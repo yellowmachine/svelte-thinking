@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import DocumentItem from '$lib/components/documents/DocumentItem.svelte';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
+	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 
@@ -24,6 +25,7 @@
 	);
 
 	let showCreateDoc = $state(false);
+	let showGenerateDraft = $state(false);
 	let newDocTitle = $state('');
 	let newDocType: 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' =
 		$state('paper');
@@ -113,6 +115,82 @@
 
 	$effect(() => { loadDatasets(); });
 
+	// ── Context links ────────────────────────────────────────────────────────
+
+	type ContextLink = {
+		id: string;
+		linkedDocumentId: string;
+		docTitle: string;
+		docType: string;
+		sourceProjectId: string;
+		sourceProjectTitle: string;
+	};
+	type AvailableDoc = {
+		id: string;
+		title: string;
+		type: string;
+		projectId: string;
+		projectTitle: string;
+	};
+
+	let contextLinks = $state<ContextLink[]>([]);
+	let showContextPicker = $state(false);
+	let availableDocs = $state<AvailableDoc[]>([]);
+	let contextPickerSearch = $state('');
+	let loadingAvailable = $state(false);
+
+	async function loadContextLinks() {
+		try {
+			contextLinks = await trpc.contextLinks.list.query(data.project.id);
+		} catch { /* non-critical */ }
+	}
+
+	async function openContextPicker() {
+		showContextPicker = true;
+		loadingAvailable = true;
+		try {
+			availableDocs = await trpc.contextLinks.listAvailable.query(data.project.id);
+		} finally {
+			loadingAvailable = false;
+		}
+	}
+
+	async function addContextLink(docId: string) {
+		await trpc.contextLinks.add.mutate({ projectId: data.project.id, documentId: docId });
+		await loadContextLinks();
+	}
+
+	async function removeContextLink(linkId: string) {
+		await trpc.contextLinks.remove.mutate(linkId);
+		contextLinks = contextLinks.filter((l) => l.id !== linkId);
+	}
+
+	const filteredAvailable = $derived(() => {
+		const q = contextPickerSearch.toLowerCase().trim();
+		const linkedIds = new Set(contextLinks.map((l) => l.linkedDocumentId));
+		const unlinked = availableDocs.filter((d) => !linkedIds.has(d.id));
+		if (!q) return unlinked;
+		return unlinked.filter(
+			(d) =>
+				d.title.toLowerCase().includes(q) ||
+				d.projectTitle.toLowerCase().includes(q)
+		);
+	});
+
+	// Group available docs by project
+	const availableByProject = $derived(() => {
+		const groups = new Map<string, { title: string; docs: AvailableDoc[] }>();
+		for (const doc of filteredAvailable()) {
+			if (!groups.has(doc.projectId)) {
+				groups.set(doc.projectId, { title: doc.projectTitle, docs: [] });
+			}
+			groups.get(doc.projectId)!.docs.push(doc);
+		}
+		return [...groups.entries()].map(([id, g]) => ({ id, ...g }));
+	});
+
+	$effect(() => { loadContextLinks(); });
+
 	const statusLabel: Record<string, string> = {
 		draft: 'Borrador',
 		active: 'Activo',
@@ -191,6 +269,15 @@
 						</svg>
 						Asistente
 					</a>
+					<button
+						onclick={() => (showGenerateDraft = true)}
+						class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						Generar borrador
+					</button>
 					<a
 						href="/projects/{data.project.id}/photos"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
@@ -201,6 +288,16 @@
 							<path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
 						Fotos
+					</a>
+					<a
+						href="/projects/{data.project.id}/bib"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						</svg>
+						Bibliografía
 					</a>
 					<button
 						onclick={() => (showCreateDoc = !showCreateDoc)}
@@ -319,7 +416,7 @@
 		</div>
 
 		<!-- Sidebar -->
-		<div>
+		<div class="flex flex-col gap-6">
 			{#if data.isOwner}
 				<InviteCollaborator
 					projectId={data.project.id}
@@ -339,6 +436,112 @@
 					</p>
 				</div>
 			{/if}
+
+			<!-- Context links for AI -->
+			<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div class="mb-3 flex items-center justify-between gap-2">
+					<div>
+						<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Contexto externo</h3>
+						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Documentos de otros proyectos visibles por la IA</p>
+					</div>
+					<button
+						onclick={openContextPicker}
+						class="shrink-0 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						+ Añadir
+					</button>
+				</div>
+
+				{#if contextLinks.length === 0}
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						Sin documentos externos. Añade notas de otros proyectos para que la IA los use como contexto.
+					</p>
+				{:else}
+					<div class="flex flex-col gap-1">
+						{#each contextLinks as link (link.id)}
+							<div class="group flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
+								<div class="min-w-0 flex-1">
+									<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">{link.docTitle}</p>
+									<p class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">{link.sourceProjectTitle}</p>
+								</div>
+								<button
+									onclick={() => removeContextLink(link.id)}
+									class="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 font-sans text-[11px] text-ink-faint hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+									title="Quitar"
+								>
+									✕
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 </div>
+
+{#if showContextPicker}
+	<!-- Context doc picker modal -->
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+		<div class="flex w-full max-w-md flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper" style="max-height: 80vh">
+			<div class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border">
+				<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Añadir contexto externo</h2>
+				<button
+					onclick={() => { showContextPicker = false; contextPickerSearch = ''; }}
+					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					aria-label="Cerrar"
+				>
+					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+						<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</button>
+			</div>
+
+			<div class="px-5 pt-3">
+				<input
+					type="search"
+					bind:value={contextPickerSearch}
+					placeholder="Buscar documentos o proyectos…"
+					class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				/>
+			</div>
+
+			<div class="flex-1 overflow-y-auto px-5 py-3">
+				{#if loadingAvailable}
+					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Cargando…</p>
+				{:else if availableByProject().length === 0}
+					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+						{availableDocs.length === 0 ? 'No tienes documentos en otros proyectos' : 'Todos los documentos ya están añadidos'}
+					</p>
+				{:else}
+					{#each availableByProject() as group (group.id)}
+						<div class="mb-3">
+							<p class="mb-1 font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">{group.title}</p>
+							{#each group.docs as doc (doc.id)}
+								<button
+									onclick={async () => { await addContextLink(doc.id); }}
+									class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+								>
+									<span class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink">{doc.title}</span>
+									<span class="shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint">{doc.type}</span>
+								</button>
+							{/each}
+						</div>
+					{/each}
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showGenerateDraft}
+	<GenerateDraftModal
+		projectId={data.project.id}
+		documents={documents}
+		onclose={() => (showGenerateDraft = false)}
+		oncreated={(docId) => {
+			showGenerateDraft = false;
+			window.location.href = `/projects/${data.project.id}/documents/${docId}`;
+		}}
+	/>
+{/if}

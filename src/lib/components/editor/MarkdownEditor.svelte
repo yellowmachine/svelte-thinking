@@ -129,6 +129,18 @@
 		view?.destroy();
 	});
 
+	// Insert text at the current cursor position.
+	// Called from the parent via bind:this.
+	export function insertAtCursor(text: string) {
+		if (!view) return;
+		const { from, to } = view.state.selection.main;
+		view.dispatch({
+			changes: { from, to, insert: text },
+			selection: { anchor: from + text.length }
+		});
+		view.focus();
+	}
+
 	// Sync external value changes (e.g. restoreVersion) without triggering ondocchange
 	$effect(() => {
 		if (!view) return;

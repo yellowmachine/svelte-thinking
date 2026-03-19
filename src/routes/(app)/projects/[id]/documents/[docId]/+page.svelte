@@ -6,6 +6,7 @@
 	import CommentThread from '$lib/components/editor/CommentThread.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { findAnchor, posToLine, type CommentRange } from '$lib/components/editor/commentsExtension';
+	import { CITATION_STYLE_LABELS, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -22,6 +23,65 @@
 
 	// Preview mode
 	let showPreview = $state(false);
+
+	// Citations
+	let citationStyle = $state<CitationStyle>('apa');
+	let projectRefs = $state<CiteRef[]>([]);
+	let refsLoaded = $state(false);
+	let showCitePicker = $state(false);
+	let citeSearch = $state('');
+	let editorEl: { insertAtCursor: (text: string) => void } | null = $state(null);
+
+	const filteredRefs = $derived(() => {
+		const q = citeSearch.toLowerCase();
+		if (!q) return projectRefs;
+		return projectRefs.filter(
+			(r) =>
+				r.citeKey.toLowerCase().includes(q) ||
+				r.title.toLowerCase().includes(q) ||
+				r.authors.some((a) => a.last.toLowerCase().includes(q))
+		);
+	});
+
+	async function loadRefs() {
+		if (refsLoaded) return;
+		try {
+			const rows = await trpc.references.list.query(data.document.projectId);
+			projectRefs = rows as CiteRef[];
+			refsLoaded = true;
+		} catch {
+			/* non-critical */
+		}
+	}
+
+	function openCitePicker() {
+		citeSearch = '';
+		showCitePicker = true;
+		loadRefs();
+	}
+
+	function insertCitation(ref: CiteRef) {
+		editorEl?.insertAtCursor(`[@${ref.citeKey}]`);
+		showCitePicker = false;
+	}
+
+	// Persist citation style per document in localStorage
+	$effect(() => {
+		const stored = localStorage.getItem(`cite-style-${data.document.id}`);
+		if (stored && (stored === 'apa' || stored === 'ieee' || stored === 'vancouver')) {
+			citationStyle = stored as CitationStyle;
+		}
+	});
+
+	function setCitationStyle(s: CitationStyle) {
+		citationStyle = s;
+		localStorage.setItem(`cite-style-${data.document.id}`, s);
+	}
+
+	// Load refs when preview is opened
+	$effect(() => {
+		if (showPreview) loadRefs();
+	});
 
 	// Version history
 	let showHistory = $state(false);
@@ -392,6 +452,33 @@
 			</span>
 		</button>
 
+		<!-- Citar button -->
+		{#if !showPreview}
+			<button
+				onclick={openCitePicker}
+				title="Insertar cita bibliográfica"
+				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			>
+				[@cite]
+			</button>
+		{/if}
+
+		<!-- Citation style selector (only visible in preview) -->
+		{#if showPreview}
+			<div class="flex rounded-md border border-paper-border overflow-hidden dark:border-dark-paper-border">
+				{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
+					<button
+						onclick={() => setCitationStyle(s as CitationStyle)}
+						class="px-2.5 py-1.5 font-sans text-xs transition-colors {citationStyle === s
+							? 'bg-accent text-white'
+							: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+					>
+						{label}
+					</button>
+				{/each}
+			</div>
+		{/if}
+
 		<button
 			onclick={toggleComments}
 			class="relative rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
@@ -442,9 +529,15 @@
 	<div class="relative flex-1 overflow-y-auto px-6 py-10">
 		<div class="mx-auto w-full max-w-2xl">
 			{#if showPreview}
-				<MarkdownPreview {content} projectId={data.document.projectId} />
+				<MarkdownPreview
+					{content}
+					projectId={data.document.projectId}
+					references={projectRefs}
+					{citationStyle}
+				/>
 			{:else}
 				<MarkdownEditor
+					bind:this={editorEl}
 					bind:value={content}
 					ondocchange={handleDocChange}
 					onselectionchange={(sel) => {
@@ -700,6 +793,75 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Cite picker modal -->
+{#if showCitePicker}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm sm:items-center"
+		onclick={(e) => { if (e.target === e.currentTarget) showCitePicker = false; }}
+	>
+		<div class="w-full max-w-sm rounded-t-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper sm:rounded-2xl">
+			<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border">
+				<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Insertar cita</h2>
+				<button
+					onclick={() => (showCitePicker = false)}
+					aria-label="Cerrar"
+					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+						<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</button>
+			</div>
+
+			<div class="px-4 pt-3">
+				<input
+					type="search"
+					bind:value={citeSearch}
+					placeholder="Buscar por autor, título o clave…"
+					class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				/>
+			</div>
+
+			<div class="max-h-72 overflow-y-auto px-2 py-2">
+				{#if !refsLoaded}
+					<p class="px-3 py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Cargando…</p>
+				{:else if projectRefs.length === 0}
+					<div class="px-3 py-6 text-center">
+						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Sin referencias en este proyecto.</p>
+						<a
+							href="/projects/{data.document.projectId}/bib"
+							class="mt-1 block font-sans text-xs text-accent hover:underline"
+						>
+							Ir a Bibliografía →
+						</a>
+					</div>
+				{:else if filteredRefs().length === 0}
+					<p class="px-3 py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Sin resultados.</p>
+				{:else}
+					{#each filteredRefs() as ref (ref.citeKey)}
+						<button
+							onclick={() => insertCitation(ref)}
+							class="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+						>
+							<span class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-1.5 py-0.5 font-mono text-xs text-accent">
+								{ref.citeKey}
+							</span>
+							<span class="min-w-0">
+								<span class="block truncate font-sans text-sm text-ink dark:text-dark-ink">{ref.title}</span>
+								<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									{(ref.authors[0]?.last ?? '')}{ ref.authors.length > 1 ? ' et al.' : ''}{ref.year ? ' · ' + ref.year : ''}
+								</span>
+							</span>
+						</button>
+					{/each}
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Commit dialog -->
 {#if showCommit}

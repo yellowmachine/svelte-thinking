@@ -10,6 +10,8 @@ import { aiRouter } from './routers/ai';
 import { aiConfigRouter } from './routers/aiConfig';
 import { billingRouter } from './routers/billing';
 import { datasetsRouter } from './routers/datasets';
+import { referencesRouter } from './routers/references';
+import { contextLinksRouter } from './routers/contextLinks';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -22,7 +24,9 @@ export const appRouter = router({
 	ai: aiRouter,
 	aiConfig: aiConfigRouter,
 	billing: billingRouter,
-	datasets: datasetsRouter
+	datasets: datasetsRouter,
+	references: referencesRouter,
+	contextLinks: contextLinksRouter
 });
 
 export type AppRouter = typeof appRouter;

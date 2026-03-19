@@ -1,12 +1,13 @@
 import { z } from 'zod';
-import { eq, desc, asc } from 'drizzle-orm';
+import { eq, desc, asc, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
 import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
-import { document } from '$lib/server/db/schemas/documents.schema';
+import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
+import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { userAiConfig } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
 import type { Db } from '$lib/server/db';
@@ -17,7 +18,7 @@ type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
 // Builds a plain-text snapshot of the project to use as system prompt context.
 // ---------------------------------------------------------------------------
 async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise<string> {
-	const [proj, docs] = await Promise.all([
+	const [proj, docs, ctxLinks] = await Promise.all([
 		withRLS((db) =>
 			db
 				.select({ title: project.title, description: project.description })
@@ -32,7 +33,21 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 				.from(document)
 				.where(eq(document.projectId, projectId))
 				.orderBy(asc(document.updatedAt))
-		) as Promise<{ title: string; type: string; draft: string | null }[]>
+		) as Promise<{ title: string; type: string; draft: string | null }[]>,
+
+		withRLS((db) =>
+			db
+				.select({
+					docTitle: document.title,
+					docType: document.type,
+					draft: document.draftContent,
+					sourceProject: project.title
+				})
+				.from(projectContextLink)
+				.innerJoin(document, eq(document.id, projectContextLink.linkedDocumentId))
+				.innerJoin(project, eq(project.id, document.projectId))
+				.where(eq(projectContextLink.projectId, projectId))
+		) as Promise<{ docTitle: string; docType: string; draft: string | null; sourceProject: string }[]>
 	]);
 
 	if (!proj[0]) return '';
@@ -47,6 +62,14 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 	for (const doc of docs) {
 		lines.push(`\n### ${doc.title} (${doc.type})`);
 		lines.push(doc.draft?.trim() || '*(sin contenido todavía)*');
+	}
+
+	if (ctxLinks.length > 0) {
+		lines.push('', '## Contexto externo (otros proyectos)');
+		for (const link of ctxLinks) {
+			lines.push(`\n### ${link.docTitle} (${link.docType}) — de "${link.sourceProject}"`);
+			lines.push(link.draft?.trim() || '*(sin contenido todavía)*');
+		}
 	}
 
 	return lines.filter(Boolean).join('\n');
@@ -273,6 +296,236 @@ export const aiRouter = router({
 			)) as { id: string }[];
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 			return { id: conversationId };
+		}),
+
+	// ---------------------------------------------------------------------------
+	// Draft generation: creates a new document from selected context documents.
+	// ---------------------------------------------------------------------------
+	generateDraft: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string(),
+				documentIds: z.array(z.string()),
+				outputType: z.enum([
+					'full_paper',
+					'introduction',
+					'abstract',
+					'discussion',
+					'conclusion',
+					'methodology',
+					'literature_review'
+				]),
+				style: z.enum(['formal', 'technical', 'review']).default('formal'),
+				audience: z.enum(['experts', 'general', 'students']).default('experts'),
+				extraInstructions: z.string().max(1000).optional()
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			// --- Get user's OpenRouter key ---
+			const configRows = (await ctx.withRLS((db) =>
+				db
+					.select({
+						encryptedApiKey: userAiConfig.encryptedApiKey,
+						encryptedDataKey: userAiConfig.encryptedDataKey,
+						iv: userAiConfig.iv,
+						authTag: userAiConfig.authTag,
+						enabled: userAiConfig.enabled,
+						provider: userAiConfig.provider
+					})
+					.from(userAiConfig)
+					.where(eq(userAiConfig.userId, ctx.user.id))
+					.limit(1)
+			)) as {
+				encryptedApiKey: string;
+				encryptedDataKey: string;
+				iv: string;
+				authTag: string;
+				enabled: boolean;
+				provider: string;
+			}[];
+
+			if (!configRows[0]) {
+				throw new TRPCError({
+					code: 'PRECONDITION_FAILED',
+					message: 'Configura tu API key de OpenRouter en Ajustes → Asistente IA.'
+				});
+			}
+			if (!configRows[0].enabled) {
+				throw new TRPCError({
+					code: 'PRECONDITION_FAILED',
+					message: 'El asistente IA está deshabilitado. Actívalo en Ajustes → Asistente IA.'
+				});
+			}
+
+			let userApiKey: string;
+			try {
+				userApiKey = await decryptSecret(configRows[0]);
+			} catch {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
+				});
+			}
+
+			// --- Load project + selected documents + context links ---
+			const [proj, selectedDocs, ctxLinks] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ title: project.title, description: project.description })
+						.from(project)
+						.where(eq(project.id, input.projectId))
+						.limit(1)
+				) as Promise<{ title: string; description: string | null }[]>,
+
+				input.documentIds.length > 0
+					? (ctx.withRLS((db) =>
+							db
+								.select({ title: document.title, type: document.type, draft: document.draftContent })
+								.from(document)
+								.where(inArray(document.id, input.documentIds))
+								.orderBy(asc(document.updatedAt))
+						) as Promise<{ title: string; type: string; draft: string | null }[]>)
+					: Promise.resolve([]),
+
+				ctx.withRLS((db) =>
+					db
+						.select({
+							docTitle: document.title,
+							docType: document.type,
+							draft: document.draftContent,
+							sourceProject: project.title
+						})
+						.from(projectContextLink)
+						.innerJoin(document, eq(document.id, projectContextLink.linkedDocumentId))
+						.innerJoin(project, eq(project.id, document.projectId))
+						.where(eq(projectContextLink.projectId, input.projectId))
+				) as Promise<{ docTitle: string; docType: string; draft: string | null; sourceProject: string }[]>
+			]);
+
+			if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+
+			// --- Build context block ---
+			const outputTypeLabels: Record<string, string> = {
+				full_paper: 'artículo académico completo',
+				introduction: 'sección de Introducción',
+				abstract: 'Resumen (Abstract)',
+				discussion: 'sección de Discusión',
+				conclusion: 'sección de Conclusión',
+				methodology: 'sección de Metodología',
+				literature_review: 'Revisión de Literatura'
+			};
+			const styleLabels: Record<string, string> = {
+				formal: 'formal y riguroso',
+				technical: 'técnico y detallado',
+				review: 'de revisión crítica'
+			};
+			const audienceLabels: Record<string, string> = {
+				experts: 'expertos en el área',
+				general: 'público general con interés en el tema',
+				students: 'estudiantes universitarios'
+			};
+
+			const contextBlock =
+				selectedDocs.length > 0
+					? selectedDocs
+							.map((d) => `### ${d.title} (${d.type})\n${d.draft?.trim() || '*(sin contenido)*'}`)
+							.join('\n\n')
+					: '*(No se seleccionaron documentos de contexto)*';
+
+			const externalBlock =
+				ctxLinks.length > 0
+					? '\n\n## Contexto externo (otros proyectos)\n' +
+						ctxLinks
+							.map(
+								(l) =>
+									`### ${l.docTitle} (${l.docType}) — de "${l.sourceProject}"\n${l.draft?.trim() || '*(sin contenido)*'}`
+							)
+							.join('\n\n')
+					: '';
+
+			const systemPrompt = `Eres un asistente de escritura académica de alto nivel. \
+Tu tarea es generar un borrador de ${outputTypeLabels[input.outputType]} \
+con un estilo ${styleLabels[input.style]}, dirigido a ${audienceLabels[input.audience]}. \
+Responde siempre en el mismo idioma que los documentos de contexto. \
+Usa formato Markdown: encabezados, listas, párrafos bien estructurados. \
+Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-comentarios.`;
+
+			const userMessage = [
+				`Proyecto: **${proj[0].title}**`,
+				proj[0].description ? `Descripción: ${proj[0].description}` : '',
+				'',
+				'## Documentos de contexto',
+				contextBlock + externalBlock,
+				input.extraInstructions
+					? `\n## Instrucciones adicionales\n${input.extraInstructions}`
+					: ''
+			]
+				.filter(Boolean)
+				.join('\n');
+
+			// --- Call OpenRouter ---
+			const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${userApiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model: 'anthropic/claude-sonnet-4-5',
+					max_tokens: 4096,
+					messages: [
+						{ role: 'system', content: systemPrompt },
+						{ role: 'user', content: userMessage }
+					]
+				})
+			});
+
+			if (!response.ok) {
+				const err = await response.text();
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: `Error de OpenRouter: ${response.status}. ${err.slice(0, 200)}`
+				});
+			}
+
+			const data = (await response.json()) as {
+				choices: { message: { content: string } }[];
+			};
+			const generatedContent = data.choices[0]?.message?.content ?? '';
+
+			// --- Create new document with generated content as draft ---
+			const docId = crypto.randomUUID();
+			const versionId = crypto.randomUUID();
+			const typeLabel = outputTypeLabels[input.outputType] ?? input.outputType;
+			const docTitle = `Borrador: ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}`;
+
+			await ctx.withRLS(async (db) => {
+				await db.insert(document).values({
+					id: docId,
+					projectId: input.projectId,
+					title: docTitle,
+					type: 'paper',
+					draftContent: generatedContent
+				});
+
+				await db.insert(documentVersion).values({
+					id: versionId,
+					documentId: docId,
+					content: '',
+					versionNumber: 1,
+					changeDescription: 'Versión inicial',
+					createdBy: ctx.user.id
+				});
+
+				await db
+					.update(document)
+					.set({ currentVersionId: versionId })
+					.where(eq(document.id, docId));
+			});
+
+			return { documentId: docId, title: docTitle };
 		}),
 
 	// ---------------------------------------------------------------------------

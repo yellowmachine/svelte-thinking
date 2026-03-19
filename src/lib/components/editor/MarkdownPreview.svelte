@@ -2,8 +2,22 @@
 	import { marked, type RendererObject } from 'marked';
 	import katex from 'katex';
 	import { trpc } from '$lib/utils/trpc';
+	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 
-	let { content = '', projectId = null }: { content: string; projectId?: string | null } = $props();
+	let {
+		content = '',
+		projectId = null,
+		references = [],
+		citationStyle = 'apa'
+	}: {
+		content: string;
+		projectId?: string | null;
+		references?: CiteRef[];
+		citationStyle?: CitationStyle;
+	} = $props();
+
+	// Build a key → ref map for fast lookup in the citation processor
+	const refsMap = $derived(new Map(references.map((r) => [r.citeKey, r])));
 
 	let container: HTMLDivElement | null = null;
 
@@ -67,10 +81,15 @@
 
 	// ── Full parse pipeline ───────────────────────────────────────────────────
 
-	function parseMarkdown(src: string): { html: string; plots: Map<string, object> } {
+	function parseMarkdown(
+		src: string,
+		refs: Map<string, CiteRef>,
+		style: CitationStyle
+	): { html: string; plots: Map<string, object> } {
 		const { processed: withPlaceholders, plots } = extractPlots(src);
 		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withPlaceholders);
-		const rawHtml = marked.parse(withMathPlaceholders) as string;
+		const withCitations = refs.size > 0 ? processCitations(withMathPlaceholders, refs, style) : withMathPlaceholders;
+		const rawHtml = marked.parse(withCitations) as string;
 		const html = restoreMath(rawHtml, mathBlocks);
 		return { html, plots };
 	}
@@ -124,7 +143,7 @@
 		}
 	}
 
-	let parsed = $derived(parseMarkdown(content));
+	let parsed = $derived(parseMarkdown(content, refsMap, citationStyle));
 
 	$effect(() => {
 		const { plots } = parsed;
