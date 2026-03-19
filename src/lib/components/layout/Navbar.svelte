@@ -19,28 +19,30 @@
 	class="sticky top-0 z-10 border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 >
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-		<button
-			onclick={() => (window.location.href = '/projects')}
+		<a
+			href="/projects"
 			class="flex items-center gap-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink"
 		>
 			Scholio
 			<span class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent">
 				beta
 			</span>
-		</button>
+		</a>
 
 		<div class="flex items-center gap-4">
-			<a href="/settings" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-				<div
-					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-sans text-xs font-semibold text-white"
+			<div class="flex items-center gap-2.5">
+				<a
+					href="/settings"
+					title="Ajustes"
+					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-sans text-xs font-semibold text-white transition-opacity hover:opacity-80"
 				>
 					{initials}
-				</div>
+				</a>
 				<div class="hidden sm:block">
 					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{user.name}</p>
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{user.email}</p>
 				</div>
-			</a>
+			</div>
 
 			<form method="post" action="/logout">
 				<button
