@@ -69,5 +69,12 @@
 		"vite-plugin-devtools-json": "^1.0.0",
 		"vitest": "^4.1.0",
 		"vitest-browser-svelte": "^2.0.2"
+	},
+	"dependencies": {
+		"@trpc/client": "^11.13.0",
+		"@trpc/server": "^11.13.0",
+		"resend": "^6.9.4",
+		"superjson": "^2.2.6",
+		"zod": "^4.3.6"
 	}
 }

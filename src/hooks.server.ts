@@ -1,6 +1,10 @@
+import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import { building } from '$app/environment';
+import { sql } from 'drizzle-orm';
 import { auth } from '$lib/server/auth';
+import { db } from '$lib/server/db';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
@@ -14,4 +18,22 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	return svelteKitHandler({ event, resolve, auth, building });
 };
 
-export const handle: Handle = handleBetterAuth;
+const handleRLS: Handle = ({ event, resolve }) => {
+	const userId = event.locals.user?.id;
+
+	event.locals.withRLS = (fn) => {
+		if (!userId) {
+			error(401, 'Unauthorized');
+		}
+
+		return db.transaction(async (tx) => {
+			// set_config con is_local=true equivale a SET LOCAL — solo aplica en esta transacción
+			await tx.execute(sql`SELECT set_config('app.current_user_id', ${userId}, true)`);
+			return fn(tx as unknown as typeof db);
+		});
+	};
+
+	return resolve(event);
+};
+
+export const handle: Handle = sequence(handleBetterAuth, handleRLS);

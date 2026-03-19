@@ -1,21 +1,24 @@
-import type { Preview } from '@storybook/sveltekit'
+import '../src/routes/layout.css';
+import type { Preview } from '@storybook/sveltekit';
 
 const preview: Preview = {
-  parameters: {
-    controls: {
-      matchers: {
-       color: /(background|color)$/i,
-       date: /Date$/i,
-      },
-    },
-
-    a11y: {
-      // 'todo' - show a11y violations in the test UI only
-      // 'error' - fail CI on a11y violations
-      // 'off' - skip a11y checks entirely
-      test: 'todo'
-    }
-  },
+	parameters: {
+		controls: {
+			matchers: {
+				color: /(background|color)$/i,
+				date: /Date$/i
+			}
+		},
+		backgrounds: {
+			default: 'paper',
+			values: [
+				{ name: 'paper', value: '#F9F7F4' },
+				{ name: 'paper-ui', value: '#F0EDE8' },
+				{ name: 'dark', value: '#1A1917' }
+			]
+		},
+		a11y: { test: 'todo' }
+	}
 };
 
 export default preview;

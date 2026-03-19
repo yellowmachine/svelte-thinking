@@ -1,4 +1,5 @@
 import type { User, Session } from 'better-auth/minimal';
+import type { Db } from '$lib/server/db';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
@@ -7,6 +8,12 @@ declare global {
 		interface Locals {
 			user?: User;
 			session?: Session;
+			/**
+			 * Ejecuta `fn` dentro de una transacción con `app.current_user_id` seteado.
+			 * Las políticas RLS de PostgreSQL usan esa variable para filtrar filas.
+			 * Lanza UNAUTHORIZED si no hay usuario autenticado.
+			 */
+			withRLS: <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
 		}
 
 		// interface Error {}
