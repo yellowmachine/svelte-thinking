@@ -3,7 +3,8 @@ import { sql } from 'drizzle-orm';
 
 export const planEnum = pgEnum('plan', ['free', 'pro', 'team']);
 
-const currentUserId = sql`current_setting('app.current_user_id', true)`;
+// nullif converts '' to NULL so both missing and empty-string are treated as unauthenticated
+const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
 
 export const userProfile = pgTable(
 	'user_profile',

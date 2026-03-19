@@ -25,7 +25,7 @@ export const projectRoleEnum = pgEnum('project_role', [
 	'commenter'
 ]);
 
-const currentUserId = sql`current_setting('app.current_user_id', true)`;
+const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
 
 export const project = pgTable(
 	'project',
