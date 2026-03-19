@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
@@ -12,7 +13,34 @@ const dirname =
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
+	plugins: [
+		tailwindcss(),
+		sveltekit(),
+		VitePWA({
+			registerType: 'autoUpdate',
+			devOptions: { enabled: false },
+			manifest: {
+				name: 'Scholio',
+				short_name: 'Scholio',
+				description: 'Escritura académica colaborativa',
+				theme_color: '#2C1E14',
+				background_color: '#F5F0E8',
+				display: 'standalone',
+				scope: '/',
+				start_url: '/projects',
+				icons: [
+					{ src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+					{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+					{ src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+					{ src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+				]
+			},
+			workbox: {
+				globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}']
+			}
+		}),
+		devtoolsJson()
+	],
 	server: { port: 5174 },
 	test: {
 		expect: {

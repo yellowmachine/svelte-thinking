@@ -23,7 +23,7 @@
 			onclick={() => (window.location.href = '/projects')}
 			class="font-serif text-xl font-semibold text-ink dark:text-dark-ink"
 		>
-			Scholarly
+			Scholio
 		</button>
 
 		<div class="flex items-center gap-4">

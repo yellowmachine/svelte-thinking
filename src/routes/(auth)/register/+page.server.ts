@@ -16,14 +16,15 @@ export const actions: Actions = {
 		const password = data.get('password')?.toString() ?? '';
 
 		try {
-			await auth.api.signUpEmail({ body: { name, email, password } });
+			await auth.api.signUpEmail({
+				body: { name, email, password, callbackURL: '/projects' }
+			});
 		} catch (e) {
-			console.error('[register] error:', e);
 			if (e instanceof APIError) return fail(400, { message: e.message || 'Error al crear la cuenta' });
 			return fail(500, { message: 'Error inesperado' });
 		}
 
-		redirect(302, '/projects');
+		redirect(302, `/check-email?email=${encodeURIComponent(email)}`);
 	},
 
 	signInSocial: async (event) => {

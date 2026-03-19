@@ -4,12 +4,19 @@ import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { env } from '$env/dynamic/private';
 import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
+import { sendVerificationEmail } from '$lib/server/resend';
 
 export const auth = betterAuth({
 	baseURL: env.ORIGIN,
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
-	emailAndPassword: { enabled: true },
+	emailAndPassword: {
+		enabled: true,
+		requireEmailVerification: true,
+		sendVerificationEmail: async ({ user, url }) => {
+			await sendVerificationEmail(user.email, url);
+		}
+	},
 	socialProviders: {
 		github: {
 			clientId: env.GITHUB_CLIENT_ID,

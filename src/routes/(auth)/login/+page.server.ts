@@ -18,7 +18,17 @@ export const actions: Actions = {
 		try {
 			await auth.api.signInEmail({ body: { email, password } });
 		} catch (e) {
-			if (e instanceof APIError) return fail(400, { message: e.message || 'Credenciales incorrectas' });
+			if (e instanceof APIError) {
+				const isUnverified = e.message?.toLowerCase().includes('email') && e.message?.toLowerCase().includes('verif');
+				if (isUnverified) {
+					return fail(400, {
+						message: 'Debes verificar tu correo antes de iniciar sesión.',
+						unverified: true,
+						email
+					});
+				}
+				return fail(400, { message: e.message || 'Credenciales incorrectas' });
+			}
 			return fail(500, { message: 'Error inesperado' });
 		}
 

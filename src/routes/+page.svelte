@@ -48,7 +48,7 @@ La evidencia empírica recolectada durante tres años de observación participan
 					<path d="M2 3h10M2 7h7M2 11h5" stroke="white" stroke-width="1.5" stroke-linecap="round" />
 				</svg>
 			</div>
-			<span class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Scholarly</span>
+			<span class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Scholio</span>
 		</div>
 
 		<!-- Project name -->
