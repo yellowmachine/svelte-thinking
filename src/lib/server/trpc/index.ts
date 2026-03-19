@@ -7,6 +7,7 @@ import { invitationsRouter } from './routers/invitations';
 import { usersRouter } from './routers/users';
 import { photosRouter } from './routers/photos';
 import { aiRouter } from './routers/ai';
+import { billingRouter } from './routers/billing';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -16,7 +17,8 @@ export const appRouter = router({
 	invitations: invitationsRouter,
 	users: usersRouter,
 	photos: photosRouter,
-	ai: aiRouter
+	ai: aiRouter,
+	billing: billingRouter
 });
 
 export type AppRouter = typeof appRouter;

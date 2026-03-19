@@ -15,6 +15,13 @@
       "when": 1773924708036,
       "tag": "0001_oval_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773929875950,
+      "tag": "0002_quick_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

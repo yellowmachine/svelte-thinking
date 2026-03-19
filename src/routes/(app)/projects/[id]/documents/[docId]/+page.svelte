@@ -40,7 +40,7 @@
 	let commitError = $state('');
 
 	// Inline comments
-	type Reply = { id: string; parentCommentId: string | null; authorId: string; authorName: string; content: string; createdAt: Date };
+	type Reply = { id: string; authorName: string; content: string; createdAt: Date };
 	type InlineComment = {
 		id: string;
 		authorId: string;
@@ -250,7 +250,7 @@
 		);
 	}
 
-	const saveStatusLabel: Record<typeof saveStatus, string> = {
+	const saveStatusLabel: Record<'idle' | 'pending' | 'saving' | 'saved' | 'error', string> = {
 		idle: '',
 		pending: 'Cambios sin guardar',
 		saving: 'Guardando...',

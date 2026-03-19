@@ -30,7 +30,7 @@
 		</button>
 
 		<div class="flex items-center gap-4">
-			<div class="flex items-center gap-2.5">
+			<a href="/settings" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
 				<div
 					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-sans text-xs font-semibold text-white"
 				>
@@ -40,7 +40,7 @@
 					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{user.name}</p>
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{user.email}</p>
 				</div>
-			</div>
+			</a>
 
 			<form method="post" action="/logout">
 				<button

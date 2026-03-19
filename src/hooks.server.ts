@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/sveltekit';
 import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
@@ -6,6 +7,8 @@ import { sql } from 'drizzle-orm';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
+
+export const handleError = Sentry.handleErrorWithSentry();
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
@@ -36,4 +39,8 @@ const handleRLS: Handle = ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle: Handle = sequence(handleBetterAuth, handleRLS);
+export const handle: Handle = sequence(
+	Sentry.sentryHandle(),
+	handleBetterAuth,
+	handleRLS
+);

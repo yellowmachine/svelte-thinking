@@ -1,5 +1,7 @@
-import { pgTable, text, timestamp, pgPolicy } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, pgPolicy, pgEnum } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+
+export const planEnum = pgEnum('plan', ['free', 'pro', 'team']);
 
 const currentUserId = sql`current_setting('app.current_user_id', true)`;
 
@@ -12,6 +14,11 @@ export const userProfile = pgTable(
 		bio: text('bio'),
 		institution: text('institution'),
 		orcid: text('orcid'),
+		// Billing
+		stripeCustomerId: text('stripe_customer_id').unique(),
+		plan: planEnum('plan').notNull().default('free'),
+		planStatus: text('plan_status').default('active'), // active | canceled | past_due
+		planCurrentPeriodEnd: timestamp('plan_current_period_end'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
