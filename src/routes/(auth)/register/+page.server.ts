@@ -18,6 +18,7 @@ export const actions: Actions = {
 		try {
 			await auth.api.signUpEmail({ body: { name, email, password } });
 		} catch (e) {
+			console.error('[register] error:', e);
 			if (e instanceof APIError) return fail(400, { message: e.message || 'Error al crear la cuenta' });
 			return fail(500, { message: 'Error inesperado' });
 		}

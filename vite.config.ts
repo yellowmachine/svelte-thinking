@@ -13,6 +13,7 @@ const dirname =
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
+	server: { port: 5174 },
 	test: {
 		expect: {
 			requireAssertions: true

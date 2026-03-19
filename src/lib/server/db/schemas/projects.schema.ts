@@ -88,22 +88,39 @@ export const projectCollaborator = pgTable(
 		index('project_collaborator_project_idx').on(t.projectId),
 		index('project_collaborator_user_idx').on(t.userId),
 
-		// SELECT: el propio colaborador o el owner del proyecto puede ver la lista
+		// SELECT: solo el propio colaborador ve su fila.
+		// Sin referencia a project → rompe el ciclo de recursión con project_select.
+		// El owner también tiene fila en esta tabla (role='owner'), así que también la ve.
 		pgPolicy('collaborator_select', {
 			for: 'select',
-			using: sql`
-				${t.userId} = ${currentUserId}
-				OR EXISTS (
+			using: sql`${t.userId} = ${currentUserId}`
+		}),
+
+		// INSERT/UPDATE/DELETE: solo el owner del proyecto.
+		// Separado de SELECT para no activarse cuando project_select lee project_collaborator.
+		// FOR ALL incluye SELECT y causaría ciclo; policies específicos evitan eso.
+		pgPolicy('collaborator_insert', {
+			for: 'insert',
+			withCheck: sql`
+				EXISTS (
 					SELECT 1 FROM project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = ${currentUserId}
 				)
 			`
 		}),
-
-		// INSERT/UPDATE/DELETE: solo el owner del proyecto
-		pgPolicy('collaborator_modify', {
-			for: 'all',
+		pgPolicy('collaborator_update', {
+			for: 'update',
+			using: sql`
+				EXISTS (
+					SELECT 1 FROM project
+					WHERE project.id = ${t.projectId}
+					AND project.owner_id = ${currentUserId}
+				)
+			`
+		}),
+		pgPolicy('collaborator_delete', {
+			for: 'delete',
 			using: sql`
 				EXISTS (
 					SELECT 1 FROM project

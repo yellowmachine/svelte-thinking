@@ -15,12 +15,11 @@ if (!url) {
 	process.exit(1);
 }
 
-console.log('Ejecutando migraciones...');
-
 const client = postgres(url, { max: 1 });
 const db = drizzle(client);
 
 try {
+	console.log('Ejecutando migraciones...');
 	await migrate(db, { migrationsFolder: './drizzle' });
 	console.log('Migraciones completadas.');
 } catch (err) {
