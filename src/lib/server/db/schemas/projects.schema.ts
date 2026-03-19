@@ -111,6 +111,12 @@ export const projectCollaborator = pgTable(
 					AND project.owner_id = ${currentUserId}
 				)
 			`
+		}),
+
+		// INSERT extra: sin contexto de usuario (flujo accept — la app valida el token de invitación)
+		pgPolicy('collaborator_insert_invite', {
+			for: 'insert',
+			withCheck: sql`current_setting('app.current_user_id', true) = ''`
 		})
 	]
 ).enableRLS();

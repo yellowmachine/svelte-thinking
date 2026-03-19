@@ -27,11 +27,12 @@ export const projectInvitation = pgTable(
 	(t) => [
 		index('invitation_project_idx').on(t.projectId),
 
-		// SELECT: el owner del proyecto puede ver sus invitaciones
+		// SELECT: owner, invitador, o sin contexto de usuario (acceso público por token)
 		pgPolicy('invitation_select', {
 			for: 'select',
 			using: sql`
-				${t.invitedBy} = current_setting('app.current_user_id', true)
+				current_setting('app.current_user_id', true) = ''
+				OR ${t.invitedBy} = current_setting('app.current_user_id', true)
 				OR EXISTS (
 					SELECT 1 FROM project
 					WHERE project.id = ${t.projectId}
@@ -40,11 +41,24 @@ export const projectInvitation = pgTable(
 			`
 		}),
 
-		// INSERT/UPDATE/DELETE: solo el owner del proyecto
+		// INSERT/DELETE: solo el owner del proyecto
 		pgPolicy('invitation_modify', {
 			for: 'all',
 			using: sql`
 				EXISTS (
+					SELECT 1 FROM project
+					WHERE project.id = ${t.projectId}
+					AND project.owner_id = current_setting('app.current_user_id', true)
+				)
+			`
+		}),
+
+		// UPDATE: owner, o sin contexto de usuario (flujo accept — la app valida el token)
+		pgPolicy('invitation_update', {
+			for: 'update',
+			using: sql`
+				current_setting('app.current_user_id', true) = ''
+				OR EXISTS (
 					SELECT 1 FROM project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = current_setting('app.current_user_id', true)

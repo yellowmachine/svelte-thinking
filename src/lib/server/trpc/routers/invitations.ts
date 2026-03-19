@@ -106,10 +106,24 @@ export const invitationsRouter = router({
 			});
 		}),
 
-	// Ruta pública — devuelve info de la invitación para mostrar en la página de aceptación
-	byToken: publicProcedure.input(z.string()).query(async ({ ctx }) => {
-		// No usa RLS porque es pública — la validación es el token opaco
-		throw new TRPCError({ code: 'METHOD_NOT_SUPPORTED' });
+	// Pública — devuelve info de la invitación para la página de aceptación
+	// No usa RLS: el token opaco es la autenticación
+	byToken: publicProcedure.input(z.string()).query(async ({ ctx, input: token }) => {
+		const rows = await ctx.db
+			.select({
+				id: projectInvitation.id,
+				role: projectInvitation.role,
+				status: projectInvitation.status,
+				expiresAt: projectInvitation.expiresAt,
+				projectId: projectInvitation.projectId,
+				invitedEmail: projectInvitation.invitedEmail
+			})
+			.from(projectInvitation)
+			.where(eq(projectInvitation.token, token))
+			.limit(1);
+
+		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+		return rows[0];
 	}),
 
 	// Acepta la invitación por token (el usuario ya debe estar autenticado)

@@ -1,8 +1,11 @@
 import { z } from 'zod';
-import { eq, and, isNull, desc } from 'drizzle-orm';
+import { eq, and, isNull, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { comment } from '$lib/server/db/schemas/comments.schema';
+
+const authorNameSql = (authorId: typeof comment.authorId) =>
+	sql<string>`(SELECT name FROM "user" WHERE "user".id = ${authorId})`;
 
 const createGeneralCommentSchema = z.object({
 	documentId: z.string(),
@@ -32,11 +35,24 @@ export const commentsRouter = router({
 		);
 	}),
 
-	// Comentarios inline de un documento
+	// Comentarios inline de un documento con nombre de autor y replies
 	listInline: protectedProcedure.input(z.string()).query(async ({ ctx, input: documentId }) => {
-		return ctx.withRLS((db) =>
+		const threads = await ctx.withRLS((db) =>
 			db
-				.select()
+				.select({
+					id: comment.id,
+					documentId: comment.documentId,
+					authorId: comment.authorId,
+					authorName: authorNameSql(comment.authorId),
+					content: comment.content,
+					anchorText: comment.anchorText,
+					lineStart: comment.lineStart,
+					lineEnd: comment.lineEnd,
+					characterStart: comment.characterStart,
+					characterEnd: comment.characterEnd,
+					status: comment.status,
+					createdAt: comment.createdAt
+				})
 				.from(comment)
 				.where(
 					and(
@@ -47,6 +63,37 @@ export const commentsRouter = router({
 				)
 				.orderBy(comment.lineStart)
 		);
+
+		const replies = await ctx.withRLS((db) =>
+			db
+				.select({
+					id: comment.id,
+					parentCommentId: comment.parentCommentId,
+					authorId: comment.authorId,
+					authorName: authorNameSql(comment.authorId),
+					content: comment.content,
+					createdAt: comment.createdAt
+				})
+				.from(comment)
+				.where(
+					and(
+						eq(comment.documentId, documentId),
+						eq(comment.type, 'inline'),
+						isNull(comment.parentCommentId).not()
+					)
+				)
+				.orderBy(comment.createdAt)
+		);
+
+		const replyMap = new Map<string, typeof replies>();
+		for (const r of replies) {
+			if (!r.parentCommentId) continue;
+			const list = replyMap.get(r.parentCommentId) ?? [];
+			list.push(r);
+			replyMap.set(r.parentCommentId, list);
+		}
+
+		return threads.map((t) => ({ ...t, replies: replyMap.get(t.id) ?? [] }));
 	}),
 
 	// Replies de un comentario
@@ -145,6 +192,39 @@ export const commentsRouter = router({
 		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 		return rows[0];
 	}),
+
+	addReply: protectedProcedure
+		.input(z.object({ commentId: z.string(), content: z.string().min(1).max(10000) }))
+		.mutation(async ({ ctx, input }) => {
+			// Verify parent exists
+			const [parent] = await ctx.withRLS((db) =>
+				db.select({ id: comment.id, documentId: comment.documentId }).from(comment).where(eq(comment.id, input.commentId)).limit(1)
+			);
+			if (!parent) throw new TRPCError({ code: 'NOT_FOUND' });
+
+			const [created] = await ctx.withRLS((db) =>
+				db
+					.insert(comment)
+					.values({
+						id: crypto.randomUUID(),
+						documentId: parent.documentId,
+						authorId: ctx.user.id,
+						type: 'inline',
+						content: input.content,
+						parentCommentId: input.commentId
+					})
+					.returning()
+			);
+
+			return {
+				id: created.id,
+				parentCommentId: created.parentCommentId,
+				authorId: created.authorId,
+				authorName: ctx.user.name ?? ctx.user.email,
+				content: created.content,
+				createdAt: created.createdAt
+			};
+		}),
 
 	delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
 		const rows = await ctx.withRLS((db) =>

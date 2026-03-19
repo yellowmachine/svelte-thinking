@@ -29,6 +29,8 @@ export const document = pgTable(
 		type: documentTypeEnum('type').notNull().default('paper'),
 		// FK no forzada para evitar dependencia circular con documentVersion
 		currentVersionId: text('current_version_id'),
+		// Contenido en progreso (auto-save). null = sin cambios desde el último commit
+		draftContent: text('draft_content'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
