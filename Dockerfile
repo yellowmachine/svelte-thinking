@@ -2,6 +2,11 @@
 FROM oven/bun:1 AS deps
 WORKDIR /app
 
+# Build tools needed for native modules (better-sqlite3, etc.)
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
@@ -9,15 +14,20 @@ RUN bun install --frozen-lockfile
 FROM oven/bun:1 AS build
 WORKDIR /app
 
+# PUBLIC_* vars from $env/static/public are baked in at build time.
+# Pass the real value via --build-arg in Coolify (Build Variables section).
+ARG PUBLIC_SENTRY_DSN=""
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Variables mínimas para que vite build no falle.
-# Los valores reales se inyectan en runtime.
+# Minimal runtime-independent vars so vite build doesn't fail.
+# Real values are injected at container startup via docker-compose env.
 ENV NODE_ENV=production
 ENV ORIGIN=https://placeholder.local
 ENV BETTER_AUTH_SECRET=build-placeholder
 ENV DATABASE_URL=postgres://placeholder
+ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
 
 RUN bun run build
 

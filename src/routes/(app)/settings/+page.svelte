@@ -13,7 +13,7 @@
 	let confirmPassword = $state('');
 
 	// Active section
-	let activeTab: 'profile' | 'billing' = $state('profile');
+	let activeTab: 'profile' | 'billing' | 'ai' = $state('profile');
 
 	// Billing state
 	type PlanInfo = {
@@ -71,6 +71,80 @@
 		if (!d) return '—';
 		return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 	}
+
+	// ── AI config state ──────────────────────────────────────────────────────
+	type AiStatus = { configured: boolean; enabled: boolean; provider: string | null; updatedAt: Date | null };
+	let aiStatus = $state<AiStatus | null>(null);
+	let loadingAi = $state(false);
+	let aiApiKey = $state('');
+	let savingKey = $state(false);
+	let togglingEnabled = $state(false);
+	let deletingKey = $state(false);
+	let aiError = $state('');
+	let aiSuccess = $state('');
+
+	async function loadAiStatus() {
+		loadingAi = true;
+		aiError = '';
+		try {
+			aiStatus = await trpc.aiConfig.getStatus.query();
+		} catch {
+			aiError = 'No se pudo cargar la configuración del asistente.';
+		} finally {
+			loadingAi = false;
+		}
+	}
+
+	async function handleSaveKey() {
+		if (!aiApiKey.trim()) return;
+		savingKey = true;
+		aiError = '';
+		aiSuccess = '';
+		try {
+			await trpc.aiConfig.saveApiKey.mutate({ apiKey: aiApiKey.trim(), provider: 'openrouter' });
+			aiApiKey = '';
+			aiSuccess = 'API key guardada correctamente.';
+			await loadAiStatus();
+		} catch (e: unknown) {
+			aiError = e instanceof Error ? e.message : 'Error al guardar la API key.';
+		} finally {
+			savingKey = false;
+		}
+	}
+
+	async function handleToggleEnabled(enabled: boolean) {
+		togglingEnabled = true;
+		aiError = '';
+		aiSuccess = '';
+		try {
+			await trpc.aiConfig.toggleEnabled.mutate(enabled);
+			if (aiStatus) aiStatus = { ...aiStatus, enabled };
+		} catch (e: unknown) {
+			aiError = e instanceof Error ? e.message : 'Error al cambiar el estado.';
+		} finally {
+			togglingEnabled = false;
+		}
+	}
+
+	async function handleDeleteKey() {
+		if (!confirm('¿Eliminar la API key almacenada? Perderás acceso al asistente IA hasta que añadas una nueva.')) return;
+		deletingKey = true;
+		aiError = '';
+		aiSuccess = '';
+		try {
+			await trpc.aiConfig.deleteApiKey.mutate();
+			aiSuccess = 'API key eliminada.';
+			await loadAiStatus();
+		} catch (e: unknown) {
+			aiError = e instanceof Error ? e.message : 'Error al eliminar la API key.';
+		} finally {
+			deletingKey = false;
+		}
+	}
+
+	$effect(() => {
+		if (activeTab === 'ai' && aiStatus === null) loadAiStatus();
+	});
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
@@ -101,6 +175,15 @@
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Plan y facturación
+		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = 'ai')}
+			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'ai'
+				? 'border-b-2 border-accent font-medium text-accent'
+				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+		>
+			Asistente IA
 		</button>
 	</div>
 
@@ -245,6 +328,144 @@
 					Eliminar cuenta
 				</button>
 			</section>
+		</div>
+
+	<!-- ── AI TAB ── -->
+	{:else if activeTab === 'ai'}
+		<div class="flex flex-col gap-6">
+
+			{#if aiError}
+				<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
+					{aiError}
+				</div>
+			{/if}
+			{#if aiSuccess}
+				<div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
+					{aiSuccess}
+				</div>
+			{/if}
+
+			<!-- Status card -->
+			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div class="flex items-start justify-between gap-4">
+					<div>
+						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Asistente de investigación</h2>
+						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+							El asistente del chat usa tu propia API key de OpenRouter (BYOK).
+							Tu key se cifra con AWS KMS y nunca se expone en claro.
+						</p>
+					</div>
+					{#if !loadingAi && aiStatus?.configured}
+						<span class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold {aiStatus.enabled
+							? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
+							: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}">
+							{aiStatus.enabled ? 'Activo' : 'Deshabilitado'}
+						</span>
+					{/if}
+				</div>
+
+				{#if loadingAi}
+					<p class="mt-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando...</p>
+				{:else if aiStatus?.configured}
+					<!-- Key configured -->
+					<div class="mt-5 flex flex-col gap-4">
+						<div class="rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Proveedor</p>
+									<p class="mt-0.5 font-sans text-sm font-medium text-ink dark:text-dark-ink">OpenRouter</p>
+								</div>
+								<div class="text-right">
+									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Última actualización</p>
+									<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+										{formatDate(aiStatus.updatedAt)}
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- Toggle enabled -->
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Asistente habilitado</p>
+								<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+									Desactívalo sin eliminar la key.
+								</p>
+							</div>
+							<button
+								type="button"
+								role="switch"
+								aria-checked={aiStatus.enabled}
+								aria-label={aiStatus.enabled ? 'Deshabilitar asistente IA' : 'Habilitar asistente IA'}
+								onclick={() => handleToggleEnabled(!aiStatus!.enabled)}
+								disabled={togglingEnabled}
+								class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50
+									{aiStatus.enabled ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
+							>
+								<span
+									class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200
+										{aiStatus.enabled ? 'translate-x-5' : 'translate-x-0'}"
+								></span>
+							</button>
+						</div>
+					</div>
+				{/if}
+			</section>
+
+			<!-- Add / replace key -->
+			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+					{aiStatus?.configured ? 'Reemplazar API key' : 'Añadir API key'}
+				</h2>
+				<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Obtén tu key en
+					<a
+						href="https://openrouter.ai/keys"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-accent underline underline-offset-2"
+					>openrouter.ai/keys</a>.
+					La key se cifra con AWS KMS antes de almacenarse.
+				</p>
+
+				<div class="flex gap-3">
+					<input
+						type="password"
+						bind:value={aiApiKey}
+						placeholder="sk-or-v1-..."
+						autocomplete="off"
+						class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					/>
+					<button
+						type="button"
+						onclick={handleSaveKey}
+						disabled={!aiApiKey.trim() || savingKey}
+						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+					>
+						{savingKey ? 'Guardando...' : 'Guardar'}
+					</button>
+				</div>
+			</section>
+
+			<!-- Danger: delete key -->
+			{#if aiStatus?.configured}
+				<section class="rounded-xl border border-red-200 bg-paper p-6 dark:border-red-900/40 dark:bg-dark-paper">
+					<h2 class="mb-1 font-serif text-lg font-semibold text-red-600 dark:text-red-400">
+						Eliminar API key
+					</h2>
+					<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						La key se elimina permanentemente de nuestros servidores.
+					</p>
+					<button
+						type="button"
+						onclick={handleDeleteKey}
+						disabled={deletingKey}
+						class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+					>
+						{deletingKey ? 'Eliminando...' : 'Eliminar key'}
+					</button>
+				</section>
+			{/if}
 		</div>
 
 	<!-- ── BILLING TAB ── -->

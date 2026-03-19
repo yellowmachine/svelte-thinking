@@ -60,7 +60,7 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 
 ### Requisitos
 - [Bun](https://bun.sh) >= 1.0
-- [Docker](https://www.docker.com) (PostgreSQL + MinIO)
+- [Docker](https://www.docker.com)
 
 ### Puesta en marcha
 
@@ -68,8 +68,8 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 # 1. Instalar dependencias
 bun install
 
-# 2. Levantar servicios (PostgreSQL + MinIO)
-docker compose up -d
+# 2. Levantar PostgreSQL + MinIO (compose de dev, puertos locales)
+docker compose -f docker-compose.dev.yml up -d
 
 # 3. Copiar variables de entorno y rellenar las necesarias
 cp .env.example .env
@@ -80,6 +80,46 @@ bun run db:migrate
 # 5. Arrancar el servidor de desarrollo
 bun run dev
 ```
+
+---
+
+## Despliegue en producción (Hetzner + Coolify)
+
+### Infraestructura recomendada
+- **Servidor**: Hetzner CX22 (2 vCPU / 4 GB RAM / 40 GB SSD) — ~3.85 €/mes
+- **PaaS**: [Coolify](https://coolify.io) self-hosted — gestiona deploys, SSL, env vars y reverse proxy
+
+### Preparación del servidor
+
+```sh
+# Instalar Coolify en el servidor Hetzner (una sola vez)
+curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
+```
+
+Accede a Coolify en `http://TU_IP:8000` y completa el onboarding.
+
+### Configurar la aplicación en Coolify
+
+1. **New Resource → Docker Compose**
+2. Apunta al repositorio Git (GitHub/GitLab)
+3. Coolify detecta el `docker-compose.yml` automáticamente
+4. En **Environment Variables**, añade todas las variables del checklist de abajo
+5. En **Build Variables**, añade `PUBLIC_SENTRY_DSN` con tu DSN real (se bake en el build)
+6. Configura el dominio y activa SSL (Let's Encrypt automático)
+7. Deploy
+
+### Variables de entorno en Coolify
+
+Copia todas las variables del `.env.example` en la sección **Environment Variables** de Coolify.
+Las variables `PUBLIC_*` (Sentry client DSN) van en **Build Variables** porque se incrustan en el bundle.
+
+> **Nota sobre `DATABASE_URL` y `MIGRATION_DATABASE_URL`**: apuntan al servicio `postgres`
+> interno del compose. Ejemplo:
+> ```
+> DATABASE_URL=postgres://scholarly_app:TU_PASSWORD@postgres:5432/scholarly
+> MIGRATION_DATABASE_URL=postgres://scholarly:TU_PASSWORD@postgres:5432/scholarly
+> ```
+> Nota que el host es `postgres` (nombre del servicio en el compose), no `localhost`.
 
 ---
 

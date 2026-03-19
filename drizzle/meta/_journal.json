@@ -22,6 +22,13 @@
       "when": 1773929875950,
       "tag": "0002_quick_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773934725851,
+      "tag": "0003_user_ai_config_kms",
+      "breakpoints": true
     }
   ]
 }

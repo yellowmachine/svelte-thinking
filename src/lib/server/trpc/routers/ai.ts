@@ -7,6 +7,8 @@ import { router, protectedProcedure } from '../init';
 import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
 import { document } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
+import { userAiConfig } from '$lib/server/db/schemas/users.schema';
+import { decryptSecret } from '$lib/server/kms';
 import type { Db } from '$lib/server/db';
 
 type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
@@ -151,31 +153,90 @@ export const aiRouter = router({
 					.orderBy(asc(aiMessage.createdAt))
 			)) as { role: 'user' | 'assistant'; content: string }[];
 
-			// --- Build project context and call Anthropic ---
+			// --- Get user's OpenRouter key ---
+			const configRows = (await ctx.withRLS((db) =>
+				db
+					.select({
+						encryptedApiKey: userAiConfig.encryptedApiKey,
+						encryptedDataKey: userAiConfig.encryptedDataKey,
+						iv: userAiConfig.iv,
+						authTag: userAiConfig.authTag,
+						enabled: userAiConfig.enabled,
+						provider: userAiConfig.provider
+					})
+					.from(userAiConfig)
+					.where(eq(userAiConfig.userId, ctx.user.id))
+					.limit(1)
+			)) as {
+				encryptedApiKey: string;
+				encryptedDataKey: string;
+				iv: string;
+				authTag: string;
+				enabled: boolean;
+				provider: string;
+			}[];
+
+			if (!configRows[0]) {
+				throw new TRPCError({
+					code: 'PRECONDITION_FAILED',
+					message: 'Configura tu API key de OpenRouter en Ajustes → Asistente IA.'
+				});
+			}
+			if (!configRows[0].enabled) {
+				throw new TRPCError({
+					code: 'PRECONDITION_FAILED',
+					message: 'El asistente IA está deshabilitado. Actívalo en Ajustes → Asistente IA.'
+				});
+			}
+
+			let userApiKey: string;
+			try {
+				userApiKey = await decryptSecret(configRows[0]);
+			} catch {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
+				});
+			}
+
+			// --- Build project context and call OpenRouter ---
 			const context = await buildProjectContext(ctx.withRLS as WithRLS, input.projectId);
 
 			const systemWithContext = context
 				? `${SYSTEM_PROMPT}\n\n---\n${context}`
 				: SYSTEM_PROMPT;
 
-			if (!env.ANTHROPIC_API_KEY) {
+			const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${userApiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model: 'anthropic/claude-haiku-4-5',
+					max_tokens: 1024,
+					messages: [
+						{ role: 'system', content: systemWithContext },
+						...history.map((m) => ({ role: m.role, content: m.content }))
+					]
+				})
+			});
+
+			if (!openRouterResponse.ok) {
+				const err = await openRouterResponse.text();
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
-					message: 'ANTHROPIC_API_KEY no configurada.'
+					message: `Error de OpenRouter: ${openRouterResponse.status}. ${err.slice(0, 200)}`
 				});
 			}
 
-			const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+			const openRouterData = (await openRouterResponse.json()) as {
+				choices: { message: { content: string } }[];
+			};
 
-			const response = await anthropic.messages.create({
-				model: 'claude-haiku-4-5-20251001',
-				max_tokens: 1024,
-				system: systemWithContext,
-				messages: history.map((m) => ({ role: m.role, content: m.content }))
-			});
-
-			const assistantContent =
-				response.content[0].type === 'text' ? response.content[0].text : '';
+			const assistantContent = openRouterData.choices[0]?.message?.content ?? '';
 
 			// --- Save assistant message ---
 			const assistantMsgId = crypto.randomUUID();

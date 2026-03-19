@@ -7,6 +7,7 @@ import { invitationsRouter } from './routers/invitations';
 import { usersRouter } from './routers/users';
 import { photosRouter } from './routers/photos';
 import { aiRouter } from './routers/ai';
+import { aiConfigRouter } from './routers/aiConfig';
 import { billingRouter } from './routers/billing';
 
 export const appRouter = router({
@@ -18,6 +19,7 @@ export const appRouter = router({
 	users: usersRouter,
 	photos: photosRouter,
 	ai: aiRouter,
+	aiConfig: aiConfigRouter,
 	billing: billingRouter
 });
 

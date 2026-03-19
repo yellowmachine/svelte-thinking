@@ -1,0 +1,29 @@
+# Dependencies
+node_modules
+
+# Dev artifacts
+.svelte-kit
+build
+
+# Environment files (se inyectan en runtime)
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Dev tools
+.storybook
+storybook-static
+playwright-report
+test-results
+
+# Docs
+*.md
+!README.md
+
+# Misc
+.DS_Store
+*.log

@@ -1,14 +1,14 @@
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 
-const resend = new Resend(env.RESEND_API_KEY);
-const from = env.EMAIL_FROM || 'Scholio <noreply@scholio.tech>';
-
 export async function sendVerificationEmail(email: string, url: string) {
 	if (!env.RESEND_API_KEY) {
 		console.log(`[dev] Verification URL for ${email}: ${url}`);
 		return;
 	}
+
+	const resend = new Resend(env.RESEND_API_KEY);
+	const from = env.EMAIL_FROM || 'Scholio <noreply@scholio.tech>';
 
 	await resend.emails.send({
 		from,

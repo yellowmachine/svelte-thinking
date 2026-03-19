@@ -1,29 +1,28 @@
 services:
-  db:
+  postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-scholarly}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scholarly_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-scholarly}
+      APP_DB_USER: ${APP_DB_USER:-scholarly_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-scholarly_app_dev}
     ports:
       - '${POSTGRES_PORT:-5433}:5432'
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      APP_DB_USER: ${APP_DB_USER}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
       - ./scripts/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-scholarly}']
       interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
+      timeout: 3s
+      retries: 5
 
   minio:
     image: minio/minio:latest
     restart: unless-stopped
-    command: server /data --console-address ":9001"
+    command: server /data --console-address ':9001'
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -35,6 +34,6 @@ services:
 
 volumes:
   postgres_dev_data:
-    name: scholarly_postgres_dev_data
+    name: scholio_postgres_dev
   minio_dev_data:
-    name: scholarly_minio_dev_data
+    name: scholio_minio_dev

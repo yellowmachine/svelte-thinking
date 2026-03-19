@@ -1,8 +1,6 @@
 import { Resend } from 'resend';
 import { env } from '$env/dynamic/private';
 
-const resend = new Resend(env.RESEND_API_KEY);
-
 export async function sendProjectInvitation({
 	to,
 	inviterName,
@@ -19,6 +17,7 @@ export async function sendProjectInvitation({
 	origin: string;
 }) {
 	const link = `${origin}/invitations/${token}`;
+	const resend = new Resend(env.RESEND_API_KEY);
 
 	await resend.emails.send({
 		from: env.EMAIL_FROM ?? 'noreply@yourdomain.com',

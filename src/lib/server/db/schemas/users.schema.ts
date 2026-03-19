@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, pgPolicy, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, pgPolicy, pgEnum } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const planEnum = pgEnum('plan', ['free', 'pro', 'team']);
@@ -37,17 +37,18 @@ export const userProfile = pgTable(
 	]
 ).enableRLS();
 
-// API keys del usuario encriptadas con AES-256-GCM
+// API keys del usuario cifradas con AWS KMS (envelope encryption)
 export const userAiConfig = pgTable(
 	'user_ai_config',
 	{
 		id: text('id').primaryKey(),
 		userId: text('user_id').notNull().unique(),
-		provider: text('provider').notNull(), // 'openai' | 'anthropic'
+		provider: text('provider').notNull().default('openrouter'),
 		encryptedApiKey: text('encrypted_api_key').notNull(),
-		salt: text('salt').notNull(),
+		encryptedDataKey: text('encrypted_data_key').notNull(), // data key cifrada por KMS
 		iv: text('iv').notNull(),
 		authTag: text('auth_tag').notNull(),
+		enabled: boolean('enabled').notNull().default(true),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
