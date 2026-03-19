@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, untrack } from 'svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
+	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
 	import CommentThread from '$lib/components/editor/CommentThread.svelte';
 	import { trpc } from '$lib/utils/trpc';
@@ -18,6 +19,9 @@
 	);
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// Preview mode
+	let showPreview = $state(false);
 
 	// Version history
 	let showHistory = $state(false);
@@ -405,6 +409,15 @@
 		</button>
 
 		<button
+			onclick={() => (showPreview = !showPreview)}
+			class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showPreview
+				? 'border-accent bg-accent text-white'
+				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+		>
+			Vista previa
+		</button>
+
+		<button
 			onclick={toggleHistory}
 			class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showHistory
 				? 'border-accent bg-accent text-white'
@@ -425,19 +438,23 @@
 
 <!-- Main layout -->
 <div class="flex overflow-hidden" style="height: calc(100vh - 57px)">
-	<!-- Editor -->
+	<!-- Editor / Preview -->
 	<div class="relative flex-1 overflow-y-auto px-6 py-10">
 		<div class="mx-auto w-full max-w-2xl">
-			<MarkdownEditor
-				bind:value={content}
-				ondocchange={handleDocChange}
-				onselectionchange={(sel) => {
-					currentSelection = sel;
-					if (!sel) showNewComment = false;
-				}}
-				{commentRanges}
-				{scrollToRange}
-			/>
+			{#if showPreview}
+				<MarkdownPreview {content} projectId={data.document.projectId} />
+			{:else}
+				<MarkdownEditor
+					bind:value={content}
+					ondocchange={handleDocChange}
+					onselectionchange={(sel) => {
+						currentSelection = sel;
+						if (!sel) showNewComment = false;
+					}}
+					{commentRanges}
+					{scrollToRange}
+				/>
+			{/if}
 		</div>
 
 		<!-- Floating "Comentar" button -->

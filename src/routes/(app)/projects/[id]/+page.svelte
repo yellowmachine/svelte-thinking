@@ -59,6 +59,60 @@
 		await invalidateAll();
 	}
 
+	// Datasets
+	type Dataset = { id: string; filename: string; size: number; mimeType: string; createdAt: Date };
+	let datasets = $state<Dataset[]>([]);
+	let uploadingDataset = $state(false);
+	let datasetError = $state('');
+
+	async function loadDatasets() {
+		try {
+			const res = await fetch(`/api/projects/${data.project.id}/datasets`);
+			if (res.ok) datasets = await res.json();
+		} catch { /* non-critical */ }
+	}
+
+	async function uploadDataset(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		uploadingDataset = true;
+		datasetError = '';
+		const form = new FormData();
+		form.append('file', file);
+
+		try {
+			const res = await fetch(`/api/projects/${data.project.id}/datasets`, {
+				method: 'POST',
+				body: form
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({ message: 'Error al subir' }));
+				throw new Error(err.message);
+			}
+			await loadDatasets();
+		} catch (err) {
+			datasetError = err instanceof Error ? err.message : 'Error al subir dataset';
+		} finally {
+			uploadingDataset = false;
+			input.value = '';
+		}
+	}
+
+	async function deleteDataset(id: string) {
+		await fetch(`/api/projects/${data.project.id}/datasets?datasetId=${id}`, { method: 'DELETE' });
+		datasets = datasets.filter((d) => d.id !== id);
+	}
+
+	function formatSize(bytes: number): string {
+		if (bytes < 1024) return `${bytes} B`;
+		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+	}
+
+	$effect(() => { loadDatasets(); });
+
 	const statusLabel: Record<string, string> = {
 		draft: 'Borrador',
 		active: 'Activo',
@@ -221,6 +275,44 @@
 							onclick={() =>
 								(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 						/>
+					{/each}
+				</div>
+			{/if}
+		</div>
+
+		<!-- Datasets -->
+		<div class="mt-8">
+			<div class="mb-3 flex items-center justify-between">
+				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Datasets</h2>
+				<label class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui {uploadingDataset ? 'opacity-50 pointer-events-none' : ''}">
+					{uploadingDataset ? 'Subiendo…' : '+ Subir dataset'}
+					<input type="file" class="hidden" accept=".csv,.tsv,.json,.xls,.xlsx" onchange={uploadDataset} disabled={uploadingDataset} />
+				</label>
+			</div>
+
+			{#if datasetError}
+				<p class="mb-2 font-sans text-sm text-red-600 dark:text-red-400">{datasetError}</p>
+			{/if}
+
+			{#if datasets.length === 0}
+				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+					Sin datasets. Sube un CSV, TSV o JSON para referenciarlos en gráficos con <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">"$ref": "dataset:nombre.csv"</code>.
+				</p>
+			{:else}
+				<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper">
+					{#each datasets as dataset (dataset.id)}
+						<div class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
+							<div class="min-w-0">
+								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{dataset.filename}</p>
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{formatSize(dataset.size)}</p>
+							</div>
+							<button
+								onclick={() => deleteDataset(dataset.id)}
+								class="ml-3 shrink-0 font-sans text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint dark:hover:text-red-400"
+							>
+								Eliminar
+							</button>
+						</div>
 					{/each}
 				</div>
 			{/if}

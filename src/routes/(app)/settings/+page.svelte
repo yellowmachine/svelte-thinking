@@ -145,6 +145,30 @@
 	$effect(() => {
 		if (activeTab === 'ai' && aiStatus === null) loadAiStatus();
 	});
+
+	// ── Delete account ────────────────────────────────────────────────────────
+	let showDeleteDialog = $state(false);
+	let deleteConfirmText = $state('');
+	let deletingAccount = $state(false);
+	let deleteError = $state('');
+	const DELETE_KEYWORD = 'ELIMINAR';
+
+	async function handleDeleteAccount() {
+		if (deleteConfirmText !== DELETE_KEYWORD) return;
+		deletingAccount = true;
+		deleteError = '';
+		try {
+			const res = await fetch('/api/account/delete', { method: 'DELETE' });
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.message ?? 'Error al eliminar la cuenta');
+			}
+			window.location.href = '/?deleted=1';
+		} catch (e) {
+			deleteError = e instanceof Error ? e.message : 'Error inesperado';
+			deletingAccount = false;
+		}
+	}
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
@@ -659,4 +683,84 @@
 			</section>
 		</div>
 	{/if}
+
+	<!-- Danger zone -->
+	<div class="mt-10 rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
+		<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Zona de peligro</h2>
+		<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
+			Estas acciones son permanentes e irreversibles.
+		</p>
+
+		<div class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper">
+			<div>
+				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Eliminar cuenta</p>
+				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+					Borra tu cuenta, todos tus proyectos, documentos y archivos de forma permanente.
+				</p>
+			</div>
+			<button
+				type="button"
+				onclick={() => (showDeleteDialog = true)}
+				class="ml-4 shrink-0 rounded-md border border-red-300 px-4 py-2 font-sans text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+			>
+				Eliminar cuenta
+			</button>
+		</div>
+	</div>
 </div>
+
+<!-- Delete account confirmation dialog -->
+{#if showDeleteDialog}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="delete-dialog-title"
+	>
+		<div class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+			<h3 id="delete-dialog-title" class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">
+				¿Eliminar tu cuenta?
+			</h3>
+			<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Esta acción borrará permanentemente tu cuenta y <strong>todos tus datos</strong>: proyectos,
+				documentos, historial de versiones, comentarios y archivos. No se puede deshacer.
+			</p>
+
+			<div class="mt-5">
+				<label for="delete-confirm" class="block font-sans text-sm font-medium text-ink dark:text-dark-ink">
+					Escribe <span class="font-mono font-bold">{DELETE_KEYWORD}</span> para confirmar
+				</label>
+				<input
+					id="delete-confirm"
+					type="text"
+					bind:value={deleteConfirmText}
+					placeholder={DELETE_KEYWORD}
+					class="mt-2 w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-red-400 focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				/>
+			</div>
+
+			{#if deleteError}
+				<p class="mt-3 font-sans text-sm text-red-600 dark:text-red-400">{deleteError}</p>
+			{/if}
+
+			<div class="mt-5 flex gap-3">
+				<button
+					type="button"
+					onclick={() => { showDeleteDialog = false; deleteConfirmText = ''; deleteError = ''; }}
+					disabled={deletingAccount}
+					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					onclick={handleDeleteAccount}
+					disabled={deleteConfirmText !== DELETE_KEYWORD || deletingAccount}
+					class="flex-1 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-40"
+				>
+					{deletingAccount ? 'Eliminando...' : 'Eliminar para siempre'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

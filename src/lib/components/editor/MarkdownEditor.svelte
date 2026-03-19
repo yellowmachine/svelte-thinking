@@ -11,6 +11,7 @@
 		setCommentRanges,
 		type CommentRange
 	} from './commentsExtension';
+	import { codeBlockExtension, codeLanguages } from './codeBlockExtension';
 
 	let {
 		value = $bindable(''),
@@ -46,7 +47,8 @@
 			lineNumbers(),
 			highlightActiveLine(),
 			keymap.of([...defaultKeymap, ...historyKeymap]),
-			markdown(),
+			markdown({ codeLanguages }),
+		...codeBlockExtension(),
 			EditorView.lineWrapping,
 			commentRangesField,
 			commentTheme,

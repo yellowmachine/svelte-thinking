@@ -85,8 +85,7 @@ describe('RLS: project', () => {
 				id: PROJECT_A,
 				title: 'Proyecto de A',
 				ownerId: USER_A,
-				status: 'active',
-				visibility: 'private'
+				status: 'active'
 			})
 		);
 
@@ -95,8 +94,7 @@ describe('RLS: project', () => {
 				id: PROJECT_B,
 				title: 'Proyecto de B',
 				ownerId: USER_B,
-				status: 'active',
-				visibility: 'private'
+				status: 'active'
 			})
 		);
 

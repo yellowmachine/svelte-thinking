@@ -9,6 +9,7 @@ import { photosRouter } from './routers/photos';
 import { aiRouter } from './routers/ai';
 import { aiConfigRouter } from './routers/aiConfig';
 import { billingRouter } from './routers/billing';
+import { datasetsRouter } from './routers/datasets';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -20,7 +21,8 @@ export const appRouter = router({
 	photos: photosRouter,
 	ai: aiRouter,
 	aiConfig: aiConfigRouter,
-	billing: billingRouter
+	billing: billingRouter,
+	datasets: datasetsRouter
 });
 
 export type AppRouter = typeof appRouter;
