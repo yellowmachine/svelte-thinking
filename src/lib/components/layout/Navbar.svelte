@@ -21,9 +21,12 @@
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
 		<button
 			onclick={() => (window.location.href = '/projects')}
-			class="font-serif text-xl font-semibold text-ink dark:text-dark-ink"
+			class="flex items-center gap-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink"
 		>
 			Scholio
+			<span class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent">
+				beta
+			</span>
 		</button>
 
 		<div class="flex items-center gap-4">

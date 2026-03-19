@@ -10,4 +10,18 @@
 	<main class="flex-1">
 		{@render children()}
 	</main>
+	<footer class="border-t border-paper-border px-6 py-3 dark:border-dark-paper-border">
+		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			Scholio Beta · Desarrollado con
+			<a
+				href="https://claude.ai/code"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
+			>Claude Code</a
+			>
+			· Asistente IA impulsado por
+			<span class="font-medium">Claude Haiku 4.5</span> (Anthropic)
+		</p>
+	</footer>
 </div>

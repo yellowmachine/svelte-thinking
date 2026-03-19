@@ -86,6 +86,10 @@
 		saveStatus = 'pending';
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		autoSaveTimer = setTimeout(doSaveDraft, 30_000);
+		if (aiEnabled) {
+			if (aiSuggestTimer) clearTimeout(aiSuggestTimer);
+			aiSuggestTimer = setTimeout(triggerSuggestions, 4_000);
+		}
 	}
 
 	async function doSaveDraft() {
@@ -255,8 +259,76 @@
 
 	const openCommentsCount = $derived(inlineComments.filter((c) => c.status === 'open').length);
 
+	// ── AI suggestions ──────────────────────────────────────────────────────────
+	type Suggestion = { id: string; originalText: string; suggestedText: string; explanation: string };
+
+	let aiEnabled = $state(false);
+	let showSuggestions = $state(false);
+	let suggestions = $state<Suggestion[]>([]);
+	let loadingSuggestions = $state(false);
+	let aiSuggestTimer: ReturnType<typeof setTimeout> | null = null;
+	let lastSuggestedContent = $state(''); // content snapshot at last API call
+
+	function wordCount(text: string) {
+		return text.trim().split(/\s+/).filter(Boolean).length;
+	}
+
+	function isCandidate(current: string): boolean {
+		const words = wordCount(current);
+		if (words < 100) return false;
+		const delta = Math.abs(wordCount(current) - wordCount(lastSuggestedContent));
+		return delta >= 30;
+	}
+
+	// Persist toggle preference in localStorage
+	$effect(() => {
+		aiEnabled = localStorage.getItem(`ai-suggestions-${data.document.id}`) === 'true';
+	});
+
+	function toggleAI() {
+		aiEnabled = !aiEnabled;
+		localStorage.setItem(`ai-suggestions-${data.document.id}`, String(aiEnabled));
+		if (aiEnabled) {
+			showSuggestions = true;
+			showHistory = false;
+			showComments = false;
+		} else {
+			showSuggestions = false;
+			suggestions = [];
+			if (aiSuggestTimer) clearTimeout(aiSuggestTimer);
+		}
+	}
+
+	async function triggerSuggestions() {
+		if (!aiEnabled || !isCandidate(content)) return;
+		lastSuggestedContent = content;
+		loadingSuggestions = true;
+		try {
+			const result = await trpc.ai.suggest.mutate({
+				projectId: data.document.projectId,
+				content
+			});
+			suggestions = result;
+		} catch {
+			// Silently ignore — suggestions are non-intrusive
+		} finally {
+			loadingSuggestions = false;
+		}
+	}
+
+	function applySuggestion(s: Suggestion) {
+		content = content.replace(s.originalText, s.suggestedText);
+		saveStatus = 'pending';
+		suggestions = suggestions.filter((x) => x.id !== s.id);
+	}
+
+	function dismissSuggestion(id: string) {
+		suggestions = suggestions.filter((s) => s.id !== id);
+	}
+
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
+		if (aiSuggestTimer) clearTimeout(aiSuggestTimer);
 	});
 </script>
 
@@ -294,6 +366,25 @@
 			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			Guardar
+		</button>
+
+		<!-- AI suggestions toggle -->
+		<button
+			type="button"
+			onclick={toggleAI}
+			title={aiEnabled ? 'Desactivar sugerencias IA' : 'Activar sugerencias IA'}
+			class="flex items-center gap-2 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {aiEnabled
+				? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
+				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+		>
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+				<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+			</svg>
+			IA
+			<!-- pill switch -->
+			<span class="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors {aiEnabled ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}">
+				<span class="inline-block h-3 w-3 rounded-full bg-white shadow transition-transform {aiEnabled ? 'translate-x-3.5' : 'translate-x-0.5'}"></span>
+			</span>
 		</button>
 
 		<button
@@ -439,6 +530,66 @@
 							onreplyadded={handleReplyAdded}
 						/>
 					{/each}
+				{/if}
+			</div>
+		</div>
+	{/if}
+
+	<!-- AI suggestions sidebar -->
+	{#if showSuggestions && aiEnabled}
+		<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+			<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
+				<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Sugerencias IA</h3>
+				{#if loadingSuggestions}
+					<div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+				{:else}
+					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						{suggestions.length} sugerencia{suggestions.length !== 1 ? 's' : ''}
+					</span>
+				{/if}
+			</div>
+
+			<div class="flex-1 overflow-y-auto p-3">
+				{#if !loadingSuggestions && suggestions.length === 0}
+					<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						Sin sugerencias.<br />
+						<span class="text-xs text-ink-faint dark:text-dark-ink-faint">
+							Se generan automáticamente al escribir.
+						</span>
+					</p>
+				{:else}
+					<div class="flex flex-col gap-3">
+						{#each suggestions as s (s.id)}
+							<div class="rounded-xl border border-accent/20 bg-accent/5 p-3">
+								<!-- Original → suggested -->
+								<div class="mb-2 space-y-1 rounded-md bg-paper px-2.5 py-2 font-mono text-xs dark:bg-dark-paper">
+									<p class="text-red-500 line-through opacity-70">{s.originalText}</p>
+									<p class="text-green-600 dark:text-green-400">{s.suggestedText}</p>
+								</div>
+								<!-- Explanation -->
+								<p class="mb-3 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+									{s.explanation}
+								</p>
+								<!-- Actions -->
+								<div class="flex gap-2">
+									<button
+										type="button"
+										onclick={() => applySuggestion(s)}
+										class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover"
+									>
+										Aplicar
+									</button>
+									<button
+										type="button"
+										onclick={() => dismissSuggestion(s.id)}
+										class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+									>
+										×
+									</button>
+								</div>
+							</div>
+						{/each}
+					</div>
 				{/if}
 			</div>
 		</div>

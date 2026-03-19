@@ -76,6 +76,7 @@
 		"vitest-browser-svelte": "^2.0.2"
 	},
 	"dependencies": {
+		"@anthropic-ai/sdk": "^0.80.0",
 		"@aws-sdk/client-s3": "^3.1012.0",
 		"@aws-sdk/s3-request-presigner": "^3.1012.0",
 		"@codemirror/lang-markdown": "^6.5.0",
