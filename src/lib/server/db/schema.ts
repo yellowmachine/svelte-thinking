@@ -6,3 +6,4 @@ export * from './schemas/comments.schema';
 export * from './schemas/invitations.schema';
 export * from './schemas/ai.schema';
 export * from './schemas/photos.schema';
+export * from './schemas/waitlist.schema';

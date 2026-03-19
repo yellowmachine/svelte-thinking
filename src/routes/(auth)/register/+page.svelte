@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 </script>
 
 <div class="rounded-2xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper">
@@ -16,6 +16,7 @@
 	</p>
 
 	<form method="post" action="?/signUpEmail" use:enhance class="mt-6 flex flex-col gap-4">
+		<input type="hidden" name="token" value={data.token} />
 		<div class="flex flex-col gap-1.5">
 			<label for="name" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Nombre completo</label>
 			<input
