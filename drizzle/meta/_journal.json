@@ -8,6 +8,13 @@
       "when": 1773920237224,
       "tag": "0000_free_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773924708036,
+      "tag": "0001_oval_namorita",
+      "breakpoints": true
     }
   ]
 }
