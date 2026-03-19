@@ -112,6 +112,7 @@
 		committing = true;
 		commitError = '';
 		try {
+			if (isDirty) await doSaveDraft();
 			await trpc.documents.commit.mutate({
 				documentId: data.document.id,
 				message: commitMessage.trim()
@@ -414,7 +415,7 @@
 
 		<button
 			onclick={() => (showCommit = true)}
-			disabled={!isDirty}
+			disabled={!content.trim()}
 			class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 		>
 			Commit

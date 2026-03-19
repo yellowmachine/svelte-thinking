@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, isNull, desc, sql } from 'drizzle-orm';
+import { eq, and, isNull, isNotNull, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { comment } from '$lib/server/db/schemas/comments.schema';
@@ -79,7 +79,7 @@ export const commentsRouter = router({
 					and(
 						eq(comment.documentId, documentId),
 						eq(comment.type, 'inline'),
-						isNull(comment.parentCommentId).not()
+						isNotNull(comment.parentCommentId)
 					)
 				)
 				.orderBy(comment.createdAt)

@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
-import { eq, and, isNull, sql } from 'drizzle-orm';
+import { eq, and, isNull, isNotNull, sql } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	const { id: projectId, docId } = event.params;
@@ -75,7 +75,7 @@ export const load: PageServerLoad = async (event) => {
 					and(
 						eq(comment.documentId, docId),
 						eq(comment.type, 'inline'),
-						isNull(comment.parentCommentId).not()
+						isNotNull(comment.parentCommentId)
 					)
 				)
 				.orderBy(comment.createdAt);
