@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { desc, sql } from 'drizzle-orm';
+import { comment } from '$lib/server/db/schemas/comments.schema';
+import { document } from '$lib/server/db/schemas/documents.schema';
 
 export const load: PageServerLoad = async (event) => {
 	const projects = await event.locals.withRLS((db) =>
