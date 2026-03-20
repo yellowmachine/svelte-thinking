@@ -82,8 +82,13 @@
 	</main>
 
 	<footer class="border-t border-paper-border px-8 py-4 dark:border-dark-paper-border">
-		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			Scholio Beta · Desarrollado con Claude Code · Asistente IA impulsado por Claude Haiku 4.5 (Anthropic)
-		</p>
+		<div class="flex flex-col items-center gap-2">
+			<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				Scholio Beta · Desarrollado con Claude Code · Asistente IA impulsado por Claude Haiku 4.5 (Anthropic)
+			</p>
+			<a href="/conduct" class="font-sans text-xs text-ink-faint underline underline-offset-2 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted">
+				Código de conducta
+			</a>
+		</div>
 	</footer>
 </div>

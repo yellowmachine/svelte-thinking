@@ -60,9 +60,14 @@
 			</p>
 		{/if}
 
+		<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			Al registrarte aceptas nuestro
+			<a href="/conduct" target="_blank" class="underline underline-offset-2 hover:text-ink-muted dark:hover:text-dark-ink-muted">código de conducta</a>.
+		</p>
+
 		<button
 			type="submit"
-			class="mt-1 rounded-md bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+			class="rounded-md bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 		>
 			Crear cuenta
 		</button>
