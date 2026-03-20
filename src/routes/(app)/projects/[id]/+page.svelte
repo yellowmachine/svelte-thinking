@@ -250,7 +250,7 @@
 					</p>
 				{/if}
 			</div>
-			<div class="flex shrink-0 items-center gap-2">
+			<div class="hidden shrink-0 items-center gap-2 sm:flex">
 				<a
 					href="/api/projects/{data.project.id}/export"
 					download
@@ -286,7 +286,7 @@
 		<div class="lg:col-span-2">
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documentos</h2>
-				<div class="flex items-center gap-2">
+				<div class="hidden items-center gap-2 sm:flex">
 					<a
 						href="/projects/{data.project.id}/bib"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
@@ -415,7 +415,7 @@
 		</div>
 
 		<!-- Datasets -->
-		<div class="mt-8">
+		<div class="mt-8 hidden sm:block">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Datasets</h2>
 				<label class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui {uploadingDataset ? 'opacity-50 pointer-events-none' : ''}">
@@ -453,7 +453,7 @@
 		</div>
 
 		<!-- Sidebar -->
-		<div class="flex flex-col gap-6">
+		<div class="hidden flex-col gap-6 sm:flex">
 			{#if data.isOwner}
 				<InviteCollaborator
 					projectId={data.project.id}

@@ -43,7 +43,7 @@ export default defineConfig({
 		}),
 		devtoolsJson()
 	],
-	server: { port: 5174 },
+	server: { port: 5174, host: true, allowedHosts: ['scholio-dev.local'] },
 	test: {
 		expect: {
 			requireAssertions: true
