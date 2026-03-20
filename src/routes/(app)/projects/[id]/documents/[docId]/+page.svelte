@@ -546,6 +546,16 @@
 			Historial
 		</button>
 
+		<a
+			href="/help"
+			target="_blank"
+			rel="noopener noreferrer"
+			title="Guía de sintaxis"
+			class="flex h-7 w-7 items-center justify-center rounded-full border border-paper-border font-sans text-sm text-ink-faint transition-colors hover:border-ink-muted hover:text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-dark-ink-muted dark:hover:text-dark-ink-muted"
+		>
+			?
+		</a>
+
 		<!-- Export dropdown -->
 		<div class="relative">
 			<button

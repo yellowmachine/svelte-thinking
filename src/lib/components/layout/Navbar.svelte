@@ -30,6 +30,20 @@
 		</a>
 
 		<div class="flex items-center gap-4">
+			<nav class="hidden items-center gap-4 sm:flex">
+				<a href="/projects" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+					Proyectos
+				</a>
+				<a href="/bib" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+					Bibliografía
+				</a>
+				<a href="/network" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+					Red
+				</a>
+				<a href="/help" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+					Ayuda
+				</a>
+			</nav>
 			<div class="flex items-center gap-2.5">
 				<a
 					href="/settings"

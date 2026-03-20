@@ -3,6 +3,7 @@ import { eq, and, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { project } from '$lib/server/db/schemas/projects.schema';
 import { parseBibtexFile, formatBibtexFile, generateCiteKey } from '$lib/utils/bibtex';
 import type { Author } from '$lib/utils/bibtex';
 import type { Db } from '$lib/server/db';
@@ -117,6 +118,48 @@ function toDbValues(ref: z.infer<typeof referenceInputSchema>, citeKey: string) 
 // ── Router ────────────────────────────────────────────────────────────────
 
 export const referencesRouter = router({
+	listAll: protectedProcedure.query(async ({ ctx }) => {
+		return ctx.withRLS((db) =>
+			db
+				.select({
+					id: projectReference.id,
+					projectId: projectReference.projectId,
+					projectTitle: project.title,
+					citeKey: projectReference.citeKey,
+					type: projectReference.type,
+					title: projectReference.title,
+					authors: projectReference.authors,
+					editors: projectReference.editors,
+					year: projectReference.year,
+					journal: projectReference.journal,
+					booktitle: projectReference.booktitle,
+					publisher: projectReference.publisher,
+					doi: projectReference.doi,
+					url: projectReference.url
+				})
+				.from(projectReference)
+				.innerJoin(project, eq(projectReference.projectId, project.id))
+				.orderBy(asc(projectReference.citeKey))
+		) as Promise<
+			{
+				id: string;
+				projectId: string;
+				projectTitle: string;
+				citeKey: string;
+				type: string;
+				title: string;
+				authors: unknown;
+				editors: unknown;
+				year: string | null;
+				journal: string | null;
+				booktitle: string | null;
+				publisher: string | null;
+				doi: string | null;
+				url: string | null;
+			}[]
+		>;
+	}),
+
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
 		return ctx.withRLS((db) =>
 			db
