@@ -1,5 +1,18 @@
 <div class="mx-auto max-w-3xl px-6 py-10">
 
+	<!-- About Scholio -->
+	<div class="mb-10 rounded-xl border border-accent/20 bg-accent/5 px-6 py-5 dark:border-accent/15 dark:bg-accent/10">
+		<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+			¿Qué significa <em>Scholio</em>?
+		</p>
+		<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+			Del griego <span class="font-serif italic">σχόλιον (skholion)</span> — la anotación marginal que los eruditos
+			escribían en los manuscritos clásicos para comentarlos, explicarlos y preservar el conocimiento.
+			Newton usaba <span class="font-serif italic">scholia</span> en los <em>Principia</em> para sus notas explicativas.
+			En inglés académico, <span class="font-serif italic">scholium</span> sigue siendo un término vivo en matemáticas y filosofía.
+		</p>
+	</div>
+
 	<div class="mb-10">
 		<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Guía de sintaxis</h1>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
