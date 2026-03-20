@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, or, exists } from 'drizzle-orm';
+import { eq, and, or, exists, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import {
@@ -26,6 +26,15 @@ export const projectsRouter = router({
 	list: protectedProcedure.query(async ({ ctx }) => {
 		return ctx.withRLS((db) =>
 			db.select().from(project).orderBy(project.createdAt)
+		);
+	}),
+
+	listForQuickNote: protectedProcedure.query(async ({ ctx }) => {
+		return ctx.withRLS((db) =>
+			db
+				.select({ id: project.id, title: project.title })
+				.from(project)
+				.orderBy(asc(project.title))
 		);
 	}),
 

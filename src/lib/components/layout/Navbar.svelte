@@ -1,4 +1,6 @@
 <script lang="ts">
+	import QuickNoteButton from './QuickNoteButton.svelte';
+
 	let {
 		user
 	}: {
@@ -44,6 +46,7 @@
 					Ayuda
 				</a>
 			</nav>
+			<QuickNoteButton />
 			<div class="flex items-center gap-2.5">
 				<a
 					href="/settings"
