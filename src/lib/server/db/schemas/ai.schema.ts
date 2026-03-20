@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, pgEnum, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, pgEnum, index, pgPolicy, integer, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { document } from './documents.schema';
 import { project } from './projects.schema';
@@ -65,6 +65,26 @@ export const aiMessage = pgTable(
 					WHERE ai_conversation.id = ${t.conversationId}
 				)
 			`
+		})
+	]
+).enableRLS();
+
+// Daily usage counter per user for operator-hosted AI calls (suggest endpoint).
+// Used to enforce rate limits without RLS bypass — each user can only see their own row.
+export const userAiUsage = pgTable(
+	'user_ai_usage',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id').notNull(),
+		date: text('date').notNull(), // 'YYYY-MM-DD'
+		suggestionCount: integer('suggestion_count').notNull().default(0)
+	},
+	(t) => [
+		uniqueIndex('user_ai_usage_user_date_idx').on(t.userId, t.date),
+
+		pgPolicy('user_ai_usage_access', {
+			for: 'all',
+			using: sql`${t.userId} = current_setting('app.current_user_id', true)`
 		})
 	]
 ).enableRLS();

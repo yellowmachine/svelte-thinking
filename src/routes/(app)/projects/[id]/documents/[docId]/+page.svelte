@@ -421,6 +421,9 @@
 		suggestions = suggestions.filter((s) => s.id !== id);
 	}
 
+	// Export dropdown
+	let showExport = $state(false);
+
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (aiSuggestTimer) clearTimeout(aiSuggestTimer);
@@ -542,6 +545,45 @@
 		>
 			Historial
 		</button>
+
+		<!-- Export dropdown -->
+		<div class="relative">
+			<button
+				onclick={() => (showExport = !showExport)}
+				class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			>
+				Exportar
+				<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+					<path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</button>
+			{#if showExport}
+				<button
+					class="fixed inset-0 z-10"
+					onclick={() => (showExport = false)}
+					aria-label="Cerrar menú"
+					tabindex="-1"
+				></button>
+				<div class="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+					<a
+						href="/api/projects/{data.document.projectId}/documents/{data.document.id}/export?format=latex"
+						onclick={() => (showExport = false)}
+						class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>
+						LaTeX
+					</a>
+					<a
+						href="/api/projects/{data.document.projectId}/documents/{data.document.id}/export?format=typst"
+						onclick={() => (showExport = false)}
+						class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>
+						Typst
+					</a>
+				</div>
+			{/if}
+		</div>
 
 		<button
 			onclick={togglePublic}

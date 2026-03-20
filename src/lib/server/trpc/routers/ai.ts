@@ -1,11 +1,13 @@
 import { z } from 'zod';
-import { eq, desc, asc, inArray } from 'drizzle-orm';
+import { eq, desc, asc, inArray, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
-import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
+import { aiConversation, aiMessage, userAiUsage } from '$lib/server/db/schemas/ai.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
+
+const DAILY_SUGGESTION_LIMIT = 30;
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { userAiConfig } from '$lib/server/db/schemas/users.schema';
@@ -547,6 +549,26 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				});
 			}
 
+			const userId = ctx.user.id;
+			const today = new Date().toISOString().slice(0, 10);
+
+			// --- Rate limit check ---
+			const usageRows = (await ctx.withRLS((db) =>
+				db
+					.select({ suggestionCount: userAiUsage.suggestionCount })
+					.from(userAiUsage)
+					.where(and(eq(userAiUsage.userId, userId), eq(userAiUsage.date, today)))
+					.limit(1)
+			)) as { suggestionCount: number }[];
+
+			const currentCount = usageRows[0]?.suggestionCount ?? 0;
+			if (currentCount >= DAILY_SUGGESTION_LIMIT) {
+				throw new TRPCError({
+					code: 'TOO_MANY_REQUESTS',
+					message: `Has alcanzado el límite de ${DAILY_SUGGESTION_LIMIT} sugerencias IA por día. Se restablece a medianoche.`
+				});
+			}
+
 			// Load project title for context
 			const proj = (await ctx.withRLS((db) =>
 				db
@@ -600,6 +622,17 @@ Reglas:
 			} catch {
 				parsed = [];
 			}
+
+			// --- Increment usage counter ---
+			await ctx.withRLS((db) =>
+				db
+					.insert(userAiUsage)
+					.values({ id: crypto.randomUUID(), userId, date: today, suggestionCount: 1 })
+					.onConflictDoUpdate({
+						target: [userAiUsage.userId, userAiUsage.date],
+						set: { suggestionCount: sql`${userAiUsage.suggestionCount} + 1` }
+					})
+			);
 
 			// Validate and sanitize
 			return parsed
