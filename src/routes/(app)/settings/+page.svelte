@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { trpc } from '$lib/utils/trpc';
 	import { onMount } from 'svelte';
+	import QRCode from 'qrcode';
 
 	let { data }: { data: PageData } = $props();
 
@@ -13,7 +14,7 @@
 	let confirmPassword = $state('');
 
 	// Active section
-	let activeTab: 'profile' | 'billing' | 'ai' = $state('profile');
+	let activeTab: 'profile' | 'billing' | 'ai' | 'security' = $state('profile');
 
 	// Billing state
 	type PlanInfo = {
@@ -146,6 +147,91 @@
 		if (activeTab === 'ai' && aiStatus === null) loadAiStatus();
 	});
 
+	// ── 2FA state ─────────────────────────────────────────────────────────────
+	type TwoFaStep = 'idle' | 'enabling' | 'qr' | 'verifying' | 'done' | 'disabling';
+	let twoFaEnabled = $state(data.user.twoFactorEnabled);
+	let twoFaStep: TwoFaStep = $state('idle');
+	let twoFaPassword = $state('');
+	let twoFaCode = $state('');
+	let twoFaQrDataUrl = $state('');
+	let twoFaBackupCodes = $state<string[]>([]);
+	let twoFaError = $state('');
+	let twoFaLoading = $state(false);
+
+	async function handleEnableTwoFa() {
+		if (!twoFaPassword.trim()) return;
+		twoFaLoading = true;
+		twoFaError = '';
+		try {
+			const res = await fetch('/api/auth/two-factor/enable', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password: twoFaPassword })
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.message || 'Error al activar 2FA');
+			}
+			const { totpURI, backupCodes } = await res.json();
+			twoFaQrDataUrl = await QRCode.toDataURL(totpURI);
+			twoFaBackupCodes = backupCodes;
+			twoFaPassword = '';
+			twoFaStep = 'qr';
+		} catch (e) {
+			twoFaError = e instanceof Error ? e.message : 'Error inesperado';
+		} finally {
+			twoFaLoading = false;
+		}
+	}
+
+	async function handleVerifyTwoFa() {
+		if (twoFaCode.length !== 6) return;
+		twoFaLoading = true;
+		twoFaError = '';
+		try {
+			const res = await fetch('/api/auth/two-factor/verify-totp', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code: twoFaCode })
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.message || 'Código incorrecto');
+			}
+			twoFaEnabled = true;
+			twoFaStep = 'done';
+			twoFaCode = '';
+		} catch (e) {
+			twoFaError = e instanceof Error ? e.message : 'Código incorrecto';
+		} finally {
+			twoFaLoading = false;
+		}
+	}
+
+	async function handleDisableTwoFa() {
+		if (!twoFaPassword.trim()) return;
+		twoFaLoading = true;
+		twoFaError = '';
+		try {
+			const res = await fetch('/api/auth/two-factor/disable', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password: twoFaPassword })
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.message || 'Error al desactivar 2FA');
+			}
+			twoFaEnabled = false;
+			twoFaStep = 'idle';
+			twoFaPassword = '';
+		} catch (e) {
+			twoFaError = e instanceof Error ? e.message : 'Error inesperado';
+		} finally {
+			twoFaLoading = false;
+		}
+	}
+
 	// ── Delete account ────────────────────────────────────────────────────────
 	let showDeleteDialog = $state(false);
 	let deleteConfirmText = $state('');
@@ -208,6 +294,15 @@
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Asistente IA
+		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = 'security')}
+			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'security'
+				? 'border-b-2 border-accent font-medium text-accent'
+				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+		>
+			Seguridad
 		</button>
 	</div>
 
@@ -490,6 +585,179 @@
 					</button>
 				</section>
 			{/if}
+		</div>
+
+	<!-- ── SECURITY TAB ── -->
+	{:else if activeTab === 'security'}
+		<div class="flex flex-col gap-6">
+
+			{#if twoFaError}
+				<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
+					{twoFaError}
+				</div>
+			{/if}
+
+			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div class="flex items-start justify-between gap-4">
+					<div>
+						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Verificación en dos pasos (2FA)</h2>
+						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+							Protege tu cuenta con una aplicación autenticadora como Google Authenticator o Authy.
+						</p>
+					</div>
+					<span class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold {twoFaEnabled
+						? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
+						: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}">
+						{twoFaEnabled ? 'Activado' : 'Desactivado'}
+					</span>
+				</div>
+
+				{#if twoFaEnabled}
+					<!-- 2FA is active — show disable option -->
+					{#if twoFaStep === 'disabling'}
+						<div class="mt-5 flex flex-col gap-3">
+							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+								Introduce tu contraseña para desactivar la verificación en dos pasos.
+							</p>
+							<input
+								type="password"
+								bind:value={twoFaPassword}
+								placeholder="Contraseña actual"
+								autocomplete="current-password"
+								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<div class="flex gap-2">
+								<button
+									type="button"
+									onclick={handleDisableTwoFa}
+									disabled={!twoFaPassword.trim() || twoFaLoading}
+									class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+								>
+									{twoFaLoading ? 'Desactivando...' : 'Confirmar desactivación'}
+								</button>
+								<button
+									type="button"
+									onclick={() => { twoFaStep = 'idle'; twoFaPassword = ''; twoFaError = ''; }}
+									class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+								>
+									Cancelar
+								</button>
+							</div>
+						</div>
+					{:else}
+						<div class="mt-5">
+							<button
+								type="button"
+								onclick={() => { twoFaStep = 'disabling'; twoFaError = ''; }}
+								class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+							>
+								Desactivar 2FA
+							</button>
+						</div>
+					{/if}
+
+				{:else if twoFaStep === 'idle' || twoFaStep === 'enabling'}
+					<!-- Enable step 1: enter password -->
+					<div class="mt-5 flex flex-col gap-3">
+						{#if twoFaStep === 'idle'}
+							<button
+								type="button"
+								onclick={() => { twoFaStep = 'enabling'; twoFaError = ''; }}
+								class="self-start rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
+							>
+								Activar 2FA
+							</button>
+						{:else}
+							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+								Introduce tu contraseña para continuar.
+							</p>
+							<input
+								type="password"
+								bind:value={twoFaPassword}
+								placeholder="Contraseña actual"
+								autocomplete="current-password"
+								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<div class="flex gap-2">
+								<button
+									type="button"
+									onclick={handleEnableTwoFa}
+									disabled={!twoFaPassword.trim() || twoFaLoading}
+									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+								>
+									{twoFaLoading ? 'Generando...' : 'Continuar'}
+								</button>
+								<button
+									type="button"
+									onclick={() => { twoFaStep = 'idle'; twoFaPassword = ''; twoFaError = ''; }}
+									class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+								>
+									Cancelar
+								</button>
+							</div>
+						{/if}
+					</div>
+
+				{:else if twoFaStep === 'qr'}
+					<!-- Enable step 2: scan QR and enter code -->
+					<div class="mt-5 flex flex-col gap-5">
+						<div class="flex flex-col items-center gap-3 rounded-lg border border-paper-border bg-paper-ui p-5 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+							<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+								Escanea con tu aplicación autenticadora
+							</p>
+							{#if twoFaQrDataUrl}
+								<img src={twoFaQrDataUrl} alt="QR code para configurar 2FA" class="h-44 w-44 rounded" />
+							{/if}
+						</div>
+
+						{#if twoFaBackupCodes.length > 0}
+							<div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
+								<p class="mb-2 font-sans text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+									Códigos de respaldo — guárdalos en un lugar seguro
+								</p>
+								<div class="grid grid-cols-2 gap-1.5">
+									{#each twoFaBackupCodes as code}
+										<span class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300">{code}</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						<div class="flex flex-col gap-2">
+							<label for="totp-verify" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+								Introduce el código de 6 dígitos para confirmar
+							</label>
+							<div class="flex gap-2">
+								<input
+									id="totp-verify"
+									type="text"
+									bind:value={twoFaCode}
+									placeholder="000000"
+									inputmode="numeric"
+									pattern="[0-9]*"
+									maxlength="6"
+									autocomplete="one-time-code"
+									class="w-36 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-center text-sm tracking-widest text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
+								<button
+									type="button"
+									onclick={handleVerifyTwoFa}
+									disabled={twoFaCode.length !== 6 || twoFaLoading}
+									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+								>
+									{twoFaLoading ? 'Verificando...' : 'Activar'}
+								</button>
+							</div>
+						</div>
+					</div>
+
+				{:else if twoFaStep === 'done'}
+					<!-- Success state -->
+					<div class="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
+						2FA activado correctamente. Tu cuenta está ahora protegida.
+					</div>
+				{/if}
+			</section>
 		</div>
 
 	<!-- ── BILLING TAB ── -->

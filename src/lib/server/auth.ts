@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth/minimal';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
+import { twoFactor } from 'better-auth/plugins/two-factor';
 import { env } from '$env/dynamic/private';
 import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
@@ -23,5 +24,8 @@ export const auth = betterAuth({
 			clientSecret: env.GITHUB_CLIENT_SECRET
 		}
 	},
-	plugins: [sveltekitCookies(getRequestEvent)] // make sure this is the last plugin in the array
+	plugins: [
+		twoFactor({ issuer: 'Scholio' }),
+		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
+	]
 });
