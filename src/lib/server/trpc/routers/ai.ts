@@ -47,9 +47,9 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 				})
 				.from(projectContextLink)
 				.innerJoin(document, eq(document.id, projectContextLink.linkedDocumentId))
-				.innerJoin(project, eq(project.id, document.projectId))
+				.leftJoin(project, eq(project.id, document.projectId))
 				.where(eq(projectContextLink.projectId, projectId))
-		) as Promise<{ docTitle: string; docType: string; draft: string | null; sourceProject: string }[]>
+		) as Promise<{ docTitle: string; docType: string; draft: string | null; sourceProject: string | null }[]>
 	]);
 
 	if (!proj[0]) return '';
@@ -69,7 +69,7 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 	if (ctxLinks.length > 0) {
 		lines.push('', '## Contexto externo (otros proyectos)');
 		for (const link of ctxLinks) {
-			lines.push(`\n### ${link.docTitle} (${link.docType}) — de "${link.sourceProject}"`);
+			lines.push(`\n### ${link.docTitle} (${link.docType}) — de "${link.sourceProject ?? 'proyecto externo'}"`);
 			lines.push(link.draft?.trim() || '*(sin contenido todavía)*');
 		}
 	}
@@ -399,9 +399,9 @@ export const aiRouter = router({
 						})
 						.from(projectContextLink)
 						.innerJoin(document, eq(document.id, projectContextLink.linkedDocumentId))
-						.innerJoin(project, eq(project.id, document.projectId))
+						.leftJoin(project, eq(project.id, document.projectId))
 						.where(eq(projectContextLink.projectId, input.projectId))
-				) as Promise<{ docTitle: string; docType: string; draft: string | null; sourceProject: string }[]>
+				) as Promise<{ docTitle: string; docType: string; draft: string | null; sourceProject: string | null }[]>
 			]);
 
 			if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
@@ -440,7 +440,7 @@ export const aiRouter = router({
 						ctxLinks
 							.map(
 								(l) =>
-									`### ${l.docTitle} (${l.docType}) — de "${l.sourceProject}"\n${l.draft?.trim() || '*(sin contenido)*'}`
+									`### ${l.docTitle} (${l.docType}) — de "${l.sourceProject ?? 'proyecto externo'}"\n${l.draft?.trim() || '*(sin contenido)*'}`
 							)
 							.join('\n\n')
 					: '';
