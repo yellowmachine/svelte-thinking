@@ -170,6 +170,7 @@
 					description={proj.description ?? undefined}
 					status={proj.status}
 					collaboratorCount={proj.collaboratorCount}
+					openComments={proj.openComments}
 					updatedAt={proj.updatedAt}
 					onclick={() => (window.location.href = `/projects/${proj.id}`)}
 				/>
