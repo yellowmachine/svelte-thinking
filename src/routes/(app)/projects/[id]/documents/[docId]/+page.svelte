@@ -112,7 +112,11 @@
 	let versions: Version[] = $state([]);
 	let loadingVersions = $state(false);
 	let selectedVersionId: string | null = $state(null);
-	let compareContent: string | null = $state(null);
+	type VersionDiff = {
+		current: { id: string; versionNumber: number; content: string };
+		previous: { id: string; versionNumber: number; content: string } | null;
+	};
+	let compareDiff: VersionDiff | null = $state(null);
 	let loadingCompare = $state(false);
 
 	// Public toggle
@@ -238,7 +242,7 @@
 		if (showHistory && versions.length === 0) await loadVersions();
 		if (!showHistory) {
 			selectedVersionId = null;
-			compareContent = null;
+			compareDiff = null;
 		}
 	}
 
@@ -250,27 +254,29 @@
 	async function selectVersion(versionId: string) {
 		if (selectedVersionId === versionId) {
 			selectedVersionId = null;
-			compareContent = null;
+			compareDiff = null;
 			return;
 		}
 		selectedVersionId = versionId;
 		loadingCompare = true;
 		try {
-			const v = await trpc.documents.versionContent.query(versionId);
-			compareContent = v.content;
+			compareDiff = await trpc.documents.versionDiff.query({
+				documentId: data.document.id,
+				versionId
+			});
 		} finally {
 			loadingCompare = false;
 		}
 	}
 
 	async function restoreVersion(versionId: string) {
-		if (compareContent === null) return;
+		if (compareDiff === null) return;
 		await trpc.documents.restoreVersion.mutate({ documentId: data.document.id, versionId });
-		content = compareContent;
-		lastSavedContent = compareContent;
+		content = compareDiff.current.content;
+		lastSavedContent = compareDiff.current.content;
 		saveStatus = 'pending';
 		selectedVersionId = null;
-		compareContent = null;
+		compareDiff = null;
 		showHistory = false;
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		autoSaveTimer = setTimeout(doSaveDraft, 30_000);
@@ -886,7 +892,7 @@
 										>
 											{selectedVersionId === v.id ? 'Cerrar' : 'Comparar'}
 										</button>
-										{#if selectedVersionId === v.id && compareContent !== null}
+										{#if selectedVersionId === v.id && compareDiff !== null}
 											<button
 												onclick={() => restoreVersion(v.id)}
 												class="rounded px-2 py-1 font-sans text-xs text-accent transition-colors hover:underline"
@@ -903,12 +909,12 @@
 											<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 												Cargando diff...
 											</p>
-										{:else if compareContent !== null}
+										{:else if compareDiff !== null}
 											<DiffViewer
-												oldText={compareContent}
-												newText={content}
-												oldLabel="v{v.versionNumber}"
-												newLabel="Actual"
+												oldText={compareDiff.previous?.content ?? ''}
+												newText={compareDiff.current.content}
+												oldLabel={compareDiff.previous ? `v${compareDiff.previous.versionNumber}` : '(vacío)'}
+												newLabel="v{v.versionNumber}"
 											/>
 										{/if}
 									</div>

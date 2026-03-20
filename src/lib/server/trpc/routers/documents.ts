@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, desc, and, inArray } from 'drizzle-orm';
+import { eq, desc, asc, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
@@ -287,6 +287,32 @@ export const documentsRouter = router({
 		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 		return rows[0];
 	}),
+
+	// Diff de una versión respecto a su predecesora inmediata.
+	// Devuelve { current, previous } donde previous es null si es la primera versión.
+	versionDiff: protectedProcedure
+		.input(z.object({ documentId: z.string(), versionId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const rows = (await ctx.withRLS((db) =>
+				db
+					.select({
+						id: documentVersion.id,
+						versionNumber: documentVersion.versionNumber,
+						content: documentVersion.content
+					})
+					.from(documentVersion)
+					.where(eq(documentVersion.documentId, input.documentId))
+					.orderBy(asc(documentVersion.versionNumber))
+			)) as { id: string; versionNumber: number; content: string }[];
+
+			const idx = rows.findIndex((v) => v.id === input.versionId);
+			if (idx === -1) throw new TRPCError({ code: 'NOT_FOUND' });
+
+			return {
+				current: rows[idx],
+				previous: idx > 0 ? rows[idx - 1] : null
+			};
+		}),
 
 	// Restaura una versión anterior: la copia como nuevo draft (sin commitear)
 	// El usuario puede revisar antes de hacer commit
