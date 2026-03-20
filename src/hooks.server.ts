@@ -2,13 +2,64 @@ import * as Sentry from '@sentry/sveltekit';
 import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
-import { building } from '$app/environment';
+import { building, dev } from '$app/environment';
 import { sql } from 'drizzle-orm';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 export const handleError = Sentry.handleErrorWithSentry();
+
+// Añade cabeceras de seguridad a todas las respuestas HTML
+const handleHeaders: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+
+	// Solo aplicar a respuestas HTML (no a assets, API, etc.)
+	const contentType = response.headers.get('content-type') ?? '';
+	if (!contentType.includes('text/html')) return response;
+
+	const headers = new Headers(response.headers);
+
+	// Evita que el navegador "adivine" el MIME type
+	headers.set('X-Content-Type-Options', 'nosniff');
+
+	// Bloquea iframes desde otros dominios (clickjacking)
+	headers.set('X-Frame-Options', 'SAMEORIGIN');
+
+	// Controla qué información de referencia se envía al navegar
+	headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+	// Fuerza HTTPS en producción (1 año, incluye subdominios)
+	if (!dev) {
+		headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+	}
+
+	// Content Security Policy
+	// En dev se relaja para permitir HMR de Vite (ws:// y eval)
+	const csp = dev
+		? [
+				"default-src 'self'",
+				"script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Vite HMR necesita eval
+				"style-src 'self' 'unsafe-inline'",
+				"img-src 'self' data: blob:",
+				"font-src 'self'",
+				"connect-src 'self' ws: wss:", // WebSocket de HMR
+				"frame-ancestors 'none'"
+			].join('; ')
+		: [
+				"default-src 'self'",
+				"script-src 'self' 'unsafe-inline'", // SvelteKit necesita inline scripts para hydration
+				"style-src 'self' 'unsafe-inline'",
+				"img-src 'self' data: blob:",
+				"font-src 'self'",
+				"connect-src 'self'",
+				"frame-ancestors 'none'"
+			].join('; ');
+
+	headers.set('Content-Security-Policy', csp);
+
+	return new Response(response.body, { status: response.status, headers });
+};
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
@@ -42,5 +93,6 @@ const handleRLS: Handle = ({ event, resolve }) => {
 export const handle: Handle = sequence(
 	Sentry.sentryHandle(),
 	handleBetterAuth,
-	handleRLS
+	handleRLS,
+	handleHeaders
 );
