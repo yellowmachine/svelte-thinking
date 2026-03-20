@@ -116,6 +116,91 @@
 		</div>
 	</section>
 
+	<!-- ── Lógica formal ─────────────────────────────────────────────────────── -->
+	<section class="mb-10">
+		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Lógica formal</h2>
+		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			Usa sintaxis LaTeX con KaTeX para notación lógica estándar, inline con <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">$...$</code> o en bloque con <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">$$...$$</code>.
+		</p>
+		<div class="overflow-hidden rounded-xl border border-paper-border dark:border-dark-paper-border">
+			<table class="w-full font-sans text-sm">
+				<thead>
+					<tr class="border-b border-paper-border bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper-ui">
+						<th class="px-4 py-2.5 text-left font-medium text-ink-muted dark:text-dark-ink-muted">Escribe</th>
+						<th class="px-4 py-2.5 text-left font-medium text-ink-muted dark:text-dark-ink-muted">Símbolo</th>
+						<th class="px-4 py-2.5 text-left font-medium text-ink-muted dark:text-dark-ink-muted">Nombre</th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$\neg p$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">¬p</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Negación</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$p \land q$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">p ∧ q</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Conjunción</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$p \lor q$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">p ∨ q</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Disyunción</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$p \rightarrow q$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">p → q</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Implicación</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$p \leftrightarrow q$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">p ↔ q</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Bicondicional</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$\forall x$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">∀x</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Cuantificador universal</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$\exists x$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">∃x</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Cuantificador existencial</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$\therefore$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">∴</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Por tanto</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$\bot$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">⊥</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Contradicción</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$\top$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">⊤</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Tautología</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$x \in A$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">x ∈ A</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Pertenencia</td>
+					</tr>
+					<tr>
+						<td class="px-4 py-3"><code class="rounded bg-paper-ui px-1.5 py-0.5 font-mono text-xs dark:bg-dark-paper-ui">$A \subseteq B$</code></td>
+						<td class="px-4 py-3 font-serif text-ink dark:text-dark-ink">A ⊆ B</td>
+						<td class="px-4 py-3 font-sans text-ink-muted dark:text-dark-ink-muted">Subconjunto</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="mt-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+			<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">$$\forall x (P(x) \rightarrow Q(x)) \land \exists x \neg Q(x) \therefore \exists x \neg P(x)$$</span></p>
+			<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Ejemplo de fórmula completa en bloque</p>
+		</div>
+	</section>
+
 	<!-- ── Wikilinks ─────────────────────────────────────────────────────────── -->
 	<section class="mb-10">
 		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Wikilinks</h2>

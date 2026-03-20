@@ -5,6 +5,7 @@
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { markdown } from '@codemirror/lang-markdown';
 	import { oneDark } from '@codemirror/theme-one-dark';
+	import { autocompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
 	import {
 		commentRangesField,
 		commentTheme,
@@ -12,10 +13,12 @@
 		type CommentRange
 	} from './commentsExtension';
 	import { codeBlockExtension, codeLanguages } from './codeBlockExtension';
+	import type { CiteRef } from '$lib/utils/citations';
 
 	let {
 		value = $bindable(''),
 		readonly = false,
+		references = [],
 		ondocchange,
 		onselectionchange,
 		commentRanges = [],
@@ -23,6 +26,7 @@
 	}: {
 		value?: string;
 		readonly?: boolean;
+		references?: CiteRef[];
 		ondocchange?: (content: string) => void;
 		onselectionchange?: (sel: {
 			text: string;
@@ -41,6 +45,28 @@
 		return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 	}
 
+	function citationCompletions(context: CompletionContext) {
+		// Match [@  or [@partial-key
+		const match = context.matchBefore(/\[@[\w.-]*/);
+		if (!match) return null;
+
+		const typed = match.text.slice(2); // strip [@
+		const options: Completion[] = references
+			.filter((r) => !typed || r.citeKey.toLowerCase().includes(typed.toLowerCase()))
+			.map((r) => {
+				const author = r.authors[0] ? `${r.authors[0].last}` : '';
+				const year = r.year ?? '';
+				return {
+					label: r.citeKey,
+					detail: [author, year].filter(Boolean).join(', '),
+					info: r.title,
+					apply: `@${r.citeKey}]`
+				};
+			});
+
+		return { from: match.from + 1, options }; // +1 para dejar el [ y reemplazar solo @key
+	}
+
 	function buildExtensions() {
 		const exts = [
 			history(),
@@ -48,6 +74,7 @@
 			highlightActiveLine(),
 			keymap.of([...defaultKeymap, ...historyKeymap]),
 			markdown({ codeLanguages }),
+			autocompletion({ override: [citationCompletions], closeOnBlur: true }),
 		...codeBlockExtension(),
 			EditorView.lineWrapping,
 			commentRangesField,
