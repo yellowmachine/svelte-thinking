@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, pgPolicy, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, pgPolicy, pgEnum, unique } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const planEnum = pgEnum('plan', ['free', 'pro', 'team']);
@@ -56,6 +56,26 @@ export const userAiConfig = pgTable(
 	(t) => [
 		// Solo el propio usuario puede ver/modificar su config de IA
 		pgPolicy('user_ai_config_access', {
+			for: 'all',
+			using: sql`${t.userId} = ${currentUserId}`
+		})
+	]
+).enableRLS();
+
+export const notificationPreference = pgTable(
+	'notification_preference',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id').notNull(),
+		projectId: text('project_id').notNull(),
+		commentEmails: boolean('comment_emails').notNull().default(true),
+		unsubscribeToken: text('unsubscribe_token').notNull().unique(),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
+		updatedAt: timestamp('updated_at').notNull().defaultNow()
+	},
+	(t) => [
+		unique().on(t.userId, t.projectId),
+		pgPolicy('notification_preference_access', {
 			for: 'all',
 			using: sql`${t.userId} = ${currentUserId}`
 		})

@@ -14,6 +14,7 @@
 
 	let input = $state('');
 	let sending = $state(false);
+	let sendError = $state<string | null>(null);
 
 	let messagesEnd: HTMLDivElement;
 
@@ -42,6 +43,7 @@
 
 		input = '';
 		sending = true;
+		sendError = null;
 
 		// Optimistic user message
 		const tempId = crypto.randomUUID();
@@ -72,7 +74,7 @@
 			scrollToBottom();
 		} catch (e) {
 			messages = messages.filter((m) => m.id !== tempId);
-			alert(e instanceof Error ? e.message : 'Error al enviar');
+			sendError = e instanceof Error ? e.message : 'Error al enviar';
 		} finally {
 			sending = false;
 		}
@@ -234,6 +236,21 @@
 
 		<!-- Input -->
 		<div class="border-t border-paper-border bg-paper px-6 py-4 dark:border-dark-paper-border dark:bg-dark-paper">
+			{#if sendError}
+				<div class="mx-auto mb-3 max-w-2xl flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/30">
+					<p class="font-sans text-sm text-red-700 dark:text-red-400">{sendError}</p>
+					<button
+						type="button"
+						onclick={() => (sendError = null)}
+						aria-label="Cerrar"
+						class="shrink-0 text-red-400 hover:text-red-600 dark:text-red-500"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+					</button>
+				</div>
+			{/if}
 			<div class="mx-auto max-w-2xl">
 				<div class="flex items-end gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui">
 					<textarea

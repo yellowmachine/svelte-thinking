@@ -8,6 +8,22 @@ import { aiConversation, aiMessage, userAiUsage } from '$lib/server/db/schemas/a
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 
 const DAILY_SUGGESTION_LIMIT = 30;
+
+async function throwOpenRouterError(res: Response): Promise<never> {
+	let message: string;
+	try {
+		const body = (await res.json()) as { error?: { message?: string; code?: number } };
+		const msg = body?.error?.message ?? '';
+		const code = body?.error?.code ?? res.status;
+		if (code === 401) message = 'API key de OpenRouter inválida. Revísala en Ajustes → Asistente IA.';
+		else if (code === 402) message = 'Has agotado los créditos de OpenRouter. Recarga tu cuenta en openrouter.ai.';
+		else if (code === 429) message = 'Límite de peticiones alcanzado en OpenRouter. Espera un momento.';
+		else message = msg || `Error de OpenRouter (${res.status}).`;
+	} catch {
+		message = `Error de OpenRouter (${res.status}).`;
+	}
+	throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message });
+}
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { userAiConfig } from '$lib/server/db/schemas/users.schema';
@@ -250,11 +266,7 @@ export const aiRouter = router({
 			});
 
 			if (!openRouterResponse.ok) {
-				const err = await openRouterResponse.text();
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: `Error de OpenRouter: ${openRouterResponse.status}. ${err.slice(0, 200)}`
-				});
+				await throwOpenRouterError(openRouterResponse);
 			}
 
 			const openRouterData = (await openRouterResponse.json()) as {
@@ -485,11 +497,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 			});
 
 			if (!response.ok) {
-				const err = await response.text();
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: `Error de OpenRouter: ${response.status}. ${err.slice(0, 200)}`
-				});
+				await throwOpenRouterError(response);
 			}
 
 			const data = (await response.json()) as {

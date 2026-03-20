@@ -31,6 +31,49 @@ export async function sendWaitlistApprovalEmail({
 	});
 }
 
+export async function sendNewCommentNotification({
+	to,
+	authorName,
+	documentTitle,
+	projectTitle,
+	commentExcerpt,
+	documentUrl,
+	unsubscribeUrl
+}: {
+	to: string;
+	authorName: string;
+	documentTitle: string;
+	projectTitle: string;
+	commentExcerpt: string;
+	documentUrl: string;
+	unsubscribeUrl: string;
+}) {
+	if (!env.RESEND_API_KEY) {
+		console.log(`[dev] New comment notification for ${to}: ${documentUrl}`);
+		return;
+	}
+
+	const resend = new Resend(env.RESEND_API_KEY);
+	const from = env.EMAIL_FROM || 'Scholio <noreply@scholio.tech>';
+
+	await resend.emails.send({
+		from,
+		to,
+		subject: `Nuevo comentario en "${documentTitle}"`,
+		html: `
+			<p>Hola,</p>
+			<p><strong>${authorName}</strong> ha dejado un comentario en <strong>"${documentTitle}"</strong> (${projectTitle}):</p>
+			<blockquote style="border-left: 3px solid #ccc; padding-left: 12px; color: #555; margin: 16px 0;">
+				${commentExcerpt}
+			</blockquote>
+			<p><a href="${documentUrl}">Ver el documento</a></p>
+			<p style="margin-top: 32px; font-size: 12px; color: #999;">
+				<a href="${unsubscribeUrl}" style="color: #999;">Silenciar notificaciones de este proyecto</a>
+			</p>
+		`
+	});
+}
+
 export async function sendVerificationEmail(email: string, url: string) {
 	if (!env.RESEND_API_KEY) {
 		console.log(`[dev] Verification URL for ${email}: ${url}`);
