@@ -250,11 +250,26 @@
 					</p>
 				{/if}
 			</div>
-			<span
-				class="shrink-0 rounded-full bg-paper-border px-3 py-1 font-sans text-xs font-medium text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted"
-			>
-				{statusLabel[data.project.status] ?? data.project.status}
-			</span>
+			<div class="flex shrink-0 items-center gap-2">
+				<a
+					href="/api/projects/{data.project.id}/export"
+					download
+					title="Exportar proyecto como YAML"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+						<polyline points="7 10 12 15 17 10"/>
+						<line x1="12" y1="15" x2="12" y2="3"/>
+					</svg>
+					Exportar
+				</a>
+				<span
+					class="rounded-full bg-paper-border px-3 py-1 font-sans text-xs font-medium text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted"
+				>
+					{statusLabel[data.project.status] ?? data.project.status}
+				</span>
+			</div>
 		</div>
 
 		{#if data.myRole}
