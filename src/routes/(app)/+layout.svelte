@@ -1,5 +1,7 @@
 <script lang="ts">
 	import Navbar from '$lib/components/layout/Navbar.svelte';
+	import MobileHeader from '$lib/components/layout/MobileHeader.svelte';
+	import MobileNav from '$lib/components/layout/MobileNav.svelte';
 	import FeedbackButton from '$lib/components/layout/FeedbackButton.svelte';
 	import type { LayoutData } from './$types';
 
@@ -7,12 +9,18 @@
 </script>
 
 <div class="flex min-h-screen flex-col bg-paper-ui dark:bg-dark-paper-ui">
-	<Navbar user={data.user} />
-	<main class="flex-1">
+	<!-- Desktop nav -->
+	<div class="hidden sm:block">
+		<Navbar user={data.user} />
+	</div>
+	<!-- Mobile header -->
+	<MobileHeader user={data.user} />
+
+	<main class="flex-1 pb-16 sm:pb-0">
 		{@render children()}
 	</main>
 	<FeedbackButton />
-	<footer class="border-t border-paper-border px-6 py-3 dark:border-dark-paper-border">
+	<footer class="hidden border-t border-paper-border px-6 py-3 sm:block dark:border-dark-paper-border">
 		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 			Scholio Beta · Desarrollado con
 			<a
@@ -26,4 +34,6 @@
 			<span class="font-medium">Claude Haiku 4.5</span> (Anthropic)
 		</p>
 	</footer>
+	<!-- Mobile bottom nav -->
+	<MobileNav />
 </div>

@@ -45,6 +45,11 @@ html.dark {
 	color: var(--color-dark-ink);
 }
 
+/* Safe area para PWA en iOS (home indicator) */
+.pb-safe {
+	padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
 /* Scrollbar discreta */
 ::-webkit-scrollbar {
 	width: 6px;

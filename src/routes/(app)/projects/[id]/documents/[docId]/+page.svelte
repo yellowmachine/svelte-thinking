@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, untrack } from 'svelte';
+	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
@@ -435,6 +436,49 @@
 		if (aiSuggestTimer) clearTimeout(aiSuggestTimer);
 	});
 </script>
+
+<!-- Mobile view -->
+<div class="sm:hidden">
+	{#if data.document.type === 'notes'}
+		<MobileNoteEditor
+			bind:content
+			{saveStatus}
+			{isDirty}
+			projectTitle={data.projectTitle}
+			projectId={data.document.projectId}
+			documentTitle={data.document.title}
+			onchange={handleDocChange}
+			onsave={doSaveDraft}
+		/>
+	{:else}
+		<!-- Read-only rendered view for non-notes documents -->
+		<div class="flex h-screen flex-col bg-paper dark:bg-dark-paper">
+			<div class="flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95">
+				<button
+					onclick={() => { window.location.href = `/projects/${data.document.projectId}`; }}
+					class="flex items-center gap-1.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M15 18l-6-6 6-6" />
+					</svg>
+					{data.projectTitle}
+				</button>
+				<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
+				<span class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{data.document.title}</span>
+			</div>
+			<div class="flex-1 overflow-y-auto px-4 py-6 pb-safe">
+				{#if content.trim()}
+					<MarkdownPreview {content} projectId={data.document.projectId} docMap={docMap()} />
+				{:else}
+					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Documento vacío.</p>
+				{/if}
+			</div>
+		</div>
+	{/if}
+</div>
+
+<!-- Desktop editor -->
+<div class="hidden sm:block">
 
 <!-- Sticky toolbar -->
 <div
@@ -1045,3 +1089,5 @@
 		</div>
 	</div>
 {/if}
+
+</div><!-- end desktop editor wrapper -->
