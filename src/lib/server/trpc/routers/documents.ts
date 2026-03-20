@@ -1,8 +1,11 @@
 import { z } from 'zod';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
+import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
+import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
+import { extractWikilinks } from '$lib/utils/wikilinks';
 
 const documentTypeValues = [
 	'paper',
@@ -68,45 +71,69 @@ export const documentsRouter = router({
 			const docId = crypto.randomUUID();
 
 			return ctx.withRLS(async (db) => {
-				const [created] = await db
-					.insert(document)
-					.values({ id: docId, projectId: input.projectId, title: input.title, type: input.type })
-					.returning();
+				try {
+					const [created] = await db
+						.insert(document)
+						.values({ id: docId, projectId: input.projectId, title: input.title, type: input.type })
+						.returning();
 
-				// Versión inicial vacía (v1)
-				const versionId = crypto.randomUUID();
-				await db.insert(documentVersion).values({
-					id: versionId,
-					documentId: docId,
-					content: '',
-					versionNumber: 1,
-					changeDescription: 'Versión inicial',
-					createdBy: ctx.user.id
-				});
+					// Versión inicial vacía (v1)
+					const versionId = crypto.randomUUID();
+					await db.insert(documentVersion).values({
+						id: versionId,
+						documentId: docId,
+						content: '',
+						versionNumber: 1,
+						changeDescription: 'Versión inicial',
+						createdBy: ctx.user.id
+					});
 
-				const [updated] = await db
-					.update(document)
-					.set({ currentVersionId: versionId })
-					.where(eq(document.id, docId))
-					.returning();
+					const [updated] = await db
+						.update(document)
+						.set({ currentVersionId: versionId })
+						.where(eq(document.id, created.id))
+						.returning();
 
-				return updated;
+					return updated;
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un documento con el título "${input.title}" en este proyecto.`
+						});
+					}
+					throw e;
+				}
 			});
 		}),
 
 	update: protectedProcedure
-		.input(z.object({ id: z.string(), title: z.string().min(1).max(255).optional() }))
+		.input(z.object({
+			id: z.string(),
+			title: z.string().min(1).max(255).optional(),
+			isPublic: z.boolean().optional()
+		}))
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
-			const rows = await ctx.withRLS((db) =>
-				db
-					.update(document)
-					.set({ ...data, updatedAt: new Date() })
-					.where(eq(document.id, id))
-					.returning()
-			);
-			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			return rows[0];
+			try {
+				const rows = await ctx.withRLS((db) =>
+					db
+						.update(document)
+						.set({ ...data, updatedAt: new Date() })
+						.where(eq(document.id, id))
+						.returning()
+				);
+				if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+				return rows[0];
+			} catch (e: unknown) {
+				if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+					throw new TRPCError({
+						code: 'CONFLICT',
+						message: `Ya existe un documento con ese título en este proyecto.`
+					});
+				}
+				throw e;
+			}
 		}),
 
 	delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
@@ -185,6 +212,51 @@ export const documentsRouter = router({
 					.set({ currentVersionId: versionId, draftContent: null, updatedAt: new Date() })
 					.where(eq(document.id, input.documentId))
 					.returning();
+
+				// ── Update wikilink index ──────────────────────────────────────
+				// Handles [[title]] (same project) and [[title:hash]] (external).
+				const titles = extractWikilinks(contentToCommit);
+
+				await db
+					.delete(documentLink)
+					.where(eq(documentLink.sourceDocumentId, input.documentId));
+
+				if (titles.length > 0 && updated.projectId) {
+					const [sameProjectDocs, externalDocs] = await Promise.all([
+						// Same-project: resolve by title
+						db
+							.select({ id: document.id, title: document.title })
+							.from(document)
+							.where(eq(document.projectId, updated.projectId)),
+
+						// External context links: resolve by [[title:hash]] (first 8 chars of ID)
+						db
+							.select({ id: document.id, title: document.title })
+							.from(projectContextLink)
+							.innerJoin(document, eq(document.id, projectContextLink.linkedDocumentId))
+							.where(eq(projectContextLink.projectId, updated.projectId))
+					]);
+
+					const titleToId = new Map(sameProjectDocs.map((d) => [d.title, d.id]));
+					// External: keyed as "title:hash"
+					for (const d of externalDocs) {
+						titleToId.set(`${d.title}:${d.id.slice(0, 8)}`, d.id);
+					}
+
+					const newLinks = titles
+						.map((t) => titleToId.get(t))
+						.filter((id): id is string => !!id && id !== input.documentId);
+
+					if (newLinks.length > 0) {
+						await db.insert(documentLink).values(
+							[...new Set(newLinks)].map((targetId) => ({
+								id: crypto.randomUUID(),
+								sourceDocumentId: input.documentId,
+								targetDocumentId: targetId
+							}))
+						);
+					}
+				}
 
 				return { document: updated, versionNumber: nextVersion };
 			});

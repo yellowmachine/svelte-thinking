@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Navbar from '$lib/components/layout/Navbar.svelte';
+	import FeedbackButton from '$lib/components/layout/FeedbackButton.svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
@@ -10,6 +11,7 @@
 	<main class="flex-1">
 		{@render children()}
 	</main>
+	<FeedbackButton />
 	<footer class="border-t border-paper-border px-6 py-3 dark:border-dark-paper-border">
 		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 			Scholio Beta · Desarrollado con

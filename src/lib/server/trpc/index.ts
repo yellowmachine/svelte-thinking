@@ -12,6 +12,7 @@ import { billingRouter } from './routers/billing';
 import { datasetsRouter } from './routers/datasets';
 import { referencesRouter } from './routers/references';
 import { contextLinksRouter } from './routers/contextLinks';
+import { feedbackRouter } from './routers/feedback';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -26,7 +27,8 @@ export const appRouter = router({
 	billing: billingRouter,
 	datasets: datasetsRouter,
 	references: referencesRouter,
-	contextLinks: contextLinksRouter
+	contextLinks: contextLinksRouter,
+	feedback: feedbackRouter
 });
 
 export type AppRouter = typeof appRouter;

@@ -83,6 +83,24 @@
 		if (showPreview) loadRefs();
 	});
 
+	// Wikilinks: build title → {id, projectId} map.
+	// Same-project docs indexed by title: [[Introducción]]
+	// External context docs indexed by "title:hash": [[Introducción:a3f9b2c1]]
+	const docMap = $derived(() => {
+		const map = new Map<string, { id: string; projectId: string }>();
+		for (const d of data.projectDocs) {
+			map.set(d.title, { id: d.id, projectId: d.projectId });
+		}
+		for (const d of data.externalDocs) {
+			const hash = d.id.slice(0, 8);
+			map.set(`${d.title}:${hash}`, { id: d.id, projectId: d.projectId });
+		}
+		return map;
+	});
+
+	// Backlinks from server (updated on commit)
+	const backlinks = $derived(data.backlinks);
+
 	// Version history
 	let showHistory = $state(false);
 	type Version = {
@@ -96,6 +114,18 @@
 	let selectedVersionId: string | null = $state(null);
 	let compareContent: string | null = $state(null);
 	let loadingCompare = $state(false);
+
+	// Public toggle
+	let isPublic = $state(untrack(() => data.document.isPublic ?? false));
+
+	async function togglePublic() {
+		isPublic = !isPublic;
+		try {
+			await trpc.documents.update.mutate({ id: data.document.id, isPublic });
+		} catch {
+			isPublic = !isPublic; // revert on error
+		}
+	}
 
 	// Commit dialog
 	let showCommit = $state(false);
@@ -514,6 +544,28 @@
 		</button>
 
 		<button
+			onclick={togglePublic}
+			title={isPublic ? 'Documento público — visible para todos como contexto de IA. Clic para hacerlo privado.' : 'Documento privado. Clic para hacerlo público.'}
+			class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {isPublic
+				? 'border-green-400/60 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-500/40 dark:bg-green-950/30 dark:text-green-400'
+				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+		>
+			{#if isPublic}
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+					<path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+				</svg>
+				Público
+			{:else}
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/>
+					<path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+				</svg>
+				Privado
+			{/if}
+		</button>
+
+		<button
 			onclick={() => (showCommit = true)}
 			disabled={!content.trim()}
 			class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
@@ -534,6 +586,7 @@
 					projectId={data.document.projectId}
 					references={projectRefs}
 					{citationStyle}
+					docMap={docMap()}
 				/>
 			{:else}
 				<MarkdownEditor
@@ -642,6 +695,29 @@
 						/>
 					{/each}
 				{/if}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Backlinks panel -->
+	{#if backlinks.length > 0}
+		<div class="flex w-56 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+			<div class="border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
+				<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Mencionado en</h3>
+			</div>
+			<div class="flex-1 overflow-y-auto p-2">
+				{#each backlinks as link (link.id)}
+					<a
+						href="/projects/{data.document.projectId}/documents/{link.id}"
+						class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+					>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="shrink-0 text-accent" aria-hidden="true">
+							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+						<span class="truncate font-sans text-xs text-ink-muted dark:text-dark-ink-muted">{link.title}</span>
+					</a>
+				{/each}
 			</div>
 		</div>
 	{/if}

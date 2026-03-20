@@ -3,17 +3,20 @@
 	import katex from 'katex';
 	import { trpc } from '$lib/utils/trpc';
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
+	import { processWikilinks } from '$lib/utils/wikilinks';
 
 	let {
 		content = '',
 		projectId = null,
 		references = [],
-		citationStyle = 'apa'
+		citationStyle = 'apa',
+		docMap = new Map()
 	}: {
 		content: string;
 		projectId?: string | null;
 		references?: CiteRef[];
 		citationStyle?: CitationStyle;
+		docMap?: Map<string, { id: string; projectId: string }>;
 	} = $props();
 
 	// Build a key → ref map for fast lookup in the citation processor
@@ -84,11 +87,13 @@
 	function parseMarkdown(
 		src: string,
 		refs: Map<string, CiteRef>,
-		style: CitationStyle
+		style: CitationStyle,
+		wikilinkMap: Map<string, { id: string; projectId: string }>
 	): { html: string; plots: Map<string, object> } {
 		const { processed: withPlaceholders, plots } = extractPlots(src);
 		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withPlaceholders);
-		const withCitations = refs.size > 0 ? processCitations(withMathPlaceholders, refs, style) : withMathPlaceholders;
+		const withWikilinks = wikilinkMap.size > 0 ? processWikilinks(withMathPlaceholders, wikilinkMap) : withMathPlaceholders;
+		const withCitations = refs.size > 0 ? processCitations(withWikilinks, refs, style) : withWikilinks;
 		const rawHtml = marked.parse(withCitations) as string;
 		const html = restoreMath(rawHtml, mathBlocks);
 		return { html, plots };
@@ -143,7 +148,7 @@
 		}
 	}
 
-	let parsed = $derived(parseMarkdown(content, refsMap, citationStyle));
+	let parsed = $derived(parseMarkdown(content, refsMap, citationStyle, docMap));
 
 	$effect(() => {
 		const { plots } = parsed;
@@ -190,5 +195,11 @@
 		color: red;
 		font-family: monospace;
 		font-size: 0.875em;
+	}
+
+	.prose :global(.wikilink-unresolved) {
+		color: var(--color-ink-faint, #A89880);
+		font-style: italic;
+		cursor: help;
 	}
 </style>

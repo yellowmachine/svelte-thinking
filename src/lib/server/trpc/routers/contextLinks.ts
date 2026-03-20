@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, ne, asc } from 'drizzle-orm';
+import { eq, and, ne, asc, isNull, or } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
@@ -36,7 +36,8 @@ export const contextLinksRouter = router({
 		return rows;
 	}),
 
-	// All documents the user can access from other projects (for the picker)
+	// All documents the user can access from other projects (for the picker).
+	// Includes public documents from other users — project title will be null for those.
 	listAvailable: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
 		const rows = (await ctx.withRLS((db) =>
 			db
@@ -45,10 +46,11 @@ export const contextLinksRouter = router({
 					title: document.title,
 					type: document.type,
 					projectId: document.projectId,
-					projectTitle: project.title
+					isPublic: document.isPublic,
+					projectTitle: project.title // null when the project belongs to another user
 				})
 				.from(document)
-				.innerJoin(project, eq(project.id, document.projectId))
+				.leftJoin(project, eq(project.id, document.projectId))
 				.where(ne(document.projectId, projectId))
 				.orderBy(asc(project.title), asc(document.title))
 		)) as {
@@ -56,7 +58,8 @@ export const contextLinksRouter = router({
 			title: string;
 			type: string;
 			projectId: string;
-			projectTitle: string;
+			isPublic: boolean;
+			projectTitle: string | null;
 		}[];
 
 		return rows;

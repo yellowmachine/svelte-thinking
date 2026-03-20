@@ -3,8 +3,10 @@ import {
 	text,
 	timestamp,
 	integer,
+	boolean,
 	pgEnum,
 	index,
+	uniqueIndex,
 	pgPolicy
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -31,11 +33,14 @@ export const document = pgTable(
 		currentVersionId: text('current_version_id'),
 		// Contenido en progreso (auto-save). null = sin cambios desde el último commit
 		draftContent: text('draft_content'),
+		// Owner can make a document publicly readable (for AI context sharing)
+		isPublic: boolean('is_public').notNull().default(false),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
 	(t) => [
 		index('document_project_idx').on(t.projectId),
+		uniqueIndex('document_project_title_idx').on(t.projectId, t.title),
 
 		pgPolicy('document_access', {
 			for: 'all',
@@ -53,6 +58,11 @@ export const document = pgTable(
 					)
 				)
 			`
+		}),
+		// Public documents are readable by anyone (SELECT only)
+		pgPolicy('document_public_read', {
+			for: 'select',
+			using: sql`${t.isPublic} = true`
 		})
 	]
 ).enableRLS();

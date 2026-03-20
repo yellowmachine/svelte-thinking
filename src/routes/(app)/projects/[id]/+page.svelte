@@ -130,7 +130,8 @@
 		title: string;
 		type: string;
 		projectId: string;
-		projectTitle: string;
+		isPublic: boolean;
+		projectTitle: string | null;
 	};
 
 	let contextLinks = $state<ContextLink[]>([]);
@@ -173,20 +174,31 @@
 		return unlinked.filter(
 			(d) =>
 				d.title.toLowerCase().includes(q) ||
-				d.projectTitle.toLowerCase().includes(q)
+				(d.projectTitle?.toLowerCase() ?? '').includes(q)
 		);
 	});
 
-	// Group available docs by project
+	// Group available docs: own projects grouped by name, then public docs from others
 	const availableByProject = $derived(() => {
 		const groups = new Map<string, { title: string; docs: AvailableDoc[] }>();
+		const publicOthers: AvailableDoc[] = [];
+
 		for (const doc of filteredAvailable()) {
-			if (!groups.has(doc.projectId)) {
-				groups.set(doc.projectId, { title: doc.projectTitle, docs: [] });
+			if (doc.projectTitle !== null) {
+				if (!groups.has(doc.projectId)) {
+					groups.set(doc.projectId, { title: doc.projectTitle, docs: [] });
+				}
+				groups.get(doc.projectId)!.docs.push(doc);
+			} else {
+				publicOthers.push(doc);
 			}
-			groups.get(doc.projectId)!.docs.push(doc);
 		}
-		return [...groups.entries()].map(([id, g]) => ({ id, ...g }));
+
+		const result = [...groups.entries()].map(([id, g]) => ({ id, ...g }));
+		if (publicOthers.length > 0) {
+			result.push({ id: '__public__', title: 'Documentos públicos de otros usuarios', docs: publicOthers });
+		}
+		return result;
 	});
 
 	$effect(() => { loadContextLinks(); });
@@ -518,13 +530,28 @@
 						<div class="mb-3">
 							<p class="mb-1 font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">{group.title}</p>
 							{#each group.docs as doc (doc.id)}
-								<button
-									onclick={async () => { await addContextLink(doc.id); }}
-									class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-								>
-									<span class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink">{doc.title}</span>
-									<span class="shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint">{doc.type}</span>
-								</button>
+								<div class="flex items-center gap-1 rounded-lg px-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
+									<button
+										onclick={async () => { await addContextLink(doc.id); }}
+										class="flex min-w-0 flex-1 items-center gap-2 py-2 pl-2 text-left"
+									>
+										<span class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink">{doc.title}</span>
+										{#if doc.isPublic && doc.projectTitle === null}
+											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" class="shrink-0 text-green-500" aria-label="Público">
+												<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+												<path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+											</svg>
+										{/if}
+										<span class="shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint">{doc.type}</span>
+									</button>
+									{#if doc.isPublic && doc.projectTitle === null}
+										<button
+											onclick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`[[${doc.title}:${doc.id.slice(0, 8)}]]`); }}
+											title="Copiar sintaxis de wikilink"
+											class="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-ink-faint transition-colors hover:bg-paper-border hover:text-accent dark:text-dark-ink-faint dark:hover:bg-dark-paper-border"
+										>[[·]]</button>
+									{/if}
+								</div>
 							{/each}
 						</div>
 					{/each}
