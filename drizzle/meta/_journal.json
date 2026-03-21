@@ -43,6 +43,13 @@
       "when": 1742500000000,
       "tag": "0018_notification_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1742600000000,
+      "tag": "0019_project_notes",
+      "breakpoints": true
     }
   ]
 }

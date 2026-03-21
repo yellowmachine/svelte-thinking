@@ -19,6 +19,7 @@ const updateProjectSchema = z.object({
 	id: z.string(),
 	title: z.string().min(1).max(255).optional(),
 	description: z.string().max(2000).nullable().optional(),
+	notes: z.string().max(10000).nullable().optional(),
 	status: z.enum(projectStatusValues).optional()
 });
 

@@ -33,6 +33,7 @@ export const project = pgTable(
 		id: text('id').primaryKey(),
 		title: text('title').notNull(),
 		description: text('description'),
+		notes: text('notes'),
 		status: projectStatusEnum('status').notNull().default('draft'),
 		ownerId: text('owner_id').notNull(),
 		createdAt: timestamp('created_at').notNull().defaultNow(),

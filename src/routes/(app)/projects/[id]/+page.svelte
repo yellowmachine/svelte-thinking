@@ -24,6 +24,52 @@
 		}))
 	);
 
+	// ── Click-to-edit ────────────────────────────────────────────────────────
+	let editingField = $state<'title' | 'description' | 'notes' | null>(null);
+	let editBuffer = $state('');
+	let savingField = $state(false);
+
+	function focusEl(node: HTMLElement) {
+		node.focus();
+	}
+
+	function startEdit(field: 'title' | 'description' | 'notes') {
+		if (!data.isOwner) return;
+		const proj = data.project as typeof data.project & { notes?: string | null };
+		editBuffer =
+			field === 'title' ? proj.title :
+			field === 'description' ? (proj.description ?? '') :
+			(proj.notes ?? '');
+		editingField = field;
+	}
+
+	function cancelEdit() {
+		editingField = null;
+	}
+
+	async function saveField(field: 'title' | 'description' | 'notes') {
+		if (savingField) return;
+		if (field === 'title' && !editBuffer.trim()) {
+			editingField = null;
+			return;
+		}
+		savingField = true;
+		try {
+			await trpc.projects.update.mutate({
+				id: data.project.id,
+				...(field === 'title' ? { title: editBuffer.trim() } : {}),
+				...(field === 'description' ? { description: editBuffer.trim() || null } : {}),
+				...(field === 'notes' ? { notes: editBuffer.trim() || null } : {})
+			});
+			await invalidateAll();
+		} catch {
+			// revert silently
+		} finally {
+			savingField = false;
+			editingField = null;
+		}
+	}
+
 	let showCreateDoc = $state(false);
 	let showGenerateDraft = $state(false);
 	let newDocTitle = $state('');
@@ -240,14 +286,79 @@
 		</button>
 
 		<div class="flex items-start justify-between gap-4">
-			<div>
-				<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
-					{data.project.title}
-				</h1>
-				{#if data.project.description}
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						{data.project.description}
-					</p>
+			<div class="min-w-0 flex-1">
+				<!-- Title -->
+				{#if editingField === 'title'}
+					<input
+						{@attach focusEl}
+						type="text"
+						bind:value={editBuffer}
+						onblur={() => saveField('title')}
+						onkeydown={(e) => {
+							if (e.key === 'Enter') { e.currentTarget.blur(); }
+							if (e.key === 'Escape') { cancelEdit(); }
+						}}
+						class="w-full rounded-md border border-accent/40 bg-transparent px-2 py-1 font-serif text-3xl font-semibold text-ink focus:outline-none dark:text-dark-ink"
+					/>
+				{:else}
+					<button
+						type="button"
+						onclick={() => startEdit('title')}
+						disabled={!data.isOwner}
+						class="block text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink {data.isOwner ? 'cursor-text hover:opacity-80' : 'cursor-default'}"
+					>
+						{data.project.title}
+					</button>
+				{/if}
+
+				<!-- Description -->
+				{#if editingField === 'description'}
+					<textarea
+						{@attach focusEl}
+						bind:value={editBuffer}
+						onblur={() => saveField('description')}
+						onkeydown={(e) => { if (e.key === 'Escape') { cancelEdit(); } }}
+						rows={3}
+						placeholder="Añade una descripción…"
+						class="mt-2 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink-muted focus:outline-none dark:text-dark-ink-muted"
+					></textarea>
+				{:else if data.project.description || data.isOwner}
+					<button
+						type="button"
+						onclick={() => startEdit('description')}
+						disabled={!data.isOwner}
+						class="mt-2 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner ? 'cursor-text hover:opacity-80' : 'cursor-default'} {!data.project.description ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink-muted dark:text-dark-ink-muted'}"
+					>
+						{data.project.description || 'Añade una descripción…'}
+					</button>
+				{/if}
+
+				<!-- Notes -->
+				{#if editingField === 'notes'}
+					<textarea
+						{@attach focusEl}
+						bind:value={editBuffer}
+						onblur={() => saveField('notes')}
+						onkeydown={(e) => { if (e.key === 'Escape') { cancelEdit(); } }}
+						rows={4}
+						placeholder="Notas privadas del proyecto…"
+						class="mt-3 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink focus:outline-none dark:text-dark-ink"
+					></textarea>
+				{:else}
+					{@const notes = (data.project as typeof data.project & { notes?: string | null }).notes}
+					{#if notes || data.isOwner}
+						<div class="mt-3">
+							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Notas</span>
+							<button
+								type="button"
+								onclick={() => startEdit('notes')}
+								disabled={!data.isOwner}
+								class="mt-0.5 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner ? 'cursor-text hover:opacity-80' : 'cursor-default'} {!notes ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
+							>
+								{notes || 'Añadir notas…'}
+							</button>
+						</div>
+					{/if}
 				{/if}
 			</div>
 			<div class="hidden shrink-0 items-center gap-2 sm:flex">
