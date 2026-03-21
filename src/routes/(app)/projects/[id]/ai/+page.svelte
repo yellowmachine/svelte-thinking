@@ -16,6 +16,27 @@
 	let sending = $state(false);
 	let sendError = $state<string | null>(null);
 
+	// Cycle through status hints while the agent loop runs
+	const thinkingHints = [
+		'Consultando el proyecto…',
+		'Leyendo documentos…',
+		'Analizando el contenido…',
+		'Preparando la respuesta…'
+	];
+	let thinkingIndex = $state(0);
+	let thinkingInterval: ReturnType<typeof setInterval> | undefined;
+
+	function startThinking() {
+		thinkingIndex = 0;
+		thinkingInterval = setInterval(() => {
+			thinkingIndex = (thinkingIndex + 1) % thinkingHints.length;
+		}, 1800);
+	}
+	function stopThinking() {
+		clearInterval(thinkingInterval);
+		thinkingInterval = undefined;
+	}
+
 	let messagesEnd: HTMLDivElement;
 
 	async function selectConversation(conv: Conversation) {
@@ -44,6 +65,7 @@
 		input = '';
 		sending = true;
 		sendError = null;
+		startThinking();
 
 		// Optimistic user message
 		const tempId = crypto.randomUUID();
@@ -76,6 +98,7 @@
 			messages = messages.filter((m) => m.id !== tempId);
 			sendError = e instanceof Error ? e.message : 'Error al enviar';
 		} finally {
+			stopThinking();
 			sending = false;
 		}
 	}
@@ -220,10 +243,15 @@
 								AI
 							</div>
 							<div class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 dark:bg-dark-paper-ui">
-								<div class="flex gap-1">
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:0ms] dark:bg-dark-ink-faint"></span>
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:150ms] dark:bg-dark-ink-faint"></span>
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms] dark:bg-dark-ink-faint"></span>
+								<div class="flex items-center gap-2">
+									<div class="flex gap-1">
+										<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:0ms] dark:bg-dark-ink-faint"></span>
+										<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:150ms] dark:bg-dark-ink-faint"></span>
+										<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms] dark:bg-dark-ink-faint"></span>
+									</div>
+									<span class="font-sans text-xs text-ink-faint transition-all dark:text-dark-ink-faint">
+										{thinkingHints[thinkingIndex]}
+									</span>
 								</div>
 							</div>
 						</div>
