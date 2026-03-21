@@ -222,6 +222,30 @@
 		</p>
 	</section>
 
+	<!-- ── Notas al pie ──────────────────────────────────────────────────────── -->
+	<section class="mb-10">
+		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Notas al pie</h2>
+		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			Añade notas al pie numeradas que se generan automáticamente al final del documento con enlaces de retorno.
+		</p>
+		<div class="space-y-3">
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-mono text-sm text-ink dark:text-dark-ink">La teoría fue propuesta por Kuhn<span class="text-accent">[^1]</span> y expandida posteriormente<span class="text-accent">[^kuhn]</span>.</p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Marca en el texto — la clave puede ser un número o una palabra. Se renderiza como superíndice numerado.</p>
+			</div>
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-mono text-sm text-ink dark:text-dark-ink">
+					<span class="text-accent">[^1]</span>: Kuhn, T. S. (1962). <em>The Structure of Scientific Revolutions</em>.<br />
+					<span class="text-accent">[^kuhn]</span>: Feyerabend, P. (1975). <em>Against Method</em>.
+				</p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Definición de la nota — puede ir en cualquier parte del documento, habitualmente al final.</p>
+			</div>
+		</div>
+		<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			Las notas al pie y las citas bibliográficas <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[@key]</code> son complementarias: usa citas para referencias formales que aparecen en la bibliografía, y notas al pie para aclaraciones, comentarios o referencias informales.
+		</p>
+	</section>
+
 	<!-- ── Gráficos ──────────────────────────────────────────────────────────── -->
 	<section class="mb-10">
 		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Gráficos Vega-Lite</h2>
