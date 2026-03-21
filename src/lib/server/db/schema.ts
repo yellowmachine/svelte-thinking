@@ -1,4 +1,5 @@
 export * from './auth.schema';
+export * from './scholio-schema';
 export * from './schemas/users.schema';
 export * from './schemas/projects.schema';
 export * from './schemas/documents.schema';

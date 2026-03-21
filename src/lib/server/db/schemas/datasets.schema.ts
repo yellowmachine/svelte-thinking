@@ -1,8 +1,9 @@
-import { pgTable, text, timestamp, integer, pgPolicy, index } from 'drizzle-orm/pg-core';
+import { text, timestamp, integer, pgPolicy, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';
 
-export const projectDataset = pgTable(
+export const projectDataset = scholioSchema.table(
 	'project_dataset',
 	{
 		id: text('id').primaryKey(),
@@ -24,12 +25,12 @@ export const projectDataset = pgTable(
 			for: 'all',
 			using: sql`
 				EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND (
 						project.owner_id = nullif(current_setting('app.current_user_id', true), '')
 						OR EXISTS (
-							SELECT 1 FROM project_collaborator
+							SELECT 1 FROM scholio.project_collaborator
 							WHERE project_collaborator.project_id = project.id
 							AND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')
 						)

@@ -1,5 +1,6 @@
-import { pgTable, text, timestamp, index, uniqueIndex, pgPolicy } from 'drizzle-orm/pg-core';
+import { text, timestamp, index, uniqueIndex, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';
 import { document } from './documents.schema';
 
@@ -7,7 +8,7 @@ const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '
 
 // project_context_link: documents from other projects that the AI can use as context
 // when generating drafts or answering questions in this project.
-export const projectContextLink = pgTable(
+export const projectContextLink = scholioSchema.table(
 	'project_context_link',
 	{
 		id: text('id').primaryKey(),
@@ -28,12 +29,12 @@ export const projectContextLink = pgTable(
 			for: 'all',
 			using: sql`
 				EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND (
 						project.owner_id = ${currentUserId}
 						OR EXISTS (
-							SELECT 1 FROM project_collaborator
+							SELECT 1 FROM scholio.project_collaborator
 							WHERE project_collaborator.project_id = project.id
 							AND project_collaborator.user_id = ${currentUserId}
 						)

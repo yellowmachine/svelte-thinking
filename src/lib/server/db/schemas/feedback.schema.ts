@@ -1,8 +1,9 @@
-import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { scholioSchema } from '../scholio-schema';
 
 // Feedback is intentionally NOT RLS-protected — it's public by design.
 // All authenticated users can insert; everyone can read.
-export const feedback = pgTable('feedback', {
+export const feedback = scholioSchema.table('feedback', {
 	id: text('id').primaryKey(),
 	userId: text('user_id').notNull(),
 	message: text('message').notNull(),

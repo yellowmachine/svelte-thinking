@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 
 	// When the server returns twoFactor: true, show the TOTP step
 	let showTotpStep = $derived(form && 'twoFactor' in form && form.twoFactor === true);
@@ -65,6 +65,12 @@
 			>Regístrate</button>
 		</p>
 
+		{#if data.welcome}
+			<div class="mt-4 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-accent">
+				Tu acceso a Scholio está listo. Inicia sesión con tus credenciales habituales.
+			</div>
+		{/if}
+
 		<form method="post" action="?/signInEmail" use:enhance class="mt-6 flex flex-col gap-4">
 			<div class="flex flex-col gap-1.5">
 				<label for="email" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Email</label>
@@ -74,6 +80,7 @@
 					name="email"
 					required
 					autocomplete="email"
+					value={data.prefillEmail ?? ''}
 					class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				/>
 			</div>

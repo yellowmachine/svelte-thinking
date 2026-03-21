@@ -1,12 +1,13 @@
-import { pgTable, text, timestamp, boolean, pgPolicy, pgEnum, unique } from 'drizzle-orm/pg-core';
+import { text, timestamp, boolean, pgPolicy, unique } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 
-export const planEnum = pgEnum('plan', ['free', 'pro', 'team']);
+export const planEnum = scholioSchema.enum('plan', ['free', 'pro', 'team']);
 
 // nullif converts '' to NULL so both missing and empty-string are treated as unauthenticated
 const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
 
-export const userProfile = pgTable(
+export const userProfile = scholioSchema.table(
 	'user_profile',
 	{
 		id: text('id').primaryKey(),
@@ -39,7 +40,7 @@ export const userProfile = pgTable(
 ).enableRLS();
 
 // API keys del usuario cifradas con AWS KMS (envelope encryption)
-export const userAiConfig = pgTable(
+export const userAiConfig = scholioSchema.table(
 	'user_ai_config',
 	{
 		id: text('id').primaryKey(),
@@ -62,7 +63,7 @@ export const userAiConfig = pgTable(
 	]
 ).enableRLS();
 
-export const notificationPreference = pgTable(
+export const notificationPreference = scholioSchema.table(
 	'notification_preference',
 	{
 		id: text('id').primaryKey(),

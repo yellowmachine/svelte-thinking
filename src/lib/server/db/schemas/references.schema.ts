@@ -1,17 +1,9 @@
-import {
-	pgTable,
-	pgEnum,
-	text,
-	timestamp,
-	jsonb,
-	index,
-	uniqueIndex,
-	pgPolicy
-} from 'drizzle-orm/pg-core';
+import { text, timestamp, jsonb, index, uniqueIndex, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';
 
-export const referenceTypeEnum = pgEnum('reference_type', [
+export const referenceTypeEnum = scholioSchema.enum('reference_type', [
 	'article',
 	'book',
 	'inproceedings',
@@ -29,7 +21,7 @@ const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '
 // Authors are stored as [{first, last}] JSON array to avoid re-parsing.
 // Type-specific fields use nullable columns for the most common ones;
 // anything unusual goes in `extra` JSONB.
-export const projectReference = pgTable(
+export const projectReference = scholioSchema.table(
 	'project_reference',
 	{
 		id: text('id').primaryKey(),
@@ -95,12 +87,12 @@ export const projectReference = pgTable(
 			for: 'all',
 			using: sql`
 				EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND (
 						project.owner_id = ${currentUserId}
 						OR EXISTS (
-							SELECT 1 FROM project_collaborator
+							SELECT 1 FROM scholio.project_collaborator
 							WHERE project_collaborator.project_id = project.id
 							AND project_collaborator.user_id = ${currentUserId}
 						)

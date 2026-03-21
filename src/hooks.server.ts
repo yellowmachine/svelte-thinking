@@ -6,6 +6,8 @@ import { building, dev } from '$app/environment';
 import { sql } from 'drizzle-orm';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
+import { userProfile } from '$lib/server/db/schemas/users.schema';
+import { eq } from 'drizzle-orm';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 export const handleError = Sentry.handleErrorWithSentry();
@@ -67,6 +69,16 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	if (session) {
 		event.locals.session = session.session;
 		event.locals.user = session.user;
+
+		const profile = await db
+			.select({ id: userProfile.id })
+			.from(userProfile)
+			.where(eq(userProfile.userId, session.user.id))
+			.limit(1);
+
+		event.locals.hasScholioProfile = profile.length > 0;
+	} else {
+		event.locals.hasScholioProfile = false;
 	}
 
 	return svelteKitHandler({ event, resolve, auth, building });
@@ -83,6 +95,8 @@ const handleRLS: Handle = ({ event, resolve }) => {
 		return db.transaction(async (tx) => {
 			// set_config con is_local=true equivale a SET LOCAL — solo aplica en esta transacción
 			await tx.execute(sql`SELECT set_config('app.current_user_id', ${userId}, true)`);
+			// search_path para que las policies encuentren las tablas de scholio sin cualificar
+			await tx.execute(sql`SET LOCAL search_path = scholio, public`);
 			return fn(tx as unknown as typeof db);
 		});
 	};

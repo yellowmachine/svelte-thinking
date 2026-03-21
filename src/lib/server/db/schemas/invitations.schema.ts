@@ -1,15 +1,16 @@
-import { pgTable, text, timestamp, pgEnum, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { text, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 import { project, projectRoleEnum } from './projects.schema';
 
-export const invitationStatusEnum = pgEnum('invitation_status', [
+export const invitationStatusEnum = scholioSchema.enum('invitation_status', [
 	'pending',
 	'accepted',
 	'expired',
 	'cancelled'
 ]);
 
-export const projectInvitation = pgTable(
+export const projectInvitation = scholioSchema.table(
 	'project_invitation',
 	{
 		id: text('id').primaryKey(),
@@ -34,7 +35,7 @@ export const projectInvitation = pgTable(
 				current_setting('app.current_user_id', true) = ''
 				OR ${t.invitedBy} = current_setting('app.current_user_id', true)
 				OR EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = current_setting('app.current_user_id', true)
 				)
@@ -46,7 +47,7 @@ export const projectInvitation = pgTable(
 			for: 'all',
 			using: sql`
 				EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = current_setting('app.current_user_id', true)
 				)
@@ -59,7 +60,7 @@ export const projectInvitation = pgTable(
 			using: sql`
 				current_setting('app.current_user_id', true) = ''
 				OR EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = current_setting('app.current_user_id', true)
 				)

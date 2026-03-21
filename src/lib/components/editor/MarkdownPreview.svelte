@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { marked, type RendererObject } from 'marked';
-	import { markedFootnote } from 'marked-footnote';
+	import markedFootnote from 'marked-footnote';
 	import katex from 'katex';
 
 	marked.use(markedFootnote());

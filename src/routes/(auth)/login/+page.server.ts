@@ -5,7 +5,10 @@ import { APIError } from 'better-auth/api';
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) redirect(302, '/projects');
-	return {};
+	return {
+		welcome: event.url.searchParams.get('welcome') === '1',
+		prefillEmail: event.url.searchParams.get('email') ?? null
+	};
 };
 
 export const actions: Actions = {

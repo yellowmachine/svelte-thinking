@@ -7,6 +7,10 @@ export const load: LayoutServerLoad = async (event) => {
 		redirect(302, `/login${redirectParam}`);
 	}
 
+	if (!event.locals.hasScholioProfile) {
+		redirect(302, '/no-access');
+	}
+
 	return {
 		user: {
 			id: event.locals.user.id,

@@ -1,18 +1,9 @@
-import {
-	pgTable,
-	text,
-	timestamp,
-	integer,
-	boolean,
-	pgEnum,
-	index,
-	uniqueIndex,
-	pgPolicy
-} from 'drizzle-orm/pg-core';
+import { text, timestamp, integer, boolean, index, uniqueIndex, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';
 
-export const documentTypeEnum = pgEnum('document_type', [
+export const documentTypeEnum = scholioSchema.enum('document_type', [
 	'paper',
 	'notes',
 	'outline',
@@ -20,7 +11,7 @@ export const documentTypeEnum = pgEnum('document_type', [
 	'supplementary'
 ]);
 
-export const document = pgTable(
+export const document = scholioSchema.table(
 	'document',
 	{
 		id: text('id').primaryKey(),
@@ -46,12 +37,12 @@ export const document = pgTable(
 			for: 'all',
 			using: sql`
 				EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND (
 						project.owner_id = current_setting('app.current_user_id', true)
 						OR EXISTS (
-							SELECT 1 FROM project_collaborator
+							SELECT 1 FROM scholio.project_collaborator
 							WHERE project_collaborator.project_id = project.id
 							AND project_collaborator.user_id = current_setting('app.current_user_id', true)
 						)
@@ -67,7 +58,7 @@ export const document = pgTable(
 	]
 ).enableRLS();
 
-export const documentVersion = pgTable(
+export const documentVersion = scholioSchema.table(
 	'document_version',
 	{
 		id: text('id').primaryKey(),
@@ -88,7 +79,7 @@ export const documentVersion = pgTable(
 			for: 'all',
 			using: sql`
 				EXISTS (
-					SELECT 1 FROM document
+					SELECT 1 FROM scholio.document
 					WHERE document.id = ${t.documentId}
 				)
 			`

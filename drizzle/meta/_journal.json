@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1773920237224,
-      "tag": "0000_free_warpath",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1773924708036,
-      "tag": "0001_oval_namorita",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1773929875950,
-      "tag": "0002_quick_gabe_jones",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1773979274069,
-      "tag": "0016_broken_major_mapleleaf",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1774000000000,
-      "tag": "0017_two_factor",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1742500000000,
-      "tag": "0018_notification_preferences",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1742600000000,
-      "tag": "0019_project_notes",
+      "when": 1774101112193,
+      "tag": "0000_magenta_giant_man",
       "breakpoints": true
     }
   ]

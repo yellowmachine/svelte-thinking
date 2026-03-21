@@ -1,11 +1,12 @@
-import { pgTable, text, timestamp, pgEnum, index, pgPolicy, integer, uniqueIndex } from 'drizzle-orm/pg-core';
+import { text, timestamp, index, pgPolicy, integer, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 import { document } from './documents.schema';
 import { project } from './projects.schema';
 
-export const aiMessageRoleEnum = pgEnum('ai_message_role', ['user', 'assistant']);
+export const aiMessageRoleEnum = scholioSchema.enum('ai_message_role', ['user', 'assistant']);
 
-export const aiSuggestionTypeEnum = pgEnum('ai_suggestion_type', [
+export const aiSuggestionTypeEnum = scholioSchema.enum('ai_suggestion_type', [
 	'grammar',
 	'style',
 	'structure',
@@ -13,13 +14,13 @@ export const aiSuggestionTypeEnum = pgEnum('ai_suggestion_type', [
 	'citation'
 ]);
 
-export const aiSuggestionStatusEnum = pgEnum('ai_suggestion_status', [
+export const aiSuggestionStatusEnum = scholioSchema.enum('ai_suggestion_status', [
 	'pending',
 	'applied',
 	'rejected'
 ]);
 
-export const aiConversation = pgTable(
+export const aiConversation = scholioSchema.table(
 	'ai_conversation',
 	{
 		id: text('id').primaryKey(),
@@ -42,7 +43,7 @@ export const aiConversation = pgTable(
 	]
 ).enableRLS();
 
-export const aiMessage = pgTable(
+export const aiMessage = scholioSchema.table(
 	'ai_message',
 	{
 		id: text('id').primaryKey(),
@@ -61,7 +62,7 @@ export const aiMessage = pgTable(
 			for: 'all',
 			using: sql`
 				EXISTS (
-					SELECT 1 FROM ai_conversation
+					SELECT 1 FROM scholio.ai_conversation
 					WHERE ai_conversation.id = ${t.conversationId}
 				)
 			`
@@ -71,7 +72,7 @@ export const aiMessage = pgTable(
 
 // Daily usage counter per user for operator-hosted AI calls (suggest endpoint).
 // Used to enforce rate limits without RLS bypass — each user can only see their own row.
-export const userAiUsage = pgTable(
+export const userAiUsage = scholioSchema.table(
 	'user_ai_usage',
 	{
 		id: text('id').primaryKey(),
@@ -89,7 +90,7 @@ export const userAiUsage = pgTable(
 	]
 ).enableRLS();
 
-export const aiSuggestion = pgTable(
+export const aiSuggestion = scholioSchema.table(
 	'ai_suggestion',
 	{
 		id: text('id').primaryKey(),
@@ -111,7 +112,7 @@ export const aiSuggestion = pgTable(
 			for: 'all',
 			using: sql`
 				EXISTS (
-					SELECT 1 FROM document
+					SELECT 1 FROM scholio.document
 					WHERE document.id = ${t.documentId}
 				)
 			`
