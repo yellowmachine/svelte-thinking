@@ -16,3 +16,4 @@
 
 ## Feedback
 - [feedback_storybook_trpc.md](feedback_storybook_trpc.md) — Patrón preferido para componentes con trpc en Storybook
+- [feedback_drizzle_sql.md](feedback_drizzle_sql.md) — Drizzle: ${table.column} en subqueries con JOINs puede generar referencias ambiguas — usar nombre literal en su lugar
