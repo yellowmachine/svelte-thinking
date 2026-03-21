@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
+	import ActionCard from '$lib/components/ai/ActionCard.svelte';
+	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -15,6 +17,10 @@
 	let input = $state('');
 	let sending = $state(false);
 	let sendError = $state<string | null>(null);
+
+	// Pending actions from the latest agent response (in-memory, cleared on next send)
+	let pendingActions = $state<PendingAction[]>([]);
+	let lastAssistantMsgId = $state<string | null>(null);
 
 	// Cycle through status hints while the agent loop runs
 	const thinkingHints = [
@@ -65,6 +71,8 @@
 		input = '';
 		sending = true;
 		sendError = null;
+		pendingActions = [];
+		lastAssistantMsgId = null;
 		startThinking();
 
 		// Optimistic user message
@@ -81,6 +89,10 @@
 
 			activeConvId = result.conversationId;
 			messages = [...messages, result.message];
+			if (result.pendingActions?.length) {
+				pendingActions = result.pendingActions;
+				lastAssistantMsgId = result.message.id;
+			}
 
 			// Update sidebar conversation list
 			const existing = conversations.find((c) => c.id === result.conversationId);
@@ -226,13 +238,29 @@
 							>
 								{msg.role === 'user' ? 'Tú' : 'AI'}
 							</div>
-							<!-- Bubble -->
-							<div
-								class="max-w-[80%] rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role === 'user'
-									? 'rounded-tr-sm bg-accent text-white'
-									: 'rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
-							>
-								{msg.content}
+							<!-- Bubble + pending actions for this message -->
+							<div class="flex max-w-[80%] flex-col">
+								<div
+									class="rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role === 'user'
+										? 'rounded-tr-sm bg-accent text-white'
+										: 'rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
+								>
+									{msg.content}
+								</div>
+								{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
+									{#each pendingActions as action, i (i)}
+										<ActionCard
+											{action}
+											projectId={data.project.id}
+											onconfirm={() => {
+												pendingActions = pendingActions.filter((_, idx) => idx !== i);
+											}}
+											ondiscard={() => {
+												pendingActions = pendingActions.filter((_, idx) => idx !== i);
+											}}
+										/>
+									{/each}
+								{/if}
 							</div>
 						</div>
 					{/each}

@@ -8,6 +8,7 @@
  * `SET LOCAL ROLE app_user` inside each transaction so RLS policies apply.
  */
 import { PGlite } from '@electric-sql/pglite';
+import { vector } from '@electric-sql/pglite/vector';
 import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
 import { sql } from 'drizzle-orm';
@@ -17,7 +18,7 @@ import { appRouter } from '$lib/server/trpc';
 export type TestDb = ReturnType<typeof drizzle<typeof schema>>;
 
 export async function createTestDb(): Promise<TestDb> {
-	const client = new PGlite();
+	const client = new PGlite({ extensions: { vector } });
 	const db = drizzle(client, { schema });
 
 	// Run all Drizzle migrations (as superuser)

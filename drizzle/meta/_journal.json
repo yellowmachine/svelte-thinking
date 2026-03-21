@@ -8,6 +8,13 @@
       "when": 1774101112193,
       "tag": "0000_magenta_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774124359827,
+      "tag": "0001_smooth_clea",
+      "breakpoints": true
     }
   ]
 }

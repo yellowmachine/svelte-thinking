@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-scholio}
@@ -38,6 +38,13 @@ services:
     restart: unless-stopped
     ports:
       - '3100:3100'
+
+  embed:
+    build:
+      context: ./embed-service
+    restart: unless-stopped
+    ports:
+      - '3200:3200'
 
 volumes:
   postgres_dev_data:

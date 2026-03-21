@@ -149,8 +149,8 @@ export const requirementsRouter = router({
 				required: r.required
 			}));
 
-			await Promise.all([
-				ctx.withRLS((db) => db.insert(projectRequirement).values(values)),
+			const [inserted] = await Promise.all([
+				ctx.withRLS((db) => db.insert(projectRequirement).values(values).returning()),
 				ctx.withRLS((db) =>
 					db
 						.update(project)
@@ -159,7 +159,7 @@ export const requirementsRouter = router({
 				)
 			]);
 
-			return values;
+			return inserted;
 		}),
 
 	// Assign a document to fulfill a requirement

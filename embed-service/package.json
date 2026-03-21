@@ -1,0 +1,9 @@
+{
+  "name": "embed-service",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "dependencies": {
+    "@huggingface/transformers": "^3.3.3"
+  }
+}

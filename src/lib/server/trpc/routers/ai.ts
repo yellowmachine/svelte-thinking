@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, desc, asc, inArray, and, ilike, count, sql } from 'drizzle-orm';
+import { eq, desc, asc, inArray, and, count, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { env } from '$env/dynamic/private';
@@ -12,9 +12,20 @@ import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { userAiConfig } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
+import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import type { Db } from '$lib/server/db';
 
 type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
+
+// Pending actions are proposed by the agent and must be confirmed by the user before executing.
+export type PendingAction = {
+	type: 'create_document';
+	title: string;
+	docType: 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary';
+	content: string;
+	/** If set, this requirement will be fulfilled with the new document after creation. */
+	requirementId?: string;
+};
 
 const DAILY_SUGGESTION_LIMIT = 30;
 
@@ -160,14 +171,18 @@ const TOOLS = [
 	{
 		type: 'function' as const,
 		function: {
-			name: 'search_documents',
+			name: 'search_documents_semantic',
 			description:
-				'Busca un término o frase en todos los documentos del proyecto. ' +
-				'Devuelve fragmentos con contexto. Útil para localizar menciones de un concepto, autor o cita concreta.',
+				'Busca párrafos relevantes en los documentos del proyecto usando similitud semántica. ' +
+				'Devuelve los fragmentos más cercanos al significado de la consulta, aunque no coincidan palabra por palabra. ' +
+				'Úsala siempre que necesites encontrar contenido sobre un tema, concepto o idea.',
 			parameters: {
 				type: 'object',
 				properties: {
-					query: { type: 'string', description: 'Texto a buscar (sin distinción de mayúsculas)' }
+					query: {
+						type: 'string',
+						description: 'Descripción del contenido que buscas (en lenguaje natural)'
+					}
 				},
 				required: ['query']
 			}
@@ -189,6 +204,34 @@ const TOOLS = [
 				'Devuelve los requisitos del proyecto con sus descripciones completas y estado actual. ' +
 				'Útil para entender qué secciones faltan o qué debe contener cada una.',
 			parameters: { type: 'object', properties: {}, required: [] }
+		}
+	},
+	{
+		type: 'function' as const,
+		function: {
+			name: 'create_document',
+			description:
+				'Propone crear un nuevo documento en el proyecto con contenido generado. ' +
+				'El usuario verá una tarjeta de confirmación antes de que el documento se cree. ' +
+				'IMPORTANTE: describe siempre en texto lo que vas a proponer ANTES de llamar a esta herramienta. ' +
+				'Usa requirementId si hay un requisito pendiente que este documento cumpliría.',
+			parameters: {
+				type: 'object',
+				properties: {
+					title: { type: 'string', description: 'Título del documento' },
+					type: {
+						type: 'string',
+						enum: ['paper', 'notes', 'outline', 'bibliography', 'supplementary'],
+						description: 'Tipo de documento'
+					},
+					content: { type: 'string', description: 'Contenido completo en Markdown' },
+					requirementId: {
+						type: 'string',
+						description: 'ID del requisito a vincular al documento tras su creación (opcional)'
+					}
+				},
+				required: ['title', 'type', 'content']
+			}
 		}
 	}
 ] as const;
@@ -224,39 +267,32 @@ async function executeTool(
 			return `# ${rows[0].title} (${rows[0].type})\n\n${content}`;
 		}
 
-		case 'search_documents': {
+		case 'search_documents_semantic': {
 			const query = ((args.query as string) ?? '').trim();
 			if (!query) return 'Error: se requiere el parámetro query.';
 
-			const docs = (await withRLS((db) =>
-				db
-					.select({ id: document.id, title: document.title, content: document.draftContent })
-					.from(document)
-					.where(and(eq(document.projectId, projectId), ilike(document.draftContent, `%${query}%`)))
-					.limit(5)
-			)) as { id: string; title: string; content: string | null }[];
+			const queryVec = await embedQuery(query);
+			const vecLiteral = `[${queryVec.join(',')}]`;
 
-			if (docs.length === 0) return `Sin resultados para "${query}" en ningún documento.`;
+			const result = await withRLS((db) =>
+				db.execute(sql`
+					SELECT dc.text, dc.document_id, d.title, d.id AS doc_id
+					FROM scholio.document_chunk dc
+					JOIN scholio.document d ON d.id = dc.document_id
+					WHERE dc.project_id = ${projectId}
+					ORDER BY dc.embedding <=> ${vecLiteral}::vector
+					LIMIT 6
+				`)
+			);
+
+			const rows = result as unknown as { title: string; doc_id: string; text: string }[];
+			if (!rows.length) return `Sin resultados para "${query}". Puede que los documentos aún no estén indexados.`;
 
 			const output: string[] = [];
-			for (const doc of docs) {
-				const body = doc.content ?? '';
-				const lc = body.toLowerCase();
-				const ql = query.toLowerCase();
-				const snippets: string[] = [];
-				let pos = 0;
-				while (snippets.length < 3) {
-					const idx = lc.indexOf(ql, pos);
-					if (idx === -1) break;
-					const start = Math.max(0, idx - 120);
-					const end = Math.min(body.length, idx + query.length + 120);
-					snippets.push(`  …${body.slice(start, end).replace(/\n/g, ' ')}…`);
-					pos = idx + query.length;
-				}
-				output.push(`**${doc.title}** [${doc.id}]`);
-				output.push(...snippets);
+			for (const row of rows) {
+				output.push(`**${row.title}** [${row.doc_id}]\n  ${row.text.replace(/\n/g, ' ')}`);
 			}
-			return output.join('\n');
+			return output.join('\n\n');
 		}
 
 		case 'list_references': {
@@ -332,11 +368,13 @@ async function runAgentLoop(
 	projectId: string,
 	apiKey: string,
 	model: string
-): Promise<string> {
+): Promise<{ content: string; pendingActions: PendingAction[] }> {
 	const messages: OAMessage[] = [
 		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
 		{ role: 'user', content: userMessage }
 	];
+
+	const pendingActions: PendingAction[] = [];
 
 	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
 		const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -372,6 +410,24 @@ async function runAgentLoop(
 				choice.message.tool_calls.map(async (tc) => {
 					let args: Record<string, unknown> = {};
 					try { args = JSON.parse(tc.function.arguments); } catch { /* empty args */ }
+
+					// ── Write tools: intercept, queue, don't execute yet ──────
+					if (tc.function.name === 'create_document') {
+						pendingActions.push({
+							type: 'create_document',
+							title: (args.title as string) || 'Nuevo documento',
+							docType: (args.type as PendingAction['docType']) || 'paper',
+							content: (args.content as string) || '',
+							requirementId: (args.requirementId as string) || undefined
+						});
+						return {
+							role: 'tool' as const,
+							tool_call_id: tc.id,
+							content: 'Propuesta registrada. El usuario verá la tarjeta de confirmación.'
+						};
+					}
+
+					// ── Read tools: execute normally ──────────────────────────
 					const result = await executeTool(tc.function.name, args, withRLS, projectId);
 					return { role: 'tool' as const, tool_call_id: tc.id, content: result };
 				})
@@ -381,7 +437,7 @@ async function runAgentLoop(
 		}
 
 		// ── Final text response ───────────────────────────────────────────────
-		return choice.message.content ?? '';
+		return { content: choice.message.content ?? '', pendingActions };
 	}
 
 	throw new TRPCError({
@@ -396,9 +452,16 @@ async function runAgentLoop(
 
 const SYSTEM_PROMPT = `Eres un asistente de investigación académica especializado integrado en Scholio.
 Tienes acceso al proyecto del usuario a través de las herramientas disponibles.
-Antes de responder preguntas sobre el contenido de un documento, usa read_document para leerlo.
+Antes de responder preguntas sobre contenido usa search_documents_semantic para encontrar los párrafos relevantes, luego read_document si necesitas el documento completo.
 Responde siempre en el mismo idioma que el usuario.
-Sé preciso, cita fragmentos del texto cuando sea relevante y mantén un tono académico.`;
+Sé preciso, cita fragmentos del texto cuando sea relevante y mantén un tono académico.
+
+Cuando el usuario pida generar o redactar contenido:
+1. Usa search_documents_semantic para encontrar contexto relevante.
+2. Lee con read_document los documentos que necesites en profundidad.
+3. Describe en texto lo que vas a proponer (título, tipo, propósito).
+4. Llama a create_document con el contenido completo.
+5. Si hay un requisito pendiente que ese documento cubriría, incluye su requirementId.`;
 
 // ---------------------------------------------------------------------------
 // Router
@@ -544,7 +607,7 @@ export const aiRouter = router({
 				: SYSTEM_PROMPT;
 
 			const model = configRows[0].provider ?? 'anthropic/claude-haiku-4-5';
-			const assistantContent = await runAgentLoop(
+			const { content: assistantContent, pendingActions } = await runAgentLoop(
 				systemWithIndex,
 				history,
 				input.message,
@@ -573,8 +636,71 @@ export const aiRouter = router({
 
 			return {
 				conversationId: convId,
-				message: { id: assistantMsgId, role: 'assistant' as const, content: assistantContent }
+				message: { id: assistantMsgId, role: 'assistant' as const, content: assistantContent },
+				pendingActions: pendingActions.length > 0 ? pendingActions : undefined
 			};
+		}),
+
+	// ---------------------------------------------------------------------------
+	// Apply a pending action confirmed by the user
+	// ---------------------------------------------------------------------------
+	applyAction: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string(),
+				action: z.object({
+					type: z.literal('create_document'),
+					title: z.string().min(1).max(255),
+					docType: z.enum(['paper', 'notes', 'outline', 'bibliography', 'supplementary']),
+					content: z.string(),
+					requirementId: z.string().optional()
+				})
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			const docId = crypto.randomUUID();
+			const versionId = crypto.randomUUID();
+
+			await ctx.withRLS(async (db) => {
+				await db.insert(document).values({
+					id: docId,
+					projectId: input.projectId,
+					title: input.action.title,
+					type: input.action.docType,
+					draftContent: input.action.content
+				});
+				await db.insert(documentVersion).values({
+					id: versionId,
+					documentId: docId,
+					content: '',
+					versionNumber: 1,
+					changeDescription: 'Creado por el agente',
+					createdBy: ctx.user.id
+				});
+				await db
+					.update(document)
+					.set({ currentVersionId: versionId })
+					.where(eq(document.id, docId));
+
+				if (input.action.requirementId) {
+					await db
+						.update(projectRequirement)
+						.set({ fulfilledDocumentId: docId })
+						.where(
+							and(
+								eq(projectRequirement.id, input.action.requirementId),
+								eq(projectRequirement.projectId, input.projectId)
+							)
+						);
+				}
+			});
+
+			// Fire-and-forget indexing after transaction commits
+			ctx.withRLS((db) =>
+				indexDocument(db, docId, input.projectId, input.action.content)
+			).catch((err) => console.error('[embeddings] indexDocument failed:', err));
+
+			return { documentId: docId, title: input.action.title };
 		}),
 
 	deleteConversation: protectedProcedure

@@ -7,9 +7,16 @@
 set -e
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+	-- pgvector extension (requires pgvector/pgvector image)
+	CREATE EXTENSION IF NOT EXISTS vector;
+
+	-- Las migraciones corren como POSTGRES_USER (superuser).
+	-- search_path explícito para que CREATE TABLE sin schema vaya a public,
+	-- no a scholio (que coincide con el nombre del usuario superuser).
+	ALTER ROLE ${POSTGRES_USER} SET search_path TO public, scholio;
+
 	-- Rol de la aplicación: non-superuser con login.
 	-- La app se conecta como este usuario → RLS se aplica normalmente.
-	-- Las migraciones corren como POSTGRES_USER (superuser).
 	CREATE ROLE ${APP_DB_USER} WITH LOGIN PASSWORD '${APP_DB_PASSWORD}';
 
 	-- Permisos de conexión y uso de schemas

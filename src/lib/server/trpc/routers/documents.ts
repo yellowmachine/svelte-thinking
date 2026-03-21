@@ -6,6 +6,7 @@ import { document, documentVersion } from '$lib/server/db/schemas/documents.sche
 import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { extractWikilinks } from '$lib/utils/wikilinks';
+import { indexDocument } from '$lib/server/embeddings';
 
 const documentTypeValues = [
 	'paper',
@@ -170,7 +171,7 @@ export const documentsRouter = router({
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
-			return ctx.withRLS(async (db) => {
+			const result = await ctx.withRLS(async (db) => {
 				const docs = await db
 					.select()
 					.from(document)
@@ -258,8 +259,15 @@ export const documentsRouter = router({
 					}
 				}
 
-				return { document: updated, versionNumber: nextVersion };
+				return { document: updated, versionNumber: nextVersion, _projectId: updated.projectId, _content: contentToCommit };
 			});
+
+			// Fire-and-forget outside the transaction so tx is already committed
+			ctx.withRLS((db) =>
+				indexDocument(db, input.documentId, result._projectId, result._content)
+			).catch((err) => console.error('[embeddings] indexDocument failed:', err));
+
+			return { document: result.document, versionNumber: result.versionNumber };
 		}),
 
 	// Historial de versiones (commits), sin contenido

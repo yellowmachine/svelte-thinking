@@ -1,4 +1,4 @@
-CREATE SCHEMA "scholio";
+CREATE SCHEMA IF NOT EXISTS "scholio";
 --> statement-breakpoint
 CREATE TYPE "scholio"."plan" AS ENUM('free', 'pro', 'team');--> statement-breakpoint
 CREATE TYPE "scholio"."project_role" AS ENUM('owner', 'author', 'coauthor', 'reviewer', 'commenter');--> statement-breakpoint
