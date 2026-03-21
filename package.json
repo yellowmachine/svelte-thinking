@@ -99,6 +99,7 @@
 		"diff": "^8.0.3",
 		"katex": "^0.16.39",
 		"marked": "^17.0.4",
+		"marked-footnote": "^1.4.0",
 		"qrcode": "^1.5.4",
 		"resend": "^6.9.4",
 		"stripe": "^20.4.1",

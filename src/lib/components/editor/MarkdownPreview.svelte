@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { marked, type RendererObject } from 'marked';
+	import { markedFootnote } from 'marked-footnote';
 	import katex from 'katex';
+
+	marked.use(markedFootnote());
 	import { trpc } from '$lib/utils/trpc';
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import { processWikilinks } from '$lib/utils/wikilinks';
@@ -201,5 +204,41 @@
 		color: var(--color-ink-faint, #A89880);
 		font-style: italic;
 		cursor: help;
+	}
+
+	/* Notas al pie */
+	.prose :global(.footnotes) {
+		margin-top: 3rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--color-paper-border, #e8e2da);
+		font-size: 0.875em;
+		color: var(--color-ink-muted, #57534e);
+	}
+
+	.prose :global(.footnotes ol) {
+		padding-left: 1.25rem;
+	}
+
+	.prose :global(.footnotes li) {
+		margin-bottom: 0.25rem;
+	}
+
+	.prose :global(a[data-footnote-ref]) {
+		font-size: 0.75em;
+		vertical-align: super;
+		line-height: 0;
+		text-decoration: none;
+		color: var(--color-accent, #7c5c3e);
+		font-weight: 600;
+	}
+
+	.prose :global(a[data-footnote-backref]) {
+		text-decoration: none;
+		color: var(--color-ink-faint, #a8a29e);
+		margin-left: 0.25rem;
+	}
+
+	.prose :global(a[data-footnote-backref]:hover) {
+		color: var(--color-accent, #7c5c3e);
 	}
 </style>
