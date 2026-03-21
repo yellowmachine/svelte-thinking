@@ -45,6 +45,9 @@
 				<a href="/help" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 					Ayuda
 				</a>
+				<a href="/blog" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+					Blog
+				</a>
 			</nav>
 			<QuickNoteButton />
 			<div class="flex items-center gap-2.5">
