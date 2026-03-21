@@ -18,6 +18,6 @@
 	});
 </script>
 
-<Story name="404 Not Found" args={{ status: 404 }} />
-<Story name="403 Forbidden" args={{ status: 403 }} />
-<Story name="500 Server Error" args={{ status: 500 }} />
+<Story name="Not Found" args={{ status: 404 }} />
+<Story name="Forbidden" args={{ status: 403 }} />
+<Story name="Server Error" args={{ status: 500 }} />
