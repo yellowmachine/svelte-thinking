@@ -38,6 +38,13 @@ services:
     networks:
       - internal
 
+  typst:
+    build:
+      context: ./typst-service
+    restart: unless-stopped
+    networks:
+      - internal
+
   app:
     build:
       context: .
@@ -69,6 +76,8 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_KMS_KEY_ID: ${AWS_KMS_KEY_ID}
+      # ── Typst PDF service ─────────────────────────────────────────────────
+      TYPST_SERVICE_URL: http://typst:3100
       # ── Anthropic (sugerencias inline) ────────────────────────────────────
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # ── Stripe ────────────────────────────────────────────────────────────
@@ -83,6 +92,8 @@ services:
       postgres:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      typst:
         condition: service_healthy
     networks:
       - internal

@@ -13,3 +13,4 @@ export * from './schemas/references.schema';
 export * from './schemas/contextLinks.schema';
 export * from './schemas/documentLinks.schema';
 export * from './schemas/feedback.schema';
+export * from './schemas/requirements.schema';
