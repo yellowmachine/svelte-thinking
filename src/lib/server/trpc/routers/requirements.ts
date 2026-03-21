@@ -11,9 +11,14 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 // AI: generate a structured list of requirements for a given document type.
 // Uses server-side ANTHROPIC_API_KEY (no user key needed).
 // ---------------------------------------------------------------------------
-async function generateRequirementsFromAI(description: string): Promise<
-	{ name: string; description: string; required: boolean }[]
-> {
+export type TemplateType = 'generic' | 'paper' | 'thesis' | 'medical' | 'report';
+
+interface AIGenerateResult {
+	template: TemplateType;
+	requirements: { name: string; description: string; required: boolean }[];
+}
+
+async function generateRequirementsFromAI(description: string): Promise<AIGenerateResult> {
 	if (!env.ANTHROPIC_API_KEY) {
 		throw new TRPCError({
 			code: 'INTERNAL_SERVER_ERROR',
@@ -28,38 +33,50 @@ async function generateRequirementsFromAI(description: string): Promise<
 		max_tokens: 1024,
 		system: `Eres un experto en documentación académica y técnica.
 El usuario describirá el tipo de documento que quiere crear.
-Devuelve ÚNICAMENTE un array JSON válido (sin markdown, sin texto extra) con los requisitos/secciones que debe contener ese documento.
+Devuelve ÚNICAMENTE un objeto JSON válido (sin markdown, sin texto extra) con este formato exacto:
 
-Formato exacto:
-[
-  {
-    "name": "Nombre de la sección",
-    "description": "Descripción breve de qué debe contener esta sección",
-    "required": true
-  }
-]
+{
+  "template": "paper",
+  "requirements": [
+    {
+      "name": "Nombre de la sección",
+      "description": "Descripción breve de qué debe contener esta sección",
+      "required": true
+    }
+  ]
+}
 
-Reglas:
-- Entre 4 y 12 elementos según la complejidad del tipo de documento.
-- Ordénalos en el orden natural de redacción/aparición.
-- "required" es false solo para secciones claramente opcionales (ej: anexos, agradecimientos).
-- Responde en el mismo idioma que el usuario.
-- Si la descripción es vaga, usa criterio académico estándar.`,
+Reglas para "template" — elige el más apropiado:
+- "paper": artículo de revista o conferencia académica
+- "thesis": tesis doctoral o de máster
+- "medical": publicación clínica o de ciencias de la salud
+- "report": informe técnico o institucional
+- "generic": cualquier otro tipo de documento
+
+Reglas para "requirements":
+- Entre 4 y 12 elementos según la complejidad.
+- Ordenados en el orden natural de redacción/aparición.
+- "required" es false solo para secciones claramente opcionales (anexos, agradecimientos).
+- Responde en el mismo idioma que el usuario.`,
 		messages: [{ role: 'user', content: description }]
 	});
 
-	const raw = response.content[0].type === 'text' ? response.content[0].text.trim() : '[]';
+	const raw = response.content[0].type === 'text' ? response.content[0].text.trim() : '{}';
 
-	type RawReq = { name: string; description: string; required: boolean };
-	let parsed: RawReq[] = [];
+	type RawResult = { template?: string; requirements?: { name: string; description: string; required: boolean }[] };
+	let parsed: RawResult = {};
 	try {
 		parsed = JSON.parse(raw);
-		if (!Array.isArray(parsed)) parsed = [];
 	} catch {
-		parsed = [];
+		parsed = {};
 	}
 
-	return parsed
+	const validTemplates: TemplateType[] = ['generic', 'paper', 'thesis', 'medical', 'report'];
+	const template: TemplateType = validTemplates.includes(parsed.template as TemplateType)
+		? (parsed.template as TemplateType)
+		: 'generic';
+
+	const requirements = (parsed.requirements ?? [])
 		.filter((r) => typeof r.name === 'string' && r.name.length > 0)
 		.slice(0, 15)
 		.map((r) => ({
@@ -67,6 +84,8 @@ Reglas:
 			description: typeof r.description === 'string' ? r.description : '',
 			required: r.required !== false
 		}));
+
+	return { template, requirements };
 }
 
 // ---------------------------------------------------------------------------
@@ -112,7 +131,7 @@ export const requirementsRouter = router({
 				db.delete(projectRequirement).where(eq(projectRequirement.projectId, input.projectId))
 			);
 
-			const aiRequirements = await generateRequirementsFromAI(input.description);
+			const { template, requirements: aiRequirements } = await generateRequirementsFromAI(input.description);
 
 			if (aiRequirements.length === 0) {
 				throw new TRPCError({
@@ -130,7 +149,15 @@ export const requirementsRouter = router({
 				required: r.required
 			}));
 
-			await ctx.withRLS((db) => db.insert(projectRequirement).values(values));
+			await Promise.all([
+				ctx.withRLS((db) => db.insert(projectRequirement).values(values)),
+				ctx.withRLS((db) =>
+					db
+						.update(project)
+						.set({ requirementsPrompt: input.description, requirementsTemplate: template })
+						.where(eq(project.id, input.projectId))
+				)
+			]);
 
 			return values;
 		}),

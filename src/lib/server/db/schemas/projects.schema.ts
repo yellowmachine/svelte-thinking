@@ -1,4 +1,4 @@
-import { text, timestamp, index, uniqueIndex, pgPolicy } from 'drizzle-orm/pg-core';
+import { text, timestamp, index, uniqueIndex, pgPolicy, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 
@@ -29,6 +29,11 @@ export const project = scholioSchema.table(
 		notes: text('notes'),
 		status: projectStatusEnum('status').notNull().default('draft'),
 		ownerId: text('owner_id').notNull(),
+		requirementsPrompt: text('requirements_prompt'),
+		requirementsTemplate: text('requirements_template'),
+		doi: text('doi'),
+		version: text('version'),
+		publishedAt: timestamp('published_at'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},

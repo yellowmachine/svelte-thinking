@@ -3,13 +3,28 @@
  *
  * Handles:
  * - Standard: headings, bold, italic, inline code, fenced code blocks,
- *   unordered/ordered lists, blockquotes, horizontal rules, links, display/inline math
+ *   unordered/ordered lists, blockquotes, horizontal rules, links, images, display/inline math
  * - Scholio: [@citeKey] / [@k1; @k2] citations → Typst @key syntax
  * - GFM footnotes: [^id] references + [^id]: content definitions → #footnote[...]
  * - Wikilinks [[Title]] → plain text
+ *
+ * @param imageRegistry  Optional map (localFilename → remoteUrl) populated as images are found.
+ *                       The caller passes it to compileToPdf so the microservice can download them.
  */
-export function markdownToTypst(md: string): string {
+export function markdownToTypst(md: string, imageRegistry?: Map<string, string>): string {
 	let src = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+	// ── 0. Protect images ![alt](url) ────────────────────────────────────────
+	// Must run before the link regex in inlineToTypst would match [alt](url)
+	const imagePlaceholders: string[] = [];
+	src = src.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_m, alt: string, url: string) => {
+		const localName = imageRegistry ? registerImage(url, imageRegistry) : `img-${imagePlaceholders.length}${extOf(url)}`;
+		const typstImg = alt.trim()
+			? `#figure(image("${localName}"), caption: [${alt.trim()}])`
+			: `#image("${localName}")`;
+		imagePlaceholders.push(typstImg);
+		return `%%IMG${imagePlaceholders.length - 1}%%`;
+	});
 
 	// ── 1. Protect fenced code blocks ────────────────────────────────────────
 	const codeBlocks: string[] = [];
@@ -114,11 +129,27 @@ export function markdownToTypst(md: string): string {
 	let result = out.join('\n');
 
 	// ── 8. Restore protected blocks ───────────────────────────────────────────
+	result = result.replace(/%%IMG(\d+)%%/g, (_m, i) => imagePlaceholders[parseInt(i)]);
 	result = result.replace(/%%CB(\d+)%%/g, (_m, i) => codeBlocks[parseInt(i)]);
 	result = result.replace(/%%DM(\d+)%%/g, (_m, i) => displayMath[parseInt(i)]);
 	result = result.replace(/%%IM(\d+)%%/g, (_m, i) => inlineMath[parseInt(i)]);
 
 	return result;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function extOf(url: string): string {
+	const m = url.match(/\.(\w{2,5})(?:\?|#|$)/);
+	return m ? `.${m[1].toLowerCase()}` : '.png';
+}
+
+/** Returns the local filename for a URL, registering it if new. */
+function registerImage(url: string, registry: Map<string, string>): string {
+	for (const [name, u] of registry) if (u === url) return name;
+	const name = `img-${registry.size}${extOf(url)}`;
+	registry.set(name, url);
+	return name;
 }
 
 /** Apply inline transforms to a single text fragment. */

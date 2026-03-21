@@ -26,7 +26,8 @@
 	);
 
 	// ── Click-to-edit ────────────────────────────────────────────────────────
-	let editingField = $state<'title' | 'description' | 'notes' | null>(null);
+	type EditableField = 'title' | 'description' | 'notes' | 'doi' | 'version' | 'publishedAt';
+	let editingField = $state<EditableField | null>(null);
 	let editBuffer = $state('');
 	let savingField = $state(false);
 
@@ -34,13 +35,17 @@
 		node.focus();
 	}
 
-	function startEdit(field: 'title' | 'description' | 'notes') {
+	function startEdit(field: EditableField) {
 		if (!data.isOwner) return;
-		const proj = data.project as typeof data.project & { notes?: string | null };
+		const proj = data.project as typeof data.project & { notes?: string | null; doi?: string | null; version?: string | null; publishedAt?: Date | null };
 		editBuffer =
 			field === 'title' ? proj.title :
 			field === 'description' ? (proj.description ?? '') :
-			(proj.notes ?? '');
+			field === 'notes' ? (proj.notes ?? '') :
+			field === 'doi' ? (proj.doi ?? '') :
+			field === 'version' ? (proj.version ?? '') :
+			field === 'publishedAt' ? (proj.publishedAt ? proj.publishedAt.toISOString().slice(0, 10) : '') :
+			'';
 		editingField = field;
 	}
 
@@ -48,7 +53,7 @@
 		editingField = null;
 	}
 
-	async function saveField(field: 'title' | 'description' | 'notes') {
+	async function saveField(field: EditableField) {
 		if (savingField) return;
 		if (field === 'title' && !editBuffer.trim()) {
 			editingField = null;
@@ -60,7 +65,10 @@
 				id: data.project.id,
 				...(field === 'title' ? { title: editBuffer.trim() } : {}),
 				...(field === 'description' ? { description: editBuffer.trim() || null } : {}),
-				...(field === 'notes' ? { notes: editBuffer.trim() || null } : {})
+				...(field === 'notes' ? { notes: editBuffer.trim() || null } : {}),
+				...(field === 'doi' ? { doi: editBuffer.trim() || null } : {}),
+				...(field === 'version' ? { version: editBuffer.trim() || null } : {}),
+				...(field === 'publishedAt' ? { publishedAt: editBuffer ? new Date(editBuffer) : null } : {})
 			});
 			await invalidateAll();
 		} catch {
@@ -602,7 +610,88 @@
 				</div>
 			{/if}
 
-			<!-- Context links for AI -->
+			<!-- Publication metadata -->
+			{#if data.isOwner || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).doi || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).version || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).publishedAt}
+				{@const pub = data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }}
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<h3 class="mb-3 font-serif text-base font-semibold text-ink dark:text-dark-ink">Publicación</h3>
+					<div class="flex flex-col gap-2">
+						<!-- DOI -->
+						<div>
+							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">DOI</span>
+							{#if editingField === 'doi'}
+								<input
+									{@attach focusEl}
+									type="text"
+									bind:value={editBuffer}
+									onblur={() => saveField('doi')}
+									onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') cancelEdit(); }}
+									placeholder="10.1000/xyz123"
+									class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-mono text-xs text-ink focus:outline-none dark:text-dark-ink"
+								/>
+							{:else}
+								<button
+									type="button"
+									onclick={() => startEdit('doi')}
+									disabled={!data.isOwner}
+									class="mt-0.5 block w-full text-left font-mono text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.doi ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
+								>
+									{pub.doi || (data.isOwner ? 'Añadir DOI…' : '—')}
+								</button>
+							{/if}
+						</div>
+						<!-- Version -->
+						<div>
+							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Versión</span>
+							{#if editingField === 'version'}
+								<input
+									{@attach focusEl}
+									type="text"
+									bind:value={editBuffer}
+									onblur={() => saveField('version')}
+									onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') cancelEdit(); }}
+									placeholder="1.0.0"
+									class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-sans text-xs text-ink focus:outline-none dark:text-dark-ink"
+								/>
+							{:else}
+								<button
+									type="button"
+									onclick={() => startEdit('version')}
+									disabled={!data.isOwner}
+									class="mt-0.5 block w-full text-left font-sans text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.version ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
+								>
+									{pub.version || (data.isOwner ? 'Añadir versión…' : '—')}
+								</button>
+							{/if}
+						</div>
+						<!-- Published date -->
+						<div>
+							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Fecha publicación</span>
+							{#if editingField === 'publishedAt'}
+								<input
+									{@attach focusEl}
+									type="date"
+									bind:value={editBuffer}
+									onblur={() => saveField('publishedAt')}
+									onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') cancelEdit(); }}
+									class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-sans text-xs text-ink focus:outline-none dark:text-dark-ink"
+								/>
+							{:else}
+								<button
+									type="button"
+									onclick={() => startEdit('publishedAt')}
+									disabled={!data.isOwner}
+									class="mt-0.5 block w-full text-left font-sans text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.publishedAt ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
+								>
+									{pub.publishedAt ? pub.publishedAt.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : (data.isOwner ? 'Añadir fecha…' : '—')}
+								</button>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/if}
+
+		<!-- Context links for AI -->
 			<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
 				<div class="mb-3 flex items-center justify-between gap-2">
 					<div>

@@ -68,6 +68,34 @@
 		requirements = requirements.filter((r) => r.id !== id);
 	}
 
+	// ── PDF export ────────────────────────────────────────────────────────────
+	let exportingPdf = $state(false);
+	let exportError = $state('');
+
+	async function downloadPdf() {
+		if (exportingPdf) return;
+		exportingPdf = true;
+		exportError = '';
+		try {
+			const res = await fetch(`/api/projects/${data.project.id}/pdf`);
+			if (!res.ok) {
+				const msg = await res.text().catch(() => `Error ${res.status}`);
+				throw new Error(msg);
+			}
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `${data.project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
+			a.click();
+			URL.revokeObjectURL(url);
+		} catch (e) {
+			exportError = e instanceof Error ? e.message : 'Error al generar el PDF';
+		} finally {
+			exportingPdf = false;
+		}
+	}
+
 	// ── Progress ──────────────────────────────────────────────────────────────
 	const fulfilled = $derived(requirements.filter((r) => r.fulfilledDocumentId !== null).length);
 	const total = $derived(requirements.length);
@@ -192,20 +220,35 @@
 				<div class="flex items-center justify-between gap-4">
 					<div>
 						<p class="font-sans text-sm font-semibold text-green-800 dark:text-green-300">Proyecto completo</p>
-						<p class="font-sans text-xs text-green-700 dark:text-green-400">Todos los requisitos obligatorios están cubiertos.</p>
+						<p class="font-sans text-xs text-green-700 dark:text-green-400">
+							{#if exportingPdf}
+								Compilando con Typst, puede tardar unos segundos…
+							{:else if exportError}
+								{exportError}
+							{:else}
+								Todos los requisitos obligatorios están cubiertos.
+							{/if}
+						</p>
 					</div>
-					<a
-						href="/api/projects/{data.project.id}/pdf"
-						download
-						class="flex shrink-0 items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
+					<button
+						onclick={downloadPdf}
+						disabled={exportingPdf}
+						class="flex shrink-0 items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-70"
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-							<polyline points="7 10 12 15 17 10"/>
-							<line x1="12" y1="15" x2="12" y2="3"/>
-						</svg>
-						Exportar
-					</a>
+						{#if exportingPdf}
+							<svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
+								<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="12" />
+							</svg>
+							Generando…
+						{:else}
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+								<polyline points="7 10 12 15 17 10"/>
+								<line x1="12" y1="15" x2="12" y2="3"/>
+							</svg>
+							Exportar PDF
+						{/if}
+					</button>
 				</div>
 			</div>
 		{/if}
