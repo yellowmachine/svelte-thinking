@@ -830,9 +830,12 @@
 
 			<!-- Plans comparison -->
 			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-				<h2 class="mb-5 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
 					Planes disponibles
 				</h2>
+				<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Durante la beta todos los planes son gratuitos. Los precios definitivos se anunciarán antes del lanzamiento.
+				</p>
 
 				<div class="grid gap-4 sm:grid-cols-3">
 					<!-- Free -->
@@ -843,8 +846,8 @@
 								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Actual</span>
 							{/if}
 						</div>
-						<p class="mb-4 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
-							0€<span class="font-sans text-sm font-normal text-ink-muted">/mes</span>
+						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
+							Gratis durante la beta
 						</p>
 						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 							{#each ['3 proyectos', '3 colaboradores por proyecto', 'IA básica (beta)', 'Historial 30 días'] as f}
@@ -866,8 +869,8 @@
 								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Actual</span>
 							{/if}
 						</div>
-						<p class="mb-4 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
-							9€<span class="font-sans text-sm font-normal text-ink-muted">/mes</span>
+						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
+							Gratis durante la beta
 						</p>
 						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 							{#each ['Proyectos ilimitados', '10 colaboradores por proyecto', 'IA avanzada con sugerencias', 'Historial ilimitado', 'Exportación PDF / LaTeX'] as f}
@@ -899,8 +902,8 @@
 								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Actual</span>
 							{/if}
 						</div>
-						<p class="mb-4 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
-							29€<span class="font-sans text-sm font-normal text-ink-muted">/mes</span>
+						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
+							Gratis durante la beta
 						</p>
 						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 							{#each ['Todo lo de Pro', 'Colaboradores ilimitados', 'Panel de administración', 'SSO / SAML', 'Soporte prioritario'] as f}
