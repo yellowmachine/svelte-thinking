@@ -3,6 +3,7 @@
 	import DocumentItem from '$lib/components/documents/DocumentItem.svelte';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
+	import RequirementsProgress from '$lib/components/projects/RequirementsProgress.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 
@@ -426,6 +427,12 @@
 							<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
 						Requisitos
+						<RequirementsProgress
+							fulfilled={data.requirementCounts.fulfilled}
+							total={data.requirementCounts.total}
+							requiredFulfilled={data.requirementCounts.requiredFulfilled}
+							requiredTotal={data.requirementCounts.requiredTotal}
+						/>
 					</a>
 					<button
 						onclick={() => (showGenerateDraft = true)}
