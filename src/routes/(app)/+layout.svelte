@@ -8,7 +8,7 @@
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 </script>
 
-<div class="flex min-h-screen flex-col bg-paper-ui dark:bg-dark-paper-ui">
+<div class="flex h-screen flex-col overflow-hidden bg-paper-ui dark:bg-dark-paper-ui">
 	<!-- Desktop nav -->
 	<div class="hidden sm:block">
 		<Navbar user={data.user} />
@@ -16,7 +16,7 @@
 	<!-- Mobile header -->
 	<MobileHeader user={data.user} />
 
-	<main class="flex-1 pb-16 sm:pb-0">
+	<main class="flex-1 overflow-y-auto pb-16 sm:pb-0">
 		{@render children()}
 	</main>
 	<FeedbackButton />
