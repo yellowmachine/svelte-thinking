@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 
 	type Reply = {
 		id: string;
@@ -11,6 +12,7 @@
 	type Comment = {
 		id: string;
 		content: string;
+		authorId: string;
 		authorName: string;
 		anchorText: string | null;
 		resolved: boolean;
@@ -24,6 +26,7 @@
 		onresolved,
 		onreopened,
 		onreplyadded,
+		ondeleted,
 		onclick
 	}: {
 		comment: Comment;
@@ -31,12 +34,30 @@
 		onresolved?: (id: string) => void;
 		onreopened?: (id: string) => void;
 		onreplyadded?: (commentId: string, reply: Reply) => void;
+		ondeleted?: (id: string) => void;
 		onclick?: (id: string) => void;
 	} = $props();
 
 	let replyText = $state('');
 	let submittingReply = $state(false);
 	let resolving = $state(false);
+
+	// Delete
+	let showDelete = $state(false);
+	let deleting = $state(false);
+
+	const isAuthor = $derived(comment.authorId === currentUserId);
+
+	async function handleDelete() {
+		deleting = true;
+		try {
+			await trpc.comments.delete.mutate(comment.id);
+			ondeleted?.(comment.id);
+		} catch {
+			deleting = false;
+			showDelete = false;
+		}
+	}
 
 	async function submitReply() {
 		if (!replyText.trim()) return;
@@ -106,19 +127,34 @@
 			</p>
 		</div>
 
-		<button
-			onclick={(e) => {
-				e.stopPropagation();
-				toggleResolve();
-			}}
-			disabled={resolving}
-			class="shrink-0 rounded px-2 py-1 font-sans text-xs transition-colors {comment.resolved
-				? 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'
-				: 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'} disabled:opacity-50"
-			title={comment.resolved ? 'Reabrir' : 'Resolver'}
-		>
-			{comment.resolved ? 'Reabrir' : 'Resolver'}
-		</button>
+		<div class="flex shrink-0 items-center gap-1">
+			<button
+				onclick={(e) => {
+					e.stopPropagation();
+					toggleResolve();
+				}}
+				disabled={resolving}
+				class="rounded px-2 py-1 font-sans text-xs transition-colors {comment.resolved
+					? 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'
+					: 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'} disabled:opacity-50"
+				title={comment.resolved ? 'Reabrir' : 'Resolver'}
+			>
+				{comment.resolved ? 'Reabrir' : 'Resolver'}
+			</button>
+
+			{#if isAuthor}
+				<button
+					onclick={(e) => { e.stopPropagation(); showDelete = true; }}
+					title="Eliminar comentario"
+					class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+					aria-label="Eliminar comentario"
+				>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Replies -->
@@ -159,3 +195,12 @@
 		</div>
 	{/if}
 </div>
+
+<SafeDeleteDialog
+	open={showDelete}
+	label="el comentario"
+	warning="El comentario y sus respuestas se eliminarán permanentemente."
+	deleting={deleting}
+	onconfirm={handleDelete}
+	oncancel={() => (showDelete = false)}
+/>

@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { onDestroy, untrack } from 'svelte';
+	import { goto } from '$app/navigation';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
 	import CommentThread from '$lib/components/editor/CommentThread.svelte';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { findAnchor, posToLine, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import { CITATION_STYLE_LABELS, type CitationStyle, type CiteRef } from '$lib/utils/citations';
@@ -138,6 +140,21 @@
 	// Commit dialog
 	let showCommit = $state(false);
 	let commitMessage = $state('');
+
+	// ── Delete document ───────────────────────────────────────────────────────
+	let showDeleteDoc = $state(false);
+	let deletingDoc = $state(false);
+
+	async function handleDeleteDoc() {
+		deletingDoc = true;
+		try {
+			await trpc.documents.delete.mutate(data.document.id);
+			await goto(`/projects/${data.document.projectId}`);
+		} catch {
+			deletingDoc = false;
+			showDeleteDoc = false;
+		}
+	}
 	let committing = $state(false);
 	let commitError = $state('');
 
@@ -671,6 +688,17 @@
 		</button>
 
 		<button
+			onclick={() => (showDeleteDoc = true)}
+			title="Eliminar documento"
+			class="flex h-7 w-7 items-center justify-center rounded-md border border-paper-border text-ink-faint transition-colors hover:border-red-300 hover:text-red-500 dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-red-700 dark:hover:text-red-400"
+			aria-label="Eliminar documento"
+		>
+			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+				<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+			</svg>
+		</button>
+
+		<button
 			onclick={() => (showCommit = true)}
 			disabled={!content.trim()}
 			class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
@@ -679,6 +707,15 @@
 		</button>
 	</div>
 </div>
+
+<SafeDeleteDialog
+	open={showDeleteDoc}
+	label="el documento"
+	warning="Se eliminarán el contenido, el historial de versiones y los comentarios asociados."
+	deleting={deletingDoc}
+	onconfirm={handleDeleteDoc}
+	oncancel={() => (showDeleteDoc = false)}
+/>
 
 <!-- Main layout -->
 <div class="flex overflow-hidden" style="height: calc(100vh - 57px)">
@@ -798,6 +835,7 @@
 							onresolved={handleCommentResolved}
 							onreopened={handleCommentReopened}
 							onreplyadded={handleReplyAdded}
+							ondeleted={(id) => { inlineComments = inlineComments.filter((x) => x.id !== id); }}
 						/>
 					{/each}
 				{/if}

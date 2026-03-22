@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
 	import DocumentItem from '$lib/components/documents/DocumentItem.svelte';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
 	import RequirementsProgress from '$lib/components/projects/RequirementsProgress.svelte';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 
@@ -160,6 +161,21 @@
 	async function deleteDataset(id: string) {
 		await fetch(`/api/projects/${data.project.id}/datasets?datasetId=${id}`, { method: 'DELETE' });
 		datasets = datasets.filter((d) => d.id !== id);
+	}
+
+	// ── Delete project ────────────────────────────────────────────────────────
+	let showDeleteProject = $state(false);
+	let deletingProject = $state(false);
+
+	async function handleDeleteProject() {
+		deletingProject = true;
+		try {
+			await trpc.projects.delete.mutate(data.project.id);
+			await goto('/projects');
+		} catch {
+			deletingProject = false;
+			showDeleteProject = false;
+		}
 	}
 
 	function formatSize(bytes: number): string {
@@ -731,8 +747,30 @@
 				{/if}
 			</div>
 		</div>
+
+		<!-- Danger zone — owner only -->
+		{#if data.isOwner}
+			<div class="mt-2">
+				<button
+					type="button"
+					onclick={() => (showDeleteProject = true)}
+					class="w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
+				>
+					Eliminar proyecto…
+				</button>
+			</div>
+		{/if}
 	</div>
 </div>
+
+<SafeDeleteDialog
+	open={showDeleteProject}
+	label="el proyecto"
+	warning="Se eliminarán permanentemente todos los documentos, versiones, comentarios y datos asociados."
+	deleting={deletingProject}
+	onconfirm={handleDeleteProject}
+	oncancel={() => (showDeleteProject = false)}
+/>
 
 {#if showContextPicker}
 	<!-- Context doc picker modal -->

@@ -33,6 +33,7 @@ export const document = scholioSchema.table(
 		index('document_project_idx').on(t.projectId),
 		uniqueIndex('document_project_title_idx').on(t.projectId, t.title),
 
+		// SELECT / INSERT / UPDATE: owner or collaborator
 		pgPolicy('document_access', {
 			for: 'all',
 			using: sql`
@@ -47,6 +48,17 @@ export const document = scholioSchema.table(
 							AND project_collaborator.user_id = current_setting('app.current_user_id', true)
 						)
 					)
+				)
+			`
+		}),
+		// DELETE: owner only
+		pgPolicy('document_delete', {
+			for: 'delete',
+			using: sql`
+				EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = ${t.projectId}
+					AND project.owner_id = current_setting('app.current_user_id', true)
 				)
 			`
 		}),
