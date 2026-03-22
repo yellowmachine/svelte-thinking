@@ -78,8 +78,20 @@
 	type AiStatus = { providers: ProviderConfig[]; defaultProvider: string; defaultModel: string | null };
 
 	const PROVIDERS = [
-		{ id: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-v1-...', keyUrl: 'https://openrouter.ai/keys' },
-		{ id: 'perplexity', label: 'Perplexity', placeholder: 'pplx-...', keyUrl: 'https://www.perplexity.ai/settings/api' }
+		{
+			id: 'openrouter',
+			label: 'OpenRouter',
+			placeholder: 'sk-or-v1-...',
+			keyUrl: 'https://openrouter.ai/keys',
+			privacyUrl: 'https://openrouter.ai/privacy'
+		},
+		{
+			id: 'perplexity',
+			label: 'Perplexity',
+			placeholder: 'pplx-...',
+			keyUrl: 'https://www.perplexity.ai/settings/api',
+			privacyUrl: 'https://www.perplexity.ai/hub/legal/privacy-policy'
+		}
 	] as const;
 	type ProviderId = (typeof PROVIDERS)[number]['id'];
 
@@ -659,6 +671,19 @@
 
 						<!-- Key input (always shown) -->
 						<div class="mt-5 border-t border-paper-border pt-5 dark:border-dark-paper-border">
+							<!-- Privacy notice -->
+							<div class="mb-4 flex gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900/50 dark:bg-blue-950/30">
+								<svg class="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+								</svg>
+								<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
+									Tus documentos se envían a {p.label} únicamente para procesar tu consulta.
+									{p.label} no usa datos enviados vía API para entrenar sus modelos.
+									<a href={p.privacyUrl} target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-2">
+										Política de privacidad de {p.label} →
+									</a>
+								</p>
+							</div>
 							<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 								{cfg ? 'Reemplazar API key · ' : 'Añadir API key · '}
 								Obtenla en <a href={p.keyUrl} target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">{p.keyUrl.replace('https://', '')}</a>.
