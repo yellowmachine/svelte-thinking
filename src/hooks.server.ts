@@ -70,11 +70,13 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 		event.locals.session = session.session;
 		event.locals.user = session.user;
 
-		const profile = await db
-			.select({ id: userProfile.id })
-			.from(userProfile)
-			.where(eq(userProfile.userId, session.user.id))
-			.limit(1);
+		const profile = await db.transaction(async (tx) => {
+			await tx.execute(sql`SELECT set_config('app.current_user_id', ${session.user.id}, true)`);
+			return tx.select({ id: userProfile.id })
+				.from(userProfile)
+				.where(eq(userProfile.userId, session.user.id))
+				.limit(1);
+		});
 
 		event.locals.hasScholioProfile = profile.length > 0;
 	} else {

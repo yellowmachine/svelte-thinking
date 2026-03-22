@@ -1,5 +1,5 @@
 import { fail, redirect, error } from '@sveltejs/kit';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, sql } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
@@ -81,10 +81,13 @@ export const actions: Actions = {
 							.limit(1);
 
 						if (!existingProfile[0]) {
-							await db.insert(userProfile).values({
-								id: crypto.randomUUID(),
-								userId: existingUser[0].id,
-								displayName: name
+							await db.transaction(async (tx) => {
+								await tx.execute(sql`SELECT set_config('app.current_user_id', ${existingUser[0].id}, true)`);
+								await tx.insert(userProfile).values({
+									id: crypto.randomUUID(),
+									userId: existingUser[0].id,
+									displayName: name
+								});
 							});
 						}
 					}
@@ -103,10 +106,13 @@ export const actions: Actions = {
 			return fail(500, { message: 'Error inesperado' });
 		}
 
-		await db.insert(userProfile).values({
-			id: crypto.randomUUID(),
-			userId,
-			displayName: name
+		await db.transaction(async (tx) => {
+			await tx.execute(sql`SELECT set_config('app.current_user_id', ${userId}, true)`);
+			await tx.insert(userProfile).values({
+				id: crypto.randomUUID(),
+				userId,
+				displayName: name
+			});
 		});
 
 		// Invalidate token so it can't be reused

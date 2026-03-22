@@ -15,6 +15,27 @@
       "when": 1774124359827,
       "tag": "0001_smooth_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774169400000,
+      "tag": "0002_ai_multi_provider",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774169500000,
+      "tag": "0003_document_delete_owner_only",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774169600000,
+      "tag": "0004_commit_emails_preference",
+      "breakpoints": true
     }
   ]
 }
