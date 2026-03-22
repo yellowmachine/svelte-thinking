@@ -138,6 +138,85 @@
 	function formatDate(date: Date | string) {
 		return new Date(date).toLocaleDateString('es', { day: 'numeric', month: 'short' });
 	}
+
+	// ── Provider / model badge ────────────────────────────────────────────────
+	type ProviderConfig = { provider: string; model: string | null; enabled: boolean };
+	type AiConfigStatus = { providers: ProviderConfig[]; defaultProvider: string; defaultModel: string | null };
+
+	const MODEL_LABELS: Record<string, Record<string, string>> = {
+		openrouter: {
+			'anthropic/claude-haiku-4-5': 'Claude Haiku 4.5',
+			'anthropic/claude-sonnet-4-5': 'Claude Sonnet 4.5',
+			'openai/gpt-4o-mini': 'GPT-4o mini',
+			'openai/gpt-4o': 'GPT-4o',
+			'google/gemini-flash-1.5': 'Gemini Flash 1.5',
+			'meta-llama/llama-3.3-70b-instruct': 'Llama 3.3 70B'
+		},
+		perplexity: {
+			sonar: 'Sonar',
+			'sonar-pro': 'Sonar Pro',
+			'sonar-reasoning-pro': 'Sonar Reasoning Pro',
+			'sonar-deep-research': 'Sonar Deep Research'
+		}
+	};
+	const MODEL_OPTIONS: Record<string, { id: string; label: string }[]> = {
+		openrouter: [
+			{ id: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5' },
+			{ id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
+			{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini' },
+			{ id: 'openai/gpt-4o', label: 'GPT-4o' },
+			{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5' },
+			{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' }
+		],
+		perplexity: [
+			{ id: 'sonar', label: 'Sonar' },
+			{ id: 'sonar-pro', label: 'Sonar Pro' },
+			{ id: 'sonar-reasoning-pro', label: 'Sonar Reasoning Pro' },
+			{ id: 'sonar-deep-research', label: 'Sonar Deep Research' }
+		]
+	};
+	const PROVIDER_DEFAULTS: Record<string, string> = {
+		openrouter: 'anthropic/claude-haiku-4-5',
+		perplexity: 'sonar'
+	};
+
+	let aiConfig = $state<AiConfigStatus | null>(null);
+
+	const activeProvider = $derived(aiConfig?.defaultProvider ?? 'openrouter');
+	const activeProviderConfig = $derived(aiConfig?.providers.find((p) => p.provider === activeProvider));
+	const activeModel = $derived(
+		aiConfig?.defaultModel ?? activeProviderConfig?.model ?? PROVIDER_DEFAULTS[activeProvider] ?? ''
+	);
+	const activeModelLabel = $derived(MODEL_LABELS[activeProvider]?.[activeModel] ?? activeModel);
+	const providerLabel = $derived(activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter');
+
+	async function loadAiConfig() {
+		try {
+			aiConfig = await trpc.aiConfig.getStatus.query();
+		} catch {
+			// non-critical — badge just won't show
+		}
+	}
+
+	async function handleModelChange(modelId: string) {
+		try {
+			await trpc.aiConfig.setModel.mutate({ provider: activeProvider as 'openrouter' | 'perplexity', model: modelId || null });
+			if (aiConfig) {
+				aiConfig = {
+					...aiConfig,
+					providers: aiConfig.providers.map((p) =>
+						p.provider === activeProvider ? { ...p, model: modelId || null } : p
+					)
+				};
+			}
+		} catch {
+			// ignore
+		}
+	}
+
+	$effect(() => {
+		loadAiConfig();
+	});
 </script>
 
 <div class="flex h-[calc(100vh-4rem)] overflow-hidden">
@@ -329,9 +408,27 @@
 						</svg>
 					</button>
 				</div>
-				<p class="mt-2 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					El asistente tiene acceso al contenido de todos los documentos del proyecto.
-				</p>
+				<div class="mt-2 flex items-center justify-between">
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						El asistente tiene acceso al contenido de todos los documentos del proyecto.
+					</p>
+					{#if aiConfig && activeProviderConfig}
+						<div class="flex items-center gap-1.5 rounded-full border border-paper-border px-2.5 py-1 dark:border-dark-paper-border">
+							<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">{providerLabel}</span>
+							<span class="text-ink-faint dark:text-dark-ink-faint">·</span>
+							<select
+								value={activeModel}
+								onchange={(e) => handleModelChange((e.target as HTMLSelectElement).value)}
+								class="cursor-pointer bg-transparent font-sans text-[11px] text-ink-muted focus:outline-none dark:text-dark-ink-muted"
+								aria-label="Cambiar modelo"
+							>
+								{#each MODEL_OPTIONS[activeProvider] ?? [] as m}
+									<option value={m.id}>{m.label}</option>
+								{/each}
+							</select>
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 	</div>

@@ -10,7 +10,7 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
-import { userAiConfig } from '$lib/server/db/schemas/users.schema';
+import { userAiConfig, userProfile } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import type { Db } from '$lib/server/db';
@@ -33,18 +33,19 @@ const DAILY_SUGGESTION_LIMIT = 30;
 // Error helper
 // ---------------------------------------------------------------------------
 
-async function throwOpenRouterError(res: Response): Promise<never> {
+async function throwProviderError(res: Response, provider = 'openrouter'): Promise<never> {
+	const providerLabel = provider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
 	let message: string;
 	try {
 		const body = (await res.json()) as { error?: { message?: string; code?: number } };
 		const msg = body?.error?.message ?? '';
 		const code = body?.error?.code ?? res.status;
-		if (code === 401) message = 'API key de OpenRouter inválida. Revísala en Ajustes → Asistente IA.';
-		else if (code === 402) message = 'Has agotado los créditos de OpenRouter. Recarga tu cuenta en openrouter.ai.';
-		else if (code === 429) message = 'Límite de peticiones alcanzado en OpenRouter. Espera un momento.';
-		else message = msg || `Error de OpenRouter (${res.status}).`;
+		if (code === 401) message = `API key de ${providerLabel} inválida. Revísala en Ajustes → Asistente IA.`;
+		else if (code === 402) message = `Has agotado los créditos de ${providerLabel}. Recarga tu cuenta.`;
+		else if (code === 429) message = `Límite de peticiones alcanzado en ${providerLabel}. Espera un momento.`;
+		else message = msg || `Error de ${providerLabel} (${res.status}).`;
 	} catch {
-		message = `Error de OpenRouter (${res.status}).`;
+		message = `Error de ${providerLabel} (${res.status}).`;
 	}
 	throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message });
 }
@@ -359,6 +360,16 @@ type OAMessage = {
 	tool_call_id?: string;
 };
 
+const PROVIDER_URLS: Record<string, string> = {
+	openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+	perplexity: 'https://api.perplexity.ai/chat/completions'
+};
+
+const DEFAULT_MODELS: Record<string, string> = {
+	openrouter: 'anthropic/claude-haiku-4-5',
+	perplexity: 'sonar'
+};
+
 async function runAgentLoop(
 	systemPrompt: string,
 	/** Prior turns already persisted in DB (no current user message). */
@@ -367,6 +378,7 @@ async function runAgentLoop(
 	withRLS: WithRLS,
 	projectId: string,
 	apiKey: string,
+	provider: string,
 	model: string
 ): Promise<{ content: string; pendingActions: PendingAction[] }> {
 	const messages: OAMessage[] = [
@@ -375,15 +387,19 @@ async function runAgentLoop(
 	];
 
 	const pendingActions: PendingAction[] = [];
+	const baseUrl = PROVIDER_URLS[provider] ?? PROVIDER_URLS.openrouter;
+	const extraHeaders: Record<string, string> =
+		provider === 'openrouter'
+			? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
+			: {};
 
 	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
-		const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+		const res = await fetch(baseUrl, {
 			method: 'POST',
 			headers: {
 				Authorization: `Bearer ${apiKey}`,
 				'Content-Type': 'application/json',
-				'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
-				'X-Title': 'Scholio'
+				...extraHeaders
 			},
 			body: JSON.stringify({
 				model,
@@ -394,7 +410,7 @@ async function runAgentLoop(
 			})
 		});
 
-		if (!res.ok) await throwOpenRouterError(res);
+		if (!res.ok) await throwProviderError(res, provider);
 
 		const data = (await res.json()) as {
 			choices: { message: OAMessage; finish_reason: string }[];
@@ -450,18 +466,58 @@ async function runAgentLoop(
 // System prompt
 // ---------------------------------------------------------------------------
 
-const SYSTEM_PROMPT = `Eres un asistente de investigación académica especializado integrado en Scholio.
-Tienes acceso al proyecto del usuario a través de las herramientas disponibles.
-Antes de responder preguntas sobre contenido usa search_documents_semantic para encontrar los párrafos relevantes, luego read_document si necesitas el documento completo.
-Responde siempre en el mismo idioma que el usuario.
-Sé preciso, cita fragmentos del texto cuando sea relevante y mantén un tono académico.
+const SYSTEM_PROMPT = `Eres Scholio, un asistente de escritura académica especializado en filosofía, ciencias sociales y ciencias formales, integrado en una plataforma de investigación.
+El usuario trabaja en proyectos académicos (grado, máster, doctorado o investigación) y tu objetivo es ayudarle a estructurar, revisar y desarrollar documentos de alta calidad usando en lo posible los documentos de su proyecto.
 
-Cuando el usuario pida generar o redactar contenido:
-1. Usa search_documents_semantic para encontrar contexto relevante.
-2. Lee con read_document los documentos que necesites en profundidad.
-3. Describe en texto lo que vas a proponer (título, tipo, propósito).
-4. Llama a create_document con el contenido completo.
-5. Si hay un requisito pendiente que ese documento cubriría, incluye su requirementId.`;
+## Idioma y estilo
+
+Responde por defecto en el mismo idioma que el mensaje del usuario. Si la pregunta es ambigua respecto al idioma, usa español europeo formal.
+Escribe con registro académico: preciso, argumentativo, sin adornos retóricos innecesarios.
+Empieza siempre con una respuesta breve y directa (2–3 frases) y luego desarrolla con secciones usando encabezados Markdown cuando la longitud lo justifique.
+
+## Uso de herramientas
+
+**Usa search_documents_semantic** cuando la pregunta requiera información específica del proyecto:
+- El usuario pregunta por algo que ya ha escrito (marco teórico, resultados, bibliografía, notas, requisitos, secciones concretas).
+- El usuario pide que redactes o generes algo "basándote en mis documentos" o menciona un documento concreto.
+- Regla práctica: si la respuesta correcta depende de lo que hay en el proyecto → busca primero.
+
+**No uses search_documents_semantic** para:
+- Conocimiento general de escritura académica (qué es un marco teórico, cómo citar en APA, estructura IMRyD, etc.).
+- Transformaciones del texto que el usuario ha pegado completo en el mensaje (reescritura, corrección, traducción): trabaja solo con el fragmento recibido.
+
+**Usa create_document** únicamente cuando:
+- El usuario pide explícitamente crear un documento nuevo, O
+- El usuario acepta explícitamente un borrador que tú has propuesto en la misma conversación.
+Nunca llames a create_document sin confirmación previa en la conversación actual.
+
+## Estructura de respuesta para tareas complejas
+
+Para preguntas que involucren contenido del proyecto, organiza tu respuesta con estas secciones cuando aplique:
+
+### Respuesta directa
+(2–3 frases que contesten la pregunta)
+
+### Desarrollo
+(1–2 párrafos en estilo formal con la respuesta elaborada)
+
+### Referencias al proyecto
+(Qué documentos o fragmentos has usado: "He utilizado 'Marco teórico', sección sobre epistemología, y 'Notas sobre Popper'")
+
+### Sugerencias
+(Bullets concretos: frases modelo, cambios de orden, conexiones entre secciones, términos técnicos a reforzar)
+
+### Próximos pasos
+(2–4 bullets accionables)
+
+Para generación de texto (borradores, introducciones, estado del arte): produce el borrador en Markdown académico con ## para secciones. Marca las citas bibliográficas sin referencia como placeholders: [Autor, año].
+
+## Rigor sobre el contenido del proyecto
+
+Cuando hables de lo que el usuario ya ha escrito, limita tus afirmaciones estrictamente a lo que aparezca en los fragmentos devueltos por search_documents_semantic y en el mensaje del usuario.
+Si una información no está en esos fragmentos, dilo explícitamente: "Esa información no consta en los documentos recuperados" y sugiere al usuario cómo podría redactarla o qué tipo de fuente debería consultar.
+Prefiere reconocer incertidumbre antes que inventar contenido, secciones, resultados o citas.
+Cuando sea posible, indica qué documento o fragmento fundamenta cada afirmación importante sobre el proyecto.`;
 
 // ---------------------------------------------------------------------------
 // Router
@@ -554,45 +610,57 @@ export const aiRouter = router({
 				})
 			);
 
-			// ── Get user's API key ────────────────────────────────────────────
-			const configRows = (await ctx.withRLS((db) =>
-				db
-					.select({
-						encryptedApiKey: userAiConfig.encryptedApiKey,
-						encryptedDataKey: userAiConfig.encryptedDataKey,
-						iv: userAiConfig.iv,
-						authTag: userAiConfig.authTag,
-						enabled: userAiConfig.enabled,
-						provider: userAiConfig.provider
-					})
-					.from(userAiConfig)
-					.where(eq(userAiConfig.userId, userId))
-					.limit(1)
-			)) as {
-				encryptedApiKey: string;
-				encryptedDataKey: string;
-				iv: string;
-				authTag: string;
-				enabled: boolean;
-				provider: string;
-			}[];
+			// ── Get user's default provider + API config ─────────────────────
+			const [profileRows, allConfigs] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({
+							defaultAiProvider: userProfile.defaultAiProvider,
+							defaultAiModel: userProfile.defaultAiModel
+						})
+						.from(userProfile)
+						.where(eq(userProfile.userId, userId))
+						.limit(1)
+				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
 
-			if (!configRows[0]) {
+				ctx.withRLS((db) =>
+					db
+						.select({
+							encryptedApiKey: userAiConfig.encryptedApiKey,
+							encryptedDataKey: userAiConfig.encryptedDataKey,
+							iv: userAiConfig.iv,
+							authTag: userAiConfig.authTag,
+							enabled: userAiConfig.enabled,
+							provider: userAiConfig.provider,
+							model: userAiConfig.model
+						})
+						.from(userAiConfig)
+						.where(eq(userAiConfig.userId, userId))
+				) as Promise<{
+					encryptedApiKey: string;
+					encryptedDataKey: string;
+					iv: string;
+					authTag: string;
+					enabled: boolean;
+					provider: string;
+					model: string | null;
+				}[]>
+			]);
+
+			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
+			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
+
+			if (!configRow) {
+				const label = activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
 				throw new TRPCError({
 					code: 'PRECONDITION_FAILED',
-					message: 'Configura tu API key de OpenRouter en Ajustes → Asistente IA.'
-				});
-			}
-			if (!configRows[0].enabled) {
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: 'El asistente IA está deshabilitado. Actívalo en Ajustes → Asistente IA.'
+					message: `Configura tu API key de ${label} en Ajustes → Asistente IA.`
 				});
 			}
 
 			let userApiKey: string;
 			try {
-				userApiKey = await decryptSecret(configRows[0]);
+				userApiKey = await decryptSecret(configRow);
 			} catch {
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
@@ -606,7 +674,12 @@ export const aiRouter = router({
 				? `${SYSTEM_PROMPT}\n\n---\n\n${projectIndex}`
 				: SYSTEM_PROMPT;
 
-			const model = configRows[0].provider ?? 'anthropic/claude-haiku-4-5';
+			const resolvedModel =
+				profileRows[0]?.defaultAiModel ??
+				configRow.model ??
+				DEFAULT_MODELS[activeProvider] ??
+				DEFAULT_MODELS.openrouter;
+
 			const { content: assistantContent, pendingActions } = await runAgentLoop(
 				systemWithIndex,
 				history,
@@ -614,7 +687,8 @@ export const aiRouter = router({
 				ctx.withRLS as WithRLS,
 				input.projectId,
 				userApiKey,
-				model
+				activeProvider,
+				resolvedModel
 			);
 
 			// ── Persist assistant response ────────────────────────────────────
@@ -739,44 +813,52 @@ export const aiRouter = router({
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
-			const configRows = (await ctx.withRLS((db) =>
-				db
-					.select({
-						encryptedApiKey: userAiConfig.encryptedApiKey,
-						encryptedDataKey: userAiConfig.encryptedDataKey,
-						iv: userAiConfig.iv,
-						authTag: userAiConfig.authTag,
-						enabled: userAiConfig.enabled,
-						provider: userAiConfig.provider
-					})
-					.from(userAiConfig)
-					.where(eq(userAiConfig.userId, ctx.user.id))
-					.limit(1)
-			)) as {
-				encryptedApiKey: string;
-				encryptedDataKey: string;
-				iv: string;
-				authTag: string;
-				enabled: boolean;
-				provider: string;
-			}[];
+			const userId = ctx.user.id;
 
-			if (!configRows[0]) {
+			const [profileRows, allConfigs] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
+						.from(userProfile)
+						.where(eq(userProfile.userId, userId))
+						.limit(1)
+				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+
+				ctx.withRLS((db) =>
+					db
+						.select({
+							encryptedApiKey: userAiConfig.encryptedApiKey,
+							encryptedDataKey: userAiConfig.encryptedDataKey,
+							iv: userAiConfig.iv,
+							authTag: userAiConfig.authTag,
+							enabled: userAiConfig.enabled,
+							provider: userAiConfig.provider,
+							model: userAiConfig.model
+						})
+						.from(userAiConfig)
+						.where(eq(userAiConfig.userId, userId))
+				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
+			]);
+
+			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
+			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
+
+			if (!configRow) {
+				const label = activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
 				throw new TRPCError({
 					code: 'PRECONDITION_FAILED',
-					message: 'Configura tu API key de OpenRouter en Ajustes → Asistente IA.'
+					message: `Configura tu API key de ${label} en Ajustes → Asistente IA.`
 				});
 			}
-			if (!configRows[0].enabled) {
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: 'El asistente IA está deshabilitado. Actívalo en Ajustes → Asistente IA.'
-				});
-			}
+
+			const resolvedModel =
+				profileRows[0]?.defaultAiModel ??
+				configRow.model ??
+				(activeProvider === 'perplexity' ? 'sonar-pro' : 'anthropic/claude-sonnet-4-5');
 
 			let userApiKey: string;
 			try {
-				userApiKey = await decryptSecret(configRows[0]);
+				userApiKey = await decryptSecret(configRow);
 			} catch {
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
@@ -876,16 +958,21 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				.filter(Boolean)
 				.join('\n');
 
-			const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+			const draftBaseUrl = PROVIDER_URLS[activeProvider] ?? PROVIDER_URLS.openrouter;
+			const draftExtraHeaders: Record<string, string> =
+				activeProvider === 'openrouter'
+					? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
+					: {};
+
+			const response = await fetch(draftBaseUrl, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${userApiKey}`,
 					'Content-Type': 'application/json',
-					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
-					'X-Title': 'Scholio'
+					...draftExtraHeaders
 				},
 				body: JSON.stringify({
-					model: 'anthropic/claude-sonnet-4-5',
+					model: resolvedModel,
 					max_tokens: 4096,
 					messages: [
 						{ role: 'system', content: systemPrompt },
@@ -894,7 +981,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				})
 			});
 
-			if (!response.ok) await throwOpenRouterError(response);
+			if (!response.ok) await throwProviderError(response, activeProvider);
 
 			const data = (await response.json()) as {
 				choices: { message: { content: string } }[];

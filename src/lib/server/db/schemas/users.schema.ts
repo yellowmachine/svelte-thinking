@@ -1,4 +1,4 @@
-import { text, timestamp, boolean, pgPolicy, unique } from 'drizzle-orm/pg-core';
+import { text, timestamp, boolean, pgPolicy, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 
@@ -21,6 +21,9 @@ export const userProfile = scholioSchema.table(
 		plan: planEnum('plan').notNull().default('free'),
 		planStatus: text('plan_status').default('active'), // active | canceled | past_due
 		planCurrentPeriodEnd: timestamp('plan_current_period_end'),
+		// Default AI provider/model for the agent
+		defaultAiProvider: text('default_ai_provider').default('openrouter'),
+		defaultAiModel: text('default_ai_model'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
@@ -44,8 +47,9 @@ export const userAiConfig = scholioSchema.table(
 	'user_ai_config',
 	{
 		id: text('id').primaryKey(),
-		userId: text('user_id').notNull().unique(),
+		userId: text('user_id').notNull(),
 		provider: text('provider').notNull().default('openrouter'),
+		model: text('model'), // selected model for this provider (null = use provider default)
 		encryptedApiKey: text('encrypted_api_key').notNull(),
 		encryptedDataKey: text('encrypted_data_key').notNull(), // data key cifrada por KMS
 		iv: text('iv').notNull(),
@@ -55,6 +59,8 @@ export const userAiConfig = scholioSchema.table(
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
 	(t) => [
+		uniqueIndex('user_ai_config_user_provider_idx').on(t.userId, t.provider),
+
 		// Solo el propio usuario puede ver/modificar su config de IA
 		pgPolicy('user_ai_config_access', {
 			for: 'all',

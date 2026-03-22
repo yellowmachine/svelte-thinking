@@ -74,15 +74,47 @@
 	}
 
 	// ── AI config state ──────────────────────────────────────────────────────
-	type AiStatus = { configured: boolean; enabled: boolean; provider: string | null; updatedAt: Date | null };
+	type ProviderConfig = { provider: string; model: string | null; enabled: boolean; updatedAt: Date };
+	type AiStatus = { providers: ProviderConfig[]; defaultProvider: string; defaultModel: string | null };
+
+	const PROVIDERS = [
+		{ id: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-v1-...', keyUrl: 'https://openrouter.ai/keys' },
+		{ id: 'perplexity', label: 'Perplexity', placeholder: 'pplx-...', keyUrl: 'https://www.perplexity.ai/settings/api' }
+	] as const;
+	type ProviderId = (typeof PROVIDERS)[number]['id'];
+
+	const MODELS: Record<ProviderId, { id: string; label: string }[]> = {
+		openrouter: [
+			{ id: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5 (rápido)' },
+			{ id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
+			{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini (rápido)' },
+			{ id: 'openai/gpt-4o', label: 'GPT-4o' },
+			{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5 (rápido)' },
+			{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' }
+		],
+		perplexity: [
+			{ id: 'sonar', label: 'Sonar (rápido)' },
+			{ id: 'sonar-pro', label: 'Sonar Pro' },
+			{ id: 'sonar-reasoning-pro', label: 'Sonar Reasoning Pro' },
+			{ id: 'sonar-deep-research', label: 'Sonar Deep Research' }
+		]
+	};
+
 	let aiStatus = $state<AiStatus | null>(null);
 	let loadingAi = $state(false);
-	let aiApiKey = $state('');
-	let savingKey = $state(false);
-	let togglingEnabled = $state(false);
-	let deletingKey = $state(false);
 	let aiError = $state('');
 	let aiSuccess = $state('');
+
+	// Per-provider UI state
+	let keyInputs = $state<Record<ProviderId, string>>({ openrouter: '', perplexity: '' });
+	let savingKey = $state<Record<ProviderId, boolean>>({ openrouter: false, perplexity: false });
+	let togglingEnabled = $state<Record<ProviderId, boolean>>({ openrouter: false, perplexity: false });
+	let deletingKey = $state<Record<ProviderId, boolean>>({ openrouter: false, perplexity: false });
+	let settingDefault = $state(false);
+
+	function providerConfig(id: ProviderId): ProviderConfig | undefined {
+		return aiStatus?.providers.find((p) => p.provider === id);
+	}
 
 	async function loadAiStatus() {
 		loadingAi = true;
@@ -96,50 +128,83 @@
 		}
 	}
 
-	async function handleSaveKey() {
-		if (!aiApiKey.trim()) return;
-		savingKey = true;
+	async function handleSaveKey(provider: ProviderId) {
+		const key = keyInputs[provider].trim();
+		if (!key) return;
+		savingKey[provider] = true;
 		aiError = '';
 		aiSuccess = '';
 		try {
-			await trpc.aiConfig.saveApiKey.mutate({ apiKey: aiApiKey.trim(), provider: 'openrouter' });
-			aiApiKey = '';
-			aiSuccess = 'API key guardada correctamente.';
+			await trpc.aiConfig.saveApiKey.mutate({ provider, apiKey: key });
+			keyInputs[provider] = '';
+			aiSuccess = `API key de ${provider === 'openrouter' ? 'OpenRouter' : 'Perplexity'} guardada.`;
 			await loadAiStatus();
 		} catch (e: unknown) {
 			aiError = e instanceof Error ? e.message : 'Error al guardar la API key.';
 		} finally {
-			savingKey = false;
+			savingKey[provider] = false;
 		}
 	}
 
-	async function handleToggleEnabled(enabled: boolean) {
-		togglingEnabled = true;
+	async function handleToggleEnabled(provider: ProviderId, enabled: boolean) {
+		togglingEnabled[provider] = true;
 		aiError = '';
-		aiSuccess = '';
 		try {
-			await trpc.aiConfig.toggleEnabled.mutate(enabled);
-			if (aiStatus) aiStatus = { ...aiStatus, enabled };
+			await trpc.aiConfig.toggleEnabled.mutate({ provider, enabled });
+			if (aiStatus) {
+				aiStatus = {
+					...aiStatus,
+					providers: aiStatus.providers.map((p) => (p.provider === provider ? { ...p, enabled } : p))
+				};
+			}
 		} catch (e: unknown) {
 			aiError = e instanceof Error ? e.message : 'Error al cambiar el estado.';
 		} finally {
-			togglingEnabled = false;
+			togglingEnabled[provider] = false;
 		}
 	}
 
-	async function handleDeleteKey() {
-		if (!confirm('¿Eliminar la API key almacenada? Perderás acceso al asistente IA hasta que añadas una nueva.')) return;
-		deletingKey = true;
+	async function handleSetModel(provider: ProviderId, model: string) {
+		try {
+			await trpc.aiConfig.setModel.mutate({ provider, model: model || null });
+			if (aiStatus) {
+				aiStatus = {
+					...aiStatus,
+					providers: aiStatus.providers.map((p) => (p.provider === provider ? { ...p, model: model || null } : p))
+				};
+			}
+		} catch (e: unknown) {
+			aiError = e instanceof Error ? e.message : 'Error al cambiar el modelo.';
+		}
+	}
+
+	async function handleDeleteKey(provider: ProviderId) {
+		const label = provider === 'openrouter' ? 'OpenRouter' : 'Perplexity';
+		if (!confirm(`¿Eliminar la API key de ${label}? Perderás acceso hasta que añadas una nueva.`)) return;
+		deletingKey[provider] = true;
 		aiError = '';
 		aiSuccess = '';
 		try {
-			await trpc.aiConfig.deleteApiKey.mutate();
-			aiSuccess = 'API key eliminada.';
+			await trpc.aiConfig.deleteApiKey.mutate({ provider });
+			aiSuccess = `API key de ${label} eliminada.`;
 			await loadAiStatus();
 		} catch (e: unknown) {
 			aiError = e instanceof Error ? e.message : 'Error al eliminar la API key.';
 		} finally {
-			deletingKey = false;
+			deletingKey[provider] = false;
+		}
+	}
+
+	async function handleSetDefault(provider: ProviderId) {
+		settingDefault = true;
+		aiError = '';
+		try {
+			await trpc.aiConfig.setDefault.mutate({ provider });
+			if (aiStatus) aiStatus = { ...aiStatus, defaultProvider: provider };
+		} catch (e: unknown) {
+			aiError = e instanceof Error ? e.message : 'Error al cambiar el proveedor por defecto.';
+		} finally {
+			settingDefault = false;
 		}
 	}
 
@@ -464,126 +529,175 @@
 				</div>
 			{/if}
 
-			<!-- Status card -->
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-				<div class="flex items-start justify-between gap-4">
-					<div>
-						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Asistente de investigación</h2>
-						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							El asistente del chat usa tu propia API key de OpenRouter (BYOK).
-							Tu key se cifra con AWS KMS y nunca se expone en claro.
+			{#if loadingAi}
+				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando...</p>
+			{:else}
+				<!-- Default provider selector -->
+				{#if aiStatus && aiStatus.providers.length > 0}
+					<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+						<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Proveedor por defecto</h2>
+						<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+							El agente usará este proveedor para todas las conversaciones.
 						</p>
-					</div>
-					{#if !loadingAi && aiStatus?.configured}
-						<span class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold {aiStatus.enabled
-							? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
-							: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}">
-							{aiStatus.enabled ? 'Activo' : 'Deshabilitado'}
-						</span>
-					{/if}
-				</div>
+						<div class="flex gap-3">
+							{#each PROVIDERS as p}
+								{@const configured = !!providerConfig(p.id)}
+								<button
+									type="button"
+									disabled={!configured || settingDefault}
+									onclick={() => handleSetDefault(p.id)}
+									class="flex items-center gap-2 rounded-lg border px-4 py-2.5 font-sans text-sm transition-colors disabled:opacity-40
+										{aiStatus.defaultProvider === p.id
+											? 'border-accent bg-accent/5 font-medium text-accent dark:bg-accent/10'
+											: 'border-paper-border text-ink-muted hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+								>
+									{#if aiStatus.defaultProvider === p.id}
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+											<circle cx="12" cy="12" r="5" fill="currentColor"/>
+										</svg>
+									{:else}
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+										</svg>
+									{/if}
+									{p.label}
+									{#if !configured}
+										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">(sin configurar)</span>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					</section>
+				{/if}
 
-				{#if loadingAi}
-					<p class="mt-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando...</p>
-				{:else if aiStatus?.configured}
-					<!-- Key configured -->
-					<div class="mt-5 flex flex-col gap-4">
-						<div class="rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-							<div class="flex items-center justify-between">
+				<!-- Provider cards -->
+				{#each PROVIDERS as p}
+					{@const cfg = providerConfig(p.id)}
+					{@const isDefault = aiStatus?.defaultProvider === p.id}
+					<section class="rounded-xl border bg-paper p-6 dark:bg-dark-paper
+						{isDefault && cfg ? 'border-accent/30 dark:border-accent/20' : 'border-paper-border dark:border-dark-paper-border'}">
+
+						<!-- Card header -->
+						<div class="flex items-start justify-between gap-4">
+							<div class="flex items-center gap-3">
 								<div>
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Proveedor</p>
-									<p class="mt-0.5 font-sans text-sm font-medium text-ink dark:text-dark-ink">OpenRouter</p>
-								</div>
-								<div class="text-right">
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Última actualización</p>
+									<div class="flex items-center gap-2">
+										<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">{p.label}</h2>
+										{#if isDefault && cfg}
+											<span class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[11px] font-semibold text-accent">
+												Por defecto
+											</span>
+										{/if}
+									</div>
 									<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-										{formatDate(aiStatus.updatedAt)}
+										{p.id === 'openrouter'
+											? 'Acceso a modelos de Anthropic, OpenAI, Google y más.'
+											: 'Modelos Sonar con búsqueda web en tiempo real.'}
 									</p>
 								</div>
 							</div>
+							{#if cfg}
+								<span class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold
+									{cfg.enabled
+										? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
+										: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}">
+									{cfg.enabled ? 'Activo' : 'Inactivo'}
+								</span>
+							{/if}
 						</div>
 
-						<!-- Toggle enabled -->
-						<div class="flex items-center justify-between">
-							<div>
-								<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Asistente habilitado</p>
-								<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-									Desactívalo sin eliminar la key.
-								</p>
+						{#if cfg}
+							<div class="mt-5 flex flex-col gap-4">
+								<!-- Model selector + last updated -->
+								<div class="rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+									<div class="flex items-center justify-between gap-4">
+										<div class="min-w-0 flex-1">
+											<p class="mb-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Modelo</p>
+											<select
+												value={cfg.model ?? ''}
+												onchange={(e) => handleSetModel(p.id, (e.target as HTMLSelectElement).value)}
+												class="w-full rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+											>
+												<option value="">— Por defecto del proveedor —</option>
+												{#each MODELS[p.id] as m}
+													<option value={m.id}>{m.label}</option>
+												{/each}
+											</select>
+										</div>
+										<div class="shrink-0 text-right">
+											<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Actualizada</p>
+											<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+												{formatDate(cfg.updatedAt)}
+											</p>
+										</div>
+									</div>
+								</div>
+
+								<!-- Enable toggle -->
+								<div class="flex items-center justify-between">
+									<div>
+										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Habilitado</p>
+										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Desactívalo sin eliminar la key.</p>
+									</div>
+									<button
+										type="button"
+										role="switch"
+										aria-checked={cfg.enabled}
+										aria-label={cfg.enabled ? 'Deshabilitar' : 'Habilitar'}
+										onclick={() => handleToggleEnabled(p.id, !cfg.enabled)}
+										disabled={togglingEnabled[p.id]}
+										class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50
+											{cfg.enabled ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
+									>
+										<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200
+											{cfg.enabled ? 'translate-x-5' : 'translate-x-0'}"></span>
+									</button>
+								</div>
 							</div>
-							<button
-								type="button"
-								role="switch"
-								aria-checked={aiStatus.enabled}
-								aria-label={aiStatus.enabled ? 'Deshabilitar asistente IA' : 'Habilitar asistente IA'}
-								onclick={() => handleToggleEnabled(!aiStatus!.enabled)}
-								disabled={togglingEnabled}
-								class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50
-									{aiStatus.enabled ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
-							>
-								<span
-									class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200
-										{aiStatus.enabled ? 'translate-x-5' : 'translate-x-0'}"
-								></span>
-							</button>
+						{/if}
+
+						<!-- Key input (always shown) -->
+						<div class="mt-5 border-t border-paper-border pt-5 dark:border-dark-paper-border">
+							<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+								{cfg ? 'Reemplazar API key · ' : 'Añadir API key · '}
+								Obtenla en <a href={p.keyUrl} target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">{p.keyUrl.replace('https://', '')}</a>.
+								Se cifra con AWS KMS antes de almacenarse.
+							</p>
+							<div class="flex gap-3">
+								<input
+									type="password"
+									bind:value={keyInputs[p.id]}
+									placeholder={p.placeholder}
+									autocomplete="off"
+									class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
+								<button
+									type="button"
+									onclick={() => handleSaveKey(p.id)}
+									disabled={!keyInputs[p.id].trim() || savingKey[p.id]}
+									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+								>
+									{savingKey[p.id] ? 'Guardando...' : 'Guardar'}
+								</button>
+							</div>
 						</div>
-					</div>
-				{/if}
-			</section>
 
-			<!-- Add / replace key -->
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					{aiStatus?.configured ? 'Reemplazar API key' : 'Añadir API key'}
-				</h2>
-				<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Obtén tu key en
-					<a
-						href="https://openrouter.ai/keys"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-accent underline underline-offset-2"
-					>openrouter.ai/keys</a>.
-					La key se cifra con AWS KMS antes de almacenarse.
-				</p>
-
-				<div class="flex gap-3">
-					<input
-						type="password"
-						bind:value={aiApiKey}
-						placeholder="sk-or-v1-..."
-						autocomplete="off"
-						class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-					/>
-					<button
-						type="button"
-						onclick={handleSaveKey}
-						disabled={!aiApiKey.trim() || savingKey}
-						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-					>
-						{savingKey ? 'Guardando...' : 'Guardar'}
-					</button>
-				</div>
-			</section>
-
-			<!-- Danger: delete key -->
-			{#if aiStatus?.configured}
-				<section class="rounded-xl border border-red-200 bg-paper p-6 dark:border-red-900/40 dark:bg-dark-paper">
-					<h2 class="mb-1 font-serif text-lg font-semibold text-red-600 dark:text-red-400">
-						Eliminar API key
-					</h2>
-					<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						La key se elimina permanentemente de nuestros servidores.
-					</p>
-					<button
-						type="button"
-						onclick={handleDeleteKey}
-						disabled={deletingKey}
-						class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
-					>
-						{deletingKey ? 'Eliminando...' : 'Eliminar key'}
-					</button>
-				</section>
+						<!-- Delete key -->
+						{#if cfg}
+							<div class="mt-4 flex justify-end">
+								<button
+									type="button"
+									onclick={() => handleDeleteKey(p.id)}
+									disabled={deletingKey[p.id]}
+									class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+								>
+									{deletingKey[p.id] ? 'Eliminando...' : 'Eliminar key'}
+								</button>
+							</div>
+						{/if}
+					</section>
+				{/each}
 			{/if}
 		</div>
 
