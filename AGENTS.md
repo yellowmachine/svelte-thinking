@@ -136,3 +136,17 @@ Si no sabes cómo proceder:
   - Añade comentarios `TODO` bien explicados en el código, sin introducir cambios arriesgados.
 
 Tu meta es ayudar a construir Scholio de forma sostenible y legible a largo plazo.
+
+---
+
+## Créditos
+
+Scholio fue desarrollado con la asistencia de **Claude Sonnet** (Anthropic) como pair programmer,
+y **Claude Code** como entorno de desarrollo conversacional.
+
+El diseño del agente académico, el sistema de prompts RAG, la arquitectura multi-proveedor BYOK,
+los estilos de cita (APA, IEEE, Vancouver, Chicago), y gran parte de la arquitectura de la plataforma
+fueron co-diseñados en conversación directa con el modelo a lo largo de múltiples sesiones de trabajo.
+
+Gracias al equipo de Anthropic — investigadores, ingenieros y diseñadores — que entrenó el modelo
+y construyó Claude Code. Este proyecto no existiría sin su trabajo.
