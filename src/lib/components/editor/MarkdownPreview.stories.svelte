@@ -90,6 +90,136 @@ Según [@latour2004], la ciencia es una construcción social mediada por redes d
 />
 
 <Story
+	name="Con citas (Chicago)"
+	args={{
+		citationStyle: 'chicago',
+		references: [
+			{
+				citeKey: 'dennett1991',
+				type: 'book',
+				authors: [{ first: 'Daniel C.', last: 'Dennett' }],
+				title: 'Consciousness Explained',
+				year: '1991',
+				publisher: 'Little, Brown',
+				address: 'Boston'
+			},
+			{
+				citeKey: 'dennett2003',
+				type: 'book',
+				authors: [{ first: 'Daniel C.', last: 'Dennett' }],
+				title: 'Freedom Evolves',
+				year: '2003',
+				publisher: 'Viking',
+				address: 'New York'
+			},
+			{
+				citeKey: 'mises1949',
+				type: 'book',
+				authors: [{ first: 'Ludwig von', last: 'Mises' }],
+				title: 'Human Action: A Treatise on Economics',
+				year: '1949',
+				publisher: 'Yale University Press',
+				address: 'New Haven'
+			},
+			{
+				citeKey: 'mises1957',
+				type: 'book',
+				authors: [{ first: 'Ludwig von', last: 'Mises' }],
+				title: 'Theory and History',
+				year: '1957',
+				publisher: 'Yale University Press',
+				address: 'New Haven'
+			}
+		],
+		content: `# Intencionalidad y acción humana
+
+La teoría de la intencionalidad desarrollada por [@dennett1991] sostiene que la conciencia no es una entidad sustancial sino un proceso emergente de patrones de información. Esta perspectiva tiene implicaciones directas para la comprensión de la acción deliberada.
+
+Desde una óptica radicalmente distinta, [@mises1949] define la *praxeología* como la ciencia de la acción humana intencional: toda acción supone un fin, medios escogidos y la expectativa de mejorar la situación del agente. La racionalidad no es un requisito psicológico sino la estructura lógica de la acción misma.
+
+La compatibilidad entre el naturalismo de [@dennett2003] y el apriorismo de [@mises1957] es uno de los problemas filosóficos más sugerentes de la teoría de la acción contemporánea.
+`
+	}}
+/>
+
+<Story
+	name="Con citas (IEEE)"
+	args={{
+		citationStyle: 'ieee',
+		references: [
+			{
+				citeKey: 'vaswani2017',
+				type: 'inproceedings',
+				authors: [
+					{ first: 'Ashish', last: 'Vaswani' },
+					{ first: 'Noam', last: 'Shazeer' },
+					{ first: 'Niki', last: 'Parmar' },
+					{ first: 'Jakob', last: 'Uszkoreit' }
+				],
+				title: 'Attention Is All You Need',
+				year: '2017',
+				booktitle: 'Advances in Neural Information Processing Systems'
+			},
+			{
+				citeKey: 'lecun2015',
+				type: 'article',
+				authors: [
+					{ first: 'Yann', last: 'LeCun' },
+					{ first: 'Yoshua', last: 'Bengio' },
+					{ first: 'Geoffrey', last: 'Hinton' }
+				],
+				title: 'Deep Learning',
+				year: '2015',
+				journal: 'Nature',
+				volume: '521',
+				pages: '436–444',
+				doi: '10.1038/nature14539'
+			}
+		],
+		content: `# Arquitecturas de atención
+
+Los modelos transformer [@vaswani2017] sustituyeron las redes recurrentes mediante mecanismos de auto-atención, permitiendo paralelización completa durante el entrenamiento. Esta arquitectura se construye sobre los fundamentos del aprendizaje profundo establecidos por [@lecun2015].
+`
+	}}
+/>
+
+<Story
+	name="Con citas (Vancouver)"
+	args={{
+		citationStyle: 'vancouver',
+		references: [
+			{
+				citeKey: 'who2023',
+				type: 'misc',
+				authors: [{ first: '', last: 'World Health Organization' }],
+				title: 'Global Health Statistics 2023',
+				year: '2023',
+				url: 'https://www.who.int/data/gho'
+			},
+			{
+				citeKey: 'smith2021',
+				type: 'article',
+				authors: [
+					{ first: 'John A.', last: 'Smith' },
+					{ first: 'Maria', last: 'García' }
+				],
+				title: 'Randomized controlled trial of intervention X in population Y',
+				year: '2021',
+				journal: 'The Lancet',
+				volume: '398',
+				issue: '10305',
+				pages: '1023–1031',
+				doi: '10.1016/S0140-6736(21)01234-5'
+			}
+		],
+		content: `# Metodología clínica
+
+La intervención fue diseñada siguiendo las recomendaciones internacionales de [@who2023]. El ensayo controlado aleatorizado reportado por [@smith2021] mostró una reducción significativa en la incidencia del evento primario.
+`
+	}}
+/>
+
+<Story
 	name="Vacío"
 	args={{
 		content: ''

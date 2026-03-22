@@ -76,6 +76,7 @@ export const notificationPreference = scholioSchema.table(
 		userId: text('user_id').notNull(),
 		projectId: text('project_id').notNull(),
 		commentEmails: boolean('comment_emails').notNull().default(true),
+		commitEmails: boolean('commit_emails').notNull().default(true),
 		unsubscribeToken: text('unsubscribe_token').notNull().unique(),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()

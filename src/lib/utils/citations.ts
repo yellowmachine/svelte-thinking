@@ -5,7 +5,7 @@
 
 import type { Author } from './bibtex';
 
-export type CitationStyle = 'apa' | 'ieee' | 'vancouver';
+export type CitationStyle = 'apa' | 'ieee' | 'vancouver' | 'chicago';
 
 export interface CiteRef {
 	citeKey: string;
@@ -277,6 +277,145 @@ function vancouverFull(ref: CiteRef, num: number): string {
 	}
 }
 
+// ── Chicago Notes-Bibliography ────────────────────────────────────────────
+// Notes: "Firstname Lastname, *Title* (Place: Publisher, Year)."
+// Bibliography: "Lastname, Firstname. *Title*. Place: Publisher, Year."
+
+// "Daniel C. Dennett" — full first name for notes
+function chicagoNoteName(a: Author): string {
+	if (!a.last.trim()) return '';
+	return a.first ? `${a.first} ${a.last}` : a.last;
+}
+
+// "Dennett, Daniel C." — inverted for bibliography (first author only)
+function chicagoBibName(a: Author): string {
+	if (!a.last.trim()) return '';
+	return a.first ? `${a.last}, ${a.first}` : a.last;
+}
+
+function chicagoNoteAuthorList(authors: Author[]): string {
+	const valid = authors.filter((a) => a.last.trim());
+	if (!valid.length) return '';
+	if (valid.length === 1) return chicagoNoteName(valid[0]);
+	if (valid.length === 2) return `${chicagoNoteName(valid[0])} and ${chicagoNoteName(valid[1])}`;
+	if (valid.length <= 3)
+		return valid.slice(0, -1).map(chicagoNoteName).join(', ') + ', and ' + chicagoNoteName(valid[valid.length - 1]);
+	return `${chicagoNoteName(valid[0])} et al.`;
+}
+
+function chicagoBibAuthorList(authors: Author[]): string {
+	const valid = authors.filter((a) => a.last.trim());
+	if (!valid.length) return '';
+	if (valid.length === 1) return chicagoBibName(valid[0]);
+	// First author inverted, rest normal
+	const rest = valid.slice(1).map(chicagoNoteName);
+	return [chicagoBibName(valid[0]), ...rest].join(', ');
+}
+
+// Footnote (note) format — full citation
+function chicagoNote(ref: CiteRef): string {
+	const authors = chicagoNoteAuthorList(ref.authors);
+	const year = ref.year ?? 'n.d.';
+
+	switch (ref.type) {
+		case 'article': {
+			const journal = ref.journal ? ` *${ref.journal}*` : '';
+			const vol = ref.volume ? ` ${ref.volume}` : '';
+			const no = ref.issue ? `, no. ${ref.issue}` : '';
+			const pp = ref.pages ? `: ${ref.pages}` : '';
+			const doi = ref.doi ? `, https://doi.org/${ref.doi}` : '';
+			return `${authors}, "${ref.title},"${journal}${vol}${no} (${year})${pp}${doi}.`;
+		}
+		case 'book': {
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? `${place}${ref.publisher}, ` : '';
+			const ed = ref.edition ? `, ${ref.edition} ed.` : '';
+			return `${authors}, *${ref.title}*${ed} (${pub}${year}).`;
+		}
+		case 'incollection': {
+			const edList = (ref.editors ?? []).filter((e) => e.last.trim());
+			const eds = edList.length > 0
+				? `, ed. ${edList.map(chicagoNoteName).join(' and ')}`
+				: '';
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? `${place}${ref.publisher}, ` : '';
+			const pp = ref.pages ? `, ${ref.pages}` : '';
+			return `${authors}, "${ref.title}," in${book}${eds} (${pub}${year})${pp}.`;
+		}
+		case 'inproceedings': {
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const pp = ref.pages ? `, ${ref.pages}` : '';
+			return `${authors}, "${ref.title}," in${book} (${year})${pp}.`;
+		}
+		case 'phdthesis':
+			return `${authors}, "${ref.title}" (PhD diss., ${ref.school ?? ''}, ${year}).`;
+		case 'mastersthesis':
+			return `${authors}, "${ref.title}" (MA thesis, ${ref.school ?? ''}, ${year}).`;
+		case 'techreport': {
+			const num = ref.reportNumber ? ` no. ${ref.reportNumber}` : '';
+			const inst = ref.institution ? `, ${ref.institution}` : '';
+			return `${authors}, "${ref.title}"${inst}${num}, ${year}.`;
+		}
+		default: {
+			const url = ref.url ? `, ${ref.url}` : '';
+			return `${authors}, *${ref.title}* (${year})${url}.`;
+		}
+	}
+}
+
+// Bibliography entry format — inverted author, ends with period
+function chicagoBib(ref: CiteRef): string {
+	const authors = chicagoBibAuthorList(ref.authors);
+	const year = ref.year ?? 'n.d.';
+
+	switch (ref.type) {
+		case 'article': {
+			const journal = ref.journal ? ` *${ref.journal}*` : '';
+			const vol = ref.volume ? ` ${ref.volume}` : '';
+			const no = ref.issue ? `, no. ${ref.issue}` : '';
+			const pp = ref.pages ? `: ${ref.pages}` : '';
+			const doi = ref.doi ? `. https://doi.org/${ref.doi}` : ref.url ? `. ${ref.url}` : '';
+			return `${authors}. "${ref.title}."${journal}${vol}${no} (${year})${pp}${doi}.`;
+		}
+		case 'book': {
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			const ed = ref.edition ? ` ${ref.edition} ed.` : '';
+			return `${authors}.${ed ? ' ' + ed : ''} *${ref.title}*.${pub} ${year}.`;
+		}
+		case 'incollection': {
+			const edList = (ref.editors ?? []).filter((e) => e.last.trim());
+			const eds = edList.length > 0
+				? `, edited by ${edList.map(chicagoNoteName).join(' and ')}`
+				: '';
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? `${place}${ref.publisher},` : '';
+			const pp = ref.pages ? ` ${ref.pages}` : '';
+			return `${authors}. "${ref.title}." In${book}${eds},${pp} ${pub} ${year}.`;
+		}
+		case 'inproceedings': {
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const pp = ref.pages ? ` ${ref.pages}` : '';
+			return `${authors}. "${ref.title}." In${book}.${pp} ${year}.`;
+		}
+		case 'phdthesis':
+			return `${authors}. "${ref.title}." PhD diss., ${ref.school ?? ''}, ${year}.`;
+		case 'mastersthesis':
+			return `${authors}. "${ref.title}." MA thesis, ${ref.school ?? ''}, ${year}.`;
+		case 'techreport': {
+			const num = ref.reportNumber ? ` No. ${ref.reportNumber}.` : '';
+			const inst = ref.institution ? ` ${ref.institution}.` : '';
+			return `${authors}. *${ref.title}*.${inst}${num} ${year}.`;
+		}
+		default: {
+			const url = ref.url ? ` ${ref.url}.` : '';
+			return `${authors}. *${ref.title}*. ${year}.${url}`;
+		}
+	}
+}
+
 // ── Main processor ────────────────────────────────────────────────────────
 //
 // Finds all [@key] and [@key1; @key2] patterns in the markdown,
@@ -301,7 +440,7 @@ export function processCitations(
 	const keyIndex = new Map<string, number>(); // key → 1-based number
 
 	// First pass: enumerate all cited keys for numbering
-	if (style !== 'apa') {
+	if (style !== 'apa' && style !== 'chicago') {
 		let m: RegExpExecArray | null;
 		const src = markdown;
 		CITE_PATTERN.lastIndex = 0;
@@ -315,6 +454,10 @@ export function processCitations(
 			}
 		}
 	}
+
+	// Chicago: footnote counter — each [@key] citation gets a unique footnote number
+	let chicagoCounter = 0;
+	const chicagoFootnotes: { id: string; key: string }[] = [];
 
 	// Second pass: replace patterns with inline citations
 	CITE_PATTERN.lastIndex = 0;
@@ -334,6 +477,19 @@ export function processCitations(
 			const allKnown = keys.every((k) => refs.has(k));
 			if (!allKnown) return _match; // if any unknown, leave entire match
 			return `(${parts.join('; ')})`;
+		} else if (style === 'chicago') {
+			// Each [@key] becomes a footnote reference [^ch-N]
+			const ids: string[] = [];
+			for (const key of keys) {
+				if (!refs.has(key)) continue;
+				chicagoCounter++;
+				const id = `ch-${chicagoCounter}`;
+				chicagoFootnotes.push({ id, key });
+				usedKeys.add(key);
+				ids.push(id);
+			}
+			if (!ids.length) return _match;
+			return ids.map((id) => `[^${id}]`).join('');
 		} else {
 			const nums = keys
 				.map((key) => {
@@ -348,22 +504,39 @@ export function processCitations(
 	});
 
 	// Build bibliography for used keys
+	const sortedAlpha = (keys: Iterable<string>) =>
+		[...keys].sort((a, b) => {
+			const ra = refs.get(a)!;
+			const rb = refs.get(b)!;
+			const la = ra.authors[0]?.last ?? ra.title;
+			const lb = rb.authors[0]?.last ?? rb.title;
+			return la.localeCompare(lb) || (ra.year ?? '').localeCompare(rb.year ?? '');
+		});
+
 	const bibKeys =
-		style === 'apa'
-			? // APA: sort by first author last name, then year
-				[...usedKeys].sort((a, b) => {
-					const ra = refs.get(a)!;
-					const rb = refs.get(b)!;
-					const la = ra.authors[0]?.last ?? ra.title;
-					const lb = rb.authors[0]?.last ?? rb.title;
-					return la.localeCompare(lb) || (ra.year ?? '').localeCompare(rb.year ?? '');
-				})
-			: // IEEE/Vancouver: in order of first citation
-				orderedKeys.filter((k) => usedKeys.has(k));
+		style === 'apa' || style === 'chicago'
+			? sortedAlpha(usedKeys)
+			: orderedKeys.filter((k) => usedKeys.has(k));
 
-	if (!bibKeys.length) return result;
+	if (!bibKeys.length && chicagoFootnotes.length === 0) return result;
 
-	const bibLines: string[] = ['', '---', '', '## Referencias', ''];
+	const bibLines: string[] = [];
+
+	// Chicago: append footnote definitions first (rendered by marked-footnote)
+	if (style === 'chicago') {
+		bibLines.push('');
+		for (const { id, key } of chicagoFootnotes) {
+			const ref = refs.get(key);
+			if (!ref) continue;
+			bibLines.push(`[^${id}]: ${chicagoNote(ref)}`);
+		}
+	}
+
+	if (!bibKeys.length) return result + bibLines.join('\n');
+
+	bibLines.push('', '---', '');
+	bibLines.push(style === 'chicago' ? '## Bibliografía' : '## Referencias');
+	bibLines.push('');
 
 	for (const key of bibKeys) {
 		const ref = refs.get(key);
@@ -372,14 +545,14 @@ export function processCitations(
 
 		if (style === 'apa') {
 			bibLines.push(apaFull(ref));
-			bibLines.push('');
 		} else if (style === 'ieee') {
 			bibLines.push(ieeeFull(ref, num));
-			bibLines.push('');
+		} else if (style === 'chicago') {
+			bibLines.push(chicagoBib(ref));
 		} else {
 			bibLines.push(vancouverFull(ref, num));
-			bibLines.push('');
 		}
+		bibLines.push('');
 	}
 
 	return result + bibLines.join('\n');
@@ -388,7 +561,8 @@ export function processCitations(
 export const CITATION_STYLE_LABELS: Record<CitationStyle, string> = {
 	apa: 'APA 7',
 	ieee: 'IEEE',
-	vancouver: 'Vancouver'
+	vancouver: 'Vancouver',
+	chicago: 'Chicago'
 };
 
 /**
@@ -399,5 +573,6 @@ export const CITATION_STYLE_LABELS: Record<CitationStyle, string> = {
 export function formatFullCitation(ref: CiteRef, style: CitationStyle, num: number): string {
 	if (style === 'ieee') return ieeeFull(ref, num);
 	if (style === 'vancouver') return vancouverFull(ref, num);
+	if (style === 'chicago') return chicagoBib(ref);
 	return apaFull(ref);
 }

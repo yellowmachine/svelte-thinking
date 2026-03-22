@@ -24,8 +24,17 @@
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// Preview mode
-	let showPreview = $state(false);
+	// View mode: editor | split | preview
+	type ViewMode = 'editor' | 'split' | 'preview';
+	const VIEW_MODE_KEY = `view-mode-${data.document.id}`;
+	let viewMode = $state<ViewMode>(
+		(localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null) ?? 'editor'
+	);
+	function setViewMode(m: ViewMode) {
+		viewMode = m;
+		localStorage.setItem(VIEW_MODE_KEY, m);
+		if (m !== 'editor') loadRefs();
+	}
 
 	// Citations
 	let citationStyle = $state<CitationStyle>('apa');
@@ -71,7 +80,7 @@
 	// Persist citation style per document in localStorage
 	$effect(() => {
 		const stored = localStorage.getItem(`cite-style-${data.document.id}`);
-		if (stored && (stored === 'apa' || stored === 'ieee' || stored === 'vancouver')) {
+		if (stored && (stored === 'apa' || stored === 'ieee' || stored === 'vancouver' || stored === 'chicago')) {
 			citationStyle = stored as CitationStyle;
 		}
 	});
@@ -83,7 +92,7 @@
 
 	// Load refs when preview is opened
 	$effect(() => {
-		if (showPreview) loadRefs();
+		if (viewMode !== 'editor') loadRefs();
 	});
 
 	// Wikilinks: build title → {id, projectId} map.
@@ -555,8 +564,8 @@
 			</span>
 		</button>
 
-		<!-- Citar button -->
-		{#if !showPreview}
+		<!-- Citar button (editor + split) -->
+		{#if viewMode !== 'preview'}
 			<button
 				onclick={openCitePicker}
 				title="Insertar cita bibliográfica"
@@ -566,9 +575,9 @@
 			</button>
 		{/if}
 
-		<!-- Citation style selector (only visible in preview) -->
-		{#if showPreview}
-			<div class="flex rounded-md border border-paper-border overflow-hidden dark:border-dark-paper-border">
+		<!-- Citation style selector (preview + split) -->
+		{#if viewMode !== 'editor'}
+			<div class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border">
 				{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
 					<button
 						onclick={() => setCitationStyle(s as CitationStyle)}
@@ -598,14 +607,41 @@
 			{/if}
 		</button>
 
-		<button
-			onclick={() => (showPreview = !showPreview)}
-			class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showPreview
-				? 'border-accent bg-accent text-white'
-				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-		>
-			Vista previa
-		</button>
+		<!-- View mode selector -->
+		<div class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border" role="group" aria-label="Modo de vista">
+			<button
+				onclick={() => setViewMode('editor')}
+				title="Solo editor"
+				class="px-2.5 py-1.5 transition-colors {viewMode === 'editor' ? 'bg-accent text-white' : 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+				aria-pressed={viewMode === 'editor'}
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M4 6h16M4 10h10M4 14h12M4 18h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+				</svg>
+			</button>
+			<button
+				onclick={() => setViewMode('split')}
+				title="Editor y vista previa"
+				class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode === 'split' ? 'bg-accent text-white' : 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+				aria-pressed={viewMode === 'split'}
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<rect x="2" y="3" width="9" height="18" rx="1" stroke="currentColor" stroke-width="1.5"/>
+					<rect x="13" y="3" width="9" height="18" rx="1" stroke="currentColor" stroke-width="1.5"/>
+				</svg>
+			</button>
+			<button
+				onclick={() => setViewMode('preview')}
+				title="Solo vista previa"
+				class="px-2.5 py-1.5 transition-colors {viewMode === 'preview' ? 'bg-accent text-white' : 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+				aria-pressed={viewMode === 'preview'}
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.5"/>
+					<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+				</svg>
+			</button>
+		</div>
 
 		<button
 			onclick={toggleHistory}
@@ -719,10 +755,42 @@
 
 <!-- Main layout -->
 <div class="flex overflow-hidden" style="height: calc(100vh - 57px)">
-	<!-- Editor / Preview -->
+	{#if viewMode === 'split'}
+		<!-- Split: editor left, preview right -->
+		<div class="relative flex flex-1 overflow-hidden">
+			<div class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-10 dark:border-dark-paper-border">
+				<div class="mx-auto w-full max-w-2xl">
+					<MarkdownEditor
+						bind:this={editorEl}
+						bind:value={content}
+						references={projectRefs}
+						ondocchange={handleDocChange}
+						onselectionchange={(sel) => {
+							currentSelection = sel;
+							if (!sel) showNewComment = false;
+						}}
+						{commentRanges}
+						{scrollToRange}
+					/>
+				</div>
+			</div>
+			<div class="flex-1 overflow-y-auto px-6 py-10">
+				<div class="mx-auto w-full max-w-2xl">
+					<MarkdownPreview
+						{content}
+						projectId={data.document.projectId}
+						references={projectRefs}
+						{citationStyle}
+						docMap={docMap()}
+					/>
+				</div>
+			</div>
+		</div>
+	{:else}
+	<!-- Editor / Preview (single panel) -->
 	<div class="relative flex-1 overflow-y-auto px-6 py-10">
 		<div class="mx-auto w-full max-w-2xl">
-			{#if showPreview}
+			{#if viewMode === 'preview'}
 				<MarkdownPreview
 					{content}
 					projectId={data.document.projectId}
@@ -805,6 +873,7 @@
 			</div>
 		{/if}
 	</div>
+	{/if}
 
 	<!-- Comments sidebar -->
 	{#if showComments}

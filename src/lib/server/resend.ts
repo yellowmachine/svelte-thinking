@@ -134,6 +134,89 @@ export async function sendNewCommentNotification({
 	});
 }
 
+export async function sendCommitNotification({
+	to,
+	committerName,
+	documentTitle,
+	projectTitle,
+	commitMessage,
+	documentUrl,
+	unsubscribeUrl
+}: {
+	to: string;
+	committerName: string;
+	documentTitle: string;
+	projectTitle: string;
+	commitMessage: string;
+	documentUrl: string;
+	unsubscribeUrl: string;
+}) {
+	if (!env.RESEND_API_KEY) {
+		console.log(`[dev] Commit notification for ${to}: ${documentUrl}`);
+		return;
+	}
+
+	const resend = new Resend(env.RESEND_API_KEY);
+	const from = env.EMAIL_FROM || 'Scholio <noreply@scholio.tech>';
+
+	await resend.emails.send({
+		from,
+		to,
+		subject: `Nuevo commit en "${documentTitle}"`,
+		html: `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f9f9f7;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f7;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e8e6e0;">
+        <tr>
+          <td style="background:#1a1a18;padding:24px 40px;">
+            <p style="margin:0;font-family:Georgia,serif;font-size:18px;font-weight:bold;color:#f5f3ee;">Scholio</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 40px 24px;">
+            <p style="margin:0 0 16px;font-size:15px;color:#2a2a26;line-height:1.6;">
+              <strong>${committerName}</strong> ha guardado una nueva versión de <strong>"${documentTitle}"</strong> en el proyecto <strong>${projectTitle}</strong>.
+            </p>
+            <table cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 24px;">
+              <tr>
+                <td style="background:#f5f3ee;border-radius:6px;border-left:3px solid #7c5c3e;padding:12px 16px;">
+                  <p style="margin:0;font-size:13px;color:#57534e;font-family:ui-sans-serif,system-ui,sans-serif;">Mensaje del commit</p>
+                  <p style="margin:4px 0 0;font-size:15px;color:#2a2a26;font-style:italic;">"${commitMessage}"</p>
+                </td>
+              </tr>
+            </table>
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="border-radius:6px;background:#1a1a18;">
+                  <a href="${documentUrl}" style="display:inline-block;padding:12px 24px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;font-weight:600;color:#f5f3ee;text-decoration:none;">
+                    Ver el documento →
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 40px 24px;border-top:1px solid #e8e6e0;">
+            <p style="margin:0;font-size:12px;color:#a8a29e;line-height:1.6;">
+              Scholio · <a href="https://scholio.tech" style="color:#a8a29e;">scholio.tech</a><br>
+              <a href="${unsubscribeUrl}" style="color:#a8a29e;">Silenciar notificaciones de este proyecto</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+		`
+	});
+}
+
 export async function sendVerificationEmail(email: string, url: string) {
 	if (!env.RESEND_API_KEY) {
 		console.log(`[dev] Verification URL for ${email}: ${url}`);
