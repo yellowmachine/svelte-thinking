@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
+
+	function renderMd(text: string): string {
+		return DOMPurify.sanitize(marked.parse(text) as string);
+	}
 
 	type Reply = {
 		id: string;
@@ -121,7 +127,8 @@
 	<div class="flex items-start justify-between gap-2">
 		<div class="min-w-0">
 			<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">{comment.authorName}</p>
-			<p class="mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">{comment.content}</p>
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+		<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">{@html renderMd(comment.content)}</div>
 			<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 				{formatDate(comment.createdAt)}
 			</p>
@@ -165,7 +172,8 @@
 					<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
 						{reply.authorName}
 					</p>
-					<p class="mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">{reply.content}</p>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">{@html renderMd(reply.content)}</div>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 						{formatDate(reply.createdAt)}
 					</p>
@@ -195,6 +203,27 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	/* Markdown básico en cuerpos de comentario */
+	:global(.comment-body > p) { margin: 0; }
+	:global(.comment-body > p + p) { margin-top: 0.25rem; }
+	:global(.comment-body strong) { font-weight: 600; }
+	:global(.comment-body em) { font-style: italic; }
+	:global(.comment-body code) {
+		font-family: ui-monospace, monospace;
+		font-size: 0.8em;
+		background: rgba(0,0,0,0.06);
+		border-radius: 3px;
+		padding: 0.1em 0.3em;
+	}
+	:global(.comment-body ul, .comment-body ol) {
+		padding-left: 1.25rem;
+		margin: 0.25rem 0;
+	}
+	:global(.comment-body li) { margin: 0; }
+	:global(.comment-body a) { color: var(--color-accent, #7c5c3e); text-decoration: underline; }
+</style>
 
 <SafeDeleteDialog
 	open={showDelete}

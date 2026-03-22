@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { marked, type RendererObject } from 'marked';
 	import markedFootnote from 'marked-footnote';
+	import DOMPurify from 'dompurify';
 	import katex from 'katex';
 
 	marked.use(markedFootnote());
@@ -98,7 +99,8 @@
 		const withWikilinks = wikilinkMap.size > 0 ? processWikilinks(withMathPlaceholders, wikilinkMap) : withMathPlaceholders;
 		const withCitations = refs.size > 0 ? processCitations(withWikilinks, refs, style) : withWikilinks;
 		const rawHtml = marked.parse(withCitations) as string;
-		const html = restoreMath(rawHtml, mathBlocks);
+		const restored = restoreMath(rawHtml, mathBlocks);
+		const html = DOMPurify.sanitize(restored, { ADD_TAGS: ['math'], ADD_ATTR: ['data-vega-id'] });
 		return { html, plots };
 	}
 
