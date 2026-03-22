@@ -28,7 +28,7 @@
 	type ViewMode = 'editor' | 'split' | 'preview';
 	const VIEW_MODE_KEY = `view-mode-${data.document.id}`;
 	let viewMode = $state<ViewMode>(
-		(localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null) ?? 'editor'
+		(typeof localStorage !== 'undefined' ? localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null : null) ?? 'editor'
 	);
 	function setViewMode(m: ViewMode) {
 		viewMode = m;

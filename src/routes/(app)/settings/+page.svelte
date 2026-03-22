@@ -192,7 +192,6 @@
 
 	async function handleDeleteKey(provider: ProviderId) {
 		const label = provider === 'openrouter' ? 'OpenRouter' : 'Perplexity';
-		if (!confirm(`¿Eliminar la API key de ${label}? Perderás acceso hasta que añadas una nueva.`)) return;
 		deletingKey[provider] = true;
 		aiError = '';
 		aiSuccess = '';
@@ -307,6 +306,20 @@
 		} finally {
 			twoFaLoading = false;
 		}
+	}
+
+	// ── Delete key confirmation ───────────────────────────────────────────────
+	let deleteKeyProvider = $state<ProviderId | null>(null);
+
+	function confirmDeleteKey(provider: ProviderId) {
+		deleteKeyProvider = provider;
+	}
+
+	async function executeDeleteKey() {
+		if (!deleteKeyProvider) return;
+		const provider = deleteKeyProvider;
+		deleteKeyProvider = null;
+		await handleDeleteKey(provider);
 	}
 
 	// ── Delete account ────────────────────────────────────────────────────────
@@ -713,7 +726,7 @@
 							<div class="mt-4 flex justify-end">
 								<button
 									type="button"
-									onclick={() => handleDeleteKey(p.id)}
+									onclick={() => confirmDeleteKey(p.id)}
 									disabled={deletingKey[p.id]}
 									class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
 								>
@@ -1118,6 +1131,41 @@
 		</div>
 	</div>
 </div>
+
+<!-- Delete API key confirmation dialog -->
+{#if deleteKeyProvider}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="dialog"
+		aria-modal="true"
+	>
+		<div class="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-xl dark:bg-dark-paper">
+			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+				¿Eliminar API key?
+			</h2>
+			<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+				Se eliminará la clave de <strong>{deleteKeyProvider === 'openrouter' ? 'OpenRouter' : 'Perplexity'}</strong>.
+				Perderás acceso al asistente IA hasta que añadas una nueva.
+			</p>
+			<div class="mt-5 flex gap-3">
+				<button
+					type="button"
+					onclick={() => (deleteKeyProvider = null)}
+					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					onclick={executeDeleteKey}
+					class="flex-1 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700"
+				>
+					Eliminar
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Delete account confirmation dialog -->
 {#if showDeleteDialog}
