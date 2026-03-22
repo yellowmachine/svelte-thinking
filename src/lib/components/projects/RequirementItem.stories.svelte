@@ -7,9 +7,6 @@
 		title: 'Projects/RequirementItem',
 		component: RequirementItem,
 		tags: ['autodocs'],
-		decorators: [
-			() => ({ template: '<ul class="max-w-xl p-4 space-y-3"><story /></ul>' })
-		],
 		args: {
 			projectId: 'proj-123',
 			isOwner: true,

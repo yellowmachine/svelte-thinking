@@ -18,6 +18,12 @@
 				<span class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent">beta</span>
 			</div>
 			<div class="flex items-center gap-4">
+				<a href="/about" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+					Acerca de
+				</a>
+				<a href="/blog" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+					Blog
+				</a>
 				<a href="/login" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 					Iniciar sesión
 				</a>

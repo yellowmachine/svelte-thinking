@@ -5,10 +5,7 @@
 	const { Story } = defineMeta({
 		title: 'AI/AiEditorPanel',
 		component: AiEditorPanel,
-		tags: ['autodocs'],
-		decorators: [
-			() => ({ template: '<div style="height: 600px; width: 380px;"><story /></div>' })
-		]
+		tags: ['autodocs']
 	});
 
 	// ── Fixture data ──────────────────────────────────────────────────────────

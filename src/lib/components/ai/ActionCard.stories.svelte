@@ -7,9 +7,6 @@
 		title: 'AI/ActionCard',
 		component: ActionCard,
 		tags: ['autodocs'],
-		decorators: [
-			() => ({ template: '<div class="max-w-sm p-4"><story /></div>' })
-		],
 		args: {
 			projectId: 'proj-123',
 			onconfirm: fn(),
@@ -115,7 +112,7 @@ Temas clave: financiación, metodología cualitativa, próximos pasos.`;
 />
 
 <!-- En contexto: simulación de cómo aparece debajo de una burbuja del agente -->
-<Story name="In chat context" decorators={[() => ({ template: '<div class="max-w-sm p-4"><story /></div>' })]}>
+<Story name="In chat context">
 	{#snippet children({ args })}
 		<div class="flex flex-col gap-1">
 			<!-- Burbuja del agente -->
