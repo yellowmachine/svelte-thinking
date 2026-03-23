@@ -2,7 +2,7 @@ import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { loginAsTestUser } from './helpers/login';
 import { TEST_USER } from './helpers/create-test-user';
 import { COLLABORATOR_USER, getCollaboratorUserId } from './helpers/create-collaborator';
-import { trpcMutate, loginViaApi, loginViaApiNo2FA } from './helpers/create-test-document';
+import { trpcMutate, trpcQuery, loginViaApi, loginViaApiNo2FA } from './helpers/create-test-document';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -381,5 +381,111 @@ test.describe('Flujo 3b — Colaborador abandona proyecto', () => {
 		await page.goto(`/projects/${projectId}`);
 		await expect(page.getByText(COLLABORATOR_USER.name)).not.toBeVisible();
 		await page.close();
+	});
+});
+
+test.describe('Flujo 4 — Seguridad RLS', () => {
+	let ownerCookie: string;
+	let collabCookie: string;
+	let privateProjectId: string;
+	let privateDocId: string;
+	let collabContext: BrowserContext;
+
+	test.beforeAll(async ({ browser }) => {
+		const totpSecret = readFileSync(SECRET_FILE, 'utf-8').trim();
+		ownerCookie = await loginViaApi(TEST_USER.email, TEST_USER.password, totpSecret);
+		collabCookie = await loginViaApiNo2FA(COLLABORATOR_USER.email, COLLABORATOR_USER.password);
+
+		// Proyecto privado del owner — colaborador NO está invitado
+		const project = await trpcMutate<{ id: string }>(
+			'projects.create',
+			{ title: '_test-private-project' },
+			ownerCookie
+		);
+		privateProjectId = project.id;
+
+		const doc = await trpcMutate<{ id: string }>(
+			'documents.create',
+			{ projectId: privateProjectId, title: 'Documento privado', type: 'paper' },
+			ownerCookie
+		);
+		privateDocId = doc.id;
+
+		collabContext = await browser.newContext();
+	});
+
+	test.afterAll(async () => {
+		await trpcMutate('projects.delete', privateProjectId, ownerCookie).catch(() => {});
+		await collabContext.close();
+	});
+
+	// ── UI ────────────────────────────────────────────────────────────────────
+
+	test('usuario B no ve el proyecto privado de A en su lista', async () => {
+		const page = await collabContext.newPage();
+		await loginAsCollaborator(page);
+
+		await page.goto('/projects');
+		await expect(page.getByText('_test-private-project')).not.toBeVisible();
+		await page.close();
+	});
+
+	test('usuario B navegando directamente a la URL del proyecto → redirige', async () => {
+		const page = await collabContext.newPage();
+		await page.goto(`/projects/${privateProjectId}`);
+
+		// RLS lanza NOT_FOUND en el page load → SvelteKit redirige a /projects
+		await expect(page).not.toHaveURL(`/projects/${privateProjectId}`);
+		await page.close();
+	});
+
+	test('usuario B navegando a la URL del documento → redirige', async () => {
+		const page = await collabContext.newPage();
+		await page.goto(`/projects/${privateProjectId}/documents/${privateDocId}`);
+
+		await expect(page).not.toHaveURL(
+			`/projects/${privateProjectId}/documents/${privateDocId}`
+		);
+		await page.close();
+	});
+
+	// ── API / tRPC ────────────────────────────────────────────────────────────
+
+	test('usuario B: projects.byId con proyecto ajeno → NOT_FOUND', async () => {
+		await expect(
+			trpcQuery('projects.byId', privateProjectId, collabCookie)
+		).rejects.toThrow('NOT_FOUND');
+	});
+
+	test('usuario B: documents.withContent con documento ajeno → NOT_FOUND', async () => {
+		await expect(
+			trpcQuery('documents.withContent', privateDocId, collabCookie)
+		).rejects.toThrow('NOT_FOUND');
+	});
+
+	test('usuario B: comments.createGeneral en documento ajeno → error', async () => {
+		await expect(
+			trpcMutate(
+				'comments.createGeneral',
+				{ documentId: privateDocId, content: 'Intrusión' },
+				collabCookie
+			)
+		).rejects.toThrow();
+	});
+
+	test('usuario B: projects.update con proyecto ajeno → error', async () => {
+		await expect(
+			trpcMutate(
+				'projects.update',
+				{ id: privateProjectId, title: 'Hackeado' },
+				collabCookie
+			)
+		).rejects.toThrow();
+	});
+
+	test('usuario B: projects.delete con proyecto ajeno → error', async () => {
+		await expect(
+			trpcMutate('projects.delete', privateProjectId, collabCookie)
+		).rejects.toThrow();
 	});
 });

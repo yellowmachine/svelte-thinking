@@ -25,6 +25,18 @@ export async function trpcMutate<T>(procedure: string, input: unknown, cookie: s
 	return body.result.data.json as T;
 }
 
+/** Ejecuta una query tRPC via GET. Lanza error si falla. */
+export async function trpcQuery<T>(procedure: string, input: unknown, cookie: string): Promise<T> {
+	const encoded = encodeURIComponent(JSON.stringify({ json: input }));
+	const res = await fetch(`${BASE_URL}/api/trpc/${procedure}?input=${encoded}`, {
+		headers: { Origin: BASE_URL, Cookie: cookie }
+	});
+	if (!res.ok) throw new Error(`tRPC query ${procedure} failed: ${res.status} ${await res.text()}`);
+	const body = await res.json();
+	if (body.error) throw new Error(body.error.data?.code ?? body.error.message ?? 'TRPC_ERROR');
+	return body.result.data.json as T;
+}
+
 /** Extrae pares name=value de uno o varios headers set-cookie */
 function parseCookies(setCookie: string | null): string {
 	if (!setCookie) return '';
