@@ -18,6 +18,32 @@ async function loginAsCollaborator(page: Page) {
 	await page.waitForURL('/projects');
 }
 
+// ── Shared API helpers ────────────────────────────────────────────────────────
+
+async function setupCollabProject(ownerCookie: string, collabCookie: string) {
+	const project = await trpcMutate<{ id: string }>(
+		'projects.create',
+		{ title: '_test-collab-project' },
+		ownerCookie
+	);
+
+	const doc = await trpcMutate<{ id: string }>(
+		'documents.create',
+		{ projectId: project.id, title: 'Documento colaborativo', type: 'paper' },
+		ownerCookie
+	);
+
+	// Invitar + aceptar via API para no depender del UI del Flujo 1
+	const invitation = await trpcMutate<{ token: string }>(
+		'invitations.create',
+		{ projectId: project.id, invitedEmail: COLLABORATOR_USER.email, role: 'reviewer' },
+		ownerCookie
+	);
+	await trpcMutate('invitations.accept', invitation.token, collabCookie);
+
+	return { projectId: project.id, docId: doc.id };
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Flujo 1 — Registro e invitación colaborativa', () => {
@@ -118,6 +144,112 @@ test.describe('Flujo 1 — Registro e invitación colaborativa', () => {
 
 		const badge = page.locator('a[href="/network"] span.rounded-full');
 		await expect(badge).not.toBeVisible();
+		await page.close();
+	});
+});
+
+test.describe('Flujo 2 — Colaboración en documentos', () => {
+	let ownerCookie: string;
+	let collabCookie: string;
+	let projectId: string;
+	let docId: string;
+	let ownerContext: BrowserContext;
+	let collabContext: BrowserContext;
+
+	test.beforeAll(async ({ browser }) => {
+		const totpSecret = readFileSync(SECRET_FILE, 'utf-8').trim();
+		ownerCookie = await loginViaApi(TEST_USER.email, TEST_USER.password, totpSecret);
+		collabCookie = await loginViaApiNo2FA(COLLABORATOR_USER.email, COLLABORATOR_USER.password);
+
+		({ projectId, docId } = await setupCollabProject(ownerCookie, collabCookie));
+
+		ownerContext = await browser.newContext();
+		collabContext = await browser.newContext();
+	});
+
+	test.afterAll(async () => {
+		await trpcMutate('projects.delete', projectId, ownerCookie).catch(() => {});
+		await ownerContext.close();
+		await collabContext.close();
+	});
+
+	test('colaborador deja un comentario general en el documento', async () => {
+		const page = await collabContext.newPage();
+		await loginAsCollaborator(page);
+
+		await page.goto(`/projects/${projectId}/documents/${docId}`);
+
+		// Abrir tab/panel de comentarios generales
+		await page.getByRole('tab', { name: /comentarios/i }).click();
+		await page.getByPlaceholder(/escribe un comentario/i).fill('Este párrafo necesita más referencias.');
+		await page.getByRole('button', { name: /comentar/i }).click();
+
+		await expect(page.getByText('Este párrafo necesita más referencias.')).toBeVisible();
+		await page.close();
+	});
+
+	test('owner ve el comentario del colaborador', async () => {
+		const page = await ownerContext.newPage();
+		await loginAsTestUser(page);
+
+		await page.goto(`/projects/${projectId}/documents/${docId}`);
+		await page.getByRole('tab', { name: /comentarios/i }).click();
+
+		await expect(page.getByText('Este párrafo necesita más referencias.')).toBeVisible();
+		await expect(page.getByText(COLLABORATOR_USER.name)).toBeVisible();
+		await page.close();
+	});
+
+	test('owner resuelve el comentario', async () => {
+		const page = await ownerContext.newPage();
+		await page.goto(`/projects/${projectId}/documents/${docId}`);
+		await page.getByRole('tab', { name: /comentarios/i }).click();
+
+		await page.getByRole('button', { name: /resolver/i }).first().click();
+
+		// El comentario pasa a estado resuelto
+		await expect(page.getByRole('button', { name: /reabrir/i }).first()).toBeVisible();
+		await page.close();
+	});
+
+	test('owner hace commit del documento', async () => {
+		const page = await ownerContext.newPage();
+		await page.goto(`/projects/${projectId}/documents/${docId}`);
+
+		await page.getByRole('button', { name: /commit/i }).click();
+		await page.getByPlaceholder(/descripción del commit/i).fill('Primera versión revisada');
+		await page.getByRole('button', { name: /confirmar/i }).click();
+
+		await expect(page.getByText('Primera versión revisada')).toBeVisible();
+		await page.close();
+	});
+
+	test('colaborador ve la nueva versión en el historial', async () => {
+		const page = await collabContext.newPage();
+		await page.goto(`/projects/${projectId}/documents/${docId}`);
+
+		await page.getByRole('button', { name: /historial/i }).click();
+
+		await expect(page.getByText('Primera versión revisada')).toBeVisible();
+		await page.close();
+	});
+
+	test('colaborador puede abrir el diff de la versión', async () => {
+		const page = await collabContext.newPage();
+		await page.goto(`/projects/${projectId}/documents/${docId}`);
+
+		await page.getByRole('button', { name: /historial/i }).click();
+
+		// Abrir diff en nueva pestaña
+		const [diffPage] = await Promise.all([
+			page.context().waitForEvent('page'),
+			page.getByRole('button', { name: /comparar/i }).first().click()
+		]);
+
+		await diffPage.waitForLoadState();
+		await expect(diffPage.getByText('Primera versión revisada')).toBeVisible();
+
+		await diffPage.close();
 		await page.close();
 	});
 });
