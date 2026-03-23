@@ -36,8 +36,10 @@
 				type="email"
 				name="email"
 				required
+				readonly
+				value={data.email}
 				autocomplete="email"
-				class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink opacity-70 focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
 		</div>
 

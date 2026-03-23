@@ -1039,13 +1039,10 @@
 									</div>
 									<div class="flex shrink-0 flex-col gap-1">
 										<button
-											onclick={() => selectVersion(v.id)}
-											class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui {selectedVersionId ===
-											v.id
-												? 'bg-paper-ui dark:bg-dark-paper-ui'
-												: ''}"
+											onclick={() => window.open(`/projects/${data.document.projectId}/documents/${data.document.id}/diff/${v.id}`, '_blank')}
+											class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 										>
-											{selectedVersionId === v.id ? 'Cerrar' : 'Comparar'}
+											Comparar ↗
 										</button>
 										{#if selectedVersionId === v.id && compareDiff !== null}
 											<button

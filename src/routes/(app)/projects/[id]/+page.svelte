@@ -92,11 +92,11 @@
 	let createDocError = $state('');
 
 	const docTypeOptions = [
-		{ value: 'paper' as const, label: 'Artículo' },
-		{ value: 'notes' as const, label: 'Notas' },
-		{ value: 'outline' as const, label: 'Esquema' },
-		{ value: 'bibliography' as const, label: 'Bibliografía' },
-		{ value: 'supplementary' as const, label: 'Suplementario' }
+		{ value: 'paper' as const, label: 'Artículo', description: 'Documento principal: tesis, artículo, ensayo.' },
+		{ value: 'notes' as const, label: 'Notas', description: 'Ideas y anotaciones en progreso.' },
+		{ value: 'outline' as const, label: 'Esquema', description: 'Índice o estructura jerárquica del argumento.' },
+		{ value: 'bibliography' as const, label: 'Bibliografía', description: 'Lista de referencias y fuentes.' },
+		{ value: 'supplementary' as const, label: 'Suplementario', description: 'Anexos, apéndices y material complementario.' }
 	];
 
 	async function createDocument() {
@@ -506,21 +506,23 @@
 			{#if showCreateDoc}
 				<div class="mb-4 rounded-xl border border-accent/30 bg-paper p-5 dark:bg-dark-paper">
 					<div class="flex flex-col gap-3">
-						<div class="flex gap-3">
-							<input
-								type="text"
-								bind:value={newDocTitle}
-								placeholder="Título del documento"
-								class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							/>
-							<select
-								bind:value={newDocType}
-								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							>
-								{#each docTypeOptions as opt (opt.value)}
-									<option value={opt.value}>{opt.label}</option>
-								{/each}
-							</select>
+						<input
+							type="text"
+							bind:value={newDocTitle}
+							placeholder="Título del documento"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						/>
+						<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+							{#each docTypeOptions as opt (opt.value)}
+								<button
+									type="button"
+									onclick={() => (newDocType = opt.value)}
+									class="flex flex-col gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors {newDocType === opt.value ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-paper-border hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui'}"
+								>
+									<span class="font-sans text-sm font-medium {newDocType === opt.value ? 'text-accent' : 'text-ink dark:text-dark-ink'}">{opt.label}</span>
+									<span class="font-sans text-xs leading-tight text-ink-faint dark:text-dark-ink-faint">{opt.description}</span>
+								</button>
+							{/each}
 						</div>
 
 						{#if createDocError}
