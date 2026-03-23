@@ -19,6 +19,9 @@
 	};
 
 	const documents = $derived(data.documents);
+	const canEdit = $derived(
+		data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor'
+	);
 	const invitations: InvitationType[] = $derived(
 		data.invitations.map((inv) => ({
 			...inv,
@@ -458,6 +461,7 @@
 							requiredTotal={data.requirementCounts.requiredTotal}
 						/>
 					</a>
+				{#if canEdit}
 					<button
 						onclick={() => (showGenerateDraft = true)}
 						class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
@@ -494,6 +498,7 @@
 					>
 						+ Nuevo
 					</button>
+				{/if}
 				</div>
 			</div>
 
@@ -746,20 +751,19 @@
 					</div>
 				{/if}
 			</div>
+			<!-- Danger zone — owner only -->
+			{#if data.isOwner}
+				<div class="mt-2">
+					<button
+						type="button"
+						onclick={() => (showDeleteProject = true)}
+						class="w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
+					>
+						Eliminar proyecto…
+					</button>
+				</div>
+			{/if}
 		</div>
-
-		<!-- Danger zone — owner only -->
-		{#if data.isOwner}
-			<div class="mt-2">
-				<button
-					type="button"
-					onclick={() => (showDeleteProject = true)}
-					class="w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
-				>
-					Eliminar proyecto…
-				</button>
-			</div>
-		{/if}
 	</div>
 </div>
 

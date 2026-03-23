@@ -40,6 +40,7 @@
 	let errorMsg = $state('');
 
 	async function invite() {
+		console.log('[invite] click', { projectId, email: email.trim(), role });
 		if (!email.trim()) return;
 		reqState ='sending';
 		errorMsg = '';

@@ -100,7 +100,9 @@
 		const withCitations = refs.size > 0 ? processCitations(withWikilinks, refs, style) : withWikilinks;
 		const rawHtml = marked.parse(withCitations) as string;
 		const restored = restoreMath(rawHtml, mathBlocks);
-		const html = DOMPurify.sanitize(restored, { ADD_TAGS: ['math'], ADD_ATTR: ['data-vega-id'] });
+		const html = typeof DOMPurify.sanitize === 'function'
+			? DOMPurify.sanitize(restored, { ADD_TAGS: ['math'], ADD_ATTR: ['data-vega-id'] })
+			: restored;
 		return { html, plots };
 	}
 
