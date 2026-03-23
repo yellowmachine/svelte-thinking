@@ -11,7 +11,7 @@
 <div class="flex h-screen flex-col overflow-hidden bg-paper-ui dark:bg-dark-paper-ui">
 	<!-- Desktop nav -->
 	<div class="hidden sm:block">
-		<Navbar user={data.user} />
+		<Navbar user={data.user} pendingInvitationCount={data.pendingInvitationCount} />
 	</div>
 	<!-- Mobile header -->
 	<MobileHeader user={data.user} />

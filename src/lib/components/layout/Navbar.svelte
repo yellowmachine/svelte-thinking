@@ -2,9 +2,11 @@
 	import QuickNoteButton from './QuickNoteButton.svelte';
 
 	let {
-		user
+		user,
+		pendingInvitationCount = 0
 	}: {
 		user: { name: string; email: string };
+		pendingInvitationCount?: number;
 	} = $props();
 
 	const initials = $derived(
@@ -39,8 +41,13 @@
 				<a href="/bib" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 					Bibliografía
 				</a>
-				<a href="/network" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+				<a href="/network" class="relative font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 					Red
+					{#if pendingInvitationCount > 0}
+						<span class="absolute -top-1.5 -right-3 flex h-4 w-4 items-center justify-center rounded-full bg-accent font-sans text-[10px] font-semibold text-white">
+							{pendingInvitationCount > 9 ? '9+' : pendingInvitationCount}
+						</span>
+					{/if}
 				</a>
 				<a href="/help" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 					Ayuda

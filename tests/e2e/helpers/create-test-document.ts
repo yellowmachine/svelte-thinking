@@ -14,7 +14,7 @@ function trpcHeaders(cookie: string) {
 	return headers({ Cookie: cookie });
 }
 
-async function trpcMutate<T>(procedure: string, input: unknown, cookie: string): Promise<T> {
+export async function trpcMutate<T>(procedure: string, input: unknown, cookie: string): Promise<T> {
 	const res = await fetch(`${BASE_URL}/api/trpc/${procedure}`, {
 		method: 'POST',
 		headers: trpcHeaders(cookie),
@@ -59,6 +59,20 @@ export async function loginViaApi(email: string, password: string, totpSecret: s
 
 	// Usar solo la cookie de sesión del paso 2 (la del paso 1 es temporal para 2FA)
 	return parseCookies(step2.headers.get('set-cookie'));
+}
+
+/**
+ * Login via API para un usuario SIN 2FA.
+ * Devuelve el Cookie header con la sesión completa.
+ */
+export async function loginViaApiNo2FA(email: string, password: string): Promise<string> {
+	const res = await fetch(`${BASE_URL}/api/auth/sign-in/email`, {
+		method: 'POST',
+		headers: headers(),
+		body: JSON.stringify({ email, password })
+	});
+	if (!res.ok) throw new Error(`login failed: ${res.status} ${await res.text()}`);
+	return parseCookies(res.headers.get('set-cookie'));
 }
 
 /**
