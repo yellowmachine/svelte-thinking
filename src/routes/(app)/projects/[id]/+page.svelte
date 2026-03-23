@@ -92,11 +92,11 @@
 	let createDocError = $state('');
 
 	const docTypeOptions = [
-		{ value: 'paper' as const, label: 'Artículo', description: 'Documento principal: tesis, artículo, ensayo.' },
-		{ value: 'notes' as const, label: 'Notas', description: 'Ideas y anotaciones en progreso.' },
-		{ value: 'outline' as const, label: 'Esquema', description: 'Índice o estructura jerárquica del argumento.' },
-		{ value: 'bibliography' as const, label: 'Bibliografía', description: 'Lista de referencias y fuentes.' },
-		{ value: 'supplementary' as const, label: 'Suplementario', description: 'Anexos, apéndices y material complementario.' }
+		{ value: 'paper' as const, label: 'Article', description: 'Main document: thesis, article, essay.' },
+		{ value: 'notes' as const, label: 'Notes', description: 'Ideas and annotations in progress.' },
+		{ value: 'outline' as const, label: 'Outline', description: 'Index or hierarchical argument structure.' },
+		{ value: 'bibliography' as const, label: 'Bibliography', description: 'List of references and sources.' },
+		{ value: 'supplementary' as const, label: 'Supplementary', description: 'Annexes, appendices and supplementary material.' }
 	];
 
 	async function createDocument() {
@@ -111,7 +111,7 @@
 			});
 			window.location.href = `/projects/${data.project.id}/documents/${doc.id}`;
 		} catch (e) {
-			createDocError = e instanceof Error ? e.message : 'Error al crear el documento';
+			createDocError = e instanceof Error ? e.message : 'Error creating document';
 			creatingDoc = false;
 		}
 	}
@@ -149,12 +149,12 @@
 				body: form
 			});
 			if (!res.ok) {
-				const err = await res.json().catch(() => ({ message: 'Error al subir' }));
+				const err = await res.json().catch(() => ({ message: 'Upload error' }));
 				throw new Error(err.message);
 			}
 			await loadDatasets();
 		} catch (err) {
-			datasetError = err instanceof Error ? err.message : 'Error al subir dataset';
+			datasetError = err instanceof Error ? err.message : 'Error uploading dataset';
 		} finally {
 			uploadingDataset = false;
 			input.value = '';
@@ -195,7 +195,7 @@
 		} catch (e: unknown) {
 			leavingProject = false;
 			showLeaveProject = false;
-			alert(e instanceof Error ? e.message : 'Error al abandonar el proyecto');
+			alert(e instanceof Error ? e.message : 'Error leaving project');
 		}
 	}
 
@@ -301,7 +301,7 @@
 
 		const result = [...groups.entries()].map(([id, g]) => ({ id, ...g }));
 		if (publicOthers.length > 0) {
-			result.push({ id: '__public__', title: 'Documentos públicos de otros usuarios', docs: publicOthers });
+			result.push({ id: '__public__', title: 'Public documents from other users', docs: publicOthers });
 		}
 		return result;
 	});
@@ -340,19 +340,19 @@
 	}
 
 	const statusLabel: Record<string, string> = {
-		draft: 'Borrador',
-		active: 'Activo',
-		review: 'En revisión',
-		published: 'Publicado',
-		archived: 'Archivado'
+		draft: 'Draft',
+		active: 'Active',
+		review: 'Under review',
+		published: 'Published',
+		archived: 'Archived'
 	};
 
 	const roleLabel: Record<string, string> = {
-		owner: 'Propietario',
-		author: 'Autor',
-		coauthor: 'Coautor',
-		reviewer: 'Revisor',
-		commenter: 'Comentarista'
+		owner: 'Owner',
+		author: 'Author',
+		coauthor: 'Co-author',
+		reviewer: 'Reviewer',
+		commenter: 'Commenter'
 	};
 </script>
 
@@ -372,7 +372,7 @@
 					stroke-linejoin="round"
 				/>
 			</svg>
-			Proyectos
+			Projects
 		</button>
 
 		<div class="flex items-start justify-between gap-4">
@@ -409,7 +409,7 @@
 						onblur={() => saveField('description')}
 						onkeydown={(e) => { if (e.key === 'Escape') { cancelEdit(); } }}
 						rows={3}
-						placeholder="Añade una descripción…"
+						placeholder="Add a description…"
 						class="mt-2 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink-muted focus:outline-none dark:text-dark-ink-muted"
 					></textarea>
 				{:else if data.project.description || data.isOwner}
@@ -419,7 +419,7 @@
 						disabled={!data.isOwner}
 						class="mt-2 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner ? 'cursor-text hover:opacity-80' : 'cursor-default'} {!data.project.description ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink-muted dark:text-dark-ink-muted'}"
 					>
-						{data.project.description || 'Añade una descripción…'}
+						{data.project.description || 'Add a description…'}
 					</button>
 				{/if}
 
@@ -431,21 +431,21 @@
 						onblur={() => saveField('notes')}
 						onkeydown={(e) => { if (e.key === 'Escape') { cancelEdit(); } }}
 						rows={4}
-						placeholder="Notas privadas del proyecto…"
+						placeholder="Private project notes…"
 						class="mt-3 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink focus:outline-none dark:text-dark-ink"
 					></textarea>
 				{:else}
 					{@const notes = (data.project as typeof data.project & { notes?: string | null }).notes}
 					{#if notes || data.isOwner}
 						<div class="mt-3">
-							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Notas</span>
+							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Notes</span>
 							<button
 								type="button"
 								onclick={() => startEdit('notes')}
 								disabled={!data.isOwner}
 								class="mt-0.5 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner ? 'cursor-text hover:opacity-80' : 'cursor-default'} {!notes ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
 							>
-								{notes || 'Añadir notas…'}
+								{notes || 'Add notes…'}
 							</button>
 						</div>
 					{/if}
@@ -455,7 +455,7 @@
 				<a
 					href="/api/projects/{data.project.id}/export"
 					download
-					title="Exportar proyecto como YAML"
+					title="Export project as YAML"
 					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -463,7 +463,7 @@
 						<polyline points="7 10 12 15 17 10"/>
 						<line x1="12" y1="15" x2="12" y2="3"/>
 					</svg>
-					Exportar
+					Export
 				</a>
 				<span
 					class="rounded-full bg-paper-border px-3 py-1 font-sans text-xs font-medium text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted"
@@ -475,9 +475,9 @@
 
 		{#if data.myRole}
 			<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Tu rol: <span class="font-medium text-accent">{roleLabel[data.myRole] ?? data.myRole}</span>
+				Your role: <span class="font-medium text-accent">{roleLabel[data.myRole] ?? data.myRole}</span>
 				· {data.collaborators.length}
-				{data.collaborators.length === 1 ? 'colaborador' : 'colaboradores'}
+				{data.collaborators.length === 1 ? 'collaborator' : 'collaborators'}
 			</p>
 		{/if}
 	</div>
@@ -486,7 +486,7 @@
 		<!-- Documents section -->
 		<div class="lg:col-span-2">
 			<div class="mb-4 flex items-center justify-between">
-				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documentos</h2>
+				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
 				<div class="hidden items-center gap-2 sm:flex">
 					<a
 						href="/projects/{data.project.id}/bib"
@@ -496,7 +496,7 @@
 							<path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
-						Bibliografía
+						Bibliography
 					</a>
 					<a
 						href="/projects/{data.project.id}/ai"
@@ -505,7 +505,7 @@
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
-						Asistente
+						Assistant
 					</a>
 					<a
 						href="/projects/{data.project.id}/requirements"
@@ -515,7 +515,7 @@
 							<path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 							<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
-						Requisitos
+						Requirements
 						<RequirementsProgress
 							fulfilled={data.requirementCounts.fulfilled}
 							total={data.requirementCounts.total}
@@ -531,7 +531,7 @@
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
-						Generar borrador
+						Generate draft
 					</button>
 					<a
 						href="/projects/{data.project.id}/photos"
@@ -542,7 +542,7 @@
 							<circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="1.5"/>
 							<path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
-						Fotos
+						Photos
 					</a>
 					<a
 						href="/projects/{data.project.id}/bib"
@@ -552,13 +552,13 @@
 							<path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
 							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
 						</svg>
-						Bibliografía
+						Bibliography
 					</a>
 					<button
 						onclick={() => (showCreateDoc = !showCreateDoc)}
 						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
-						+ Nuevo
+						+ New
 					</button>
 				{/if}
 				</div>
@@ -571,7 +571,7 @@
 						<input
 							type="text"
 							bind:value={newDocTitle}
-							placeholder="Título del documento"
+							placeholder="Document title"
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 						<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -597,13 +597,13 @@
 								disabled={creatingDoc || !newDocTitle.trim()}
 								class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 							>
-								{creatingDoc ? 'Creando...' : 'Crear y abrir'}
+								{creatingDoc ? 'Creating...' : 'Create and open'}
 							</button>
 							<button
 								onclick={() => (showCreateDoc = false)}
 								class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 							>
-								Cancelar
+								Cancel
 							</button>
 						</div>
 					</div>
@@ -616,7 +616,7 @@
 					class="rounded-xl border border-dashed border-paper-border py-12 text-center dark:border-dark-paper-border"
 				>
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Sin documentos. Crea el primero.
+						No documents yet. Create the first one.
 					</p>
 				</div>
 			{:else}
@@ -640,7 +640,7 @@
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Datasets</h2>
 				<label class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui {uploadingDataset ? 'opacity-50 pointer-events-none' : ''}">
-					{uploadingDataset ? 'Subiendo…' : '+ Subir dataset'}
+					{uploadingDataset ? 'Uploading…' : '+ Upload dataset'}
 					<input type="file" class="hidden" accept=".csv,.tsv,.json,.xls,.xlsx" onchange={uploadDataset} disabled={uploadingDataset} />
 				</label>
 			</div>
@@ -651,7 +651,7 @@
 
 			{#if datasets.length === 0}
 				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					Sin datasets. Sube un CSV, TSV o JSON para referenciarlos en gráficos con <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">"$ref": "dataset:nombre.csv"</code>.
+					No datasets. Upload a CSV, TSV or JSON to reference them in charts with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">"$ref": "dataset:name.csv"</code>.
 				</p>
 			{:else}
 				<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper">
@@ -665,7 +665,7 @@
 								onclick={() => deleteDataset(dataset.id)}
 								class="ml-3 shrink-0 font-sans text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint dark:hover:text-red-400"
 							>
-								Eliminar
+								Delete
 							</button>
 						</div>
 					{/each}
@@ -688,17 +688,17 @@
 					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
 					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-						Colaboradores
+						Collaborators
 					</h3>
 					<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 						{data.collaborators.length}
-						{data.collaborators.length === 1 ? 'colaborador' : 'colaboradores'}
+						{data.collaborators.length === 1 ? 'collaborator' : 'collaborators'}
 					</p>
 					<button
 						onclick={() => (showLeaveProject = true)}
 						class="mt-4 w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
 					>
-						Abandonar proyecto…
+						Leave project…
 					</button>
 				</div>
 			{/if}
@@ -707,7 +707,7 @@
 			{#if data.isOwner || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).doi || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).version || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).publishedAt}
 				{@const pub = data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }}
 				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
-					<h3 class="mb-3 font-serif text-base font-semibold text-ink dark:text-dark-ink">Publicación</h3>
+					<h3 class="mb-3 font-serif text-base font-semibold text-ink dark:text-dark-ink">Publication</h3>
 					<div class="flex flex-col gap-2">
 						<!-- DOI -->
 						<div>
@@ -729,13 +729,13 @@
 									disabled={!data.isOwner}
 									class="mt-0.5 block w-full text-left font-mono text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.doi ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
 								>
-									{pub.doi || (data.isOwner ? 'Añadir DOI…' : '—')}
+									{pub.doi || (data.isOwner ? 'Add DOI…' : '—')}
 								</button>
 							{/if}
 						</div>
 						<!-- Version -->
 						<div>
-							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Versión</span>
+							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Version</span>
 							{#if editingField === 'version'}
 								<input
 									{@attach focusEl}
@@ -753,13 +753,13 @@
 									disabled={!data.isOwner}
 									class="mt-0.5 block w-full text-left font-sans text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.version ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
 								>
-									{pub.version || (data.isOwner ? 'Añadir versión…' : '—')}
+									{pub.version || (data.isOwner ? 'Add version…' : '—')}
 								</button>
 							{/if}
 						</div>
 						<!-- Published date -->
 						<div>
-							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Fecha publicación</span>
+							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Publication date</span>
 							{#if editingField === 'publishedAt'}
 								<input
 									{@attach focusEl}
@@ -776,7 +776,7 @@
 									disabled={!data.isOwner}
 									class="mt-0.5 block w-full text-left font-sans text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.publishedAt ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
 								>
-									{pub.publishedAt ? pub.publishedAt.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : (data.isOwner ? 'Añadir fecha…' : '—')}
+									{pub.publishedAt ? pub.publishedAt.toLocaleDateString('en', { year: 'numeric', month: 'long', day: 'numeric' }) : (data.isOwner ? 'Add date…' : '—')}
 								</button>
 							{/if}
 						</div>
@@ -788,20 +788,20 @@
 			<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
 				<div class="mb-3 flex items-center justify-between gap-2">
 					<div>
-						<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Contexto externo</h3>
-						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Documentos de otros proyectos visibles por la IA</p>
+						<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">External context</h3>
+						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Documents from other projects visible to the AI</p>
 					</div>
 					<button
 						onclick={openContextPicker}
 						class="shrink-0 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
-						+ Añadir
+						+ Add
 					</button>
 				</div>
 
 				{#if contextLinks.length === 0}
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						Sin documentos externos. Añade notas de otros proyectos para que la IA los use como contexto.
+						No external documents. Add notes from other projects for the AI to use as context.
 					</p>
 				{:else}
 					<div class="flex flex-col gap-1">
@@ -814,7 +814,7 @@
 								<button
 									onclick={() => removeContextLink(link.id)}
 									class="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 font-sans text-[11px] text-ink-faint hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
-									title="Quitar"
+									title="Remove"
 								>
 									✕
 								</button>
@@ -828,9 +828,9 @@
 				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
 					<div class="flex items-center justify-between gap-3">
 						<div>
-							<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Búsqueda pública</h3>
+							<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Public search</h3>
 							<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								{isSearchable ? 'Visible en Explorar. Muestra título, descripción y Abstract.' : 'Solo visible para colaboradores.'}
+								{isSearchable ? 'Visible in Explore. Shows title, description and Abstract.' : 'Visible to collaborators only.'}
 							</p>
 						</div>
 						<button
@@ -850,7 +850,7 @@
 						<div class="mt-4 border-t border-paper-border pt-4 dark:border-dark-paper-border">
 							<div class="mb-2 flex items-center justify-between">
 								<h4 class="font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
-									Interesados
+									Interested
 								</h4>
 								{#if !loadedInterested}
 									<button
@@ -858,14 +858,14 @@
 										disabled={loadingInterested}
 										class="font-sans text-xs text-accent hover:underline disabled:opacity-50"
 									>
-										{loadingInterested ? 'Cargando…' : 'Cargar'}
+										{loadingInterested ? 'Loading…' : 'Load'}
 									</button>
 								{/if}
 							</div>
 							{#if loadedInterested}
 								{#if interestedUsers.length === 0}
 									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										Nadie ha marcado interés todavía.
+										No one has expressed interest yet.
 									</p>
 								{:else}
 									<ul class="flex flex-col gap-2">
@@ -907,7 +907,7 @@
 						onclick={() => (showDeleteProject = true)}
 						class="w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
 					>
-						Eliminar proyecto…
+						Delete project…
 					</button>
 				</div>
 			{/if}
@@ -917,8 +917,8 @@
 
 <SafeDeleteDialog
 	open={showDeleteProject}
-	label="el proyecto"
-	warning="Se eliminarán permanentemente todos los documentos, versiones, comentarios y datos asociados."
+	label="the project"
+	warning="All documents, versions, comments and associated data will be permanently deleted."
 	deleting={deletingProject}
 	onconfirm={handleDeleteProject}
 	oncancel={() => (showDeleteProject = false)}
@@ -926,10 +926,10 @@
 
 <SafeDeleteDialog
 	open={showLeaveProject}
-	label="este proyecto"
-	title="Abandonar este proyecto"
-	confirmLabel="Abandonar"
-	warning="Perderás el acceso al proyecto y sus documentos. El owner puede volver a invitarte."
+	label="this project"
+	title="Leave this project"
+	confirmLabel="Leave"
+	warning="You will lose access to the project and its documents. The owner can invite you back."
 	deleting={leavingProject}
 	onconfirm={handleLeaveProject}
 	oncancel={() => (showLeaveProject = false)}
@@ -937,10 +937,10 @@
 
 <SafeDeleteDialog
 	open={showRemoveCollaborator}
-	label={collaboratorToRemove?.name ?? 'este colaborador'}
-	title="Expulsar a {collaboratorToRemove?.name ?? 'este colaborador'}"
-	confirmLabel="Expulsar"
-	warning="Perderá el acceso al proyecto inmediatamente. Puedes volver a invitarle."
+	label={collaboratorToRemove?.name ?? 'this collaborator'}
+	title="Remove {collaboratorToRemove?.name ?? 'this collaborator'}"
+	confirmLabel="Remove"
+	warning="They will immediately lose access to the project. You can invite them again."
 	deleting={removingCollaborator}
 	onconfirm={handleRemoveCollaborator}
 	oncancel={() => { showRemoveCollaborator = false; collaboratorToRemove = null; }}
@@ -951,11 +951,11 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
 		<div class="flex w-full max-w-md flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper" style="max-height: 80vh">
 			<div class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border">
-				<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Añadir contexto externo</h2>
+				<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Add external context</h2>
 				<button
 					onclick={() => { showContextPicker = false; contextPickerSearch = ''; }}
 					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					aria-label="Cerrar"
+					aria-label="Close"
 				>
 					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 						<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -967,14 +967,14 @@
 				<input
 					type="search"
 					bind:value={contextPickerSearch}
-					placeholder="Buscar documentos o proyectos…"
+					placeholder="Search documents or projects…"
 					class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				/>
 			</div>
 
 			<div class="flex-1 overflow-y-auto px-5 py-3">
 				{#if loadingAvailable}
-					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Cargando…</p>
+					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Loading…</p>
 				{:else if availableByProject().length === 0}
 					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
 						{availableDocs.length === 0 ? 'No tienes documentos en otros proyectos' : 'Todos los documentos ya están añadidos'}

@@ -36,16 +36,16 @@
 		<div class="flex items-center gap-4">
 			<nav class="hidden items-center gap-4 sm:flex">
 				<a href="/projects" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
-					Proyectos
+					Projects
 				</a>
 				<a href="/bib" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
-					Bibliografía
+					Bibliography
 				</a>
 				<a href="/explore" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
-					Explorar
+					Explore
 				</a>
 				<a href="/network" class="relative font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
-					Red
+					Network
 					{#if pendingInvitationCount > 0}
 						<span class="absolute -top-1.5 -right-3 flex h-4 w-4 items-center justify-center rounded-full bg-accent font-sans text-[10px] font-semibold text-white">
 							{pendingInvitationCount > 9 ? '9+' : pendingInvitationCount}
@@ -53,17 +53,18 @@
 					{/if}
 				</a>
 				<a href="/help" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
-					Ayuda
+					Help
 				</a>
 				<a href="/blog" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 					Blog
 				</a>
+
 			</nav>
 			<QuickNoteButton />
 			<div class="flex items-center gap-2.5">
 				<a
 					href="/settings"
-					title="Ajustes"
+					title="Settings"
 					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-sans text-xs font-semibold text-white transition-opacity hover:opacity-80"
 				>
 					{initials}
@@ -79,7 +80,7 @@
 					type="submit"
 					class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 				>
-					Salir
+					Sign out
 				</button>
 			</form>
 		</div>

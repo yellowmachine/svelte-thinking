@@ -71,7 +71,7 @@
 							href="/settings"
 							class="block px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 						>
-							Ajustes
+							Settings
 						</a>
 					</li>
 					<li>
@@ -80,7 +80,7 @@
 								type="submit"
 								class="w-full px-4 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 							>
-								Salir
+								Sign out
 							</button>
 						</form>
 					</li>

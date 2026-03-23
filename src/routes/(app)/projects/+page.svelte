@@ -28,7 +28,7 @@
 			newDescription = '';
 			showCreate = false;
 		} catch (e) {
-			createError = e instanceof Error ? e.message : 'Error al crear el proyecto';
+			createError = e instanceof Error ? e.message : 'Error creating project';
 		} finally {
 			creating = false;
 		}
@@ -46,16 +46,16 @@
 	<!-- Header -->
 	<div class="mb-8 flex items-center justify-between">
 		<div>
-			<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Mis proyectos</h1>
+			<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">My projects</h1>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				{projects.length === 1 ? '1 proyecto' : `${projects.length} proyectos`}
+				{projects.length === 1 ? '1 project' : `${projects.length} projects`}
 			</p>
 		</div>
 		<button
 			onclick={() => (showCreate = true)}
 			class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 		>
-			Nuevo proyecto
+			New project
 		</button>
 	</div>
 
@@ -63,7 +63,7 @@
 	{#if showCreate}
 		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-6 dark:bg-dark-paper">
 			<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Nuevo proyecto
+				New project
 			</h2>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-1.5">
@@ -71,13 +71,13 @@
 						for="project-title"
 						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
 					>
-						Título
+						Title
 					</label>
 					<input
 						id="project-title"
 						type="text"
 						bind:value={newTitle}
-						placeholder="Ej: Análisis del discurso académico en redes sociales"
+						placeholder="E.g.: Analysis of academic discourse on social media"
 						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					/>
 				</div>
@@ -86,13 +86,13 @@
 						for="project-desc"
 						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
 					>
-						Descripción <span class="font-normal text-ink-faint">(opcional)</span>
+						Description <span class="font-normal text-ink-faint">(optional)</span>
 					</label>
 					<textarea
 						id="project-desc"
 						bind:value={newDescription}
 						rows={2}
-						placeholder="Breve descripción del proyecto..."
+						placeholder="Brief project description..."
 						class="resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					></textarea>
 				</div>
@@ -107,13 +107,13 @@
 						disabled={creating || !newTitle.trim()}
 						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 					>
-						{creating ? 'Creando...' : 'Crear proyecto'}
+						{creating ? 'Creating...' : 'Create project'}
 					</button>
 					<button
 						onclick={cancelCreate}
 						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 					>
-						Cancelar
+						Cancel
 					</button>
 				</div>
 			</div>
@@ -151,15 +151,15 @@
 					/>
 				</svg>
 			</div>
-			<p class="font-serif text-lg font-medium text-ink dark:text-dark-ink">Sin proyectos aún</p>
+			<p class="font-serif text-lg font-medium text-ink dark:text-dark-ink">No projects yet</p>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Crea tu primer proyecto académico para empezar.
+				Create your first academic project to get started.
 			</p>
 			<button
 				onclick={() => (showCreate = true)}
 				class="mt-6 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 			>
-				Crear proyecto
+				Create project
 			</button>
 		</div>
 	{:else}
