@@ -14,6 +14,7 @@
 	let photoInputEl: HTMLInputElement | undefined;
 
 	const onProjects = $derived(page.url.pathname.startsWith('/projects'));
+	const onExplore = $derived(page.url.pathname.startsWith('/explore'));
 
 	async function openSheet(type: Sheet) {
 		sheet = type;
@@ -122,6 +123,19 @@
 				<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
 			</svg>
 			Proyectos
+		</a>
+
+		<!-- Explorar -->
+		<a
+			href="/explore"
+			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onExplore
+				? 'text-accent'
+				: 'text-ink-muted dark:text-dark-ink-muted'}"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+				<circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+			</svg>
+			Explorar
 		</a>
 
 		<!-- + Nota -->

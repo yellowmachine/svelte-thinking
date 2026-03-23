@@ -15,3 +15,4 @@ export * from './schemas/documentLinks.schema';
 export * from './schemas/feedback.schema';
 export * from './schemas/requirements.schema';
 export * from './schemas/documentChunks.schema';
+export * from './schemas/discover.schema';

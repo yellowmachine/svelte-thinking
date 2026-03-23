@@ -308,6 +308,37 @@
 
 	$effect(() => { loadContextLinks(); });
 
+	// ── Searchable toggle ────────────────────────────────────────────────────
+	let isSearchable = $state((data.project as typeof data.project & { isSearchable?: boolean }).isSearchable ?? false);
+	let togglingSearchable = $state(false);
+
+	async function toggleSearchable() {
+		togglingSearchable = true;
+		try {
+			const result = await trpc.projects.setSearchable.mutate({ id: data.project.id, isSearchable: !isSearchable });
+			isSearchable = result.isSearchable;
+		} finally {
+			togglingSearchable = false;
+		}
+	}
+
+	// ── Interesados ──────────────────────────────────────────────────────────
+	type InterestedUser = { id: string; userId: string; name: string; displayName: string | null; institution: string | null; orcid: string | null; bio: string | null; createdAt: Date };
+	let interestedUsers = $state<InterestedUser[]>([]);
+	let loadedInterested = $state(false);
+	let loadingInterested = $state(false);
+
+	async function loadInterested() {
+		if (loadedInterested) return;
+		loadingInterested = true;
+		try {
+			interestedUsers = await trpc.projects.listInterested.query(data.project.id) as InterestedUser[];
+			loadedInterested = true;
+		} finally {
+			loadingInterested = false;
+		}
+	}
+
 	const statusLabel: Record<string, string> = {
 		draft: 'Borrador',
 		active: 'Activo',
@@ -792,7 +823,83 @@
 					</div>
 				{/if}
 			</div>
-			<!-- Danger zone — owner only -->
+			<!-- Visibilidad pública — owner only -->
+			{#if data.isOwner}
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="flex items-center justify-between gap-3">
+						<div>
+							<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Búsqueda pública</h3>
+							<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								{isSearchable ? 'Visible en Explorar. Muestra título, descripción y Abstract.' : 'Solo visible para colaboradores.'}
+							</p>
+						</div>
+						<button
+							onclick={toggleSearchable}
+							disabled={togglingSearchable}
+							aria-pressed={isSearchable}
+							class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50
+								{isSearchable ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
+						>
+							<span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform
+								{isSearchable ? 'translate-x-6' : 'translate-x-1'}"></span>
+						</button>
+					</div>
+
+					{#if isSearchable}
+						<!-- Interesados -->
+						<div class="mt-4 border-t border-paper-border pt-4 dark:border-dark-paper-border">
+							<div class="mb-2 flex items-center justify-between">
+								<h4 class="font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
+									Interesados
+								</h4>
+								{#if !loadedInterested}
+									<button
+										onclick={loadInterested}
+										disabled={loadingInterested}
+										class="font-sans text-xs text-accent hover:underline disabled:opacity-50"
+									>
+										{loadingInterested ? 'Cargando…' : 'Cargar'}
+									</button>
+								{/if}
+							</div>
+							{#if loadedInterested}
+								{#if interestedUsers.length === 0}
+									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+										Nadie ha marcado interés todavía.
+									</p>
+								{:else}
+									<ul class="flex flex-col gap-2">
+										{#each interestedUsers as u (u.id)}
+											<li>
+												<a
+													href="/u/{u.userId}"
+													class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+												>
+													<span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/20 font-sans text-xs font-semibold text-accent">
+														{(u.displayName ?? u.name).charAt(0).toUpperCase()}
+													</span>
+													<div class="min-w-0">
+														<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+															{u.displayName ?? u.name}
+														</p>
+														{#if u.institution}
+															<p class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+																{u.institution}
+															</p>
+														{/if}
+													</div>
+												</a>
+											</li>
+										{/each}
+									</ul>
+								{/if}
+							{/if}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+		<!-- Danger zone — owner only -->
 			{#if data.isOwner}
 				<div class="mt-2">
 					<button

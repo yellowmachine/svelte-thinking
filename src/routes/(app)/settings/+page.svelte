@@ -462,7 +462,65 @@
 				</div>
 			</section>
 
-			<!-- Change password -->
+			<!-- ORCID -->
+		<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+			<div class="mb-4 flex items-start justify-between gap-4">
+				<div>
+					<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">ORCID</h2>
+					<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						Conecta tu cuenta ORCID para verificar tu identidad académica.
+					</p>
+				</div>
+				<svg width="32" height="32" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true" class="shrink-0">
+					<path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"/>
+				</svg>
+			</div>
+
+			{#if data.orcidStatus === 'connected'}
+				<p class="mb-4 rounded-lg bg-green-50 px-4 py-2 font-sans text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
+					ORCID conectado correctamente.
+				</p>
+			{:else if data.orcidStatus === 'error'}
+				<p class="mb-4 rounded-lg bg-red-50 px-4 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+					Error al conectar ORCID. Inténtalo de nuevo.
+				</p>
+			{/if}
+
+			{#if data.orcid && data.orcidVerified}
+				<div class="flex items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/40 dark:bg-green-900/10">
+					<div class="flex items-center gap-2">
+						<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" class="shrink-0 text-green-600 dark:text-green-400">
+							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+						</svg>
+						<span class="font-sans text-sm font-medium text-green-700 dark:text-green-400">Verificado</span>
+						<span class="font-mono text-sm text-ink dark:text-dark-ink">{data.orcid}</span>
+					</div>
+					<a
+						href="/api/auth/orcid/connect"
+						class="font-sans text-xs text-ink-muted underline hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					>
+						Reconectar
+					</a>
+				</div>
+			{:else}
+				{#if data.orcid}
+					<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						ORCID actual (sin verificar): <span class="font-mono">{data.orcid}</span>
+					</p>
+				{/if}
+				<a
+					href="/api/auth/orcid/connect"
+					class="inline-flex items-center gap-2 rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
+				>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true">
+						<path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"/>
+					</svg>
+					Conectar con ORCID
+				</a>
+			{/if}
+		</section>
+
+		<!-- Change password -->
 			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 				<h2 class="mb-5 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
 					Cambiar contraseña

@@ -14,6 +14,7 @@ import { referencesRouter } from './routers/references';
 import { contextLinksRouter } from './routers/contextLinks';
 import { feedbackRouter } from './routers/feedback';
 import { requirementsRouter } from './routers/requirements';
+import { discoverRouter } from './routers/discover';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -30,7 +31,8 @@ export const appRouter = router({
 	references: referencesRouter,
 	contextLinks: contextLinksRouter,
 	feedback: feedbackRouter,
-	requirements: requirementsRouter
+	requirements: requirementsRouter,
+	discover: discoverRouter
 });
 
 export type AppRouter = typeof appRouter;

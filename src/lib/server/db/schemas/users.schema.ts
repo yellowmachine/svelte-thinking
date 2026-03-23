@@ -1,6 +1,14 @@
 import { text, timestamp, boolean, pgPolicy, unique, uniqueIndex } from 'drizzle-orm/pg-core';
+import { customType } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
+
+// Reutilizamos el mismo tipo vector(384) que documentChunks
+const vector384 = customType<{ data: number[]; driverData: string }>({
+	dataType() { return 'vector(384)'; },
+	fromDriver(v: string) { return v.slice(1, -1).split(',').map(Number); },
+	toDriver(v: number[]) { return `[${v.join(',')}]`; }
+});
 
 export const planEnum = scholioSchema.enum('plan', ['free', 'pro', 'team']);
 
@@ -16,11 +24,14 @@ export const userProfile = scholioSchema.table(
 		bio: text('bio'),
 		institution: text('institution'),
 		orcid: text('orcid'),
+		orcidVerified: boolean('orcid_verified').notNull().default(false),
 		// Billing
 		stripeCustomerId: text('stripe_customer_id').unique(),
 		plan: planEnum('plan').notNull().default('free'),
 		planStatus: text('plan_status').default('active'), // active | canceled | past_due
 		planCurrentPeriodEnd: timestamp('plan_current_period_end'),
+		// Embedding del perfil para búsqueda semántica (null hasta primer indexado)
+		profileEmbedding: vector384('profile_embedding'),
 		// Default AI provider/model for the agent
 		defaultAiProvider: text('default_ai_provider').default('openrouter'),
 		defaultAiModel: text('default_ai_model'),

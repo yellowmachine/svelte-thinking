@@ -29,6 +29,7 @@ export const project = scholioSchema.table(
 		notes: text('notes'),
 		status: projectStatusEnum('status').notNull().default('draft'),
 		ownerId: text('owner_id').notNull(),
+		isSearchable: boolean('is_searchable').notNull().default(false),
 		requirementsPrompt: text('requirements_prompt'),
 		requirementsTemplate: text('requirements_template'),
 		doi: text('doi'),
@@ -51,6 +52,12 @@ export const project = scholioSchema.table(
 					AND project_collaborator.user_id = ${currentUserId}
 				)
 			`
+		}),
+
+		// SELECT: proyecto buscable — cualquier usuario autenticado puede ver
+		pgPolicy('project_select_searchable', {
+			for: 'select',
+			using: sql`${t.isSearchable} = true AND ${currentUserId} IS NOT NULL`
 		}),
 
 		// INSERT: solo puede insertar proyectos donde sea el owner

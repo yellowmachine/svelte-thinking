@@ -5,6 +5,7 @@ import { router, protectedProcedure, publicProcedure } from '../init';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectCollaborator, project } from '$lib/server/db/schemas/projects.schema';
 import { sendProjectInvitation } from '$lib/server/services/email.service';
+import { user } from '$lib/server/db/auth.schema';
 
 const roleValues = ['author', 'coauthor', 'reviewer', 'commenter'] as const;
 
@@ -181,6 +182,78 @@ export const invitationsRouter = router({
 
 		return { projectId: invitation.projectId, role: invitation.role };
 	}),
+
+	// Invita directamente a un usuario existente (por userId, desde el perfil público)
+	createForUserId: protectedProcedure
+		.input(z.object({ projectId: z.string(), userId: z.string(), role: z.enum(roleValues) }))
+		.mutation(async ({ ctx, input }) => {
+			// Obtiene el email del usuario invitado (superuser — no hay RLS en auth.user)
+			const targetUser = await ctx.db
+				.select({ email: user.email, name: user.name })
+				.from(user)
+				.where(eq(user.id, input.userId))
+				.limit(1);
+
+			if (!targetUser[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+
+			// Reutiliza el flujo de create con email
+			return ctx.withRLS(async (db) => {
+				const projects = await db
+					.select({ title: project.title, ownerId: project.ownerId })
+					.from(project)
+					.where(eq(project.id, input.projectId))
+					.limit(1);
+
+				if (!projects[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+				if (projects[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+
+				const existing = await db
+					.select({ id: projectInvitation.id })
+					.from(projectInvitation)
+					.where(
+						and(
+							eq(projectInvitation.projectId, input.projectId),
+							eq(projectInvitation.invitedEmail, targetUser[0].email),
+							eq(projectInvitation.status, 'pending')
+						)
+					)
+					.limit(1);
+
+				if (existing[0]) {
+					throw new TRPCError({
+						code: 'CONFLICT',
+						message: 'Ya existe una invitación pendiente para este usuario'
+					});
+				}
+
+				const token = generateToken();
+
+				const [invitation] = await db
+					.insert(projectInvitation)
+					.values({
+						id: crypto.randomUUID(),
+						projectId: input.projectId,
+						invitedEmail: targetUser[0].email,
+						invitedBy: ctx.user.id,
+						role: input.role,
+						token,
+						expiresAt: sevenDaysFromNow()
+					})
+					.returning();
+
+				const origin = ctx.event.url.origin;
+				sendProjectInvitation({
+					to: targetUser[0].email,
+					inviterName: ctx.user.name,
+					projectTitle: projects[0].title,
+					role: input.role,
+					token,
+					origin
+				}).catch(console.error);
+
+				return invitation;
+			});
+		}),
 
 	cancel: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: invitationId }) => {
 		const rows = await ctx.withRLS((db) =>
