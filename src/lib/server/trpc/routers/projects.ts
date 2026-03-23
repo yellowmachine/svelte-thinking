@@ -127,5 +127,54 @@ export const projectsRouter = router({
 		);
 
 		return rows[0]?.role ?? null;
-	})
+	}),
+
+	// Owner expulsa a un colaborador
+	// Usa ctx.db (superuser) porque RLS en projectCollaborator solo permite ver la propia fila
+	removeCollaborator: protectedProcedure
+		.input(z.object({ projectId: z.string(), userId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const proj = await ctx.db
+				.select({ ownerId: project.ownerId })
+				.from(project)
+				.where(eq(project.id, input.projectId))
+				.limit(1);
+
+			if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+			if (proj[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+
+			await ctx.db
+				.delete(projectCollaborator)
+				.where(
+					and(
+						eq(projectCollaborator.projectId, input.projectId),
+						eq(projectCollaborator.userId, input.userId)
+					)
+				);
+		}),
+
+	// Colaborador abandona el proyecto
+	leave: protectedProcedure
+		.input(z.string()) // projectId
+		.mutation(async ({ ctx, input: projectId }) => {
+			// withRLS para validar que el proyecto existe y el usuario tiene acceso
+			const proj = await ctx.withRLS((db) =>
+				db.select({ ownerId: project.ownerId }).from(project).where(eq(project.id, projectId)).limit(1)
+			) as { ownerId: string }[];
+
+			if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+			if (proj[0].ownerId === ctx.user.id) {
+				throw new TRPCError({ code: 'BAD_REQUEST', message: 'El owner no puede abandonar su propio proyecto.' });
+			}
+
+			// ctx.db para el delete: RLS en projectCollaborator no tiene política de DELETE
+			await ctx.db
+				.delete(projectCollaborator)
+				.where(
+					and(
+						eq(projectCollaborator.projectId, projectId),
+						eq(projectCollaborator.userId, ctx.user.id)
+					)
+				);
+		})
 });

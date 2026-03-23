@@ -181,6 +181,37 @@
 		}
 	}
 
+	let showLeaveProject = $state(false);
+	let leavingProject = $state(false);
+	let showRemoveCollaborator = $state(false);
+	let removingCollaborator = $state(false);
+	let collaboratorToRemove = $state<{ userId: string; name: string } | null>(null);
+
+	async function handleLeaveProject() {
+		leavingProject = true;
+		try {
+			await trpc.projects.leave.mutate(data.project.id);
+			await goto('/projects');
+		} catch (e: unknown) {
+			leavingProject = false;
+			showLeaveProject = false;
+			alert(e instanceof Error ? e.message : 'Error al abandonar el proyecto');
+		}
+	}
+
+	async function handleRemoveCollaborator() {
+		if (!collaboratorToRemove) return;
+		removingCollaborator = true;
+		try {
+			await trpc.projects.removeCollaborator.mutate({ projectId: data.project.id, userId: collaboratorToRemove.userId });
+			await invalidateAll();
+		} finally {
+			removingCollaborator = false;
+			showRemoveCollaborator = false;
+			collaboratorToRemove = null;
+		}
+	}
+
 	function formatSize(bytes: number): string {
 		if (bytes < 1024) return `${bytes} B`;
 		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -617,7 +648,9 @@
 				<InviteCollaborator
 					projectId={data.project.id}
 					{invitations}
+					collaborators={data.collaborators as { id: string; userId: string; role: 'author' | 'coauthor' | 'reviewer' | 'commenter'; name: string; email: string }[]}
 					oninvited={reloadInvitations}
+					onremove={(c) => { collaboratorToRemove = c; showRemoveCollaborator = true; }}
 				/>
 			{:else}
 				<div
@@ -630,6 +663,12 @@
 						{data.collaborators.length}
 						{data.collaborators.length === 1 ? 'colaborador' : 'colaboradores'}
 					</p>
+					<button
+						onclick={() => (showLeaveProject = true)}
+						class="mt-4 w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
+					>
+						Abandonar proyecto…
+					</button>
 				</div>
 			{/if}
 
@@ -776,6 +815,28 @@
 	deleting={deletingProject}
 	onconfirm={handleDeleteProject}
 	oncancel={() => (showDeleteProject = false)}
+/>
+
+<SafeDeleteDialog
+	open={showLeaveProject}
+	label="este proyecto"
+	title="Abandonar este proyecto"
+	confirmLabel="Abandonar"
+	warning="Perderás el acceso al proyecto y sus documentos. El owner puede volver a invitarte."
+	deleting={leavingProject}
+	onconfirm={handleLeaveProject}
+	oncancel={() => (showLeaveProject = false)}
+/>
+
+<SafeDeleteDialog
+	open={showRemoveCollaborator}
+	label={collaboratorToRemove?.name ?? 'este colaborador'}
+	title="Expulsar a {collaboratorToRemove?.name ?? 'este colaborador'}"
+	confirmLabel="Expulsar"
+	warning="Perderá el acceso al proyecto inmediatamente. Puedes volver a invitarle."
+	deleting={removingCollaborator}
+	onconfirm={handleRemoveCollaborator}
+	oncancel={() => { showRemoveCollaborator = false; collaboratorToRemove = null; }}
 />
 
 {#if showContextPicker}

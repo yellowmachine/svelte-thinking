@@ -3,16 +3,20 @@
 
 	type Props = {
 		open: boolean;
-		/** Short description of what is being deleted, e.g. "el documento" or "el proyecto" */
+		/** Short description of what is being acted on, e.g. "el documento" or "el proyecto" */
 		label: string;
 		/** Longer warning shown below the label */
 		warning?: string;
 		deleting?: boolean;
+		/** Override the dialog title. Defaults to "Eliminar {label}" */
+		title?: string;
+		/** Override the confirm button label. Defaults to "Eliminar" */
+		confirmLabel?: string;
 		onconfirm: () => void;
 		oncancel: () => void;
 	};
 
-	let { open, label, warning, deleting = false, onconfirm, oncancel }: Props = $props();
+	let { open, label, warning, deleting = false, title, confirmLabel, onconfirm, oncancel }: Props = $props();
 
 	const CHARS = 'abcdefghjkmnpqrstuvwxyz23456789'; // no ambiguous chars (0/O, 1/l/I)
 	function genCode() {
@@ -70,7 +74,7 @@
 				</div>
 				<div class="min-w-0 flex-1">
 					<h2 id="safe-delete-title" class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-						Eliminar {label}
+						{title ?? `Eliminar ${label}`}
 					</h2>
 					{#if warning}
 						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{warning}</p>
@@ -131,7 +135,7 @@
 						disabled={!matches || deleting}
 						class="flex-1 rounded-lg bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
 					>
-						{deleting ? 'Eliminando…' : 'Eliminar'}
+						{deleting ? `${confirmLabel ?? 'Eliminar'}…` : (confirmLabel ?? 'Eliminar')}
 					</button>
 				</div>
 			</div>

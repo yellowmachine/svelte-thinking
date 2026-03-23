@@ -9,15 +9,26 @@
 		status: string;
 		expiresAt: Date;
 	};
+	type Collaborator = {
+		id: string;
+		userId: string;
+		role: Role;
+		name: string;
+		email: string;
+	};
 
 	let {
 		projectId,
 		invitations = [],
-		oninvited
+		collaborators = [],
+		oninvited,
+		onremove
 	}: {
 		projectId: string;
 		invitations?: Invitation[];
+		collaborators?: Collaborator[];
 		oninvited?: () => void;
+		onremove?: (collaborator: { userId: string; name: string }) => void;
 	} = $props();
 
 	const roleOptions: { value: Role; label: string }[] = [
@@ -40,18 +51,17 @@
 	let errorMsg = $state('');
 
 	async function invite() {
-		console.log('[invite] click', { projectId, email: email.trim(), role });
 		if (!email.trim()) return;
-		reqState ='sending';
+		reqState = 'sending';
 		errorMsg = '';
 		try {
 			await trpc.invitations.create.mutate({ projectId, invitedEmail: email.trim(), role });
-			reqState ='sent';
+			reqState = 'sent';
 			email = '';
 			oninvited?.();
-			setTimeout(() => (reqState ='idle'), 3000);
+			setTimeout(() => (reqState = 'idle'), 3000);
 		} catch (e: unknown) {
-			reqState ='error';
+			reqState = 'error';
 			errorMsg = e instanceof Error ? e.message : 'Error al enviar la invitación';
 		}
 	}
@@ -60,17 +70,41 @@
 		await trpc.invitations.cancel.mutate(invitationId);
 		oninvited?.();
 	}
+
+	function remove(userId: string, name: string) {
+		onremove?.({ userId, name });
+	}
 </script>
 
 <div class="font-sans">
 	<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-		Invitar colaboradores
+		Colaboradores
 	</h2>
-	<p class="mt-1 text-sm text-ink-muted dark:text-dark-ink-muted">
-		El colaborador recibirá un email con un enlace para unirse al proyecto.
+
+	{#if collaborators.length > 0}
+		<ul class="mt-3 flex flex-col gap-1">
+			{#each collaborators as c (c.id)}
+				<li class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border">
+					<div class="min-w-0">
+						<p class="truncate text-sm text-ink dark:text-dark-ink">{c.name || c.email}</p>
+						<p class="text-xs text-ink-faint dark:text-dark-ink-faint">{roleLabel[c.role]}</p>
+					</div>
+					<button
+						onclick={() => remove(c.userId, c.name || c.email)}
+						class="ml-3 shrink-0 text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint"
+					>
+						Expulsar…
+					</button>
+				</li>
+			{/each}
+		</ul>
+	{/if}
+
+	<p class="mt-4 text-sm text-ink-muted dark:text-dark-ink-muted">
+		Invitar nuevo colaborador
 	</p>
 
-	<div class="mt-4 flex flex-col gap-3 sm:flex-row">
+	<div class="mt-2 flex flex-col gap-3 sm:flex-row">
 		<input
 			type="email"
 			bind:value={email}
@@ -87,29 +121,27 @@
 		</select>
 		<button
 			onclick={invite}
-			disabled={reqState ==='sending' || !email.trim()}
+			disabled={reqState === 'sending' || !email.trim()}
 			class="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 		>
-			{reqState ==='sending' ? 'Enviando...' : 'Invitar'}
+			{reqState === 'sending' ? 'Enviando...' : 'Invitar'}
 		</button>
 	</div>
 
-	{#if reqState ==='sent'}
+	{#if reqState === 'sent'}
 		<p class="mt-2 text-sm text-green-600">Invitación enviada correctamente.</p>
-	{:else if reqState ==='error'}
+	{:else if reqState === 'error'}
 		<p class="mt-2 text-sm text-red-600">{errorMsg}</p>
 	{/if}
 
 	{#if invitations.length > 0}
-		<div class="mt-6">
-			<h3 class="mb-3 text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-				Invitaciones pendientes
-			</h3>
+		<div class="mt-4">
+			<p class="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
+				Pendientes de aceptar
+			</p>
 			<ul class="flex flex-col gap-2">
 				{#each invitations as inv (inv.id)}
-					<li
-						class="flex items-center justify-between rounded-lg border border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
+					<li class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border">
 						<div>
 							<p class="text-sm text-ink dark:text-dark-ink">{inv.invitedEmail}</p>
 							<p class="mt-0.5 text-xs text-ink-faint dark:text-dark-ink-faint">
