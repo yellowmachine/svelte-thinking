@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import { eq, desc, asc, inArray, and, count, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
-import { aiConversation, aiMessage, userAiUsage } from '$lib/server/db/schemas/ai.schema';
+import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
@@ -26,8 +25,6 @@ export type PendingAction = {
 	/** If set, this requirement will be fulfilled with the new document after creation. */
 	requirementId?: string;
 };
-
-const DAILY_SUGGESTION_LIMIT = 30;
 
 // ---------------------------------------------------------------------------
 // Error helper
@@ -1016,7 +1013,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 		}),
 
 	// ---------------------------------------------------------------------------
-	// Inline suggestions  (unchanged — ephemeral, server-key only)
+	// Inline suggestions — uses user's BYOK provider key
 	// ---------------------------------------------------------------------------
 	suggest: protectedProcedure
 		.input(
@@ -1026,47 +1023,69 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
-			if (!env.ANTHROPIC_API_KEY) {
+			const [profileRows, allConfigs] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
+						.from(userProfile)
+						.where(eq(userProfile.userId, ctx.user.id))
+						.limit(1)
+				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+				ctx.withRLS((db) =>
+					db
+						.select({
+							provider: userAiConfig.provider,
+							model: userAiConfig.model,
+							enabled: userAiConfig.enabled,
+							encryptedApiKey: userAiConfig.encryptedApiKey,
+							encryptedDataKey: userAiConfig.encryptedDataKey,
+							iv: userAiConfig.iv,
+							authTag: userAiConfig.authTag
+						})
+						.from(userAiConfig)
+						.where(eq(userAiConfig.userId, ctx.user.id))
+				) as Promise<{ provider: string; model: string | null; enabled: boolean; encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string }[]>
+			]);
+
+			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
+			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
+
+			if (!configRow) {
+				throw new TRPCError({
+					code: 'PRECONDITION_FAILED',
+					message: 'Configura tu API key en Ajustes → Asistente IA para usar las sugerencias.'
+				});
+			}
+
+			let userApiKey: string;
+			try {
+				userApiKey = await decryptSecret(configRow);
+			} catch {
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
-					message: 'ANTHROPIC_API_KEY no configurada.'
+					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
 				});
 			}
 
-			const userId = ctx.user.id;
-			const today = new Date().toISOString().slice(0, 10);
+			const [projRows] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ title: project.title })
+						.from(project)
+						.where(eq(project.id, input.projectId))
+						.limit(1)
+				) as Promise<{ title: string }[]>
+			]);
 
-			const usageRows = (await ctx.withRLS((db) =>
-				db
-					.select({ suggestionCount: userAiUsage.suggestionCount })
-					.from(userAiUsage)
-					.where(and(eq(userAiUsage.userId, userId), eq(userAiUsage.date, today)))
-					.limit(1)
-			)) as { suggestionCount: number }[];
+			const projectTitle = projRows[0]?.title ?? 'Proyecto académico';
+			const model = profileRows[0]?.defaultAiModel ?? configRow.model ?? DEFAULT_MODELS[activeProvider] ?? DEFAULT_MODELS.openrouter;
+			const baseUrl = PROVIDER_URLS[activeProvider] ?? PROVIDER_URLS.openrouter;
+			const extraHeaders: Record<string, string> =
+				activeProvider === 'openrouter'
+					? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
+					: {};
 
-			const currentCount = usageRows[0]?.suggestionCount ?? 0;
-			if (currentCount >= DAILY_SUGGESTION_LIMIT) {
-				throw new TRPCError({
-					code: 'TOO_MANY_REQUESTS',
-					message: `Has alcanzado el límite de ${DAILY_SUGGESTION_LIMIT} sugerencias IA por día. Se restablece a medianoche.`
-				});
-			}
-
-			const proj = (await ctx.withRLS((db) =>
-				db
-					.select({ title: project.title })
-					.from(project)
-					.where(eq(project.id, input.projectId))
-					.limit(1)
-			)) as { title: string }[];
-
-			const projectTitle = proj[0]?.title ?? 'Proyecto académico';
-			const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-
-			const response = await anthropic.messages.create({
-				model: 'claude-haiku-4-5-20251001',
-				max_tokens: 1024,
-				system: `Eres un asistente de escritura académica. Analiza el borrador del usuario y devuelve sugerencias de citas y referencias.
+			const system = `Eres un asistente de escritura académica. Analiza el borrador del usuario y devuelve sugerencias de citas y referencias.
 
 Responde ÚNICAMENTE con un array JSON válido (sin markdown, sin explicaciones fuera del JSON) con el siguiente formato:
 [
@@ -1083,11 +1102,33 @@ Reglas:
 - originalText debe ser un fragmento literal que aparezca en el draft.
 - suggestedText debe ser mínimamente invasivo: añade la cita entre paréntesis o como nota al pie.
 - Usa el idioma del documento.
-- Proyecto: "${projectTitle}"`,
-				messages: [{ role: 'user', content: input.content }]
+- Proyecto: "${projectTitle}"`;
+
+			const res = await fetch(baseUrl, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${userApiKey}`,
+					'Content-Type': 'application/json',
+					...extraHeaders
+				},
+				body: JSON.stringify({
+					model,
+					max_tokens: 1024,
+					messages: [
+						{ role: 'system', content: system },
+						{ role: 'user', content: input.content }
+					]
+				})
 			});
 
-			const raw = response.content[0].type === 'text' ? response.content[0].text.trim() : '[]';
+			console.log('[suggest] request →', { provider: activeProvider, model, contentLength: input.content.length });
+
+			if (!res.ok) await throwProviderError(res, activeProvider);
+
+			const data = await res.json();
+			const rawContent = data.choices?.[0]?.message?.content?.trim() ?? '[]';
+			const raw = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+			console.log('[suggest] response ←', raw);
 
 			type RawSuggestion = { originalText: string; suggestedText: string; explanation: string };
 			let parsed: RawSuggestion[] = [];
@@ -1097,16 +1138,6 @@ Reglas:
 			} catch {
 				parsed = [];
 			}
-
-			await ctx.withRLS((db) =>
-				db
-					.insert(userAiUsage)
-					.values({ id: crypto.randomUUID(), userId, date: today, suggestionCount: 1 })
-					.onConflictDoUpdate({
-						target: [userAiUsage.userId, userAiUsage.date],
-						set: { suggestionCount: sql`${userAiUsage.suggestionCount} + 1` }
-					})
-			);
 
 			return parsed
 				.filter(

@@ -246,6 +246,22 @@ para el diseño del estudio.</code></pre>
 		</div>
 	</section>
 
+	<!-- ── Honestidad científica ─────────────────────────────────────────────── -->
+	<section class="border-t border-paper-border py-20 dark:border-dark-paper-border">
+		<div class="mx-auto max-w-2xl px-6 text-center">
+			<p class="mb-3 font-sans text-xs font-semibold uppercase tracking-widest text-accent">Posición clara</p>
+			<h2 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+				Scholio no escribe por ti.
+			</h2>
+			<p class="mx-auto mt-5 font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+				El asistente IA puede ayudarte a buscar, estructurar y proponer borradores. Todo lo que genera queda marcado como origen IA y no puede convertirse directamente en resultado final. La autoría es tuya o no es nada.
+			</p>
+			<p class="mt-4 font-sans text-sm leading-relaxed text-ink-faint dark:text-dark-ink-faint">
+				Puedes copiar y pegar. Eso es tu decisión. Nosotros no lo facilitamos.
+			</p>
+		</div>
+	</section>
+
 	<!-- ── Para quién ────────────────────────────────────────────────────────── -->
 	<section class="border-t border-paper-border py-24 dark:border-dark-paper-border">
 		<div class="mx-auto max-w-5xl px-6">
