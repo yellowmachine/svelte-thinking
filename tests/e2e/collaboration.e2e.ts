@@ -1,7 +1,7 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { loginAsTestUser } from './helpers/login';
 import { TEST_USER } from './helpers/create-test-user';
-import { COLLABORATOR_USER } from './helpers/create-collaborator';
+import { COLLABORATOR_USER, getCollaboratorUserId } from './helpers/create-collaborator';
 import { trpcMutate, loginViaApi, loginViaApiNo2FA } from './helpers/create-test-document';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -250,6 +250,136 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 		await expect(diffPage.getByText('Primera versión revisada')).toBeVisible();
 
 		await diffPage.close();
+		await page.close();
+	});
+});
+
+test.describe('Flujo 3a — Owner expulsa colaborador', () => {
+	let ownerCookie: string;
+	let collabCookie: string;
+	let projectId: string;
+	let collabUserId: string;
+	let ownerContext: BrowserContext;
+	let collabContext: BrowserContext;
+
+	test.beforeAll(async ({ browser }) => {
+		const totpSecret = readFileSync(SECRET_FILE, 'utf-8').trim();
+		ownerCookie = await loginViaApi(TEST_USER.email, TEST_USER.password, totpSecret);
+		collabCookie = await loginViaApiNo2FA(COLLABORATOR_USER.email, COLLABORATOR_USER.password);
+		collabUserId = await getCollaboratorUserId();
+
+		({ projectId } = await setupCollabProject(ownerCookie, collabCookie));
+
+		ownerContext = await browser.newContext();
+		collabContext = await browser.newContext();
+	});
+
+	test.afterAll(async () => {
+		await trpcMutate('projects.delete', projectId, ownerCookie).catch(() => {});
+		await ownerContext.close();
+		await collabContext.close();
+	});
+
+	test('owner expulsa al colaborador desde la página del proyecto', async () => {
+		const page = await ownerContext.newPage();
+		await loginAsTestUser(page);
+
+		await page.goto(`/projects/${projectId}`);
+
+		await page.getByRole('button', { name: /expulsar/i }).first().click();
+
+		// Confirmar en SafeDeleteDialog — introducir el código de 3 caracteres
+		const dialog = page.getByRole('dialog');
+		await expect(dialog).toBeVisible();
+		const code = await dialog.locator('span.font-mono').allTextContents();
+		await dialog.locator('input[type="text"]').fill(code.join(''));
+		await dialog.getByRole('button', { name: /expulsar/i }).click();
+
+		await expect(page.getByText(COLLABORATOR_USER.name)).not.toBeVisible();
+		await page.close();
+	});
+
+	test('colaborador expulsado no puede acceder al proyecto', async () => {
+		const page = await collabContext.newPage();
+		await loginAsCollaborator(page);
+
+		await page.goto(`/projects/${projectId}`);
+
+		// Debe redirigir a /projects o mostrar error — no puede ver el contenido
+		await expect(page).not.toHaveURL(`/projects/${projectId}`);
+		await page.close();
+	});
+
+	test('el proyecto desaparece de la lista del colaborador', async () => {
+		const page = await collabContext.newPage();
+		await page.goto('/projects');
+
+		await expect(page.getByText('_test-collab-project')).not.toBeVisible();
+		await page.close();
+	});
+});
+
+test.describe('Flujo 3b — Colaborador abandona proyecto', () => {
+	let ownerCookie: string;
+	let collabCookie: string;
+	let projectId: string;
+	let ownerContext: BrowserContext;
+	let collabContext: BrowserContext;
+
+	test.beforeAll(async ({ browser }) => {
+		const totpSecret = readFileSync(SECRET_FILE, 'utf-8').trim();
+		ownerCookie = await loginViaApi(TEST_USER.email, TEST_USER.password, totpSecret);
+		collabCookie = await loginViaApiNo2FA(COLLABORATOR_USER.email, COLLABORATOR_USER.password);
+
+		({ projectId } = await setupCollabProject(ownerCookie, collabCookie));
+
+		ownerContext = await browser.newContext();
+		collabContext = await browser.newContext();
+	});
+
+	test.afterAll(async () => {
+		await trpcMutate('projects.delete', projectId, ownerCookie).catch(() => {});
+		await ownerContext.close();
+		await collabContext.close();
+	});
+
+	test('colaborador abandona el proyecto desde la página del proyecto', async () => {
+		const page = await collabContext.newPage();
+		await loginAsCollaborator(page);
+
+		await page.goto(`/projects/${projectId}`);
+
+		await page.getByRole('button', { name: /abandonar proyecto/i }).click();
+
+		// Confirmar en SafeDeleteDialog
+		const dialog = page.getByRole('dialog');
+		await expect(dialog).toBeVisible();
+		const code = await dialog.locator('span.font-mono').allTextContents();
+		await dialog.locator('input[type="text"]').fill(code.join(''));
+		await dialog.getByRole('button', { name: /abandonar/i }).click();
+
+		// Tras abandonar, redirige fuera del proyecto
+		await expect(page).not.toHaveURL(`/projects/${projectId}`);
+		await page.close();
+	});
+
+	test('el proyecto desaparece de la lista del colaborador', async () => {
+		const page = await collabContext.newPage();
+		await page.goto('/projects');
+
+		await expect(page.getByText('_test-collab-project')).not.toBeVisible();
+		await page.close();
+	});
+
+	test('owner sigue viendo el proyecto tras la salida del colaborador', async () => {
+		const page = await ownerContext.newPage();
+		await loginAsTestUser(page);
+
+		await page.goto('/projects');
+		await expect(page.getByText('_test-collab-project')).toBeVisible();
+
+		await page.goto(`/projects/${projectId}`);
+		await expect(page.getByText(COLLABORATOR_USER.name)).not.toBeVisible();
 		await page.close();
 	});
 });

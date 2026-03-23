@@ -35,3 +35,14 @@ export async function createCollaboratorUser() {
 	await sql`UPDATE "user" SET email_verified = true WHERE email = ${COLLABORATOR_USER.email}`;
 	await sql.end();
 }
+
+/** Devuelve el id del usuario colaborador desde la DB de test. */
+export async function getCollaboratorUserId(): Promise<string> {
+	const sql = postgres(TEST_DB_URL);
+	const rows = await sql<{ id: string }[]>`
+		SELECT id FROM "user" WHERE email = ${COLLABORATOR_USER.email} LIMIT 1
+	`;
+	await sql.end();
+	if (!rows[0]) throw new Error('Collaborator user not found in DB');
+	return rows[0].id;
+}
