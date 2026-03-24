@@ -6,7 +6,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	type Message = { id: string; role: 'user' | 'assistant'; content: string };
+	type Message = { id: string; role: 'user' | 'assistant'; content: string; docsUsed?: { id: string; title: string }[] };
 	type Conversation = (typeof data.conversations)[number];
 
 	let conversations = $state(data.conversations);
@@ -337,7 +337,18 @@
 								>
 									{msg.content}
 								</div>
-								{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
+								{#if msg.role === 'assistant' && msg.docsUsed?.length}
+								<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
+									<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">Sources:</span>
+									{#each msg.docsUsed as doc (doc.id)}
+										<a
+											href="/projects/{data.project.id}/documents/{doc.id}"
+											class="font-sans text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										>{doc.title}</a>
+									{/each}
+								</div>
+							{/if}
+							{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
 									{#each pendingActions as action, i (i)}
 										<ActionCard
 											{action}

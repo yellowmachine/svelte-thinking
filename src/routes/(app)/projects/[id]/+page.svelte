@@ -121,22 +121,6 @@
 		await invalidateAll();
 	}
 
-	// Datasets
-	type Dataset = { id: string; filename: string; size: number; mimeType: string; createdAt: Date };
-	let datasets = $state<Dataset[]>([]);
-
-	async function loadDatasets() {
-		try {
-			const res = await fetch(`/api/projects/${data.project.id}/datasets`);
-			if (res.ok) datasets = await res.json();
-		} catch { /* non-critical */ }
-	}
-
-	async function deleteDataset(id: string) {
-		await fetch(`/api/projects/${data.project.id}/datasets?datasetId=${id}`, { method: 'DELETE' });
-		datasets = datasets.filter((d) => d.id !== id);
-	}
-
 	// Notebooks
 	type Notebook = { id: string; filename: string; size: number; languageName: string | null; createdAt: Date };
 	let notebooks = $state<Notebook[]>([]);
@@ -239,7 +223,6 @@
 		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	}
 
-	$effect(() => { loadDatasets(); });
 	$effect(() => { loadNotebooks(); });
 
 	// ── Context links ────────────────────────────────────────────────────────
@@ -510,75 +493,19 @@
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
 				<div class="hidden items-center gap-2 sm:flex">
-					<a
-						href="/projects/{data.project.id}/bib"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-						Bibliography
-					</a>
-					<a
-						href="/projects/{data.project.id}/ai"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-						Assistant
-					</a>
-					<a
-						href="/projects/{data.project.id}/requirements"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-							<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-						Requirements
-						<RequirementsProgress
-							fulfilled={data.requirementCounts.fulfilled}
-							total={data.requirementCounts.total}
-							requiredFulfilled={data.requirementCounts.requiredFulfilled}
-							requiredTotal={data.requirementCounts.requiredTotal}
-						/>
-					</a>
 				{#if canEdit}
 					<button
 						onclick={() => (showGenerateDraft = true)}
-						class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
+						class="flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
 						Generate draft
 					</button>
-					<a
-						href="/projects/{data.project.id}/photos"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
-							<circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="1.5"/>
-							<path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-						Photos
-					</a>
-					<a
-						href="/projects/{data.project.id}/bib"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-						</svg>
-						Bibliography
-					</a>
 					<button
 						onclick={() => (showCreateDoc = !showCreateDoc)}
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						+ New
 					</button>
@@ -657,45 +584,15 @@
 			{/if}
 		</div>
 
-		<!-- Datasets -->
-		<div class="mt-8 hidden sm:block">
-			<div class="mb-3 flex items-center justify-between">
-				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Datasets</h2>
-			</div>
-
-			{#if datasets.length === 0}
-				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					No datasets. Manage datasets from the <a href="/projects/{data.project.id}/analyses" class="underline hover:text-ink dark:hover:text-dark-ink">analyses</a> section.
-				</p>
-			{:else}
-				<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper">
-					{#each datasets as dataset (dataset.id)}
-						<div class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
-							<div class="min-w-0">
-								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{dataset.filename}</p>
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{formatSize(dataset.size)}</p>
-							</div>
-							<button
-								onclick={() => deleteDataset(dataset.id)}
-								class="ml-3 shrink-0 font-sans text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint dark:hover:text-red-400"
-							>
-								Delete
-							</button>
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</div>
-
 		<!-- Notebooks -->
-		<div class="mt-8 hidden sm:block">
+		<div class="mt-8 hidden sm:block lg:mt-0">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Notebooks</h2>
 				<div class="relative">
 					<button
 						onclick={() => notebookDropdownOpen = !notebookDropdownOpen}
 						disabled={uploadingNotebook}
-						class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui disabled:pointer-events-none disabled:opacity-50"
+						class="flex cursor-pointer items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui disabled:pointer-events-none disabled:opacity-50"
 					>
 						{uploadingNotebook ? 'Importing…' : '+ Import notebook'}
 						<svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
@@ -755,6 +652,36 @@
 
 		<!-- Sidebar -->
 		<div class="hidden flex-col gap-6 sm:flex">
+			<!-- Project navigation -->
+			<div class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div class="flex flex-col gap-1">
+					<a href="/projects/{data.project.id}/ai" class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						Assistant
+					</a>
+					<a href="/projects/{data.project.id}/requirements" class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						Requirements
+						<RequirementsProgress
+							fulfilled={data.requirementCounts.fulfilled}
+							total={data.requirementCounts.total}
+							requiredFulfilled={data.requirementCounts.requiredFulfilled}
+							requiredTotal={data.requirementCounts.requiredTotal}
+						/>
+					</a>
+					<a href="/projects/{data.project.id}/bib" class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						Bibliography
+					</a>
+					{#if canEdit}
+					<a href="/projects/{data.project.id}/photos" class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+						Photos
+					</a>
+					{/if}
+				</div>
+			</div>
+
 			{#if data.isOwner}
 				<InviteCollaborator
 					projectId={data.project.id}
