@@ -96,7 +96,7 @@
 	}
 
 	function formatDate(d: Date) {
-		return new Intl.DateTimeFormat('es', {
+		return new Intl.DateTimeFormat('en', {
 			day: 'numeric',
 			month: 'short',
 			hour: '2-digit',
@@ -117,7 +117,7 @@
 	<!-- Anchor text excerpt -->
 	{#if comment.anchorText}
 		<p
-			class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs italic text-ink-muted dark:text-dark-ink-muted"
+			class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
 		>
 			{comment.anchorText.slice(0, 80)}{comment.anchorText.length > 80 ? '…' : ''}
 		</p>
@@ -126,9 +126,13 @@
 	<!-- Main comment body -->
 	<div class="flex items-start justify-between gap-2">
 		<div class="min-w-0">
-			<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">{comment.authorName}</p>
+			<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+				{comment.authorName}
+			</p>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-		<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">{@html renderMd(comment.content)}</div>
+			<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">
+				{@html renderMd(comment.content)}
+			</div>
 			<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 				{formatDate(comment.createdAt)}
 			</p>
@@ -144,20 +148,29 @@
 				class="rounded px-2 py-1 font-sans text-xs transition-colors {comment.resolved
 					? 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'
 					: 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'} disabled:opacity-50"
-				title={comment.resolved ? 'Reabrir' : 'Resolver'}
+				title={comment.resolved ? 'Reopen' : 'Resolve'}
 			>
-				{comment.resolved ? 'Reabrir' : 'Resolver'}
+				{comment.resolved ? 'Reopen' : 'Resolve'}
 			</button>
 
 			{#if isAuthor}
 				<button
-					onclick={(e) => { e.stopPropagation(); showDelete = true; }}
-					title="Eliminar comentario"
+					onclick={(e) => {
+						e.stopPropagation();
+						showDelete = true;
+					}}
+					title="Delete comment"
 					class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
-					aria-label="Eliminar comentario"
+					aria-label="Delete comment"
 				>
 					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						<path
+							d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
 					</svg>
 				</button>
 			{/if}
@@ -173,7 +186,9 @@
 						{reply.authorName}
 					</p>
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">{@html renderMd(reply.content)}</div>
+					<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">
+						{@html renderMd(reply.content)}
+					</div>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 						{formatDate(reply.createdAt)}
 					</p>
@@ -189,7 +204,7 @@
 				<input
 					bind:value={replyText}
 					onkeydown={(e) => e.key === 'Enter' && !e.shiftKey && submitReply()}
-					placeholder="Responder…"
+					placeholder="Reply…"
 					class="min-w-0 flex-1 rounded border border-paper-border bg-paper-ui px-2 py-1 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				/>
 				<button
@@ -204,16 +219,33 @@
 	{/if}
 </div>
 
+<SafeDeleteDialog
+	open={showDelete}
+	label="the comment"
+	warning="The comment and its replies will be permanently deleted."
+	{deleting}
+	onconfirm={handleDelete}
+	oncancel={() => (showDelete = false)}
+/>
+
 <style>
-	/* Markdown básico en cuerpos de comentario */
-	:global(.comment-body > p) { margin: 0; }
-	:global(.comment-body > p + p) { margin-top: 0.25rem; }
-	:global(.comment-body strong) { font-weight: 600; }
-	:global(.comment-body em) { font-style: italic; }
+	/* Basic markdown in comment bodies */
+	:global(.comment-body > p) {
+		margin: 0;
+	}
+	:global(.comment-body > p + p) {
+		margin-top: 0.25rem;
+	}
+	:global(.comment-body strong) {
+		font-weight: 600;
+	}
+	:global(.comment-body em) {
+		font-style: italic;
+	}
 	:global(.comment-body code) {
 		font-family: ui-monospace, monospace;
 		font-size: 0.8em;
-		background: rgba(0,0,0,0.06);
+		background: rgba(0, 0, 0, 0.06);
 		border-radius: 3px;
 		padding: 0.1em 0.3em;
 	}
@@ -221,15 +253,11 @@
 		padding-left: 1.25rem;
 		margin: 0.25rem 0;
 	}
-	:global(.comment-body li) { margin: 0; }
-	:global(.comment-body a) { color: var(--color-accent, #7c5c3e); text-decoration: underline; }
+	:global(.comment-body li) {
+		margin: 0;
+	}
+	:global(.comment-body a) {
+		color: var(--color-accent, #7c5c3e);
+		text-decoration: underline;
+	}
 </style>
-
-<SafeDeleteDialog
-	open={showDelete}
-	label="el comentario"
-	warning="El comentario y sus respuestas se eliminarán permanentemente."
-	deleting={deleting}
-	onconfirm={handleDelete}
-	oncancel={() => (showDelete = false)}
-/>

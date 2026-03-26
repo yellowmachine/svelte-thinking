@@ -103,8 +103,35 @@ const documentTypeValues = [
 	'notes',
 	'outline',
 	'bibliography',
-	'supplementary'
+	'supplementary',
+	'book',
+	'chapter'
 ] as const;
+
+const BOOK_TEMPLATE = `---
+layout: academic
+subtitle:
+edition:
+---
+
+> [!epigraph]
+> "The beginning is the most important part of the work."
+> — Plato
+> The Republic
+
+## About this book
+
+Write a brief introduction to your book here.
+
+---
+
+*Reference chapters below using \`[[\` to insert chapter links.*
+`;
+
+function initialContent(type: (typeof documentTypeValues)[number]): string {
+	if (type === 'book') return BOOK_TEMPLATE;
+	return '';
+}
 
 export const documentsRouter = router({
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
@@ -168,14 +195,14 @@ export const documentsRouter = router({
 						.values({ id: docId, projectId: input.projectId, title: input.title, type: input.type })
 						.returning();
 
-					// Versión inicial vacía (v1)
+					// Versión inicial (v1) — con plantilla si el tipo la tiene
 					const versionId = crypto.randomUUID();
 					await db.insert(documentVersion).values({
 						id: versionId,
 						documentId: docId,
-						content: '',
+						content: initialContent(input.type),
 						versionNumber: 1,
-						changeDescription: 'Versión inicial',
+						changeDescription: 'Initial version',
 						createdBy: ctx.user.id
 					});
 
@@ -305,14 +332,15 @@ export const documentsRouter = router({
 					.returning();
 
 				// ── Update wikilink index ──────────────────────────────────────
-				// Handles [[title]] (same project) and [[title:hash]] (external).
-				const titles = extractWikilinks(contentToCommit);
+				// Handles [[title]] (same project), [[title:hash]] (external),
+				// and [[doc:uuid|Title]] (book→chapter, UUID-stable).
+				const { uuids: linkedUuids, titles } = extractWikilinks(contentToCommit);
 
 				await db
 					.delete(documentLink)
 					.where(eq(documentLink.sourceDocumentId, input.documentId));
 
-				if (titles.length > 0 && updated.projectId) {
+				if ((titles.length > 0 || linkedUuids.length > 0) && updated.projectId) {
 					const [sameProjectDocs, externalDocs] = await Promise.all([
 						// Same-project: resolve by title
 						db
@@ -334,9 +362,14 @@ export const documentsRouter = router({
 						titleToId.set(`${d.title}:${d.id.slice(0, 8)}`, d.id);
 					}
 
-					const newLinks = titles
+					const titleLinks = titles
 						.map((t) => titleToId.get(t))
 						.filter((id): id is string => !!id && id !== input.documentId);
+
+					// UUID links are already resolved — just exclude self-links
+					const uuidLinks = linkedUuids.filter((id) => id !== input.documentId);
+
+					const newLinks = [...titleLinks, ...uuidLinks];
 
 					if (newLinks.length > 0) {
 						await db.insert(documentLink).values(

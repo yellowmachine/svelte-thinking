@@ -13,12 +13,14 @@
 		type CommentRange
 	} from './commentsExtension';
 	import { codeBlockExtension, codeLanguages } from './codeBlockExtension';
+	import { epigraphCompletion } from './epigraphExtension';
 	import type { CiteRef } from '$lib/utils/citations';
 
 	let {
 		value = $bindable(''),
 		readonly = false,
 		references = [],
+		chapters = [],
 		ondocchange,
 		onselectionchange,
 		commentRanges = [],
@@ -27,6 +29,7 @@
 		value?: string;
 		readonly?: boolean;
 		references?: CiteRef[];
+		chapters?: { id: string; title: string }[];
 		ondocchange?: (content: string) => void;
 		onselectionchange?: (sel: {
 			text: string;
@@ -45,8 +48,34 @@
 		return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 	}
 
-	function citationCompletions(context: CompletionContext) {
-		// Match [@  or [@partial-key
+	function chapterCompletion(context: CompletionContext) {
+		if (chapters.length === 0) return null;
+
+		const match = context.matchBefore(/\[\[[^\]]*$/);
+		if (!match) return null;
+
+		const typed = match.text.slice(2).toLowerCase(); // strip [[
+		const options: Completion[] = chapters
+			.filter((c) => !typed || c.title.toLowerCase().includes(typed))
+			.map((c) => ({
+				label: c.title,
+				detail: 'chapter',
+				apply: `[[doc:${c.id}|${c.title}]]`
+			}));
+
+		return { from: match.from, options };
+	}
+
+	function allCompletions(context: CompletionContext) {
+		// Try epigraph completion first
+		const epigraphResult = epigraphCompletion(context);
+		if (epigraphResult) return epigraphResult;
+
+		// Try chapter completion for [[ in book documents
+		const chapterResult = chapterCompletion(context);
+		if (chapterResult) return chapterResult;
+
+		// Then try citation completions
 		const match = context.matchBefore(/\[@[\w.-]*/);
 		if (!match) return null;
 
@@ -74,8 +103,8 @@
 			highlightActiveLine(),
 			keymap.of([...defaultKeymap, ...historyKeymap]),
 			markdown({ codeLanguages }),
-			autocompletion({ override: [citationCompletions], closeOnBlur: true }),
-		...codeBlockExtension(),
+			autocompletion({ override: [allCompletions], closeOnBlur: true }),
+			...codeBlockExtension(),
 			EditorView.lineWrapping,
 			commentRangesField,
 			commentTheme,

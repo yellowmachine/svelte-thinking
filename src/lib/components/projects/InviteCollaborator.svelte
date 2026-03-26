@@ -32,17 +32,17 @@
 	} = $props();
 
 	const roleOptions: { value: Role; label: string }[] = [
-		{ value: 'author', label: 'Autor' },
-		{ value: 'coauthor', label: 'Coautor' },
-		{ value: 'reviewer', label: 'Revisor' },
-		{ value: 'commenter', label: 'Comentarista' }
+		{ value: 'author', label: 'Author' },
+		{ value: 'coauthor', label: 'Co-author' },
+		{ value: 'reviewer', label: 'Reviewer' },
+		{ value: 'commenter', label: 'Commenter' }
 	];
 
 	const roleLabel: Record<Role, string> = {
-		author: 'Autor',
-		coauthor: 'Coautor',
-		reviewer: 'Revisor',
-		commenter: 'Comentarista'
+		author: 'Author',
+		coauthor: 'Co-author',
+		reviewer: 'Reviewer',
+		commenter: 'Commenter'
 	};
 
 	let email = $state('');
@@ -62,7 +62,7 @@
 			setTimeout(() => (reqState = 'idle'), 3000);
 		} catch (e: unknown) {
 			reqState = 'error';
-			errorMsg = e instanceof Error ? e.message : 'Error al enviar la invitación';
+			errorMsg = e instanceof Error ? e.message : 'Failed to send the invitation';
 		}
 	}
 
@@ -77,14 +77,14 @@
 </script>
 
 <div class="font-sans">
-	<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-		Colaboradores
-	</h2>
+	<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Collaborators</h2>
 
 	{#if collaborators.length > 0}
 		<ul class="mt-3 flex flex-col gap-1">
 			{#each collaborators as c (c.id)}
-				<li class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border">
+				<li
+					class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border"
+				>
 					<div class="min-w-0">
 						<p class="truncate text-sm text-ink dark:text-dark-ink">{c.name || c.email}</p>
 						<p class="text-xs text-ink-faint dark:text-dark-ink-faint">{roleLabel[c.role]}</p>
@@ -93,22 +93,20 @@
 						onclick={() => remove(c.userId, c.name || c.email)}
 						class="ml-3 shrink-0 text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint"
 					>
-						Expulsar…
+						Remove…
 					</button>
 				</li>
 			{/each}
 		</ul>
 	{/if}
 
-	<p class="mt-4 text-sm text-ink-muted dark:text-dark-ink-muted">
-		Invitar nuevo colaborador
-	</p>
+	<p class="mt-4 text-sm text-ink-muted dark:text-dark-ink-muted">Invite a new collaborator</p>
 
 	<div class="mt-2 flex flex-col gap-3 sm:flex-row">
 		<input
 			type="email"
 			bind:value={email}
-			placeholder="email@ejemplo.com"
+			placeholder="email@example.com"
 			class="flex-1 rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 		/>
 		<select
@@ -124,28 +122,32 @@
 			disabled={reqState === 'sending' || !email.trim()}
 			class="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 		>
-			{reqState === 'sending' ? 'Enviando...' : 'Invitar'}
+			{reqState === 'sending' ? 'Sending...' : 'Invite'}
 		</button>
 	</div>
 
 	{#if reqState === 'sent'}
-		<p class="mt-2 text-sm text-green-600">Invitación enviada correctamente.</p>
+		<p class="mt-2 text-sm text-green-600">Invitation sent successfully.</p>
 	{:else if reqState === 'error'}
 		<p class="mt-2 text-sm text-red-600">{errorMsg}</p>
 	{/if}
 
 	{#if invitations.length > 0}
 		<div class="mt-4">
-			<p class="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
-				Pendientes de aceptar
+			<p
+				class="mb-2 text-xs font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+			>
+				Pending acceptance
 			</p>
 			<ul class="flex flex-col gap-2">
 				{#each invitations as inv (inv.id)}
-					<li class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border">
+					<li
+						class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border"
+					>
 						<div>
 							<p class="text-sm text-ink dark:text-dark-ink">{inv.invitedEmail}</p>
 							<p class="mt-0.5 text-xs text-ink-faint dark:text-dark-ink-faint">
-								{roleLabel[inv.role]} · expira {new Intl.DateTimeFormat('es', {
+								{roleLabel[inv.role]} · expires {new Intl.DateTimeFormat('en', {
 									day: 'numeric',
 									month: 'short'
 								}).format(new Date(inv.expiresAt))}
@@ -155,7 +157,7 @@
 							onclick={() => cancel(inv.id)}
 							class="text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint"
 						>
-							Cancelar
+							Cancel
 						</button>
 					</li>
 				{/each}

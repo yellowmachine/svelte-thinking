@@ -30,6 +30,23 @@
 		}))
 	);
 
+	// Check if a chapter UUID is referenced in any book document.
+	// Uses bookContent (draft ?? committed version) loaded server-side.
+	function isChapterReferenced(chapterId: string): boolean {
+		const bookContent = documents
+			.filter((d) => d.type === 'book')
+			.map((b) => (b as { bookContent?: string }).bookContent ?? '')
+			.join('\n');
+		return bookContent.includes(`[[doc:${chapterId}`);
+	}
+
+	// Get badge text for a document if it's an unassigned chapter
+	function getDocumentBadge(doc: { type: string; id: string }): string | null {
+		if (doc.type !== 'chapter') return null;
+		if (isChapterReferenced(doc.id)) return null;
+		return 'Unassigned';
+	}
+
 	// ── Click-to-edit ────────────────────────────────────────────────────────
 	type EditableField = 'title' | 'description' | 'notes' | 'doi' | 'version' | 'publishedAt';
 	let editingField = $state<EditableField | null>(null);
@@ -87,7 +104,7 @@
 	let showCreateDoc = $state(false);
 	let showGenerateDraft = $state(false);
 	let newDocTitle = $state('');
-	let newDocType: 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' =
+	let newDocType: 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter' =
 		$state('paper');
 	let creatingDoc = $state(false);
 	let createDocError = $state('');
@@ -97,7 +114,9 @@
 		{ value: 'notes' as const, label: 'Notes', description: 'Ideas and annotations in progress.' },
 		{ value: 'outline' as const, label: 'Outline', description: 'Index or hierarchical argument structure.' },
 		{ value: 'bibliography' as const, label: 'Bibliography', description: 'List of references and sources.' },
-		{ value: 'supplementary' as const, label: 'Supplementary', description: 'Annexes, appendices and supplementary material.' }
+		{ value: 'supplementary' as const, label: 'Supplementary', description: 'Annexes, appendices and supplementary material.' },
+		{ value: 'book' as const, label: 'Book', description: 'Manifest that references chapters. Pre-filled with a starter template.' },
+		{ value: 'chapter' as const, label: 'Chapter', description: 'A book chapter, referenced from a book document.' }
 	];
 
 	async function createDocument() {
@@ -576,7 +595,8 @@
 						<DocumentItem
 							title={doc.title}
 							type={doc.type}
-							onclick={() =>
+						badge={getDocumentBadge(doc)}
+						onclick={() =>
 								(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 						/>
 					{/each}

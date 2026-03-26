@@ -92,24 +92,24 @@
 			<line x1="12" y1="5" x2="12" y2="19" />
 			<line x1="5" y1="12" x2="19" y2="12" />
 		</svg>
-		Nota rápida
+		Quick note
 	</button>
 
 	{#if open}
 		<div
-			class="absolute right-0 top-full z-50 mt-1.5 w-60 rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+			class="absolute top-full right-0 z-50 mt-1.5 w-60 rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 		>
 			{#if loading}
 				<p class="px-4 py-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Cargando proyectos…
+					Loading projects…
 				</p>
 			{:else if projects.length === 0}
 				<div class="px-4 py-3">
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						No tienes proyectos aún.
+						You have no projects yet.
 					</p>
 					<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						Crea un proyecto para empezar.
+						Create a project to get started.
 					</p>
 				</div>
 			{:else}
@@ -127,7 +127,7 @@
 					{/each}
 					{#if displayed.length === 0 && showSearch}
 						<li class="px-4 py-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Sin resultados
+							No results
 						</li>
 					{/if}
 				</ul>
@@ -139,7 +139,7 @@
 							autofocus
 							bind:value={searchQuery}
 							type="text"
-							placeholder="Buscar proyecto…"
+							placeholder="Search project…"
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 					</div>
@@ -156,8 +156,8 @@
 
 				<div class="border-t border-paper-border px-4 py-2 dark:border-dark-paper-border">
 					<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-						Tip: nombra proyectos con <span class="font-mono">_quick</span> o
-						<span class="font-mono">_math</span> para que aparezcan primero.
+						Tip: name projects with <span class="font-mono">_quick</span> or
+						<span class="font-mono">_math</span> to make them appear first.
 					</p>
 				</div>
 			{/if}

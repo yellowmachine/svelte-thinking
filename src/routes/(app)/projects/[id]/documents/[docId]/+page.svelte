@@ -97,11 +97,13 @@
 
 	// Wikilinks: build title → {id, projectId} map.
 	// Same-project docs indexed by title: [[Introducción]]
+	// Same-project docs also indexed by UUID: [[doc:uuid|Title]] (book→chapter links)
 	// External context docs indexed by "title:hash": [[Introducción:a3f9b2c1]]
 	const docMap = $derived(() => {
 		const map = new Map<string, { id: string; projectId: string }>();
 		for (const d of data.projectDocs) {
 			map.set(d.title, { id: d.id, projectId: d.projectId });
+			map.set(d.id, { id: d.id, projectId: d.projectId }); // UUID-keyed for [[doc:uuid|...]]
 		}
 		for (const d of data.externalDocs) {
 			const hash = d.id.slice(0, 8);
@@ -109,6 +111,13 @@
 		}
 		return map;
 	});
+
+	// Chapters available for [[doc:uuid|Title]] autocomplete (only relevant for book documents)
+	const chapters = $derived(
+		data.document.type === 'book'
+			? data.projectDocs.filter((d) => d.type === 'chapter')
+			: []
+	);
 
 	// Backlinks from server (updated on commit)
 	const backlinks = $derived(data.backlinks);
@@ -542,8 +551,21 @@
 			disabled={!isDirty || saveStatus === 'saving'}
 			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
-			Guardar
+			Save
 		</button>
+
+		{#if data.document.type === 'book'}
+			<a
+				href="/projects/{data.document.projectId}/documents/{data.document.id}/read"
+				class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+					<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+				</svg>
+				Read
+			</a>
+		{/if}
 
 		<!-- AI suggestions toggle -->
 		<button
@@ -764,6 +786,7 @@
 						bind:this={editorEl}
 						bind:value={content}
 						references={projectRefs}
+						{chapters}
 						ondocchange={handleDocChange}
 						onselectionchange={(sel) => {
 							currentSelection = sel;
@@ -803,6 +826,7 @@
 					bind:this={editorEl}
 					bind:value={content}
 					references={projectRefs}
+					{chapters}
 					ondocchange={handleDocChange}
 					onselectionchange={(sel) => {
 						currentSelection = sel;
