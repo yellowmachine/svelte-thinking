@@ -534,7 +534,7 @@ export function processCitations(
 
 	if (!bibKeys.length) return result + bibLines.join('\n');
 
-	bibLines.push('', '---', '');
+	bibLines.push('', '', '---', '');
 	bibLines.push(style === 'chicago' ? '## Bibliografía' : '## Referencias');
 	bibLines.push('');
 
