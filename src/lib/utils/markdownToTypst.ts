@@ -26,6 +26,17 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 		return `%%IMG${imagePlaceholders.length - 1}%%`;
 	});
 
+	// ── 0.5 Protect epigraph blocks (multiline blockquotes with [!epigraph]) ──
+	const epigraphs: string[] = [];
+	src = src.replace(/^> \[!epigraph\]\n((?:> [^\n]*\n?)*)/gm, (_m, body: string) => {
+		const lines = body.split('\n').filter(l => l.startsWith('> ')).map(l => l.slice(2).trim()).filter(Boolean);
+		if (lines.length === 0) return _m; // fallback if no lines
+
+		const typstEpigraph = renderEpigraphToTypst(lines);
+		epigraphs.push(typstEpigraph);
+		return `%%EPIGRAPH${epigraphs.length - 1}%%`;
+	});
+
 	// ── 1. Protect fenced code blocks ────────────────────────────────────────
 	const codeBlocks: string[] = [];
 	src = src.replace(/^```(\w*)\n([\s\S]*?)^```/gm, (_m, lang, code) => {
@@ -133,11 +144,51 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	result = result.replace(/%%CB(\d+)%%/g, (_m, i) => codeBlocks[parseInt(i)]);
 	result = result.replace(/%%DM(\d+)%%/g, (_m, i) => displayMath[parseInt(i)]);
 	result = result.replace(/%%IM(\d+)%%/g, (_m, i) => inlineMath[parseInt(i)]);
+	result = result.replace(/%%EPIGRAPH(\d+)%%/g, (_m, i) => epigraphs[parseInt(i)]);
 
 	return result;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Parse epigraph lines (quote, author, source) and render to Typst. */
+function renderEpigraphToTypst(lines: string[]): string {
+	if (lines.length === 0) return '';
+
+	// Detect attribution line (starts with — or --)
+	const attrIdx = lines.findIndex(l => /^[—–-]/.test(l));
+	let quoteLines: string[];
+	let attr: string;
+	if (attrIdx >= 0) {
+		// Explicit attribution found
+		quoteLines = lines.slice(0, attrIdx);
+		attr = lines[attrIdx];
+	} else if (lines.length === 1) {
+		// Single line — treat as quote with no attribution
+		quoteLines = lines;
+		attr = '';
+	} else {
+		// No explicit attribution — treat last line as attribution
+		quoteLines = lines.slice(0, -1);
+		attr = lines[lines.length - 1];
+	}
+	const source = attrIdx >= 0 && lines.length > attrIdx + 1 ? lines.slice(attrIdx + 1).join(' ') : '';
+
+	const quote = quoteLines.map(l => l.replace(/^[""]|[""]$/g, '')).join(' ').trim();
+
+	if (!quote) return '';
+
+	const attributionParts = [attr, source].filter(Boolean).map(escapeTypstStringHelper);
+	const attribution = attributionParts.length > 0
+		? `, attribution: [${attributionParts.join(', ')}]`
+		: '';
+
+	return `#quote(block: true${attribution})[${escapeTypstStringHelper(quote)}]`;
+}
+
+function escapeTypstStringHelper(s: string): string {
+	return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\[/g, '\\[').replace(/\]/g, '\\]');
+}
 
 function extOf(url: string): string {
 	const m = url.match(/\.(\w{2,5})(?:\?|#|$)/);

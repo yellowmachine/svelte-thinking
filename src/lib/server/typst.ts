@@ -16,6 +16,8 @@ export interface TypstDocumentOptions {
 	authors?: string[];
 	doi?: string;
 	version?: string;
+	subtitle?: string;
+	edition?: string;
 	sections: TypstSection[];
 	refs?: RefData[];
 	template?: TemplateType;
@@ -53,6 +55,15 @@ function renderSections(sections: TypstSection[]): string {
 	return sections
 		.map((s) => `== ${s.title}\n\n${s.content.trim()}`)
 		.join('\n\n#v(1em)\n\n');
+}
+
+function renderBookChapters(sections: TypstSection[]): string {
+	// Use = heading so #outline() picks them up for TOC.
+	// The #show heading.where(level: 1) rule in templateBook handles the
+	// "CHAPTER N / Title" visual layout using counter(heading).
+	return sections
+		.map((s) => `= ${escapeTypstString(s.title)}\n\n${s.content.trim()}`)
+		.join('\n\n');
 }
 
 function abstractBlock(abstract: TypstSection | null): string {
@@ -282,6 +293,63 @@ ${abstractBlock(abstract)}${renderSections(rest)}
 ${bibStr}`;
 }
 
+function templateBook(opts: TypstDocumentOptions, sections: TypstSection[], bibStr: string): string {
+	const date = opts.date ?? new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+	return `\
+#set document(title: "${escapeTypstString(opts.title)}")
+#set page(
+  paper: "a4",
+  margin: (top: 3cm, bottom: 3cm, left: 3.5cm, right: 2.5cm),
+  numbering: "1",
+  number-align: center,
+  header: context {
+    if counter(page).get().first() > 1 {
+      align(right, text(size: 9pt, fill: luma(140))[${escapeTypstString(opts.title)}])
+      v(-0.4em)
+      line(length: 100%, stroke: 0.3pt + luma(200))
+    }
+  }
+)
+#set text(font: "Linux Libertine", size: 12pt, lang: "es")
+#set heading(numbering: none)
+#set par(justify: true, leading: 0.75em, spacing: 1.4em, first-line-indent: 1.5em)
+#show heading.where(level: 1): it => {
+  pagebreak(weak: true)
+  v(2cm, weak: true)
+  text(size: 10pt, fill: luma(140), tracking: 0.08em)[CHAPTER #counter(heading).display("1")]
+  v(0.4em)
+  text(size: 22pt, weight: "bold")[#it.body]
+  v(1.5em)
+}
+#show heading.where(level: 2): it => {
+  v(1.2em, weak: true)
+  set text(size: 13pt, weight: "bold")
+  it
+  v(0.5em, weak: true)
+}
+
+// ── Cover page ─────────────────────────────────────────────────────────────────
+#page(numbering: none, header: none)[
+  #align(center + horizon)[
+    #v(3cm)
+    #text(size: 26pt, weight: "bold")[${escapeTypstString(opts.title)}]
+    ${opts.subtitle ? `\n    #v(0.8em)\n    #text(size: 15pt, fill: luma(80))[${escapeTypstString(opts.subtitle)}]` : ''}${authorsBlock(opts.authors)}
+    ${opts.edition ? `\n    #v(1.5em)\n    #text(size: 11pt, fill: luma(100))[${escapeTypstString(opts.edition)}]` : ''}
+    #v(2cm)
+    #line(length: 40%, stroke: luma(200))
+    #v(1cm)
+    #text(size: 10pt, fill: luma(120))[${date}]
+  ]
+]
+
+// ── Table of Contents ──────────────────────────────────────────────────────────
+#outline(title: "Contenido", depth: 1, indent: 1em)
+#pagebreak()
+
+${renderBookChapters(sections)}
+${bibStr}`;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -294,6 +362,7 @@ export function buildTypstSource(opts: TypstDocumentOptions): string {
 		case 'thesis':  return templateThesis(opts, opts.sections, bibStr);
 		case 'medical': return templateMedical(opts, opts.sections, bibStr);
 		case 'report':  return templateReport(opts, opts.sections, bibStr);
+		case 'book':    return templateBook(opts, opts.sections, bibStr);
 		default:        return templateGeneric(opts, opts.sections, bibStr);
 	}
 }

@@ -5,6 +5,16 @@
 	let { data }: { data: PageData } = $props();
 
 	let activeChapterId = $state<string | null>(null);
+	let isExporting = $state(false);
+
+	function exportPdf() {
+		isExporting = true;
+		window.location.href = `/api/projects/${data.book.projectId}/documents/${data.book.id}/book-export`;
+		// Reset flag after a delay (user may stay on page if export fails)
+		setTimeout(() => {
+			isExporting = false;
+		}, 3000);
+	}
 
 	const docMap = $derived(() => {
 		const map = new Map<string, { id: string; projectId: string }>();
@@ -85,6 +95,48 @@
 				{data.chapters.length} chapter{data.chapters.length === 1 ? '' : 's'}
 			</span>
 		{/if}
+
+		<!-- Export button (right side) -->
+		<button
+			onclick={exportPdf}
+			disabled={isExporting}
+			class="ml-auto flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink disabled:opacity-60 disabled:cursor-not-allowed dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			title="Export to PDF"
+		>
+			{#if isExporting}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="animate-spin"
+				>
+					<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 2.2" />
+				</svg>
+			{:else}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					<polyline points="7 10 12 15 17 10" />
+					<line x1="12" y1="15" x2="12" y2="3" />
+				</svg>
+			{/if}
+			{#if !isExporting}Export{/if}
+		</button>
 	</header>
 
 	<div class="flex flex-1 overflow-hidden">
