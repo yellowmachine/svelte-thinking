@@ -131,18 +131,14 @@ export const GET: RequestHandler = async (event) => {
 	// Convert content to Typst sections
 	const imageRegistry = new Map<string, string>();
 
-	const sections = [];
+	const typstPreamble = preamble ? markdownToTypst(preamble, imageRegistry) : undefined;
 
-	if (preamble) {
-		sections.push({ title: 'Introduction', content: markdownToTypst(preamble, imageRegistry) });
-	}
+	const sections = chapterRefs.map((ref) => ({
+		title: ref.title,
+		content: markdownToTypst(chapterContents.get(ref.uuid) ?? '', imageRegistry)
+	}));
 
-	for (const ref of chapterRefs) {
-		const content = chapterContents.get(ref.uuid) ?? '';
-		sections.push({ title: ref.title, content: markdownToTypst(content, imageRegistry) });
-	}
-
-	if (sections.length === 0) {
+	if (sections.length === 0 && !typstPreamble) {
 		error(422, 'This book has no content to export yet');
 	}
 
@@ -154,6 +150,7 @@ export const GET: RequestHandler = async (event) => {
 			subtitle,
 			edition,
 			authors: authorNames,
+			preamble: typstPreamble,
 			sections,
 			template: 'book'
 		});

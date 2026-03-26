@@ -18,6 +18,7 @@ export interface TypstDocumentOptions {
 	version?: string;
 	subtitle?: string;
 	edition?: string;
+	preamble?: string;
 	sections: TypstSection[];
 	refs?: RefData[];
 	template?: TemplateType;
@@ -346,7 +347,7 @@ function templateBook(opts: TypstDocumentOptions, sections: TypstSection[], bibS
 #outline(title: "Contenido", depth: 1, indent: 1em)
 #pagebreak()
 
-${renderBookChapters(sections)}
+${opts.preamble ? opts.preamble.trim() + '\n\n' : ''}${renderBookChapters(sections)}
 ${bibStr}`;
 }
 
