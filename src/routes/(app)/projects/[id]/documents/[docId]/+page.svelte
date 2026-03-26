@@ -16,18 +16,18 @@
 	let { data }: { data: PageData } = $props();
 
 	// untrack: read from props once without creating a reactive dependency
-	let content = $state(untrack(() => data.document.content));
-	let lastSavedContent = $state(untrack(() => data.document.content));
+	let content = $state(untrack(() => data.document?.content ?? ''));
+	let lastSavedContent = $state(untrack(() => data.document?.content ?? ''));
 	const isDirty = $derived(content !== lastSavedContent);
 	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' = $state(
-		untrack(() => (data.document.hasDraft ? 'pending' : 'idle'))
+		untrack(() => (data.document?.hasDraft ? 'pending' : 'idle'))
 	);
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// View mode: editor | split | preview
 	type ViewMode = 'editor' | 'split' | 'preview';
-	const VIEW_MODE_KEY = `view-mode-${data.document.id}`;
+	const VIEW_MODE_KEY = `view-mode-${data.document?.id ?? ''}`;
 	let viewMode = $state<ViewMode>(
 		(typeof localStorage !== 'undefined' ? localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null : null) ?? 'editor'
 	);
@@ -84,6 +84,7 @@
 
 	// Persist citation style per document in localStorage
 	$effect(() => {
+		if (!data.document) return;
 		const stored = localStorage.getItem(`cite-style-${data.document.id}`);
 		if (stored && (stored === 'apa' || stored === 'ieee' || stored === 'vancouver' || stored === 'chicago')) {
 			citationStyle = stored as CitationStyle;
@@ -146,7 +147,7 @@
 	let loadingCompare = $state(false);
 
 	// Public toggle
-	let isPublic = $state(untrack(() => data.document.isPublic ?? false));
+	let isPublic = $state(untrack(() => data.document?.isPublic ?? false));
 
 	async function togglePublic() {
 		isPublic = !isPublic;
@@ -198,7 +199,7 @@
 	};
 
 	let showComments = $state(false);
-	let inlineComments: InlineComment[] = $state(untrack(() => data.inlineComments as InlineComment[]));
+	let inlineComments: InlineComment[] = $state(untrack(() => (data.inlineComments as InlineComment[]) ?? []));
 
 	// Selection → floating "Comentar" button
 	type Selection = { text: string; from: number; to: number; coords: { top: number; bottom: number; left: number; right: number } | null };
@@ -549,6 +550,7 @@
 	});
 </script>
 
+{#if data.document}
 <!-- Mobile view -->
 <div class="sm:hidden">
 	{#if data.document.type === 'notes'}
@@ -1520,6 +1522,7 @@
 {/if}
 
 </div><!-- end desktop editor wrapper -->
+{/if}
 
 <svelte:window onkeydown={(e) => {
 	if (e.key === '/' && (e.ctrlKey || e.metaKey)) {

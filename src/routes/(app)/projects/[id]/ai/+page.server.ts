@@ -7,23 +7,23 @@ import { eq, desc } from 'drizzle-orm';
 export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
 
-	const [proj, conversations] = await Promise.all([
-		event.locals.withRLS((db) =>
-			db.select({ id: project.id, title: project.title })
-				.from(project)
-				.where(eq(project.id, projectId))
-				.limit(1)
-		) as Promise<{ id: string; title: string }[]>,
+	const proj = await event.locals.withRLS((db) =>
+		db.select({ id: project.id, title: project.title })
+			.from(project)
+			.where(eq(project.id, projectId))
+			.limit(1)
+			.then((r) => r)
+	);
 
-		event.locals.withRLS((db) =>
-			db.select()
-				.from(aiConversation)
-				.where(eq(aiConversation.projectId, projectId))
-				.orderBy(desc(aiConversation.updatedAt))
-		) as Promise<(typeof aiConversation.$inferSelect)[]>
-	]);
+	if (!proj?.[0]) error(404, 'Proyecto no encontrado');
 
-	if (!proj[0]) error(404, 'Proyecto no encontrado');
+	const conversations = await event.locals.withRLS((db) =>
+		db.select()
+			.from(aiConversation)
+			.where(eq(aiConversation.projectId, projectId))
+			.orderBy(desc(aiConversation.updatedAt))
+			.then((r) => r)
+	);
 
-	return { project: proj[0], conversations };
+	return { project: proj[0], conversations: conversations ?? [] };
 };

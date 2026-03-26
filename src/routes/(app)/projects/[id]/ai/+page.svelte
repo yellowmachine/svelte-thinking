@@ -8,9 +8,10 @@
 	let { data }: { data: PageData } = $props();
 
 	type Message = { id: string; role: 'user' | 'assistant'; content: string; docsUsed?: { id: string; title: string }[] };
-	type Conversation = (typeof data.conversations)[number];
+	type Conversation = NonNullable<typeof data.conversations>[number];
 
-	let conversations = $state(data.conversations);
+	let conversations = $state<Conversation[]>([]);
+	$effect(() => { conversations = data.conversations ?? []; });
 	let activeConvId = $state<string | null>(null);
 	let messages = $state<Message[]>([]);
 	let loadingConv = $state(false);
@@ -44,7 +45,7 @@
 		thinkingInterval = undefined;
 	}
 
-	let messagesEnd: HTMLDivElement;
+	let messagesEnd = $state<HTMLDivElement | undefined>(undefined);
 
 	async function selectConversation(conv: Conversation) {
 		if (loadingConv) return;
@@ -99,7 +100,7 @@
 			const existing = conversations.find((c) => c.id === result.conversationId);
 			if (!existing) {
 				const conv = await trpc.ai.listConversations.query(data.project.id);
-				conversations = conv;
+				conversations = conv ?? [];
 			} else {
 				conversations = conversations.map((c) =>
 					c.id === result.conversationId ? { ...c, updatedAt: new Date() } : c
@@ -244,6 +245,7 @@
 	}
 </script>
 
+{#if data.project}
 <div class="flex h-[calc(100vh-4rem)] overflow-hidden">
 	<!-- Sidebar: conversation list -->
 	<aside
@@ -469,6 +471,7 @@
 		</div>
 	</div>
 </div>
+{/if}
 
 {#if showPrivacyNotice}
 	<!-- Privacy onboarding modal -->
