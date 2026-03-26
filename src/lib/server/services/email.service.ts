@@ -16,6 +16,8 @@ export async function sendProjectInvitation({
 	token: string;
 	origin: string;
 }) {
+	if (!env.RESEND_API_KEY) return;
+
 	const link = `${origin}/invitations/${token}`;
 	const resend = new Resend(env.RESEND_API_KEY);
 

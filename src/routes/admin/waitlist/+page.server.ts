@@ -18,7 +18,7 @@ export const actions: Actions = {
 	approve: async ({ request }) => {
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
-		if (!id) return fail(400, { error: 'ID requerido' });
+		if (!id) return fail(400, { error: 'ID required' });
 
 		const token = crypto.randomUUID();
 		const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
@@ -29,12 +29,12 @@ export const actions: Actions = {
 			.where(eq(waitlist.id, id))
 			.returning({ email: waitlist.email, name: waitlist.name });
 
-		if (!rows[0]) return fail(404, { error: 'Entrada no encontrada' });
+		if (!rows[0]) return fail(404, { error: 'Entry not found' });
 
 		const origin = env.ORIGIN ?? 'http://localhost:3000';
 		await sendWaitlistApprovalEmail({
 			to: rows[0].email,
-			name: rows[0].name ?? 'Investigador',
+			name: rows[0].name ?? 'Researcher',
 			registrationUrl: `${origin}/register?token=${token}`
 		});
 
@@ -44,7 +44,7 @@ export const actions: Actions = {
 	reject: async ({ request }) => {
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
-		if (!id) return fail(400, { error: 'ID requerido' });
+		if (!id) return fail(400, { error: 'ID required' });
 
 		await db.update(waitlist).set({ status: 'rejected' }).where(eq(waitlist.id, id));
 		return { ok: true };

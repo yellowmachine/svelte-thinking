@@ -4,8 +4,6 @@ import { project, projectCollaborator } from '$lib/server/db/schemas/projects.sc
 import { document } from '$lib/server/db/schemas/documents.schema';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
-import { db } from '$lib/server/db';
-import { user } from '$lib/server/db/auth.schema';
 import { eq, desc, and, count, sql, inArray } from 'drizzle-orm';
 import { documentVersion } from '$lib/server/db/schemas/documents.schema';
 
@@ -49,18 +47,20 @@ export const load: PageServerLoad = async (event) => {
 						: ''
 			}));
 		}),
-		// Usa db directo (superuser): RLS solo permite ver la propia fila, el owner necesita ver todas
-		db
-			.select({
-				id: projectCollaborator.id,
-				userId: projectCollaborator.userId,
-				role: projectCollaborator.role,
-				createdAt: projectCollaborator.createdAt,
-				name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${projectCollaborator.userId})`,
-				email: sql<string>`(SELECT email FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
-			})
-			.from(projectCollaborator)
-			.where(eq(projectCollaborator.projectId, projectId)),
+		// withRLS: owner policy allows seeing all collaborators; collaborator policy shows own row
+		event.locals.withRLS((db) =>
+			db
+				.select({
+					id: projectCollaborator.id,
+					userId: projectCollaborator.userId,
+					role: projectCollaborator.role,
+					createdAt: projectCollaborator.createdAt,
+					name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${projectCollaborator.userId})`,
+					email: sql<string>`(SELECT email FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
+				})
+				.from(projectCollaborator)
+				.where(eq(projectCollaborator.projectId, projectId))
+		),
 		event.locals.withRLS((db) =>
 			db
 				.select()

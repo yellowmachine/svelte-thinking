@@ -20,23 +20,23 @@ test.describe('Guardado de documentos', () => {
 		await page.keyboard.type(TEST_CONTENT);
 
 		// El status cambia a "Cambios sin guardar"
-		await expect(page.getByText('Cambios sin guardar')).toBeVisible();
+		await expect(page.getByText('Unsaved changes')).toBeVisible();
 
 		// Guardar y esperar a que el servidor confirme el draft
 		await Promise.all([
 			page.waitForResponse((res) => res.url().includes('/api/trpc/') && res.request().method() === 'POST'),
-			page.locator('button:has-text("Guardar")').last().click()
+			page.locator('button:has-text("Save")').last().click()
 		]);
 
 		// Status cambia a "Guardado"
-		await expect(page.getByText('Guardado').last()).toBeVisible();
+		await expect(page.getByText('Saved').last()).toBeVisible();
 
 		// Recargar y verificar que el contenido persiste
 		await page.reload();
 		await page.waitForLoadState('networkidle');
 
 		// Si el draft fue guardado, el servidor lo devuelve y el status es 'pending' (hasDraft: true)
-		await expect(page.getByText('Cambios sin guardar')).toBeVisible({ timeout: 8000 });
+		await expect(page.getByText('Unsaved changes')).toBeVisible({ timeout: 8000 });
 
 		// El contenido debe estar en el editor
 		await expect(page.locator('.cm-content')).toContainText(TEST_CONTENT, { timeout: 8000 });
@@ -47,7 +47,7 @@ test.describe('Guardado de documentos', () => {
 		await page.goto(getDocUrl());
 
 		// Sin editar, el botón Guardar del desktop está disabled
-		const saveButton = page.locator('button:has-text("Guardar")').last();
+		const saveButton = page.locator('button:has-text("Save")').last();
 		await expect(saveButton).toBeDisabled();
 	});
 });

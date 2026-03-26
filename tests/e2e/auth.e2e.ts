@@ -4,13 +4,13 @@ import { generateTotpCode, TEST_USER } from './helpers/create-test-user';
 test.describe('Autenticación con 2FA', () => {
 	test('login correcto con 2FA', async ({ page }) => {
 		await page.goto('/login');
-		await expect(page.getByRole('heading', { name: 'Iniciar sesión' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 
 		await page.fill('input[name="email"]', TEST_USER.email);
 		await page.fill('input[name="password"]', TEST_USER.password);
 		await page.click('button[type="submit"]');
 
-		await expect(page.getByRole('heading', { name: 'Verificación en dos pasos' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Two-step verification' })).toBeVisible();
 
 		await page.fill('input[name="code"]', generateTotpCode());
 		await page.click('button[type="submit"]');
@@ -26,14 +26,14 @@ test.describe('Autenticación con 2FA', () => {
 		await page.fill('input[name="password"]', TEST_USER.password);
 		await page.click('button[type="submit"]');
 
-		await expect(page.getByRole('heading', { name: 'Verificación en dos pasos' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Two-step verification' })).toBeVisible();
 
 		// Código intencionadamente incorrecto
 		await page.fill('input[name="code"]', '000000');
 		await page.click('button[type="submit"]');
 
 		// Sigue en el paso TOTP con un mensaje de error
-		await expect(page.getByRole('heading', { name: 'Verificación en dos pasos' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Two-step verification' })).toBeVisible();
 		await expect(page.locator('p.text-red-700, p.text-red-300')).toBeVisible();
 	});
 
@@ -46,6 +46,6 @@ test.describe('Autenticación con 2FA', () => {
 
 		await expect(page.locator('p.text-red-700, p.text-red-300')).toBeVisible();
 		// No pasa al paso TOTP
-		await expect(page.getByRole('heading', { name: 'Iniciar sesión' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 	});
 });

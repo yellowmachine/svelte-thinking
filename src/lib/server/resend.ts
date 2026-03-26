@@ -21,10 +21,10 @@ export async function sendWaitlistApprovalEmail({
 	await resend.emails.send({
 		from,
 		to,
-		subject: 'Bienvenido/a a Scholio — tu acceso está listo',
+		subject: 'Welcome to Scholio — your access is ready',
 		html: `
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f9f9f7;font-family:Georgia,serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f7;padding:40px 16px;">
@@ -42,16 +42,16 @@ export async function sendWaitlistApprovalEmail({
         <tr>
           <td style="padding:40px 40px 32px;">
             <p style="margin:0 0 20px;font-size:16px;color:#2a2a26;line-height:1.6;">
-              Hola ${name},
+              Hi ${name},
             </p>
             <p style="margin:0 0 20px;font-size:16px;color:#2a2a26;line-height:1.6;">
-              Gracias por unirte a la beta de Scholio. Tu solicitud ha sido aceptada y nos alegra mucho tenerte en esta primera comunidad de usuarios.
+              Thank you for joining the Scholio beta. Your request has been accepted and we are glad to have you in this first community of users.
             </p>
             <p style="margin:0 0 20px;font-size:16px;color:#2a2a26;line-height:1.6;">
-              Scholio es una plataforma de escritura académica colaborativa: editor Markdown con citas, control de versiones, colaboración con roles, exportación a LaTeX y Typst, y un asistente IA que entiende el contexto de tu investigación.
+              Scholio is a collaborative academic writing platform: Markdown editor with citations, version control, role-based collaboration, export to LaTeX and Typst, and an AI assistant that understands your research context.
             </p>
             <p style="margin:0 0 32px;font-size:16px;color:#2a2a26;line-height:1.6;">
-              Estamos en una fase muy temprana y tu opinión importa de verdad. Si algo no funciona como esperas, o si tienes una idea, escríbenos directamente respondiendo a este correo.
+              We are at a very early stage and your feedback genuinely matters. If something does not work as expected, or if you have an idea, write to us by replying to this email.
             </p>
 
             <!-- CTA -->
@@ -60,14 +60,14 @@ export async function sendWaitlistApprovalEmail({
                 <td style="border-radius:6px;background:#1a1a18;">
                   <a href="${registrationUrl}"
                      style="display:inline-block;padding:14px 28px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:15px;font-weight:600;color:#f5f3ee;text-decoration:none;letter-spacing:0.01em;">
-                    Crear mi cuenta →
+                    Create my account →
                   </a>
                 </td>
               </tr>
             </table>
 
             <p style="margin:24px 0 0;font-size:13px;color:#8a8880;">
-              Este enlace es personal e intransferible. Expira en 7 días.
+              This link is personal and non-transferable. It expires in 7 days.
             </p>
           </td>
         </tr>
@@ -76,7 +76,7 @@ export async function sendWaitlistApprovalEmail({
         <tr>
           <td style="padding:24px 40px;border-top:1px solid #e8e6e0;">
             <p style="margin:0;font-size:13px;color:#8a8880;line-height:1.6;">
-              Scholio · Software libre para escritura académica<br>
+              Scholio · Open source academic writing platform<br>
               <a href="https://scholio.review" style="color:#8a8880;">scholio.review</a>
             </p>
           </td>
@@ -119,16 +119,16 @@ export async function sendNewCommentNotification({
 	await resend.emails.send({
 		from,
 		to,
-		subject: `Nuevo comentario en "${documentTitle}"`,
+		subject: `New comment on "${documentTitle}"`,
 		html: `
-			<p>Hola,</p>
-			<p><strong>${authorName}</strong> ha dejado un comentario en <strong>"${documentTitle}"</strong> (${projectTitle}):</p>
+			<p>Hi,</p>
+			<p><strong>${authorName}</strong> left a comment on <strong>"${documentTitle}"</strong> (${projectTitle}):</p>
 			<blockquote style="border-left: 3px solid #ccc; padding-left: 12px; color: #555; margin: 16px 0;">
 				${commentExcerpt}
 			</blockquote>
-			<p><a href="${documentUrl}">Ver el documento</a></p>
+			<p><a href="${documentUrl}">View the document</a></p>
 			<p style="margin-top: 32px; font-size: 12px; color: #999;">
-				<a href="${unsubscribeUrl}" style="color: #999;">Silenciar notificaciones de este proyecto</a>
+				<a href="${unsubscribeUrl}" style="color: #999;">Mute notifications for this project</a>
 			</p>
 		`
 	});
@@ -162,10 +162,10 @@ export async function sendCommitNotification({
 	await resend.emails.send({
 		from,
 		to,
-		subject: `Nuevo commit en "${documentTitle}"`,
+		subject: `New commit on "${documentTitle}"`,
 		html: `
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f9f9f7;font-family:Georgia,serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f7;padding:40px 16px;">
@@ -179,12 +179,12 @@ export async function sendCommitNotification({
         <tr>
           <td style="padding:32px 40px 24px;">
             <p style="margin:0 0 16px;font-size:15px;color:#2a2a26;line-height:1.6;">
-              <strong>${committerName}</strong> ha guardado una nueva versión de <strong>"${documentTitle}"</strong> en el proyecto <strong>${projectTitle}</strong>.
+              <strong>${committerName}</strong> saved a new version of <strong>"${documentTitle}"</strong> in project <strong>${projectTitle}</strong>.
             </p>
             <table cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 24px;">
               <tr>
                 <td style="background:#f5f3ee;border-radius:6px;border-left:3px solid #7c5c3e;padding:12px 16px;">
-                  <p style="margin:0;font-size:13px;color:#57534e;font-family:ui-sans-serif,system-ui,sans-serif;">Mensaje del commit</p>
+                  <p style="margin:0;font-size:13px;color:#57534e;font-family:ui-sans-serif,system-ui,sans-serif;">Commit message</p>
                   <p style="margin:4px 0 0;font-size:15px;color:#2a2a26;font-style:italic;">"${commitMessage}"</p>
                 </td>
               </tr>
@@ -193,7 +193,7 @@ export async function sendCommitNotification({
               <tr>
                 <td style="border-radius:6px;background:#1a1a18;">
                   <a href="${documentUrl}" style="display:inline-block;padding:12px 24px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;font-weight:600;color:#f5f3ee;text-decoration:none;">
-                    Ver el documento →
+                    View the document →
                   </a>
                 </td>
               </tr>
@@ -204,7 +204,7 @@ export async function sendCommitNotification({
           <td style="padding:16px 40px 24px;border-top:1px solid #e8e6e0;">
             <p style="margin:0;font-size:12px;color:#a8a29e;line-height:1.6;">
               Scholio · <a href="https://scholio.tech" style="color:#a8a29e;">scholio.tech</a><br>
-              <a href="${unsubscribeUrl}" style="color:#a8a29e;">Silenciar notificaciones de este proyecto</a>
+              <a href="${unsubscribeUrl}" style="color:#a8a29e;">Mute notifications for this project</a>
             </p>
           </td>
         </tr>
@@ -229,12 +229,12 @@ export async function sendVerificationEmail(email: string, url: string) {
 	await resend.emails.send({
 		from,
 		to: email,
-		subject: 'Confirma tu cuenta en Scholio',
+		subject: 'Confirm your Scholio account',
 		html: `
-			<p>Hola,</p>
-			<p>Haz clic en el siguiente enlace para confirmar tu cuenta:</p>
+			<p>Hi,</p>
+			<p>Click the link below to confirm your account:</p>
 			<p><a href="${url}">${url}</a></p>
-			<p>El enlace expira en 24 horas.</p>
+			<p>The link expires in 24 hours.</p>
 		`
 	});
 }
