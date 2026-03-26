@@ -49,6 +49,14 @@ export async function createTestUser() {
 		WHERE user_id = (SELECT id FROM "user" WHERE email = ${TEST_USER.email})
 	`;
 	await sql`UPDATE "user" SET two_factor_enabled = false WHERE email = ${TEST_USER.email}`;
+
+	// 4b. Crear scholio.user_profile si no existe (necesario para acceder a la app)
+	await sql`
+		INSERT INTO scholio.user_profile (id, user_id, created_at, updated_at)
+		SELECT gen_random_uuid()::text, id, NOW(), NOW()
+		FROM "user" WHERE email = ${TEST_USER.email}
+		ON CONFLICT (user_id) DO NOTHING
+	`;
 	await sql.end();
 
 	// 4. Login sin 2FA (todavía no está activado o acabamos de crear el usuario)

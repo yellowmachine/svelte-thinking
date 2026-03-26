@@ -7,6 +7,7 @@
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
 	import CommentThread from '$lib/components/editor/CommentThread.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { findAnchor, posToLine, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import { CITATION_STYLE_LABELS, type CitationStyle, type CiteRef } from '$lib/utils/citations';
@@ -42,7 +43,11 @@
 	let refsLoaded = $state(false);
 	let showCitePicker = $state(false);
 	let citeSearch = $state('');
-	let editorEl: { insertAtCursor: (text: string) => void } | null = $state(null);
+	let editorEl: {
+		insertAtCursor: (text: string) => void;
+		getSelection: () => { text: string; from: number; to: number } | null;
+		replaceRange: (from: number, to: number, text: string) => void;
+	} | null = $state(null);
 
 	const filteredRefs = $derived(() => {
 		const q = citeSearch.toLowerCase();
@@ -391,10 +396,10 @@
 
 	const saveStatusLabel: Record<'idle' | 'pending' | 'saving' | 'saved' | 'error', string> = {
 		idle: '',
-		pending: 'Cambios sin guardar',
-		saving: 'Guardando...',
-		saved: 'Guardado',
-		error: 'Error al guardar'
+		pending: 'Unsaved changes',
+		saving: 'Saving...',
+		saved: 'Saved',
+		error: 'Error saving'
 	};
 
 	const openCommentsCount = $derived(inlineComments.filter((c) => c.status === 'open').length);
@@ -430,6 +435,9 @@
 		localStorage.setItem(`ai-suggestions-${data.document.id}`, String(aiEnabled));
 		if (aiEnabled) {
 			showSuggestions = true;
+			showChat = false;
+			showReview = false;
+			showDraft = false;
 			showHistory = false;
 			showComments = false;
 		} else {
@@ -468,6 +476,147 @@
 
 	// Export dropdown
 	let showExport = $state(false);
+
+	// ── Chat assistant ───────────────────────────────────────────────────────────
+	let showChat = $state(false);
+
+	function toggleChat() {
+		showChat = !showChat;
+		if (showChat) {
+			showSuggestions = false;
+			showReview = false;
+			showDraft = false;
+			showHistory = false;
+			showComments = false;
+		}
+	}
+
+	// ── Review assistant ─────────────────────────────────────────────────────────
+	type ReviewResult = {
+		requirements: { name: string; covered: boolean; note: string }[];
+		uncitedRefs: string[];
+	};
+	let showReview = $state(false);
+	let loadingReview = $state(false);
+	let reviewResult = $state<ReviewResult | null>(null);
+	let reviewError = $state('');
+
+	function toggleReview() {
+		showReview = !showReview;
+		if (showReview) {
+			showSuggestions = false;
+			showChat = false;
+			showDraft = false;
+			showHistory = false;
+			showComments = false;
+		}
+	}
+
+	async function runReview() {
+		if (loadingReview) return;
+		loadingReview = true;
+		reviewError = '';
+		reviewResult = null;
+		try {
+			reviewResult = await trpc.ai.reviewDocument.mutate({
+				projectId: data.document.projectId,
+				documentId: data.document.id
+			});
+		} catch (e: unknown) {
+			reviewError = e instanceof Error ? e.message : 'Error al revisar el documento.';
+		} finally {
+			loadingReview = false;
+		}
+	}
+
+	// ── Draft assistant ──────────────────────────────────────────────────────────
+	let showDraft = $state(false);
+	let draftMode = $state<'new' | 'rewrite'>('new');
+	let draftInstruction = $state('');
+	let draftResult = $state('');
+	let loadingDraft = $state(false);
+	let draftError = $state('');
+
+	// Rewrite mode — snapshot of the selected range
+	type SelectionSnapshot = { text: string; from: number; to: number };
+	let capturedSelection = $state<SelectionSnapshot | null>(null);
+
+	function toggleDraft() {
+		showDraft = !showDraft;
+		if (showDraft) {
+			showSuggestions = false;
+			showChat = false;
+			showReview = false;
+			showHistory = false;
+			showComments = false;
+		} else {
+			capturedSelection = null;
+			draftResult = '';
+		}
+	}
+
+	function setDraftMode(m: 'new' | 'rewrite') {
+		draftMode = m;
+		draftResult = '';
+		draftError = '';
+		capturedSelection = null;
+	}
+
+	function captureSelection() {
+		const sel = editorEl?.getSelection() ?? null;
+		capturedSelection = sel;
+		draftResult = '';
+		draftError = '';
+	}
+
+	async function runDraft() {
+		if (!draftInstruction.trim() || loadingDraft) return;
+		if (draftMode === 'rewrite' && !capturedSelection) return;
+		loadingDraft = true;
+		draftError = '';
+		draftResult = '';
+		try {
+			if (draftMode === 'rewrite') {
+				const instruction = `Rewrite the following text fragment according to this instruction: ${draftInstruction}\n\nOriginal text:\n${capturedSelection!.text}`;
+				const { text } = await trpc.ai.draftSection.mutate({
+					projectId: data.document.projectId,
+					instruction,
+					documentContext: undefined
+				});
+				draftResult = text;
+			} else {
+				const preview = content.slice(-2000);
+				const { text } = await trpc.ai.draftSection.mutate({
+					projectId: data.document.projectId,
+					instruction: draftInstruction,
+					documentContext: preview || undefined
+				});
+				draftResult = text;
+			}
+		} catch (e: unknown) {
+			draftError = e instanceof Error ? e.message : 'Error generating draft.';
+		} finally {
+			loadingDraft = false;
+		}
+	}
+
+	function acceptDraft() {
+		if (!draftResult) return;
+		if (draftMode === 'rewrite' && capturedSelection) {
+			const wrapped = `> ⚠️ AI DRAFT — review and rewrite before publishing\n\n${draftResult}\n\n> ⚠️ END AI DRAFT`;
+			editorEl?.replaceRange(capturedSelection.from, capturedSelection.to, wrapped);
+			capturedSelection = null;
+		} else {
+			const wrapped = `\n\n> ⚠️ AI DRAFT — review and rewrite before publishing\n\n${draftResult}\n\n> ⚠️ END AI DRAFT\n\n`;
+			editorEl?.insertAtCursor(wrapped);
+		}
+		draftResult = '';
+		draftInstruction = '';
+	}
+
+	function rejectDraft() {
+		draftResult = '';
+	}
 
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
@@ -586,6 +735,55 @@
 			</span>
 		</button>
 
+		<!-- Chat assistant button -->
+		<button
+			type="button"
+			onclick={toggleChat}
+			title="Chat with the assistant about this document"
+			class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showChat
+				? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
+				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+		>
+			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+				<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+			</svg>
+			Chat
+		</button>
+
+		<!-- Review button -->
+		<button
+			type="button"
+			onclick={toggleReview}
+			title="Review document against project requirements"
+			class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showReview
+				? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
+				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+		>
+			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+				<path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+			</svg>
+			Review
+		</button>
+
+		<!-- Draft assistant button -->
+		{#if viewMode !== 'preview'}
+			<button
+				type="button"
+				onclick={toggleDraft}
+				title="Draft assistant — generate text from your project context"
+				class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showDraft
+					? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
+					: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+			>
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M12 19l7-7 3 3-7 7-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					<path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+				Draft
+			</button>
+		{/if}
+
 		<!-- Citar button (editor + split) -->
 		{#if viewMode !== 'preview'}
 			<button
@@ -619,7 +817,7 @@
 				? 'border-amber-400 bg-amber-400/10 text-amber-700 dark:text-amber-300'
 				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 		>
-			Comentarios
+			Comments
 			{#if openCommentsCount > 0}
 				<span
 					class="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 font-sans text-xs font-semibold text-white"
@@ -671,8 +869,8 @@
 				? 'border-accent bg-accent text-white'
 				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 		>
-			Historial
-		</button>
+			History
+</button>
 
 		<a
 			href="/help"
@@ -852,7 +1050,7 @@
 						showHistory = false;
 					}}
 				>
-					+ Comentar
+					+ Comment
 				</button>
 			</div>
 		{/if}
@@ -872,7 +1070,7 @@
 					<textarea
 						bind:value={newCommentText}
 						rows={3}
-						placeholder="Escribe tu comentario…"
+						placeholder="Write your comment…"
 						class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					></textarea>
 					<div class="mt-2 flex gap-2">
@@ -881,7 +1079,7 @@
 							disabled={submittingComment || !newCommentText.trim()}
 							class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 						>
-							{submittingComment ? 'Guardando…' : 'Comentar'}
+							{submittingComment ? 'Saving…' : 'Comment'}
 						</button>
 						<button
 							onclick={() => {
@@ -890,7 +1088,7 @@
 							}}
 							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 						>
-							Cancelar
+							Cancel
 						</button>
 					</div>
 				</div>
@@ -907,7 +1105,7 @@
 			<div
 				class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
 			>
-				<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Comentarios</h3>
+				<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Comments</h3>
 				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 					{openCommentsCount} abierto{openCommentsCount !== 1 ? 's' : ''}
 				</span>
@@ -1019,6 +1217,257 @@
 		</div>
 	{/if}
 
+	<!-- Chat assistant sidebar -->
+	{#if showChat}
+		<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border">
+			<AiEditorPanel
+				projectId={data.document.projectId}
+				documentId={data.document.id}
+				documentTitle={data.document.title}
+				onClose={toggleChat}
+			/>
+		</div>
+	{/if}
+
+	<!-- Review sidebar -->
+	{#if showReview}
+		<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+			<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
+				<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Document review</h3>
+				<div class="flex items-center gap-2">
+					{#if loadingReview}
+						<div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+					{/if}
+					<button
+						type="button"
+						onclick={toggleReview}
+						class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+						aria-label="Close review"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+				{#if !reviewResult && !loadingReview}
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						Checks each project requirement against the document content, and identifies relevant references that aren't cited yet.
+					</p>
+					<button
+						type="button"
+						onclick={runReview}
+						class="flex items-center justify-center gap-2 rounded-lg bg-accent py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+					>
+						Run review
+					</button>
+				{/if}
+
+				{#if loadingReview && !reviewResult}
+					<p class="py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Analysing document…</p>
+				{/if}
+
+				{#if reviewError}
+					<p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+						{reviewError}
+					</p>
+				{/if}
+
+				{#if reviewResult}
+					<!-- Requirements checklist -->
+					{#if reviewResult.requirements.length > 0}
+						<div>
+							<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+								Requirements
+							</p>
+							<div class="flex flex-col gap-2">
+								{#each reviewResult.requirements as req}
+									<div class="rounded-lg border {req.covered ? 'border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-900/10' : 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/10'} px-3 py-2">
+										<div class="flex items-start gap-2">
+											<span class="mt-0.5 shrink-0 text-sm {req.covered ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}">
+												{req.covered ? '✓' : '✗'}
+											</span>
+											<div>
+												<p class="font-sans text-xs font-medium text-ink dark:text-dark-ink">{req.name}</p>
+												{#if req.note}
+													<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">{req.note}</p>
+												{/if}
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<!-- Uncited references -->
+					{#if reviewResult.uncitedRefs.length > 0}
+						<div>
+							<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+								Relevant but uncited
+							</p>
+							<div class="flex flex-col gap-1.5">
+								{#each reviewResult.uncitedRefs as citeKey}
+									<button
+										type="button"
+										onclick={() => editorEl?.insertAtCursor(`[@${citeKey}]`)}
+										title="Insert citation"
+										class="flex items-center justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-left transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+									>
+										<span class="font-mono text-xs text-ink dark:text-dark-ink">[@{citeKey}]</span>
+										<span class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">insert</span>
+									</button>
+								{/each}
+							</div>
+						</div>
+					{:else if reviewResult.requirements.length > 0}
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							All relevant references are cited.
+						</p>
+					{/if}
+
+					<button
+						type="button"
+						onclick={runReview}
+						disabled={loadingReview}
+						class="mt-auto rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						Re-run review
+					</button>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Draft assistant sidebar -->
+	{#if showDraft}
+		<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+			<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
+				<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Draft assistant</h3>
+				<button
+					type="button"
+					onclick={toggleDraft}
+					class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+					aria-label="Close draft assistant"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</button>
+			</div>
+
+			<div class="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
+				<!-- Mode toggle -->
+				<div class="flex overflow-hidden rounded-lg border border-paper-border dark:border-dark-paper-border">
+					<button
+						type="button"
+						onclick={() => setDraftMode('new')}
+						class="flex-1 py-1.5 font-sans text-xs transition-colors {draftMode === 'new' ? 'bg-accent text-white' : 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+					>
+						New text
+					</button>
+					<button
+						type="button"
+						onclick={() => setDraftMode('rewrite')}
+						class="flex-1 border-l border-paper-border py-1.5 font-sans text-xs transition-colors dark:border-dark-paper-border {draftMode === 'rewrite' ? 'bg-accent text-white' : 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+					>
+						Rewrite selection
+					</button>
+				</div>
+
+				{#if draftMode === 'new'}
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						Describe what to write. The assistant will use your project references, requirements, and existing documents as context.
+					</p>
+				{:else}
+					<!-- Rewrite mode: capture selection -->
+					<div class="flex flex-col gap-2">
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							Select text in the editor, then capture it here.
+						</p>
+						<button
+							type="button"
+							onclick={captureSelection}
+							class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:text-dark-ink"
+						>
+							Capture selection
+						</button>
+						{#if capturedSelection}
+							<div class="rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink-muted dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-muted" style="max-height: 80px; overflow-y: auto;">
+								{capturedSelection.text}
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+				<textarea
+					bind:value={draftInstruction}
+					placeholder={draftMode === 'new'
+						? 'E.g.: Write an introductory paragraph for the methodology section…'
+						: 'E.g.: Make this more formal, add a citation, expand this argument…'}
+					rows="3"
+					class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				></textarea>
+
+				<button
+					type="button"
+					onclick={runDraft}
+					disabled={!draftInstruction.trim() || loadingDraft || (draftMode === 'rewrite' && !capturedSelection)}
+					class="flex items-center justify-center gap-2 rounded-lg bg-accent py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+				>
+					{#if loadingDraft}
+						<span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+						Generating…
+					{:else}
+						Generate
+					{/if}
+				</button>
+
+				{#if draftError}
+					<p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+						{draftError}
+					</p>
+				{/if}
+
+				{#if draftResult}
+					<div class="flex flex-col gap-2">
+						<!-- Diff preview: original → new (rewrite mode only) -->
+						{#if draftMode === 'rewrite' && capturedSelection}
+							<div class="rounded-xl border border-accent/20 bg-accent/5 p-3">
+								<div class="mb-2 space-y-1 rounded-md bg-paper px-2.5 py-2 font-mono text-xs dark:bg-dark-paper">
+									<p class="text-red-500 line-through opacity-70">{capturedSelection.text}</p>
+									<p class="text-green-600 dark:text-green-400">{draftResult}</p>
+								</div>
+							</div>
+						{:else}
+							<div class="rounded-lg border border-paper-border bg-paper-ui px-3 py-2.5 font-sans text-sm leading-relaxed text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" style="white-space: pre-wrap;">
+								{draftResult}
+							</div>
+						{/if}
+						<div class="flex gap-2">
+							<button
+								type="button"
+								onclick={acceptDraft}
+								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover"
+							>
+								{draftMode === 'rewrite' ? 'Accept' : 'Insert at cursor'}
+							</button>
+							<button
+								type="button"
+								onclick={rejectDraft}
+								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+							>
+								Reject
+							</button>
+						</div>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
 	<!-- Version history sidebar -->
 	{#if showHistory}
 		<div
@@ -1028,7 +1477,7 @@
 				class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
 			>
 				<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-					Historial de versiones
+					Version history
 				</h3>
 				{#if loadingVersions}
 					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Cargando...</span>
@@ -1066,7 +1515,7 @@
 											onclick={() => window.open(`/projects/${data.document.projectId}/documents/${data.document.id}/diff/${v.id}`, '_blank')}
 											class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 										>
-											Comparar ↗
+											Compare ↗
 										</button>
 										{#if selectedVersionId === v.id && compareDiff !== null}
 											<button
@@ -1214,7 +1663,7 @@
 						}}
 						class="rounded-md border border-paper-border px-4 py-2.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 					>
-						Cancelar
+						Cancel
 					</button>
 				</div>
 			</div>

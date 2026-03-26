@@ -33,6 +33,14 @@ export async function createCollaboratorUser() {
 
 	const sql = postgres(TEST_DB_URL);
 	await sql`UPDATE "user" SET email_verified = true WHERE email = ${COLLABORATOR_USER.email}`;
+
+	// Crear scholio.user_profile si no existe (necesario para acceder a la app)
+	await sql`
+		INSERT INTO scholio.user_profile (id, user_id, created_at, updated_at)
+		SELECT gen_random_uuid()::text, id, NOW(), NOW()
+		FROM "user" WHERE email = ${COLLABORATOR_USER.email}
+		ON CONFLICT (user_id) DO NOTHING
+	`;
 	await sql.end();
 }
 

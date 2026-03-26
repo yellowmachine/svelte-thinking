@@ -86,6 +86,7 @@ export const projectCollaborator = scholioSchema.table(
 			.notNull()
 			.references(() => project.id, { onDelete: 'cascade' }),
 		userId: text('user_id').notNull(),
+		ownerUserId: text('owner_user_id').notNull(),
 		role: projectRoleEnum('role').notNull(),
 		createdAt: timestamp('created_at').notNull().defaultNow()
 	},
@@ -97,6 +98,13 @@ export const projectCollaborator = scholioSchema.table(
 		pgPolicy('collaborator_select', {
 			for: 'select',
 			using: sql`${t.userId} = ${currentUserId}`
+		}),
+
+		// Owner puede ver todos los colaboradores de sus proyectos
+		// (columna directa para evitar recursión circular con project_select → project_collaborator)
+		pgPolicy('collaborator_select_owner', {
+			for: 'select',
+			using: sql`${t.ownerUserId} = ${currentUserId}`
 		}),
 
 		pgPolicy('collaborator_insert', {

@@ -8,6 +8,20 @@
       "when": 1774512095515,
       "tag": "0000_lucky_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774525771971,
+      "tag": "0001_add_project_title_to_invitation",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774559525882,
+      "tag": "0002_thankful_living_lightning",
+      "breakpoints": true
     }
   ]
 }

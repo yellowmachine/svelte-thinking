@@ -104,6 +104,7 @@ describe('RLS: project', () => {
 			id: 'collab-c',
 			projectId: PROJECT_A,
 			userId: USER_C,
+			ownerUserId: USER_A,
 			role: 'reviewer'
 		});
 	});

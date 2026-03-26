@@ -1,286 +1,279 @@
 <script lang="ts">
-	type AgentMode = 'review' | 'structure' | 'draft' | 'question';
-
-	type Message = {
-		role: 'user' | 'assistant';
-		content: string;
-		sections?: {
-			label: string;
-			body: string;
-		}[];
-	};
+	import { trpc } from '$lib/utils/trpc';
+	import { tick } from 'svelte';
 
 	type Props = {
-		/** Initial task mode selected */
-		initialMode?: AgentMode;
-		/** Seed messages to show in the panel */
-		messages?: Message[];
-		/** Whether the advanced (model) panel starts open */
-		advancedOpen?: boolean;
-		/** Provider label shown in badge */
+		projectId: string;
+		documentId: string;
+		documentTitle: string;
+		onClose: () => void;
 		provider?: string;
-		/** Model label shown in badge */
 		model?: string;
 	};
 
 	let {
-		initialMode = undefined,
-		messages = [],
-		advancedOpen = false,
+		projectId,
+		documentId,
+		documentTitle,
+		onClose,
 		provider = 'OpenRouter',
-		model = 'Claude Haiku 4.5'
+		model = ''
 	}: Props = $props();
 
-	const MODES: { id: AgentMode; label: string; icon: string; hint: string }[] = [
-		{
-			id: 'review',
-			label: 'Review writing',
-			icon: '✦',
-			hint: 'Style, clarity and coherence corrections.'
-		},
-		{
-			id: 'structure',
-			label: 'Structure & logic',
-			icon: '⬡',
-			hint: 'Argument organisation and text flow.'
-		},
-		{
-			id: 'draft',
-			label: 'Generate draft',
-			icon: '◈',
-			hint: 'Draft from your notes and documents.'
-		},
-		{
-			id: 'question',
-			label: 'Theoretical query',
-			icon: '◎',
-			hint: 'Conceptual and academic writing questions.'
-		}
+	type Message = {
+		role: 'user' | 'assistant';
+		content: string;
+		docsUsed?: { id: string; title: string }[];
+	};
+
+	const CONV_KEY = `ai-conv-${documentId}`;
+
+	const SHORTCUTS = [
+		{ label: 'Requirements gap', prompt: "Which project requirements haven't I covered yet in this document?" },
+		{ label: 'Missing citations', prompt: 'Which references in my bibliography am I not citing but should be?' },
+		{ label: 'Argument flow', prompt: 'Does the argument flow logically? Where are the weak points?' },
+		{ label: 'Summary so far', prompt: 'Give me a brief summary of what I have written so far.' }
 	];
 
-	const MODELS = [
-		'Claude Haiku 4.5',
-		'Claude Sonnet 4.5',
-		'GPT-4o mini',
-		'GPT-4o',
-		'Sonar',
-		'Sonar Pro'
-	];
-
-	let activeMode = $state<AgentMode | undefined>(initialMode);
-	let showAdvanced = $state(advancedOpen);
+	let messages = $state<Message[]>([]);
+	let conversationId = $state<string | undefined>(undefined);
 	let input = $state('');
-	let selectedModel = $state(model);
+	let loading = $state(false);
+	let error = $state('');
+	let historyLoaded = $state(false);
+	let messagesEl = $state<HTMLDivElement | null>(null);
 
-	const activeModeData = $derived(MODES.find((m) => m.id === activeMode));
+	async function scrollToBottom() {
+		await tick();
+		if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+	}
+
+	$effect(() => {
+		const stored = localStorage.getItem(CONV_KEY);
+		if (stored) {
+			conversationId = stored;
+			loadHistory(stored);
+		} else {
+			historyLoaded = true;
+		}
+	});
+
+	async function loadHistory(convId: string) {
+		try {
+			const { messages: rows } = await trpc.ai.getConversation.query(convId);
+			messages = rows
+				.filter((m) => m.role === 'user' || m.role === 'assistant')
+				.map((m) => ({
+					role: m.role as 'user' | 'assistant',
+					content: m.content,
+					docsUsed: (m.docsUsed as { id: string; title: string }[] | null) ?? undefined
+				}));
+			await scrollToBottom();
+		} catch {
+			// conversation may have been deleted — start fresh
+			localStorage.removeItem(CONV_KEY);
+			conversationId = undefined;
+		} finally {
+			historyLoaded = true;
+		}
+	}
+
+	function useShortcut(prompt: string) {
+		input = prompt;
+	}
+
+	async function send() {
+		const text = input.trim();
+		if (!text || loading) return;
+
+		// Prefix with document context so the agent knows what's being edited
+		const withContext = `[Currently editing: "${documentTitle}"]\n${text}`;
+
+		messages = [...messages, { role: 'user', content: text }];
+		input = '';
+		loading = true;
+		error = '';
+		await scrollToBottom();
+
+		try {
+			const result = await trpc.ai.sendMessage.mutate({
+				projectId,
+				conversationId,
+				message: withContext
+			});
+
+			conversationId = result.conversationId;
+			localStorage.setItem(CONV_KEY, result.conversationId);
+
+			messages = [
+				...messages,
+				{
+					role: 'assistant',
+					content: result.message.content,
+					docsUsed: result.message.docsUsed as { id: string; title: string }[] | undefined
+				}
+			];
+			await scrollToBottom();
+		} catch (e: unknown) {
+			error = e instanceof Error ? e.message : 'Error al enviar el mensaje.';
+			// Remove the optimistic user message on failure
+			messages = messages.slice(0, -1);
+		} finally {
+			loading = false;
+		}
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+			e.preventDefault();
+			send();
+		}
+	}
+
+	function clearConversation() {
+		localStorage.removeItem(CONV_KEY);
+		conversationId = undefined;
+		messages = [];
+		error = '';
+	}
 </script>
 
-<div
-	class="flex h-full flex-col border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
->
+<div class="flex h-full flex-col border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
 	<!-- Header -->
-	<div
-		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
+	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
 		<div class="flex items-center gap-2">
 			<div class="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10 text-accent">
 				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path
-						d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
+					<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 				</svg>
 			</div>
-			<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-				>Scholio Assistant</span
-			>
+			<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Scholio Assistant</span>
 		</div>
-		<!-- Provider badge -->
-		<span
-			class="rounded-full border border-paper-border px-2 py-0.5 font-sans text-[11px] text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
-		>
-			{provider}
-		</span>
-	</div>
-
-	<!-- Task chips -->
-	<div class="border-b border-paper-border px-3 py-3 dark:border-dark-paper-border">
-		<p
-			class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-		>
-			What do you want to do?
-		</p>
-		<div class="flex flex-wrap gap-1.5">
-			{#each MODES as mode}
+		<div class="flex items-center gap-2">
+			{#if messages.length > 0}
 				<button
 					type="button"
-					onclick={() => (activeMode = activeMode === mode.id ? undefined : mode.id)}
-					title={mode.hint}
-					class="flex items-center gap-1.5 rounded-full border px-3 py-1 font-sans text-xs transition-colors
-						{activeMode === mode.id
-						? 'border-accent bg-accent text-white'
-						: 'border-paper-border text-ink-muted hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+					onclick={clearConversation}
+					title="Clear conversation"
+					class="font-sans text-[11px] text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
 				>
-					<span class="text-[10px]">{mode.icon}</span>
-					{mode.label}
+					Clear
 				</button>
-			{/each}
+			{/if}
+			{#if provider}
+				<span class="rounded-full border border-paper-border px-2 py-0.5 font-sans text-[11px] text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint">
+					{provider}{model ? ` · ${model}` : ''}
+				</span>
+			{/if}
+			<button
+				type="button"
+				onclick={onClose}
+				class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+				aria-label="Close assistant"
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+				</svg>
+			</button>
 		</div>
-		{#if activeModeData}
-			<p class="mt-2 font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-				{activeModeData.hint}
-			</p>
-		{/if}
 	</div>
 
 	<!-- Messages -->
-	<div class="flex-1 overflow-y-auto px-4 py-4">
-		{#if messages.length === 0}
-			<div class="flex h-full flex-col items-center justify-center gap-3 text-center">
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					{activeMode
-						? `Mode: ${activeModeData?.label}. Type your query below.`
-						: 'Choose a task above or type directly.'}
-				</p>
-				<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					The assistant will search your documents before responding.
-				</p>
+	<div bind:this={messagesEl} class="flex-1 overflow-y-auto px-4 py-4">
+		{#if !historyLoaded}
+			<div class="flex h-full items-center justify-center">
+				<div class="h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+			</div>
+		{:else if messages.length === 0}
+			<!-- Empty state + shortcuts -->
+			<div class="flex h-full flex-col justify-between">
+				<div class="flex flex-col items-center gap-2 pt-6 text-center">
+					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						Ask anything about your project.
+					</p>
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						The assistant can read your documents, references, and requirements.
+					</p>
+				</div>
+				<div class="flex flex-col gap-1.5 pb-2">
+					<p class="mb-1 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+						Quick questions
+					</p>
+					{#each SHORTCUTS as s}
+						<button
+							type="button"
+							onclick={() => useShortcut(s.prompt)}
+							class="rounded-lg border border-paper-border px-3 py-2 text-left font-sans text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:text-dark-ink"
+						>
+							{s.label}
+						</button>
+					{/each}
+				</div>
 			</div>
 		{:else}
 			<div class="flex flex-col gap-5">
 				{#each messages as msg}
 					{#if msg.role === 'user'}
 						<div class="flex justify-end">
-							<div
-								class="max-w-[85%] rounded-2xl rounded-tr-sm bg-accent px-4 py-2.5 font-sans text-sm leading-relaxed text-white"
-							>
+							<div class="max-w-[85%] rounded-2xl rounded-tr-sm bg-accent px-4 py-2.5 font-sans text-sm leading-relaxed text-white">
 								{msg.content}
 							</div>
 						</div>
 					{:else}
-						<div class="flex flex-col gap-2">
-							<!-- Direct answer (always first) -->
-							<div
-								class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
-							>
+						<div class="flex flex-col gap-1.5">
+							<div class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink dark:bg-dark-paper-ui dark:text-dark-ink" style="white-space: pre-wrap;">
 								{msg.content}
 							</div>
-
-							<!-- Structured sections -->
-							{#if msg.sections && msg.sections.length > 0}
-								<div class="flex flex-col gap-2 pl-1">
-									{#each msg.sections as section}
-										<details
-											class="group rounded-lg border border-paper-border dark:border-dark-paper-border"
-										>
-											<summary
-												class="flex cursor-pointer list-none items-center justify-between px-3 py-2"
-											>
-												<span
-													class="font-sans text-xs font-semibold text-ink-muted dark:text-dark-ink-muted"
-												>
-													{section.label}
-												</span>
-												<svg
-													class="h-3 w-3 shrink-0 text-ink-faint transition-transform group-open:rotate-180 dark:text-dark-ink-faint"
-													viewBox="0 0 24 24"
-													fill="none"
-													aria-hidden="true"
-												>
-													<path
-														d="M6 9l6 6 6-6"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													/>
-												</svg>
-											</summary>
-											<div
-												class="border-t border-paper-border px-3 py-2.5 font-sans text-xs leading-relaxed text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted"
-											>
-												{section.body}
-											</div>
-										</details>
+							{#if msg.docsUsed && msg.docsUsed.length > 0}
+								<div class="flex flex-wrap gap-1 pl-1">
+									{#each msg.docsUsed as doc}
+										<span class="rounded-full bg-accent/8 px-2 py-0.5 font-sans text-[10px] text-accent dark:bg-accent/12">
+											{doc.title}
+										</span>
 									{/each}
 								</div>
 							{/if}
 						</div>
 					{/if}
 				{/each}
+				{#if loading}
+					<div class="flex items-center gap-2 pl-1">
+						<div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Thinking…</span>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
 
-	<!-- Input area -->
+	{#if error}
+		<p class="mx-4 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+			{error}
+		</p>
+	{/if}
+
+	<!-- Input -->
 	<div class="border-t border-paper-border px-3 pt-2.5 pb-3 dark:border-dark-paper-border">
-		<div
-			class="flex items-end gap-2 rounded-xl border border-paper-border bg-paper-ui px-3 py-2 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui"
-		>
+		<div class="flex items-end gap-2 rounded-xl border border-paper-border bg-paper-ui px-3 py-2 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui">
 			<textarea
 				bind:value={input}
-				placeholder={activeMode
-					? `${activeModeData?.label}…`
-					: 'Ask a question or request help with the document…'}
+				onkeydown={handleKeydown}
+				placeholder="Ask a question… (⌘↵ to send)"
 				rows="2"
 				class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
-				style="max-height: 100px;"
+				style="max-height: 120px;"
 			></textarea>
 			<button
 				type="button"
-				disabled={!input.trim()}
+				onclick={send}
+				disabled={!input.trim() || loading}
 				class="shrink-0 rounded-lg bg-accent p-1.5 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 				aria-label="Send"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path
-						d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
+					<path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 				</svg>
 			</button>
 		</div>
-
-		<!-- Advanced toggle + model -->
-		<div class="mt-2 flex items-center justify-between">
-			<button
-				type="button"
-				onclick={() => (showAdvanced = !showAdvanced)}
-				class="font-sans text-[11px] text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
-			>
-				{showAdvanced ? '▴ Hide advanced' : '▾ AI engine'}
-			</button>
-			{#if !showAdvanced}
-				<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-					{provider} · {selectedModel}
-				</span>
-			{/if}
-		</div>
-
-		{#if showAdvanced}
-			<div
-				class="mt-2 flex flex-col gap-2 rounded-lg border border-paper-border bg-paper-ui px-3 py-2.5 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-			>
-				<div>
-					<p class="mb-1 font-sans text-[11px] font-medium text-ink-faint dark:text-dark-ink-faint">
-						Model
-					</p>
-					<select
-						bind:value={selectedModel}
-						class="w-full rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
-					>
-						{#each MODELS as m}
-							<option value={m}>{m}</option>
-						{/each}
-					</select>
-				</div>
-			</div>
-		{/if}
 	</div>
 </div>

@@ -8,7 +8,7 @@ export async function loginAsTestUser(page: Page) {
 	await page.click('button[type="submit"]');
 
 	// Paso 2FA
-	await page.getByRole('heading', { name: 'Verificación en dos pasos' }).waitFor();
+	await page.getByRole('heading', { name: 'Two-step verification' }).waitFor();
 	await page.fill('input[name="code"]', generateTotpCode());
 	await page.click('button[type="submit"]');
 

@@ -143,6 +143,110 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
 }
 
 // ---------------------------------------------------------------------------
+// Project context  (rich snapshot for one-shot drafting — includes abstracts,
+// requirement descriptions and document previews, no tool calls needed)
+// ---------------------------------------------------------------------------
+
+async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise<string> {
+	const [proj, reqs, refs, docs] = await Promise.all([
+		withRLS((db) =>
+			db
+				.select({ title: project.title, description: project.description })
+				.from(project)
+				.where(eq(project.id, projectId))
+				.limit(1)
+		) as Promise<{ title: string; description: string | null }[]>,
+
+		withRLS((db) =>
+			db
+				.select({
+					name: projectRequirement.name,
+					description: projectRequirement.description,
+					required: projectRequirement.required,
+					fulfilledDocumentId: projectRequirement.fulfilledDocumentId,
+					order: projectRequirement.order
+				})
+				.from(projectRequirement)
+				.where(eq(projectRequirement.projectId, projectId))
+				.orderBy(asc(projectRequirement.order))
+		) as Promise<{ name: string; description: string | null; required: boolean; fulfilledDocumentId: string | null; order: number }[]>,
+
+		withRLS((db) =>
+			db
+				.select({
+					citeKey: projectReference.citeKey,
+					title: projectReference.title,
+					authors: projectReference.authors,
+					year: projectReference.year,
+					abstract: projectReference.abstract
+				})
+				.from(projectReference)
+				.where(eq(projectReference.projectId, projectId))
+		) as Promise<{ citeKey: string; title: string; authors: unknown; year: number | null; abstract: string | null }[]>,
+
+		withRLS((db) =>
+			db
+				.select({
+					title: document.title,
+					type: document.type,
+					draftContent: document.draftContent,
+					wordCount: sql<number>`coalesce(length(${document.draftContent}) / 6, 0)`
+				})
+				.from(document)
+				.where(eq(document.projectId, projectId))
+				.orderBy(desc(document.updatedAt))
+		) as Promise<{ title: string; type: string; draftContent: string | null; wordCount: number }[]>
+	]);
+
+	if (!proj[0]) return '';
+	const lines: string[] = [`Proyecto: "${proj[0].title}"`];
+	if (proj[0].description) lines.push(`Descripción: ${proj[0].description}`);
+	lines.push('');
+
+	// Requirements — all, with descriptions and status
+	if (reqs.length > 0) {
+		lines.push('## Requisitos del proyecto');
+		for (const r of reqs) {
+			const icon = r.fulfilledDocumentId ? '✓' : r.required ? '✗' : '○';
+			const opt = r.required ? '' : ' (opcional)';
+			lines.push(`${icon} "${r.name}"${opt}`);
+			if (r.description) lines.push(`   ${r.description}`);
+		}
+		lines.push('');
+	}
+
+	// References — with abstract preview (≤200 chars)
+	if (refs.length > 0) {
+		lines.push('## Bibliografía disponible');
+		lines.push('Usa las citekeys entre corchetes al citar: [@citeKey]');
+		for (const r of refs) {
+			const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
+				.map((a) => [a.last, a.first].filter(Boolean).join(', '))
+				.join('; ');
+			const year = r.year ? ` (${r.year})` : '';
+			const abstract = r.abstract ? `\n   Abstract: ${r.abstract.slice(0, 200)}${r.abstract.length > 200 ? '…' : ''}` : '';
+			lines.push(`[@${r.citeKey}] ${authors}${year}. ${r.title}.${abstract}`);
+		}
+		lines.push('');
+	}
+
+	// Existing documents — first 400 chars as preview
+	const filledDocs = docs.filter((d) => d.draftContent && d.draftContent.trim().length > 0);
+	if (filledDocs.length > 0) {
+		lines.push('## Documentos existentes');
+		for (const d of filledDocs) {
+			const words = d.wordCount > 0 ? `~${d.wordCount.toLocaleString()} palabras` : '';
+			lines.push(`### ${d.title} (${d.type})${words ? ` — ${words}` : ''}`);
+			const preview = d.draftContent!.slice(0, 400).trim();
+			lines.push(preview + (d.draftContent!.length > 400 ? '\n[…]' : ''));
+		}
+		lines.push('');
+	}
+
+	return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
 // Tool definitions  (OpenAI function-calling format, compatible with OpenRouter)
 // ---------------------------------------------------------------------------
 
@@ -1173,5 +1277,280 @@ Reglas:
 				)
 				.slice(0, 3)
 				.map((s, i) => ({ id: `s-${i}`, ...s }));
+		}),
+
+	draftSection: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string(),
+				instruction: z.string().min(1).max(2000),
+				documentContext: z.string().max(8000).optional()
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			const userId = ctx.user.id;
+
+			const [profileRows, allConfigs] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
+						.from(userProfile)
+						.where(eq(userProfile.userId, userId))
+						.limit(1)
+				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+
+				ctx.withRLS((db) =>
+					db
+						.select({
+							encryptedApiKey: userAiConfig.encryptedApiKey,
+							encryptedDataKey: userAiConfig.encryptedDataKey,
+							iv: userAiConfig.iv,
+							authTag: userAiConfig.authTag,
+							enabled: userAiConfig.enabled,
+							provider: userAiConfig.provider,
+							model: userAiConfig.model
+						})
+						.from(userAiConfig)
+						.where(eq(userAiConfig.userId, userId))
+				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
+			]);
+
+			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
+			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
+
+			if (!configRow) {
+				throw new TRPCError({
+					code: 'PRECONDITION_FAILED',
+					message: 'Configura tu API key en Ajustes → Asistente IA para usar el borrador asistido.'
+				});
+			}
+
+			let userApiKey: string;
+			try {
+				userApiKey = await decryptSecret(configRow);
+			} catch {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
+				});
+			}
+
+			const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
+			if (!projectContext) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
+			}
+
+			const model =
+				profileRows[0]?.defaultAiModel ??
+				configRow.model ??
+				DEFAULT_MODELS[activeProvider] ??
+				DEFAULT_MODELS.openrouter;
+			const baseUrl = PROVIDER_URLS[activeProvider] ?? PROVIDER_URLS.openrouter;
+			const extraHeaders: Record<string, string> =
+				activeProvider === 'openrouter'
+					? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
+					: {};
+
+			const systemPrompt = `Eres un asistente de escritura académica. Tu tarea es redactar un fragmento de texto según las instrucciones del investigador.
+
+Contexto del proyecto:
+${projectContext}
+
+Reglas:
+- Responde ÚNICAMENTE con el texto redactado, listo para insertar en el documento. Sin explicaciones ni preámbulos.
+- Usa el idioma del investigador (detecta por la instrucción).
+- Cita referencias usando su citekey entre corchetes: [@citeKey].
+- El texto debe tener un tono académico apropiado para publicación científica.
+- No inventes datos, cifras ni afirmaciones que no estén en el contexto.`;
+
+			const userMessage = input.documentContext
+				? `Contexto actual del documento (para mantener coherencia):\n${input.documentContext}\n\n---\nInstrucción: ${input.instruction}`
+				: `Instrucción: ${input.instruction}`;
+
+			const res = await fetch(baseUrl, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${userApiKey}`,
+					'Content-Type': 'application/json',
+					...extraHeaders
+				},
+				body: JSON.stringify({
+					model,
+					max_tokens: 2048,
+					messages: [
+						{ role: 'system', content: systemPrompt },
+						{ role: 'user', content: userMessage }
+					]
+				})
+			});
+
+			console.log('[draftSection] request →', { provider: activeProvider, model, projectId: input.projectId });
+
+			if (!res.ok) await throwProviderError(res, activeProvider);
+
+			const data = await res.json();
+			const text = data.choices?.[0]?.message?.content?.trim() ?? '';
+
+			console.log('[draftSection] response ←', { chars: text.length });
+
+			return { text };
+		}),
+
+	reviewDocument: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string(),
+				documentId: z.string()
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			const userId = ctx.user.id;
+
+			const [profileRows, allConfigs] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
+						.from(userProfile)
+						.where(eq(userProfile.userId, userId))
+						.limit(1)
+				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+
+				ctx.withRLS((db) =>
+					db
+						.select({
+							encryptedApiKey: userAiConfig.encryptedApiKey,
+							encryptedDataKey: userAiConfig.encryptedDataKey,
+							iv: userAiConfig.iv,
+							authTag: userAiConfig.authTag,
+							enabled: userAiConfig.enabled,
+							provider: userAiConfig.provider,
+							model: userAiConfig.model
+						})
+						.from(userAiConfig)
+						.where(eq(userAiConfig.userId, userId))
+				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
+			]);
+
+			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
+			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
+
+			if (!configRow) {
+				throw new TRPCError({
+					code: 'PRECONDITION_FAILED',
+					message: 'Configura tu API key en Ajustes → Asistente IA para usar la revisión.'
+				});
+			}
+
+			let userApiKey: string;
+			try {
+				userApiKey = await decryptSecret(configRow);
+			} catch {
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
+				});
+			}
+
+			// Load document content + project context in parallel
+			const [docRows, projectContext] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ draftContent: document.draftContent, title: document.title })
+						.from(document)
+						.where(and(eq(document.id, input.documentId), eq(document.projectId, input.projectId)))
+						.limit(1)
+				) as Promise<{ draftContent: string | null; title: string }[]>,
+				buildProjectContext(ctx.withRLS, input.projectId)
+			]);
+
+			if (!docRows[0]) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Documento no encontrado.' });
+			}
+			if (!projectContext) {
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
+			}
+
+			const docContent = docRows[0].draftContent?.trim() ?? '';
+			if (!docContent) {
+				throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'El documento está vacío. Escribe algo antes de revisarlo.'
+				});
+			}
+
+			const model =
+				profileRows[0]?.defaultAiModel ??
+				configRow.model ??
+				DEFAULT_MODELS[activeProvider] ??
+				DEFAULT_MODELS.openrouter;
+			const baseUrl = PROVIDER_URLS[activeProvider] ?? PROVIDER_URLS.openrouter;
+			const extraHeaders: Record<string, string> =
+				activeProvider === 'openrouter'
+					? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
+					: {};
+
+			const systemPrompt = `You are an academic writing reviewer. Analyze a document against the project's requirements and bibliography.
+
+Respond ONLY with a valid JSON object (no markdown, no explanation outside the JSON) with this exact shape:
+{
+  "requirements": [
+    { "name": "requirement name", "covered": true, "note": "one sentence explaining why it is or isn't covered" }
+  ],
+  "uncitedRefs": ["citeKey1", "citeKey2"]
+}
+
+Rules:
+- "requirements": include every requirement from the project context, in the same order. Set "covered" to true only if the document meaningfully addresses it.
+- "uncitedRefs": list citeKeys from the bibliography that are relevant to the document's topic but never mentioned (as [@citeKey]) in the document. Omit refs that are genuinely unrelated to the document content.
+- Keep notes concise (max 15 words).
+- Use the language of the document.`;
+
+			const userMessage = `Project context:\n${projectContext}\n\n---\nDocument: "${docRows[0].title}"\n\n${docContent.slice(0, 12000)}`;
+
+			const res = await fetch(baseUrl, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${userApiKey}`,
+					'Content-Type': 'application/json',
+					...extraHeaders
+				},
+				body: JSON.stringify({
+					model,
+					max_tokens: 1024,
+					messages: [
+						{ role: 'system', content: systemPrompt },
+						{ role: 'user', content: userMessage }
+					]
+				})
+			});
+
+			console.log('[reviewDocument] request →', { provider: activeProvider, model, documentId: input.documentId });
+
+			if (!res.ok) await throwProviderError(res, activeProvider);
+
+			const data = await res.json();
+			const rawContent = data.choices?.[0]?.message?.content?.trim() ?? '{}';
+			const raw = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+			console.log('[reviewDocument] response ←', raw.slice(0, 200));
+
+			type ReviewResult = {
+				requirements: { name: string; covered: boolean; note: string }[];
+				uncitedRefs: string[];
+			};
+			let parsed: ReviewResult = { requirements: [], uncitedRefs: [] };
+			try {
+				const p = JSON.parse(raw);
+				parsed = {
+					requirements: Array.isArray(p.requirements) ? p.requirements.filter(
+						(r: unknown) => r && typeof r === 'object' && 'name' in r && 'covered' in r
+					) : [],
+					uncitedRefs: Array.isArray(p.uncitedRefs) ? p.uncitedRefs.filter((r: unknown) => typeof r === 'string') : []
+				};
+			} catch {
+				parsed = { requirements: [], uncitedRefs: [] };
+			}
+
+			return parsed;
 		})
 });

@@ -77,6 +77,7 @@ export const projectsRouter = router({
 				id: crypto.randomUUID(),
 				projectId: id,
 				userId,
+				ownerUserId: userId,
 				role: 'owner'
 			});
 

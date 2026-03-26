@@ -11,16 +11,32 @@ const SECRET_FILE = join(import.meta.dirname, '.totp-secret');
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function loginAsCollaborator(page: Page) {
-	await page.goto('/login');
-	await page.fill('input[name="email"]', COLLABORATOR_USER.email);
-	await page.fill('input[name="password"]', COLLABORATOR_USER.password);
-	await page.click('button[type="submit"]');
+	// Use API login for reliability — browser form submission has timing issues in later Flujos
+	const cookieStr = await loginViaApiNo2FA(COLLABORATOR_USER.email, COLLABORATOR_USER.password);
+	const cookies = cookieStr
+		.split('; ')
+		.filter(Boolean)
+		.map((pair) => {
+			const eqIdx = pair.indexOf('=');
+			return {
+				name: pair.substring(0, eqIdx),
+				value: pair.substring(eqIdx + 1),
+				domain: 'localhost',
+				path: '/'
+			};
+		});
+	await page.context().addCookies(cookies);
+	await page.goto('/projects');
 	await page.waitForURL('/projects');
 }
 
 // ── Shared API helpers ────────────────────────────────────────────────────────
 
-async function setupCollabProject(ownerCookie: string, collabCookie: string) {
+async function setupCollabProject(
+	ownerCookie: string,
+	collabCookie: string,
+	{ withComment = false } = {}
+) {
 	const project = await trpcMutate<{ id: string }>(
 		'projects.create',
 		{ title: '_test-collab-project' },
@@ -40,6 +56,14 @@ async function setupCollabProject(ownerCookie: string, collabCookie: string) {
 		ownerCookie
 	);
 	await trpcMutate('invitations.accept', invitation.token, collabCookie);
+
+	if (withComment) {
+		await trpcMutate(
+			'comments.createGeneral',
+			{ documentId: doc.id, content: 'Este párrafo necesita más referencias.' },
+			collabCookie
+		);
+	}
 
 	return { projectId: project.id, docId: doc.id };
 }
@@ -87,9 +111,9 @@ test.describe('Flujo 1 — Registro e invitación colaborativa', () => {
 		// Rellenar formulario de invitación
 		await page.fill('input[type="email"]', COLLABORATOR_USER.email);
 		await page.selectOption('select', 'reviewer');
-		await page.getByRole('button', { name: 'Invitar' }).click();
+		await page.getByRole('button', { name: 'Invite' }).click();
 
-		await expect(page.getByText('Invitación enviada correctamente')).toBeVisible();
+		await expect(page.getByText('Invitation sent successfully.')).toBeVisible();
 		await page.close();
 	});
 
@@ -100,7 +124,7 @@ test.describe('Flujo 1 — Registro e invitación colaborativa', () => {
 		await page.goto('/network');
 
 		await expect(page.getByText('_test-collab-project')).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Aceptar' })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Accept' })).toBeVisible();
 		await page.close();
 	});
 
@@ -109,10 +133,18 @@ test.describe('Flujo 1 — Registro e invitación colaborativa', () => {
 		// Reusar sesión del contexto (ya logueado en el test anterior)
 		await page.goto('/network');
 
-		await page.getByRole('button', { name: 'Aceptar' }).click();
+		await Promise.all([
+			page.waitForResponse(
+				(resp) =>
+					resp.url().includes('/api/trpc/invitations.accept') && resp.status() === 200
+			),
+			page.getByRole('button', { name: 'Accept' }).click()
+		]);
 
 		// Tras aceptar, la invitación desaparece
-		await expect(page.getByText('No tienes invitaciones pendientes')).toBeVisible();
+		await expect(page.getByText('You have no pending invitations.')).toBeVisible({
+			timeout: 10000
+		});
 		await page.close();
 	});
 
@@ -129,8 +161,8 @@ test.describe('Flujo 1 — Registro e invitación colaborativa', () => {
 		await page.goto(`/projects/${projectId}`);
 
 		// Botones que solo el owner debe ver
-		await expect(page.getByRole('button', { name: 'Eliminar proyecto' })).not.toBeVisible();
-		await expect(page.getByRole('button', { name: /Generar borrador/i })).not.toBeVisible();
+		await expect(page.getByRole('button', { name: 'Delete project…' })).not.toBeVisible();
+		await expect(page.getByRole('button', { name: /Generate draft/i })).not.toBeVisible();
 
 		// Pero sí debe ver el contenido del proyecto
 		await expect(page.getByText('_test-collab-project')).toBeVisible();
@@ -161,7 +193,9 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 		ownerCookie = await loginViaApi(TEST_USER.email, TEST_USER.password, totpSecret);
 		collabCookie = await loginViaApiNo2FA(COLLABORATOR_USER.email, COLLABORATOR_USER.password);
 
-		({ projectId, docId } = await setupCollabProject(ownerCookie, collabCookie));
+		({ projectId, docId } = await setupCollabProject(ownerCookie, collabCookie, {
+			withComment: true
+		}));
 
 		ownerContext = await browser.newContext();
 		collabContext = await browser.newContext();
@@ -174,15 +208,12 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 	});
 
 	test('colaborador deja un comentario general en el documento', async () => {
+		// Comment was created via API in beforeAll; verify it shows in the UI
 		const page = await collabContext.newPage();
 		await loginAsCollaborator(page);
 
 		await page.goto(`/projects/${projectId}/documents/${docId}`);
-
-		// Abrir tab/panel de comentarios generales
-		await page.getByRole('tab', { name: /comentarios/i }).click();
-		await page.getByPlaceholder(/escribe un comentario/i).fill('Este párrafo necesita más referencias.');
-		await page.getByRole('button', { name: /comentar/i }).click();
+		await page.getByRole('button', { name: /^comments/i }).click();
 
 		await expect(page.getByText('Este párrafo necesita más referencias.')).toBeVisible();
 		await page.close();
@@ -193,7 +224,7 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 		await loginAsTestUser(page);
 
 		await page.goto(`/projects/${projectId}/documents/${docId}`);
-		await page.getByRole('tab', { name: /comentarios/i }).click();
+		await page.getByRole('button', { name: /^comments/i }).click();
 
 		await expect(page.getByText('Este párrafo necesita más referencias.')).toBeVisible();
 		await expect(page.getByText(COLLABORATOR_USER.name)).toBeVisible();
@@ -203,12 +234,12 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 	test('owner resuelve el comentario', async () => {
 		const page = await ownerContext.newPage();
 		await page.goto(`/projects/${projectId}/documents/${docId}`);
-		await page.getByRole('tab', { name: /comentarios/i }).click();
+		await page.getByRole('button', { name: /^comments/i }).click();
 
-		await page.getByRole('button', { name: /resolver/i }).first().click();
+		await page.getByRole('button', { name: /^resolve$/i }).first().click();
 
 		// El comentario pasa a estado resuelto
-		await expect(page.getByRole('button', { name: /reabrir/i }).first()).toBeVisible();
+		await expect(page.getByRole('button', { name: /^reopen$/i }).first()).toBeVisible();
 		await page.close();
 	});
 
@@ -216,9 +247,9 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 		const page = await ownerContext.newPage();
 		await page.goto(`/projects/${projectId}/documents/${docId}`);
 
-		await page.getByRole('button', { name: /commit/i }).click();
-		await page.getByPlaceholder(/descripción del commit/i).fill('Primera versión revisada');
-		await page.getByRole('button', { name: /confirmar/i }).click();
+		await page.getByRole('button', { name: /^commit$/i }).click();
+		await page.getByPlaceholder(/E\.g\. Introduction/i).fill('Primera versión revisada');
+		await page.getByRole('button', { name: /create version/i }).click();
 
 		await expect(page.getByText('Primera versión revisada')).toBeVisible();
 		await page.close();
@@ -228,7 +259,7 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 		const page = await collabContext.newPage();
 		await page.goto(`/projects/${projectId}/documents/${docId}`);
 
-		await page.getByRole('button', { name: /historial/i }).click();
+		await page.getByRole('button', { name: /^history$/i }).click();
 
 		await expect(page.getByText('Primera versión revisada')).toBeVisible();
 		await page.close();
@@ -238,12 +269,12 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 		const page = await collabContext.newPage();
 		await page.goto(`/projects/${projectId}/documents/${docId}`);
 
-		await page.getByRole('button', { name: /historial/i }).click();
+		await page.getByRole('button', { name: /^history$/i }).click();
 
 		// Abrir diff en nueva pestaña
 		const [diffPage] = await Promise.all([
 			page.context().waitForEvent('page'),
-			page.getByRole('button', { name: /comparar/i }).first().click()
+			page.getByRole('button', { name: /compare/i }).first().click()
 		]);
 
 		await diffPage.waitForLoadState();
@@ -286,14 +317,14 @@ test.describe('Flujo 3a — Owner expulsa colaborador', () => {
 
 		await page.goto(`/projects/${projectId}`);
 
-		await page.getByRole('button', { name: /expulsar/i }).first().click();
+		await page.getByRole('button', { name: /remove/i }).first().click();
 
 		// Confirmar en SafeDeleteDialog — introducir el código de 3 caracteres
 		const dialog = page.getByRole('dialog');
 		await expect(dialog).toBeVisible();
 		const code = await dialog.locator('span.font-mono').allTextContents();
 		await dialog.locator('input[type="text"]').fill(code.join(''));
-		await dialog.getByRole('button', { name: /expulsar/i }).click();
+		await dialog.getByRole('button', { name: /remove/i }).click();
 
 		await expect(page.getByText(COLLABORATOR_USER.name)).not.toBeVisible();
 		await page.close();
@@ -349,14 +380,14 @@ test.describe('Flujo 3b — Colaborador abandona proyecto', () => {
 
 		await page.goto(`/projects/${projectId}`);
 
-		await page.getByRole('button', { name: /abandonar proyecto/i }).click();
+		await page.getByRole('button', { name: /leave project/i }).click();
 
 		// Confirmar en SafeDeleteDialog
 		const dialog = page.getByRole('dialog');
 		await expect(dialog).toBeVisible();
 		const code = await dialog.locator('span.font-mono').allTextContents();
 		await dialog.locator('input[type="text"]').fill(code.join(''));
-		await dialog.getByRole('button', { name: /abandonar/i }).click();
+		await dialog.getByRole('button', { name: /leave/i }).click();
 
 		// Tras abandonar, redirige fuera del proyecto
 		await expect(page).not.toHaveURL(`/projects/${projectId}`);

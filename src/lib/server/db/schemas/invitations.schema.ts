@@ -19,6 +19,7 @@ export const projectInvitation = scholioSchema.table(
 			.references(() => project.id, { onDelete: 'cascade' }),
 		invitedEmail: text('invited_email').notNull(),
 		invitedBy: text('invited_by').notNull(),
+		projectTitle: text('project_title'),
 		role: projectRoleEnum('role').notNull(),
 		token: text('token').notNull().unique(),
 		status: invitationStatusEnum('status').notNull().default('pending'),

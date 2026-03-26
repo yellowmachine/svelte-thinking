@@ -197,6 +197,22 @@
 		view.focus();
 	}
 
+	export function getSelection(): { text: string; from: number; to: number } | null {
+		if (!view) return null;
+		const { from, to } = view.state.selection.main;
+		if (from === to) return null;
+		return { text: view.state.doc.sliceString(from, to), from, to };
+	}
+
+	export function replaceRange(from: number, to: number, text: string) {
+		if (!view) return;
+		view.dispatch({
+			changes: { from, to, insert: text },
+			selection: { anchor: from + text.length }
+		});
+		view.focus();
+	}
+
 	// Sync external value changes (e.g. restoreVersion) without triggering ondocchange
 	$effect(() => {
 		if (!view) return;

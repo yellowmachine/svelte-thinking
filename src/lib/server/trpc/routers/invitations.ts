@@ -84,6 +84,7 @@ export const invitationsRouter = router({
 					.values({
 						id: crypto.randomUUID(),
 						projectId: input.projectId,
+						projectTitle: projects[0].title,
 						invitedEmail: input.invitedEmail,
 						invitedBy: ctx.user.id,
 						role: input.role,
@@ -172,6 +173,7 @@ export const invitationsRouter = router({
 			id: crypto.randomUUID(),
 			projectId: invitation.projectId,
 			userId: ctx.user.id,
+			ownerUserId: invitation.invitedBy,
 			role: invitation.role
 		});
 
@@ -233,6 +235,7 @@ export const invitationsRouter = router({
 					.values({
 						id: crypto.randomUUID(),
 						projectId: input.projectId,
+						projectTitle: projects[0].title,
 						invitedEmail: targetUser[0].email,
 						invitedBy: ctx.user.id,
 						role: input.role,
