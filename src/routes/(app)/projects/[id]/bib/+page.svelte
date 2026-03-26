@@ -16,6 +16,7 @@
 		type CiteRef
 	} from '$lib/utils/citations';
 	import type { PageData } from './$types';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 
 	// ── Citation style ────────────────────────────────────────────────────────
 
@@ -322,13 +323,20 @@
 		}
 	}
 
-	async function deleteRef(ref: Ref) {
-		if (!confirm(`¿Eliminar "${ref.citeKey}"?`)) return;
+	let refToDelete = $state<Ref | null>(null);
+	let deletingRef = $state(false);
+
+	async function confirmDeleteRef() {
+		if (!refToDelete) return;
+		deletingRef = true;
 		try {
-			await trpc.references.delete.mutate(ref.id);
-			references = references.filter((r) => r.id !== ref.id);
+			await trpc.references.delete.mutate(refToDelete.id);
+			references = references.filter((r) => r.id !== refToDelete!.id);
 		} catch {
 			/* non-critical */
+		} finally {
+			deletingRef = false;
+			refToDelete = null;
 		}
 	}
 
@@ -608,7 +616,7 @@
 									</svg>
 								</button>
 								<button
-									onclick={() => deleteRef(ref)}
+									onclick={() => (refToDelete = ref)}
 									class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:text-dark-ink-muted dark:hover:bg-red-950/30 dark:hover:text-red-400"
 									title="Eliminar"
 								>
@@ -984,3 +992,12 @@
 		</div>
 	</div>
 {/if}
+
+<SafeDeleteDialog
+	open={!!refToDelete}
+	label={refToDelete?.citeKey ?? ''}
+	warning="The reference will be removed from this project. Documents citing it will keep the text but lose the formatted bibliography entry."
+	deleting={deletingRef}
+	onconfirm={confirmDeleteRef}
+	oncancel={() => (refToDelete = null)}
+/>

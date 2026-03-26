@@ -3,6 +3,7 @@
 	import ActionCard from '$lib/components/ai/ActionCard.svelte';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import type { PageData } from './$types';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -115,12 +116,25 @@
 		}
 	}
 
-	async function deleteConversation(id: string, e: MouseEvent) {
+	let convToDelete = $state<string | null>(null);
+	let deletingConv = $state(false);
+
+	function requestDeleteConversation(id: string, e: MouseEvent) {
 		e.stopPropagation();
-		if (!confirm('¿Eliminar esta conversación?')) return;
-		await trpc.ai.deleteConversation.mutate(id);
-		conversations = conversations.filter((c) => c.id !== id);
-		if (activeConvId === id) newConversation();
+		convToDelete = id;
+	}
+
+	async function confirmDeleteConversation() {
+		if (!convToDelete) return;
+		deletingConv = true;
+		try {
+			await trpc.ai.deleteConversation.mutate(convToDelete);
+			conversations = conversations.filter((c) => c.id !== convToDelete);
+			if (activeConvId === convToDelete) newConversation();
+		} finally {
+			deletingConv = false;
+			convToDelete = null;
+		}
 	}
 
 	function scrollToBottom() {
@@ -282,7 +296,7 @@
 						<button
 							type="button"
 							aria-label="Eliminar conversación"
-							onclick={(e) => deleteConversation(conv.id, e)}
+							onclick={(e) => requestDeleteConversation(conv.id, e)}
 							class="mr-2 mt-2.5 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-dark-ink-faint"
 						>
 							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -500,3 +514,12 @@
 		</div>
 	</div>
 {/if}
+
+<SafeDeleteDialog
+	open={!!convToDelete}
+	label="this conversation"
+	warning="All messages in this conversation will be permanently deleted."
+	deleting={deletingConv}
+	onconfirm={confirmDeleteConversation}
+	oncancel={() => (convToDelete = null)}
+/>

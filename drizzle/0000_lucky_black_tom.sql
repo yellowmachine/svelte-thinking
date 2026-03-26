@@ -3,7 +3,7 @@ CREATE SCHEMA IF NOT EXISTS "scholio";
 CREATE TYPE "scholio"."plan" AS ENUM('free', 'pro', 'team');--> statement-breakpoint
 CREATE TYPE "scholio"."project_role" AS ENUM('owner', 'author', 'coauthor', 'reviewer', 'commenter');--> statement-breakpoint
 CREATE TYPE "scholio"."project_status" AS ENUM('draft', 'active', 'review', 'published', 'archived');--> statement-breakpoint
-CREATE TYPE "scholio"."document_type" AS ENUM('paper', 'notes', 'outline', 'bibliography', 'supplementary');--> statement-breakpoint
+CREATE TYPE "scholio"."document_type" AS ENUM('paper', 'notes', 'outline', 'bibliography', 'supplementary', 'book', 'chapter');--> statement-breakpoint
 CREATE TYPE "scholio"."comment_status" AS ENUM('open', 'resolved');--> statement-breakpoint
 CREATE TYPE "scholio"."comment_type" AS ENUM('general', 'inline');--> statement-breakpoint
 CREATE TYPE "scholio"."invitation_status" AS ENUM('pending', 'accepted', 'expired', 'cancelled');--> statement-breakpoint
@@ -11,6 +11,8 @@ CREATE TYPE "scholio"."ai_message_role" AS ENUM('user', 'assistant');--> stateme
 CREATE TYPE "scholio"."ai_suggestion_status" AS ENUM('pending', 'applied', 'rejected');--> statement-breakpoint
 CREATE TYPE "scholio"."ai_suggestion_type" AS ENUM('grammar', 'style', 'structure', 'clarity', 'citation');--> statement-breakpoint
 CREATE TYPE "scholio"."waitlist_status" AS ENUM('pending', 'approved', 'rejected');--> statement-breakpoint
+CREATE TYPE "scholio"."analysis_status" AS ENUM('pending', 'running', 'completed', 'failed');--> statement-breakpoint
+CREATE TYPE "scholio"."analysis_type" AS ENUM('describe', 'ttest');--> statement-breakpoint
 CREATE TYPE "scholio"."reference_type" AS ENUM('article', 'book', 'inproceedings', 'incollection', 'phdthesis', 'mastersthesis', 'techreport', 'misc');--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" text PRIMARY KEY NOT NULL,
@@ -73,6 +75,7 @@ CREATE TABLE "scholio"."notification_preference" (
 	"user_id" text NOT NULL,
 	"project_id" text NOT NULL,
 	"comment_emails" boolean DEFAULT true NOT NULL,
+	"commit_emails" boolean DEFAULT true NOT NULL,
 	"unsubscribe_token" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -85,17 +88,30 @@ CREATE TABLE "scholio"."user_ai_config" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
 	"provider" text DEFAULT 'openrouter' NOT NULL,
+	"model" text,
 	"encrypted_api_key" text NOT NULL,
 	"encrypted_data_key" text NOT NULL,
 	"iv" text NOT NULL,
 	"auth_tag" text NOT NULL,
 	"enabled" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "user_ai_config_user_id_unique" UNIQUE("user_id")
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "scholio"."user_ai_config" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "scholio"."user_jupyter_connection" (
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
+	"name" text NOT NULL,
+	"base_url" text NOT NULL,
+	"encrypted_token" text NOT NULL,
+	"encrypted_data_key" text NOT NULL,
+	"iv" text NOT NULL,
+	"auth_tag" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "scholio"."user_jupyter_connection" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "scholio"."user_profile" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
@@ -103,10 +119,14 @@ CREATE TABLE "scholio"."user_profile" (
 	"bio" text,
 	"institution" text,
 	"orcid" text,
+	"orcid_verified" boolean DEFAULT false NOT NULL,
 	"stripe_customer_id" text,
 	"plan" "scholio"."plan" DEFAULT 'free' NOT NULL,
 	"plan_status" text DEFAULT 'active',
 	"plan_current_period_end" timestamp,
+	"profile_embedding" vector(384),
+	"default_ai_provider" text DEFAULT 'openrouter',
+	"default_ai_model" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "user_profile_user_id_unique" UNIQUE("user_id"),
@@ -121,6 +141,12 @@ CREATE TABLE "scholio"."project" (
 	"notes" text,
 	"status" "scholio"."project_status" DEFAULT 'draft' NOT NULL,
 	"owner_id" text NOT NULL,
+	"is_searchable" boolean DEFAULT false NOT NULL,
+	"requirements_prompt" text,
+	"requirements_template" text,
+	"doi" text,
+	"version" text,
+	"published_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -206,6 +232,7 @@ CREATE TABLE "scholio"."ai_message" (
 	"conversation_id" text NOT NULL,
 	"role" "scholio"."ai_message_role" NOT NULL,
 	"content" text NOT NULL,
+	"docs_used" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -270,6 +297,33 @@ CREATE TABLE "scholio"."project_dataset" (
 );
 --> statement-breakpoint
 ALTER TABLE "scholio"."project_dataset" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "scholio"."project_analysis" (
+	"id" text PRIMARY KEY NOT NULL,
+	"project_id" text NOT NULL,
+	"dataset_id" text NOT NULL,
+	"type" "scholio"."analysis_type" NOT NULL,
+	"parameters" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"result" jsonb,
+	"status" "scholio"."analysis_status" DEFAULT 'pending' NOT NULL,
+	"error_message" text,
+	"created_by" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "scholio"."project_analysis" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "scholio"."project_template" (
+	"id" text PRIMARY KEY NOT NULL,
+	"project_id" text NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"type" text NOT NULL,
+	"parameters" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"is_public" boolean DEFAULT false NOT NULL,
+	"created_by" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "scholio"."project_template" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "scholio"."project_reference" (
 	"id" text PRIMARY KEY NOT NULL,
 	"project_id" text NOT NULL,
@@ -329,6 +383,52 @@ CREATE TABLE "scholio"."feedback" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "scholio"."project_requirement" (
+	"id" text PRIMARY KEY NOT NULL,
+	"project_id" text NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"order" integer DEFAULT 0 NOT NULL,
+	"required" boolean DEFAULT true NOT NULL,
+	"fulfilled_document_id" text,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "scholio"."project_requirement" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "scholio"."document_chunk" (
+	"id" text PRIMARY KEY NOT NULL,
+	"document_id" text NOT NULL,
+	"project_id" text NOT NULL,
+	"chunk_index" integer NOT NULL,
+	"text" text NOT NULL,
+	"embedding" vector(384) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "scholio"."document_chunk" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "scholio"."project_interest" (
+	"id" text PRIMARY KEY NOT NULL,
+	"project_id" text NOT NULL,
+	"user_id" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "scholio"."project_interest" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "scholio"."project_notebook" (
+	"id" text PRIMARY KEY NOT NULL,
+	"project_id" text NOT NULL,
+	"imported_by" text NOT NULL,
+	"filename" text NOT NULL,
+	"size" integer NOT NULL,
+	"source" text DEFAULT 'file' NOT NULL,
+	"remote_url" text,
+	"kernel_name" text,
+	"language_name" text,
+	"cells" jsonb DEFAULT '[]' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "scholio"."project_notebook" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "two_factor" ADD CONSTRAINT "two_factor_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -342,14 +442,23 @@ ALTER TABLE "scholio"."ai_message" ADD CONSTRAINT "ai_message_conversation_id_ai
 ALTER TABLE "scholio"."ai_suggestion" ADD CONSTRAINT "ai_suggestion_document_id_document_id_fk" FOREIGN KEY ("document_id") REFERENCES "scholio"."document"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."project_photo" ADD CONSTRAINT "project_photo_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."project_dataset" ADD CONSTRAINT "project_dataset_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."project_analysis" ADD CONSTRAINT "project_analysis_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."project_analysis" ADD CONSTRAINT "project_analysis_dataset_id_project_dataset_id_fk" FOREIGN KEY ("dataset_id") REFERENCES "scholio"."project_dataset"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."project_template" ADD CONSTRAINT "project_template_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."project_reference" ADD CONSTRAINT "project_reference_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."project_context_link" ADD CONSTRAINT "project_context_link_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."project_context_link" ADD CONSTRAINT "project_context_link_linked_document_id_document_id_fk" FOREIGN KEY ("linked_document_id") REFERENCES "scholio"."document"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."document_link" ADD CONSTRAINT "document_link_source_document_id_document_id_fk" FOREIGN KEY ("source_document_id") REFERENCES "scholio"."document"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."document_link" ADD CONSTRAINT "document_link_target_document_id_document_id_fk" FOREIGN KEY ("target_document_id") REFERENCES "scholio"."document"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."project_requirement" ADD CONSTRAINT "project_requirement_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."project_requirement" ADD CONSTRAINT "project_requirement_fulfilled_document_id_document_id_fk" FOREIGN KEY ("fulfilled_document_id") REFERENCES "scholio"."document"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."document_chunk" ADD CONSTRAINT "document_chunk_document_id_document_id_fk" FOREIGN KEY ("document_id") REFERENCES "scholio"."document"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."project_interest" ADD CONSTRAINT "project_interest_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."project_notebook" ADD CONSTRAINT "project_notebook_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
+CREATE UNIQUE INDEX "user_ai_config_user_provider_idx" ON "scholio"."user_ai_config" USING btree ("user_id","provider");--> statement-breakpoint
 CREATE INDEX "project_owner_idx" ON "scholio"."project" USING btree ("owner_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "project_collaborator_unique_idx" ON "scholio"."project_collaborator" USING btree ("project_id","user_id");--> statement-breakpoint
 CREATE INDEX "project_collaborator_project_idx" ON "scholio"."project_collaborator" USING btree ("project_id");--> statement-breakpoint
@@ -366,6 +475,10 @@ CREATE UNIQUE INDEX "user_ai_usage_user_date_idx" ON "scholio"."user_ai_usage" U
 CREATE INDEX "photo_project_idx" ON "scholio"."project_photo" USING btree ("project_id");--> statement-breakpoint
 CREATE INDEX "photo_uploader_idx" ON "scholio"."project_photo" USING btree ("uploaded_by");--> statement-breakpoint
 CREATE INDEX "dataset_project_idx" ON "scholio"."project_dataset" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "analysis_project_idx" ON "scholio"."project_analysis" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "analysis_dataset_idx" ON "scholio"."project_analysis" USING btree ("dataset_id");--> statement-breakpoint
+CREATE INDEX "template_project_idx" ON "scholio"."project_template" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "template_public_idx" ON "scholio"."project_template" USING btree ("is_public");--> statement-breakpoint
 CREATE UNIQUE INDEX "ref_project_key_idx" ON "scholio"."project_reference" USING btree ("project_id","cite_key");--> statement-breakpoint
 CREATE INDEX "ref_project_idx" ON "scholio"."project_reference" USING btree ("project_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "ctx_link_unique_idx" ON "scholio"."project_context_link" USING btree ("project_id","linked_document_id");--> statement-breakpoint
@@ -373,8 +486,16 @@ CREATE INDEX "ctx_link_project_idx" ON "scholio"."project_context_link" USING bt
 CREATE UNIQUE INDEX "doc_link_unique_idx" ON "scholio"."document_link" USING btree ("source_document_id","target_document_id");--> statement-breakpoint
 CREATE INDEX "doc_link_source_idx" ON "scholio"."document_link" USING btree ("source_document_id");--> statement-breakpoint
 CREATE INDEX "doc_link_target_idx" ON "scholio"."document_link" USING btree ("target_document_id");--> statement-breakpoint
+CREATE INDEX "project_requirement_project_idx" ON "scholio"."project_requirement" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "document_chunk_document_idx" ON "scholio"."document_chunk" USING btree ("document_id");--> statement-breakpoint
+CREATE INDEX "document_chunk_project_idx" ON "scholio"."document_chunk" USING btree ("project_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "project_interest_unique_idx" ON "scholio"."project_interest" USING btree ("project_id","user_id");--> statement-breakpoint
+CREATE INDEX "project_interest_project_idx" ON "scholio"."project_interest" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "project_interest_user_idx" ON "scholio"."project_interest" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "notebook_project_idx" ON "scholio"."project_notebook" USING btree ("project_id");--> statement-breakpoint
 CREATE POLICY "notification_preference_access" ON "scholio"."notification_preference" AS PERMISSIVE FOR ALL TO public USING ("scholio"."notification_preference"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
 CREATE POLICY "user_ai_config_access" ON "scholio"."user_ai_config" AS PERMISSIVE FOR ALL TO public USING ("scholio"."user_ai_config"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
+CREATE POLICY "user_jupyter_connection_access" ON "scholio"."user_jupyter_connection" AS PERMISSIVE FOR ALL TO public USING ("scholio"."user_jupyter_connection"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
 CREATE POLICY "user_profile_select" ON "scholio"."user_profile" AS PERMISSIVE FOR SELECT TO public USING (nullif(current_setting('app.current_user_id', true), '') IS NOT NULL);--> statement-breakpoint
 CREATE POLICY "user_profile_modify" ON "scholio"."user_profile" AS PERMISSIVE FOR ALL TO public USING ("scholio"."user_profile"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
 CREATE POLICY "project_select" ON "scholio"."project" AS PERMISSIVE FOR SELECT TO public USING (
@@ -385,6 +506,7 @@ CREATE POLICY "project_select" ON "scholio"."project" AS PERMISSIVE FOR SELECT T
 					AND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')
 				)
 			);--> statement-breakpoint
+CREATE POLICY "project_select_searchable" ON "scholio"."project" AS PERMISSIVE FOR SELECT TO public USING ("scholio"."project"."is_searchable" = true AND nullif(current_setting('app.current_user_id', true), '') IS NOT NULL);--> statement-breakpoint
 CREATE POLICY "project_insert" ON "scholio"."project" AS PERMISSIVE FOR INSERT TO public WITH CHECK ("scholio"."project"."owner_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
 CREATE POLICY "project_update" ON "scholio"."project" AS PERMISSIVE FOR UPDATE TO public USING ("scholio"."project"."owner_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
 CREATE POLICY "project_delete" ON "scholio"."project" AS PERMISSIVE FOR DELETE TO public USING ("scholio"."project"."owner_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
@@ -423,6 +545,13 @@ CREATE POLICY "document_access" ON "scholio"."document" AS PERMISSIVE FOR ALL TO
 							AND project_collaborator.user_id = current_setting('app.current_user_id', true)
 						)
 					)
+				)
+			);--> statement-breakpoint
+CREATE POLICY "document_delete" ON "scholio"."document" AS PERMISSIVE FOR DELETE TO public USING (
+				EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."document"."project_id"
+					AND project.owner_id = current_setting('app.current_user_id', true)
 				)
 			);--> statement-breakpoint
 CREATE POLICY "document_public_read" ON "scholio"."document" AS PERMISSIVE FOR SELECT TO public USING ("scholio"."document"."is_public" = true);--> statement-breakpoint
@@ -507,6 +636,35 @@ CREATE POLICY "dataset_access" ON "scholio"."project_dataset" AS PERMISSIVE FOR 
 					)
 				)
 			);--> statement-breakpoint
+CREATE POLICY "analysis_access" ON "scholio"."project_analysis" AS PERMISSIVE FOR ALL TO public USING (
+				EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_analysis"."project_id"
+					AND (
+						project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+						OR EXISTS (
+							SELECT 1 FROM scholio.project_collaborator
+							WHERE project_collaborator.project_id = project.id
+							AND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')
+						)
+					)
+				)
+			);--> statement-breakpoint
+CREATE POLICY "template_access" ON "scholio"."project_template" AS PERMISSIVE FOR ALL TO public USING (
+				"scholio"."project_template"."is_public" = true
+				OR EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_template"."project_id"
+					AND (
+						project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+						OR EXISTS (
+							SELECT 1 FROM scholio.project_collaborator
+							WHERE project_collaborator.project_id = project.id
+							AND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')
+						)
+					)
+				)
+			);--> statement-breakpoint
 CREATE POLICY "reference_access" ON "scholio"."project_reference" AS PERMISSIVE FOR ALL TO public USING (
 				EXISTS (
 					SELECT 1 FROM scholio.project
@@ -560,6 +718,78 @@ CREATE POLICY "document_link_incoming_public" ON "scholio"."document_link" AS PE
 					SELECT 1 FROM scholio.document target_doc
 					JOIN scholio.project ON project.id = target_doc.project_id
 					WHERE target_doc.id = "scholio"."document_link"."target_document_id"
+					AND (
+						project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+						OR EXISTS (
+							SELECT 1 FROM scholio.project_collaborator
+							WHERE project_collaborator.project_id = project.id
+							AND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')
+						)
+					)
+				)
+			);--> statement-breakpoint
+CREATE POLICY "requirement_select" ON "scholio"."project_requirement" AS PERMISSIVE FOR SELECT TO public USING (
+				EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_requirement"."project_id"
+					AND (
+						project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+						OR EXISTS (
+							SELECT 1 FROM scholio.project_collaborator
+							WHERE project_collaborator.project_id = "scholio"."project_requirement"."project_id"
+							AND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')
+						)
+					)
+				)
+			);--> statement-breakpoint
+CREATE POLICY "requirement_insert" ON "scholio"."project_requirement" AS PERMISSIVE FOR INSERT TO public WITH CHECK (
+				EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_requirement"."project_id"
+					AND project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+				)
+			);--> statement-breakpoint
+CREATE POLICY "requirement_update" ON "scholio"."project_requirement" AS PERMISSIVE FOR UPDATE TO public USING (
+				EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_requirement"."project_id"
+					AND project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+				)
+			);--> statement-breakpoint
+CREATE POLICY "requirement_delete" ON "scholio"."project_requirement" AS PERMISSIVE FOR DELETE TO public USING (
+				EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_requirement"."project_id"
+					AND project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+				)
+			);--> statement-breakpoint
+CREATE POLICY "document_chunk_access" ON "scholio"."document_chunk" AS PERMISSIVE FOR ALL TO public USING (
+				EXISTS (
+					SELECT 1 FROM scholio.document
+					WHERE document.id = "scholio"."document_chunk"."document_id"
+				)
+			);--> statement-breakpoint
+CREATE POLICY "project_interest_select" ON "scholio"."project_interest" AS PERMISSIVE FOR SELECT TO public USING (
+				"scholio"."project_interest"."user_id" = nullif(current_setting('app.current_user_id', true), '')
+				OR EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_interest"."project_id"
+					AND project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+				)
+			);--> statement-breakpoint
+CREATE POLICY "project_interest_insert" ON "scholio"."project_interest" AS PERMISSIVE FOR INSERT TO public WITH CHECK (
+				"scholio"."project_interest"."user_id" = nullif(current_setting('app.current_user_id', true), '')
+				AND NOT EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_interest"."project_id"
+					AND project.owner_id = nullif(current_setting('app.current_user_id', true), '')
+				)
+			);--> statement-breakpoint
+CREATE POLICY "project_interest_delete" ON "scholio"."project_interest" AS PERMISSIVE FOR DELETE TO public USING ("scholio"."project_interest"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
+CREATE POLICY "notebook_access" ON "scholio"."project_notebook" AS PERMISSIVE FOR ALL TO public USING (
+				EXISTS (
+					SELECT 1 FROM scholio.project
+					WHERE project.id = "scholio"."project_notebook"."project_id"
 					AND (
 						project.owner_id = nullif(current_setting('app.current_user_id', true), '')
 						OR EXISTS (

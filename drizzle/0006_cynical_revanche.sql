@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."user_profile" ADD COLUMN "profile_embedding" vector(384);

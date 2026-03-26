@@ -5,64 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774101112193,
-      "tag": "0000_magenta_giant_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1774124359827,
-      "tag": "0001_smooth_clea",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1774169400000,
-      "tag": "0002_ai_multi_provider",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1774169500000,
-      "tag": "0003_document_delete_owner_only",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1774169600000,
-      "tag": "0004_commit_emails_preference",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1774265199219,
-      "tag": "0005_known_lionheart",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1774266341200,
-      "tag": "0006_cynical_revanche",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1774267004005,
-      "tag": "0007_heavy_absorbing_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1774284163069,
-      "tag": "0008_careful_princess_powerful",
+      "when": 1774512095515,
+      "tag": "0000_lucky_black_tom",
       "breakpoints": true
     }
   ]
