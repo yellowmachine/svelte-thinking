@@ -11,7 +11,7 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 // AI: generate a structured list of requirements for a given document type.
 // Uses server-side ANTHROPIC_API_KEY (no user key needed).
 // ---------------------------------------------------------------------------
-export type TemplateType = 'generic' | 'paper' | 'thesis' | 'medical' | 'report';
+export type TemplateType = 'generic' | 'paper' | 'thesis' | 'medical' | 'report' | 'book';
 
 interface AIGenerateResult {
 	template: TemplateType;
@@ -71,7 +71,7 @@ Reglas para "requirements":
 		parsed = {};
 	}
 
-	const validTemplates: TemplateType[] = ['generic', 'paper', 'thesis', 'medical', 'report'];
+	const validTemplates: TemplateType[] = ['generic', 'paper', 'thesis', 'medical', 'report', 'book'];
 	const template: TemplateType = validTemplates.includes(parsed.template as TemplateType)
 		? (parsed.template as TemplateType)
 		: 'generic';

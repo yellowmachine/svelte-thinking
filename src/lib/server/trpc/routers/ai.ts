@@ -238,16 +238,18 @@ const TOOLS = [
 // Tool executor
 // ---------------------------------------------------------------------------
 
+type ToolResult = { output: string; docsUsed: { id: string; title: string }[] };
+
 async function executeTool(
 	name: string,
 	args: Record<string, unknown>,
 	withRLS: WithRLS,
 	projectId: string
-): Promise<string> {
+): Promise<ToolResult> {
 	switch (name) {
 		case 'read_document': {
 			const id = args.id as string;
-			if (!id) return 'Error: se requiere el parámetro id.';
+			if (!id) return { output: 'Error: se requiere el parámetro id.', docsUsed: [] };
 			const rows = (await withRLS((db) =>
 				db
 					.select({
@@ -260,14 +262,17 @@ async function executeTool(
 					.limit(1)
 			)) as { title: string; type: string; content: string | null }[];
 
-			if (!rows[0]) return `Error: documento "${id}" no encontrado en este proyecto.`;
+			if (!rows[0]) return { output: `Error: documento "${id}" no encontrado en este proyecto.`, docsUsed: [] };
 			const content = rows[0].content?.trim() || '*(sin contenido todavía)*';
-			return `# ${rows[0].title} (${rows[0].type})\n\n${content}`;
+			return {
+				output: `# ${rows[0].title} (${rows[0].type})\n\n${content}`,
+				docsUsed: [{ id, title: rows[0].title }]
+			};
 		}
 
 		case 'search_documents_semantic': {
 			const query = ((args.query as string) ?? '').trim();
-			if (!query) return 'Error: se requiere el parámetro query.';
+			if (!query) return { output: 'Error: se requiere el parámetro query.', docsUsed: [] };
 
 			const queryVec = await embedQuery(query);
 			const vecLiteral = `[${queryVec.join(',')}]`;
@@ -284,13 +289,18 @@ async function executeTool(
 			);
 
 			const rows = result as unknown as { title: string; doc_id: string; text: string }[];
-			if (!rows.length) return `Sin resultados para "${query}". Puede que los documentos aún no estén indexados.`;
+			if (!rows.length) return { output: `Sin resultados para "${query}". Puede que los documentos aún no estén indexados.`, docsUsed: [] };
 
+			const seen = new Map<string, string>();
 			const output: string[] = [];
 			for (const row of rows) {
 				output.push(`**${row.title}** [${row.doc_id}]\n  ${row.text.replace(/\n/g, ' ')}`);
+				seen.set(row.doc_id, row.title);
 			}
-			return output.join('\n\n');
+			return {
+				output: output.join('\n\n'),
+				docsUsed: [...seen.entries()].map(([id, title]) => ({ id, title }))
+			};
 		}
 
 		case 'list_references': {
@@ -301,18 +311,21 @@ async function executeTool(
 					.where(eq(projectReference.projectId, projectId))
 			)) as (typeof projectReference.$inferSelect)[];
 
-			if (refs.length === 0) return 'Este proyecto no tiene referencias bibliográficas todavía.';
+			if (refs.length === 0) return { output: 'Este proyecto no tiene referencias bibliográficas todavía.', docsUsed: [] };
 
-			return refs
-				.map((r) => {
-					const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
-						.map((a) => [a.last, a.first].filter(Boolean).join(', '))
-						.join('; ');
-					const year = r.year ? ` (${r.year})` : '';
-					const doi = r.doi ? ` DOI: ${r.doi}` : '';
-					return `[@${r.citeKey}] ${authors}${year}. ${r.title}.${doi}`;
-				})
-				.join('\n');
+			return {
+				output: refs
+					.map((r) => {
+						const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
+							.map((a) => [a.last, a.first].filter(Boolean).join(', '))
+							.join('; ');
+						const year = r.year ? ` (${r.year})` : '';
+						const doi = r.doi ? ` DOI: ${r.doi}` : '';
+						return `[@${r.citeKey}] ${authors}${year}. ${r.title}.${doi}`;
+					})
+					.join('\n'),
+				docsUsed: []
+			};
 		}
 
 		case 'get_requirement_details': {
@@ -324,23 +337,26 @@ async function executeTool(
 					.orderBy(asc(projectRequirement.order))
 			)) as (typeof projectRequirement.$inferSelect)[];
 
-			if (reqs.length === 0) return 'Este proyecto no tiene requisitos definidos todavía.';
+			if (reqs.length === 0) return { output: 'Este proyecto no tiene requisitos definidos todavía.', docsUsed: [] };
 
-			return reqs
-				.map((r) => {
-					const status = r.fulfilledDocumentId
-						? `✓ cumplido → [${r.fulfilledDocumentId}]`
-						: r.required
-							? '✗ pendiente (obligatorio)'
-							: '○ pendiente (opcional)';
-					const desc = r.description ? `\n    ${r.description}` : '';
-					return `• "${r.name}" — ${status}${desc}`;
-				})
-				.join('\n');
+			return {
+				output: reqs
+					.map((r) => {
+						const status = r.fulfilledDocumentId
+							? `✓ cumplido → [${r.fulfilledDocumentId}]`
+							: r.required
+								? '✗ pendiente (obligatorio)'
+								: '○ pendiente (opcional)';
+						const desc = r.description ? `\n    ${r.description}` : '';
+						return `• "${r.name}" — ${status}${desc}`;
+					})
+					.join('\n'),
+				docsUsed: []
+			};
 		}
 
 		default:
-			return `Herramienta desconocida: "${name}".`;
+			return { output: `Herramienta desconocida: "${name}".`, docsUsed: [] };
 	}
 }
 
@@ -377,13 +393,14 @@ async function runAgentLoop(
 	apiKey: string,
 	provider: string,
 	model: string
-): Promise<{ content: string; pendingActions: PendingAction[] }> {
+): Promise<{ content: string; pendingActions: PendingAction[]; docsUsed: { id: string; title: string }[] }> {
 	const messages: OAMessage[] = [
 		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
 		{ role: 'user', content: userMessage }
 	];
 
 	const pendingActions: PendingAction[] = [];
+	const seenDocs = new Map<string, string>();
 	const baseUrl = PROVIDER_URLS[provider] ?? PROVIDER_URLS.openrouter;
 	const extraHeaders: Record<string, string> =
 		provider === 'openrouter'
@@ -441,8 +458,9 @@ async function runAgentLoop(
 					}
 
 					// ── Read tools: execute normally ──────────────────────────
-					const result = await executeTool(tc.function.name, args, withRLS, projectId);
-					return { role: 'tool' as const, tool_call_id: tc.id, content: result };
+					const { output, docsUsed } = await executeTool(tc.function.name, args, withRLS, projectId);
+					for (const d of docsUsed) seenDocs.set(d.id, d.title);
+					return { role: 'tool' as const, tool_call_id: tc.id, content: output };
 				})
 			);
 			messages.push(...results);
@@ -450,7 +468,11 @@ async function runAgentLoop(
 		}
 
 		// ── Final text response ───────────────────────────────────────────────
-		return { content: choice.message.content ?? '', pendingActions };
+		return {
+			content: choice.message.content ?? '',
+			pendingActions,
+			docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title }))
+		};
 	}
 
 	throw new TRPCError({
@@ -677,7 +699,7 @@ export const aiRouter = router({
 				DEFAULT_MODELS[activeProvider] ??
 				DEFAULT_MODELS.openrouter;
 
-			const { content: assistantContent, pendingActions } = await runAgentLoop(
+			const { content: assistantContent, pendingActions, docsUsed } = await runAgentLoop(
 				systemWithIndex,
 				history,
 				input.message,
@@ -695,7 +717,8 @@ export const aiRouter = router({
 					id: assistantMsgId,
 					conversationId: convId!,
 					role: 'assistant',
-					content: assistantContent
+					content: assistantContent,
+					docsUsed
 				})
 			);
 			await ctx.withRLS((db) =>
@@ -707,7 +730,7 @@ export const aiRouter = router({
 
 			return {
 				conversationId: convId,
-				message: { id: assistantMsgId, role: 'assistant' as const, content: assistantContent },
+				message: { id: assistantMsgId, role: 'assistant' as const, content: assistantContent, docsUsed },
 				pendingActions: pendingActions.length > 0 ? pendingActions : undefined
 			};
 		}),

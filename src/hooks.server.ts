@@ -12,6 +12,12 @@ import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 export const handleError = Sentry.handleErrorWithSentry();
 
+const handleSubdomain: Handle = ({ event, resolve }) => {
+	const host = event.request.headers.get('host') ?? '';
+	event.locals.app = host.startsWith('scipy.') ? 'scipy' : 'scholio';
+	return resolve(event);
+};
+
 // Añade cabeceras de seguridad a todas las respuestas HTML
 const handleHeaders: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
@@ -108,6 +114,7 @@ const handleRLS: Handle = ({ event, resolve }) => {
 
 export const handle: Handle = sequence(
 	Sentry.sentryHandle(),
+	handleSubdomain,
 	handleBetterAuth,
 	handleRLS,
 	handleHeaders

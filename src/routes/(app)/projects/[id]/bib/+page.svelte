@@ -16,6 +16,7 @@
 		type CiteRef
 	} from '$lib/utils/citations';
 	import type { PageData } from './$types';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 
 	// ── Citation style ────────────────────────────────────────────────────────
 
@@ -116,7 +117,7 @@
 			const json = await res.json();
 			semanticResults = json.data ?? [];
 		} catch {
-			semanticError = 'Error al conectar con Semantic Scholar. Inténtalo de nuevo.';
+			semanticError = 'Error connecting to Semantic Scholar. Please try again.';
 		} finally {
 			semanticLoading = false;
 		}
@@ -322,13 +323,20 @@
 		}
 	}
 
-	async function deleteRef(ref: Ref) {
-		if (!confirm(`¿Eliminar "${ref.citeKey}"?`)) return;
+	let refToDelete = $state<Ref | null>(null);
+	let deletingRef = $state(false);
+
+	async function confirmDeleteRef() {
+		if (!refToDelete) return;
+		deletingRef = true;
 		try {
-			await trpc.references.delete.mutate(ref.id);
-			references = references.filter((r) => r.id !== ref.id);
+			await trpc.references.delete.mutate(refToDelete.id);
+			references = references.filter((r) => r.id !== refToDelete!.id);
 		} catch {
 			/* non-critical */
+		} finally {
+			deletingRef = false;
+			refToDelete = null;
 		}
 	}
 
@@ -394,13 +402,13 @@
 	// ── Type labels & field config ───────────────────────────────────────────
 
 	const TYPE_LABELS: Record<string, string> = {
-		article: 'Artículo',
+		article: 'Article',
 		book: 'Libro',
 		inproceedings: 'Conferencia',
-		incollection: 'Capítulo',
+		incollection: 'Chapter',
 		phdthesis: 'Tesis PhD',
-		mastersthesis: 'Tesis Máster',
-		techreport: 'Informe técnico',
+		mastersthesis: 'Master\'s thesis',
+		techreport: 'Technical report',
 		misc: 'Otro'
 	};
 
@@ -452,7 +460,7 @@
 
 		<div class="flex items-center justify-between gap-4">
 			<div>
-				<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Bibliografía</h1>
+				<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Bibliography</h1>
 				<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 					{references.length} {references.length === 1 ? 'referencia' : 'referencias'}
 				</p>
@@ -505,7 +513,7 @@
 			<input
 				type="search"
 				bind:value={searchQuery}
-				placeholder="Buscar por autor, título, año, revista…"
+				placeholder="Search by author, title, year, journal…"
 				class="w-full max-w-sm rounded-lg border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 			/>
 		</div>
@@ -518,7 +526,7 @@
 				<div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paper-border py-20 text-center dark:border-dark-paper-border">
 					<p class="font-serif text-lg text-ink-muted dark:text-dark-ink-muted">Sin referencias</p>
 					<p class="mt-1 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						Añade referencias manualmente o importa un archivo .bib
+						Add references manually or import a .bib file
 					</p>
 					<div class="mt-4 flex gap-3">
 						<button onclick={openNew} class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover">
@@ -608,7 +616,7 @@
 									</svg>
 								</button>
 								<button
-									onclick={() => deleteRef(ref)}
+									onclick={() => (refToDelete = ref)}
 									class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:text-dark-ink-muted dark:hover:bg-red-950/30 dark:hover:text-red-400"
 									title="Eliminar"
 								>
@@ -684,7 +692,7 @@
 
 						<!-- Title -->
 						<div>
-							<label for="ref-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Título *</label>
+							<label for="ref-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Title *</label>
 							<input id="ref-title" type="text" bind:value={form.title} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 						</div>
 
@@ -692,7 +700,7 @@
 						<div>
 							<div class="mb-1 flex items-center justify-between">
 								<span class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Autores</span>
-								<button onclick={addAuthor} class="font-sans text-xs text-accent hover:underline">+ Añadir</button>
+								<button onclick={addAuthor} class="font-sans text-xs text-accent hover:underline">+ Add</button>
 							</div>
 							<div class="space-y-1.5">
 								{#each form.authors as author, i (i)}
@@ -723,7 +731,7 @@
 						<!-- Year + Cite key -->
 						<div class="grid grid-cols-2 gap-2">
 							<div>
-								<label for="ref-year" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Año</label>
+								<label for="ref-year" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Year</label>
 								<input id="ref-year" type="text" bind:value={form.year} maxlength={4} onblur={autoCiteKey} placeholder="2024" class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 							</div>
 							<div>
@@ -744,11 +752,11 @@
 									<input id="ref-vol" type="text" bind:value={form.volume} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 								</div>
 								<div>
-									<label for="ref-issue" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Núm.</label>
+									<label for="ref-issue" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">No.</label>
 									<input id="ref-issue" type="text" bind:value={form.issue} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 								</div>
 								<div>
-									<label for="ref-pages" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Págs.</label>
+									<label for="ref-pages" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Pages</label>
 									<input id="ref-pages" type="text" bind:value={form.pages} placeholder="1--12" class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 								</div>
 							</div>
@@ -759,7 +767,7 @@
 							</div>
 							<div class="grid grid-cols-2 gap-2">
 								<div>
-									<label for="ref-edition" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Edición</label>
+									<label for="ref-edition" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Edition</label>
 									<input id="ref-edition" type="text" bind:value={form.edition} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 								</div>
 								<div>
@@ -774,26 +782,26 @@
 							</div>
 							<div class="grid grid-cols-2 gap-2">
 								<div>
-									<label for="ref-pages2" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Págs.</label>
+									<label for="ref-pages2" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Pages</label>
 									<input id="ref-pages2" type="text" bind:value={form.pages} placeholder="1--12" class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 								</div>
 								<div>
-									<label for="ref-org" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Organización</label>
+									<label for="ref-org" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Organization</label>
 									<input id="ref-org" type="text" bind:value={form.organization} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 								</div>
 							</div>
 						{:else if form.type === 'phdthesis' || form.type === 'mastersthesis'}
 							<div>
-								<label for="ref-school" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Universidad / Institución</label>
+								<label for="ref-school" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">University / Institution</label>
 								<input id="ref-school" type="text" bind:value={form.school} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 							</div>
 						{:else if form.type === 'techreport'}
 							<div>
-								<label for="ref-inst" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Institución</label>
+								<label for="ref-inst" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Institution</label>
 								<input id="ref-inst" type="text" bind:value={form.institution} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 							</div>
 							<div>
-								<label for="ref-repnum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Número de informe</label>
+								<label for="ref-repnum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Report number</label>
 								<input id="ref-repnum" type="text" bind:value={form.reportNumber} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 							</div>
 						{/if}
@@ -930,7 +938,7 @@
 			>
 				<input
 					bind:value={semanticQuery}
-					placeholder="Título, autor o palabras clave…"
+					placeholder="Title, author or keywords…"
 					class="flex-1 rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					autofocus
 				/>
@@ -971,16 +979,25 @@
 								disabled={semanticAdding.has(result.paperId)}
 								class="shrink-0 rounded-lg border border-accent px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
 							>
-								{semanticAdding.has(result.paperId) ? 'Añadiendo…' : '+ Añadir'}
+								{semanticAdding.has(result.paperId) ? 'Adding…' : '+ Add'}
 							</button>
 						</div>
 					{/each}
 				</div>
 			{:else if !semanticLoading && semanticQuery && !semanticError}
 				<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					Sin resultados. Prueba con otros términos.
+					No results. Try different terms.
 				</p>
 			{/if}
 		</div>
 	</div>
 {/if}
+
+<SafeDeleteDialog
+	open={!!refToDelete}
+	label={refToDelete?.citeKey ?? ''}
+	warning="The reference will be removed from this project. Documents citing it will keep the text but lose the formatted bibliography entry."
+	deleting={deletingRef}
+	onconfirm={confirmDeleteRef}
+	oncancel={() => (refToDelete = null)}
+/>

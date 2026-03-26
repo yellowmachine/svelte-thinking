@@ -14,7 +14,7 @@
 	<p class="text-muted-foreground mb-12 text-base">Novedades y anuncios del equipo de Scholio.</p>
 
 	{#if data.posts.length === 0}
-		<p class="text-muted-foreground">No hay entradas todavía.</p>
+		<p class="text-muted-foreground">No posts yet.</p>
 	{:else}
 		<ul class="space-y-8">
 			{#each data.posts as post (post.slug)}

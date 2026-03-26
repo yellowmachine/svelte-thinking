@@ -97,11 +97,13 @@
 
 	// Wikilinks: build title → {id, projectId} map.
 	// Same-project docs indexed by title: [[Introducción]]
+	// Same-project docs also indexed by UUID: [[doc:uuid|Title]] (book→chapter links)
 	// External context docs indexed by "title:hash": [[Introducción:a3f9b2c1]]
 	const docMap = $derived(() => {
 		const map = new Map<string, { id: string; projectId: string }>();
 		for (const d of data.projectDocs) {
 			map.set(d.title, { id: d.id, projectId: d.projectId });
+			map.set(d.id, { id: d.id, projectId: d.projectId }); // UUID-keyed for [[doc:uuid|...]]
 		}
 		for (const d of data.externalDocs) {
 			const hash = d.id.slice(0, 8);
@@ -109,6 +111,13 @@
 		}
 		return map;
 	});
+
+	// Chapters available for [[doc:uuid|Title]] autocomplete (only relevant for book documents)
+	const chapters = $derived(
+		data.document.type === 'book'
+			? data.projectDocs.filter((d) => d.type === 'chapter')
+			: []
+	);
 
 	// Backlinks from server (updated on commit)
 	const backlinks = $derived(data.backlinks);
@@ -251,7 +260,7 @@
 			saveStatus = 'idle';
 			if (showHistory) await loadVersions();
 		} catch (e) {
-			commitError = e instanceof Error ? e.message : 'Error al crear versión';
+			commitError = e instanceof Error ? e.message : 'Error creating version';
 		} finally {
 			committing = false;
 		}
@@ -499,7 +508,7 @@
 				{#if content.trim()}
 					<MarkdownPreview {content} projectId={data.document.projectId} docMap={docMap()} />
 				{:else}
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Documento vacío.</p>
+					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Empty document.</p>
 				{/if}
 			</div>
 		</div>
@@ -542,8 +551,21 @@
 			disabled={!isDirty || saveStatus === 'saving'}
 			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
-			Guardar
+			Save
 		</button>
+
+		{#if data.document.type === 'book'}
+			<a
+				href="/projects/{data.document.projectId}/documents/{data.document.id}/read"
+				class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+					<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+				</svg>
+				Read
+			</a>
+		{/if}
 
 		<!-- AI suggestions toggle -->
 		<button
@@ -568,7 +590,7 @@
 		{#if viewMode !== 'preview'}
 			<button
 				onclick={openCitePicker}
-				title="Insertar cita bibliográfica"
+				title="Insert bibliographic citation"
 				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
 				[@cite]
@@ -656,7 +678,7 @@
 			href="/help"
 			target="_blank"
 			rel="noopener noreferrer"
-			title="Guía de sintaxis"
+			title="Syntax guide"
 			class="flex h-7 w-7 items-center justify-center rounded-full border border-paper-border font-sans text-sm text-ink-faint transition-colors hover:border-ink-muted hover:text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-dark-ink-muted dark:hover:text-dark-ink-muted"
 		>
 			?
@@ -677,7 +699,7 @@
 				<button
 					class="fixed inset-0 z-10"
 					onclick={() => (showExport = false)}
-					aria-label="Cerrar menú"
+					aria-label="Close menu"
 					tabindex="-1"
 				></button>
 				<div class="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
@@ -703,7 +725,7 @@
 
 		<button
 			onclick={togglePublic}
-			title={isPublic ? 'Documento público — visible para todos como contexto de IA. Clic para hacerlo privado.' : 'Documento privado. Clic para hacerlo público.'}
+			title={isPublic ? 'Public document — visible to everyone as AI context. Click to make private.' : 'Private document. Click to make public.'}
 			class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {isPublic
 				? 'border-green-400/60 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-500/40 dark:bg-green-950/30 dark:text-green-400'
 				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
@@ -713,7 +735,7 @@
 					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
 					<path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
 				</svg>
-				Público
+				Public
 			{:else}
 				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 					<rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/>
@@ -747,7 +769,7 @@
 <SafeDeleteDialog
 	open={showDeleteDoc}
 	label="el documento"
-	warning="Se eliminarán el contenido, el historial de versiones y los comentarios asociados."
+	warning="The content, version history and associated comments will be permanently deleted."
 	deleting={deletingDoc}
 	onconfirm={handleDeleteDoc}
 	oncancel={() => (showDeleteDoc = false)}
@@ -764,6 +786,7 @@
 						bind:this={editorEl}
 						bind:value={content}
 						references={projectRefs}
+						{chapters}
 						ondocchange={handleDocChange}
 						onselectionchange={(sel) => {
 							currentSelection = sel;
@@ -803,6 +826,7 @@
 					bind:this={editorEl}
 					bind:value={content}
 					references={projectRefs}
+					{chapters}
 					ondocchange={handleDocChange}
 					onselectionchange={(sel) => {
 						currentSelection = sel;
@@ -892,7 +916,7 @@
 			<div class="flex-1 space-y-2 overflow-y-auto p-3">
 				{#if inlineComments.length === 0}
 					<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Sin comentarios aún.<br />
+						No comments yet.<br />
 						<span class="text-xs text-ink-faint dark:text-dark-ink-faint">Selecciona texto para comentar.</span>
 					</p>
 				{:else}
@@ -954,7 +978,7 @@
 					<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 						Sin sugerencias.<br />
 						<span class="text-xs text-ink-faint dark:text-dark-ink-faint">
-							Se generan automáticamente al escribir.
+							Generated automatically as you write.
 						</span>
 					</p>
 				{:else}
@@ -1016,7 +1040,7 @@
 					<div
 						class="px-4 py-8 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
 					>
-						Sin versiones guardadas aún.
+						No saved versions yet.
 					</div>
 				{:else}
 					<ul class="divide-y divide-paper-border dark:divide-dark-paper-border">
@@ -1026,7 +1050,7 @@
 									<div class="min-w-0">
 										<p class="font-sans text-xs font-semibold text-accent">v{v.versionNumber}</p>
 										<p class="mt-0.5 truncate font-sans text-sm text-ink dark:text-dark-ink">
-											{v.changeDescription ?? 'Sin descripción'}
+											{v.changeDescription ?? 'No description'}
 										</p>
 										<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 											{new Intl.DateTimeFormat('es', {
@@ -1065,7 +1089,7 @@
 											<DiffViewer
 												oldText={compareDiff.previous?.content ?? ''}
 												newText={compareDiff.current.content}
-												oldLabel={compareDiff.previous ? `v${compareDiff.previous.versionNumber}` : '(vacío)'}
+												oldLabel={compareDiff.previous ? `v${compareDiff.previous.versionNumber}` : '(empty)'}
 												newLabel="v{v.versionNumber}"
 											/>
 										{/if}
@@ -1106,7 +1130,7 @@
 				<input
 					type="search"
 					bind:value={citeSearch}
-					placeholder="Buscar por autor, título o clave…"
+					placeholder="Search by author, title or key…"
 					class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				/>
 			</div>
@@ -1121,7 +1145,7 @@
 							href="/projects/{data.document.projectId}/bib"
 							class="mt-1 block font-sans text-xs text-accent hover:underline"
 						>
-							Ir a Bibliografía →
+							Go to Bibliography →
 						</a>
 					</div>
 				{:else if filteredRefs().length === 0}
@@ -1157,16 +1181,16 @@
 		<div
 			class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
 		>
-			<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Crear versión</h2>
+			<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Create version</h2>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Describe los cambios de esta versión.
+				Describe the changes in this version.
 			</p>
 
 			<div class="mt-4 flex flex-col gap-3">
 				<textarea
 					bind:value={commitMessage}
 					rows={3}
-					placeholder="Ej: Revisión de la introducción y ajuste de hipótesis"
+					placeholder="E.g. Introduction revision and hypothesis adjustment"
 					class="resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				></textarea>
 
@@ -1180,7 +1204,7 @@
 						disabled={committing || !commitMessage.trim()}
 						class="flex-1 rounded-md bg-accent py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 					>
-						{committing ? 'Guardando versión...' : 'Crear versión'}
+						{committing ? 'Saving version...' : 'Create version'}
 					</button>
 					<button
 						onclick={() => {
@@ -1236,11 +1260,11 @@
 				<table class="w-full">
 					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 						{#each [
-							['# Título', 'Encabezado 1'],
-							['## Sección', 'Encabezado 2'],
+							['# Title', 'Heading 1'],
+							['## Section', 'Heading 2'],
 							['**negrita**', 'Negrita'],
 							['*cursiva*', 'Cursiva'],
-							['`código`', 'Código inline'],
+							['`code`', 'Inline code'],
 							['> cita', 'Bloque de cita'],
 							['- elemento', 'Lista'],
 							['1. elemento', 'Lista numerada'],
@@ -1257,16 +1281,16 @@
 			</div>
 
 			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Citas bibliográficas</p>
+				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Bibliographic citations</p>
 				<table class="w-full">
 					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 						<tr>
 							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[@citeKey]</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Cita única</td>
+							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Single citation</td>
 						</tr>
 						<tr>
 							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[@key1; @key2]</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Múltiples citas</td>
+							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Multiple citations</td>
 						</tr>
 					</tbody>
 				</table>
@@ -1274,7 +1298,7 @@
 			</div>
 
 			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Matemáticas (KaTeX)</p>
+				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Mathematics (KaTeX)</p>
 				<table class="w-full">
 					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 						<tr>
@@ -1290,19 +1314,19 @@
 			</div>
 
 			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Lógica formal</p>
+				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formal logic</p>
 				<table class="w-full">
 					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 						{#each [
-							['$\\neg p$', '¬p', 'Negación'],
-							['$p \\land q$', 'p ∧ q', 'Conjunción'],
-							['$p \\lor q$', 'p ∨ q', 'Disyunción'],
-							['$p \\rightarrow q$', 'p → q', 'Implicación'],
+							['$\\neg p$', '¬p', 'Negation'],
+							['$p \\land q$', 'p ∧ q', 'Conjunction'],
+							['$p \\lor q$', 'p ∨ q', 'Disjunction'],
+							['$p \\rightarrow q$', 'p → q', 'Implication'],
 							['$p \\leftrightarrow q$', 'p ↔ q', 'Bicondicional'],
 							['$\\forall x$', '∀x', 'Universal'],
 							['$\\exists x$', '∃x', 'Existencial'],
 							['$\\therefore$', '∴', 'Por tanto'],
-							['$\\bot$ / $\\top$', '⊥ / ⊤', 'Contradicción / Tautología'],
+							['$\\bot$ / $\\top$', '⊥ / ⊤', 'Contradiction / Tautology'],
 						] as item}
 							<tr>
 								<td class="py-1.5 pr-3 font-mono text-xs text-accent">{item[0]}</td>
@@ -1319,11 +1343,11 @@
 				<table class="w-full">
 					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[Título]]</td>
+							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[Title]]</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Mismo proyecto</td>
 						</tr>
 						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[Título:hash]]</td>
+							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[Title:hash]]</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Documento externo</td>
 						</tr>
 					</tbody>

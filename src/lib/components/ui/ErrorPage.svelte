@@ -7,10 +7,10 @@
 
 	const message = $derived(
 		status === 404
-			? 'Esta página no existe o fue movida.'
+			? 'This page does not exist or has been moved.'
 			: status === 403
-				? 'No tienes permiso para ver esto.'
-				: 'Algo salió mal. Intenta de nuevo.'
+				? 'You do not have permission to view this.'
+				: 'Something went wrong. Please try again.'
 	);
 </script>
 
@@ -69,12 +69,12 @@
 			</p>
 		</div>
 
-		<!-- Acción -->
+		<!-- Action -->
 		<a
 			href="/projects"
 			class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper dark:hover:text-dark-ink"
 		>
-			Volver al inicio
+			Back to home
 		</a>
 	</div>
 </div>

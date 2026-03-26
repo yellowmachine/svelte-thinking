@@ -80,6 +80,29 @@ export const userAiConfig = scholioSchema.table(
 	]
 ).enableRLS();
 
+// Conexiones a servidores Jupyter remotos (JupyterHub, JupyterLab)
+// El token se cifra con el mismo patrón KMS que userAiConfig
+export const userJupyterConnection = scholioSchema.table(
+	'user_jupyter_connection',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id').notNull(),
+		name: text('name').notNull(), // label visible al usuario, e.g. "JupyterHub UCM"
+		baseUrl: text('base_url').notNull(), // e.g. https://jupyter.miinstituto.edu
+		encryptedToken: text('encrypted_token').notNull(),
+		encryptedDataKey: text('encrypted_data_key').notNull(),
+		iv: text('iv').notNull(),
+		authTag: text('auth_tag').notNull(),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(t) => [
+		pgPolicy('user_jupyter_connection_access', {
+			for: 'all',
+			using: sql`${t.userId} = ${currentUserId}`
+		})
+	]
+).enableRLS();
+
 export const notificationPreference = scholioSchema.table(
 	'notification_preference',
 	{

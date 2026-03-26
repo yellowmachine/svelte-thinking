@@ -12,11 +12,11 @@
 	let { action, projectId, onconfirm, ondiscard }: Props = $props();
 
 	const docTypeLabel: Record<string, string> = {
-		paper: 'Artículo',
-		notes: 'Notas',
-		outline: 'Esquema',
-		bibliography: 'Bibliografía',
-		supplementary: 'Suplementario'
+		paper: 'Article',
+		notes: 'Notes',
+		outline: 'Outline',
+		bibliography: 'Bibliography',
+		supplementary: 'Supplementary'
 	};
 
 	const wordCount = $derived(
@@ -86,15 +86,15 @@
 			<div class="min-w-0 flex-1">
 				<p class="font-sans text-[11px] font-semibold uppercase tracking-wide
 					{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent'}">
-					{status === 'done' ? 'Documento creado' : 'Crear documento'}
+					{status === 'done' ? 'Document created' : 'Create document'}
 				</p>
 				<p class="mt-0.5 font-serif text-sm font-semibold text-ink dark:text-dark-ink">
 					{action.title}
 				</p>
 				<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 					{docTypeLabel[action.docType] ?? action.docType}
-					{#if wordCount > 0} · ~{wordCount.toLocaleString()} palabras{/if}
-					{#if action.requirementId} · vincula requisito{/if}
+					{#if wordCount > 0} · ~{wordCount.toLocaleString()} words{/if}
+					{#if action.requirementId} · links requirement{/if}
 				</p>
 			</div>
 		</div>
@@ -106,7 +106,7 @@
 					href="{base}/projects/{projectId}/documents/{createdDocId}"
 					class="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
 				>
-					Abrir documento
+					Open document
 					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 					</svg>
@@ -117,7 +117,7 @@
 					disabled={status === 'loading'}
 					class="rounded-lg px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-border disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-border"
 				>
-					Descartar
+					Discard
 				</button>
 				<button
 					onclick={confirm}
@@ -128,12 +128,12 @@
 						<svg class="animate-spin" width="11" height="11" viewBox="0 0 24 24" fill="none">
 							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="12" />
 						</svg>
-						Creando…
+						Creating…
 					{:else}
 						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
-						Crear
+						Create
 					{/if}
 				</button>
 			{/if}

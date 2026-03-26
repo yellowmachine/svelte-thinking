@@ -30,7 +30,7 @@
 				researcherResults = await trpc.users.searchProfiles.query(q);
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Error al buscar';
+			error = e instanceof Error ? e.message : 'Search error';
 		} finally {
 			loading = false;
 		}
@@ -82,9 +82,9 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
-	<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Explorar</h1>
+	<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Explore</h1>
 	<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-		Descubre proyectos y colaboradores académicos.
+		Discover academic projects and collaborators.
 	</p>
 
 	<!-- Tabs -->
@@ -96,7 +96,7 @@
 				? 'border-b-2 border-accent text-accent'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
-			Proyectos
+			Projects
 		</button>
 		<button
 			onclick={() => switchTab('researchers')}
@@ -105,7 +105,7 @@
 				? 'border-b-2 border-accent text-accent'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
-			Investigadores
+			Researchers
 		</button>
 	</div>
 
@@ -116,8 +116,8 @@
 			bind:value={query}
 			onkeydown={handleKeydown}
 			placeholder={tab === 'projects'
-				? 'Buscar proyectos por tema…'
-				: 'Buscar investigadores por especialidad…'}
+				? 'Search projects by topic…'
+				: 'Search researchers by specialty…'}
 			class="flex-1 rounded-lg border border-paper-border bg-paper px-4 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint"
 		/>
 		<button
@@ -125,7 +125,7 @@
 			disabled={loading || !query.trim()}
 			class="rounded-lg bg-accent px-5 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 		>
-			{loading ? 'Buscando…' : 'Buscar'}
+			{loading ? 'Searching…' : 'Buscar'}
 		</button>
 		{#if tab === 'projects'}
 			<button
@@ -147,7 +147,7 @@
 		<div class="mt-8">
 			{#if projectResults.length === 0}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					No se encontraron proyectos.
+					No projects found.
 				</p>
 			{:else}
 				<ul class="flex flex-col gap-4">
@@ -200,13 +200,13 @@
 								<button
 									onclick={() => togglePin(proj.id, proj.isPinned)}
 									disabled={pinning === proj.id}
-									title={proj.isPinned ? 'Quitar interés' : 'Marcar interés en el owner'}
+									title={proj.isPinned ? 'Remove interest' : 'Mark interest'}
 									class="shrink-0 rounded-lg border px-3 py-1.5 font-sans text-xs font-medium transition-colors disabled:opacity-50
 										{proj.isPinned
 										? 'border-accent bg-accent/10 text-accent'
 										: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted'}"
 								>
-									{pinning === proj.id ? '…' : proj.isPinned ? '★ Fijado' : '☆ Fijar'}
+									{pinning === proj.id ? '…' : proj.isPinned ? '★ Saved' : '☆ Save'}
 								</button>
 							</div>
 						</li>
@@ -221,7 +221,7 @@
 		<div class="mt-8">
 			{#if researcherResults.length === 0}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					No se encontraron investigadores.
+					No researchers found.
 				</p>
 			{:else}
 				<ul class="flex flex-col gap-4">

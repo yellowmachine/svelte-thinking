@@ -71,8 +71,8 @@
 		});
 
 		if (!res.ok) {
-			const err = await res.json().catch(() => ({ message: 'Error al subir' }));
-			uploadError = err.message ?? 'Error al subir la foto';
+			const err = await res.json().catch(() => ({ message: 'Upload error' }));
+			uploadError = err.message ?? 'Error uploading photo';
 		} else {
 			close();
 			window.location.href = `/projects/${photoProjectId}/photos`;
@@ -122,10 +122,10 @@
 			>
 				<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
 			</svg>
-			Proyectos
+			Projects
 		</a>
 
-		<!-- Explorar -->
+		<!-- Explore -->
 		<a
 			href="/explore"
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onExplore
@@ -135,7 +135,7 @@
 			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
 				<circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
 			</svg>
-			Explorar
+			Explore
 		</a>
 
 		<!-- + Nota -->
@@ -161,10 +161,10 @@
 					<line x1="5" y1="12" x2="19" y2="12" />
 				</svg>
 			</span>
-			Nota
+			Note
 		</button>
 
-		<!-- Fotos -->
+		<!-- Photos -->
 		<button
 			onclick={() => openSheet('photo')}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors dark:text-dark-ink-muted"
@@ -185,7 +185,7 @@
 				/>
 				<circle cx="12" cy="13" r="3" />
 			</svg>
-			Fotos
+			Photos
 		</button>
 	</div>
 </nav>
@@ -194,7 +194,7 @@
 {#if sheet}
 	<button
 		type="button"
-		aria-label="Cerrar"
+		aria-label="Close"
 		class="fixed inset-0 z-20 bg-black/40 sm:hidden"
 		onclick={close}
 	></button>
@@ -209,17 +209,17 @@
 
 		<div class="px-4 pb-2">
 			<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-				{sheet === 'note' ? '¿A qué proyecto añadir la nota?' : '¿A qué proyecto añadir la foto?'}
+				{sheet === 'note' ? 'Which project to add the note to?' : 'Which project to add the photo to?'}
 			</p>
 		</div>
 
 		{#if loading}
 			<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Cargando proyectos…
+				Loading projects…
 			</p>
 		{:else if projects.length === 0}
 			<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				No tienes proyectos aún.
+				You have no projects yet.
 			</p>
 		{:else}
 			<ul class="max-h-64 overflow-y-auto pb-2">

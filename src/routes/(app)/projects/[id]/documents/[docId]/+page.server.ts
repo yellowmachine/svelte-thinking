@@ -101,10 +101,10 @@ export const load: PageServerLoad = async (event) => {
 		// All documents in project (for wikilink resolution in preview)
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: document.id, title: document.title, projectId: document.projectId })
+				.select({ id: document.id, title: document.title, projectId: document.projectId, type: document.type })
 				.from(document)
 				.where(eq(document.projectId, projectId))
-		) as Promise<{ id: string; title: string; projectId: string }[]>,
+		) as Promise<{ id: string; title: string; projectId: string; type: string }[]>,
 
 		// Backlinks: documents that [[link]] to this one
 		event.locals.withRLS((db) =>

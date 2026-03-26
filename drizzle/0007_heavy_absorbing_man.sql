@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."user_profile" ADD COLUMN "orcid_verified" boolean DEFAULT false NOT NULL;

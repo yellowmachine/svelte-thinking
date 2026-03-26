@@ -6,7 +6,8 @@ import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/auth.schema';
-import { eq, desc, and, count, sql } from 'drizzle-orm';
+import { eq, desc, and, count, sql, inArray } from 'drizzle-orm';
+import { documentVersion } from '$lib/server/db/schemas/documents.schema';
 
 export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
@@ -16,13 +17,38 @@ export const load: PageServerLoad = async (event) => {
 		event.locals.withRLS((db) =>
 			db.select().from(project).where(eq(project.id, projectId)).limit(1)
 		),
-		event.locals.withRLS((db) =>
-			db
+		event.locals.withRLS(async (db) => {
+			const docs = await db
 				.select()
 				.from(document)
 				.where(eq(document.projectId, projectId))
-				.orderBy(desc(document.updatedAt))
-		),
+				.orderBy(desc(document.updatedAt));
+
+			// For book documents without an active draft, load committed content
+			// so isChapterReferenced can check actual published state
+			const booksNeedingContent = docs.filter(
+				(d) => d.type === 'book' && d.draftContent === null && d.currentVersionId !== null
+			);
+
+			if (booksNeedingContent.length === 0) {
+				return docs.map((d) => ({ ...d, bookContent: d.draftContent ?? '' }));
+			}
+
+			const versions = await db
+				.select({ id: documentVersion.id, content: documentVersion.content })
+				.from(documentVersion)
+				.where(inArray(documentVersion.id, booksNeedingContent.map((b) => b.currentVersionId!)));
+
+			const versionById = new Map(versions.map((v) => [v.id, v.content]));
+
+			return docs.map((d) => ({
+				...d,
+				bookContent:
+					d.type === 'book'
+						? (d.draftContent ?? (d.currentVersionId ? (versionById.get(d.currentVersionId) ?? '') : ''))
+						: ''
+			}));
+		}),
 		// Usa db directo (superuser): RLS solo permite ver la propia fila, el owner necesita ver todas
 		db
 			.select({

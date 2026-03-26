@@ -7,15 +7,15 @@
 
 	const labels: Record<Variant, string> = {
 		owner: 'Owner',
-		author: 'Autor',
-		coauthor: 'Coautor',
-		reviewer: 'Revisor',
-		commenter: 'Comentarista',
-		draft: 'Borrador',
-		active: 'Activo',
-		review: 'En revisión',
-		published: 'Publicado',
-		archived: 'Archivado'
+		author: 'Author',
+		coauthor: 'Coauthor',
+		reviewer: 'Reviewer',
+		commenter: 'Commenter',
+		draft: 'Draft',
+		active: 'Active',
+		review: 'In review',
+		published: 'Published',
+		archived: 'Archived'
 	};
 
 	const styles: Record<Variant, string> = {

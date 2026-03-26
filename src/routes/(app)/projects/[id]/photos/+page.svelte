@@ -54,7 +54,7 @@
 
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({ message: res.statusText }));
-				uploadError = err.message ?? 'Error al subir la imagen';
+				uploadError = err.message ?? 'Error uploading image';
 				uploading = false;
 				return;
 			}
@@ -94,7 +94,7 @@
 			extraPhotos = extraPhotos.filter((p) => p.id !== id);
 			if (lightboxPhoto?.id === id) lightboxPhoto = null;
 		} catch (e) {
-			alert(e instanceof Error ? e.message : 'Error al eliminar');
+			alert(e instanceof Error ? e.message : 'Error deleting');
 		}
 	}
 
@@ -129,9 +129,9 @@
 			{data.project.title}
 		</button>
 
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Fotos</h1>
+		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Photos</h1>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Sube fotos de pizarras, notas o esquemas para usarlas en tus documentos.
+			Upload photos of whiteboards, notes or sketches to use in your documents.
 		</p>
 	</div>
 
@@ -166,10 +166,10 @@
 				</svg>
 				<div>
 					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Arrastra fotos aquí o haz clic para seleccionar
+						Drag photos here or click to select
 					</p>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						JPG, PNG, WebP, GIF · Máx. 10 MB
+						JPG, PNG, WebP, GIF · Max. 10 MB
 					</p>
 				</div>
 			</div>
@@ -188,7 +188,7 @@
 	{#if staged.length > 0}
 		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-5 dark:bg-dark-paper">
 			<h2 class="mb-4 font-serif text-base font-semibold text-ink dark:text-dark-ink">
-				{staged.length === 1 ? '1 foto lista para subir' : `${staged.length} fotos listas para subir`}
+				{staged.length === 1 ? '1 photo ready to upload' : `${staged.length} photos ready to upload`}
 			</h2>
 
 			<div class="flex flex-col gap-4">
@@ -198,12 +198,12 @@
 						<div class="relative shrink-0">
 							<img
 								src={item.preview}
-								alt="Vista previa"
+								alt="Preview"
 								class="h-20 w-20 rounded-lg object-cover"
 							/>
 							<button
 								type="button"
-								aria-label="Quitar"
+								aria-label="Remove"
 								onclick={() => removeStaged(i)}
 								class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white shadow"
 							>
@@ -220,7 +220,7 @@
 							</p>
 							<textarea
 								bind:value={item.description}
-								placeholder="Nota u observación (opcional)"
+								placeholder="Note or caption (optional)"
 								rows="2"
 								class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 							></textarea>
@@ -244,9 +244,9 @@
 				>
 					{#if uploading}
 						<div class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-						Subiendo...
+						Uploading...
 					{:else}
-						Subir {staged.length === 1 ? 'foto' : `${staged.length} fotos`}
+						Upload {staged.length === 1 ? 'photo' : `${staged.length} photos`}
 					{/if}
 				</button>
 				<button
@@ -263,7 +263,7 @@
 					disabled={uploading}
 					class="ml-auto rounded-md border border-paper-border px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
-					+ Añadir más
+					+ Add more
 				</button>
 			</div>
 		</div>
@@ -273,7 +273,7 @@
 	{#if photos.length === 0}
 		<div class="rounded-xl border border-dashed border-paper-border py-16 text-center dark:border-dark-paper-border">
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin fotos todavía. Sube la primera desde el móvil o el ordenador.
+				No photos yet. Upload the first one from your phone or computer.
 			</p>
 		</div>
 	{:else}

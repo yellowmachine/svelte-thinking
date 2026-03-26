@@ -4,10 +4,10 @@
 	import type { PageData } from './$types';
 
 	const roleLabel: Record<string, string> = {
-		author: 'Autor',
-		coauthor: 'Coautor',
-		reviewer: 'Revisor',
-		commenter: 'Comentarista'
+		author: 'Author',
+		coauthor: 'Co-author',
+		reviewer: 'Reviewer',
+		commenter: 'Commenter'
 	};
 
 	let { data }: { data: PageData } = $props();
@@ -22,7 +22,7 @@
 			await trpc.invitations.accept.mutate(token);
 			await invalidateAll();
 		} catch (e: unknown) {
-			error = e instanceof Error ? e.message : 'Error al aceptar la invitación';
+			error = e instanceof Error ? e.message : 'Error accepting invitation';
 		} finally {
 			accepting = null;
 		}
@@ -30,16 +30,16 @@
 </script>
 
 <div class="mx-auto max-w-2xl px-6 py-10">
-	<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Red</h1>
+	<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Network</h1>
 
 	<section class="mt-8">
 		<h2 class="mb-4 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
-			Invitaciones pendientes
+			Pending invitations
 		</h2>
 
 		{#if data.invitations.length === 0}
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				No tienes invitaciones pendientes.
+				You have no pending invitations.
 			</p>
 		{:else}
 			<ul class="flex flex-col gap-3">
@@ -50,7 +50,7 @@
 								{inv.projectTitle}
 							</p>
 							<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								{roleLabel[inv.role] ?? inv.role} · expira {new Intl.DateTimeFormat('es', {
+								{roleLabel[inv.role] ?? inv.role} · expires {new Intl.DateTimeFormat('en', {
 									day: 'numeric',
 									month: 'short'
 								}).format(new Date(inv.expiresAt))}
@@ -61,7 +61,7 @@
 							disabled={accepting === inv.token}
 							class="ml-4 shrink-0 rounded-lg bg-accent px-4 py-1.5 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 						>
-							{accepting === inv.token ? 'Aceptando…' : 'Aceptar'}
+							{accepting === inv.token ? 'Accepting…' : 'Accept'}
 						</button>
 					</li>
 				{/each}

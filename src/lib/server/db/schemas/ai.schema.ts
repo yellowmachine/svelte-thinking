@@ -1,4 +1,4 @@
-import { text, timestamp, index, pgPolicy, integer, uniqueIndex } from 'drizzle-orm/pg-core';
+import { text, timestamp, index, pgPolicy, integer, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 import { document } from './documents.schema';
@@ -52,6 +52,7 @@ export const aiMessage = scholioSchema.table(
 			.references(() => aiConversation.id, { onDelete: 'cascade' }),
 		role: aiMessageRoleEnum('role').notNull(),
 		content: text('content').notNull(),
+		docsUsed: jsonb('docs_used').$type<{ id: string; title: string }[]>().notNull().default([]),
 		createdAt: timestamp('created_at').notNull().defaultNow()
 	},
 	(t) => [

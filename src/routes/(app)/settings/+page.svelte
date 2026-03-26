@@ -34,7 +34,7 @@
 		try {
 			planData = await trpc.billing.currentPlan.query();
 		} catch {
-			billingError = 'No se pudo cargar la información del plan.';
+			billingError = 'Could not load plan information.';
 		} finally {
 			loadingPlan = false;
 		}
@@ -49,7 +49,7 @@
 			const result = await trpc.billing.createCheckoutSession.mutate({ plan });
 			if (result.url) window.location.href = result.url;
 		} catch (e: unknown) {
-			billingError = e instanceof Error ? e.message : 'Error al iniciar el pago.';
+			billingError = e instanceof Error ? e.message : 'Error starting payment.';
 		} finally {
 			checkoutLoading = null;
 		}
@@ -62,7 +62,7 @@
 			const result = await trpc.billing.createPortalSession.mutate();
 			if (result.url) window.location.href = result.url;
 		} catch (e: unknown) {
-			billingError = e instanceof Error ? e.message : 'Error al abrir el portal.';
+			billingError = e instanceof Error ? e.message : 'Error opening portal.';
 		} finally {
 			portalLoading = false;
 		}
@@ -70,7 +70,7 @@
 
 	function formatDate(d: Date | null): string {
 		if (!d) return '—';
-		return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+		return new Date(d).toLocaleDateString('en', { day: 'numeric', month: 'long', year: 'numeric' });
 	}
 
 	// ── AI config state ──────────────────────────────────────────────────────
@@ -97,15 +97,15 @@
 
 	const MODELS: Record<ProviderId, { id: string; label: string }[]> = {
 		openrouter: [
-			{ id: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5 (rápido)' },
+			{ id: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5 (fast)' },
 			{ id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
-			{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini (rápido)' },
+			{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini (fast)' },
 			{ id: 'openai/gpt-4o', label: 'GPT-4o' },
-			{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5 (rápido)' },
+			{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5 (fast)' },
 			{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' }
 		],
 		perplexity: [
-			{ id: 'sonar', label: 'Sonar (rápido)' },
+			{ id: 'sonar', label: 'Sonar (fast)' },
 			{ id: 'sonar-pro', label: 'Sonar Pro' },
 			{ id: 'sonar-reasoning-pro', label: 'Sonar Reasoning Pro' },
 			{ id: 'sonar-deep-research', label: 'Sonar Deep Research' }
@@ -134,7 +134,7 @@
 		try {
 			aiStatus = await trpc.aiConfig.getStatus.query();
 		} catch {
-			aiError = 'No se pudo cargar la configuración del asistente.';
+			aiError = 'Could not load assistant configuration.';
 		} finally {
 			loadingAi = false;
 		}
@@ -149,10 +149,10 @@
 		try {
 			await trpc.aiConfig.saveApiKey.mutate({ provider, apiKey: key });
 			keyInputs[provider] = '';
-			aiSuccess = `API key de ${provider === 'openrouter' ? 'OpenRouter' : 'Perplexity'} guardada.`;
+			aiSuccess = `${provider === 'openrouter' ? 'OpenRouter' : 'Perplexity'} API key saved.`;
 			await loadAiStatus();
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error al guardar la API key.';
+			aiError = e instanceof Error ? e.message : 'Error saving API key.';
 		} finally {
 			savingKey[provider] = false;
 		}
@@ -170,7 +170,7 @@
 				};
 			}
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error al cambiar el estado.';
+			aiError = e instanceof Error ? e.message : 'Error toggling provider.';
 		} finally {
 			togglingEnabled[provider] = false;
 		}
@@ -186,7 +186,7 @@
 				};
 			}
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error al cambiar el modelo.';
+			aiError = e instanceof Error ? e.message : 'Error changing model.';
 		}
 	}
 
@@ -197,10 +197,10 @@
 		aiSuccess = '';
 		try {
 			await trpc.aiConfig.deleteApiKey.mutate({ provider });
-			aiSuccess = `API key de ${label} eliminada.`;
+			aiSuccess = `${label} API key deleted.`;
 			await loadAiStatus();
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error al eliminar la API key.';
+			aiError = e instanceof Error ? e.message : 'Error deleting API key.';
 		} finally {
 			deletingKey[provider] = false;
 		}
@@ -213,7 +213,7 @@
 			await trpc.aiConfig.setDefault.mutate({ provider });
 			if (aiStatus) aiStatus = { ...aiStatus, defaultProvider: provider };
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error al cambiar el proveedor por defecto.';
+			aiError = e instanceof Error ? e.message : 'Error changing default provider.';
 		} finally {
 			settingDefault = false;
 		}
@@ -246,7 +246,7 @@
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				throw new Error(body.message || 'Error al activar 2FA');
+				throw new Error(body.message || 'Error enabling 2FA');
 			}
 			const { totpURI, backupCodes } = await res.json();
 			twoFaQrDataUrl = await QRCode.toDataURL(totpURI);
@@ -254,7 +254,7 @@
 			twoFaPassword = '';
 			twoFaStep = 'qr';
 		} catch (e) {
-			twoFaError = e instanceof Error ? e.message : 'Error inesperado';
+			twoFaError = e instanceof Error ? e.message : 'Unexpected error';
 		} finally {
 			twoFaLoading = false;
 		}
@@ -272,13 +272,13 @@
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				throw new Error(body.message || 'Código incorrecto');
+				throw new Error(body.message || 'Incorrect code');
 			}
 			twoFaEnabled = true;
 			twoFaStep = 'done';
 			twoFaCode = '';
 		} catch (e) {
-			twoFaError = e instanceof Error ? e.message : 'Código incorrecto';
+			twoFaError = e instanceof Error ? e.message : 'Incorrect code';
 		} finally {
 			twoFaLoading = false;
 		}
@@ -296,13 +296,13 @@
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				throw new Error(body.message || 'Error al desactivar 2FA');
+				throw new Error(body.message || 'Error disabling 2FA');
 			}
 			twoFaEnabled = false;
 			twoFaStep = 'idle';
 			twoFaPassword = '';
 		} catch (e) {
-			twoFaError = e instanceof Error ? e.message : 'Error inesperado';
+			twoFaError = e instanceof Error ? e.message : 'Unexpected error';
 		} finally {
 			twoFaLoading = false;
 		}
@@ -327,7 +327,7 @@
 	let deleteConfirmText = $state('');
 	let deletingAccount = $state(false);
 	let deleteError = $state('');
-	const DELETE_KEYWORD = 'ELIMINAR';
+	const DELETE_KEYWORD = 'DELETE';
 
 	async function handleDeleteAccount() {
 		if (deleteConfirmText !== DELETE_KEYWORD) return;
@@ -337,11 +337,11 @@
 			const res = await fetch('/api/account/delete', { method: 'DELETE' });
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				throw new Error(body.message ?? 'Error al eliminar la cuenta');
+				throw new Error(body.message ?? 'Error deleting account');
 			}
 			window.location.href = '/?deleted=1';
 		} catch (e) {
-			deleteError = e instanceof Error ? e.message : 'Error inesperado';
+			deleteError = e instanceof Error ? e.message : 'Unexpected error';
 			deletingAccount = false;
 		}
 	}
@@ -350,9 +350,9 @@
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<!-- Header -->
 	<div class="mb-8">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Ajustes</h1>
+		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Settings</h1>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Gestiona tu cuenta y suscripción.
+			Manage your account and subscription.
 		</p>
 	</div>
 
@@ -374,7 +374,7 @@
 				? 'border-b-2 border-accent font-medium text-accent'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
-			Plan y facturación
+			Plan & billing
 		</button>
 		<button
 			type="button"
@@ -403,7 +403,7 @@
 			<!-- Personal info -->
 			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 				<h2 class="mb-5 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Información personal
+					Personal information
 				</h2>
 
 				<div class="flex flex-col gap-4">
@@ -420,7 +420,7 @@
 							>
 								Cambiar foto
 							</button>
-							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Próximamente</p>
+							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Coming soon</p>
 						</div>
 					</div>
 
@@ -468,7 +468,7 @@
 				<div>
 					<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">ORCID</h2>
 					<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Conecta tu cuenta ORCID para verificar tu identidad académica.
+						Connect your ORCID account to verify your academic identity.
 					</p>
 				</div>
 				<svg width="32" height="32" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true" class="shrink-0">
@@ -478,11 +478,11 @@
 
 			{#if data.orcidStatus === 'connected'}
 				<p class="mb-4 rounded-lg bg-green-50 px-4 py-2 font-sans text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-					ORCID conectado correctamente.
+					ORCID connected successfully.
 				</p>
 			{:else if data.orcidStatus === 'error'}
 				<p class="mb-4 rounded-lg bg-red-50 px-4 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-					Error al conectar ORCID. Inténtalo de nuevo.
+					Error connecting ORCID. Please try again.
 				</p>
 			{/if}
 
@@ -492,20 +492,20 @@
 						<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" class="shrink-0 text-green-600 dark:text-green-400">
 							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
 						</svg>
-						<span class="font-sans text-sm font-medium text-green-700 dark:text-green-400">Verificado</span>
+						<span class="font-sans text-sm font-medium text-green-700 dark:text-green-400">Verified</span>
 						<span class="font-mono text-sm text-ink dark:text-dark-ink">{data.orcid}</span>
 					</div>
 					<a
 						href="/api/auth/orcid/connect"
 						class="font-sans text-xs text-ink-muted underline hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 					>
-						Reconectar
+						Reconnect
 					</a>
 				</div>
 			{:else}
 				{#if data.orcid}
 					<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						ORCID actual (sin verificar): <span class="font-mono">{data.orcid}</span>
+						Current ORCID (unverified): <span class="font-mono">{data.orcid}</span>
 					</p>
 				{/if}
 				<a
@@ -515,7 +515,7 @@
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true">
 						<path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"/>
 					</svg>
-					Conectar con ORCID
+					Connect with ORCID
 				</a>
 			{/if}
 		</section>
@@ -523,13 +523,13 @@
 		<!-- Change password -->
 			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 				<h2 class="mb-5 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Cambiar contraseña
+					Change password
 				</h2>
 
 				<div class="flex flex-col gap-4">
 					<div class="flex flex-col gap-1.5">
 						<label for="current-password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-							Contraseña actual
+							Current password
 						</label>
 						<input
 							id="current-password"
@@ -543,7 +543,7 @@
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div class="flex flex-col gap-1.5">
 							<label for="new-password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-								Nueva contraseña
+								New password
 							</label>
 							<input
 								id="new-password"
@@ -555,7 +555,7 @@
 						</div>
 						<div class="flex flex-col gap-1.5">
 							<label for="confirm-password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-								Confirmar contraseña
+								Confirm password
 							</label>
 							<input
 								id="confirm-password"
@@ -573,7 +573,7 @@
 							disabled
 							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white opacity-50"
 						>
-							Actualizar contraseña
+							Update password
 						</button>
 					</div>
 				</div>
@@ -582,10 +582,10 @@
 			<!-- Danger zone -->
 			<section class="rounded-xl border border-red-200 bg-paper p-6 dark:border-red-900/40 dark:bg-dark-paper">
 				<h2 class="mb-1 font-serif text-lg font-semibold text-red-600 dark:text-red-400">
-					Zona de peligro
+					Danger zone
 				</h2>
 				<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Estas acciones son irreversibles.
+					These actions are irreversible.
 				</p>
 				<button
 					type="button"
@@ -613,14 +613,14 @@
 			{/if}
 
 			{#if loadingAi}
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando...</p>
+				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
 			{:else}
 				<!-- Default provider selector -->
 				{#if aiStatus && aiStatus.providers.length > 0}
 					<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-						<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Proveedor por defecto</h2>
+						<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Default provider</h2>
 						<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							El agente usará este proveedor para todas las conversaciones.
+							The agent will use this provider for all conversations.
 						</p>
 						<div class="flex gap-3">
 							{#each PROVIDERS as p}
@@ -646,7 +646,7 @@
 									{/if}
 									{p.label}
 									{#if !configured}
-										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">(sin configurar)</span>
+										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">(not configured)</span>
 									{/if}
 								</button>
 							{/each}
@@ -669,14 +669,14 @@
 										<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">{p.label}</h2>
 										{#if isDefault && cfg}
 											<span class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[11px] font-semibold text-accent">
-												Por defecto
+												Default
 											</span>
 										{/if}
 									</div>
 									<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 										{p.id === 'openrouter'
-											? 'Acceso a modelos de Anthropic, OpenAI, Google y más.'
-											: 'Modelos Sonar con búsqueda web en tiempo real.'}
+											? 'Access to Anthropic, OpenAI, Google and more models.'
+											: 'Sonar models with real-time web search.'}
 									</p>
 								</div>
 							</div>
@@ -685,7 +685,7 @@
 									{cfg.enabled
 										? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
 										: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}">
-									{cfg.enabled ? 'Activo' : 'Inactivo'}
+									{cfg.enabled ? 'Active' : 'Inactive'}
 								</span>
 							{/if}
 						</div>
@@ -696,20 +696,20 @@
 								<div class="rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 									<div class="flex items-center justify-between gap-4">
 										<div class="min-w-0 flex-1">
-											<p class="mb-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Modelo</p>
+											<p class="mb-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Model</p>
 											<select
 												value={cfg.model ?? ''}
 												onchange={(e) => handleSetModel(p.id, (e.target as HTMLSelectElement).value)}
 												class="w-full rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 											>
-												<option value="">— Por defecto del proveedor —</option>
+												<option value="">— Default del proveedor —</option>
 												{#each MODELS[p.id] as m}
 													<option value={m.id}>{m.label}</option>
 												{/each}
 											</select>
 										</div>
 										<div class="shrink-0 text-right">
-											<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Actualizada</p>
+											<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Updated</p>
 											<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 												{formatDate(cfg.updatedAt)}
 											</p>
@@ -720,14 +720,14 @@
 								<!-- Enable toggle -->
 								<div class="flex items-center justify-between">
 									<div>
-										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Habilitado</p>
-										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Desactívalo sin eliminar la key.</p>
+										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Enabled</p>
+										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Disable without deleting the key.</p>
 									</div>
 									<button
 										type="button"
 										role="switch"
 										aria-checked={cfg.enabled}
-										aria-label={cfg.enabled ? 'Deshabilitar' : 'Habilitar'}
+										aria-label={cfg.enabled ? 'Disable' : 'Enable'}
 										onclick={() => handleToggleEnabled(p.id, !cfg.enabled)}
 										disabled={togglingEnabled[p.id]}
 										class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50
@@ -748,17 +748,17 @@
 									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
 								</svg>
 								<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-									Tus documentos se envían a {p.label} únicamente para procesar tu consulta.
-									{p.label} no usa datos enviados vía API para entrenar sus modelos.
+									Your documents are sent to {p.label} only to process your query.
+									{p.label} does not use API data to train its models.
 									<a href={p.privacyUrl} target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-2">
-										Política de privacidad de {p.label} →
+										{p.label} Privacy Policy →
 									</a>
 								</p>
 							</div>
 							<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								{cfg ? 'Reemplazar API key · ' : 'Añadir API key · '}
+								{cfg ? 'Replace API key · ' : 'Add API key · '}
 								Obtenla en <a href={p.keyUrl} target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">{p.keyUrl.replace('https://', '')}</a>.
-								Se cifra con AWS KMS antes de almacenarse.
+								Encrypted with AWS KMS before storage.
 							</p>
 							<div class="flex gap-3">
 								<input
@@ -774,7 +774,7 @@
 									disabled={!keyInputs[p.id].trim() || savingKey[p.id]}
 									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 								>
-									{savingKey[p.id] ? 'Guardando...' : 'Guardar'}
+									{savingKey[p.id] ? 'Saving...' : 'Save'}
 								</button>
 							</div>
 						</div>
@@ -788,7 +788,7 @@
 									disabled={deletingKey[p.id]}
 									class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
 								>
-									{deletingKey[p.id] ? 'Eliminando...' : 'Eliminar key'}
+									{deletingKey[p.id] ? 'Deleting...' : 'Delete key'}
 								</button>
 							</div>
 						{/if}
@@ -810,15 +810,15 @@
 			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 				<div class="flex items-start justify-between gap-4">
 					<div>
-						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Verificación en dos pasos (2FA)</h2>
+						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Two-factor authentication (2FA)</h2>
 						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Protege tu cuenta con una aplicación autenticadora como Google Authenticator o Authy.
+							Secure your account with an authenticator app like Google Authenticator or Authy.
 						</p>
 					</div>
 					<span class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold {twoFaEnabled
 						? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
 						: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}">
-						{twoFaEnabled ? 'Activado' : 'Desactivado'}
+						{twoFaEnabled ? 'Enabled' : 'Disabled'}
 					</span>
 				</div>
 
@@ -827,12 +827,12 @@
 					{#if twoFaStep === 'disabling'}
 						<div class="mt-5 flex flex-col gap-3">
 							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								Introduce tu contraseña para desactivar la verificación en dos pasos.
+								Enter your password to disable two-factor authentication.
 							</p>
 							<input
 								type="password"
 								bind:value={twoFaPassword}
-								placeholder="Contraseña actual"
+								placeholder="Current password"
 								autocomplete="current-password"
 								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 							/>
@@ -843,7 +843,7 @@
 									disabled={!twoFaPassword.trim() || twoFaLoading}
 									class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
 								>
-									{twoFaLoading ? 'Desactivando...' : 'Confirmar desactivación'}
+									{twoFaLoading ? 'Disabling...' : 'Confirm disable'}
 								</button>
 								<button
 									type="button"
@@ -879,12 +879,12 @@
 							</button>
 						{:else}
 							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								Introduce tu contraseña para continuar.
+								Enter your password to continue.
 							</p>
 							<input
 								type="password"
 								bind:value={twoFaPassword}
-								placeholder="Contraseña actual"
+								placeholder="Current password"
 								autocomplete="current-password"
 								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 							/>
@@ -895,7 +895,7 @@
 									disabled={!twoFaPassword.trim() || twoFaLoading}
 									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 								>
-									{twoFaLoading ? 'Generando...' : 'Continuar'}
+									{twoFaLoading ? 'Generating...' : 'Continue'}
 								</button>
 								<button
 									type="button"
@@ -913,17 +913,17 @@
 					<div class="mt-5 flex flex-col gap-5">
 						<div class="flex flex-col items-center gap-3 rounded-lg border border-paper-border bg-paper-ui p-5 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 							<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-								Escanea con tu aplicación autenticadora
+								Scan with your authenticator app
 							</p>
 							{#if twoFaQrDataUrl}
-								<img src={twoFaQrDataUrl} alt="QR code para configurar 2FA" class="h-44 w-44 rounded" />
+								<img src={twoFaQrDataUrl} alt="QR code to configure 2FA" class="h-44 w-44 rounded" />
 							{/if}
 						</div>
 
 						{#if twoFaBackupCodes.length > 0}
 							<div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
 								<p class="mb-2 font-sans text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-									Códigos de respaldo — guárdalos en un lugar seguro
+									Backup codes — store them in a safe place
 								</p>
 								<div class="grid grid-cols-2 gap-1.5">
 									{#each twoFaBackupCodes as code}
@@ -935,7 +935,7 @@
 
 						<div class="flex flex-col gap-2">
 							<label for="totp-verify" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-								Introduce el código de 6 dígitos para confirmar
+								Enter the 6-digit code to confirm
 							</label>
 							<div class="flex gap-2">
 								<input
@@ -955,7 +955,7 @@
 									disabled={twoFaCode.length !== 6 || twoFaLoading}
 									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 								>
-									{twoFaLoading ? 'Verificando...' : 'Activar'}
+									{twoFaLoading ? 'Verifying...' : 'Enable'}
 								</button>
 							</div>
 						</div>
@@ -964,7 +964,7 @@
 				{:else if twoFaStep === 'done'}
 					<!-- Success state -->
 					<div class="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
-						2FA activado correctamente. Tu cuenta está ahora protegida.
+						2FA enabled successfully. Your account is now protected.
 					</div>
 				{/if}
 			</section>
@@ -984,17 +984,17 @@
 			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 				<div class="flex items-start justify-between gap-4">
 					<div>
-						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Plan actual</h2>
+						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Current plan</h2>
 						{#if loadingPlan}
-							<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando...</p>
+							<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
 						{:else if planData}
 							<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 								{#if planData.plan === 'free'}
-									Estás en el plan gratuito.
+									You are on the free plan.
 								{:else}
-									Suscripción activa.
+									Active subscription.
 									{#if planData.planCurrentPeriodEnd}
-										Próxima renovación: {formatDate(planData.planCurrentPeriodEnd)}.
+										Next renewal: {formatDate(planData.planCurrentPeriodEnd)}.
 									{/if}
 								{/if}
 							</p>
@@ -1018,17 +1018,17 @@
 							disabled={portalLoading}
 							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 						>
-							{portalLoading ? 'Redirigiendo...' : 'Gestionar suscripción'}
+							{portalLoading ? 'Redirecting...' : 'Manage subscription'}
 						</button>
 					</div>
 				{/if}
 
 				<div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
 					{#each [
-						{ label: 'Proyectos', value: 'Ilimitados' },
-						{ label: 'Documentos', value: 'Ilimitados' },
-						{ label: 'Colaboradores', value: '3 por proyecto' },
-						{ label: 'Consultas IA', value: 'Incluidas (beta)' }
+						{ label: 'Projects', value: 'Unlimited' },
+						{ label: 'Documents', value: 'Unlimited' },
+						{ label: 'Collaborators', value: '3 per project' },
+						{ label: 'AI queries', value: 'Included (beta)' }
 					] as item}
 						<div class="rounded-lg border border-paper-border bg-paper-ui px-3 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{item.label}</p>
@@ -1041,10 +1041,10 @@
 			<!-- Plans comparison -->
 			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Planes disponibles
+					Available plans
 				</h2>
 				<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Durante la beta todos los planes son gratuitos. Los precios definitivos se anunciarán antes del lanzamiento.
+					All plans are free during the beta. Final pricing will be announced before launch.
 				</p>
 
 				<div class="grid gap-4 sm:grid-cols-3">
@@ -1053,14 +1053,14 @@
 						<div class="mb-3 flex items-center justify-between">
 							<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Free</span>
 							{#if currentPlanName === 'free'}
-								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Actual</span>
+								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Current</span>
 							{/if}
 						</div>
 						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-							Gratis durante la beta
+							Free during beta
 						</p>
 						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							{#each ['3 proyectos', '3 colaboradores por proyecto', 'IA básica (beta)', 'Historial 30 días'] as f}
+							{#each ['3 projects', '3 collaborators per project', 'Basic AI (beta)', '30-day history'] as f}
 								<li class="flex items-center gap-2">
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-accent" aria-hidden="true">
 										<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1076,14 +1076,14 @@
 						<div class="mb-3 flex items-center justify-between">
 							<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Pro</span>
 							{#if currentPlanName === 'pro'}
-								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Actual</span>
+								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Current</span>
 							{/if}
 						</div>
 						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-							Gratis durante la beta
+							Free during beta
 						</p>
 						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							{#each ['Proyectos ilimitados', '10 colaboradores por proyecto', 'IA avanzada con sugerencias', 'Historial ilimitado', 'Exportación PDF / LaTeX'] as f}
+							{#each ['Unlimited projects', '10 collaborators per project', 'Advanced AI with suggestions', 'Unlimited history', 'PDF / LaTeX export'] as f}
 								<li class="flex items-center gap-2">
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-accent" aria-hidden="true">
 										<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1099,7 +1099,7 @@
 								disabled={checkoutLoading === 'pro'}
 								class="mt-5 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 							>
-								{checkoutLoading === 'pro' ? 'Redirigiendo...' : 'Upgrade a Pro'}
+								{checkoutLoading === 'pro' ? 'Redirecting...' : 'Upgrade to Pro'}
 							</button>
 						{/if}
 					</div>
@@ -1109,14 +1109,14 @@
 						<div class="mb-3 flex items-center justify-between">
 							<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Team</span>
 							{#if currentPlanName === 'team'}
-								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Actual</span>
+								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Current</span>
 							{/if}
 						</div>
 						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-							Gratis durante la beta
+							Free during beta
 						</p>
 						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							{#each ['Todo lo de Pro', 'Colaboradores ilimitados', 'Panel de administración', 'SSO / SAML', 'Soporte prioritario'] as f}
+							{#each ['Everything in Pro', 'Unlimited collaborators', 'Admin panel', 'SSO / SAML', 'Priority support'] as f}
 								<li class="flex items-center gap-2">
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-accent" aria-hidden="true">
 										<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1132,7 +1132,7 @@
 								disabled={checkoutLoading === 'team'}
 								class="mt-5 rounded-md border border-accent px-4 py-2 font-sans text-sm font-medium text-accent transition-colors hover:bg-accent/5 disabled:opacity-50"
 							>
-								{checkoutLoading === 'team' ? 'Redirigiendo...' : 'Upgrade a Team'}
+								{checkoutLoading === 'team' ? 'Redirecting...' : 'Upgrade to Team'}
 							</button>
 						{/if}
 					</div>
@@ -1141,10 +1141,10 @@
 
 			<!-- Invoices -->
 			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-				<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Facturas</h2>
+				<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Invoices</h2>
 				{#if planData?.stripeCustomerId}
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Accede al portal de Stripe para ver y descargar tus facturas.
+						Access the Stripe portal to view and download your invoices.
 					</p>
 					<button
 						type="button"
@@ -1152,12 +1152,12 @@
 						disabled={portalLoading}
 						class="mt-3 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 					>
-						{portalLoading ? 'Redirigiendo...' : 'Ver facturas en Stripe'}
+						{portalLoading ? 'Redirecting...' : 'View invoices in Stripe'}
 					</button>
 				{:else}
 					<div class="rounded-lg border border-dashed border-paper-border py-10 text-center dark:border-dark-paper-border">
 						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Sin facturas. Las facturas aparecerán aquí cuando tengas un plan de pago.
+							No invoices yet. Invoices will appear here once you have a paid plan.
 						</p>
 					</div>
 				{/if}
@@ -1167,16 +1167,16 @@
 
 	<!-- Danger zone -->
 	<div class="mt-10 rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
-		<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Zona de peligro</h2>
+		<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
 		<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
-			Estas acciones son permanentes e irreversibles.
+			These actions are permanent and irreversible.
 		</p>
 
 		<div class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper">
 			<div>
 				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Eliminar cuenta</p>
 				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-					Borra tu cuenta, todos tus proyectos, documentos y archivos de forma permanente.
+					Permanently deletes your account, all projects, documents and files.
 				</p>
 			</div>
 			<button
@@ -1199,11 +1199,11 @@
 	>
 		<div class="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-xl dark:bg-dark-paper">
 			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				¿Eliminar API key?
+				Delete API key?
 			</h2>
 			<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				Se eliminará la clave de <strong>{deleteKeyProvider === 'openrouter' ? 'OpenRouter' : 'Perplexity'}</strong>.
-				Perderás acceso al asistente IA hasta que añadas una nueva.
+				The key for <strong>{deleteKeyProvider === 'openrouter' ? 'OpenRouter' : 'Perplexity'}</strong> will be deleted.
+				You will lose AI assistant access until you add a new one.
 			</p>
 			<div class="mt-5 flex gap-3">
 				<button
@@ -1235,16 +1235,16 @@
 	>
 		<div class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
 			<h3 id="delete-dialog-title" class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">
-				¿Eliminar tu cuenta?
+				Delete your account?
 			</h3>
 			<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Esta acción borrará permanentemente tu cuenta y <strong>todos tus datos</strong>: proyectos,
-				documentos, historial de versiones, comentarios y archivos. No se puede deshacer.
+				This action will permanently delete your account and <strong>all your data</strong>: projects,
+			documents, version history, comments and files. This cannot be undone.
 			</p>
 
 			<div class="mt-5">
 				<label for="delete-confirm" class="block font-sans text-sm font-medium text-ink dark:text-dark-ink">
-					Escribe <span class="font-mono font-bold">{DELETE_KEYWORD}</span> para confirmar
+					Type <span class="font-mono font-bold">{DELETE_KEYWORD}</span> to confirm
 				</label>
 				<input
 					id="delete-confirm"
@@ -1274,7 +1274,7 @@
 					disabled={deleteConfirmText !== DELETE_KEYWORD || deletingAccount}
 					class="flex-1 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-40"
 				>
-					{deletingAccount ? 'Eliminando...' : 'Eliminar para siempre'}
+					{deletingAccount ? 'Deleting...' : 'Delete forever'}
 				</button>
 			</div>
 		</div>

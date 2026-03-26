@@ -25,9 +25,9 @@
 
 	const saveLabel: Record<typeof saveStatus, string> = {
 		idle: '',
-		pending: 'Sin guardar',
-		saving: 'Guardando…',
-		saved: 'Guardado',
+		pending: 'Not saved',
+		saving: 'Saving…',
+		saved: 'Saved',
 		error: 'Error'
 	};
 </script>
@@ -66,7 +66,7 @@
 						? 'bg-accent text-white'
 						: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
-					Editar
+					Edit
 				</button>
 				<button
 					onclick={() => (mode = 'preview')}
@@ -74,7 +74,7 @@
 						? 'bg-accent text-white'
 						: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
-					Ver
+					Preview
 				</button>
 			</div>
 
@@ -95,7 +95,7 @@
 					disabled={!isDirty || saveStatus === 'saving'}
 					class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white disabled:opacity-40"
 				>
-					Guardar
+					Save
 				</button>
 			{/if}
 		</div>
@@ -110,7 +110,7 @@
 		<textarea
 			value={content}
 			oninput={(e) => onchange((e.target as HTMLTextAreaElement).value)}
-			placeholder="Escribe tu nota…"
+			placeholder="Write your note…"
 			spellcheck="true"
 			class="flex-1 resize-none bg-transparent px-4 py-2 pb-safe font-sans text-base leading-relaxed text-ink focus:outline-none dark:text-dark-ink"
 		></textarea>
@@ -120,7 +120,7 @@
 			{#if content.trim()}
 				<MarkdownPreview {content} {projectId} />
 			{:else}
-				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Nota vacía.</p>
+				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Empty note.</p>
 			{/if}
 		</div>
 	{/if}

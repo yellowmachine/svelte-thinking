@@ -3,10 +3,11 @@
 	import ActionCard from '$lib/components/ai/ActionCard.svelte';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import type { PageData } from './$types';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 
 	let { data }: { data: PageData } = $props();
 
-	type Message = { id: string; role: 'user' | 'assistant'; content: string };
+	type Message = { id: string; role: 'user' | 'assistant'; content: string; docsUsed?: { id: string; title: string }[] };
 	type Conversation = (typeof data.conversations)[number];
 
 	let conversations = $state(data.conversations);
@@ -115,12 +116,25 @@
 		}
 	}
 
-	async function deleteConversation(id: string, e: MouseEvent) {
+	let convToDelete = $state<string | null>(null);
+	let deletingConv = $state(false);
+
+	function requestDeleteConversation(id: string, e: MouseEvent) {
 		e.stopPropagation();
-		if (!confirm('¿Eliminar esta conversación?')) return;
-		await trpc.ai.deleteConversation.mutate(id);
-		conversations = conversations.filter((c) => c.id !== id);
-		if (activeConvId === id) newConversation();
+		convToDelete = id;
+	}
+
+	async function confirmDeleteConversation() {
+		if (!convToDelete) return;
+		deletingConv = true;
+		try {
+			await trpc.ai.deleteConversation.mutate(convToDelete);
+			conversations = conversations.filter((c) => c.id !== convToDelete);
+			if (activeConvId === convToDelete) newConversation();
+		} finally {
+			deletingConv = false;
+			convToDelete = null;
+		}
 	}
 
 	function scrollToBottom() {
@@ -248,7 +262,7 @@
 			<button
 				type="button"
 				onclick={newConversation}
-				title="Nueva conversación"
+				title="New conversation"
 				class="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -273,7 +287,7 @@
 							class="flex min-w-0 flex-1 flex-col px-4 py-2.5 text-left"
 						>
 							<span class="block truncate font-sans text-sm text-ink dark:text-dark-ink">
-								{conv.title ?? 'Conversación'}
+								{conv.title ?? 'Conversation'}
 							</span>
 							<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 								{formatDate(conv.updatedAt)}
@@ -281,8 +295,8 @@
 						</button>
 						<button
 							type="button"
-							aria-label="Eliminar conversación"
-							onclick={(e) => deleteConversation(conv.id, e)}
+							aria-label="Delete conversation"
+							onclick={(e) => requestDeleteConversation(conv.id, e)}
 							class="mr-2 mt-2.5 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-dark-ink-faint"
 						>
 							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -308,13 +322,13 @@
 					</div>
 					<div>
 						<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-							Asistente de investigación
+							Research assistant
 						</p>
 						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 							Hazme preguntas sobre el contenido de tu proyecto.
 						</p>
 						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Ej: "¿Qué referencias hay a Mises en el borrador?"
+							E.g. "What references to Mises are in the draft?"
 						</p>
 					</div>
 				</div>
@@ -326,7 +340,7 @@
 							<div
 								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold {msg.role === 'user' ? 'bg-accent text-white' : 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted'}"
 							>
-								{msg.role === 'user' ? 'Tú' : 'AI'}
+								{msg.role === 'user' ? 'You' : 'AI'}
 							</div>
 							<!-- Bubble + pending actions for this message -->
 							<div class="flex max-w-[80%] flex-col">
@@ -337,7 +351,18 @@
 								>
 									{msg.content}
 								</div>
-								{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
+								{#if msg.role === 'assistant' && msg.docsUsed?.length}
+								<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
+									<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">Sources:</span>
+									{#each msg.docsUsed as doc (doc.id)}
+										<a
+											href="/projects/{data.project.id}/documents/{doc.id}"
+											class="font-sans text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										>{doc.title}</a>
+									{/each}
+								</div>
+							{/if}
+							{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
 									{#each pendingActions as action, i (i)}
 										<ActionCard
 											{action}
@@ -402,7 +427,7 @@
 					<textarea
 						bind:value={input}
 						onkeydown={onKeydown}
-						placeholder="Pregunta sobre tu proyecto... (Enter para enviar, Shift+Enter para nueva línea)"
+						placeholder="Ask about your project... (Enter to send, Shift+Enter for new line)"
 						rows="1"
 						class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
 						style="max-height: 160px; overflow-y: auto;"
@@ -465,13 +490,13 @@
 						Tus documentos son privados
 					</h2>
 					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Cuando usas el asistente de IA, el contenido de tus documentos se envía al proveedor que hayas configurado (OpenRouter o Perplexity) <strong class="font-medium text-ink dark:text-dark-ink">únicamente para procesar tu consulta</strong>.
+						When you use the AI assistant, the content of your documents is sent to the provider you have configured (OpenRouter or Perplexity) <strong class="font-medium text-ink dark:text-dark-ink">only to process your query</strong>.
 					</p>
 					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Ninguno de estos proveedores usa los datos enviados vía API para entrenar sus modelos. Tu investigación no sale de la consulta.
+						None of these providers use data sent via API to train their models. Your research stays within the query.
 					</p>
 					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Puedes revisar las políticas de privacidad en
+						You can review the privacy policies at
 						<a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">OpenRouter</a>
 						y
 						<a href="https://www.perplexity.ai/hub/legal/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">Perplexity</a>.
@@ -489,3 +514,12 @@
 		</div>
 	</div>
 {/if}
+
+<SafeDeleteDialog
+	open={!!convToDelete}
+	label="this conversation"
+	warning="All messages in this conversation will be permanently deleted."
+	deleting={deletingConv}
+	onconfirm={confirmDeleteConversation}
+	oncancel={() => (convToDelete = null)}
+/>

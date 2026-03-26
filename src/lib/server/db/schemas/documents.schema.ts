@@ -8,7 +8,9 @@ export const documentTypeEnum = scholioSchema.enum('document_type', [
 	'notes',
 	'outline',
 	'bibliography',
-	'supplementary'
+	'supplementary',
+	'book',
+	'chapter'
 ]);
 
 export const document = scholioSchema.table(

@@ -8,6 +8,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import { processWikilinks } from '$lib/utils/wikilinks';
+	import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
 
 	let {
 		content = '',
@@ -78,7 +79,7 @@
 			try {
 				plots.set(id, JSON.parse(json.trim()));
 			} catch {
-				plots.set(id, { error: 'JSON inválido en bloque vega-lite' });
+				plots.set(id, { error: 'Invalid JSON in vega-lite block' });
 			}
 			return `<div data-vega-id="${id}"></div>`;
 		});
@@ -95,14 +96,16 @@
 		wikilinkMap: Map<string, { id: string; projectId: string }>
 	): { html: string; plots: Map<string, object> } {
 		const { processed: withPlaceholders, plots } = extractPlots(src);
-		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withPlaceholders);
+		const { processed: withEpigraphPlaceholders, epigraphs } = extractEpigraphsForProcessing(withPlaceholders);
+		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withEpigraphPlaceholders);
 		const withWikilinks = wikilinkMap.size > 0 ? processWikilinks(withMathPlaceholders, wikilinkMap) : withMathPlaceholders;
 		const withCitations = refs.size > 0 ? processCitations(withWikilinks, refs, style) : withWikilinks;
 		const rawHtml = marked.parse(withCitations) as string;
 		const restored = restoreMath(rawHtml, mathBlocks);
+		const withEpigraphs = restoreEpigraphs(restored, epigraphs);
 		const html = typeof DOMPurify.sanitize === 'function'
-			? DOMPurify.sanitize(restored, { ADD_TAGS: ['math'], ADD_ATTR: ['data-vega-id'] })
-			: restored;
+			? DOMPurify.sanitize(withEpigraphs, { ADD_TAGS: ['math', 'figure', 'figcaption'], ADD_ATTR: ['data-vega-id'] })
+			: withEpigraphs;
 		return { html, plots };
 	}
 
@@ -120,7 +123,7 @@
 			const { url } = await trpc.datasets.resolveRef.query({ projectId, filename });
 			return { ...spec, data: { url } };
 		} catch {
-			return { ...spec, data: { values: [], __error: `Dataset "${filename}" no encontrado` } };
+			return { ...spec, data: { values: [], __error: `Dataset "${filename}" not found` } };
 		}
 	}
 
@@ -150,7 +153,7 @@
 					config: { background: 'transparent', font: '"Source Serif 4", Georgia, serif' }
 				});
 			} catch (e) {
-				el.textContent = `Error al renderizar gráfico: ${e}`;
+				el.textContent = `Error rendering plot: ${e}`;
 			}
 		}
 	}
@@ -244,5 +247,40 @@
 
 	.prose :global(a[data-footnote-backref]:hover) {
 		color: var(--color-accent, #7c5c3e);
+	}
+
+	/* Epigraphs */
+	.prose :global(.epigraph-block) {
+		margin: 2rem 0;
+		padding: 1.5rem;
+		border-left: 4px solid var(--color-accent, #7c5c3e);
+		background: var(--color-paper-ui, #ede8df);
+		font-style: italic;
+	}
+
+	.prose :global(.epigraph-block blockquote) {
+		margin: 0;
+		padding: 0;
+	}
+
+	.prose :global(.epigraph-block blockquote p) {
+		margin: 0 0 0.5rem 0;
+	}
+
+	.prose :global(.epigraph-block figcaption) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		font-size: 0.9rem;
+		font-style: normal;
+		color: var(--color-ink-muted, #7a6a58);
+	}
+
+	.prose :global(.epigraph-author) {
+		font-weight: 500;
+	}
+
+	.prose :global(.epigraph-source) {
+		font-size: 0.85rem;
 	}
 </style>
