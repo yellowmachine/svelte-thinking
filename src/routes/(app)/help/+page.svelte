@@ -1,3 +1,7 @@
+<script lang="ts">
+	import Callout from '$lib/components/ui/Callout.svelte';
+</script>
+
 <div class="mx-auto max-w-3xl px-6 py-10">
 
 	<!-- About Scholio -->
@@ -93,9 +97,7 @@
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Multiple citations separated by semicolons</p>
 			</div>
 		</div>
-		<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			Use the <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[@cite]</code> button in the editor toolbar to search and insert references without typing the key manually. The bibliography is generated automatically at the end of the document in the selected style (APA 7, IEEE or Vancouver).
-		</p>
+		<Callout>Use the <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[@cite]</code> button in the editor toolbar to search and insert references without typing the key manually. The bibliography is generated automatically at the end of the document in the selected style (APA 7, IEEE or Vancouver).</Callout>
 	</section>
 
 	<!-- ── Mathematics ───────────────────────────────────────────────────────── -->
@@ -107,11 +109,11 @@
 		<div class="space-y-3">
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">The formula <span class="text-accent">$E = mc^2$</span> describes...</p>
-				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Mathematics <strong>inline</strong> — entre el texto, delimitadas con <code class="font-mono">$...$</code></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Mathematics <strong>inline</strong> — within the text, delimited with <code class="font-mono">$...$</code></p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">$$</span><br />H = -\sum_&#123;i&#125; p_i \log p_i<br /><span class="text-accent">$$</span></p>
-				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Mathematics en <strong>bloque</strong> — centradas, delimitadas con <code class="font-mono">$$...$$</code></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Mathematics <strong>block</strong> — centered, delimited with <code class="font-mono">$$...$$</code></p>
 			</div>
 		</div>
 	</section>
@@ -120,7 +122,7 @@
 	<section class="mb-10">
 		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Formal logic</h2>
 		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Use LaTeX syntax with KaTeX for standard logical notation, inline with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">$...$</code> o en bloque con <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">$$...$$</code>.
+			Use LaTeX syntax with KaTeX for standard logical notation, inline with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">$...$</code> or block with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">$$...$$</code>.
 		</p>
 		<div class="overflow-hidden rounded-xl border border-paper-border dark:border-dark-paper-border">
 			<table class="w-full font-sans text-sm">
@@ -217,9 +219,7 @@
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Link to a <strong>public document from another user</strong>. The hash is the first 8 characters of the document ID — copy it from the external context picker using the <code class="font-mono">[[·]]</code> button.</p>
 			</div>
 		</div>
-		<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			Backlinks (documents that mention you) appear in the "Mentioned in" panel of the editor. The link index is updated on <strong>commit</strong>, not on draft save.
-		</p>
+		<Callout>Backlinks (documents that mention you) appear in the "Mentioned in" panel of the editor. The link index is updated on <strong>commit</strong>, not on draft save.</Callout>
 	</section>
 
 	<!-- ── Footnotes ──────────────────────────────────────────────────────── -->
@@ -230,7 +230,7 @@
 		</p>
 		<div class="space-y-3">
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-mono text-sm text-ink dark:text-dark-ink">The theory was proposed by Kuhn<span class="text-accent">[^1]</span> y expandida posteriormente<span class="text-accent">[^kuhn]</span>.</p>
+				<p class="font-mono text-sm text-ink dark:text-dark-ink">The theory was proposed by Kuhn<span class="text-accent">[^1]</span> and later expanded<span class="text-accent">[^kuhn]</span>.</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Mark in the text — the key can be a number or a word. Renders as a numbered superscript.</p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
@@ -241,9 +241,7 @@
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Note definition — can go anywhere in the document, usually at the end.</p>
 			</div>
 		</div>
-		<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			Footnotes and bibliographic citations <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[@key]</code> are complementary: use citations for formal references that appear in the bibliography, and footnotes for clarifications, comments or informal references.
-		</p>
+		<Callout>Footnotes and bibliographic citations <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[@key]</code> are complementary: use citations for formal references that appear in the bibliography, and footnotes for clarifications, comments or informal references.</Callout>
 	</section>
 
 	<!-- ── Gráficos ──────────────────────────────────────────────────────────── -->
@@ -265,9 +263,7 @@
 &#125;
 ```</code></pre>
 		</div>
-		<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			<code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">"$ref": "dataset:name"</code> references a dataset uploaded to the project (<strong>/datasets</strong> section). You can also put the data directly in the <code class="font-mono">"data"</code> field.
-		</p>
+		<Callout><code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">"$ref": "dataset:name"</code> references a dataset uploaded to the project (<strong>/datasets</strong> section). You can also put the data directly in the <code class="font-mono">"data"</code> field.</Callout>
 	</section>
 
 	<!-- ── Export ──────────────────────────────────────────────────────────── -->
