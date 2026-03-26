@@ -4,8 +4,8 @@
 	let {
 		oldText,
 		newText,
-		oldLabel = 'Versión anterior',
-		newLabel = 'Versión actual'
+		oldLabel = 'Previous version',
+		newLabel = 'Current version'
 	}: {
 		oldText: string;
 		newText: string;
@@ -61,7 +61,7 @@
 <div class="w-full overflow-hidden rounded-lg border border-paper-border font-sans text-sm dark:border-dark-paper-border">
 	{#if !hasChanges}
 		<div class="flex items-center justify-center px-6 py-8 text-ink-muted dark:text-dark-ink-muted">
-			Sin cambios entre las versiones seleccionadas.
+			No changes between selected versions.
 		</div>
 	{:else}
 		<!-- Header -->

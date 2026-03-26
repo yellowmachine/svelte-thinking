@@ -1012,7 +1012,7 @@
 					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Loading…</p>
 				{:else if availableByProject().length === 0}
 					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						{availableDocs.length === 0 ? 'No tienes documentos en otros proyectos' : 'Todos los documentos ya están añadidos'}
+						{availableDocs.length === 0 ? 'No documents in other projects' : 'All documents already added'}
 					</p>
 				{:else}
 					{#each availableByProject() as group (group.id)}
@@ -1026,7 +1026,7 @@
 									>
 										<span class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink">{doc.title}</span>
 										{#if doc.isPublic && doc.projectTitle === null}
-											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" class="shrink-0 text-green-500" aria-label="Público">
+											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" class="shrink-0 text-green-500" aria-label="Public">
 												<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
 												<path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
 											</svg>
@@ -1036,7 +1036,7 @@
 									{#if doc.isPublic && doc.projectTitle === null}
 										<button
 											onclick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`[[${doc.title}:${doc.id.slice(0, 8)}]]`); }}
-											title="Copiar sintaxis de wikilink"
+											title="Copy wikilink syntax"
 											class="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-ink-faint transition-colors hover:bg-paper-border hover:text-accent dark:text-dark-ink-faint dark:hover:bg-dark-paper-border"
 										>[[·]]</button>
 									{/if}

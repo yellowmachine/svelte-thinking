@@ -20,11 +20,11 @@
 	} = $props();
 
 	const statusLabel: Record<Status, string> = {
-		draft: 'Borrador',
-		active: 'Activo',
-		review: 'En revisión',
-		published: 'Publicado',
-		archived: 'Archivado'
+		draft: 'Draft',
+		active: 'Active',
+		review: 'In review',
+		published: 'Published',
+		archived: 'Archived'
 	};
 
 	const statusStyle: Record<Status, string> = {
@@ -83,12 +83,12 @@
 				/>
 			</svg>
 			{collaboratorCount}
-			{collaboratorCount === 1 ? 'colaborador' : 'colaboradores'}
+			{collaboratorCount === 1 ? 'collaborator' : 'collaborators'}
 		</span>
 
 		{#if formattedDate}
 			<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Actualizado {formattedDate}
+				Updated {formattedDate}
 			</span>
 		{/if}
 

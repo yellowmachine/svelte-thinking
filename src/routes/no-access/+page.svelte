@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-	<title>Acceso pendiente — Scholio</title>
+	<title>Access pending — Scholio</title>
 </svelte:head>
 
 <main class="flex min-h-screen items-center justify-center bg-paper px-6 dark:bg-dark-paper">
@@ -17,19 +17,19 @@
 		{#if form?.ok}
 			<div class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper">
 				<h1 class="mb-3 font-serif text-xl font-semibold text-ink dark:text-dark-ink">
-					Solicitud enviada
+					Request submitted
 				</h1>
 				<p class="font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-					Te avisaremos en cuanto tu acceso a la plataforma de escritura académica esté listo.
+					We will notify you as soon as your access to the academic writing platform is ready.
 				</p>
 			</div>
 		{:else}
 			<div class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper">
 				<h1 class="mb-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink">
-					Tu cuenta no tiene acceso a Scholio todavía
+					Your account does not have access to Scholio yet
 				</h1>
 				<p class="mb-6 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-					Scholio está en beta cerrada. Si quieres acceder a la plataforma de escritura académica, solicita tu plaza y te avisaremos cuando esté lista.
+					Scholio is in closed beta. If you want access to the academic writing platform, request a spot and we will notify you when it is ready.
 				</p>
 
 				{#if form?.message}
@@ -74,7 +74,7 @@
 
 			<form method="post" action="/logout" class="mt-4 text-center">
 				<button type="submit" class="font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
-					Cerrar sesión
+					Sign out
 				</button>
 			</form>
 		{/if}

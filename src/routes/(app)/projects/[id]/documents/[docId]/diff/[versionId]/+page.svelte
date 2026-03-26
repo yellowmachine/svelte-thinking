@@ -16,7 +16,7 @@
 				onclick={() => history.back()}
 				class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 			>
-				← Volver
+				← Back
 			</button>
 			<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
 			<h1 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
@@ -32,7 +32,7 @@
 		<DiffViewer
 			oldText={data.previous?.content ?? ''}
 			newText={data.current.content}
-			oldLabel={data.previous ? `v${data.previous.versionNumber}` : '(vacío)'}
+			oldLabel={data.previous ? `v${data.previous.versionNumber}` : '(empty)'}
 			newLabel="v{data.current.versionNumber}"
 		/>
 	</div>

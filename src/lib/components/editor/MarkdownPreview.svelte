@@ -79,7 +79,7 @@
 			try {
 				plots.set(id, JSON.parse(json.trim()));
 			} catch {
-				plots.set(id, { error: 'JSON inválido en bloque vega-lite' });
+				plots.set(id, { error: 'Invalid JSON in vega-lite block' });
 			}
 			return `<div data-vega-id="${id}"></div>`;
 		});
@@ -123,7 +123,7 @@
 			const { url } = await trpc.datasets.resolveRef.query({ projectId, filename });
 			return { ...spec, data: { url } };
 		} catch {
-			return { ...spec, data: { values: [], __error: `Dataset "${filename}" no encontrado` } };
+			return { ...spec, data: { values: [], __error: `Dataset "${filename}" not found` } };
 		}
 	}
 
@@ -153,7 +153,7 @@
 					config: { background: 'transparent', font: '"Source Serif 4", Georgia, serif' }
 				});
 			} catch (e) {
-				el.textContent = `Error al renderizar gráfico: ${e}`;
+				el.textContent = `Error rendering plot: ${e}`;
 			}
 		}
 	}

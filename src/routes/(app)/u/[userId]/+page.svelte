@@ -6,10 +6,10 @@
 	const roleValues = ['author', 'coauthor', 'reviewer', 'commenter'] as const;
 	type Role = (typeof roleValues)[number];
 	const roleLabel: Record<Role, string> = {
-		author: 'Autor',
-		coauthor: 'Coautor',
-		reviewer: 'Revisor',
-		commenter: 'Comentarista'
+		author: 'Author',
+		coauthor: 'Co-author',
+		reviewer: 'Reviewer',
+		commenter: 'Commenter'
 	};
 	const roleColor: Record<Role, string> = {
 		author: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
@@ -53,10 +53,10 @@
 				userId: data.profile.userId,
 				role: inviteRole
 			});
-			inviteSuccess = 'Invitación enviada.';
+			inviteSuccess = 'Invitation sent.';
 			inviting = false;
 		} catch (e) {
-			inviteError = e instanceof Error ? e.message : 'Error al enviar la invitación';
+			inviteError = e instanceof Error ? e.message : 'Error sending invitation';
 		} finally {
 			sendingInvite = false;
 		}
@@ -94,15 +94,15 @@
 	);
 
 	function formatLastActive(date: Date | string | null): string {
-		if (!date) return 'Sin actividad registrada';
+		if (!date) return 'No activity recorded';
 		const d = new Date(date);
 		const now = new Date();
 		const days = Math.floor((now.getTime() - d.getTime()) / 86400000);
-		if (days === 0) return 'Hoy';
-		if (days === 1) return 'Ayer';
-		if (days < 30) return `Hace ${days} días`;
-		if (days < 365) return `Hace ${Math.floor(days / 30)} meses`;
-		return `Hace ${Math.floor(days / 365)} años`;
+		if (days === 0) return 'Today';
+		if (days === 1) return 'Yesterday';
+		if (days < 30) return `${days} days ago`;
+		if (days < 365) return `${Math.floor(days / 30)} months ago`;
+		return `${Math.floor(days / 365)} years ago`;
 	}
 </script>
 
@@ -136,7 +136,7 @@
 					</a>
 					{#if data.profile.orcidVerified}
 						<span
-							title="Identidad verificada con ORCID"
+							title="Identity verified with ORCID"
 							class="inline-flex items-center gap-0.5 rounded-full bg-green-100 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400"
 						>
 							<svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -157,7 +157,7 @@
 	{#if data.reputation.projectsTotal > 0 || data.reputation.totalCommits > 0}
 		<section class="mt-8">
 			<h2 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
-				Historial de colaboración
+				Collaboration history
 			</h2>
 
 			<!-- Stats row -->
@@ -167,14 +167,14 @@
 						{data.reputation.projectsTotal}
 					</p>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						{data.reputation.projectsTotal === 1 ? 'proyecto' : 'proyectos'}
+						{data.reputation.projectsTotal === 1 ? 'project' : 'projects'}
 					</p>
 				</div>
 				<div class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper">
 					<p class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
 						{data.reputation.projectsCompleted}
 					</p>
-					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">completados</p>
+					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">completed</p>
 				</div>
 				<div class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper">
 					<p class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
@@ -184,7 +184,7 @@
 				</div>
 			</div>
 
-			<!-- Roles trabajados -->
+			<!-- Roles worked -->
 			{#if data.reputation.rolesWorked.length > 0}
 				<div class="mt-3 flex flex-wrap gap-2">
 					{#each data.reputation.rolesWorked as role (role)}
@@ -197,13 +197,13 @@
 
 			<!-- Última actividad -->
 			<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Última actividad: {formatLastActive(data.reputation.lastActiveAt)}
+				Last activity: {formatLastActive(data.reputation.lastActiveAt)}
 			</p>
 		</section>
 	{:else if !data.isOwnProfile}
 		<section class="mt-8">
 			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Sin historial de colaboración en la plataforma todavía.
+				No collaboration history on the platform yet.
 			</p>
 		</section>
 	{/if}
@@ -212,7 +212,7 @@
 	{#if data.ownedSearchableProjects.length > 0}
 		<section class="mt-8">
 			<h2 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
-				Proyectos abiertos
+				Open projects
 			</h2>
 			<ul class="flex flex-col gap-3">
 				{#each data.ownedSearchableProjects as proj (proj.id)}
@@ -236,7 +236,7 @@
 									? 'border-accent bg-accent/10 text-accent'
 									: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted'}"
 							>
-								{pinning === proj.id ? '…' : pinnedSet.has(proj.id) ? '★ Fijado' : '☆ Fijar'}
+								{pinning === proj.id ? '…' : pinnedSet.has(proj.id) ? '★ Saved' : '☆ Save'}
 							</button>
 						{/if}
 					</li>
@@ -248,11 +248,11 @@
 		</section>
 	{/if}
 
-	<!-- Invitar a colaborar (solo si no es el propio perfil) -->
+	<!-- Invite to collaborate (solo si no es el propio perfil) -->
 	{#if !data.isOwnProfile}
 		<section class="mt-8">
 			<h2 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
-				Invitar a colaborar
+				Invite to collaborate
 			</h2>
 
 			{#if inviteSuccess}
@@ -262,7 +262,7 @@
 					onclick={startInviting}
 					class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
-					Invitar a uno de mis proyectos
+					Invite to one of my projects
 				</button>
 			{:else if loadingProjects}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando proyectos…</p>
@@ -312,7 +312,7 @@
 							disabled={sendingInvite}
 							class="rounded-lg bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 						>
-							{sendingInvite ? 'Enviando…' : 'Enviar invitación'}
+							{sendingInvite ? 'Sending…' : 'Send invitation'}
 						</button>
 						<button
 							onclick={() => { inviting = false; inviteError = ''; }}

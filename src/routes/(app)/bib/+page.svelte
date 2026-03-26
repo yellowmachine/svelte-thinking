@@ -50,28 +50,28 @@
 
 	function typeLabel(type: string): string {
 		const labels: Record<string, string> = {
-			article: 'Artículo',
+			article: 'Article',
 			book: 'Libro',
 			inproceedings: 'Conferencia',
-			incollection: 'Capítulo',
+			incollection: 'Chapter',
 			phdthesis: 'Tesis doctoral',
-			mastersthesis: 'Tesis de máster',
-			techreport: 'Informe técnico',
-			misc: 'Miscelánea'
+			mastersthesis: 'Master\'s thesis',
+			techreport: 'Technical report',
+			misc: 'Miscellaneous'
 		};
 		return labels[type] ?? type;
 	}
 </script>
 
 <svelte:head>
-	<title>Bibliografía global · Scholio</title>
+	<title>Global bibliography · Scholio</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl px-6 py-8">
 	<div class="mb-6 flex items-start justify-between gap-4">
 		<div>
 			<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
-				Bibliografía global
+				Global bibliography
 			</h1>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				{data.references.length} referencia{data.references.length !== 1 ? 's' : ''} en todos tus proyectos
@@ -84,7 +84,7 @@
 		<input
 			type="search"
 			bind:value={query}
-			placeholder="Buscar por título, autor, clave, proyecto…"
+			placeholder="Search by title, author, key, project…"
 			class="w-full rounded-lg border border-paper-border bg-paper px-4 py-2.5 font-sans text-sm text-ink placeholder-ink-faint outline-none focus:border-accent focus:ring-1 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint dark:focus:border-accent"
 		/>
 	</div>
@@ -92,8 +92,8 @@
 	{#if data.references.length === 0}
 		<div class="rounded-lg border border-paper-border bg-paper p-8 text-center dark:border-dark-paper-border dark:bg-dark-paper">
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Aún no tienes referencias. Añádelas desde la sección
-				<strong>Bibliografía</strong> de cada proyecto.
+				No references yet. Add them from the
+				<strong>Bibliography</strong> section of each project.
 			</p>
 		</div>
 	{:else if filtered.length === 0}

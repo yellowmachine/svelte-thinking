@@ -19,10 +19,10 @@
 					Blog
 				</a>
 				<a href="/login" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
-					Iniciar sesión
+					Sign in
 				</a>
 				<a href="/#waitlist" class="rounded-lg bg-accent px-4 py-1.5 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90">
-					Acceso beta
+					Beta access
 				</a>
 			</div>
 		</div>
@@ -41,7 +41,7 @@
 					Miguel Ángel Alarcos Torrecillas
 				</h1>
 				<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Ingeniero Técnico en Informática de Sistemas · Almería, Andalucía
+					Computer Systems Engineer · Almería, Andalucía
 				</p>
 				<div class="mt-3 flex items-center gap-4">
 					<a
@@ -71,31 +71,31 @@
 
 		<!-- Sobre el proyecto -->
 		<section class="space-y-6 border-t border-paper-border pt-10 dark:border-dark-paper-border">
-			<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Por qué existe Scholio</h2>
+			<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Why Scholio exists</h2>
 			<p class="font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				Scholio nació de una necesidad concreta: quería una herramienta que me ayudara en mis propias investigaciones, que entendiera el contexto de mis documentos, que manejara citas con rigor y que no me obligara a cambiar de aplicación cada vez que necesitaba consultar algo o redactar un borrador.
+				Scholio was born from a concrete need: I wanted a tool that would help me in my own research, that understood the context of my documents, handled citations rigorously, and didn't force me to switch applications every time I needed to look something up or draft a paragraph.
 			</p>
 			<p class="font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				No encontré esa herramienta, así que la construí. Scholio es el entorno que me habría gustado tener desde el principio: editor Markdown, gestión bibliográfica, control de versiones de documentos, colaboración con roles y un asistente de IA que conoce tu proyecto — no un chatbot genérico, sino un agente que trabaja sobre tus propios textos y referencias.
+				I didn't find that tool, so I built it. Scholio is the environment I wish I had from the start: Markdown editor, bibliography management, document version control, role-based collaboration, and an AI assistant that knows your project — not a generic chatbot, but an agent that works with your own texts and references.
 			</p>
 			<p class="font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				Soy el único desarrollador. Eso significa que cada decisión de diseño y cada línea de código responden a un criterio claro: si no me sirve a mí como investigador, no entra en el producto.
+				I am the sole developer. That means every design decision and every line of code answers to a clear criterion: if it doesn't serve me as a researcher, it doesn't go into the product.
 			</p>
 		</section>
 
-		<!-- Transparencia -->
+		<!-- Transparency -->
 		<section class="mt-10 space-y-4 rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-			<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Transparencia</h2>
+			<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Transparency</h2>
 			<ul class="space-y-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				<li>· Scholio está en <strong class="text-ink dark:text-dark-ink">beta cerrada</strong>. El acceso es por invitación mientras estabilizo la plataforma.</li>
-				<li>· Tus datos y documentos <strong class="text-ink dark:text-dark-ink">no se usan para entrenar modelos de IA</strong>. La integración con proveedores externos (OpenRouter, Perplexity) se rige por sus propias políticas, que puedes consultar en los ajustes.</li>
-				<li>· El proyecto es <strong class="text-ink dark:text-dark-ink">independiente</strong>, sin inversores ni agenda de monetización agresiva.</li>
+				<li>· Scholio is in <strong class="text-ink dark:text-dark-ink">closed beta</strong>. Access is by invitation while I stabilize the platform.</li>
+				<li>· Your data and documents <strong class="text-ink dark:text-dark-ink">are not used to train AI models</strong>. Integration with external providers (OpenRouter, Perplexity) is governed by their own policies, which you can review in settings.</li>
+				<li>· The project is <strong class="text-ink dark:text-dark-ink">independent</strong>, with no investors and no aggressive monetization agenda.</li>
 			</ul>
 		</section>
 
 		<div class="mt-12 text-center">
 			<a href="/#waitlist" class="rounded-lg bg-accent px-6 py-3 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90">
-				Solicitar acceso beta
+				Request beta access
 			</a>
 		</div>
 	</main>
@@ -103,7 +103,7 @@
 	<!-- ── Footer ────────────────────────────────────────────────────────────── -->
 	<footer class="border-t border-paper-border py-8 dark:border-dark-paper-border">
 		<div class="mx-auto max-w-5xl px-6 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			© 2025 Scholio · <a href="/conduct" class="hover:text-ink-muted dark:hover:text-dark-ink-muted">Código de conducta</a>
+			© 2025 Scholio · <a href="/conduct" class="hover:text-ink-muted dark:hover:text-dark-ink-muted">Code of conduct</a>
 		</div>
 	</footer>
 
