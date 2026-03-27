@@ -699,7 +699,8 @@
 							<input id="ref-title" type="text" bind:value={form.title} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 						</div>
 
-						<!-- Authors -->
+						<!-- Authors (hidden for CCC — no personal author) -->
+						{#if !(form.type === 'magisterial' && form.extra.doctype === 'catechism')}
 						<div>
 							<div class="mb-1 flex items-center justify-between">
 								<span class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Autores</span>
@@ -730,6 +731,7 @@
 								{/each}
 							</div>
 						</div>
+						{/if}
 
 						<!-- Year + Cite key -->
 						<div class="grid grid-cols-2 gap-2">
@@ -808,16 +810,7 @@
 								<input id="ref-repnum" type="text" bind:value={form.reportNumber} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 							</div>
 						{:else if form.type === 'magisterial'}
-							<div class="grid grid-cols-2 gap-2">
-								<div>
-									<label for="ref-siglum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Siglum</label>
-									<input id="ref-siglum" type="text" placeholder="GS, LG, EG, CCC…" bind:value={form.extra.siglum} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
-								</div>
-								<div>
-									<label for="ref-paragraph" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Paragraph §</label>
-									<input id="ref-paragraph" type="text" placeholder="45" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
-								</div>
-							</div>
+							<!-- Document type selector — comes first so the rest of the form adapts -->
 							<div>
 								<label for="ref-doctype" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Document type</label>
 								<select id="ref-doctype" bind:value={form.extra.doctype} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
@@ -833,6 +826,69 @@
 									<option value="other">Other</option>
 								</select>
 							</div>
+
+							{#if form.extra.doctype === 'catechism'}
+								<!-- CCC: fixed document, no personal author, cite by paragraph -->
+								<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+									Use <strong>Catechism of the Catholic Church</strong> as the title. No author needed.
+								</p>
+								<div>
+									<label for="ref-paragraph" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Paragraph §</label>
+									<input id="ref-paragraph" type="text" placeholder="1234" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+
+							{:else if form.extra.doctype === 'canon_law'}
+								<!-- Canon Law: CIC 1983 or CCEO, canon number -->
+								<div class="grid grid-cols-2 gap-2">
+									<div>
+										<label for="ref-canon-code" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Code</label>
+										<select id="ref-canon-code" bind:value={form.extra.canon_code} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+											<option value="CIC1983">CIC 1983</option>
+											<option value="CCEO">CCEO</option>
+										</select>
+									</div>
+									<div>
+										<label for="ref-canon" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Canon c.</label>
+										<input id="ref-canon" type="text" placeholder="1024" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									</div>
+								</div>
+
+							{:else if form.extra.doctype === 'conciliar_constitution' || form.extra.doctype === 'conciliar_decree' || form.extra.doctype === 'conciliar_declaration'}
+								<!-- Conciliar: Latin title + siglum + paragraph -->
+								<div class="grid grid-cols-2 gap-2">
+									<div>
+										<label for="ref-latin-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Latin title</label>
+										<input id="ref-latin-title" type="text" placeholder="Gaudium et Spes" bind:value={form.extra.latin_title} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-serif text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									</div>
+									<div>
+										<label for="ref-siglum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Siglum</label>
+										<input id="ref-siglum" type="text" placeholder="GS" bind:value={form.extra.siglum} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									</div>
+								</div>
+								<div>
+									<label for="ref-paragraph" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Paragraph §</label>
+									<input id="ref-paragraph" type="text" placeholder="45" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+
+							{:else}
+								<!-- Papal (encyclical, exhortation, etc.) and generic -->
+								{#if form.extra.doctype === 'encyclical' || form.extra.doctype === 'apostolic_exhortation' || form.extra.doctype === 'apostolic_constitution'}
+									<div>
+										<label for="ref-pope" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Pope</label>
+										<input id="ref-pope" type="text" placeholder="Francis, John Paul II…" bind:value={form.extra.pope} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									</div>
+								{/if}
+								<div class="grid grid-cols-2 gap-2">
+									<div>
+										<label for="ref-siglum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Siglum</label>
+										<input id="ref-siglum" type="text" placeholder="EG, LS, GS…" bind:value={form.extra.siglum} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									</div>
+									<div>
+										<label for="ref-paragraph" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Paragraph §</label>
+										<input id="ref-paragraph" type="text" placeholder="45" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									</div>
+								</div>
+							{/if}
 						{:else if form.type === 'patristic'}
 							<div>
 								<label for="ref-section" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Section (book.chapter.§)</label>
@@ -890,10 +946,10 @@
 							</div>
 						{:else if form.type === 'biblical'}
 							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
-								Use <strong>Title</strong> for the full name of the Bible translation (e.g. <em>The Holy Bible, New Revised Standard Version</em>).
+								Use <strong>Title</strong> for the full name of the translation (e.g. <em>The Holy Bible, New Revised Standard Version</em>). Biblical citations appear as inline parentheticals — usually not in the bibliography.
 							</p>
 							<div>
-								<label for="ref-translation" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Translation abbreviation</label>
+								<label for="ref-translation" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Translation</label>
 								<select id="ref-translation" bind:value={form.extra.translation} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
 									<option value="">— select —</option>
 									<option value="RSV">RSV (Revised Standard Version)</option>
@@ -907,6 +963,21 @@
 									<option value="Vg">Vg (Vulgata)</option>
 									<option value="BHS">BHS (Biblia Hebraica Stuttgartensia)</option>
 								</select>
+							</div>
+							<!-- Book / chapter / verse for inline citation (Jn 1:1 NRSV) -->
+							<div class="grid grid-cols-4 gap-2">
+								<div class="col-span-2">
+									<label for="ref-bib-book" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Book</label>
+									<input id="ref-bib-book" type="text" placeholder="Jn, Rom, Gen…" bind:value={form.extra.book} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+								<div>
+									<label for="ref-bib-chapter" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Chapter</label>
+									<input id="ref-bib-chapter" type="text" placeholder="1" bind:value={form.extra.chapter} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+								<div>
+									<label for="ref-bib-verse" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Verse(s)</label>
+									<input id="ref-bib-verse" type="text" placeholder="1–3" bind:value={form.extra.verse} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
 							</div>
 							<div class="flex items-center gap-2">
 								<input id="ref-deutero" type="checkbox" checked={form.extra.deuterocanonical === 'true'} onchange={(e) => { form.extra.deuterocanonical = (e.currentTarget as HTMLInputElement).checked ? 'true' : ''; }} class="h-4 w-4 rounded border-paper-border accent-accent" />

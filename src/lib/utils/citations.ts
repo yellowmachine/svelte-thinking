@@ -360,10 +360,31 @@ function chicagoNote(ref: CiteRef): string {
 			return `${authors}, "${ref.title}"${inst}${num}, ${year}.`;
 		}
 		case 'magisterial': {
+			const doctype = ref.extra?.doctype ?? '';
+			// CCC — no author, no year, cite by paragraph
+			if (doctype === 'catechism') {
+				const para = ref.extra?.paragraph ? `, §${ref.extra.paragraph}` : '';
+				return `*Catechism of the Catholic Church*${para}.`;
+			}
+			// Canon Law — code + canon number
+			if (doctype === 'canon_law') {
+				const code = ref.extra?.canon_code === 'CCEO' ? 'CCEO' : '1983 CIC';
+				const canon = ref.extra?.paragraph ? `, c. ${ref.extra.paragraph}` : '';
+				return `${code}${canon}.`;
+			}
+			// Conciliar — Latin title in footnote
+			if (doctype === 'conciliar_constitution' || doctype === 'conciliar_decree' || doctype === 'conciliar_declaration') {
+				const latTitle = ref.extra?.latin_title || ref.title;
+				const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
+				const para = ref.extra?.paragraph ? `, §${ref.extra.paragraph}` : '';
+				return `*${latTitle}*${siglum}${para}.`;
+			}
+			// Papal + generic — include pope name if available
+			const pope = ref.extra?.pope ? ` (Pope ${ref.extra.pope})` : '';
 			const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
 			const paragraph = ref.extra?.paragraph ? `, §${ref.extra.paragraph}` : '';
 			const url = ref.url ? `, ${ref.url}` : '';
-			const auth = authors ? `${authors}, ` : '';
+			const auth = authors ? `${authors}${pope}, ` : '';
 			return `${auth}*${ref.title}*${siglum} (${year})${paragraph}${url}.`;
 		}
 		case 'patristic': {
@@ -384,8 +405,18 @@ function chicagoNote(ref: CiteRef): string {
 			return `${authors}, *${ref.title}*${part}${q}${a}${sub}.`;
 		}
 		case 'biblical': {
-			const trans = ref.extra?.translation ? ` (${ref.extra.translation})` : '';
-			return `*${ref.title}*${trans}.`;
+			// Prefer inline parenthetical (Jn 1:1 NRSV) if book/chapter/verse are set
+			const book = ref.extra?.book;
+			const chapter = ref.extra?.chapter;
+			const verse = ref.extra?.verse;
+			const trans = ref.extra?.translation;
+			if (book && chapter) {
+				const passage = verse ? `${chapter}:${verse}` : chapter;
+				const t = trans ? ` ${trans}` : '';
+				return `(${book} ${passage}${t})`;
+			}
+			const transStr = trans ? ` (${trans})` : '';
+			return `*${ref.title}*${transStr}.`;
 		}
 		case 'classical': {
 			const passage = ref.extra?.passage ? ` ${ref.extra.passage}` : '';
@@ -455,6 +486,19 @@ function chicagoBib(ref: CiteRef): string {
 			return `${authors}. *${ref.title}*.${inst}${num} ${year}.`;
 		}
 		case 'magisterial': {
+			const doctype = ref.extra?.doctype ?? '';
+			if (doctype === 'catechism') {
+				return `*Catechism of the Catholic Church*. ${year}.`;
+			}
+			if (doctype === 'canon_law') {
+				const code = ref.extra?.canon_code === 'CCEO' ? 'CCEO' : '1983 CIC';
+				return `*${ref.title}* [${code}]. ${year}.`;
+			}
+			if (doctype === 'conciliar_constitution' || doctype === 'conciliar_decree' || doctype === 'conciliar_declaration') {
+				const latTitle = ref.extra?.latin_title || ref.title;
+				const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
+				return `*${latTitle}*${siglum}. ${year}.`;
+			}
 			const url = ref.url ? ` ${ref.url}.` : '';
 			const auth = authors ? `${authors}. ` : '';
 			return `${auth}*${ref.title}*. ${year}.${url}`;
