@@ -20,7 +20,7 @@
 </script>
 
 <nav
-	class="sticky top-0 z-10 border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+	class="sticky top-0 z-30 border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 >
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
 		<a

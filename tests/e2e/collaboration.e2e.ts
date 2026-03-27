@@ -11,21 +11,11 @@ const SECRET_FILE = join(import.meta.dirname, '.totp-secret');
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function loginAsCollaborator(page: Page) {
-	// Use API login for reliability — browser form submission has timing issues in later Flujos
-	const cookieStr = await loginViaApiNo2FA(COLLABORATOR_USER.email, COLLABORATOR_USER.password);
-	const cookies = cookieStr
-		.split('; ')
-		.filter(Boolean)
-		.map((pair) => {
-			const eqIdx = pair.indexOf('=');
-			return {
-				name: pair.substring(0, eqIdx),
-				value: pair.substring(eqIdx + 1),
-				domain: 'localhost',
-				path: '/'
-			};
-		});
-	await page.context().addCookies(cookies);
+	// Use page.request so Set-Cookie headers are applied directly to the browser context
+	const res = await page.request.post('/api/auth/sign-in/email', {
+		data: { email: COLLABORATOR_USER.email, password: COLLABORATOR_USER.password }
+	});
+	if (!res.ok()) throw new Error(`Collab login failed: ${res.status()}`);
 	await page.goto('/projects');
 	await page.waitForURL('/projects');
 }
@@ -132,14 +122,9 @@ test.describe('Flujo 1 — Registro e invitación colaborativa', () => {
 		const page = await collabContext.newPage();
 		// Reusar sesión del contexto (ya logueado en el test anterior)
 		await page.goto('/network');
+		await page.waitForLoadState('networkidle');
 
-		await Promise.all([
-			page.waitForResponse(
-				(resp) =>
-					resp.url().includes('/api/trpc/invitations.accept') && resp.status() === 200
-			),
-			page.getByRole('button', { name: 'Accept' }).click()
-		]);
+		await page.getByRole('button', { name: 'Accept' }).click();
 
 		// Tras aceptar, la invitación desaparece
 		await expect(page.getByText('You have no pending invitations.')).toBeVisible({
