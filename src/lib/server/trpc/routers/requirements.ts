@@ -104,19 +104,11 @@ async function generateRequirementsFromAI(
 	const model =
 		profileRows[0]?.defaultAiModel ??
 		configRow.model ??
-		(activeProvider === 'perplexity' ? 'sonar' : 'anthropic/claude-haiku-4-5');
+		'anthropic/claude-haiku-4-5';
 
-	const baseUrl =
-		activeProvider === 'perplexity'
-			? 'https://api.perplexity.ai/chat/completions'
-			: 'https://openrouter.ai/api/v1/chat/completions';
+	const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
-	const extraHeaders: Record<string, string> =
-		activeProvider === 'openrouter'
-			? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
-			: {};
-
-	const res = await fetch(baseUrl, {
+	const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${apiKey}`,
@@ -134,8 +126,7 @@ async function generateRequirementsFromAI(
 	});
 
 	if (!res.ok) {
-		const label = activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
-		throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Error de ${label} (${res.status}).` });
+		throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Error de OpenRouter (${res.status}).` });
 	}
 
 	const data = (await res.json()) as { choices: { message: { content: string } }[] };

@@ -30,8 +30,8 @@ export type PendingAction = {
 // Error helper
 // ---------------------------------------------------------------------------
 
-async function throwProviderError(res: Response, provider = 'openrouter'): Promise<never> {
-	const providerLabel = provider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
+async function throwProviderError(res: Response): Promise<never> {
+	const providerLabel = 'OpenRouter';
 	let message: string;
 	try {
 		const body = (await res.json()) as { error?: { message?: string; code?: number } };
@@ -495,15 +495,8 @@ type OAMessage = {
 	tool_call_id?: string;
 };
 
-const PROVIDER_URLS: Record<string, string> = {
-	openrouter: 'https://openrouter.ai/api/v1/chat/completions',
-	perplexity: 'https://api.perplexity.ai/chat/completions'
-};
-
-const DEFAULT_MODELS: Record<string, string> = {
-	openrouter: 'anthropic/claude-haiku-4-5',
-	perplexity: 'sonar'
-};
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
 
 async function runAgentLoop(
 	systemPrompt: string,
@@ -513,7 +506,6 @@ async function runAgentLoop(
 	withRLS: WithRLS,
 	projectId: string,
 	apiKey: string,
-	provider: string,
 	model: string
 ): Promise<{ content: string; pendingActions: PendingAction[]; docsUsed: { id: string; title: string }[] }> {
 	const messages: OAMessage[] = [
@@ -523,14 +515,10 @@ async function runAgentLoop(
 
 	const pendingActions: PendingAction[] = [];
 	const seenDocs = new Map<string, string>();
-	const baseUrl = PROVIDER_URLS[provider] ?? PROVIDER_URLS.openrouter;
-	const extraHeaders: Record<string, string> =
-		provider === 'openrouter'
-			? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
-			: {};
+	const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
 	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
-		const res = await fetch(baseUrl, {
+		const res = await fetch(OPENROUTER_URL, {
 			method: 'POST',
 			headers: {
 				Authorization: `Bearer ${apiKey}`,
@@ -546,7 +534,7 @@ async function runAgentLoop(
 			})
 		});
 
-		if (!res.ok) await throwProviderError(res, provider);
+		if (!res.ok) await throwProviderError(res);
 
 		const data = (await res.json()) as {
 			choices: { message: OAMessage; finish_reason: string }[];
@@ -830,7 +818,7 @@ export const aiRouter = router({
 			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
 
 			if (!configRow) {
-				const label = activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
+				const label = 'OpenRouter';
 				throw new TRPCError({
 					code: 'PRECONDITION_FAILED',
 					message: `Configura tu API key de ${label} en Ajustes → Asistente IA.`
@@ -856,8 +844,7 @@ export const aiRouter = router({
 			const resolvedModel =
 				profileRows[0]?.defaultAiModel ??
 				configRow.model ??
-				DEFAULT_MODELS[activeProvider] ??
-				DEFAULT_MODELS.openrouter;
+				DEFAULT_MODEL;
 
 			const { content: assistantContent, pendingActions, docsUsed } = await runAgentLoop(
 				systemWithIndex,
@@ -866,7 +853,6 @@ export const aiRouter = router({
 				ctx.withRLS as WithRLS,
 				input.projectId,
 				userApiKey,
-				activeProvider,
 				resolvedModel
 			);
 
@@ -1024,7 +1010,7 @@ export const aiRouter = router({
 			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
 
 			if (!configRow) {
-				const label = activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
+				const label = 'OpenRouter';
 				throw new TRPCError({
 					code: 'PRECONDITION_FAILED',
 					message: `Configura tu API key de ${label} en Ajustes → Asistente IA.`
@@ -1034,7 +1020,7 @@ export const aiRouter = router({
 			const resolvedModel =
 				profileRows[0]?.defaultAiModel ??
 				configRow.model ??
-				(activeProvider === 'perplexity' ? 'sonar-pro' : 'anthropic/claude-sonnet-4-5');
+				'anthropic/claude-sonnet-4-5';
 
 			let userApiKey: string;
 			try {
@@ -1138,11 +1124,8 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				.filter(Boolean)
 				.join('\n');
 
-			const draftBaseUrl = PROVIDER_URLS[activeProvider] ?? PROVIDER_URLS.openrouter;
-			const draftExtraHeaders: Record<string, string> =
-				activeProvider === 'openrouter'
-					? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
-					: {};
+			const draftBaseUrl = OPENROUTER_URL;
+			const draftExtraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
 			const response = await fetch(draftBaseUrl, {
 				method: 'POST',
@@ -1161,7 +1144,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				})
 			});
 
-			if (!response.ok) await throwProviderError(response, activeProvider);
+			if (!response.ok) await throwProviderError(response);
 
 			const data = (await response.json()) as {
 				choices: { message: { content: string } }[];
@@ -1259,13 +1242,9 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 			const model =
 				profileRows[0]?.defaultAiModel ??
 				configRow.model ??
-				DEFAULT_MODELS[activeProvider] ??
-				DEFAULT_MODELS.openrouter;
-			const baseUrl = PROVIDER_URLS[activeProvider] ?? PROVIDER_URLS.openrouter;
-			const extraHeaders: Record<string, string> =
-				activeProvider === 'openrouter'
-					? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
-					: {};
+				DEFAULT_MODEL;
+			const baseUrl = OPENROUTER_URL;
+			const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
 			const systemPrompt = `Eres un asistente de escritura académica. Tu tarea es redactar un fragmento de texto según las instrucciones del investigador.
 
@@ -1300,9 +1279,9 @@ Reglas:
 				})
 			});
 
-			console.log('[draftSection] request →', { provider: activeProvider, model, projectId: input.projectId });
+			console.log('[draftSection] request →', { model, projectId: input.projectId });
 
-			if (!res.ok) await throwProviderError(res, activeProvider);
+			if (!res.ok) await throwProviderError(res);
 
 			const data = await res.json();
 			const text = data.choices?.[0]?.message?.content?.trim() ?? '';
@@ -1397,13 +1376,9 @@ Reglas:
 			const model =
 				profileRows[0]?.defaultAiModel ??
 				configRow.model ??
-				DEFAULT_MODELS[activeProvider] ??
-				DEFAULT_MODELS.openrouter;
-			const baseUrl = PROVIDER_URLS[activeProvider] ?? PROVIDER_URLS.openrouter;
-			const extraHeaders: Record<string, string> =
-				activeProvider === 'openrouter'
-					? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
-					: {};
+				DEFAULT_MODEL;
+			const baseUrl = OPENROUTER_URL;
+			const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
 			const systemPrompt = `You are an academic writing reviewer. Analyze a document against the project's requirements and bibliography.
 
@@ -1440,9 +1415,9 @@ Rules:
 				})
 			});
 
-			console.log('[reviewDocument] request →', { provider: activeProvider, model, documentId: input.documentId });
+			console.log('[reviewDocument] request →', { model, documentId: input.documentId });
 
-			if (!res.ok) await throwProviderError(res, activeProvider);
+			if (!res.ok) await throwProviderError(res);
 
 			const data = await res.json();
 			const rawContent = data.choices?.[0]?.message?.content?.trim() ?? '{}';

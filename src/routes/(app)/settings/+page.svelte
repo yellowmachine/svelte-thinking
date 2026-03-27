@@ -84,13 +84,6 @@
 			placeholder: 'sk-or-v1-...',
 			keyUrl: 'https://openrouter.ai/keys',
 			privacyUrl: 'https://openrouter.ai/privacy'
-		},
-		{
-			id: 'perplexity',
-			label: 'Perplexity',
-			placeholder: 'pplx-...',
-			keyUrl: 'https://www.perplexity.ai/settings/api',
-			privacyUrl: 'https://www.perplexity.ai/hub/legal/privacy-policy'
 		}
 	] as const;
 	type ProviderId = (typeof PROVIDERS)[number]['id'];
@@ -102,13 +95,9 @@
 			{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini (fast)' },
 			{ id: 'openai/gpt-4o', label: 'GPT-4o' },
 			{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5 (fast)' },
-			{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' }
-		],
-		perplexity: [
-			{ id: 'sonar', label: 'Sonar (fast)' },
-			{ id: 'sonar-pro', label: 'Sonar Pro' },
-			{ id: 'sonar-reasoning-pro', label: 'Sonar Reasoning Pro' },
-			{ id: 'sonar-deep-research', label: 'Sonar Deep Research' }
+			{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
+			{ id: 'perplexity/sonar', label: 'Perplexity Sonar (web search, fast)' },
+			{ id: 'perplexity/sonar-pro', label: 'Perplexity Sonar Pro (web search)' }
 		]
 	};
 
@@ -118,10 +107,10 @@
 	let aiSuccess = $state('');
 
 	// Per-provider UI state
-	let keyInputs = $state<Record<ProviderId, string>>({ openrouter: '', perplexity: '' });
-	let savingKey = $state<Record<ProviderId, boolean>>({ openrouter: false, perplexity: false });
-	let togglingEnabled = $state<Record<ProviderId, boolean>>({ openrouter: false, perplexity: false });
-	let deletingKey = $state<Record<ProviderId, boolean>>({ openrouter: false, perplexity: false });
+	let keyInputs = $state<Record<ProviderId, string>>({ openrouter: '' });
+	let savingKey = $state<Record<ProviderId, boolean>>({ openrouter: false });
+	let togglingEnabled = $state<Record<ProviderId, boolean>>({ openrouter: false });
+	let deletingKey = $state<Record<ProviderId, boolean>>({ openrouter: false });
 	let settingDefault = $state(false);
 
 	function providerConfig(id: ProviderId): ProviderConfig | undefined {
@@ -149,7 +138,7 @@
 		try {
 			await trpc.aiConfig.saveApiKey.mutate({ provider, apiKey: key });
 			keyInputs[provider] = '';
-			aiSuccess = `${provider === 'openrouter' ? 'OpenRouter' : 'Perplexity'} API key saved.`;
+			aiSuccess = 'OpenRouter API key saved.';
 			await loadAiStatus();
 		} catch (e: unknown) {
 			aiError = e instanceof Error ? e.message : 'Error saving API key.';
@@ -191,7 +180,7 @@
 	}
 
 	async function handleDeleteKey(provider: ProviderId) {
-		const label = provider === 'openrouter' ? 'OpenRouter' : 'Perplexity';
+		const label = 'OpenRouter';
 		deletingKey[provider] = true;
 		aiError = '';
 		aiSuccess = '';
@@ -615,68 +604,18 @@
 			{#if loadingAi}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
 			{:else}
-				<!-- Default provider selector -->
-				{#if aiStatus && aiStatus.providers.length > 0}
-					<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-						<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Default provider</h2>
-						<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							The agent will use this provider for all conversations.
-						</p>
-						<div class="flex gap-3">
-							{#each PROVIDERS as p}
-								{@const configured = !!providerConfig(p.id)}
-								<button
-									type="button"
-									disabled={!configured || settingDefault}
-									onclick={() => handleSetDefault(p.id)}
-									class="flex items-center gap-2 rounded-lg border px-4 py-2.5 font-sans text-sm transition-colors disabled:opacity-40
-										{aiStatus.defaultProvider === p.id
-											? 'border-accent bg-accent/5 font-medium text-accent dark:bg-accent/10'
-											: 'border-paper-border text-ink-muted hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
-								>
-									{#if aiStatus.defaultProvider === p.id}
-										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-											<circle cx="12" cy="12" r="5" fill="currentColor"/>
-										</svg>
-									{:else}
-										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-										</svg>
-									{/if}
-									{p.label}
-									{#if !configured}
-										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">(not configured)</span>
-									{/if}
-								</button>
-							{/each}
-						</div>
-					</section>
-				{/if}
-
 				<!-- Provider cards -->
 				{#each PROVIDERS as p}
 					{@const cfg = providerConfig(p.id)}
-					{@const isDefault = aiStatus?.defaultProvider === p.id}
-					<section class="rounded-xl border bg-paper p-6 dark:bg-dark-paper
-						{isDefault && cfg ? 'border-accent/30 dark:border-accent/20' : 'border-paper-border dark:border-dark-paper-border'}">
+					<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 
 						<!-- Card header -->
 						<div class="flex items-start justify-between gap-4">
 							<div class="flex items-center gap-3">
 								<div>
-									<div class="flex items-center gap-2">
-										<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">{p.label}</h2>
-										{#if isDefault && cfg}
-											<span class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[11px] font-semibold text-accent">
-												Default
-											</span>
-										{/if}
-									</div>
+									<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">{p.label}</h2>
 									<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-										{p.id === 'openrouter'
-											? 'Access to Anthropic, OpenAI, Google and more models.'
-											: 'Sonar models with real-time web search.'}
+										Access to Anthropic, OpenAI, Google, Perplexity and more models via a single key.
 									</p>
 								</div>
 							</div>
@@ -1202,7 +1141,7 @@
 				Delete API key?
 			</h2>
 			<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				The key for <strong>{deleteKeyProvider === 'openrouter' ? 'OpenRouter' : 'Perplexity'}</strong> will be deleted.
+				The key for <strong>OpenRouter</strong> will be deleted.
 				You will lose AI assistant access until you add a new one.
 			</p>
 			<div class="mt-5 flex gap-3">

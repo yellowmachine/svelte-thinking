@@ -5,7 +5,7 @@ import { router, protectedProcedure } from '../init';
 import { userAiConfig, userProfile } from '$lib/server/db/schemas/users.schema';
 import { encryptSecret } from '$lib/server/kms';
 
-const PROVIDER = z.enum(['openrouter', 'perplexity']);
+const PROVIDER = z.enum(['openrouter']);
 
 // Curated model lists shown in the UI model selector.
 const MODELS: Record<string, { id: string; label: string }[]> = {
@@ -15,13 +15,9 @@ const MODELS: Record<string, { id: string; label: string }[]> = {
 		{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini (fast)' },
 		{ id: 'openai/gpt-4o', label: 'GPT-4o' },
 		{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5 (fast)' },
-		{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' }
-	],
-	perplexity: [
-		{ id: 'sonar', label: 'Sonar (fast)' },
-		{ id: 'sonar-pro', label: 'Sonar Pro' },
-		{ id: 'sonar-reasoning-pro', label: 'Sonar Reasoning Pro' },
-		{ id: 'sonar-deep-research', label: 'Sonar Deep Research' }
+		{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
+		{ id: 'perplexity/sonar', label: 'Perplexity Sonar (web search, fast)' },
+		{ id: 'perplexity/sonar-pro', label: 'Perplexity Sonar Pro (web search)' }
 	]
 };
 
