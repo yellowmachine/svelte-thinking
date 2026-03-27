@@ -110,7 +110,7 @@
 	let createDocError = $state('');
 
 	const docTypeOptions = [
-		{ value: 'paper' as const, label: 'Article', description: 'Main document: thesis, article, essay.' },
+		{ value: 'paper' as const, label: 'Article / Essay', description: 'Main academic text: article, thesis, essay, treatise or commentary.' },
 		{ value: 'notes' as const, label: 'Notes', description: 'Ideas and annotations in progress.' },
 		{ value: 'outline' as const, label: 'Outline', description: 'Index or hierarchical argument structure.' },
 		{ value: 'bibliography' as const, label: 'Bibliography', description: 'List of references and sources.' },
