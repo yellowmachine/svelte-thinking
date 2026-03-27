@@ -11,6 +11,7 @@ import { document } from '$lib/server/db/schemas/documents.schema';
 import { documentChunk } from '$lib/server/db/schemas/documentChunks.schema';
 import { projectInterest } from '$lib/server/db/schemas/discover.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
+import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { user } from '$lib/server/db/auth.schema';
 import { embedQuery } from '$lib/server/embeddings';
 
@@ -18,7 +19,8 @@ const projectStatusValues = ['draft', 'active', 'review', 'published', 'archived
 
 const createProjectSchema = z.object({
 	title: z.string().min(1).max(255),
-	description: z.string().max(2000).optional()
+	description: z.string().max(2000).optional(),
+	orgId: z.string().optional() // set when creating in an org workspace
 });
 
 const updateProjectSchema = z.object({
@@ -61,6 +63,36 @@ export const projectsRouter = router({
 		const id = crypto.randomUUID();
 		const userId = ctx.user.id;
 
+		// If creating in an org workspace, verify the user is owner or admin
+		if (input.orgId) {
+			const isOwner = await ctx.db
+				.select({ id: organization.id })
+				.from(organization)
+				.where(and(eq(organization.id, input.orgId), eq(organization.ownerId, userId)))
+				.limit(1);
+
+			const isAdmin = isOwner[0]
+				? []
+				: await ctx.db
+						.select({ id: organizationMember.id })
+						.from(organizationMember)
+						.where(
+							and(
+								eq(organizationMember.orgId, input.orgId),
+								eq(organizationMember.userId, userId),
+								eq(organizationMember.role, 'admin')
+							)
+						)
+						.limit(1);
+
+			if (!isOwner[0] && !isAdmin[0]) {
+				throw new TRPCError({
+					code: 'FORBIDDEN',
+					message: 'Only org owners and admins can create projects in an organization.'
+				});
+			}
+		}
+
 		return ctx.withRLS(async (db) => {
 			const [created] = await db
 				.insert(project)
@@ -68,7 +100,8 @@ export const projectsRouter = router({
 					id,
 					title: input.title,
 					description: input.description,
-					ownerId: userId
+					ownerId: userId,
+					orgId: input.orgId ?? null
 				})
 				.returning();
 

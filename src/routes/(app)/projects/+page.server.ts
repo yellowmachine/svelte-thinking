@@ -10,6 +10,7 @@ export const load: PageServerLoad = async (event) => {
 				title: project.title,
 				description: project.description,
 				status: project.status,
+				orgId: project.orgId,
 				updatedAt: project.updatedAt,
 				collaboratorCount:
 					sql<number>`(SELECT COUNT(*)::int FROM project_collaborator WHERE project_collaborator.project_id = ${project.id})`.as(

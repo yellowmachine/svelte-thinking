@@ -2,11 +2,20 @@
 	import { invalidateAll } from '$app/navigation';
 	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
 	import { trpc } from '$lib/utils/trpc';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const projects = $derived(data.projects);
+	// Filter projects by active workspace
+	const projects = $derived(
+		workspaceStore.current.id === null
+			? data.projects.filter((p) => !p.orgId)
+			: data.projects.filter((p) => p.orgId === workspaceStore.current.id)
+	);
+
+	const workspaceName = $derived(workspaceStore.current.name);
+	const isOrgWorkspace = $derived(workspaceStore.current.id !== null);
 
 	let showCreate = $state(false);
 	let newTitle = $state('');
@@ -21,7 +30,8 @@
 		try {
 			await trpc.projects.create.mutate({
 				title: newTitle.trim(),
-				description: newDescription.trim() || undefined
+				description: newDescription.trim() || undefined,
+				orgId: workspaceStore.current.id ?? undefined
 			});
 			await invalidateAll();
 			newTitle = '';
@@ -46,7 +56,14 @@
 	<!-- Header -->
 	<div class="mb-8 flex items-center justify-between">
 		<div>
-			<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">My projects</h1>
+			<div class="flex items-center gap-2">
+				<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+					{isOrgWorkspace ? workspaceName : 'My projects'}
+				</h1>
+				{#if isOrgWorkspace}
+					<span class="rounded-full border border-accent/30 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent">org</span>
+				{/if}
+			</div>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				{projects.length === 1 ? '1 project' : `${projects.length} projects`}
 			</p>
