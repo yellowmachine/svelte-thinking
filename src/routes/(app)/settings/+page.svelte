@@ -78,7 +78,7 @@
 	type TaskConfig = { keyId: string; model: string };
 	type AiTaskId = 'agent' | 'draft' | 'review' | 'requirements';
 	type AiTaskDef = { id: AiTaskId; label: string; description: string };
-	type AiModel = { id: string; label: string; toolCalling: boolean };
+	type AiModel = { id: string; label: string; toolCalling: boolean; pricing: string | null };
 
 	const TASK_LABELS: Record<AiTaskId, string> = {
 		agent: 'Agent (chat)',
@@ -111,13 +111,14 @@
 		loadingAi = true;
 		aiError = '';
 		try {
-			const [keys, taskData] = await Promise.all([
+			const [keys, taskData, models] = await Promise.all([
 				trpc.aiConfig.listKeys.query(),
-				trpc.aiConfig.getTaskConfig.query()
+				trpc.aiConfig.getTaskConfig.query(),
+				trpc.aiConfig.getModels.query()
 			]);
 			aiKeys = keys;
 			aiTaskConfig = taskData.taskConfig as Partial<Record<AiTaskId, TaskConfig>>;
-			aiModels = taskData.models as AiModel[];
+			aiModels = models as AiModel[];
 			aiTasks = taskData.tasks as AiTaskDef[];
 		} catch {
 			aiError = 'Could not load assistant configuration.';
@@ -731,7 +732,7 @@
 										>
 											<option value="">— Default model —</option>
 											{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
-												<option value={m.id}>{m.label}</option>
+												<option value={m.id}>{m.label}{m.pricing ? ` — ${m.pricing}` : ''}</option>
 											{/each}
 										</select>
 									</div>

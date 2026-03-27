@@ -46,6 +46,57 @@ export const MODELS: { id: string; label: string; toolCalling: boolean }[] = [
 	{ id: 'perplexity/sonar-pro', label: 'Perplexity Sonar Pro (web search)', toolCalling: false }
 ];
 
+// ---------------------------------------------------------------------------
+// OpenRouter pricing (fetched at runtime, cached in memory for 1 hour)
+// ---------------------------------------------------------------------------
+
+interface PricingCache {
+	fetchedAt: number;
+	prices: Record<string, { input: number; output: number }>;
+}
+
+let pricingCache: PricingCache | null = null;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+async function fetchOpenRouterPrices(): Promise<Record<string, { input: number; output: number }>> {
+	if (pricingCache && Date.now() - pricingCache.fetchedAt < CACHE_TTL_MS) {
+		return pricingCache.prices;
+	}
+
+	try {
+		const res = await fetch('https://openrouter.ai/api/v1/models', {
+			headers: { 'User-Agent': 'Scholio/1.0' }
+		});
+		if (!res.ok) return pricingCache?.prices ?? {};
+
+		const data = (await res.json()) as {
+			data: { id: string; pricing?: { prompt?: string; completion?: string } }[];
+		};
+
+		const prices: Record<string, { input: number; output: number }> = {};
+		for (const model of data.data) {
+			const input = parseFloat(model.pricing?.prompt ?? '0');
+			const output = parseFloat(model.pricing?.completion ?? '0');
+			if (!isNaN(input) && !isNaN(output)) {
+				prices[model.id] = { input, output };
+			}
+		}
+
+		pricingCache = { fetchedAt: Date.now(), prices };
+		return prices;
+	} catch {
+		return pricingCache?.prices ?? {};
+	}
+}
+
+function formatPrice(pricePerToken: number): string {
+	const perMillion = pricePerToken * 1_000_000;
+	if (perMillion === 0) return 'free';
+	if (perMillion < 0.01) return `$${(perMillion * 1000).toFixed(2)}/1B`;
+	if (perMillion < 1) return `$${perMillion.toFixed(3)}/1M`;
+	return `$${perMillion.toFixed(2)}/1M`;
+}
+
 export const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
 
 // ---------------------------------------------------------------------------
@@ -66,6 +117,18 @@ export function parseTaskConfig(raw: string | null): AiTaskConfig {
 // ---------------------------------------------------------------------------
 
 export const aiConfigRouter = router({
+	// Returns model list with live pricing from OpenRouter (cached 1h)
+	getModels: protectedProcedure.query(async () => {
+		const prices = await fetchOpenRouterPrices();
+		return MODELS.map((m) => {
+			const p = prices[m.id];
+			const pricing = p
+				? `${formatPrice(p.input)} in · ${formatPrice(p.output)} out`
+				: null;
+			return { ...m, pricing };
+		});
+	}),
+
 	// List all keys for the current user (no key material returned)
 	listKeys: protectedProcedure.query(async ({ ctx }) => {
 		const keys = await ctx.withRLS((db) =>
