@@ -541,6 +541,7 @@
 							bind:value={newDocTitle}
 							placeholder="Document title"
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							onkeydown={(e) => { if (e.key === 'Enter' && newDocTitle.trim() && !creatingDoc) createDocument(); }}
 						/>
 						<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
 							{#each docTypeOptions as opt (opt.value)}
