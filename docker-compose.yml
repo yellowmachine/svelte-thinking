@@ -93,8 +93,6 @@ services:
       TYPST_SERVICE_URL: http://typst:3100
       # ── Embed service (semantic search) ──────────────────────────────────
       EMBED_SERVICE_URL: http://embed:3200
-      # ── Anthropic (sugerencias inline) ────────────────────────────────────
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # ── Stripe ────────────────────────────────────────────────────────────
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

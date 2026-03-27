@@ -1,15 +1,19 @@
 import { z } from 'zod';
 import { eq, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
+import { userAiConfig, userProfile } from '$lib/server/db/schemas/users.schema';
+import { decryptSecret } from '$lib/server/kms';
+import type { Db } from '$lib/server/db';
+
+type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
 
 // ---------------------------------------------------------------------------
 // AI: generate a structured list of requirements for a given document type.
-// Uses server-side ANTHROPIC_API_KEY (no user key needed).
+// Uses the user's configured BYOK provider (OpenRouter / Perplexity).
 // ---------------------------------------------------------------------------
 export type TemplateType = 'generic' | 'paper' | 'thesis' | 'medical' | 'report' | 'book';
 
@@ -18,20 +22,7 @@ interface AIGenerateResult {
 	requirements: { name: string; description: string; required: boolean }[];
 }
 
-async function generateRequirementsFromAI(description: string): Promise<AIGenerateResult> {
-	if (!env.ANTHROPIC_API_KEY) {
-		throw new TRPCError({
-			code: 'INTERNAL_SERVER_ERROR',
-			message: 'ANTHROPIC_API_KEY no configurada.'
-		});
-	}
-
-	const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-
-	const response = await anthropic.messages.create({
-		model: 'claude-haiku-4-5-20251001',
-		max_tokens: 1024,
-		system: `Eres un experto en documentación académica y técnica.
+const SYSTEM_PROMPT = `Eres un experto en documentación académica y técnica.
 El usuario describirá el tipo de documento que quiere crear.
 Devuelve ÚNICAMENTE un objeto JSON válido (sin markdown, sin texto extra) con este formato exacto:
 
@@ -57,11 +48,98 @@ Reglas para "requirements":
 - Entre 4 y 12 elementos según la complejidad.
 - Ordenados en el orden natural de redacción/aparición.
 - "required" es false solo para secciones claramente opcionales (anexos, agradecimientos).
-- Responde en el mismo idioma que el usuario.`,
-		messages: [{ role: 'user', content: description }]
+- Responde en el mismo idioma que el usuario.`;
+
+async function generateRequirementsFromAI(
+	description: string,
+	withRLS: WithRLS,
+	userId: string
+): Promise<AIGenerateResult> {
+	const [profileRows, allConfigs] = await Promise.all([
+		withRLS((db) =>
+			(db as Db)
+				.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
+				.from(userProfile)
+				.where(eq(userProfile.userId, userId))
+				.limit(1)
+		) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+
+		withRLS((db) =>
+			(db as Db)
+				.select({
+					encryptedApiKey: userAiConfig.encryptedApiKey,
+					encryptedDataKey: userAiConfig.encryptedDataKey,
+					iv: userAiConfig.iv,
+					authTag: userAiConfig.authTag,
+					enabled: userAiConfig.enabled,
+					provider: userAiConfig.provider,
+					model: userAiConfig.model
+				})
+				.from(userAiConfig)
+				.where(eq(userAiConfig.userId, userId))
+		) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
+	]);
+
+	const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
+	const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
+
+	if (!configRow) {
+		const label = activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
+		throw new TRPCError({
+			code: 'PRECONDITION_FAILED',
+			message: `Configura tu API key de ${label} en Ajustes → Asistente IA para generar requisitos.`
+		});
+	}
+
+	let apiKey: string;
+	try {
+		apiKey = await decryptSecret(configRow);
+	} catch {
+		throw new TRPCError({
+			code: 'INTERNAL_SERVER_ERROR',
+			message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
+		});
+	}
+
+	const model =
+		profileRows[0]?.defaultAiModel ??
+		configRow.model ??
+		(activeProvider === 'perplexity' ? 'sonar' : 'anthropic/claude-haiku-4-5');
+
+	const baseUrl =
+		activeProvider === 'perplexity'
+			? 'https://api.perplexity.ai/chat/completions'
+			: 'https://openrouter.ai/api/v1/chat/completions';
+
+	const extraHeaders: Record<string, string> =
+		activeProvider === 'openrouter'
+			? { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' }
+			: {};
+
+	const res = await fetch(baseUrl, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${apiKey}`,
+			'Content-Type': 'application/json',
+			...extraHeaders
+		},
+		body: JSON.stringify({
+			model,
+			max_tokens: 1024,
+			messages: [
+				{ role: 'system', content: SYSTEM_PROMPT },
+				{ role: 'user', content: description }
+			]
+		})
 	});
 
-	const raw = response.content[0].type === 'text' ? response.content[0].text.trim() : '{}';
+	if (!res.ok) {
+		const label = activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
+		throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Error de ${label} (${res.status}).` });
+	}
+
+	const data = (await res.json()) as { choices: { message: { content: string } }[] };
+	const raw = data.choices[0]?.message?.content?.trim() ?? '{}';
 
 	type RawResult = { template?: string; requirements?: { name: string; description: string; required: boolean }[] };
 	let parsed: RawResult = {};
@@ -131,7 +209,11 @@ export const requirementsRouter = router({
 				db.delete(projectRequirement).where(eq(projectRequirement.projectId, input.projectId))
 			);
 
-			const { template, requirements: aiRequirements } = await generateRequirementsFromAI(input.description);
+			const { template, requirements: aiRequirements } = await generateRequirementsFromAI(
+			input.description,
+			ctx.withRLS as WithRLS,
+			ctx.user.id
+		);
 
 			if (aiRequirements.length === 0) {
 				throw new TRPCError({
