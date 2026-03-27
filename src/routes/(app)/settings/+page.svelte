@@ -3,6 +3,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
+	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -14,7 +15,7 @@
 	let confirmPassword = $state('');
 
 	// Active section
-	let activeTab: 'profile' | 'billing' | 'ai' | 'security' = $state('profile');
+	let activeTab: 'profile' | 'billing' | 'ai' | 'security' | 'appearance' = $state('profile');
 
 	// Billing state
 	type PlanInfo = {
@@ -368,6 +369,15 @@
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Seguridad
+		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = 'appearance')}
+			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'appearance'
+				? 'border-b-2 border-accent font-medium text-accent'
+				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+		>
+			Appearance
 		</button>
 	</div>
 
@@ -1231,5 +1241,18 @@
 				</button>
 			</div>
 		</div>
+	</div>
+{/if}
+
+<!-- ── APPEARANCE TAB ── -->
+{#if activeTab === 'appearance'}
+	<div class="flex flex-col gap-8">
+		<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Theme</h2>
+			<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Choose a color scheme. Top row is light, bottom row is dark.
+			</p>
+			<ThemePicker />
+		</section>
 	</div>
 {/if}

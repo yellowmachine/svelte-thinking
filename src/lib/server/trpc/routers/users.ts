@@ -128,6 +128,17 @@ export const usersRouter = router({
 		});
 	}),
 
+	setTheme: protectedProcedure
+		.input(z.enum(['warm', 'github', 'solarized', 'nord', 'catppuccin', 'gruvbox']))
+		.mutation(async ({ ctx, input: theme }) => {
+			return ctx.withRLS((db) =>
+				db
+					.update(userProfile)
+					.set({ theme, updatedAt: new Date() })
+					.where(eq(userProfile.userId, ctx.user.id))
+			);
+		}),
+
 	updateProfile: protectedProcedure
 		.input(updateProfileSchema)
 		.mutation(async ({ ctx, input }) => {

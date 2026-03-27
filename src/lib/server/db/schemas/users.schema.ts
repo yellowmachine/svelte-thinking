@@ -34,6 +34,8 @@ export const userProfile = scholioSchema.table(
 		profileEmbedding: vector384('profile_embedding'),
 		// Per-task AI configuration: { agent, draft, review, requirements } → { keyId, model }
 		aiTaskConfig: text('ai_task_config'), // JSON stored as text
+		// UI theme preference: 'warm' | 'github' | 'solarized' | 'nord' | 'catppuccin' | 'gruvbox'
+		theme: text('theme'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},

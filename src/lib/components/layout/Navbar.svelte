@@ -1,5 +1,8 @@
 <script lang="ts">
 	import QuickNoteButton from './QuickNoteButton.svelte';
+	import ThemePicker from './ThemePicker.svelte';
+
+	let themeOpen = $state(false);
 
 	let {
 		user,
@@ -61,6 +64,35 @@
 
 			</nav>
 			<QuickNoteButton />
+
+			<!-- Theme picker -->
+			<div class="relative">
+				<button
+					type="button"
+					title="Appearance"
+					onclick={() => (themeOpen = !themeOpen)}
+					class="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="13" r="2.5"/><circle cx="6" cy="14" r="2.5"/><circle cx="10.5" cy="19.5" r="2.5"/>
+						<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+					</svg>
+				</button>
+
+				{#if themeOpen}
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						class="fixed inset-0 z-40"
+						onclick={() => (themeOpen = false)}
+						onkeydown={(e) => e.key === 'Escape' && (themeOpen = false)}
+					></div>
+					<div class="absolute right-0 top-10 z-50 w-80 rounded-xl border border-paper-border bg-paper p-4 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+						<p class="mb-3 font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Appearance</p>
+						<ThemePicker />
+					</div>
+				{/if}
+			</div>
+
 			<div class="flex items-center gap-2.5">
 				<a
 					href="/settings"
