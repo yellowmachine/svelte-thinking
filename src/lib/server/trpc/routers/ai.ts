@@ -52,7 +52,7 @@ async function throwProviderError(res: Response, provider = 'openrouter'): Promi
 // ---------------------------------------------------------------------------
 
 async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<string> {
-	const [proj, docs, reqs, refCount] = await Promise.all([
+	const [proj, docs, reqs, refCount, theologyCount] = await Promise.all([
 		withRLS((db) =>
 			db
 				.select({
@@ -98,6 +98,18 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
 				.select({ total: count() })
 				.from(projectReference)
 				.where(eq(projectReference.projectId, projectId))
+		) as Promise<{ total: number }[]>,
+
+		withRLS((db) =>
+			db
+				.select({ total: count() })
+				.from(projectReference)
+				.where(
+					and(
+						eq(projectReference.projectId, projectId),
+						inArray(projectReference.type, ['magisterial', 'patristic'])
+					)
+				)
 		) as Promise<{ total: number }[]>
 	]);
 
@@ -137,6 +149,12 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
 	const refTotal = refCount[0]?.total ?? 0;
 	if (refTotal > 0) {
 		lines.push(`REFERENCIAS: ${refTotal} entradas (usa list_references para verlas).`);
+	}
+
+	const hasTheology = (theologyCount[0]?.total ?? 0) > 0;
+	if (hasTheology) {
+		lines.push('');
+		lines.push(THEOLOGY_CONTEXT);
 	}
 
 	return lines.filter((l) => l !== undefined).join('\n');
@@ -586,10 +604,48 @@ async function runAgentLoop(
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Theology context block — injected only when project has magisterial/patristic refs
+// ---------------------------------------------------------------------------
+
+const THEOLOGY_CONTEXT = `CONTEXTO TEOLÓGICO (este proyecto contiene fuentes de teología académica):
+
+**Documentos magisteriales** — Cita siempre por párrafo o sección, nunca por página.
+  Formato Chicago (nota completa): Autor, *Título* [SIGLUM] (año), §N.
+  Ejemplo: Francisco, *Evangelii Gaudium* [EG] (2013), §11.
+  Ejemplo concilio: Concilio Vaticano II, *Gaudium et Spes* [GS] (1965), §45.
+  Nota abreviada (segunda cita): *EG*, §11 — o bien: Francisco, *EG*, §11.
+  Sigla frecuentes: GS (Gaudium et Spes), LG (Lumen Gentium), DV (Dei Verbum),
+    SC (Sacrosanctum Concilium), EG (Evangelii Gaudium), LS (Laudato Si'),
+    AL (Amoris Laetitia), CCC (Catecismo), CDC (Código de Derecho Canónico).
+
+**Textos patrísticos y medievales** — Cita por obra, libro, capítulo y sección.
+  Formato Chicago: Autor, *Título* libro.cap.§, en Colección vol:col (año).
+  Ejemplo: Agustín de Hipona, *Confessiones* 10.8.15, en PL 32:456.
+  Ediciones críticas estándar: PG (Patrologia Graeca, Migne), PL (Patrologia Latina, Migne),
+    SC (Sources Chrétiennes), CCL (Corpus Christianorum Latinorum),
+    CSEL (Corpus Scriptorum Ecclesiasticorum Latinorum), GCS.
+  Para textos ya en edición moderna con traductor, cita también el traductor.
+
+**Estilo Chicago Notes-Bibliography** (estándar en teología católica):
+  - Primera cita: nota completa al pie.
+  - Citas siguientes del mismo autor en notas consecutivas: *Ibid.*, §N.
+  - Citas siguientes no consecutivas: Apellido, *Título corto*, §N.
+  - Bibliografía final: autor invertido, título en cursiva, datos editoriales completos.
+
+**Abreviaturas de revistas y series** — Usa siempre las abreviaturas canónicas
+  del SBL Handbook of Style (3.ª ed.). Ejemplos: TS (Theological Studies),
+  NTS (New Testament Studies), ZNW (Zeitschrift für die neutestamentliche Wissenschaft),
+  EstBíb (Estudios Bíblicos), EphThLov (Ephemerides Theologicae Lovanienses).
+
+Cuando el usuario pida insertar o formatear una cita de estas fuentes, aplica estas reglas.
+Si no tienes certeza del siglum correcto o la abreviatura de revista, dilo explícitamente.`;
+
+// ---------------------------------------------------------------------------
 // System prompt
 // ---------------------------------------------------------------------------
 
-const SYSTEM_PROMPT = `Eres Scholio, un asistente de escritura académica especializado en filosofía, ciencias sociales y ciencias formales, integrado en una plataforma de investigación.
+const SYSTEM_PROMPT = `Eres Scholio, un asistente de escritura académica especializado en filosofía, teología, ciencias sociales y ciencias formales, integrado en una plataforma de investigación.
 El usuario trabaja en proyectos académicos (grado, máster, doctorado o investigación) y tu objetivo es ayudarle a estructurar, revisar y desarrollar documentos de alta calidad usando en lo posible los documentos de su proyecto.
 
 ## Idioma y estilo
