@@ -94,6 +94,7 @@
 	let aiModels = $state<AiModel[]>([]);
 	let aiTasks = $state<AiTaskDef[]>([]);
 	let loadingAi = $state(false);
+	let aiLoaded = $state(false);
 	let aiError = $state('');
 	let aiSuccess = $state('');
 
@@ -126,6 +127,7 @@
 			aiError = 'Could not load assistant configuration.';
 		} finally {
 			loadingAi = false;
+			aiLoaded = true;
 		}
 	}
 
@@ -200,7 +202,7 @@
 	}
 
 	$effect(() => {
-		if (activeTab === 'ai' && aiKeys.length === 0 && !loadingAi) loadAiConfig();
+		if (activeTab === 'ai' && !aiLoaded && !loadingAi) loadAiConfig();
 	});
 
 	// ── 2FA state ─────────────────────────────────────────────────────────────
@@ -575,21 +577,27 @@
 			</section>
 
 			<!-- Danger zone -->
-			<section class="rounded-xl border border-red-200 bg-paper p-6 dark:border-red-900/40 dark:bg-dark-paper">
-				<h2 class="mb-1 font-serif text-lg font-semibold text-red-600 dark:text-red-400">
-					Danger zone
-				</h2>
-				<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					These actions are irreversible.
+			<div class="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
+				<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
+				<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
+					These actions are permanent and irreversible.
 				</p>
-				<button
-					type="button"
-					disabled
-					class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 opacity-50 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
-				>
-					Eliminar cuenta
-				</button>
-			</section>
+				<div class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper">
+					<div>
+						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Delete account</p>
+						<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+							Permanently deletes your account, all projects, documents and files.
+						</p>
+					</div>
+					<button
+						type="button"
+						onclick={() => (showDeleteDialog = true)}
+						class="ml-4 shrink-0 rounded-md border border-red-300 px-4 py-2 font-sans text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+					>
+						Delete account
+					</button>
+				</div>
+			</div>
 		</div>
 
 	<!-- ── AI TAB ── -->
@@ -944,7 +952,7 @@
 		</div>
 
 	<!-- ── BILLING TAB ── -->
-	{:else}
+	{:else if activeTab === 'billing'}
 		<div class="flex flex-col gap-6">
 
 			{#if billingError}
@@ -1136,31 +1144,29 @@
 				{/if}
 			</section>
 		</div>
-	{/if}
 
-	<!-- Danger zone -->
-	<div class="mt-10 rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
-		<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
-		<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
-			These actions are permanent and irreversible.
-		</p>
-
-		<div class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper">
-			<div>
-				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Eliminar cuenta</p>
-				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-					Permanently deletes your account, all projects, documents and files.
+	<!-- ── APPEARANCE TAB ── -->
+	{:else if activeTab === 'appearance'}
+		<div class="flex flex-col gap-8">
+			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Theme</h2>
+				<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Choose a color scheme. Top row is light, bottom row is dark.
 				</p>
-			</div>
-			<button
-				type="button"
-				onclick={() => (showDeleteDialog = true)}
-				class="ml-4 shrink-0 rounded-md border border-red-300 px-4 py-2 font-sans text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
-			>
-				Eliminar cuenta
-			</button>
+				<ThemePicker />
+			</section>
 		</div>
-	</div>
+
+	<!-- ── ORGANIZATIONS TAB ── -->
+	{:else if activeTab === 'organizations'}
+		<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Organizations</h2>
+			<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Create or join organizations to share AI billing and collaborate on projects.
+			</p>
+			<OrgSettings initialOrgs={data.orgs ?? []} />
+		</div>
+	{/if}
 </div>
 
 <!-- Delete API key confirmation dialog -->
@@ -1254,26 +1260,3 @@
 	</div>
 {/if}
 
-<!-- ── APPEARANCE TAB ── -->
-{#if activeTab === 'appearance'}
-	<div class="flex flex-col gap-8">
-		<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Theme</h2>
-			<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Choose a color scheme. Top row is light, bottom row is dark.
-			</p>
-			<ThemePicker />
-		</section>
-	</div>
-{/if}
-
-<!-- ── ORGANIZATIONS TAB ── -->
-{#if activeTab === 'organizations'}
-	<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Organizations</h2>
-		<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Create or join organizations to share AI billing and collaborate on projects.
-		</p>
-		<OrgSettings initialOrgs={data.orgs ?? []} />
-	</div>
-{/if}
