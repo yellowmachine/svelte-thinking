@@ -134,7 +134,7 @@ para el diseño del estudio.</code></pre>
 					</div>
 					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Automatic citations and bibliography</h3>
 					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Manage your references with BibTeX. Cite with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[@author2024]</code> and Scholio generates the bibliography in APA 7, IEEE or Vancouver at the end of the document.
+						Manage your references with BibTeX. Cite with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[@author2024]</code> and Scholio generates the bibliography in APA 7, IEEE, Vancouver or Chicago Notes-Bibliography at the end of the document.
 					</p>
 				</div>
 
@@ -268,7 +268,7 @@ para el diseño del estudio.</code></pre>
 			<h2 class="text-center font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
 				Made for those who publish
 			</h2>
-			<div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+			<div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
 				<div class="text-center">
 					<div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
 						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -304,6 +304,15 @@ para el diseño del estudio.</code></pre>
 					</div>
 					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">PhD students and postdocs</h3>
 					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">Theses, conference papers, literature reviews.</p>
+				</div>
+				<div class="text-center">
+					<div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+						</svg>
+					</div>
+					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Humanists and theologians</h3>
+					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">Essays and treatises with Chicago, classical text citations and magisterial sources.</p>
 				</div>
 			</div>
 		</div>
