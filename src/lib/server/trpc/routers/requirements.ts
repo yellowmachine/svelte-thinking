@@ -5,8 +5,9 @@ import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
-import { userAiConfig, userProfile } from '$lib/server/db/schemas/users.schema';
+import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
+import { parseTaskConfig, DEFAULT_MODEL } from './aiConfig';
 import type { Db } from '$lib/server/db';
 
 type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
@@ -55,45 +56,46 @@ async function generateRequirementsFromAI(
 	withRLS: WithRLS,
 	userId: string
 ): Promise<AIGenerateResult> {
-	const [profileRows, allConfigs] = await Promise.all([
+	const [profileRows, keys] = await Promise.all([
 		withRLS((db) =>
 			(db as Db)
-				.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
+				.select({ aiTaskConfig: userProfile.aiTaskConfig })
 				.from(userProfile)
 				.where(eq(userProfile.userId, userId))
 				.limit(1)
-		) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+		) as Promise<{ aiTaskConfig: string | null }[]>,
 
 		withRLS((db) =>
 			(db as Db)
 				.select({
-					encryptedApiKey: userAiConfig.encryptedApiKey,
-					encryptedDataKey: userAiConfig.encryptedDataKey,
-					iv: userAiConfig.iv,
-					authTag: userAiConfig.authTag,
-					enabled: userAiConfig.enabled,
-					provider: userAiConfig.provider,
-					model: userAiConfig.model
+					id: userApiKey.id,
+					encryptedApiKey: userApiKey.encryptedApiKey,
+					encryptedDataKey: userApiKey.encryptedDataKey,
+					iv: userApiKey.iv,
+					authTag: userApiKey.authTag,
+					enabled: userApiKey.enabled
 				})
-				.from(userAiConfig)
-				.where(eq(userAiConfig.userId, userId))
-		) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
+				.from(userApiKey)
+				.where(eq(userApiKey.userId, userId))
+		) as Promise<{ id: string; encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean }[]>
 	]);
 
-	const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-	const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
+	const taskConfig = parseTaskConfig(profileRows[0]?.aiTaskConfig ?? null);
+	const taskEntry = taskConfig['requirements'];
+	const keyRow = taskEntry
+		? keys.find((k) => k.id === taskEntry.keyId && k.enabled)
+		: keys.find((k) => k.enabled);
 
-	if (!configRow) {
-		const label = activeProvider === 'perplexity' ? 'Perplexity' : 'OpenRouter';
+	if (!keyRow) {
 		throw new TRPCError({
 			code: 'PRECONDITION_FAILED',
-			message: `Configura tu API key de ${label} en Ajustes → Asistente IA para generar requisitos.`
+			message: 'Configura tu API key de OpenRouter en Ajustes → Asistente IA para generar requisitos.'
 		});
 	}
 
 	let apiKey: string;
 	try {
-		apiKey = await decryptSecret(configRow);
+		apiKey = await decryptSecret(keyRow);
 	} catch {
 		throw new TRPCError({
 			code: 'INTERNAL_SERVER_ERROR',
@@ -101,10 +103,7 @@ async function generateRequirementsFromAI(
 		});
 	}
 
-	const model =
-		profileRows[0]?.defaultAiModel ??
-		configRow.model ??
-		'anthropic/claude-haiku-4-5';
+	const model = taskEntry?.model ?? DEFAULT_MODEL;
 
 	const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 

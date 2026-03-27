@@ -9,8 +9,9 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
-import { userAiConfig, userProfile } from '$lib/server/db/schemas/users.schema';
+import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
+import { type AiTask, DEFAULT_MODEL as AI_DEFAULT_MODEL, parseTaskConfig } from './aiConfig';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import type { Db } from '$lib/server/db';
 
@@ -496,6 +497,64 @@ type OAMessage = {
 };
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+// Resolves the API key and model for a given task based on the user's task config.
+async function resolveTaskKey(
+	withRLS: WithRLS,
+	userId: string,
+	task: AiTask,
+	fallbackModel: string = DEFAULT_MODEL
+): Promise<{ apiKey: string; model: string }> {
+	const [profileRows, keys] = await Promise.all([
+		withRLS((db) =>
+			(db as Db)
+				.select({ aiTaskConfig: userProfile.aiTaskConfig })
+				.from(userProfile)
+				.where(eq(userProfile.userId, userId))
+				.limit(1)
+		) as Promise<{ aiTaskConfig: string | null }[]>,
+
+		withRLS((db) =>
+			(db as Db)
+				.select({
+					id: userApiKey.id,
+					encryptedApiKey: userApiKey.encryptedApiKey,
+					encryptedDataKey: userApiKey.encryptedDataKey,
+					iv: userApiKey.iv,
+					authTag: userApiKey.authTag,
+					enabled: userApiKey.enabled
+				})
+				.from(userApiKey)
+				.where(eq(userApiKey.userId, userId))
+		) as Promise<{ id: string; encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean }[]>
+	]);
+
+	const taskConfig = parseTaskConfig(profileRows[0]?.aiTaskConfig ?? null);
+	const taskEntry = taskConfig[task];
+	const keyRow = taskEntry
+		? keys.find((k) => k.id === taskEntry.keyId && k.enabled)
+		: keys.find((k) => k.enabled); // fallback: first enabled key
+
+	if (!keyRow) {
+		throw new TRPCError({
+			code: 'PRECONDITION_FAILED',
+			message: 'Configura tu API key de OpenRouter en Ajustes → Asistente IA.'
+		});
+	}
+
+	let apiKey: string;
+	try {
+		apiKey = await decryptSecret(keyRow);
+	} catch {
+		throw new TRPCError({
+			code: 'INTERNAL_SERVER_ERROR',
+			message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
+		});
+	}
+
+	const model = taskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
+	return { apiKey, model };
+}
 const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
 
 async function runAgentLoop(
@@ -777,74 +836,16 @@ export const aiRouter = router({
 				})
 			);
 
-			// ── Get user's default provider + API config ─────────────────────
-			const [profileRows, allConfigs] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({
-							defaultAiProvider: userProfile.defaultAiProvider,
-							defaultAiModel: userProfile.defaultAiModel
-						})
-						.from(userProfile)
-						.where(eq(userProfile.userId, userId))
-						.limit(1)
-				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
-
-				ctx.withRLS((db) =>
-					db
-						.select({
-							encryptedApiKey: userAiConfig.encryptedApiKey,
-							encryptedDataKey: userAiConfig.encryptedDataKey,
-							iv: userAiConfig.iv,
-							authTag: userAiConfig.authTag,
-							enabled: userAiConfig.enabled,
-							provider: userAiConfig.provider,
-							model: userAiConfig.model
-						})
-						.from(userAiConfig)
-						.where(eq(userAiConfig.userId, userId))
-				) as Promise<{
-					encryptedApiKey: string;
-					encryptedDataKey: string;
-					iv: string;
-					authTag: string;
-					enabled: boolean;
-					provider: string;
-					model: string | null;
-				}[]>
-			]);
-
-			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
-
-			if (!configRow) {
-				const label = 'OpenRouter';
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: `Configura tu API key de ${label} en Ajustes → Asistente IA.`
-				});
-			}
-
-			let userApiKey: string;
-			try {
-				userApiKey = await decryptSecret(configRow);
-			} catch {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
-				});
-			}
+			// ── Resolve key + model for agent task ───────────────────────────
+			const { apiKey: userApiKey, model: resolvedModel } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, userId, 'agent'
+			);
 
 			// ── Build project index and run agent loop ────────────────────────
 			const projectIndex = await buildProjectIndex(ctx.withRLS as WithRLS, input.projectId);
 			const systemWithIndex = projectIndex
 				? `${SYSTEM_PROMPT}\n\n---\n\n${projectIndex}`
 				: SYSTEM_PROMPT;
-
-			const resolvedModel =
-				profileRows[0]?.defaultAiModel ??
-				configRow.model ??
-				DEFAULT_MODEL;
 
 			const { content: assistantContent, pendingActions, docsUsed } = await runAgentLoop(
 				systemWithIndex,
@@ -981,56 +982,9 @@ export const aiRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const [profileRows, allConfigs] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
-						.from(userProfile)
-						.where(eq(userProfile.userId, userId))
-						.limit(1)
-				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
-
-				ctx.withRLS((db) =>
-					db
-						.select({
-							encryptedApiKey: userAiConfig.encryptedApiKey,
-							encryptedDataKey: userAiConfig.encryptedDataKey,
-							iv: userAiConfig.iv,
-							authTag: userAiConfig.authTag,
-							enabled: userAiConfig.enabled,
-							provider: userAiConfig.provider,
-							model: userAiConfig.model
-						})
-						.from(userAiConfig)
-						.where(eq(userAiConfig.userId, userId))
-				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
-			]);
-
-			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
-
-			if (!configRow) {
-				const label = 'OpenRouter';
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: `Configura tu API key de ${label} en Ajustes → Asistente IA.`
-				});
-			}
-
-			const resolvedModel =
-				profileRows[0]?.defaultAiModel ??
-				configRow.model ??
-				'anthropic/claude-sonnet-4-5';
-
-			let userApiKey: string;
-			try {
-				userApiKey = await decryptSecret(configRow);
-			} catch {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
-				});
-			}
+			const { apiKey: userApiKey, model: resolvedModel } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, userId, 'draft', 'anthropic/claude-sonnet-4-5'
+			);
 
 			const [proj, selectedDocs, ctxLinks] = await Promise.all([
 				ctx.withRLS((db) =>
@@ -1189,60 +1143,15 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const [profileRows, allConfigs] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
-						.from(userProfile)
-						.where(eq(userProfile.userId, userId))
-						.limit(1)
-				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
-
-				ctx.withRLS((db) =>
-					db
-						.select({
-							encryptedApiKey: userAiConfig.encryptedApiKey,
-							encryptedDataKey: userAiConfig.encryptedDataKey,
-							iv: userAiConfig.iv,
-							authTag: userAiConfig.authTag,
-							enabled: userAiConfig.enabled,
-							provider: userAiConfig.provider,
-							model: userAiConfig.model
-						})
-						.from(userAiConfig)
-						.where(eq(userAiConfig.userId, userId))
-				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
-			]);
-
-			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
-
-			if (!configRow) {
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: 'Configura tu API key en Ajustes → Asistente IA para usar el borrador asistido.'
-				});
-			}
-
-			let userApiKey: string;
-			try {
-				userApiKey = await decryptSecret(configRow);
-			} catch {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
-				});
-			}
+			const { apiKey: userApiKey, model } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, userId, 'draft'
+			);
 
 			const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
 			if (!projectContext) {
 				throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
 			}
 
-			const model =
-				profileRows[0]?.defaultAiModel ??
-				configRow.model ??
-				DEFAULT_MODEL;
 			const baseUrl = OPENROUTER_URL;
 			const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
@@ -1301,50 +1210,9 @@ Reglas:
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const [profileRows, allConfigs] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
-						.from(userProfile)
-						.where(eq(userProfile.userId, userId))
-						.limit(1)
-				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
-
-				ctx.withRLS((db) =>
-					db
-						.select({
-							encryptedApiKey: userAiConfig.encryptedApiKey,
-							encryptedDataKey: userAiConfig.encryptedDataKey,
-							iv: userAiConfig.iv,
-							authTag: userAiConfig.authTag,
-							enabled: userAiConfig.enabled,
-							provider: userAiConfig.provider,
-							model: userAiConfig.model
-						})
-						.from(userAiConfig)
-						.where(eq(userAiConfig.userId, userId))
-				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
-			]);
-
-			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
-
-			if (!configRow) {
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: 'Configura tu API key en Ajustes → Asistente IA para usar la revisión.'
-				});
-			}
-
-			let userApiKey: string;
-			try {
-				userApiKey = await decryptSecret(configRow);
-			} catch {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
-				});
-			}
+			const { apiKey: userApiKey, model: resolvedReviewModel } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, userId, 'review'
+			);
 
 			// Load document content + project context in parallel
 			const [docRows, projectContext] = await Promise.all([
@@ -1373,10 +1241,7 @@ Reglas:
 				});
 			}
 
-			const model =
-				profileRows[0]?.defaultAiModel ??
-				configRow.model ??
-				DEFAULT_MODEL;
+			const model = resolvedReviewModel;
 			const baseUrl = OPENROUTER_URL;
 			const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 

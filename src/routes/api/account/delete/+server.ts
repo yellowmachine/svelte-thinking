@@ -16,7 +16,7 @@ import { eq, inArray } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
-import { userProfile, userAiConfig } from '$lib/server/db/schemas/users.schema';
+import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { projectDataset } from '$lib/server/db/schemas/datasets.schema';
 import { user as authUser, session as authSession } from '$lib/server/db/auth.schema';
@@ -64,7 +64,7 @@ export const DELETE: RequestHandler = async (event) => {
 	// ── 5. Delete app-level user data (no FK to auth.user) ───────────────────
 	await Promise.all([
 		db.delete(userProfile).where(eq(userProfile.userId, userId)),
-		db.delete(userAiConfig).where(eq(userAiConfig.userId, userId))
+		db.delete(userApiKey).where(eq(userApiKey.userId, userId))
 	]);
 
 	// ── 6. Delete auth records ────────────────────────────────────────────────
