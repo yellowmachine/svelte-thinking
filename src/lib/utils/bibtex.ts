@@ -13,7 +13,9 @@ export type ReferenceType =
 	| 'phdthesis'
 	| 'mastersthesis'
 	| 'techreport'
-	| 'misc';
+	| 'misc'
+	| 'magisterial'
+	| 'patristic';
 
 export interface ParsedBibtex {
 	citeKey: string;

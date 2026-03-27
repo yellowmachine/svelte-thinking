@@ -199,7 +199,9 @@
 			school: '',
 			// techreport
 			institution: '',
-			reportNumber: ''
+			reportNumber: '',
+			// Theological sources (stored in extra)
+			extra: {} as Record<string, string>
 		};
 	}
 
@@ -239,7 +241,8 @@
 			series: ref.series ?? '',
 			school: ref.school ?? '',
 			institution: ref.institution ?? '',
-			reportNumber: ref.reportNumber ?? ''
+			reportNumber: ref.reportNumber ?? '',
+			extra: ((ref.extra ?? {}) as Record<string, string>)
 		};
 		panel = 'edit';
 	}
@@ -296,7 +299,7 @@
 				school: form.school.trim() || undefined,
 				institution: form.institution.trim() || undefined,
 				reportNumber: form.reportNumber.trim() || undefined,
-				extra: {}
+				extra: Object.fromEntries(Object.entries(form.extra).filter(([, v]) => v && v.trim()))
 			};
 
 			if (panel === 'edit' && editingRef) {
@@ -403,25 +406,15 @@
 
 	const TYPE_LABELS: Record<string, string> = {
 		article: 'Article',
-		book: 'Libro',
-		inproceedings: 'Conferencia',
-		incollection: 'Chapter',
-		phdthesis: 'Tesis PhD',
-		mastersthesis: 'Master\'s thesis',
+		book: 'Book',
+		inproceedings: 'Conference paper',
+		incollection: 'Book chapter',
+		phdthesis: 'PhD thesis',
+		mastersthesis: "Master's thesis",
 		techreport: 'Technical report',
-		misc: 'Otro'
-	};
-
-	// Which extra fields show for each type
-	const TYPE_FIELDS: Record<string, string[]> = {
-		article: ['journal', 'volume', 'issue', 'pages'],
-		book: ['publisher', 'edition', 'address', 'isbn', 'editors'],
-		inproceedings: ['booktitle', 'pages', 'organization', 'address'],
-		incollection: ['booktitle', 'pages', 'publisher', 'editors'],
-		phdthesis: ['school', 'address'],
-		mastersthesis: ['school', 'address'],
-		techreport: ['institution', 'reportNumber', 'address'],
-		misc: ['url', 'note']
+		misc: 'Other',
+		magisterial: 'Church document',
+		patristic: 'Patristic / medieval text'
 	};
 
 	const ALL_TYPES: ReferenceType[] = [
@@ -432,7 +425,9 @@
 		'phdthesis',
 		'mastersthesis',
 		'techreport',
-		'misc'
+		'misc',
+		'magisterial',
+		'patristic'
 	];
 
 	function formatAuthors(ref: Ref): string {
@@ -803,6 +798,55 @@
 							<div>
 								<label for="ref-repnum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Report number</label>
 								<input id="ref-repnum" type="text" bind:value={form.reportNumber} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+							</div>
+						{:else if form.type === 'magisterial'}
+							<div class="grid grid-cols-2 gap-2">
+								<div>
+									<label for="ref-siglum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Siglum</label>
+									<input id="ref-siglum" type="text" placeholder="GS, LG, EG, CCC…" bind:value={form.extra.siglum} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+								<div>
+									<label for="ref-paragraph" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Paragraph §</label>
+									<input id="ref-paragraph" type="text" placeholder="45" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+							</div>
+							<div>
+								<label for="ref-doctype" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Document type</label>
+								<select id="ref-doctype" bind:value={form.extra.doctype} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+									<option value="">— select —</option>
+									<option value="encyclical">Encyclical</option>
+									<option value="apostolic_exhortation">Apostolic Exhortation</option>
+									<option value="apostolic_constitution">Apostolic Constitution</option>
+									<option value="conciliar_constitution">Conciliar Constitution</option>
+									<option value="conciliar_decree">Conciliar Decree</option>
+									<option value="conciliar_declaration">Conciliar Declaration</option>
+									<option value="catechism">Catechism (CCC)</option>
+									<option value="canon_law">Code of Canon Law</option>
+									<option value="other">Other</option>
+								</select>
+							</div>
+						{:else if form.type === 'patristic'}
+							<div>
+								<label for="ref-section" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Section (book.chapter.§)</label>
+								<input id="ref-section" type="text" placeholder="10.8.15" bind:value={form.extra.section} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+							</div>
+							<div class="grid grid-cols-2 gap-2">
+								<div>
+									<label for="ref-edition" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Critical edition</label>
+									<select id="ref-edition" bind:value={form.extra.edition} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+										<option value="">— none —</option>
+										<option value="PG">PG (Patrologia Graeca)</option>
+										<option value="PL">PL (Patrologia Latina)</option>
+										<option value="SC">SC (Sources Chrétiennes)</option>
+										<option value="CCL">CCL (Corpus Christianorum)</option>
+										<option value="CSEL">CSEL</option>
+										<option value="GCS">GCS</option>
+									</select>
+								</div>
+								<div>
+									<label for="ref-column" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Vol:col / page</label>
+									<input id="ref-column" type="text" placeholder="32:456" bind:value={form.extra.column} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
 							</div>
 						{/if}
 

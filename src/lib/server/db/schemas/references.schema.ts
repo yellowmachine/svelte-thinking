@@ -11,7 +11,9 @@ export const referenceTypeEnum = scholioSchema.enum('reference_type', [
 	'phdthesis',
 	'mastersthesis',
 	'techreport',
-	'misc'
+	'misc',
+	'magisterial',
+	'patristic'
 ]);
 
 // RLS helper — reused from other schemas

@@ -30,6 +30,8 @@ export interface CiteRef {
 	url?: string | null;
 	note?: string | null;
 	reportNumber?: string | null;
+	// Theological source metadata (stored in `extra` JSONB)
+	extra?: Record<string, string> | null;
 }
 
 // ── Name helpers ──────────────────────────────────────────────────────────
@@ -357,6 +359,23 @@ function chicagoNote(ref: CiteRef): string {
 			const inst = ref.institution ? `, ${ref.institution}` : '';
 			return `${authors}, "${ref.title}"${inst}${num}, ${year}.`;
 		}
+		case 'magisterial': {
+			const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
+			const paragraph = ref.extra?.paragraph ? `, §${ref.extra.paragraph}` : '';
+			const url = ref.url ? `, ${ref.url}` : '';
+			const auth = authors ? `${authors}, ` : '';
+			return `${auth}*${ref.title}*${siglum} (${year})${paragraph}${url}.`;
+		}
+		case 'patristic': {
+			const section = ref.extra?.section ? ` ${ref.extra.section}` : '';
+			const ed = ref.extra?.edition && ref.volume
+				? `, ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}`
+				: ref.extra?.edition ? `, ${ref.extra.edition}` : '';
+			const pub = ref.publisher
+				? ` (${ref.address ? ref.address + ': ' : ''}${ref.publisher}, ${year})`
+				: ` (${year})`;
+			return `${authors}, *${ref.title}*${section}${ed}${pub}.`;
+		}
 		default: {
 			const url = ref.url ? `, ${ref.url}` : '';
 			return `${authors}, *${ref.title}* (${year})${url}.`;
@@ -408,6 +427,17 @@ function chicagoBib(ref: CiteRef): string {
 			const num = ref.reportNumber ? ` No. ${ref.reportNumber}.` : '';
 			const inst = ref.institution ? ` ${ref.institution}.` : '';
 			return `${authors}. *${ref.title}*.${inst}${num} ${year}.`;
+		}
+		case 'magisterial': {
+			const url = ref.url ? ` ${ref.url}.` : '';
+			const auth = authors ? `${authors}. ` : '';
+			return `${auth}*${ref.title}*. ${year}.${url}`;
+		}
+		case 'patristic': {
+			const ed = ref.extra?.edition && ref.volume
+				? ` ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}.`
+				: ref.extra?.edition ? ` ${ref.extra.edition}.` : '.';
+			return `${authors}. *${ref.title}*.${ed} ${year}.`;
 		}
 		default: {
 			const url = ref.url ? ` ${ref.url}.` : '';

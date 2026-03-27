@@ -18,7 +18,9 @@ const referenceTypeValues = [
 	'phdthesis',
 	'mastersthesis',
 	'techreport',
-	'misc'
+	'misc',
+	'magisterial',
+	'patristic'
 ] as const;
 
 const referenceInputSchema = z.object({
