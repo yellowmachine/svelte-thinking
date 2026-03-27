@@ -9,42 +9,10 @@ import { encryptSecret } from '$lib/server/kms';
 // Types
 // ---------------------------------------------------------------------------
 
-export type AiTask = 'agent' | 'draft' | 'review' | 'requirements';
-
-export const AI_TASKS: { id: AiTask; label: string; description: string }[] = [
-	{ id: 'agent', label: 'Agent (chat)', description: 'Conversational assistant with tool use' },
-	{ id: 'draft', label: 'Draft', description: 'Generate document drafts and sections' },
-	{ id: 'review', label: 'Review', description: 'Review and give feedback on documents' },
-	{ id: 'requirements', label: 'Requirements', description: 'Generate project requirements' }
-];
-
-export interface TaskConfig {
-	keyId: string;
-	model: string;
-}
-
-export type AiTaskConfig = Partial<Record<AiTask, TaskConfig>>;
-
-// Models that support tool/function calling (required for agent task)
-export const TOOL_CALLING_MODELS = new Set([
-	'anthropic/claude-haiku-4-5',
-	'anthropic/claude-sonnet-4-5',
-	'openai/gpt-4o-mini',
-	'openai/gpt-4o',
-	'google/gemini-flash-1.5',
-	'meta-llama/llama-3.3-70b-instruct'
-]);
-
-export const MODELS: { id: string; label: string; toolCalling: boolean }[] = [
-	{ id: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5 (fast)', toolCalling: true },
-	{ id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5', toolCalling: true },
-	{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini (fast)', toolCalling: true },
-	{ id: 'openai/gpt-4o', label: 'GPT-4o', toolCalling: true },
-	{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5 (fast)', toolCalling: true },
-	{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B', toolCalling: true },
-	{ id: 'perplexity/sonar', label: 'Perplexity Sonar (web search, fast)', toolCalling: false },
-	{ id: 'perplexity/sonar-pro', label: 'Perplexity Sonar Pro (web search)', toolCalling: false }
-];
+export type { AiTask, TaskConfig, AiTaskConfig } from '$lib/ai-config';
+export { AI_TASKS, MODELS, TOOL_CALLING_MODELS, parseTaskConfig } from '$lib/ai-config';
+import type { AiTask, AiTaskConfig } from '$lib/ai-config';
+import { AI_TASKS, MODELS, parseTaskConfig } from '$lib/ai-config';
 
 // ---------------------------------------------------------------------------
 // OpenRouter pricing (fetched at runtime, cached in memory for 1 hour)
@@ -98,19 +66,6 @@ function formatPrice(pricePerToken: number): string {
 }
 
 export const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-export function parseTaskConfig(raw: string | null): AiTaskConfig {
-	if (!raw) return {};
-	try {
-		return JSON.parse(raw) as AiTaskConfig;
-	} catch {
-		return {};
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Router

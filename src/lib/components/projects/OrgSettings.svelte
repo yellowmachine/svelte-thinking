@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
-	import { AI_TASKS, MODELS } from '$lib/server/trpc/routers/aiConfig';
+	import { AI_TASKS, MODELS } from '$lib/ai-config';
 
 	type Org = { id: string; name: string; slug: string; role: string };
 
