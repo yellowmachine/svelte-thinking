@@ -454,6 +454,139 @@ export const documentsRouter = router({
 			};
 		}),
 
+	// Crea un documento nuevo copiando el contenido de un template.
+	// El tipo del nuevo documento es el mismo que el template original.
+	createFromTemplate: protectedProcedure
+		.input(
+			z.object({
+				templateDocId: z.string(),
+				projectId: z.string(),
+				title: z.string().min(1).max(255)
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			return ctx.withRLS(async (db) => {
+				const [tmpl] = await db
+					.select()
+					.from(document)
+					.where(eq(document.id, input.templateDocId))
+					.limit(1);
+
+				if (!tmpl) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+				if (!tmpl.isTemplate)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: 'Document is not a template' });
+
+				// Resolver contenido: draft > versión actual > ''
+				let content = tmpl.draftContent ?? '';
+				if (!content && tmpl.currentVersionId) {
+					const [ver] = await db
+						.select({ content: documentVersion.content })
+						.from(documentVersion)
+						.where(eq(documentVersion.id, tmpl.currentVersionId))
+						.limit(1);
+					content = ver?.content ?? '';
+				}
+
+				const docId = crypto.randomUUID();
+				try {
+					const [created] = await db
+						.insert(document)
+						.values({ id: docId, projectId: input.projectId, title: input.title, type: tmpl.type })
+						.returning();
+
+					const versionId = crypto.randomUUID();
+					await db.insert(documentVersion).values({
+						id: versionId,
+						documentId: docId,
+						content,
+						versionNumber: 1,
+						changeDescription: `Created from template "${tmpl.title}"`,
+						createdBy: ctx.user.id
+					});
+
+					const [updated] = await db
+						.update(document)
+						.set({ currentVersionId: versionId })
+						.where(eq(document.id, created.id))
+						.returning();
+
+					return updated;
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un documento con el título "${input.title}" en este proyecto.`
+						});
+					}
+					throw e;
+				}
+			});
+		}),
+
+	// Crea una copia del documento actual como template (isTemplate = true).
+	saveAsTemplate: protectedProcedure
+		.input(
+			z.object({
+				documentId: z.string(),
+				templateTitle: z.string().min(1).max(255)
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			return ctx.withRLS(async (db) => {
+				const [src] = await db
+					.select()
+					.from(document)
+					.where(eq(document.id, input.documentId))
+					.limit(1);
+
+				if (!src) throw new TRPCError({ code: 'NOT_FOUND' });
+
+				let content = src.draftContent ?? '';
+				if (!content && src.currentVersionId) {
+					const [ver] = await db
+						.select({ content: documentVersion.content })
+						.from(documentVersion)
+						.where(eq(documentVersion.id, src.currentVersionId))
+						.limit(1);
+					content = ver?.content ?? '';
+				}
+
+				const docId = crypto.randomUUID();
+				try {
+					const [created] = await db
+						.insert(document)
+						.values({ id: docId, projectId: src.projectId, title: input.templateTitle, type: src.type, isTemplate: true })
+						.returning();
+
+					const versionId = crypto.randomUUID();
+					await db.insert(documentVersion).values({
+						id: versionId,
+						documentId: docId,
+						content,
+						versionNumber: 1,
+						changeDescription: `Template saved from "${src.title}"`,
+						createdBy: ctx.user.id
+					});
+
+					const [updated] = await db
+						.update(document)
+						.set({ currentVersionId: versionId })
+						.where(eq(document.id, created.id))
+						.returning();
+
+					return updated;
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un template con el título "${input.templateTitle}" en este proyecto.`
+						});
+					}
+					throw e;
+				}
+			});
+		}),
+
 	// Restaura una versión anterior: la copia como nuevo draft (sin commitear)
 	// El usuario puede revisar antes de hacer commit
 	restoreVersion: protectedProcedure

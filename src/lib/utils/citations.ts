@@ -376,6 +376,32 @@ function chicagoNote(ref: CiteRef): string {
 				: ` (${year})`;
 			return `${authors}, *${ref.title}*${section}${ed}${pub}.`;
 		}
+		case 'scholastic': {
+			const part = ref.extra?.part ? ` ${ref.extra.part}` : '';
+			const q = ref.extra?.question ? `, q. ${ref.extra.question}` : '';
+			const a = ref.extra?.article ? `, a. ${ref.extra.article}` : '';
+			const sub = ref.extra?.subdivision ? `, ${ref.extra.subdivision}` : '';
+			return `${authors}, *${ref.title}*${part}${q}${a}${sub}.`;
+		}
+		case 'biblical': {
+			const trans = ref.extra?.translation ? ` (${ref.extra.translation})` : '';
+			return `*${ref.title}*${trans}.`;
+		}
+		case 'classical': {
+			const passage = ref.extra?.passage ? ` ${ref.extra.passage}` : '';
+			const trans = ref.extra?.translator ? `, trans. ${ref.extra.translator}` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? `(${place}${ref.publisher}, ${year})` : `(${year})`;
+			return `${authors}, *${ref.title}*${passage}${trans} ${pub}.`;
+		}
+		case 'earlymodern': {
+			const trans = ref.extra?.translator ? `, trans. ${ref.extra.translator}` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` (${place}${ref.publisher}, ${year})` : ` (${year})`;
+			const sigla = ref.extra?.edition_sigla ? ` ${ref.extra.edition_sigla}` : '';
+			const section = ref.extra?.section ? ` ${ref.extra.section}` : '';
+			return `${authors}, *${ref.title}*${trans}${pub},${sigla}${section}.`;
+		}
 		default: {
 			const url = ref.url ? `, ${ref.url}` : '';
 			return `${authors}, *${ref.title}* (${year})${url}.`;
@@ -438,6 +464,29 @@ function chicagoBib(ref: CiteRef): string {
 				? ` ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}.`
 				: ref.extra?.edition ? ` ${ref.extra.edition}.` : '.';
 			return `${authors}. *${ref.title}*.${ed} ${year}.`;
+		}
+		case 'scholastic': {
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			return `${authors}. *${ref.title}*.${pub} ${year}.`;
+		}
+		case 'biblical': {
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			return `*${ref.title}*.${pub} ${year}.`;
+		}
+		case 'classical': {
+			const trans = ref.extra?.translator ? ` Translated by ${ref.extra.translator}.` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			return `${authors}. *${ref.title}*.${trans}${pub} ${year}.`;
+		}
+		case 'earlymodern': {
+			const trans = ref.extra?.translator ? ` Translated by ${ref.extra.translator}.` : '';
+			const origYear = ref.extra?.original_year ? ` Originally published ${ref.extra.original_year}.` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			return `${authors}. *${ref.title}*.${trans}${pub} ${year}.${origYear}`;
 		}
 		default: {
 			const url = ref.url ? ` ${ref.url}.` : '';

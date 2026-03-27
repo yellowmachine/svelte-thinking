@@ -13,7 +13,11 @@ export const referenceTypeEnum = scholioSchema.enum('reference_type', [
 	'techreport',
 	'misc',
 	'magisterial',
-	'patristic'
+	'patristic',
+	'scholastic',
+	'biblical',
+	'classical',
+	'earlymodern'
 ]);
 
 // RLS helper — reused from other schemas

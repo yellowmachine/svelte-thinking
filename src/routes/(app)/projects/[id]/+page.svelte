@@ -109,6 +109,10 @@
 	let creatingDoc = $state(false);
 	let createDocError = $state('');
 
+	// Split templates from normal documents
+	const templates = $derived(documents.filter((d) => d.isTemplate));
+	const normalDocs = $derived(documents.filter((d) => !d.isTemplate));
+
 	const docTypeOptions = [
 		{ value: 'paper' as const, label: 'Article / Essay', description: 'Main academic text: article, thesis, essay, treatise or commentary.' },
 		{ value: 'notes' as const, label: 'Notes', description: 'Ideas and annotations in progress.' },
@@ -133,6 +137,64 @@
 		} catch (e) {
 			createDocError = e instanceof Error ? e.message : 'Error creating document';
 			creatingDoc = false;
+		}
+	}
+
+	// ── Templates ─────────────────────────────────────────────────────────────
+	let showUseTemplate = $state<string | null>(null); // templateDoc.id being used
+	let fromTemplateTitle = $state('');
+	let fromTemplateCreating = $state(false);
+	let fromTemplateError = $state('');
+
+	let saveAsTemplateDocId = $state<string | null>(null); // doc.id being saved as template
+	let templateTitle = $state('');
+	let savingTemplate = $state(false);
+	let saveTemplateError = $state('');
+
+	function openUseTemplate(templateId: string, templateName: string) {
+		showUseTemplate = templateId;
+		fromTemplateTitle = templateName.replace(/^Template:\s*/i, '').trim();
+		fromTemplateError = '';
+	}
+
+	function openSaveAsTemplate(docId: string, docTitle: string) {
+		saveAsTemplateDocId = docId;
+		templateTitle = `Template: ${docTitle}`;
+		saveTemplateError = '';
+	}
+
+	async function createFromTemplate() {
+		if (!fromTemplateTitle.trim() || !showUseTemplate) return;
+		fromTemplateCreating = true;
+		fromTemplateError = '';
+		try {
+			const doc = await trpc.documents.createFromTemplate.mutate({
+				templateDocId: showUseTemplate,
+				projectId: data.project.id,
+				title: fromTemplateTitle.trim()
+			});
+			window.location.href = `/projects/${data.project.id}/documents/${doc.id}`;
+		} catch (e) {
+			fromTemplateError = e instanceof Error ? e.message : 'Error creating document';
+			fromTemplateCreating = false;
+		}
+	}
+
+	async function saveAsTemplate() {
+		if (!templateTitle.trim() || !saveAsTemplateDocId) return;
+		savingTemplate = true;
+		saveTemplateError = '';
+		try {
+			await trpc.documents.saveAsTemplate.mutate({
+				documentId: saveAsTemplateDocId,
+				templateTitle: templateTitle.trim()
+			});
+			saveAsTemplateDocId = null;
+			await invalidateAll();
+		} catch (e) {
+			saveTemplateError = e instanceof Error ? e.message : 'Error saving template';
+		} finally {
+			savingTemplate = false;
 		}
 	}
 
@@ -580,7 +642,7 @@
 			{/if}
 
 			<!-- Document list -->
-			{#if documents.length === 0}
+			{#if normalDocs.length === 0 && templates.length === 0}
 				<div
 					class="rounded-xl border border-dashed border-paper-border py-12 text-center dark:border-dark-paper-border"
 				>
@@ -588,19 +650,66 @@
 						No documents yet. Create the first one.
 					</p>
 				</div>
-			{:else}
+			{:else if normalDocs.length > 0}
 				<div
 					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
-					{#each documents as doc (doc.id)}
-						<DocumentItem
-							title={doc.title}
-							type={doc.type}
-						badge={getDocumentBadge(doc)}
-						onclick={() =>
-								(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
-						/>
+					{#each normalDocs as doc (doc.id)}
+						<div class="group relative flex items-center">
+							<div class="flex-1 min-w-0">
+								<DocumentItem
+									title={doc.title}
+									type={doc.type as 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter'}
+									badge={getDocumentBadge(doc)}
+									onclick={() => (window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
+								/>
+							</div>
+							{#if canEdit}
+								<button
+									onclick={() => openSaveAsTemplate(doc.id, doc.title)}
+									title="Save as template"
+									class="absolute right-1 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 text-ink-faint hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+								>
+									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+										<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v4h8V3"/><path d="M8 21v-6h8v6"/>
+									</svg>
+								</button>
+							{/if}
+						</div>
 					{/each}
+				</div>
+			{/if}
+
+			<!-- Templates section -->
+			{#if templates.length > 0}
+				<div class="mt-6">
+					<h3 class="mb-2 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Templates</h3>
+					<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper">
+						{#each templates as tmpl (tmpl.id)}
+							<div class="flex items-center gap-1 pl-2 pr-1 py-1.5">
+								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-ink-faint dark:text-dark-ink-faint" aria-hidden="true">
+									<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v4h8V3"/><path d="M8 21v-6h8v6"/>
+								</svg>
+								<span class="flex-1 min-w-0 truncate font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{tmpl.title}</span>
+								<div class="flex items-center gap-1 shrink-0">
+									{#if canEdit}
+										<button
+											onclick={() => openUseTemplate(tmpl.id, tmpl.title)}
+											class="rounded-md bg-accent/10 px-2.5 py-1 font-sans text-xs font-medium text-accent hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
+										>
+											Use
+										</button>
+									{/if}
+									<a
+										href="/projects/{data.project.id}/documents/{tmpl.id}"
+										class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+									>
+										Edit
+									</a>
+								</div>
+							</div>
+						{/each}
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -1061,4 +1170,84 @@
 			window.location.href = `/projects/${data.project.id}/documents/${docId}`;
 		}}
 	/>
+{/if}
+
+<!-- Use template modal -->
+{#if showUseTemplate}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+		<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+			<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">New document from template</h2>
+			<div class="flex flex-col gap-3">
+				<div>
+					<label for="from-tmpl-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Document title</label>
+					<input
+						id="from-tmpl-title"
+						type="text"
+						bind:value={fromTemplateTitle}
+						placeholder="Document title"
+						onkeydown={(e) => { if (e.key === 'Enter' && fromTemplateTitle.trim() && !fromTemplateCreating) createFromTemplate(); }}
+						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					/>
+				</div>
+				{#if fromTemplateError}
+					<p class="font-sans text-sm text-red-600 dark:text-red-400">{fromTemplateError}</p>
+				{/if}
+				<div class="flex gap-2">
+					<button
+						onclick={createFromTemplate}
+						disabled={fromTemplateCreating || !fromTemplateTitle.trim()}
+						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
+					>
+						{fromTemplateCreating ? 'Creating...' : 'Create and open'}
+					</button>
+					<button
+						onclick={() => (showUseTemplate = null)}
+						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Save as template modal -->
+{#if saveAsTemplateDocId}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+		<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Save as template</h2>
+			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">A copy of this document will be saved as a reusable template in this project.</p>
+			<div class="flex flex-col gap-3">
+				<div>
+					<label for="tmpl-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Template name</label>
+					<input
+						id="tmpl-title"
+						type="text"
+						bind:value={templateTitle}
+						onkeydown={(e) => { if (e.key === 'Enter' && templateTitle.trim() && !savingTemplate) saveAsTemplate(); }}
+						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					/>
+				</div>
+				{#if saveTemplateError}
+					<p class="font-sans text-sm text-red-600 dark:text-red-400">{saveTemplateError}</p>
+				{/if}
+				<div class="flex gap-2">
+					<button
+						onclick={saveAsTemplate}
+						disabled={savingTemplate || !templateTitle.trim()}
+						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
+					>
+						{savingTemplate ? 'Saving...' : 'Save template'}
+					</button>
+					<button
+						onclick={() => (saveAsTemplateDocId = null)}
+						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 {/if}

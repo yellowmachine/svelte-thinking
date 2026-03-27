@@ -414,7 +414,11 @@
 		techreport: 'Technical report',
 		misc: 'Other',
 		magisterial: 'Church document',
-		patristic: 'Patristic / medieval text'
+		patristic: 'Patristic / medieval text',
+		scholastic: 'Scholastic work',
+		biblical: 'Biblical text',
+		classical: 'Classical text',
+		earlymodern: 'Early modern work'
 	};
 
 	const ALL_TYPES: ReferenceType[] = [
@@ -427,7 +431,11 @@
 		'techreport',
 		'misc',
 		'magisterial',
-		'patristic'
+		'patristic',
+		'scholastic',
+		'biblical',
+		'classical',
+		'earlymodern'
 	];
 
 	function formatAuthors(ref: Ref): string {
@@ -846,6 +854,114 @@
 								<div>
 									<label for="ref-column" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Vol:col / page</label>
 									<input id="ref-column" type="text" placeholder="32:456" bind:value={form.extra.column} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+							</div>
+						{:else if form.type === 'scholastic'}
+							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+								Use <strong>Title</strong> for the work name (e.g. <em>Summa Theologiae</em>) and fill Author as usual.
+							</p>
+							<div class="grid grid-cols-3 gap-2">
+								<div>
+									<label for="ref-part" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Part</label>
+									<input id="ref-part" type="text" placeholder="I-II" bind:value={form.extra.part} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+								<div>
+									<label for="ref-question" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Question (q.)</label>
+									<input id="ref-question" type="text" placeholder="94" bind:value={form.extra.question} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+								<div>
+									<label for="ref-article" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Article (a.)</label>
+									<input id="ref-article" type="text" placeholder="2" bind:value={form.extra.article} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+							</div>
+							<div>
+								<label for="ref-subdivision" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Subdivision</label>
+								<select id="ref-subdivision" bind:value={form.extra.subdivision} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+									<option value="">— none —</option>
+									<option value="corp.">corp. (corpus)</option>
+									<option value="s.c.">s.c. (sed contra)</option>
+									<option value="ad 1">ad 1</option>
+									<option value="ad 2">ad 2</option>
+									<option value="ad 3">ad 3</option>
+									<option value="obj. 1">obj. 1</option>
+									<option value="obj. 2">obj. 2</option>
+									<option value="obj. 3">obj. 3</option>
+								</select>
+							</div>
+						{:else if form.type === 'biblical'}
+							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+								Use <strong>Title</strong> for the full name of the Bible translation (e.g. <em>The Holy Bible, New Revised Standard Version</em>).
+							</p>
+							<div>
+								<label for="ref-translation" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Translation abbreviation</label>
+								<select id="ref-translation" bind:value={form.extra.translation} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+									<option value="">— select —</option>
+									<option value="RSV">RSV (Revised Standard Version)</option>
+									<option value="NRSV">NRSV (New Revised Standard Version)</option>
+									<option value="NAB">NAB (New American Bible)</option>
+									<option value="NABRE">NABRE (New American Bible Revised Edition)</option>
+									<option value="DRB">DRB (Douay-Rheims Bible)</option>
+									<option value="NIV">NIV (New International Version)</option>
+									<option value="ESV">ESV (English Standard Version)</option>
+									<option value="LXX">LXX (Septuagint)</option>
+									<option value="Vg">Vg (Vulgata)</option>
+									<option value="BHS">BHS (Biblia Hebraica Stuttgartensia)</option>
+								</select>
+							</div>
+							<div class="flex items-center gap-2">
+								<input id="ref-deutero" type="checkbox" checked={form.extra.deuterocanonical === 'true'} onchange={(e) => { form.extra.deuterocanonical = (e.currentTarget as HTMLInputElement).checked ? 'true' : ''; }} class="h-4 w-4 rounded border-paper-border accent-accent" />
+								<label for="ref-deutero" class="font-sans text-sm text-ink dark:text-dark-ink">Includes deuterocanonical / apocryphal books</label>
+							</div>
+						{:else if form.type === 'classical'}
+							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+								For Plato (Stephanus), Aristotle (Bekker), and other ancient authors with canonical numbering. Cite by canonical passage, independent of edition.
+							</p>
+							<div class="grid grid-cols-2 gap-2">
+								<div>
+									<label for="ref-pagination" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Pagination system</label>
+									<select id="ref-pagination" bind:value={form.extra.pagination_system} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+										<option value="">— select —</option>
+										<option value="stephanus">Stephanus (Plato)</option>
+										<option value="bekker">Bekker (Aristotle)</option>
+										<option value="diels">Diels-Kranz (Presocratics)</option>
+										<option value="other">Other / none</option>
+									</select>
+								</div>
+								<div>
+									<label for="ref-work-abbrev" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Work abbreviation</label>
+									<input id="ref-work-abbrev" type="text" placeholder="Rep., Met., NE…" bind:value={form.extra.work_abbrev} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+							</div>
+							<div>
+								<label for="ref-passage" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Passage</label>
+								<input id="ref-passage" type="text" placeholder="514a–520a  or  1045b23–35" bind:value={form.extra.passage} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+							</div>
+							<div>
+								<label for="ref-translator" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Translator</label>
+								<input id="ref-translator" type="text" placeholder="G.M.A. Grube" bind:value={form.extra.translator} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+							</div>
+						{:else if form.type === 'earlymodern'}
+							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+								For Descartes, Kant, Spinoza, Hegel, Hume, Leibniz, etc. Cite by standard edition sigla (AT, AA, KrV A/B, GW…) or section/paragraph.
+							</p>
+							<div class="grid grid-cols-2 gap-2">
+								<div>
+									<label for="ref-sigla" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Edition sigla</label>
+									<input id="ref-sigla" type="text" placeholder="AT, AA, KrV, GW…" bind:value={form.extra.edition_sigla} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+								<div>
+									<label for="ref-em-section" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Section / §</label>
+									<input id="ref-em-section" type="text" placeholder="A123/B456  or  §142  or  7:45" bind:value={form.extra.section} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+							</div>
+							<div class="grid grid-cols-2 gap-2">
+								<div>
+									<label for="ref-em-translator" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Translator</label>
+									<input id="ref-em-translator" type="text" placeholder="Norman Kemp Smith" bind:value={form.extra.translator} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								</div>
+								<div>
+									<label for="ref-orig-year" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Original year</label>
+									<input id="ref-orig-year" type="text" placeholder="1781" bind:value={form.extra.original_year} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
 								</div>
 							</div>
 						{/if}

@@ -28,6 +28,8 @@ export const document = scholioSchema.table(
 		draftContent: text('draft_content'),
 		// Owner can make a document publicly readable (for AI context sharing)
 		isPublic: boolean('is_public').notNull().default(false),
+		// Marks this document as a reusable template within the project
+		isTemplate: boolean('is_template').notNull().default(false),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},

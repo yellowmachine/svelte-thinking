@@ -20,7 +20,11 @@ const referenceTypeValues = [
 	'techreport',
 	'misc',
 	'magisterial',
-	'patristic'
+	'patristic',
+	'scholastic',
+	'biblical',
+	'classical',
+	'earlymodern'
 ] as const;
 
 const referenceInputSchema = z.object({

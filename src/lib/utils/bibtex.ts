@@ -15,7 +15,11 @@ export type ReferenceType =
 	| 'techreport'
 	| 'misc'
 	| 'magisterial'
-	| 'patristic';
+	| 'patristic'
+	| 'scholastic'
+	| 'biblical'
+	| 'classical'
+	| 'earlymodern';
 
 export interface ParsedBibtex {
 	citeKey: string;
