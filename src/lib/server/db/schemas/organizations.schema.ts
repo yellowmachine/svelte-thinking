@@ -1,4 +1,4 @@
-import { text, timestamp, boolean, uniqueIndex, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { text, timestamp, boolean, uniqueIndex, index, pgPolicy, numeric } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 
@@ -6,7 +6,7 @@ const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '
 
 // ── Enums ─────────────────────────────────────────────────────────────────
 
-export const orgMemberRoleEnum = scholioSchema.enum('org_member_role', ['admin', 'member']);
+export const orgMemberRoleEnum = scholioSchema.enum('org_member_role', ['admin', 'member', 'guest']);
 
 export const orgInvitationStatusEnum = scholioSchema.enum('org_invitation_status', [
 	'pending',
@@ -27,6 +27,8 @@ export const organization = scholioSchema.table(
 		// Per-task AI config: { agent, draft, review, requirements } → { keyId, model }
 		// keyId references organization_api_key.id
 		aiTaskConfig: text('ai_task_config'),
+		// Soft monthly spend cap in EUR (null = unlimited)
+		monthlyBudgetEur: numeric('monthly_budget_eur', { precision: 10, scale: 2 }),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},

@@ -16,6 +16,7 @@ import { feedbackRouter } from './routers/feedback';
 import { requirementsRouter } from './routers/requirements';
 import { discoverRouter } from './routers/discover';
 import { jupyterRouter } from './routers/jupyter';
+import { orgsRouter } from './routers/orgs';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -34,7 +35,8 @@ export const appRouter = router({
 	feedback: feedbackRouter,
 	requirements: requirementsRouter,
 	discover: discoverRouter,
-	jupyter: jupyterRouter
+	jupyter: jupyterRouter,
+	orgs: orgsRouter
 });
 
 export type AppRouter = typeof appRouter;

@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
 	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
+	import OrgSettings from '$lib/components/projects/OrgSettings.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -15,7 +16,7 @@
 	let confirmPassword = $state('');
 
 	// Active section
-	let activeTab: 'profile' | 'billing' | 'ai' | 'security' | 'appearance' = $state('profile');
+	let activeTab: 'profile' | 'billing' | 'ai' | 'security' | 'appearance' | 'organizations' = $state('profile');
 
 	// Billing state
 	type PlanInfo = {
@@ -378,6 +379,15 @@
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Appearance
+		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = 'organizations')}
+			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'organizations'
+				? 'border-b-2 border-accent font-medium text-accent'
+				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+		>
+			Organizations
 		</button>
 	</div>
 
@@ -1254,5 +1264,16 @@
 			</p>
 			<ThemePicker />
 		</section>
+	</div>
+{/if}
+
+<!-- ── ORGANIZATIONS TAB ── -->
+{#if activeTab === 'organizations'}
+	<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Organizations</h2>
+		<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			Create or join organizations to share AI billing and collaborate on projects.
+		</p>
+		<OrgSettings initialOrgs={data.orgs ?? []} />
 	</div>
 {/if}

@@ -10,6 +10,7 @@ import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
+import { organization, organizationMember, organizationApiKey } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
 import { type AiTask, DEFAULT_MODEL as AI_DEFAULT_MODEL, parseTaskConfig } from './aiConfig';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
@@ -498,24 +499,105 @@ type OAMessage = {
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Resolves the API key and model for a given task based on the user's task config.
+type KeyRow = { id: string; encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean };
+
+// Resolves the API key and model for a given task.
+// If the project belongs to an org and the user is a member, uses the org key.
+// Falls back to the user's personal key otherwise.
 async function resolveTaskKey(
 	withRLS: WithRLS,
+	db: Db,
 	userId: string,
 	task: AiTask,
+	projectId?: string,
 	fallbackModel: string = DEFAULT_MODEL
-): Promise<{ apiKey: string; model: string }> {
+): Promise<{ apiKey: string; model: string; resolvedOrgId?: string }> {
+	// ── 1. Check if project is linked to an org ───────────────────────────────
+	let orgId: string | null = null;
+	if (projectId) {
+		const projectRows = await withRLS((rdb) =>
+			(rdb as Db)
+				.select({ orgId: project.orgId })
+				.from(project)
+				.where(eq(project.id, projectId))
+				.limit(1)
+		) as { orgId: string | null }[];
+		orgId = projectRows[0]?.orgId ?? null;
+	}
+
+	// ── 2. If org project, try org key ────────────────────────────────────────
+	if (orgId) {
+		// Verify user is a member (withRLS — member can see their own row)
+		const memberRows = await withRLS((rdb) =>
+			(rdb as Db)
+				.select({ id: organizationMember.id })
+				.from(organizationMember)
+				.where(and(eq(organizationMember.orgId, orgId!), eq(organizationMember.userId, userId)))
+				.limit(1)
+		) as { id: string }[];
+
+		// Also accept the org owner (may not have a member row)
+		const ownerRows = await db
+			.select({ id: organization.id })
+			.from(organization)
+			.where(and(eq(organization.id, orgId), eq(organization.ownerId, userId)))
+			.limit(1);
+
+		if (memberRows[0] || ownerRows[0]) {
+			// Fetch org config + keys without RLS (member RLS blocks key SELECT)
+			const [orgRows, orgKeys] = await Promise.all([
+				db
+					.select({ aiTaskConfig: organization.aiTaskConfig })
+					.from(organization)
+					.where(eq(organization.id, orgId))
+					.limit(1),
+				db
+					.select({
+						id: organizationApiKey.id,
+						encryptedApiKey: organizationApiKey.encryptedApiKey,
+						encryptedDataKey: organizationApiKey.encryptedDataKey,
+						iv: organizationApiKey.iv,
+						authTag: organizationApiKey.authTag,
+						enabled: organizationApiKey.enabled
+					})
+					.from(organizationApiKey)
+					.where(and(eq(organizationApiKey.orgId, orgId), eq(organizationApiKey.enabled, true)))
+			]);
+
+			const orgConfig = parseTaskConfig(orgRows[0]?.aiTaskConfig ?? null);
+			const orgTaskEntry = orgConfig[task];
+			const orgKeyRow = (orgTaskEntry
+				? orgKeys.find((k) => k.id === orgTaskEntry.keyId)
+				: orgKeys[0]) as KeyRow | undefined;
+
+			if (orgKeyRow) {
+				let apiKey: string;
+				try {
+					apiKey = await decryptSecret(orgKeyRow);
+				} catch {
+					throw new TRPCError({
+						code: 'INTERNAL_SERVER_ERROR',
+						message: 'Error decrypting org API key.'
+					});
+				}
+				const model = orgTaskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
+				return { apiKey, model, resolvedOrgId: orgId };
+			}
+		}
+	}
+
+	// ── 3. Fallback: personal key ─────────────────────────────────────────────
 	const [profileRows, keys] = await Promise.all([
-		withRLS((db) =>
-			(db as Db)
+		withRLS((rdb) =>
+			(rdb as Db)
 				.select({ aiTaskConfig: userProfile.aiTaskConfig })
 				.from(userProfile)
 				.where(eq(userProfile.userId, userId))
 				.limit(1)
 		) as Promise<{ aiTaskConfig: string | null }[]>,
 
-		withRLS((db) =>
-			(db as Db)
+		withRLS((rdb) =>
+			(rdb as Db)
 				.select({
 					id: userApiKey.id,
 					encryptedApiKey: userApiKey.encryptedApiKey,
@@ -526,7 +608,7 @@ async function resolveTaskKey(
 				})
 				.from(userApiKey)
 				.where(eq(userApiKey.userId, userId))
-		) as Promise<{ id: string; encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean }[]>
+		) as Promise<KeyRow[]>
 	]);
 
 	const taskConfig = parseTaskConfig(profileRows[0]?.aiTaskConfig ?? null);
@@ -538,7 +620,7 @@ async function resolveTaskKey(
 	if (!keyRow) {
 		throw new TRPCError({
 			code: 'PRECONDITION_FAILED',
-			message: 'Configura tu API key de OpenRouter en Ajustes → Asistente IA.'
+			message: 'Configure your OpenRouter API key in Settings → AI Assistant.'
 		});
 	}
 
@@ -548,7 +630,7 @@ async function resolveTaskKey(
 	} catch {
 		throw new TRPCError({
 			code: 'INTERNAL_SERVER_ERROR',
-			message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
+			message: 'Error decrypting API key. Try saving it again in Settings.'
 		});
 	}
 
@@ -838,7 +920,7 @@ export const aiRouter = router({
 
 			// ── Resolve key + model for agent task ───────────────────────────
 			const { apiKey: userApiKey, model: resolvedModel } = await resolveTaskKey(
-				ctx.withRLS as WithRLS, userId, 'agent'
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId
 			);
 
 			// ── Build project index and run agent loop ────────────────────────
@@ -983,7 +1065,7 @@ export const aiRouter = router({
 			const userId = ctx.user.id;
 
 			const { apiKey: userApiKey, model: resolvedModel } = await resolveTaskKey(
-				ctx.withRLS as WithRLS, userId, 'draft', 'anthropic/claude-sonnet-4-5'
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'draft', input.projectId, 'anthropic/claude-sonnet-4-5'
 			);
 
 			const [proj, selectedDocs, ctxLinks] = await Promise.all([
@@ -1144,7 +1226,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 			const userId = ctx.user.id;
 
 			const { apiKey: userApiKey, model } = await resolveTaskKey(
-				ctx.withRLS as WithRLS, userId, 'draft'
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'draft', input.projectId
 			);
 
 			const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
@@ -1211,7 +1293,7 @@ Reglas:
 			const userId = ctx.user.id;
 
 			const { apiKey: userApiKey, model: resolvedReviewModel } = await resolveTaskKey(
-				ctx.withRLS as WithRLS, userId, 'review'
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'review', input.projectId
 			);
 
 			// Load document content + project context in parallel

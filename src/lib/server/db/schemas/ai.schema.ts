@@ -1,6 +1,8 @@
-import { text, timestamp, index, pgPolicy, integer, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
+import { text, timestamp, index, pgPolicy, integer, uniqueIndex, jsonb, numeric } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
+
+const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
 import { document } from './documents.schema';
 import { project } from './projects.schema';
 
@@ -87,6 +89,51 @@ export const userAiUsage = scholioSchema.table(
 		pgPolicy('user_ai_usage_access', {
 			for: 'all',
 			using: sql`${t.userId} = current_setting('app.current_user_id', true)`
+		})
+	]
+).enableRLS();
+
+// Immutable log of AI calls — aggregated for quota enforcement and billing visibility.
+// orgId = null means personal (user key); orgId set means org billing applies.
+export const aiUsageLog = scholioSchema.table(
+	'ai_usage_log',
+	{
+		id: text('id').primaryKey(),
+		orgId: text('org_id'), // null = personal
+		projectId: text('project_id').notNull(),
+		userId: text('user_id').notNull(),
+		model: text('model').notNull(),
+		task: text('task'), // 'agent' | 'draft' | 'review' | 'requirements' | 'suggest'
+		inputTokens: integer('input_tokens').notNull().default(0),
+		outputTokens: integer('output_tokens').notNull().default(0),
+		estimatedCostEur: numeric('estimated_cost_eur', { precision: 10, scale: 6 }),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(t) => [
+		index('ai_usage_log_org_idx').on(t.orgId, t.createdAt),
+		index('ai_usage_log_project_idx').on(t.projectId, t.createdAt),
+		index('ai_usage_log_user_idx').on(t.userId, t.createdAt),
+
+		// User sees own rows; org owner sees all org rows
+		pgPolicy('ai_usage_log_select', {
+			for: 'select',
+			using: sql`
+				${t.userId} = ${currentUserId}
+				OR (
+					${t.orgId} IS NOT NULL
+					AND EXISTS (
+						SELECT 1 FROM scholio.organization
+						WHERE organization.id = ${t.orgId}
+						AND organization.owner_id = ${currentUserId}
+					)
+				)
+			`
+		}),
+
+		// Server inserts with user context set
+		pgPolicy('ai_usage_log_insert', {
+			for: 'insert',
+			withCheck: sql`${t.userId} = ${currentUserId}`
 		})
 	]
 ).enableRLS();

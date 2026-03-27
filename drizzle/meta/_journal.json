@@ -64,6 +64,20 @@
       "when": 1774612400000,
       "tag": "0008_add_user_theme",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774613996373,
+      "tag": "0009_regular_champions",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774627534369,
+      "tag": "0010_omniscient_greymalkin",
+      "breakpoints": true
     }
   ]
 }
