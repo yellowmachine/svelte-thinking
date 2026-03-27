@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { eq, desc, asc, inArray, and, count, sql } from 'drizzle-orm';
+import { eq, desc, asc, inArray, and, count, sql, sum, gte } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
-import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
+import { aiConversation, aiMessage, aiUsageLog } from '$lib/server/db/schemas/ai.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
@@ -12,7 +12,7 @@ import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember, organizationApiKey } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
-import { type AiTask, DEFAULT_MODEL as AI_DEFAULT_MODEL, parseTaskConfig } from './aiConfig';
+import { type AiTask, DEFAULT_MODEL as AI_DEFAULT_MODEL, parseTaskConfig, fetchOpenRouterPrices } from './aiConfig';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import type { Db } from '$lib/server/db';
 
@@ -638,6 +638,85 @@ async function resolveTaskKey(
 	return { apiKey, model };
 }
 const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
+// Fixed USD→EUR rate for cost estimates (good enough for beta quotas)
+const USD_TO_EUR = 0.92;
+
+function startOfMonth(): Date {
+	const d = new Date();
+	return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+// Fire-and-forget: inserts a usage record after each AI call
+async function logUsage(
+	db: Db,
+	{
+		orgId,
+		projectId,
+		userId,
+		model,
+		task,
+		inputTokens,
+		outputTokens
+	}: {
+		orgId?: string;
+		projectId: string;
+		userId: string;
+		model: string;
+		task: string;
+		inputTokens: number;
+		outputTokens: number;
+	}
+) {
+	try {
+		const prices = await fetchOpenRouterPrices();
+		const price = prices[model];
+		let estimatedCostEur: string | undefined;
+		if (price) {
+			const costUsd = inputTokens * price.input + outputTokens * price.output;
+			estimatedCostEur = (costUsd * USD_TO_EUR).toFixed(6);
+		}
+		await db.insert(aiUsageLog).values({
+			id: crypto.randomUUID(),
+			orgId: orgId ?? null,
+			projectId,
+			userId,
+			model,
+			task,
+			inputTokens,
+			outputTokens,
+			estimatedCostEur
+		});
+	} catch (e) {
+		console.error('[logUsage] failed:', e);
+	}
+}
+
+// Throws FORBIDDEN if org has exceeded its monthly budget
+async function checkOrgQuota(db: Db, orgId: string): Promise<void> {
+	const since = startOfMonth();
+	const [usageRows, orgRows] = await Promise.all([
+		db
+			.select({ total: sum(aiUsageLog.estimatedCostEur) })
+			.from(aiUsageLog)
+			.where(and(eq(aiUsageLog.orgId, orgId), gte(aiUsageLog.createdAt, since))),
+		db
+			.select({ monthlyBudgetEur: organization.monthlyBudgetEur })
+			.from(organization)
+			.where(eq(organization.id, orgId))
+			.limit(1)
+	]);
+
+	const budget = parseFloat(orgRows[0]?.monthlyBudgetEur ?? '0');
+	if (!budget) return; // null / 0 = unlimited
+
+	const spent = parseFloat(usageRows[0]?.total ?? '0');
+	if (spent >= budget) {
+		throw new TRPCError({
+			code: 'FORBIDDEN',
+			message: `Organization monthly AI budget of €${budget.toFixed(2)} has been reached. Contact the org owner to increase the limit.`
+		});
+	}
+}
 
 async function runAgentLoop(
 	systemPrompt: string,
@@ -648,7 +727,7 @@ async function runAgentLoop(
 	projectId: string,
 	apiKey: string,
 	model: string
-): Promise<{ content: string; pendingActions: PendingAction[]; docsUsed: { id: string; title: string }[] }> {
+): Promise<{ content: string; pendingActions: PendingAction[]; docsUsed: { id: string; title: string }[]; inputTokens: number; outputTokens: number }> {
 	const messages: OAMessage[] = [
 		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
 		{ role: 'user', content: userMessage }
@@ -657,6 +736,8 @@ async function runAgentLoop(
 	const pendingActions: PendingAction[] = [];
 	const seenDocs = new Map<string, string>();
 	const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
+	let totalInputTokens = 0;
+	let totalOutputTokens = 0;
 
 	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
 		const res = await fetch(OPENROUTER_URL, {
@@ -679,7 +760,11 @@ async function runAgentLoop(
 
 		const data = (await res.json()) as {
 			choices: { message: OAMessage; finish_reason: string }[];
+			usage?: { prompt_tokens: number; completion_tokens: number };
 		};
+		totalInputTokens += data.usage?.prompt_tokens ?? 0;
+		totalOutputTokens += data.usage?.completion_tokens ?? 0;
+
 		const choice = data.choices[0];
 		if (!choice) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo.' });
 
@@ -722,7 +807,9 @@ async function runAgentLoop(
 		return {
 			content: choice.message.content ?? '',
 			pendingActions,
-			docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title }))
+			docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title })),
+			inputTokens: totalInputTokens,
+			outputTokens: totalOutputTokens
 		};
 	}
 
@@ -919,9 +1006,11 @@ export const aiRouter = router({
 			);
 
 			// ── Resolve key + model for agent task ───────────────────────────
-			const { apiKey: userApiKey, model: resolvedModel } = await resolveTaskKey(
+			const { apiKey: userApiKey, model: resolvedModel, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId
 			);
+
+			if (resolvedOrgId) await checkOrgQuota(ctx.db as Db, resolvedOrgId);
 
 			// ── Build project index and run agent loop ────────────────────────
 			const projectIndex = await buildProjectIndex(ctx.withRLS as WithRLS, input.projectId);
@@ -929,7 +1018,7 @@ export const aiRouter = router({
 				? `${SYSTEM_PROMPT}\n\n---\n\n${projectIndex}`
 				: SYSTEM_PROMPT;
 
-			const { content: assistantContent, pendingActions, docsUsed } = await runAgentLoop(
+			const { content: assistantContent, pendingActions, docsUsed, inputTokens: agentIn, outputTokens: agentOut } = await runAgentLoop(
 				systemWithIndex,
 				history,
 				input.message,
@@ -938,6 +1027,8 @@ export const aiRouter = router({
 				userApiKey,
 				resolvedModel
 			);
+
+			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'agent', inputTokens: agentIn, outputTokens: agentOut });
 
 			// ── Persist assistant response ────────────────────────────────────
 			const assistantMsgId = crypto.randomUUID();
@@ -1064,9 +1155,11 @@ export const aiRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const { apiKey: userApiKey, model: resolvedModel } = await resolveTaskKey(
+			const { apiKey: userApiKey, model: resolvedModel, resolvedOrgId: draftOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'draft', input.projectId, 'anthropic/claude-sonnet-4-5'
 			);
+
+			if (draftOrgId) await checkOrgQuota(ctx.db as Db, draftOrgId);
 
 			const [proj, selectedDocs, ctxLinks] = await Promise.all([
 				ctx.withRLS((db) =>
@@ -1184,8 +1277,10 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 
 			const data = (await response.json()) as {
 				choices: { message: { content: string } }[];
+				usage?: { prompt_tokens: number; completion_tokens: number };
 			};
 			const generatedContent = data.choices[0]?.message?.content ?? '';
+			logUsage(ctx.db as Db, { orgId: draftOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			const docId = crypto.randomUUID();
 			const versionId = crypto.randomUUID();
@@ -1225,9 +1320,11 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const { apiKey: userApiKey, model } = await resolveTaskKey(
+			const { apiKey: userApiKey, model, resolvedOrgId: sectionOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'draft', input.projectId
 			);
+
+			if (sectionOrgId) await checkOrgQuota(ctx.db as Db, sectionOrgId);
 
 			const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
 			if (!projectContext) {
@@ -1276,6 +1373,7 @@ Reglas:
 
 			const data = await res.json();
 			const text = data.choices?.[0]?.message?.content?.trim() ?? '';
+			logUsage(ctx.db as Db, { orgId: sectionOrgId, projectId: input.projectId, userId, model, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			console.log('[draftSection] response ←', { chars: text.length });
 
@@ -1292,9 +1390,11 @@ Reglas:
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const { apiKey: userApiKey, model: resolvedReviewModel } = await resolveTaskKey(
+			const { apiKey: userApiKey, model: resolvedReviewModel, resolvedOrgId: reviewOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'review', input.projectId
 			);
+
+			if (reviewOrgId) await checkOrgQuota(ctx.db as Db, reviewOrgId);
 
 			// Load document content + project context in parallel
 			const [docRows, projectContext] = await Promise.all([
@@ -1369,6 +1469,7 @@ Rules:
 			const data = await res.json();
 			const rawContent = data.choices?.[0]?.message?.content?.trim() ?? '{}';
 			const raw = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+			logUsage(ctx.db as Db, { orgId: reviewOrgId, projectId: input.projectId, userId, model: resolvedReviewModel, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			console.log('[reviewDocument] response ←', raw.slice(0, 200));
 

@@ -58,7 +58,7 @@ interface PricingCache {
 let pricingCache: PricingCache | null = null;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-async function fetchOpenRouterPrices(): Promise<Record<string, { input: number; output: number }>> {
+export async function fetchOpenRouterPrices(): Promise<Record<string, { input: number; output: number }>> {
 	if (pricingCache && Date.now() - pricingCache.fetchedAt < CACHE_TTL_MS) {
 		return pricingCache.prices;
 	}
