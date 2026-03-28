@@ -34,10 +34,10 @@ export const load: PageServerLoad = async (event) => {
 			return { ...doc, content: versions[0]?.content ?? '', hasDraft: false };
 		}),
 
-		// Project title
+		// Project title + orgId
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: project.id, title: project.title })
+				.select({ id: project.id, title: project.title, orgId: project.orgId })
 				.from(project)
 				.where(eq(project.id, projectId))
 				.limit(1)
@@ -130,6 +130,7 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		document: docResult,
 		projectTitle: projectResult[0]?.title ?? '',
+		projectOrgId: projectResult[0]?.orgId ?? null,
 		inlineComments,
 		currentUserId: event.locals.user!.id,
 		projectDocs,
