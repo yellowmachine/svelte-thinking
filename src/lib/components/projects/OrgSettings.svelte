@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
+	import { invalidateAll } from '$app/navigation';
 	import { AI_TASKS, MODELS } from '$lib/ai-config';
 
 	type Org = { id: string; name: string; slug: string; role: string };
@@ -85,6 +86,7 @@
 			orgs = [...orgs, { id: org.id, name: org.name, slug: org.slug, role: 'owner' }];
 			selectedOrgId = org.id;
 			createName = '';
+			await invalidateAll();
 		} catch (e: unknown) {
 			createError = e instanceof Error ? e.message : 'Error creating organization.';
 		} finally {
