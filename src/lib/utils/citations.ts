@@ -554,9 +554,9 @@ export function processCitations(
 ): string {
 	if (!refs.size) return markdown;
 
-	// Pattern: [@key] (legacy) or [[@key]] (new) or multi-key variants
+	// Pattern: [[@key]] or multi-key [[@key1; @key2]]
 	// citeKey chars: letters, digits, :, -, _, .
-	const CITE_PATTERN = /\[{1,2}(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]{1,2}/g;
+	const CITE_PATTERN = /\[\[(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]\]/g;
 
 	// For numbered styles: collect unique keys in order of first appearance
 	const orderedKeys: string[] = [];
@@ -592,7 +592,7 @@ export function processCitations(
 		if (style === 'apa') {
 			const parts = keys.map((key) => {
 				const ref = refs.get(key);
-				if (!ref) return `[@${key}]`; // unknown key: leave as-is
+				if (!ref) return `[[@${key}]]`; // unknown key: leave as-is
 				usedKeys.add(key);
 				return apaInlineOne(ref).slice(1, -1); // strip outer parens for grouping
 			});
