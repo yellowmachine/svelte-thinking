@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onDestroy, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
@@ -37,9 +36,6 @@
 		localStorage.setItem(VIEW_MODE_KEY, m);
 		if (m !== 'editor') loadRefs();
 	}
-
-	// Sync navbar workspace to the org this project belongs to
-	$effect(() => { workspaceStore.syncToOrg(data.projectOrgId); });
 
 	// Citations
 	let citationStyle = $state<CitationStyle>('apa');

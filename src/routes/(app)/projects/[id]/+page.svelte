@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { invalidateAll, goto } from '$app/navigation';
-	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import DocumentItem from '$lib/components/documents/DocumentItem.svelte';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
@@ -11,8 +10,6 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-
-	$effect(() => { workspaceStore.syncToOrg(data.project?.orgId); });
 
 	type InvitationType = {
 		id: string;
