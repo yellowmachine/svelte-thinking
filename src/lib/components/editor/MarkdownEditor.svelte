@@ -308,8 +308,6 @@
 			lineNumbers(),
 			highlightActiveLine(),
 			keymap.of([
-				...defaultKeymap,
-				...historyKeymap,
 				{
 					key: 'Mod-i',
 					run(view) {
@@ -321,7 +319,9 @@
 						if (word) onignoreword(word);
 						return true;
 					}
-				}
+				},
+				...defaultKeymap,
+				...historyKeymap,
 			]),
 			markdown({ codeLanguages }),
 			autocompletion({ override: [allCompletions], closeOnBlur: true }),

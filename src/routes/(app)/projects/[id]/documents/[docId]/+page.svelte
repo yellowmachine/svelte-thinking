@@ -1253,6 +1253,7 @@
 						onlookup={lookupNames}
 						showLookupHint={lookupUnavailable}
 						spellLanguage={navigator.language}
+						onignoreword={ignoreWord}
 					/>
 				</div>
 			</div>
@@ -1298,6 +1299,7 @@
 					onlookup={lookupNames}
 					showLookupHint={lookupUnavailable}
 					spellLanguage={navigator.language}
+					onignoreword={ignoreWord}
 				/>
 			{/if}
 		</div>
