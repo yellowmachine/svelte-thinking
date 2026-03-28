@@ -51,7 +51,9 @@
 	// [[ dispatcher — character after [[ determines completion type:
 	//   [[        → wikilinks / chapters
 	//   [[@       → bibliographic citations  (inserts [[@key]])
-	//   [[#  etc. → future (headings, embeds…)
+	//   [[#       → heading anchor in current document
+	//   [[^       → footnote (inserts [^N] inline + [^N]: at end)
+	//   [[! [[~   → reserved (embeds, snippets)
 
 	function wikilinkCompletion(context: CompletionContext) {
 		// Matches [[ NOT immediately followed by a special dispatcher char (@, #, !, ^, ~)
@@ -94,10 +96,62 @@
 		return { from: match.from + 2, options }; // +2: skip [[, replace @key…
 	}
 
+	function headingCompletion(context: CompletionContext) {
+		const match = context.matchBefore(/\[\[#[^\]]*$/);
+		if (!match) return null;
+
+		const typed = match.text.slice(3).toLowerCase(); // strip [[#
+		const options: Completion[] = [];
+		for (const line of value.split('\n')) {
+			const m = line.match(/^(#{1,6})\s+(.+)$/);
+			if (!m) continue;
+			const text = m[2].trim();
+			if (!typed || text.toLowerCase().includes(typed)) {
+				options.push({
+					label: text,
+					detail: m[1], // heading level (##, ###…)
+					apply: `[[#${text}]]`
+				});
+			}
+		}
+
+		if (options.length === 0) return null;
+		return { from: match.from, options };
+	}
+
+	function footnoteCompletion(context: CompletionContext) {
+		const match = context.matchBefore(/\[\[\^[^\]]*$/);
+		if (!match) return null;
+
+		const n = (value.match(/\[\^\d+\]:/g) ?? []).length + 1;
+		const options: Completion[] = [
+			{
+				label: `footnote ${n}`,
+				detail: `[^${n}]`,
+				apply: (view, _c, from, to) => {
+					const ref = `[^${n}]`;
+					const def = `\n\n[^${n}]: `;
+					const docEnd = view.state.doc.length;
+					view.dispatch({
+						changes: [
+							{ from, to, insert: ref },
+							{ from: docEnd, insert: def }
+						],
+						selection: { anchor: docEnd + ref.length - (to - from) + def.length }
+					});
+				}
+			}
+		];
+
+		return { from: match.from, options };
+	}
+
 	function allCompletions(context: CompletionContext) {
 		return (
 			epigraphCompletion(context) ??
 			citationCompletion(context) ??
+			headingCompletion(context) ??
+			footnoteCompletion(context) ??
 			wikilinkCompletion(context)
 		);
 	}
