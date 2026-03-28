@@ -90,14 +90,21 @@
 		);
 	});
 
+	let lookupUnavailable = $state(false);
+
 	async function lookupNames(partial: string, context: string): Promise<string[]> {
 		try {
-			return await trpc.ai.lookupNames.query({
+			const result = await trpc.ai.lookupNames.query({
 				partial,
 				context,
 				projectId: data.document.projectId
 			});
-		} catch {
+			lookupUnavailable = false;
+			return result;
+		} catch (e: unknown) {
+			if (e && typeof e === 'object' && 'data' in e && (e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED') {
+				lookupUnavailable = true;
+			}
 			return [];
 		}
 	}
@@ -976,6 +983,7 @@
 						{commentRanges}
 						{scrollToRange}
 						onlookup={lookupNames}
+						showLookupHint={lookupUnavailable}
 					/>
 				</div>
 			</div>
@@ -1019,6 +1027,7 @@
 					{commentRanges}
 					{scrollToRange}
 					onlookup={lookupNames}
+					showLookupHint={lookupUnavailable}
 				/>
 			{/if}
 		</div>

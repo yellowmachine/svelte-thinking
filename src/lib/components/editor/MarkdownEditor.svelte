@@ -44,6 +44,8 @@
 		scrollToRange?: { from: number; to: number } | null;
 		/** Which [[ completions to enable. undefined = all active. */
 		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph'>;
+		/** Show a footer hint that @@ lookup is unavailable (no AI key configured). */
+		showLookupHint?: boolean;
 	} = $props();
 
 	let container: HTMLDivElement | null = null;
@@ -329,6 +331,12 @@
 </script>
 
 <div bind:this={container} class="codemirror-host w-full"></div>
+{#if showLookupHint}
+	<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+		<span class="opacity-60">@@ lookup unavailable —</span>
+		<a href="/settings?tab=ai" class="underline underline-offset-2 hover:text-ink dark:hover:text-dark-ink">assign an AI model in Settings</a>
+	</p>
+{/if}
 
 <style>
 	.codemirror-host :global(.cm-editor) {
