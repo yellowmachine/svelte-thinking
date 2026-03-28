@@ -16,7 +16,7 @@ export async function sendWaitlistApprovalEmail({
 	}
 
 	const resend = new Resend(env.RESEND_API_KEY);
-	const from = env.EMAIL_FROM || 'Scholio <noreply@scholio.tech>';
+	const from = env.EMAIL_FROM || 'Scholio <noreply@support.scholio.review>';
 
 	await resend.emails.send({
 		from,
@@ -114,7 +114,7 @@ export async function sendNewCommentNotification({
 	}
 
 	const resend = new Resend(env.RESEND_API_KEY);
-	const from = env.EMAIL_FROM || 'Scholio <noreply@scholio.tech>';
+	const from = env.EMAIL_FROM || 'Scholio <noreply@support.scholio.review>';
 
 	await resend.emails.send({
 		from,
@@ -157,7 +157,7 @@ export async function sendCommitNotification({
 	}
 
 	const resend = new Resend(env.RESEND_API_KEY);
-	const from = env.EMAIL_FROM || 'Scholio <noreply@scholio.tech>';
+	const from = env.EMAIL_FROM || 'Scholio <noreply@support.scholio.review>';
 
 	await resend.emails.send({
 		from,
@@ -203,7 +203,7 @@ export async function sendCommitNotification({
         <tr>
           <td style="padding:16px 40px 24px;border-top:1px solid #e8e6e0;">
             <p style="margin:0;font-size:12px;color:#a8a29e;line-height:1.6;">
-              Scholio · <a href="https://scholio.tech" style="color:#a8a29e;">scholio.tech</a><br>
+              Scholio · <a href="https://scholio.review" style="color:#a8a29e;">scholio.review</a><br>
               <a href="${unsubscribeUrl}" style="color:#a8a29e;">Mute notifications for this project</a>
             </p>
           </td>
@@ -224,7 +224,7 @@ export async function sendVerificationEmail(email: string, url: string) {
 	}
 
 	const resend = new Resend(env.RESEND_API_KEY);
-	const from = env.EMAIL_FROM || 'Scholio <noreply@scholio.tech>';
+	const from = env.EMAIL_FROM || 'Scholio <noreply@support.scholio.review>';
 
 	await resend.emails.send({
 		from,

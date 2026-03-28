@@ -20,7 +20,7 @@ export async function sendOrgInvitation({
 	const resend = new Resend(env.RESEND_API_KEY);
 
 	await resend.emails.send({
-		from: env.EMAIL_FROM ?? 'noreply@yourdomain.com',
+		from: env.EMAIL_FROM ?? 'Scholio <noreply@support.scholio.review>',
 		to,
 		subject: `${inviterName} invited you to join "${orgName}" on Scholio`,
 		html: `
@@ -53,7 +53,7 @@ export async function sendProjectInvitation({
 	const resend = new Resend(env.RESEND_API_KEY);
 
 	await resend.emails.send({
-		from: env.EMAIL_FROM ?? 'noreply@yourdomain.com',
+		from: env.EMAIL_FROM ?? 'Scholio <noreply@support.scholio.review>',
 		to,
 		subject: `${inviterName} te invitó a colaborar en "${projectTitle}"`,
 		html: `
