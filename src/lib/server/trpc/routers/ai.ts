@@ -1081,7 +1081,8 @@ export const aiRouter = router({
 					projectId: input.projectId,
 					title: input.action.title,
 					type: input.action.docType,
-					draftContent: input.action.content
+					draftContent: input.action.content,
+					generatedByAi: true
 				});
 				await db.insert(documentVersion).values({
 					id: versionId,
@@ -1293,7 +1294,8 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 					projectId: input.projectId,
 					title: docTitle,
 					type: 'paper',
-					draftContent: generatedContent
+					draftContent: generatedContent,
+					generatedByAi: true
 				});
 				await db.insert(documentVersion).values({
 					id: versionId,
@@ -1493,6 +1495,80 @@ Rules:
 			return parsed;
 		}),
 
+	generateReviewQuestions: protectedProcedure
+		.input(z.object({
+			projectId: z.string(),
+			documentId: z.string()
+		}))
+		.mutation(async ({ ctx, input }) => {
+			const userId = ctx.user.id;
+
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'review', input.projectId
+			);
+
+			const [docRows, projectContext] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ draftContent: document.draftContent, title: document.title, type: document.type })
+						.from(document)
+						.where(and(eq(document.id, input.documentId), eq(document.projectId, input.projectId)))
+						.limit(1)
+				) as Promise<{ draftContent: string | null; title: string; type: string }[]>,
+				buildProjectContext(ctx.withRLS, input.projectId)
+			]);
+
+			if (!docRows[0]) throw new TRPCError({ code: 'NOT_FOUND', message: 'Document not found.' });
+
+			const docContent = docRows[0].draftContent?.trim() ?? '';
+			if (!docContent) throw new TRPCError({ code: 'BAD_REQUEST', message: 'The document is empty.' });
+
+			const systemPrompt = `You are a rigorous academic peer reviewer. Given a document, generate 3–5 critical questions that a real reviewer would raise: gaps in argument, missing evidence, methodological concerns, unclear claims, or citation needs.
+
+Respond ONLY with a valid JSON array of strings. No markdown, no explanation outside the JSON.
+Example: ["Why does the author assume X without evidence?", "How does this account for Y?"]
+
+Rules:
+- Each question must be specific to the document content, not generic.
+- Use the language of the document.`;
+
+			const userMessage = `Document type: ${docRows[0].type}\nDocument: "${docRows[0].title}"\n\n${docContent.slice(0, 10000)}${projectContext ? `\n\n---\nProject context:\n${projectContext}` : ''}`;
+
+			const res = await fetch(OPENROUTER_URL, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model,
+					max_tokens: 512,
+					messages: [
+						{ role: 'system', content: systemPrompt },
+						{ role: 'user', content: userMessage }
+					]
+				})
+			});
+
+			if (!res.ok) await throwProviderError(res);
+
+			const data = await res.json();
+			const rawContent = (data.choices?.[0]?.message?.content ?? '[]').trim()
+				.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
+
+			let questions: string[] = [];
+			try {
+				const parsed = JSON.parse(rawContent);
+				if (Array.isArray(parsed)) questions = parsed.filter((q): q is string => typeof q === 'string').slice(0, 5);
+			} catch { questions = []; }
+
+			return questions;
+		}),
+
 	// Quick name lookup for @@ trigger in the editor
 	lookupNames: protectedProcedure
 		.input(z.object({
@@ -1548,5 +1624,65 @@ Rules:
 			});
 
 			return names;
+		}),
+
+	// Explain a citation key in the context of the surrounding text
+	explainCitation: protectedProcedure
+		.input(z.object({
+			projectId: z.string().optional(),
+			citeKey: z.string().max(200),
+			refTitle: z.string().max(500),
+			refAuthors: z.string().max(300),
+			refYear: z.string().max(10),
+			surrounding: z.string().max(1000)
+		}))
+		.query(async ({ ctx, input }) => {
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS, ctx.db, ctx.user.id, 'lookup', input.projectId
+			);
+
+			const refLine = [
+				input.refTitle,
+				input.refAuthors,
+				input.refYear
+			].filter(Boolean).join(' — ');
+
+			const prompt = [
+				'You are an academic writing assistant. Briefly explain (1–2 sentences) why this citation is likely being used, based on the surrounding text and the reference details.',
+				`Reference: ${refLine || input.citeKey}`,
+				`Surrounding text: """${input.surrounding}"""`,
+				'Reply with only the explanation, no preamble.'
+			].filter(Boolean).join('\n');
+
+			const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': 'https://scholio.review',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model,
+					messages: [{ role: 'user', content: prompt }],
+					max_tokens: 150,
+					temperature: 0.3
+				})
+			});
+
+			if (!res.ok) await throwProviderError(res);
+
+			const data = await res.json() as { choices: { message: { content: string } }[]; usage?: { prompt_tokens: number; completion_tokens: number } };
+			const explanation = data.choices[0]?.message?.content?.trim() ?? '';
+
+			logUsage(ctx.db as Db, {
+				userId: ctx.user.id,
+				orgId: resolvedOrgId, projectId: input.projectId,
+				model, task: 'lookup',
+				inputTokens: data.usage?.prompt_tokens ?? 0,
+				outputTokens: data.usage?.completion_tokens ?? 0
+			});
+
+			return explanation;
 		})
 });

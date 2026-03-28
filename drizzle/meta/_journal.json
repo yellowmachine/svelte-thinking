@@ -78,6 +78,13 @@
       "when": 1774627534369,
       "tag": "0010_omniscient_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1774695088477,
+      "tag": "0011_moaning_loners",
+      "breakpoints": true
     }
   ]
 }
