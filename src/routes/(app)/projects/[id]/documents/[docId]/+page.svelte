@@ -1072,6 +1072,7 @@
 							currentSelection = sel;
 							if (!sel) showNewComment = false;
 						}}
+						oncitehover={hasAiKey ? (key, coords) => explainCitation(key, coords) : undefined}
 						{commentRanges}
 						{scrollToRange}
 						onlookup={lookupNames}

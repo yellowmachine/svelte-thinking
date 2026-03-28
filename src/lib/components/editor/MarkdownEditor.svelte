@@ -24,6 +24,7 @@
 		ondocchange,
 		onselectionchange,
 		onlookup,
+		oncitehover,
 		commentRanges = [],
 		scrollToRange = null,
 		completions = undefined,
@@ -41,6 +42,8 @@
 			coords: { top: number; bottom: number; left: number; right: number } | null;
 		} | null) => void;
 		onlookup?: (partial: string, context: string) => Promise<string[]>;
+		/** Called when cursor dwells on a [[@citeKey]] token (debounced 700ms). */
+		oncitehover?: (citeKey: string, coords: { bottom: number; left: number }) => void;
 		commentRanges?: CommentRange[];
 		scrollToRange?: { from: number; to: number } | null;
 		/** Which [[ completions to enable. undefined = all active. */
@@ -51,6 +54,22 @@
 
 	let container: HTMLDivElement | null = null;
 	let view: EditorView | null = null;
+
+	// Debounce timer for citation hover
+	let citeHoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+	const CITE_TOKEN_RE = /\[\[@([\w:._-]+)\]\]/g;
+
+	function citationAtPos(doc: string, pos: number): { citeKey: string; from: number; to: number } | null {
+		CITE_TOKEN_RE.lastIndex = 0;
+		let m: RegExpExecArray | null;
+		while ((m = CITE_TOKEN_RE.exec(doc)) !== null) {
+			if (m.index <= pos && pos <= m.index + m[0].length) {
+				return { citeKey: m[1], from: m.index, to: m.index + m[0].length };
+			}
+		}
+		return null;
+	}
 
 	function isDarkMode() {
 		return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
@@ -217,6 +236,22 @@
 						onselectionchange({ text, from: sel.from, to: sel.to, coords });
 					}
 				}
+				// Citation hover — cursor dwell on [[@key]] (keyboard navigation)
+				if (update.selectionSet && oncitehover) {
+					const sel = update.state.selection.main;
+					if (citeHoverTimer) { clearTimeout(citeHoverTimer); citeHoverTimer = null; }
+					if (sel.empty) {
+						const doc = update.state.doc.toString();
+						const pos = sel.from;
+						const found = citationAtPos(doc, pos);
+						if (found) {
+							citeHoverTimer = setTimeout(() => {
+								const coords = update.view.coordsAtPos(found.from);
+								if (coords) oncitehover!(found.citeKey, { bottom: coords.bottom, left: coords.left });
+							}, 700);
+						}
+					}
+				}
 			}),
 			EditorView.editable.of(!readonly),
 			EditorView.theme({
@@ -276,6 +311,7 @@
 
 	onDestroy(() => {
 		view?.destroy();
+		if (citeHoverTimer) clearTimeout(citeHoverTimer);
 	});
 
 	// Insert text at the current cursor position.
