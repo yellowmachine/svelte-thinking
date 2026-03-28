@@ -590,7 +590,7 @@
 	}
 
 	// ── Enrich (find untagged) ───────────────────────────────────────────────────
-	type UntaggedResult = { persons: string[]; refs: { text: string; citeKey: string }[] };
+	type UntaggedResult = { persons: string[]; refs: { context: string; text: string; citeKey: string }[] };
 	let showEnrich = $state(false);
 	let loadingEnrich = $state(false);
 	let enrichResult = $state<UntaggedResult | null>(null);
@@ -644,15 +644,25 @@
 		enrichResult = enrichResult ? { ...enrichResult, persons: enrichResult.persons.filter(p => p !== name) } : null;
 	}
 
-	function applyRef(text: string, citeKey: string) {
-		content = content.replace(text, `[[@${citeKey}]]`);
+	function applyRef(context: string, text: string, citeKey: string) {
+		// Use context as anchor to find the exact occurrence, then replace only `text` within it
+		const ctxIdx = content.indexOf(context);
+		if (ctxIdx !== -1) {
+			const textIdx = content.indexOf(text, ctxIdx);
+			if (textIdx !== -1 && textIdx < ctxIdx + context.length) {
+				content = content.slice(0, textIdx) + `[[@${citeKey}]]` + content.slice(textIdx + text.length);
+			}
+		} else {
+			// fallback: plain replace if context not found
+			content = content.replace(text, `[[@${citeKey}]]`);
+		}
 		enrichResult = enrichResult ? { ...enrichResult, refs: enrichResult.refs.filter(r => r.text !== text) } : null;
 	}
 
 	function applyAll() {
 		if (!enrichResult) return;
 		enrichResult.persons.forEach(applyPerson);
-		enrichResult.refs.forEach(r => applyRef(r.text, r.citeKey));
+		enrichResult.refs.forEach(r => applyRef(r.context, r.text, r.citeKey));
 	}
 
 	// ── Draft assistant ──────────────────────────────────────────────────────────
@@ -1717,7 +1727,8 @@
 							<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">Informal citations</p>
 							<div class="flex flex-col gap-1.5">
 								{#each enrichResult.refs as ref}
-									{@const refSnippet = enrichSnippet(ref.text)}
+									{@const refTextIdx = ref.context.indexOf(ref.text)}
+								{@const refSnippet = refTextIdx !== -1 ? { before: ref.context.slice(0, refTextIdx), match: ref.text, after: ref.context.slice(refTextIdx + ref.text.length) } : enrichSnippet(ref.text)}
 									<div class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 										<div class="min-w-0">
 											{#if refSnippet}
@@ -1729,7 +1740,7 @@
 										</div>
 										<button
 											type="button"
-											onclick={() => applyRef(ref.text, ref.citeKey)}
+											onclick={() => applyRef(ref.context, ref.text, ref.citeKey)}
 											class="ml-2 shrink-0 font-sans text-[10px] text-accent hover:underline"
 										>Apply</button>
 									</div>

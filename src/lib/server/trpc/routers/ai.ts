@@ -1660,7 +1660,7 @@ Respond ONLY with valid JSON (no markdown) in this exact shape:
 {
   "persons": ["Full Name 1", "Full Name 2"],
   "refs": [
-    { "text": "exact text in document", "citeKey": "matchingCiteKey" }
+    { "context": "~15 words surrounding the informal citation, exact substring of document", "text": "the informal citation itself, exact substring", "citeKey": "matchingCiteKey" }
   ]
 }
 
@@ -1668,7 +1668,8 @@ Rules:
 - persons: only full names of real people (scholars, historical figures). Max 10.
 - Do NOT include names already in [[person:...]] tokens.
 - refs: only if the informal text clearly refers to a known citeKey from the list provided. Max 10.
-- text in refs must be an exact substring of the document.
+- context must be a unique substring of the document (~15 words) that contains text within it.
+- text must be an exact substring of context.
 - Use the document language.`;
 
 			const userMessage = `Known citeKeys: ${citeKeyList || '(none)'}
@@ -1702,13 +1703,13 @@ ${docContent.slice(0, 10000)}`;
 			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model, task: 'review',
 				inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
-			type UntaggedResult = { persons: string[]; refs: { text: string; citeKey: string }[] };
+			type UntaggedResult = { persons: string[]; refs: { context: string; text: string; citeKey: string }[] };
 			try {
 				const parsed = JSON.parse(raw) as UntaggedResult;
 				return {
 					persons: Array.isArray(parsed.persons) ? parsed.persons.filter((p): p is string => typeof p === 'string').slice(0, 10) : [],
-					refs: Array.isArray(parsed.refs) ? parsed.refs.filter((r): r is { text: string; citeKey: string } =>
-						typeof r?.text === 'string' && typeof r?.citeKey === 'string').slice(0, 10) : []
+					refs: Array.isArray(parsed.refs) ? parsed.refs.filter((r): r is { context: string; text: string; citeKey: string } =>
+						typeof r?.context === 'string' && typeof r?.text === 'string' && typeof r?.citeKey === 'string').slice(0, 10) : []
 				};
 			} catch {
 				return { persons: [], refs: [] };
