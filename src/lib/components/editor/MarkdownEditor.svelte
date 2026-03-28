@@ -333,10 +333,10 @@
 
 <div bind:this={container} class="codemirror-host w-full"></div>
 {#if showLookupHint}
-	<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-		<span class="opacity-60">@@ lookup unavailable —</span>
-		<a href="/settings?tab=ai" class="underline underline-offset-2 hover:text-ink dark:hover:text-dark-ink">assign an AI model in Settings</a>
-	</p>
+	<div class="mt-6 inline-flex items-center gap-1.5 rounded border border-paper-border px-2.5 py-1.5 dark:border-dark-paper-border">
+		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">@@ lookup unavailable —</span>
+		<a href="/settings?tab=ai" class="font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">assign an AI model in Settings</a>
+	</div>
 {/if}
 
 <style>
