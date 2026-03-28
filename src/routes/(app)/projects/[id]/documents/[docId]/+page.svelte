@@ -624,6 +624,18 @@
 		}
 	}
 
+	function enrichSnippet(term: string): { before: string; match: string; after: string } | null {
+		const idx = content.indexOf(term);
+		if (idx === -1) return null;
+		const start = Math.max(0, idx - 50);
+		const end = Math.min(content.length, idx + term.length + 50);
+		return {
+			before: (start > 0 ? '…' : '') + content.slice(start, idx),
+			match: term,
+			after: content.slice(idx + term.length, end) + (end < content.length ? '…' : '')
+		};
+	}
+
 	function applyPerson(name: string) {
 		const token = `[[person:${name}]]`;
 		// Replace all occurrences of the bare name not already inside [[person:...]]
@@ -1679,10 +1691,15 @@
 							<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">People</p>
 							<div class="flex flex-col gap-1.5">
 								{#each enrichResult.persons as name}
-									<div class="flex items-center justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+									{@const snippet = enrichSnippet(name)}
+									<div class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 										<div class="min-w-0">
-											<span class="font-sans text-xs text-ink dark:text-dark-ink">{name}</span>
-											<span class="ml-1 font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint">→ [[person:]]</span>
+											{#if snippet}
+												<p class="font-sans text-[11px] leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+													{snippet.before}<strong class="text-ink dark:text-dark-ink">{snippet.match}</strong>{snippet.after}
+												</p>
+											{/if}
+											<span class="mt-0.5 block font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint">→ [[person:{name}]]</span>
 										</div>
 										<button
 											type="button"
@@ -1700,9 +1717,14 @@
 							<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">Informal citations</p>
 							<div class="flex flex-col gap-1.5">
 								{#each enrichResult.refs as ref}
+									{@const refSnippet = enrichSnippet(ref.text)}
 									<div class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 										<div class="min-w-0">
-											<span class="font-sans text-xs italic text-ink dark:text-dark-ink">"{ref.text}"</span>
+											{#if refSnippet}
+												<p class="font-sans text-[11px] leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+													{refSnippet.before}<strong class="text-ink dark:text-dark-ink">{refSnippet.match}</strong>{refSnippet.after}
+												</p>
+											{/if}
 											<span class="mt-0.5 block font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint">→ [[@{ref.citeKey}]]</span>
 										</div>
 										<button
