@@ -1684,7 +1684,7 @@
 						</tr>
 					</tbody>
 				</table>
-				<p class="mt-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">Escribe <span class="font-mono">[[@</span> para autocompletar.</p>
+				<p class="mt-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">Type <span class="font-mono">[[@</span> to autocomplete.</p>
 			</div>
 
 			<div>
