@@ -307,7 +307,22 @@
 			history(),
 			lineNumbers(),
 			highlightActiveLine(),
-			keymap.of([...defaultKeymap, ...historyKeymap]),
+			keymap.of([
+				...defaultKeymap,
+				...historyKeymap,
+				{
+					key: 'Mod-k',
+					run(view) {
+						if (!onignoreword) return false;
+						const pos = view.state.selection.main.head;
+						const range = view.state.wordAt(pos);
+						if (!range) return false;
+						const word = view.state.doc.sliceString(range.from, range.to);
+						if (word) onignoreword(word);
+						return true;
+					}
+				}
+			]),
 			markdown({ codeLanguages }),
 			autocompletion({ override: [allCompletions], closeOnBlur: true }),
 			...codeBlockExtension(),
