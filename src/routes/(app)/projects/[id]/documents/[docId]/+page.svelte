@@ -127,7 +127,7 @@
 	}
 
 	function insertCitation(ref: CiteRef) {
-		editorEl?.insertAtCursor(`[@${ref.citeKey}]`);
+		editorEl?.insertAtCursor(`[[@${ref.citeKey}]]`);
 		showCitePicker = false;
 	}
 
@@ -748,7 +748,7 @@
 				title="Insert bibliographic citation"
 				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
-				[@cite]
+				[[@cite]]
 			</button>
 		{/if}
 
@@ -1252,11 +1252,11 @@
 								{#each reviewResult.uncitedRefs as citeKey}
 									<button
 										type="button"
-										onclick={() => editorEl?.insertAtCursor(`[@${citeKey}]`)}
+										onclick={() => editorEl?.insertAtCursor(`[[@${citeKey}]]`)}
 										title="Insert citation"
 										class="flex items-center justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-left transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 									>
-										<span class="font-mono text-xs text-ink dark:text-dark-ink">[@{citeKey}]</span>
+										<span class="font-mono text-xs text-ink dark:text-dark-ink">[[@{citeKey}]]</span>
 										<span class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">insert</span>
 									</button>
 								{/each}
@@ -1675,16 +1675,16 @@
 				<table class="w-full">
 					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[@citeKey]</td>
+							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[@citeKey]]</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Single citation</td>
 						</tr>
 						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[@key1; @key2]</td>
+							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[@key1; @key2]]</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Multiple citations</td>
 						</tr>
 					</tbody>
 				</table>
-				<p class="mt-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">Escribe <span class="font-mono">[@</span> para autocompletar.</p>
+				<p class="mt-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">Escribe <span class="font-mono">[[@</span> para autocompletar.</p>
 			</div>
 
 			<div>
