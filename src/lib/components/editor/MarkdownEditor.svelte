@@ -15,7 +15,7 @@
 	import { codeBlockExtension, codeLanguages } from './codeBlockExtension';
 	import { epigraphCompletion } from './epigraphExtension';
 	import type { CiteRef } from '$lib/utils/citations';
-	import { linter, lintGutter, type Diagnostic } from '@codemirror/lint';
+	import { linter, type Diagnostic } from '@codemirror/lint';
 
 	let {
 		value = $bindable(''),
@@ -328,7 +328,6 @@
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
 			spellLinter,
-			lintGutter(),
 			commentRangesField,
 			commentTheme,
 			EditorView.updateListener.of((update) => {
