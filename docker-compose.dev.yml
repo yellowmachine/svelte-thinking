@@ -46,8 +46,22 @@ services:
     ports:
       - '3200:3200'
 
+  languagetool:
+    image: erikvl87/languagetool
+    restart: unless-stopped
+    ports:
+      - '8010:8010'
+    environment:
+      - Java_Xms=256m
+      - Java_Xmx=512m
+      - langtool_languageModel=/ngrams
+    volumes:
+      - languagetool_ngrams:/ngrams
+
 volumes:
   postgres_dev_data:
     name: scholio_postgres_dev
   minio_dev_data:
     name: scholio_minio_dev
+  languagetool_ngrams:
+    name: scholio_languagetool_ngrams

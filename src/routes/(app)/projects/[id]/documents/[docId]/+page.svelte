@@ -1244,6 +1244,7 @@
 						{scrollToRange}
 						onlookup={lookupNames}
 						showLookupHint={lookupUnavailable}
+						spellLanguage={navigator.language}
 					/>
 				</div>
 			</div>
@@ -1288,6 +1289,7 @@
 					{scrollToRange}
 					onlookup={lookupNames}
 					showLookupHint={lookupUnavailable}
+					spellLanguage={navigator.language}
 				/>
 			{/if}
 		</div>

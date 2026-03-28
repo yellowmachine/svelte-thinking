@@ -15,6 +15,7 @@
 	import { codeBlockExtension, codeLanguages } from './codeBlockExtension';
 	import { epigraphCompletion } from './epigraphExtension';
 	import type { CiteRef } from '$lib/utils/citations';
+	import { linter, lintGutter, type Diagnostic } from '@codemirror/lint';
 
 	let {
 		value = $bindable(''),
@@ -30,7 +31,8 @@
 		commentRanges = [],
 		scrollToRange = null,
 		completions = undefined,
-		showLookupHint = false
+		showLookupHint = false,
+	spellLanguage = 'en-US'
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -56,10 +58,42 @@
 		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph'>;
 		/** Show a footer hint that @@ lookup is unavailable (no AI key configured). */
 		showLookupHint?: boolean;
+		/** BCP-47 language tag for LanguageTool spell check (e.g. 'es-ES', 'en-US'). */
+		spellLanguage?: string;
 	} = $props();
 
 	let container: HTMLDivElement | null = null;
 	let view: EditorView | null = null;
+
+	const spellLinter = linter(async (view): Promise<Diagnostic[]> => {
+		const text = view.state.doc.toString();
+		if (text.trim().length < 10) return [];
+		try {
+			const res = await fetch('/api/spell', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ text, language: spellLanguage })
+			});
+			if (!res.ok) return [];
+			const data = await res.json() as {
+				matches: { from: number; to: number; message: string; severity: string; replacements: string[] }[]
+			};
+			return data.matches.map((m) => ({
+				from: m.from,
+				to: m.to,
+				severity: m.severity as 'error' | 'warning' | 'info',
+				message: m.message,
+				actions: m.replacements.map((r) => ({
+					name: r,
+					apply(view, from, to) {
+						view.dispatch({ changes: { from, to, insert: r } });
+					}
+				}))
+			}));
+		} catch {
+			return [];
+		}
+	}, { delay: 1500 });
 
 	// Debounce timer for citation hover
 	let citeHoverTimer: ReturnType<typeof setTimeout> | null = null;
@@ -256,6 +290,8 @@
 			autocompletion({ override: [allCompletions], closeOnBlur: true }),
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
+			spellLinter,
+			lintGutter(),
 			commentRangesField,
 			commentTheme,
 			EditorView.updateListener.of((update) => {
