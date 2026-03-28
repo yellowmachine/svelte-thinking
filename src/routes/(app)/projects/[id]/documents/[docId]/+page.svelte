@@ -19,6 +19,36 @@
 	let content = $state(untrack(() => data.document?.content ?? ''));
 	let lastSavedContent = $state(untrack(() => data.document?.content ?? ''));
 	const isDirty = $derived(content !== lastSavedContent);
+
+	// Editable title
+	let docTitle = $state(untrack(() => data.document?.title ?? ''));
+	let editingTitle = $state(false);
+	let titleError = $state('');
+	let titleInputEl = $state<HTMLInputElement | null>(null);
+
+	function startEditTitle() {
+		editingTitle = true;
+		titleError = '';
+		setTimeout(() => titleInputEl?.select(), 0);
+	}
+
+	async function commitTitle() {
+		const trimmed = docTitle.trim();
+		if (!trimmed || trimmed === data.document?.title) { editingTitle = false; docTitle = data.document?.title ?? ''; return; }
+		try {
+			await trpc.documents.update.mutate({ documentId: data.document!.id, title: trimmed });
+			data.document!.title = trimmed;
+			editingTitle = false;
+			titleError = '';
+		} catch (e: unknown) {
+			titleError = e instanceof Error ? e.message : 'Could not rename document.';
+		}
+	}
+
+	function onTitleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') { e.preventDefault(); commitTitle(); }
+		if (e.key === 'Escape') { editingTitle = false; docTitle = data.document?.title ?? ''; titleError = ''; }
+	}
 	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' = $state(
 		untrack(() => (data.document?.hasDraft ? 'pending' : 'idle'))
 	);
@@ -606,7 +636,7 @@
 			{data.projectTitle}
 		</button>
 		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-		<span class="truncate font-medium text-ink dark:text-dark-ink">{data.document.title}</span>
+		<span class="truncate font-medium text-ink dark:text-dark-ink">{docTitle}</span>
 	</div>
 
 	<div class="flex shrink-0 items-center gap-3">
@@ -881,6 +911,33 @@
 	oncancel={() => (showDeleteDoc = false)}
 />
 
+{#snippet editableTitle()}
+	<div class="mb-6">
+		{#if editingTitle}
+			<input
+				bind:this={titleInputEl}
+				bind:value={docTitle}
+				onblur={commitTitle}
+				onkeydown={onTitleKeydown}
+				class="w-full border-none bg-transparent font-serif text-3xl font-semibold text-ink outline-none dark:text-dark-ink"
+			/>
+			{#if titleError}
+				<p class="mt-1 font-sans text-xs text-red-500">{titleError}</p>
+			{/if}
+		{:else}
+			<h1
+				role="button"
+				tabindex="0"
+				onclick={startEditTitle}
+				onkeydown={(e) => e.key === 'Enter' && startEditTitle()}
+				class="cursor-text font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
+			>
+				{docTitle}
+			</h1>
+		{/if}
+	</div>
+{/snippet}
+
 <!-- Main layout -->
 <div class="flex overflow-hidden" style="height: calc(100vh - 57px)">
 	{#if viewMode === 'split'}
@@ -888,6 +945,7 @@
 		<div class="relative flex flex-1 overflow-hidden">
 			<div class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-10 dark:border-dark-paper-border">
 				<div class="mx-auto w-full max-w-2xl">
+					{@render editableTitle()}
 					<MarkdownEditor
 						bind:this={editorEl}
 						bind:value={content}
@@ -928,6 +986,7 @@
 					docMap={docMap()}
 				/>
 			{:else}
+				{@render editableTitle()}
 				<MarkdownEditor
 					bind:this={editorEl}
 					bind:value={content}
