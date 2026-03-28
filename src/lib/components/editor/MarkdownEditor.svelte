@@ -311,7 +311,7 @@
 				...defaultKeymap,
 				...historyKeymap,
 				{
-					key: 'Mod-k',
+					key: 'Mod-i',
 					run(view) {
 						if (!onignoreword) return false;
 						const pos = view.state.selection.main.head;
