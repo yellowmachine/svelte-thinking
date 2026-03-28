@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
-	import { AI_TASKS, MODELS } from '$lib/ai-config';
+	import { AI_TASKS, MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
 	type Org = { id: string; name: string; slug: string; role: string };
 
@@ -343,7 +343,8 @@
 										>
 											<option value="">— model —</option>
 											{#each MODELS as model (model.id)}
-												<option value={model.id}>{model.label}</option>
+												{@const isRec = MODEL_RECOMMENDATIONS[model.id]?.includes(task.id as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup')}
+												<option value={model.id}>{isRec ? '★ ' : ''}{model.label}</option>
 											{/each}
 										</select>
 									</div>

@@ -5,6 +5,7 @@
 	import QRCode from 'qrcode';
 	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
 	import OrgSettings from '$lib/components/projects/OrgSettings.svelte';
+	import { MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
 	let { data }: { data: PageData } = $props();
 
@@ -760,7 +761,8 @@
 										>
 											<option value="">— Default model —</option>
 											{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
-												<option value={m.id}>{m.label}{m.pricing ? ` — ${m.pricing}` : ''}</option>
+												{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(task.id as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup')}
+												<option value={m.id}>{isRec ? '★ ' : ''}{m.label}{m.pricing ? ` — ${m.pricing}` : ''}</option>
 											{/each}
 										</select>
 									</div>

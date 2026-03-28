@@ -17,6 +17,12 @@ export const AI_TASKS: { id: AiTask; label: string; description: string }[] = [
 	{ id: 'lookup', label: 'Lookup', description: 'Quick in-editor lookups (name suggestions, @@ trigger)' }
 ];
 
+// Tasks for which each model is recommended (empty = no specific recommendation)
+export const MODEL_RECOMMENDATIONS: Record<string, AiTask[]> = {
+	'anthropic/claude-sonnet-4-5': ['agent', 'draft'],
+	'anthropic/claude-haiku-4-5': ['review', 'requirements', 'lookup']
+};
+
 export const MODELS: { id: string; label: string; toolCalling: boolean }[] = [
 	{ id: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5 (fast)', toolCalling: true },
 	{ id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5', toolCalling: true },
