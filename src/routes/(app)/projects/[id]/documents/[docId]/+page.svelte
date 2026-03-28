@@ -2104,6 +2104,10 @@
 		e.preventDefault();
 		showCheatsheet = !showCheatsheet;
 	}
+	if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+		e.preventDefault();
+		doSaveDraft();
+	}
 	if (e.key === 'Escape') showCheatsheet = false;
 }} />
 
