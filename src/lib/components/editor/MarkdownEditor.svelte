@@ -26,7 +26,8 @@
 		onlookup,
 		commentRanges = [],
 		scrollToRange = null,
-		completions = undefined
+		completions = undefined,
+		showLookupHint = false
 	}: {
 		value?: string;
 		readonly?: boolean;
