@@ -213,6 +213,10 @@
 		cursor: help;
 	}
 
+	.prose :global(.mention-person) {
+		border-bottom: 1px dotted var(--color-ink-faint, #A89880);
+	}
+
 	/* Notas al pie */
 	.prose :global(.footnotes) {
 		margin-top: 3rem;

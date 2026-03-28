@@ -7,8 +7,10 @@
 const UUID_LINK_RE = /\[\[doc:([a-f0-9-]{36})\|([^\]]+)\]\]/g;
 // Matches [[#Heading]] — internal section anchor
 const HEADING_LINK_RE = /\[\[#([^\]]+)\]\]/g;
-// Matches [[Title]] — no doc: prefix, no pipe, no #
-const TITLE_LINK_RE = /\[\[([^\]|#]+)\]\]/g;
+// Matches [[person:Name]] — named person mention
+const PERSON_LINK_RE = /\[\[person:([^\]]+)\]\]/g;
+// Matches [[Title]] — no doc: prefix, no pipe, no #, no @, no person:
+const TITLE_LINK_RE = /\[\[(?!doc:|person:|@|#)([^\]|]+)\]\]/g;
 
 function headingAnchor(text: string): string {
 	return text.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
@@ -44,8 +46,13 @@ export function processWikilinks(
 	markdown: string,
 	docMap: Map<string, { id: string; projectId: string }>
 ): string {
-	// First pass: resolve [[#Heading]] → markdown anchor links
-	let result = markdown.replace(HEADING_LINK_RE, (_match, heading: string) => {
+	// First pass: resolve [[person:Name]] → styled span
+	let result = markdown.replace(PERSON_LINK_RE, (_match, name: string) => {
+		return `<span class="mention-person">${name.trim()}</span>`;
+	});
+
+	// Second pass: resolve [[#Heading]] → markdown anchor links
+	result = result.replace(HEADING_LINK_RE, (_match, heading: string) => {
 		return `[${heading.trim()}](#${headingAnchor(heading)})`;
 	});
 

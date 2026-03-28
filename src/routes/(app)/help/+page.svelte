@@ -222,6 +222,36 @@
 		<Callout>Backlinks (documents that mention you) appear in the "Mentioned in" panel of the editor. The link index is updated on <strong>commit</strong>, not on draft save.</Callout>
 	</section>
 
+	<!-- ── [[ dispatcher ─────────────────────────────────────────────────── -->
+	<section class="mb-10">
+		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Editor autocomplete (<code class="font-mono text-base">[[</code>)</h2>
+		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[</code> followed by a trigger character to open a specific autocomplete. Each trigger inserts a structured token.
+		</p>
+		<div class="space-y-3">
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[Introduction]]</span></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Link to another document in the project by title.</p>
+			</div>
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[@darwin1859]]</span></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Insert a bibliographic citation. Autocompletes from the project references.</p>
+			</div>
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[#Methodology]]</span></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Internal anchor link to a heading in the current document.</p>
+			</div>
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[^]]</span> → inserts <span class="text-accent">[^1]</span> + definition at end</p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Insert a numbered footnote. The definition is added automatically at the bottom.</p>
+			</div>
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">@@Karl</span> → inserts <span class="text-accent">[[person:Karl Barth]]</span></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">@@</code> to search for a person by name using AI. Renders as the name in the preview with a dotted underline. Hovering the cursor over it shows a brief author card (dates, field, origin).</p>
+			</div>
+		</div>
+	</section>
+
 	<!-- ── Footnotes ──────────────────────────────────────────────────────── -->
 	<section class="mb-10">
 		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Footnotes</h2>

@@ -25,6 +25,8 @@
 		onselectionchange,
 		onlookup,
 		oncitehover,
+		onauthorhover,
+		onheadinghover,
 		commentRanges = [],
 		scrollToRange = null,
 		completions = undefined,
@@ -44,6 +46,10 @@
 		onlookup?: (partial: string, context: string) => Promise<string[]>;
 		/** Called when cursor dwells on a [[@citeKey]] token (debounced 700ms). */
 		oncitehover?: (citeKey: string, coords: { bottom: number; left: number }) => void;
+		/** Called when cursor dwells on a [[person:Name]] token (debounced 700ms). */
+		onauthorhover?: (name: string, coords: { bottom: number; left: number }) => void;
+		/** Called when cursor dwells on a heading line (debounced 700ms). */
+		onheadinghover?: (info: { level: number; title: string; wordCount: number }, coords: { bottom: number; left: number }) => void;
 		commentRanges?: CommentRange[];
 		scrollToRange?: { from: number; to: number } | null;
 		/** Which [[ completions to enable. undefined = all active. */
@@ -59,6 +65,7 @@
 	let citeHoverTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const CITE_TOKEN_RE = /\[\[@([\w:._-]+)\]\]/g;
+	const PERSON_TOKEN_RE = /\[\[person:([^\]]+)\]\]/g;
 
 	function citationAtPos(doc: string, pos: number): { citeKey: string; from: number; to: number } | null {
 		CITE_TOKEN_RE.lastIndex = 0;
@@ -69,6 +76,37 @@
 			}
 		}
 		return null;
+	}
+
+	function personAtPos(doc: string, pos: number): { name: string; from: number; to: number } | null {
+		PERSON_TOKEN_RE.lastIndex = 0;
+		let m: RegExpExecArray | null;
+		while ((m = PERSON_TOKEN_RE.exec(doc)) !== null) {
+			if (m.index <= pos && pos <= m.index + m[0].length) {
+				return { name: m[1].trim(), from: m.index, to: m.index + m[0].length };
+			}
+		}
+		return null;
+	}
+
+	function headingAtPos(doc: string, pos: number): { level: number; title: string; wordCount: number } | null {
+		const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
+		const lineEnd = doc.indexOf('\n', pos);
+		const line = doc.slice(lineStart, lineEnd === -1 ? doc.length : lineEnd);
+		const m = line.match(/^(#{1,6})\s+(.+)$/);
+		if (!m) return null;
+		const level = m[1].length;
+		const title = m[2].trim();
+		// Count words from this heading to the next heading of same or higher level
+		const rest = doc.slice(lineStart);
+		const lines = rest.split('\n');
+		let words = 0;
+		for (let i = 1; i < lines.length; i++) {
+			const hm = lines[i].match(/^(#{1,6})\s/);
+			if (hm && hm[1].length <= level) break;
+			words += lines[i].trim().split(/\s+/).filter(Boolean).length;
+		}
+		return { level, title, wordCount: words };
 	}
 
 	function isDarkMode() {
@@ -191,7 +229,7 @@
 			from: match.from,
 			options: names.map((name) => ({
 				label: name,
-				apply: name // plain text, no wrapper
+				apply: `[[person:${name}]]` // stored as structured mention token
 			}))
 		};
 	}
@@ -236,18 +274,30 @@
 						onselectionchange({ text, from: sel.from, to: sel.to, coords });
 					}
 				}
-				// Citation hover — cursor dwell on [[@key]] (keyboard navigation)
-				if (update.selectionSet && oncitehover) {
+				// Token hover — cursor dwell on [[@key]], [[person:Name]], or ## heading
+				if (update.selectionSet && (oncitehover || onauthorhover || onheadinghover)) {
 					const sel = update.state.selection.main;
 					if (citeHoverTimer) { clearTimeout(citeHoverTimer); citeHoverTimer = null; }
 					if (sel.empty) {
 						const doc = update.state.doc.toString();
 						const pos = sel.from;
-						const found = citationAtPos(doc, pos);
-						if (found) {
+						const cite = oncitehover ? citationAtPos(doc, pos) : null;
+						const person = onauthorhover ? personAtPos(doc, pos) : null;
+						const heading = onheadinghover ? headingAtPos(doc, pos) : null;
+						if (cite) {
 							citeHoverTimer = setTimeout(() => {
-								const coords = update.view.coordsAtPos(found.from);
-								if (coords) oncitehover!(found.citeKey, { bottom: coords.bottom, left: coords.left });
+								const coords = update.view.coordsAtPos(cite.from);
+								if (coords) oncitehover!(cite.citeKey, { bottom: coords.bottom, left: coords.left });
+							}, 700);
+						} else if (person) {
+							citeHoverTimer = setTimeout(() => {
+								const coords = update.view.coordsAtPos(person.from);
+								if (coords) onauthorhover!(person.name, { bottom: coords.bottom, left: coords.left });
+							}, 700);
+						} else if (heading) {
+							citeHoverTimer = setTimeout(() => {
+								const coords = update.view.coordsAtPos(pos);
+								if (coords) onheadinghover!(heading, { bottom: coords.bottom, left: coords.left });
 							}, 700);
 						}
 					}

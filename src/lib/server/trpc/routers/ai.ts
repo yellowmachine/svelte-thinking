@@ -1569,6 +1569,56 @@ Rules:
 			return questions;
 		}),
 
+	// Mini author card for [[person:Name]] cursor dwell
+	authorInfo: protectedProcedure
+		.input(z.object({
+			name: z.string().min(1).max(200),
+			projectId: z.string().optional()
+		}))
+		.query(async ({ ctx, input }) => {
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS, ctx.db, ctx.user.id, 'lookup', input.projectId
+			);
+
+			const prompt = `You are an academic reference assistant. For the person named "${input.name}", provide a brief factual summary in this exact JSON format:\n{"dates":"birth–death or fl. period (e.g. 1844–1900)","field":"main field or discipline","nationality":"nationality or origin","note":"one sentence summary of why they matter academically"}\nIf the person is unknown or fictional, return {"dates":"","field":"","nationality":"","note":"Unknown person"}.\nReply with ONLY the JSON object, no explanation.`;
+
+			const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model,
+					messages: [{ role: 'user', content: prompt }],
+					max_tokens: 150,
+					temperature: 0.1
+				})
+			});
+
+			if (!res.ok) await throwProviderError(res);
+
+			const data = await res.json() as { choices: { message: { content: string } }[]; usage?: { prompt_tokens: number; completion_tokens: number } };
+			const raw = (data.choices[0]?.message?.content ?? '{}').trim()
+				.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+			logUsage(ctx.db as Db, {
+				userId: ctx.user.id, orgId: resolvedOrgId, projectId: input.projectId,
+				model, task: 'lookup',
+				inputTokens: data.usage?.prompt_tokens ?? 0,
+				outputTokens: data.usage?.completion_tokens ?? 0
+			});
+
+			type AuthorInfo = { dates: string; field: string; nationality: string; note: string };
+			try {
+				return JSON.parse(raw) as AuthorInfo;
+			} catch {
+				return { dates: '', field: '', nationality: '', note: 'Unknown person' };
+			}
+		}),
+
 	// Quick name lookup for @@ trigger in the editor
 	lookupNames: protectedProcedure
 		.input(z.object({
