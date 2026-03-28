@@ -115,8 +115,8 @@
 			];
 			await scrollToBottom();
 		} catch (e: unknown) {
-			error = e instanceof Error ? e.message : 'Error al enviar el mensaje.';
-			// Remove the optimistic user message on failure
+			const isNoKey = e && typeof e === 'object' && 'data' in e && (e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED';
+			error = isNoKey ? 'NO_KEY' : (e instanceof Error ? e.message : 'Error sending message.');
 			messages = messages.slice(0, -1);
 		} finally {
 			loading = false;
@@ -247,9 +247,13 @@
 	</div>
 
 	{#if error}
-		<p class="mx-4 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
-			{error}
-		</p>
+		<div class="mx-4 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+			{#if error === 'NO_KEY'}
+				No AI key configured. <a href="/settings?tab=ai" class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a> to add one.
+			{:else}
+				{error}
+			{/if}
+		</div>
 	{/if}
 
 	<!-- Input -->

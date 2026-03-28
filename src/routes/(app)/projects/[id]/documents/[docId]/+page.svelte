@@ -90,6 +90,12 @@
 		);
 	});
 
+	function isNoKeyError(e: unknown): boolean {
+		return !!(e && typeof e === 'object' && 'data' in e && (e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED');
+	}
+
+	const NO_KEY_MSG = 'No AI key configured. Go to Settings → AI to add one.';
+
 	let lookupUnavailable = $state(false);
 
 	async function lookupNames(partial: string, context: string): Promise<string[]> {
@@ -102,9 +108,7 @@
 			lookupUnavailable = false;
 			return result;
 		} catch (e: unknown) {
-			if (e && typeof e === 'object' && 'data' in e && (e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED') {
-				lookupUnavailable = true;
-			}
+			if (isNoKeyError(e)) lookupUnavailable = true;
 			return [];
 		}
 	}
@@ -499,7 +503,7 @@
 				documentId: data.document.id
 			});
 		} catch (e: unknown) {
-			reviewError = e instanceof Error ? e.message : 'Error al revisar el documento.';
+			reviewError = isNoKeyError(e) ? NO_KEY_MSG : (e instanceof Error ? e.message : 'Error reviewing document.');
 		} finally {
 			loadingReview = false;
 		}
@@ -570,7 +574,7 @@
 				draftResult = text;
 			}
 		} catch (e: unknown) {
-			draftError = e instanceof Error ? e.message : 'Error generating draft.';
+			draftError = isNoKeyError(e) ? NO_KEY_MSG : (e instanceof Error ? e.message : 'Error generating draft.');
 		} finally {
 			loadingDraft = false;
 		}
@@ -1210,9 +1214,13 @@
 				{/if}
 
 				{#if reviewError}
-					<p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
-						{reviewError}
-					</p>
+					<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+						{#if reviewError === NO_KEY_MSG}
+							No AI key configured. <a href="/settings?tab=ai" class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a> to add one.
+						{:else}
+							{reviewError}
+						{/if}
+					</div>
 				{/if}
 
 				{#if reviewResult}
@@ -1366,9 +1374,13 @@
 				</button>
 
 				{#if draftError}
-					<p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
-						{draftError}
-					</p>
+					<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+						{#if draftError === NO_KEY_MSG}
+							No AI key configured. <a href="/settings?tab=ai" class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a> to add one.
+						{:else}
+							{draftError}
+						{/if}
+					</div>
 				{/if}
 
 				{#if draftResult}
