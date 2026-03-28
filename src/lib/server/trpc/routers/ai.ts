@@ -1831,5 +1831,91 @@ ${docContent.slice(0, 10000)}`;
 			});
 
 			return explanation;
+		}),
+
+	// Review a selected text fragment with layered context
+	reviewSelection: protectedProcedure
+		.input(z.object({
+			projectId: z.string(),
+			selection: z.string().min(1).max(4000),
+			before: z.string().max(400),
+			after: z.string().max(400),
+			headings: z.array(z.string()).max(30),
+			docTitle: z.string().max(200),
+			reviewType: z.enum(['clarity', 'argument', 'citations', 'terminology'])
+		}))
+		.mutation(async ({ ctx, input }) => {
+			const userId = ctx.user.id;
+
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'review', input.projectId
+			);
+
+			const typeInstructions: Record<string, string> = {
+				clarity: 'Improve clarity and concision. Use academic register. Eliminate redundancy.',
+				argument: 'Evaluate logical strength. Identify unsupported claims, missing premises, or weak reasoning.',
+				citations: 'Identify claims that need bibliographic support. Note which statements are unsourced.',
+				terminology: 'Check terminological consistency. Flag ambiguous or shifting use of key terms.'
+			};
+
+			const systemPrompt = `You are an academic writing assistant. Your task: ${typeInstructions[input.reviewType]}
+
+Context: document titled "${input.docTitle}", sections: ${input.headings.join(' > ') || '(no headings)'}.
+The text before the selection: "${input.before}"
+The text after the selection: "${input.after}"
+
+Respond ONLY with valid JSON (no markdown):
+{
+  "suggestion": "the improved or annotated version of the selected text (same language as input)",
+  "explanation": "1-2 sentences explaining what you changed and why"
+}
+
+Rules:
+- suggestion must be the same language as the input selection.
+- For 'argument' and 'citations' types, suggestion may be the original text with inline annotations like [needs citation] or [unsupported claim].
+- Keep suggestion concise — do not expand the text unnecessarily.
+- explanation must be plain text, no markdown.`;
+
+			const userMessage = `Selected text to review:\n${input.selection}`;
+
+			const res = await fetch(OPENROUTER_URL, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model, max_tokens: 600,
+					messages: [
+						{ role: 'system', content: systemPrompt },
+						{ role: 'user', content: userMessage }
+					]
+				})
+			});
+
+			if (!res.ok) await throwProviderError(res);
+
+			const data = await res.json();
+			const raw = (data.choices?.[0]?.message?.content ?? '{}').trim()
+				.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
+
+			let parsed: { suggestion: string; explanation: string };
+			try {
+				parsed = JSON.parse(raw);
+			} catch {
+				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI returned invalid JSON.' });
+			}
+
+			logUsage(ctx.db as Db, {
+				userId,
+				orgId: resolvedOrgId, projectId: input.projectId,
+				model, task: 'review',
+				inputTokens: data.usage?.prompt_tokens ?? 0,
+				outputTokens: data.usage?.completion_tokens ?? 0
+			});
+
+			return parsed;
 		})
 });
