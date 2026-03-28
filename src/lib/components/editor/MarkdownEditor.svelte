@@ -25,7 +25,8 @@
 		onselectionchange,
 		onlookup,
 		commentRanges = [],
-		scrollToRange = null
+		scrollToRange = null,
+		completions = undefined
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -41,6 +42,8 @@
 		onlookup?: (partial: string, context: string) => Promise<string[]>;
 		commentRanges?: CommentRange[];
 		scrollToRange?: { from: number; to: number } | null;
+		/** Which [[ completions to enable. undefined = all active. */
+		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph'>;
 	} = $props();
 
 	let container: HTMLDivElement | null = null;
@@ -172,13 +175,14 @@
 	}
 
 	function allCompletions(context: CompletionContext) {
+		const all = completions === undefined;
 		return (
-			epigraphCompletion(context) ??
-			citationCompletion(context) ??
-			headingCompletion(context) ??
-			footnoteCompletion(context) ??
-			mentionCompletion(context) ??
-			wikilinkCompletion(context)
+			(all || completions.has('epigraph') ? epigraphCompletion(context) : null) ??
+			(all || completions.has('citation') ? citationCompletion(context) : null) ??
+			(all || completions.has('heading') ? headingCompletion(context) : null) ??
+			(all || completions.has('footnote') ? footnoteCompletion(context) : null) ??
+			(all || completions.has('mention') ? mentionCompletion(context) : null) ??
+			(all || completions.has('wikilink') ? wikilinkCompletion(context) : null)
 		);
 	}
 

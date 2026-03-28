@@ -1108,6 +1108,8 @@
 							onreopened={handleCommentReopened}
 							onreplyadded={handleReplyAdded}
 							ondeleted={(id) => { inlineComments = inlineComments.filter((x) => x.id !== id); }}
+							{chapters}
+							onlookup={lookupNames}
 						/>
 					{/each}
 				{/if}
