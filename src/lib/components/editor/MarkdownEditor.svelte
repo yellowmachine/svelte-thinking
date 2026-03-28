@@ -255,7 +255,6 @@
 			markdown({ codeLanguages }),
 			autocompletion({ override: [allCompletions], closeOnBlur: true }),
 			...codeBlockExtension(),
-			EditorView.contentAttributes.of({ spellcheck: 'true' }),
 			EditorView.lineWrapping,
 			commentRangesField,
 			commentTheme,
