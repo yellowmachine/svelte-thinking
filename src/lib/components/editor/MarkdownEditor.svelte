@@ -65,9 +65,21 @@
 	let container: HTMLDivElement | null = null;
 	let view: EditorView | null = null;
 
+	const SPELL_WINDOW = 3000; // chars around cursor to send to LanguageTool
+
 	const spellLinter = linter(async (view): Promise<Diagnostic[]> => {
-		const text = view.state.doc.toString();
-		if (text.trim().length < 10) return [];
+		const full = view.state.doc.toString();
+		if (full.trim().length < 10) return [];
+
+		// Extract window around cursor, snapping to word boundaries
+		const cursor = view.state.selection.main.head;
+		const rawFrom = Math.max(0, cursor - SPELL_WINDOW);
+		const rawTo = Math.min(full.length, cursor + SPELL_WINDOW);
+		// Snap to nearest whitespace to avoid cutting mid-word
+		const sliceFrom = rawFrom === 0 ? 0 : (full.indexOf(' ', rawFrom) + 1 || rawFrom);
+		const sliceTo = rawTo === full.length ? full.length : (full.lastIndexOf(' ', rawTo) || rawTo);
+		const text = full.slice(sliceFrom, sliceTo);
+
 		try {
 			const res = await fetch('/api/spell', {
 				method: 'POST',
@@ -78,9 +90,10 @@
 			const data = await res.json() as {
 				matches: { from: number; to: number; message: string; severity: string; replacements: string[] }[]
 			};
+			// Translate slice-relative offsets back to document positions
 			return data.matches.map((m) => ({
-				from: m.from,
-				to: m.to,
+				from: m.from + sliceFrom,
+				to: m.to + sliceFrom,
 				severity: m.severity as 'error' | 'warning' | 'info',
 				message: m.message,
 				actions: m.replacements.map((r) => ({
