@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { trpc } from '$lib/utils/trpc';
+	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
 	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
@@ -183,6 +184,7 @@
 		try {
 			await trpc.aiConfig.setTaskConfig.mutate({ task, keyId, model });
 			aiTaskConfig = { ...aiTaskConfig, [task]: { keyId, model } };
+			await invalidateAll();
 		} catch (e: unknown) {
 			aiError = e instanceof Error ? e.message : 'Error saving task config.';
 		} finally {
@@ -197,6 +199,7 @@
 			const next = { ...aiTaskConfig };
 			delete next[task];
 			aiTaskConfig = next;
+			await invalidateAll();
 		} catch (e: unknown) {
 			aiError = e instanceof Error ? e.message : 'Error clearing task config.';
 		}
