@@ -30,69 +30,73 @@
 	class="sticky top-0 z-30 border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 >
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-		<a
-			href="/projects"
-			class="flex items-center gap-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink"
-		>
-			Scholio
-			<span class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent">
-				beta
-			</span>
-		</a>
+		<div class="flex items-center gap-2">
+			<a
+				href="/projects"
+				class="flex items-center gap-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink"
+			>
+				Scholio
+				<span class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent">
+					beta
+				</span>
+			</a>
 
-		<!-- Workspace selector (only shown when user belongs to ≥1 org) -->
-		{#if orgs.length > 0}
-			<div class="relative">
-				<button
-					type="button"
-					onclick={() => (workspaceOpen = !workspaceOpen)}
-					class="flex items-center gap-1.5 rounded-md border border-paper-border bg-paper px-2.5 py-1 font-sans text-sm text-ink transition-colors hover:border-accent/40 hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:hover:border-accent/40 dark:hover:bg-dark-paper-ui"
-				>
-					<span class="max-w-[120px] truncate">{workspaceStore.current.name}</span>
-					<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-						<path d="m6 9 6 6 6-6"/>
-					</svg>
-				</button>
+			<!-- Workspace indicator (only when in an org workspace) -->
+			{#if orgs.length > 0}
+				<div class="relative">
+					<button
+						type="button"
+						onclick={() => (workspaceOpen = !workspaceOpen)}
+						class="flex items-center gap-1 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					>
+						{#if workspaceStore.current.id !== null}
+							<span>({workspaceStore.current.name})</span>
+						{/if}
+						<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<path d="m6 9 6 6 6-6"/>
+						</svg>
+					</button>
 
-				{#if workspaceOpen}
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div
-						class="fixed inset-0 z-40"
-						onclick={() => (workspaceOpen = false)}
-						onkeydown={(e) => e.key === 'Escape' && (workspaceOpen = false)}
-					></div>
-					<div class="absolute left-0 top-10 z-50 min-w-44 rounded-xl border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
-						<p class="px-3 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Workspace</p>
-						<button
-							type="button"
-							onclick={() => { workspaceStore.set({ id: null, name: 'Personal' }); workspaceOpen = false; }}
-							class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore.current.id === null ? 'text-accent' : 'text-ink dark:text-dark-ink'}"
-						>
-							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-							</svg>
-							Personal
-						</button>
-						<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
-						{#each orgs as org (org.id)}
+					{#if workspaceOpen}
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div
+							class="fixed inset-0 z-40"
+							onclick={() => (workspaceOpen = false)}
+							onkeydown={(e) => e.key === 'Escape' && (workspaceOpen = false)}
+						></div>
+						<div class="absolute left-0 top-8 z-50 min-w-44 rounded-xl border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+							<p class="px-3 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Workspace</p>
 							<button
 								type="button"
-								onclick={() => { workspaceStore.set({ id: org.id, name: org.name }); workspaceOpen = false; }}
-								class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore.current.id === org.id ? 'text-accent' : 'text-ink dark:text-dark-ink'}"
+								onclick={() => { workspaceStore.set({ id: null, name: 'Personal' }); workspaceOpen = false; }}
+								class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore.current.id === null ? 'text-accent' : 'text-ink dark:text-dark-ink'}"
 							>
 								<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+									<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
 								</svg>
-								<span class="truncate">{org.name}</span>
-								{#if org.role === 'owner'}
-									<span class="ml-auto font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">owner</span>
-								{/if}
+								Personal
 							</button>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		{/if}
+							<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
+							{#each orgs as org (org.id)}
+								<button
+									type="button"
+									onclick={() => { workspaceStore.set({ id: org.id, name: org.name }); workspaceOpen = false; }}
+									class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore.current.id === org.id ? 'text-accent' : 'text-ink dark:text-dark-ink'}"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+									</svg>
+									<span class="truncate">{org.name}</span>
+									{#if org.role === 'owner'}
+										<span class="ml-auto font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">owner</span>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</div>
 
 		<div class="flex items-center gap-4">
 			<nav class="hidden items-center gap-4 sm:flex">
