@@ -1,78 +1,128 @@
 import { z } from 'zod';
-import { eq, and } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
-import { userAiConfig, userProfile } from '$lib/server/db/schemas/users.schema';
+import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { encryptSecret } from '$lib/server/kms';
 
-const PROVIDER = z.enum(['openrouter']);
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-// Curated model lists shown in the UI model selector.
-const MODELS: Record<string, { id: string; label: string }[]> = {
-	openrouter: [
-		{ id: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5 (fast)' },
-		{ id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
-		{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini (fast)' },
-		{ id: 'openai/gpt-4o', label: 'GPT-4o' },
-		{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5 (fast)' },
-		{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
-		{ id: 'perplexity/sonar', label: 'Perplexity Sonar (web search, fast)' },
-		{ id: 'perplexity/sonar-pro', label: 'Perplexity Sonar Pro (web search)' }
-	]
-};
+export type { AiTask, TaskConfig, AiTaskConfig } from '$lib/ai-config';
+export { AI_TASKS, MODELS, TOOL_CALLING_MODELS, parseTaskConfig } from '$lib/ai-config';
+import type { AiTask, AiTaskConfig } from '$lib/ai-config';
+import { AI_TASKS, MODELS, parseTaskConfig } from '$lib/ai-config';
+
+// ---------------------------------------------------------------------------
+// OpenRouter pricing (fetched at runtime, cached in memory for 1 hour)
+// ---------------------------------------------------------------------------
+
+interface PricingCache {
+	fetchedAt: number;
+	prices: Record<string, { input: number; output: number }>;
+}
+
+let pricingCache: PricingCache | null = null;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export async function fetchOpenRouterPrices(): Promise<Record<string, { input: number; output: number }>> {
+	if (pricingCache && Date.now() - pricingCache.fetchedAt < CACHE_TTL_MS) {
+		return pricingCache.prices;
+	}
+
+	try {
+		const res = await fetch('https://openrouter.ai/api/v1/models', {
+			headers: { 'User-Agent': 'Scholio/1.0' }
+		});
+		if (!res.ok) return pricingCache?.prices ?? {};
+
+		const data = (await res.json()) as {
+			data: { id: string; pricing?: { prompt?: string; completion?: string } }[];
+		};
+
+		const prices: Record<string, { input: number; output: number }> = {};
+		for (const model of data.data) {
+			const input = parseFloat(model.pricing?.prompt ?? '0');
+			const output = parseFloat(model.pricing?.completion ?? '0');
+			if (!isNaN(input) && !isNaN(output)) {
+				prices[model.id] = { input, output };
+			}
+		}
+
+		pricingCache = { fetchedAt: Date.now(), prices };
+		return prices;
+	} catch {
+		return pricingCache?.prices ?? {};
+	}
+}
+
+function formatPrice(pricePerToken: number): string {
+	const perMillion = pricePerToken * 1_000_000;
+	if (perMillion === 0) return 'free';
+	if (perMillion < 0.01) return `$${(perMillion * 1000).toFixed(2)}/1B`;
+	if (perMillion < 1) return `$${perMillion.toFixed(3)}/1M`;
+	return `$${perMillion.toFixed(2)}/1M`;
+}
+
+export const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
+
+// ---------------------------------------------------------------------------
+// Router
+// ---------------------------------------------------------------------------
 
 export const aiConfigRouter = router({
-	// Returns all configured providers + current default from userProfile.
-	// Never returns any key material.
-	getStatus: protectedProcedure.query(async ({ ctx }) => {
-		const [configs, profileRows] = await Promise.all([
-			ctx.withRLS((db) =>
-				db
-					.select({
-						provider: userAiConfig.provider,
-						model: userAiConfig.model,
-						enabled: userAiConfig.enabled,
-						updatedAt: userAiConfig.updatedAt
-					})
-					.from(userAiConfig)
-					.where(eq(userAiConfig.userId, ctx.user.id))
-			) as Promise<{ provider: string; model: string | null; enabled: boolean; updatedAt: Date }[]>,
+	// Returns model list with live pricing from OpenRouter (cached 1h)
+	getModels: protectedProcedure.query(async () => {
+		const prices = await fetchOpenRouterPrices();
+		return MODELS.map((m) => {
+			const p = prices[m.id];
+			const pricing = p
+				? `${formatPrice(p.input)} in · ${formatPrice(p.output)} out`
+				: null;
+			return { ...m, pricing };
+		});
+	}),
 
-			ctx.withRLS((db) =>
-				db
-					.select({
-						defaultAiProvider: userProfile.defaultAiProvider,
-						defaultAiModel: userProfile.defaultAiModel
-					})
-					.from(userProfile)
-					.where(eq(userProfile.userId, ctx.user.id))
-					.limit(1)
-			) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>
-		]);
+	// List all keys for the current user (no key material returned)
+	listKeys: protectedProcedure.query(async ({ ctx }) => {
+		const keys = await ctx.withRLS((db) =>
+			db
+				.select({
+					id: userApiKey.id,
+					name: userApiKey.name,
+					enabled: userApiKey.enabled,
+					createdAt: userApiKey.createdAt,
+					updatedAt: userApiKey.updatedAt
+				})
+				.from(userApiKey)
+				.where(eq(userApiKey.userId, ctx.user.id))
+				.orderBy(asc(userApiKey.createdAt))
+		) as { id: string; name: string; enabled: boolean; createdAt: Date; updatedAt: Date }[];
+
+		return keys;
+	}),
+
+	// Get the task config (which key + model per task)
+	getTaskConfig: protectedProcedure.query(async ({ ctx }) => {
+		const rows = await ctx.withRLS((db) =>
+			db
+				.select({ aiTaskConfig: userProfile.aiTaskConfig })
+				.from(userProfile)
+				.where(eq(userProfile.userId, ctx.user.id))
+				.limit(1)
+		) as { aiTaskConfig: string | null }[];
 
 		return {
-			providers: configs,
-			defaultProvider: profileRows[0]?.defaultAiProvider ?? 'openrouter',
-			defaultModel: profileRows[0]?.defaultAiModel ?? null
+			taskConfig: parseTaskConfig(rows[0]?.aiTaskConfig ?? null),
+			models: MODELS,
+			tasks: AI_TASKS
 		};
 	}),
 
-	// Static curated model list for a given provider — no API call needed.
-	getModels: protectedProcedure
-		.input(z.object({ provider: PROVIDER }))
-		.query(({ input }) => {
-			return { models: MODELS[input.provider] ?? [] };
-		}),
-
-	// Encrypts and stores (or replaces) the user's API key for the given provider.
-	saveApiKey: protectedProcedure
-		.input(
-			z.object({
-				provider: PROVIDER,
-				apiKey: z.string().min(1),
-				model: z.string().optional()
-			})
-		)
+	// Add a new named key
+	addKey: protectedProcedure
+		.input(z.object({ name: z.string().min(1).max(80), apiKey: z.string().min(1) }))
 		.mutation(async ({ ctx, input }) => {
 			let encrypted;
 			try {
@@ -84,141 +134,136 @@ export const aiConfigRouter = router({
 				});
 			}
 
-			const existing = (await ctx.withRLS((db) =>
-				db
-					.select({ id: userAiConfig.id })
-					.from(userAiConfig)
-					.where(
-						and(
-							eq(userAiConfig.userId, ctx.user.id),
-							eq(userAiConfig.provider, input.provider)
-						)
-					)
-					.limit(1)
-			)) as { id: string }[];
+			const id = crypto.randomUUID();
+			await ctx.withRLS((db) =>
+				db.insert(userApiKey).values({
+					id,
+					userId: ctx.user.id,
+					name: input.name,
+					...encrypted,
+					enabled: true
+				})
+			);
 
-			if (existing[0]) {
+			return { id };
+		}),
+
+	// Rename a key
+	renameKey: protectedProcedure
+		.input(z.object({ keyId: z.string(), name: z.string().min(1).max(80) }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.withRLS((db) =>
+				db
+					.update(userApiKey)
+					.set({ name: input.name, updatedAt: new Date() })
+					.where(eq(userApiKey.id, input.keyId))
+			);
+			return { ok: true };
+		}),
+
+	// Toggle enabled without deleting
+	toggleKey: protectedProcedure
+		.input(z.object({ keyId: z.string(), enabled: z.boolean() }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.withRLS((db) =>
+				db
+					.update(userApiKey)
+					.set({ enabled: input.enabled, updatedAt: new Date() })
+					.where(eq(userApiKey.id, input.keyId))
+			);
+			return { enabled: input.enabled };
+		}),
+
+	// Delete a key — also clears any task configs that reference it
+	deleteKey: protectedProcedure
+		.input(z.object({ keyId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.withRLS((db) =>
+				db.delete(userApiKey).where(eq(userApiKey.id, input.keyId))
+			);
+
+			// Remove references to deleted key from task config
+			const rows = await ctx.withRLS((db) =>
+				db
+					.select({ aiTaskConfig: userProfile.aiTaskConfig })
+					.from(userProfile)
+					.where(eq(userProfile.userId, ctx.user.id))
+					.limit(1)
+			) as { aiTaskConfig: string | null }[];
+
+			const config = parseTaskConfig(rows[0]?.aiTaskConfig ?? null);
+			let changed = false;
+			for (const task of Object.keys(config) as AiTask[]) {
+				if (config[task]?.keyId === input.keyId) {
+					delete config[task];
+					changed = true;
+				}
+			}
+			if (changed) {
 				await ctx.withRLS((db) =>
 					db
-						.update(userAiConfig)
-						.set({
-							...encrypted,
-							...(input.model !== undefined ? { model: input.model } : {}),
-							enabled: true,
-							updatedAt: new Date()
-						})
-						.where(
-							and(
-								eq(userAiConfig.userId, ctx.user.id),
-								eq(userAiConfig.provider, input.provider)
-							)
-						)
-				);
-			} else {
-				await ctx.withRLS((db) =>
-					db.insert(userAiConfig).values({
-						id: crypto.randomUUID(),
-						userId: ctx.user.id,
-						provider: input.provider,
-						model: input.model ?? null,
-						...encrypted,
-						enabled: true
-					})
+						.update(userProfile)
+						.set({ aiTaskConfig: JSON.stringify(config), updatedAt: new Date() })
+						.where(eq(userProfile.userId, ctx.user.id))
 				);
 			}
 
 			return { ok: true };
 		}),
 
-	// Enables or disables the assistant for a specific provider without deleting the key.
-	toggleEnabled: protectedProcedure
-		.input(z.object({ provider: PROVIDER, enabled: z.boolean() }))
-		.mutation(async ({ ctx, input }) => {
-			const rows = (await ctx.withRLS((db) =>
-				db
-					.select({ id: userAiConfig.id })
-					.from(userAiConfig)
-					.where(
-						and(
-							eq(userAiConfig.userId, ctx.user.id),
-							eq(userAiConfig.provider, input.provider)
-						)
-					)
-					.limit(1)
-			)) as { id: string }[];
-
-			if (!rows[0])
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'No hay API key configurada para este proveedor.' });
-
-			await ctx.withRLS((db) =>
-				db
-					.update(userAiConfig)
-					.set({ enabled: input.enabled, updatedAt: new Date() })
-					.where(
-						and(
-							eq(userAiConfig.userId, ctx.user.id),
-							eq(userAiConfig.provider, input.provider)
-						)
-					)
-			);
-
-			return { enabled: input.enabled };
-		}),
-
-	// Permanently removes the stored key for a specific provider.
-	deleteApiKey: protectedProcedure
-		.input(z.object({ provider: PROVIDER }))
-		.mutation(async ({ ctx, input }) => {
-			await ctx.withRLS((db) =>
-				db
-					.delete(userAiConfig)
-					.where(
-						and(
-							eq(userAiConfig.userId, ctx.user.id),
-							eq(userAiConfig.provider, input.provider)
-						)
-					)
-			);
-			return { ok: true };
-		}),
-
-	// Sets the default provider and optionally the default model.
-	setDefault: protectedProcedure
+	// Set key + model for a specific task
+	setTaskConfig: protectedProcedure
 		.input(
 			z.object({
-				provider: PROVIDER,
-				model: z.string().nullable().optional()
+				task: z.enum(['agent', 'draft', 'review', 'requirements', 'lookup']),
+				keyId: z.string(),
+				model: z.string().min(1)
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
+			const rows = await ctx.withRLS((db) =>
+				db
+					.select({ aiTaskConfig: userProfile.aiTaskConfig })
+					.from(userProfile)
+					.where(eq(userProfile.userId, ctx.user.id))
+					.limit(1)
+			) as { aiTaskConfig: string | null }[];
+
+			const config = parseTaskConfig(rows[0]?.aiTaskConfig ?? null);
+			config[input.task] = { keyId: input.keyId, model: input.model };
+
 			await ctx.withRLS((db) =>
 				db
 					.update(userProfile)
-					.set({
-						defaultAiProvider: input.provider,
-						...(input.model !== undefined ? { defaultAiModel: input.model } : {}),
-						updatedAt: new Date()
-					})
+					.set({ aiTaskConfig: JSON.stringify(config), updatedAt: new Date() })
 					.where(eq(userProfile.userId, ctx.user.id))
 			);
+
 			return { ok: true };
 		}),
 
-	// Updates just the model for a provider config (without re-saving the key).
-	setModel: protectedProcedure
-		.input(z.object({ provider: PROVIDER, model: z.string().nullable() }))
+	// Clear config for a specific task (fallback to default)
+	clearTaskConfig: protectedProcedure
+		.input(z.object({ task: z.enum(['agent', 'draft', 'review', 'requirements', 'lookup']) }))
 		.mutation(async ({ ctx, input }) => {
+			const rows = await ctx.withRLS((db) =>
+				db
+					.select({ aiTaskConfig: userProfile.aiTaskConfig })
+					.from(userProfile)
+					.where(eq(userProfile.userId, ctx.user.id))
+					.limit(1)
+			) as { aiTaskConfig: string | null }[];
+
+			const config = parseTaskConfig(rows[0]?.aiTaskConfig ?? null);
+			delete config[input.task];
+
 			await ctx.withRLS((db) =>
 				db
-					.update(userAiConfig)
-					.set({ model: input.model, updatedAt: new Date() })
-					.where(
-						and(
-							eq(userAiConfig.userId, ctx.user.id),
-							eq(userAiConfig.provider, input.provider)
-						)
-					)
+					.update(userProfile)
+					.set({ aiTaskConfig: JSON.stringify(config), updatedAt: new Date() })
+					.where(eq(userProfile.userId, ctx.user.id))
 			);
+
 			return { ok: true };
 		})
 });

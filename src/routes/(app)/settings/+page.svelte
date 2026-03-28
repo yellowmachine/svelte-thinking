@@ -1,8 +1,12 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { trpc } from '$lib/utils/trpc';
+	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
+	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
+	import OrgSettings from '$lib/components/projects/OrgSettings.svelte';
+	import { MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
 	let { data }: { data: PageData } = $props();
 
@@ -14,7 +18,7 @@
 	let confirmPassword = $state('');
 
 	// Active section
-	let activeTab: 'profile' | 'billing' | 'ai' | 'security' = $state('profile');
+	let activeTab: 'profile' | 'billing' | 'ai' | 'security' | 'appearance' | 'organizations' = $state('profile');
 
 	// Billing state
 	type PlanInfo = {
@@ -74,142 +78,135 @@
 	}
 
 	// ── AI config state ──────────────────────────────────────────────────────
-	type ProviderConfig = { provider: string; model: string | null; enabled: boolean; updatedAt: Date };
-	type AiStatus = { providers: ProviderConfig[]; defaultProvider: string; defaultModel: string | null };
+	type AiKey = { id: string; name: string; enabled: boolean; createdAt: Date; updatedAt: Date };
+	type TaskConfig = { keyId: string; model: string };
+	type AiTaskId = 'agent' | 'draft' | 'review' | 'requirements';
+	type AiTaskDef = { id: AiTaskId; label: string; description: string };
+	type AiModel = { id: string; label: string; toolCalling: boolean; pricing: string | null };
 
-	const PROVIDERS = [
-		{
-			id: 'openrouter',
-			label: 'OpenRouter',
-			placeholder: 'sk-or-v1-...',
-			keyUrl: 'https://openrouter.ai/keys',
-			privacyUrl: 'https://openrouter.ai/privacy'
-		}
-	] as const;
-	type ProviderId = (typeof PROVIDERS)[number]['id'];
-
-	const MODELS: Record<ProviderId, { id: string; label: string }[]> = {
-		openrouter: [
-			{ id: 'anthropic/claude-haiku-4-5', label: 'Claude Haiku 4.5 (fast)' },
-			{ id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
-			{ id: 'openai/gpt-4o-mini', label: 'GPT-4o mini (fast)' },
-			{ id: 'openai/gpt-4o', label: 'GPT-4o' },
-			{ id: 'google/gemini-flash-1.5', label: 'Gemini Flash 1.5 (fast)' },
-			{ id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
-			{ id: 'perplexity/sonar', label: 'Perplexity Sonar (web search, fast)' },
-			{ id: 'perplexity/sonar-pro', label: 'Perplexity Sonar Pro (web search)' }
-		]
+	const TASK_LABELS: Record<AiTaskId, string> = {
+		agent: 'Agent (chat)',
+		draft: 'Draft',
+		review: 'Review',
+		requirements: 'Requirements'
 	};
 
-	let aiStatus = $state<AiStatus | null>(null);
+	let aiKeys = $state<AiKey[]>([]);
+	let aiTaskConfig = $state<Partial<Record<AiTaskId, TaskConfig>>>({});
+	let aiModels = $state<AiModel[]>([]);
+	let aiTasks = $state<AiTaskDef[]>([]);
 	let loadingAi = $state(false);
+	let aiLoaded = $state(false);
 	let aiError = $state('');
 	let aiSuccess = $state('');
 
-	// Per-provider UI state
-	let keyInputs = $state<Record<ProviderId, string>>({ openrouter: '' });
-	let savingKey = $state<Record<ProviderId, boolean>>({ openrouter: false });
-	let togglingEnabled = $state<Record<ProviderId, boolean>>({ openrouter: false });
-	let deletingKey = $state<Record<ProviderId, boolean>>({ openrouter: false });
-	let settingDefault = $state(false);
+	// New key form
+	let newKeyName = $state('');
+	let newKeyValue = $state('');
+	let savingNewKey = $state(false);
 
-	function providerConfig(id: ProviderId): ProviderConfig | undefined {
-		return aiStatus?.providers.find((p) => p.provider === id);
-	}
+	// Per-key state
+	let togglingKey = $state<Record<string, boolean>>({});
+	let deletingKeyId = $state<string | null>(null);
 
-	async function loadAiStatus() {
+	// Task config saving state
+	let savingTask = $state<Record<AiTaskId, boolean>>({ agent: false, draft: false, review: false, requirements: false });
+
+	async function loadAiConfig() {
 		loadingAi = true;
 		aiError = '';
 		try {
-			aiStatus = await trpc.aiConfig.getStatus.query();
+			const [keys, taskData, models] = await Promise.all([
+				trpc.aiConfig.listKeys.query(),
+				trpc.aiConfig.getTaskConfig.query(),
+				trpc.aiConfig.getModels.query()
+			]);
+			aiKeys = keys;
+			aiTaskConfig = taskData.taskConfig as Partial<Record<AiTaskId, TaskConfig>>;
+			aiModels = models as AiModel[];
+			aiTasks = taskData.tasks as AiTaskDef[];
 		} catch {
 			aiError = 'Could not load assistant configuration.';
 		} finally {
 			loadingAi = false;
+			aiLoaded = true;
 		}
 	}
 
-	async function handleSaveKey(provider: ProviderId) {
-		const key = keyInputs[provider].trim();
-		if (!key) return;
-		savingKey[provider] = true;
+	async function handleAddKey() {
+		if (!newKeyName.trim() || !newKeyValue.trim()) return;
+		savingNewKey = true;
 		aiError = '';
 		aiSuccess = '';
 		try {
-			await trpc.aiConfig.saveApiKey.mutate({ provider, apiKey: key });
-			keyInputs[provider] = '';
-			aiSuccess = 'OpenRouter API key saved.';
-			await loadAiStatus();
+			await trpc.aiConfig.addKey.mutate({ name: newKeyName.trim(), apiKey: newKeyValue.trim() });
+			newKeyName = '';
+			newKeyValue = '';
+			aiSuccess = 'API key saved.';
+			await loadAiConfig();
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error saving API key.';
+			aiError = e instanceof Error ? e.message : 'Error saving key.';
 		} finally {
-			savingKey[provider] = false;
+			savingNewKey = false;
 		}
 	}
 
-	async function handleToggleEnabled(provider: ProviderId, enabled: boolean) {
-		togglingEnabled[provider] = true;
+	async function handleToggleKey(keyId: string, enabled: boolean) {
+		togglingKey[keyId] = true;
 		aiError = '';
 		try {
-			await trpc.aiConfig.toggleEnabled.mutate({ provider, enabled });
-			if (aiStatus) {
-				aiStatus = {
-					...aiStatus,
-					providers: aiStatus.providers.map((p) => (p.provider === provider ? { ...p, enabled } : p))
-				};
-			}
+			await trpc.aiConfig.toggleKey.mutate({ keyId, enabled });
+			aiKeys = aiKeys.map((k) => (k.id === keyId ? { ...k, enabled } : k));
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error toggling provider.';
+			aiError = e instanceof Error ? e.message : 'Error toggling key.';
 		} finally {
-			togglingEnabled[provider] = false;
+			togglingKey[keyId] = false;
 		}
 	}
 
-	async function handleSetModel(provider: ProviderId, model: string) {
-		try {
-			await trpc.aiConfig.setModel.mutate({ provider, model: model || null });
-			if (aiStatus) {
-				aiStatus = {
-					...aiStatus,
-					providers: aiStatus.providers.map((p) => (p.provider === provider ? { ...p, model: model || null } : p))
-				};
-			}
-		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error changing model.';
-		}
-	}
-
-	async function handleDeleteKey(provider: ProviderId) {
-		const label = 'OpenRouter';
-		deletingKey[provider] = true;
+	async function handleDeleteKey(keyId: string) {
+		deletingKeyId = null;
 		aiError = '';
 		aiSuccess = '';
 		try {
-			await trpc.aiConfig.deleteApiKey.mutate({ provider });
-			aiSuccess = `${label} API key deleted.`;
-			await loadAiStatus();
+			await trpc.aiConfig.deleteKey.mutate({ keyId });
+			aiSuccess = 'API key deleted.';
+			await loadAiConfig();
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error deleting API key.';
-		} finally {
-			deletingKey[provider] = false;
+			aiError = e instanceof Error ? e.message : 'Error deleting key.';
 		}
 	}
 
-	async function handleSetDefault(provider: ProviderId) {
-		settingDefault = true;
+	async function handleSetTaskConfig(task: AiTaskId, keyId: string, model: string) {
+		if (!keyId || !model) return;
+		savingTask[task] = true;
 		aiError = '';
 		try {
-			await trpc.aiConfig.setDefault.mutate({ provider });
-			if (aiStatus) aiStatus = { ...aiStatus, defaultProvider: provider };
+			await trpc.aiConfig.setTaskConfig.mutate({ task, keyId, model });
+			aiTaskConfig = { ...aiTaskConfig, [task]: { keyId, model } };
+			await invalidateAll();
 		} catch (e: unknown) {
-			aiError = e instanceof Error ? e.message : 'Error changing default provider.';
+			aiError = e instanceof Error ? e.message : 'Error saving task config.';
 		} finally {
-			settingDefault = false;
+			savingTask[task] = false;
+		}
+	}
+
+	async function handleClearTaskConfig(task: AiTaskId) {
+		aiError = '';
+		try {
+			await trpc.aiConfig.clearTaskConfig.mutate({ task });
+			const next = { ...aiTaskConfig };
+			delete next[task];
+			aiTaskConfig = next;
+			await invalidateAll();
+		} catch (e: unknown) {
+			aiError = e instanceof Error ? e.message : 'Error clearing task config.';
 		}
 	}
 
 	$effect(() => {
-		if (activeTab === 'ai' && aiStatus === null) loadAiStatus();
+		if (activeTab === 'ai' && !aiLoaded && !loadingAi) loadAiConfig();
 	});
 
 	// ── 2FA state ─────────────────────────────────────────────────────────────
@@ -298,17 +295,14 @@
 	}
 
 	// ── Delete key confirmation ───────────────────────────────────────────────
-	let deleteKeyProvider = $state<ProviderId | null>(null);
-
-	function confirmDeleteKey(provider: ProviderId) {
-		deleteKeyProvider = provider;
+	function confirmDeleteKey(keyId: string) {
+		deletingKeyId = keyId;
 	}
 
 	async function executeDeleteKey() {
-		if (!deleteKeyProvider) return;
-		const provider = deleteKeyProvider;
-		deleteKeyProvider = null;
-		await handleDeleteKey(provider);
+		if (!deletingKeyId) return;
+		const keyId = deletingKeyId;
+		await handleDeleteKey(keyId);
 	}
 
 	// ── Delete account ────────────────────────────────────────────────────────
@@ -382,6 +376,24 @@
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Seguridad
+		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = 'appearance')}
+			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'appearance'
+				? 'border-b-2 border-accent font-medium text-accent'
+				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+		>
+			Appearance
+		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = 'organizations')}
+			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'organizations'
+				? 'border-b-2 border-accent font-medium text-accent'
+				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+		>
+			Organizations
 		</button>
 	</div>
 
@@ -569,21 +581,27 @@
 			</section>
 
 			<!-- Danger zone -->
-			<section class="rounded-xl border border-red-200 bg-paper p-6 dark:border-red-900/40 dark:bg-dark-paper">
-				<h2 class="mb-1 font-serif text-lg font-semibold text-red-600 dark:text-red-400">
-					Danger zone
-				</h2>
-				<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					These actions are irreversible.
+			<div class="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
+				<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
+				<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
+					These actions are permanent and irreversible.
 				</p>
-				<button
-					type="button"
-					disabled
-					class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 opacity-50 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
-				>
-					Eliminar cuenta
-				</button>
-			</section>
+				<div class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper">
+					<div>
+						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Delete account</p>
+						<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+							Permanently deletes your account, all projects, documents and files.
+						</p>
+					</div>
+					<button
+						type="button"
+						onclick={() => (showDeleteDialog = true)}
+						class="ml-4 shrink-0 rounded-md border border-red-300 px-4 py-2 font-sans text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+					>
+						Delete account
+					</button>
+				</div>
+			</div>
 		</div>
 
 	<!-- ── AI TAB ── -->
@@ -604,135 +622,164 @@
 			{#if loadingAi}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
 			{:else}
-				<!-- Provider cards -->
-				{#each PROVIDERS as p}
-					{@const cfg = providerConfig(p.id)}
+
+				<!-- ── Section 1: API Keys ── -->
+				<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">API Keys</h2>
+					<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						Add one or more OpenRouter keys. Each key can be assigned to a specific task below.
+						Get your keys at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">openrouter.ai/keys</a>.
+					</p>
+
+					<!-- Privacy notice -->
+					<div class="mb-5 flex gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900/50 dark:bg-blue-950/30">
+						<svg class="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+						</svg>
+						<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
+							Your documents are sent to OpenRouter only to process your query. OpenRouter does not use API data to train models.
+							<a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-2">Privacy Policy →</a>
+						</p>
+					</div>
+
+					<!-- Existing keys -->
+					{#if aiKeys.length > 0}
+						<div class="mb-5 flex flex-col gap-2">
+							{#each aiKeys as key}
+								<div class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+									<div class="min-w-0 flex-1">
+										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{key.name}</p>
+										<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Added {formatDate(key.createdAt)}</p>
+									</div>
+									<div class="flex items-center gap-3">
+										<span class="font-sans text-xs {key.enabled ? 'text-green-600 dark:text-green-400' : 'text-ink-muted dark:text-dark-ink-muted'}">
+											{key.enabled ? 'Active' : 'Inactive'}
+										</span>
+										<button
+											type="button"
+											role="switch"
+											aria-checked={key.enabled}
+											onclick={() => handleToggleKey(key.id, !key.enabled)}
+											disabled={togglingKey[key.id]}
+											class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50
+												{key.enabled ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
+										>
+											<span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200
+												{key.enabled ? 'translate-x-4' : 'translate-x-0'}"></span>
+										</button>
+										<button
+											type="button"
+											onclick={() => confirmDeleteKey(key.id)}
+											class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+										>
+											Delete
+										</button>
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+
+					<!-- Add new key form -->
+					<div class="flex flex-col gap-3">
+						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Add key</p>
+						<input
+							type="text"
+							bind:value={newKeyName}
+							placeholder='Name (e.g. "My Anthropic key")'
+							class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						/>
+						<div class="flex gap-3">
+							<input
+								type="password"
+								bind:value={newKeyValue}
+								placeholder="sk-or-v1-..."
+								autocomplete="off"
+								class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<button
+								type="button"
+								onclick={handleAddKey}
+								disabled={!newKeyName.trim() || !newKeyValue.trim() || savingNewKey}
+								class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+							>
+								{savingNewKey ? 'Saving...' : 'Save'}
+							</button>
+						</div>
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Encrypted with AWS KMS before storage.</p>
+					</div>
+				</section>
+
+				<!-- ── Section 2: Task configuration ── -->
+				{#if aiKeys.length > 0}
 					<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+						<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Task configuration</h2>
+						<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+							Choose which key and model to use for each AI feature. Falls back to the first active key if not configured.
+						</p>
 
-						<!-- Card header -->
-						<div class="flex items-start justify-between gap-4">
-							<div class="flex items-center gap-3">
-								<div>
-									<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">{p.label}</h2>
-									<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-										Access to Anthropic, OpenAI, Google, Perplexity and more models via a single key.
-									</p>
-								</div>
-							</div>
-							{#if cfg}
-								<span class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold
-									{cfg.enabled
-										? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
-										: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}">
-									{cfg.enabled ? 'Active' : 'Inactive'}
-								</span>
-							{/if}
-						</div>
-
-						{#if cfg}
-							<div class="mt-5 flex flex-col gap-4">
-								<!-- Model selector + last updated -->
-								<div class="rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-									<div class="flex items-center justify-between gap-4">
-										<div class="min-w-0 flex-1">
-											<p class="mb-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Model</p>
-											<select
-												value={cfg.model ?? ''}
-												onchange={(e) => handleSetModel(p.id, (e.target as HTMLSelectElement).value)}
-												class="w-full rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+						<div class="flex flex-col gap-4">
+							{#each aiTasks as task}
+								{@const cfg = aiTaskConfig[task.id as AiTaskId]}
+								{@const enabledKeys = aiKeys.filter((k) => k.enabled)}
+								<div class="rounded-lg border border-paper-border bg-paper-ui px-4 py-4 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+									<div class="mb-3 flex items-center justify-between">
+										<div>
+											<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{task.label}</p>
+											<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{task.description}</p>
+										</div>
+										{#if cfg}
+											<button
+												type="button"
+												onclick={() => handleClearTaskConfig(task.id as AiTaskId)}
+												class="font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 											>
-												<option value="">— Default del proveedor —</option>
-												{#each MODELS[p.id] as m}
-													<option value={m.id}>{m.label}</option>
-												{/each}
-											</select>
-										</div>
-										<div class="shrink-0 text-right">
-											<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Updated</p>
-											<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-												{formatDate(cfg.updatedAt)}
-											</p>
-										</div>
+												Reset
+											</button>
+										{/if}
 									</div>
-								</div>
-
-								<!-- Enable toggle -->
-								<div class="flex items-center justify-between">
-									<div>
-										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Enabled</p>
-										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Disable without deleting the key.</p>
+									<div class="flex gap-3">
+										<select
+											value={cfg?.keyId ?? ''}
+											onchange={async (e) => {
+												const keyId = (e.target as HTMLSelectElement).value;
+												const model = cfg?.model ?? aiModels[0]?.id ?? '';
+												if (keyId) await handleSetTaskConfig(task.id as AiTaskId, keyId, model);
+											}}
+											class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+										>
+											<option value="">— First active key —</option>
+											{#each enabledKeys as key}
+												<option value={key.id}>{key.name}</option>
+											{/each}
+										</select>
+										<select
+											value={cfg?.model ?? ''}
+											onchange={async (e) => {
+												const model = (e.target as HTMLSelectElement).value;
+												const keyId = cfg?.keyId ?? enabledKeys[0]?.id ?? '';
+												if (model && keyId) await handleSetTaskConfig(task.id as AiTaskId, keyId, model);
+											}}
+											class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+										>
+											<option value="">— Default model —</option>
+											{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
+												{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(task.id as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup')}
+												<option value={m.id}>{isRec ? '★ ' : ''}{m.label}{m.pricing ? ` — ${m.pricing}` : ''}</option>
+											{/each}
+										</select>
 									</div>
-									<button
-										type="button"
-										role="switch"
-										aria-checked={cfg.enabled}
-										aria-label={cfg.enabled ? 'Disable' : 'Enable'}
-										onclick={() => handleToggleEnabled(p.id, !cfg.enabled)}
-										disabled={togglingEnabled[p.id]}
-										class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50
-											{cfg.enabled ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
-									>
-										<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200
-											{cfg.enabled ? 'translate-x-5' : 'translate-x-0'}"></span>
-									</button>
+									{#if task.id === 'agent' && cfg?.model && !aiModels.find((m) => m.id === cfg.model)?.toolCalling}
+										<p class="mt-2 font-sans text-xs text-amber-600 dark:text-amber-400">
+											⚠ This model may not support tool calling required by the agent.
+										</p>
+									{/if}
 								</div>
-							</div>
-						{/if}
-
-						<!-- Key input (always shown) -->
-						<div class="mt-5 border-t border-paper-border pt-5 dark:border-dark-paper-border">
-							<!-- Privacy notice -->
-							<div class="mb-4 flex gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900/50 dark:bg-blue-950/30">
-								<svg class="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-								</svg>
-								<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-									Your documents are sent to {p.label} only to process your query.
-									{p.label} does not use API data to train its models.
-									<a href={p.privacyUrl} target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-2">
-										{p.label} Privacy Policy →
-									</a>
-								</p>
-							</div>
-							<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								{cfg ? 'Replace API key · ' : 'Add API key · '}
-								Obtenla en <a href={p.keyUrl} target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">{p.keyUrl.replace('https://', '')}</a>.
-								Encrypted with AWS KMS before storage.
-							</p>
-							<div class="flex gap-3">
-								<input
-									type="password"
-									bind:value={keyInputs[p.id]}
-									placeholder={p.placeholder}
-									autocomplete="off"
-									class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-								/>
-								<button
-									type="button"
-									onclick={() => handleSaveKey(p.id)}
-									disabled={!keyInputs[p.id].trim() || savingKey[p.id]}
-									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-								>
-									{savingKey[p.id] ? 'Saving...' : 'Save'}
-								</button>
-							</div>
+							{/each}
 						</div>
-
-						<!-- Delete key -->
-						{#if cfg}
-							<div class="mt-4 flex justify-end">
-								<button
-									type="button"
-									onclick={() => confirmDeleteKey(p.id)}
-									disabled={deletingKey[p.id]}
-									class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
-								>
-									{deletingKey[p.id] ? 'Deleting...' : 'Delete key'}
-								</button>
-							</div>
-						{/if}
 					</section>
-				{/each}
+				{/if}
+
 			{/if}
 		</div>
 
@@ -910,7 +957,7 @@
 		</div>
 
 	<!-- ── BILLING TAB ── -->
-	{:else}
+	{:else if activeTab === 'billing'}
 		<div class="flex flex-col gap-6">
 
 			{#if billingError}
@@ -1102,35 +1149,33 @@
 				{/if}
 			</section>
 		</div>
-	{/if}
 
-	<!-- Danger zone -->
-	<div class="mt-10 rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
-		<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
-		<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
-			These actions are permanent and irreversible.
-		</p>
-
-		<div class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper">
-			<div>
-				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Eliminar cuenta</p>
-				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-					Permanently deletes your account, all projects, documents and files.
+	<!-- ── APPEARANCE TAB ── -->
+	{:else if activeTab === 'appearance'}
+		<div class="flex flex-col gap-8">
+			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Theme</h2>
+				<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Choose a color scheme. Top row is light, bottom row is dark.
 				</p>
-			</div>
-			<button
-				type="button"
-				onclick={() => (showDeleteDialog = true)}
-				class="ml-4 shrink-0 rounded-md border border-red-300 px-4 py-2 font-sans text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
-			>
-				Eliminar cuenta
-			</button>
+				<ThemePicker />
+			</section>
 		</div>
-	</div>
+
+	<!-- ── ORGANIZATIONS TAB ── -->
+	{:else if activeTab === 'organizations'}
+		<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Organizations</h2>
+			<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Create or join organizations to share AI billing and collaborate on projects.
+			</p>
+			<OrgSettings initialOrgs={data.orgs ?? []} />
+		</div>
+	{/if}
 </div>
 
 <!-- Delete API key confirmation dialog -->
-{#if deleteKeyProvider}
+{#if deletingKeyId}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 		role="dialog"
@@ -1141,23 +1186,23 @@
 				Delete API key?
 			</h2>
 			<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				The key for <strong>OpenRouter</strong> will be deleted.
-				You will lose AI assistant access until you add a new one.
+				<strong>{aiKeys.find((k) => k.id === deletingKeyId)?.name ?? 'This key'}</strong> will be deleted.
+				Any task configured with this key will fall back to the first active key.
 			</p>
 			<div class="mt-5 flex gap-3">
 				<button
 					type="button"
-					onclick={() => (deleteKeyProvider = null)}
+					onclick={() => (deletingKeyId = null)}
 					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
-					Cancelar
+					Cancel
 				</button>
 				<button
 					type="button"
 					onclick={executeDeleteKey}
 					class="flex-1 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700"
 				>
-					Eliminar
+					Delete
 				</button>
 			</div>
 		</div>
@@ -1219,3 +1264,4 @@
 		</div>
 	</div>
 {/if}
+

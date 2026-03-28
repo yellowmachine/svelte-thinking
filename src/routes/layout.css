@@ -65,3 +65,98 @@ html.dark {
 html.dark ::-webkit-scrollbar-thumb {
 	background: var(--color-dark-paper-border);
 }
+
+/* ── Theme overrides ─────────────────────────────────────────────────────── */
+/* Each [data-theme] block overrides both light and dark CSS variables.      */
+/* Light utilities (bg-paper, text-ink, …) always read --color-*            */
+/* Dark  utilities (dark:bg-dark-paper, …) always read --color-dark-*       */
+
+[data-theme='github'] {
+	--color-paper: #ffffff;
+	--color-paper-ui: #f6f8fa;
+	--color-paper-border: #d0d7de;
+	--color-ink: #1f2328;
+	--color-ink-muted: #636c76;
+	--color-ink-faint: #9198a1;
+	--color-accent: #0969da;
+	--color-accent-hover: #0860ca;
+	--color-accent-light: #ddf4ff;
+	--color-dark-paper: #0d1117;
+	--color-dark-paper-ui: #161b22;
+	--color-dark-paper-border: #30363d;
+	--color-dark-ink: #e6edf3;
+	--color-dark-ink-muted: #8b949e;
+	--color-dark-ink-faint: #6e7781;
+}
+
+[data-theme='solarized'] {
+	--color-paper: #fdf6e3;
+	--color-paper-ui: #eee8d5;
+	--color-paper-border: #ddd6c1;
+	--color-ink: #657b83;
+	--color-ink-muted: #839496;
+	--color-ink-faint: #93a1a1;
+	--color-accent: #268bd2;
+	--color-accent-hover: #1a7bbf;
+	--color-accent-light: #d4e8f6;
+	--color-dark-paper: #002b36;
+	--color-dark-paper-ui: #073642;
+	--color-dark-paper-border: #0d4a5a;
+	--color-dark-ink: #839496;
+	--color-dark-ink-muted: #657b83;
+	--color-dark-ink-faint: #586e75;
+}
+
+[data-theme='nord'] {
+	--color-paper: #eceff4;
+	--color-paper-ui: #e5e9f0;
+	--color-paper-border: #d8dee9;
+	--color-ink: #2e3440;
+	--color-ink-muted: #4c566a;
+	--color-ink-faint: #8090a8;
+	--color-accent: #5e81ac;
+	--color-accent-hover: #507399;
+	--color-accent-light: #d8e4f0;
+	--color-dark-paper: #2e3440;
+	--color-dark-paper-ui: #272c36;
+	--color-dark-paper-border: #3b4252;
+	--color-dark-ink: #eceff4;
+	--color-dark-ink-muted: #d8dee9;
+	--color-dark-ink-faint: #8090a8;
+}
+
+[data-theme='catppuccin'] {
+	--color-paper: #eff1f5;
+	--color-paper-ui: #e6e9ef;
+	--color-paper-border: #ccd0da;
+	--color-ink: #4c4f69;
+	--color-ink-muted: #6c6f85;
+	--color-ink-faint: #9ca0b0;
+	--color-accent: #1e66f5;
+	--color-accent-hover: #1958d4;
+	--color-accent-light: #d3e0fd;
+	--color-dark-paper: #1e1e2e;
+	--color-dark-paper-ui: #181825;
+	--color-dark-paper-border: #313244;
+	--color-dark-ink: #cdd6f4;
+	--color-dark-ink-muted: #bac2de;
+	--color-dark-ink-faint: #a6adc8;
+}
+
+[data-theme='gruvbox'] {
+	--color-paper: #fbf1c7;
+	--color-paper-ui: #f2e5bc;
+	--color-paper-border: #ebdbb2;
+	--color-ink: #3c3836;
+	--color-ink-muted: #665c54;
+	--color-ink-faint: #928374;
+	--color-accent: #b57614;
+	--color-accent-hover: #9e6910;
+	--color-accent-light: #f2d49e;
+	--color-dark-paper: #282828;
+	--color-dark-paper-ui: #1d2021;
+	--color-dark-paper-border: #3c3836;
+	--color-dark-ink: #ebdbb2;
+	--color-dark-ink-muted: #d5c4a1;
+	--color-dark-ink-faint: #928374;
+}

@@ -1,16 +1,18 @@
 import { z } from 'zod';
-import { eq, desc, asc, inArray, and, count, sql } from 'drizzle-orm';
+import { eq, desc, asc, inArray, and, count, sql, sum, gte } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
-import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
+import { aiConversation, aiMessage, aiUsageLog } from '$lib/server/db/schemas/ai.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
-import { userAiConfig, userProfile } from '$lib/server/db/schemas/users.schema';
+import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
+import { organization, organizationMember, organizationApiKey } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
+import { type AiTask, DEFAULT_MODEL as AI_DEFAULT_MODEL, parseTaskConfig, fetchOpenRouterPrices } from './aiConfig';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import type { Db } from '$lib/server/db';
 
@@ -496,7 +498,225 @@ type OAMessage = {
 };
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+type KeyRow = { id: string; encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean };
+
+// Resolves the API key and model for a given task.
+// If the project belongs to an org and the user is a member, uses the org key.
+// Falls back to the user's personal key otherwise.
+async function resolveTaskKey(
+	withRLS: WithRLS,
+	db: Db,
+	userId: string,
+	task: AiTask,
+	projectId?: string,
+	fallbackModel: string = DEFAULT_MODEL
+): Promise<{ apiKey: string; model: string; resolvedOrgId?: string }> {
+	// ── 1. Check if project is linked to an org ───────────────────────────────
+	let orgId: string | null = null;
+	if (projectId) {
+		const projectRows = await withRLS((rdb) =>
+			(rdb as Db)
+				.select({ orgId: project.orgId })
+				.from(project)
+				.where(eq(project.id, projectId))
+				.limit(1)
+		) as { orgId: string | null }[];
+		orgId = projectRows[0]?.orgId ?? null;
+	}
+
+	// ── 2. If org project, try org key ────────────────────────────────────────
+	if (orgId) {
+		// Verify user is a member (withRLS — member can see their own row)
+		const memberRows = await withRLS((rdb) =>
+			(rdb as Db)
+				.select({ id: organizationMember.id })
+				.from(organizationMember)
+				.where(and(eq(organizationMember.orgId, orgId!), eq(organizationMember.userId, userId)))
+				.limit(1)
+		) as { id: string }[];
+
+		// Also accept the org owner (may not have a member row)
+		const ownerRows = await db
+			.select({ id: organization.id })
+			.from(organization)
+			.where(and(eq(organization.id, orgId), eq(organization.ownerId, userId)))
+			.limit(1);
+
+		if (memberRows[0] || ownerRows[0]) {
+			// Fetch org config + keys without RLS (member RLS blocks key SELECT)
+			const [orgRows, orgKeys] = await Promise.all([
+				db
+					.select({ aiTaskConfig: organization.aiTaskConfig })
+					.from(organization)
+					.where(eq(organization.id, orgId))
+					.limit(1),
+				db
+					.select({
+						id: organizationApiKey.id,
+						encryptedApiKey: organizationApiKey.encryptedApiKey,
+						encryptedDataKey: organizationApiKey.encryptedDataKey,
+						iv: organizationApiKey.iv,
+						authTag: organizationApiKey.authTag,
+						enabled: organizationApiKey.enabled
+					})
+					.from(organizationApiKey)
+					.where(and(eq(organizationApiKey.orgId, orgId), eq(organizationApiKey.enabled, true)))
+			]);
+
+			const orgConfig = parseTaskConfig(orgRows[0]?.aiTaskConfig ?? null);
+			const orgTaskEntry = orgConfig[task];
+			const orgKeyRow = (orgTaskEntry
+				? orgKeys.find((k) => k.id === orgTaskEntry.keyId)
+				: orgKeys[0]) as KeyRow | undefined;
+
+			if (orgKeyRow) {
+				let apiKey: string;
+				try {
+					apiKey = await decryptSecret(orgKeyRow);
+				} catch {
+					throw new TRPCError({
+						code: 'INTERNAL_SERVER_ERROR',
+						message: 'Error decrypting org API key.'
+					});
+				}
+				const model = orgTaskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
+				return { apiKey, model, resolvedOrgId: orgId };
+			}
+		}
+	}
+
+	// ── 3. Fallback: personal key ─────────────────────────────────────────────
+	const [profileRows, keys] = await Promise.all([
+		withRLS((rdb) =>
+			(rdb as Db)
+				.select({ aiTaskConfig: userProfile.aiTaskConfig })
+				.from(userProfile)
+				.where(eq(userProfile.userId, userId))
+				.limit(1)
+		) as Promise<{ aiTaskConfig: string | null }[]>,
+
+		withRLS((rdb) =>
+			(rdb as Db)
+				.select({
+					id: userApiKey.id,
+					encryptedApiKey: userApiKey.encryptedApiKey,
+					encryptedDataKey: userApiKey.encryptedDataKey,
+					iv: userApiKey.iv,
+					authTag: userApiKey.authTag,
+					enabled: userApiKey.enabled
+				})
+				.from(userApiKey)
+				.where(eq(userApiKey.userId, userId))
+		) as Promise<KeyRow[]>
+	]);
+
+	const taskConfig = parseTaskConfig(profileRows[0]?.aiTaskConfig ?? null);
+	const taskEntry = taskConfig[task];
+	const keyRow = taskEntry
+		? keys.find((k) => k.id === taskEntry.keyId && k.enabled)
+		: keys.find((k) => k.enabled); // fallback: first enabled key
+
+	if (!keyRow) {
+		throw new TRPCError({
+			code: 'PRECONDITION_FAILED',
+			message: 'Configure your OpenRouter API key in Settings → AI Assistant.'
+		});
+	}
+
+	let apiKey: string;
+	try {
+		apiKey = await decryptSecret(keyRow);
+	} catch {
+		throw new TRPCError({
+			code: 'INTERNAL_SERVER_ERROR',
+			message: 'Error decrypting API key. Try saving it again in Settings.'
+		});
+	}
+
+	const model = taskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
+	return { apiKey, model };
+}
 const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
+// Fixed USD→EUR rate for cost estimates (good enough for beta quotas)
+const USD_TO_EUR = 0.92;
+
+function startOfMonth(): Date {
+	const d = new Date();
+	return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+// Fire-and-forget: inserts a usage record after each AI call
+async function logUsage(
+	db: Db,
+	{
+		orgId,
+		projectId,
+		userId,
+		model,
+		task,
+		inputTokens,
+		outputTokens
+	}: {
+		orgId?: string;
+		projectId?: string;
+		userId: string;
+		model: string;
+		task: string;
+		inputTokens: number;
+		outputTokens: number;
+	}
+) {
+	try {
+		const prices = await fetchOpenRouterPrices();
+		const price = prices[model];
+		let estimatedCostEur: string | undefined;
+		if (price) {
+			const costUsd = inputTokens * price.input + outputTokens * price.output;
+			estimatedCostEur = (costUsd * USD_TO_EUR).toFixed(6);
+		}
+		await db.insert(aiUsageLog).values({
+			id: crypto.randomUUID(),
+			orgId: orgId ?? null,
+			projectId: projectId ?? '',
+			userId,
+			model,
+			task,
+			inputTokens,
+			outputTokens,
+			estimatedCostEur
+		});
+	} catch (e) {
+		console.error('[logUsage] failed:', e);
+	}
+}
+
+// Throws FORBIDDEN if org has exceeded its monthly budget
+async function checkOrgQuota(db: Db, orgId: string): Promise<void> {
+	const since = startOfMonth();
+	const [usageRows, orgRows] = await Promise.all([
+		db
+			.select({ total: sum(aiUsageLog.estimatedCostEur) })
+			.from(aiUsageLog)
+			.where(and(eq(aiUsageLog.orgId, orgId), gte(aiUsageLog.createdAt, since))),
+		db
+			.select({ monthlyBudgetEur: organization.monthlyBudgetEur })
+			.from(organization)
+			.where(eq(organization.id, orgId))
+			.limit(1)
+	]);
+
+	const budget = parseFloat(orgRows[0]?.monthlyBudgetEur ?? '0');
+	if (!budget) return; // null / 0 = unlimited
+
+	const spent = parseFloat(usageRows[0]?.total ?? '0');
+	if (spent >= budget) {
+		throw new TRPCError({
+			code: 'FORBIDDEN',
+			message: `Organization monthly AI budget of €${budget.toFixed(2)} has been reached. Contact the org owner to increase the limit.`
+		});
+	}
+}
 
 async function runAgentLoop(
 	systemPrompt: string,
@@ -507,7 +727,7 @@ async function runAgentLoop(
 	projectId: string,
 	apiKey: string,
 	model: string
-): Promise<{ content: string; pendingActions: PendingAction[]; docsUsed: { id: string; title: string }[] }> {
+): Promise<{ content: string; pendingActions: PendingAction[]; docsUsed: { id: string; title: string }[]; inputTokens: number; outputTokens: number }> {
 	const messages: OAMessage[] = [
 		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
 		{ role: 'user', content: userMessage }
@@ -516,6 +736,8 @@ async function runAgentLoop(
 	const pendingActions: PendingAction[] = [];
 	const seenDocs = new Map<string, string>();
 	const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
+	let totalInputTokens = 0;
+	let totalOutputTokens = 0;
 
 	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
 		const res = await fetch(OPENROUTER_URL, {
@@ -538,7 +760,11 @@ async function runAgentLoop(
 
 		const data = (await res.json()) as {
 			choices: { message: OAMessage; finish_reason: string }[];
+			usage?: { prompt_tokens: number; completion_tokens: number };
 		};
+		totalInputTokens += data.usage?.prompt_tokens ?? 0;
+		totalOutputTokens += data.usage?.completion_tokens ?? 0;
+
 		const choice = data.choices[0];
 		if (!choice) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo.' });
 
@@ -581,7 +807,9 @@ async function runAgentLoop(
 		return {
 			content: choice.message.content ?? '',
 			pendingActions,
-			docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title }))
+			docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title })),
+			inputTokens: totalInputTokens,
+			outputTokens: totalOutputTokens
 		};
 	}
 
@@ -777,63 +1005,12 @@ export const aiRouter = router({
 				})
 			);
 
-			// ── Get user's default provider + API config ─────────────────────
-			const [profileRows, allConfigs] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({
-							defaultAiProvider: userProfile.defaultAiProvider,
-							defaultAiModel: userProfile.defaultAiModel
-						})
-						.from(userProfile)
-						.where(eq(userProfile.userId, userId))
-						.limit(1)
-				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+			// ── Resolve key + model for agent task ───────────────────────────
+			const { apiKey: userApiKey, model: resolvedModel, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId
+			);
 
-				ctx.withRLS((db) =>
-					db
-						.select({
-							encryptedApiKey: userAiConfig.encryptedApiKey,
-							encryptedDataKey: userAiConfig.encryptedDataKey,
-							iv: userAiConfig.iv,
-							authTag: userAiConfig.authTag,
-							enabled: userAiConfig.enabled,
-							provider: userAiConfig.provider,
-							model: userAiConfig.model
-						})
-						.from(userAiConfig)
-						.where(eq(userAiConfig.userId, userId))
-				) as Promise<{
-					encryptedApiKey: string;
-					encryptedDataKey: string;
-					iv: string;
-					authTag: string;
-					enabled: boolean;
-					provider: string;
-					model: string | null;
-				}[]>
-			]);
-
-			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
-
-			if (!configRow) {
-				const label = 'OpenRouter';
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: `Configura tu API key de ${label} en Ajustes → Asistente IA.`
-				});
-			}
-
-			let userApiKey: string;
-			try {
-				userApiKey = await decryptSecret(configRow);
-			} catch {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
-				});
-			}
+			if (resolvedOrgId) await checkOrgQuota(ctx.db as Db, resolvedOrgId);
 
 			// ── Build project index and run agent loop ────────────────────────
 			const projectIndex = await buildProjectIndex(ctx.withRLS as WithRLS, input.projectId);
@@ -841,12 +1018,7 @@ export const aiRouter = router({
 				? `${SYSTEM_PROMPT}\n\n---\n\n${projectIndex}`
 				: SYSTEM_PROMPT;
 
-			const resolvedModel =
-				profileRows[0]?.defaultAiModel ??
-				configRow.model ??
-				DEFAULT_MODEL;
-
-			const { content: assistantContent, pendingActions, docsUsed } = await runAgentLoop(
+			const { content: assistantContent, pendingActions, docsUsed, inputTokens: agentIn, outputTokens: agentOut } = await runAgentLoop(
 				systemWithIndex,
 				history,
 				input.message,
@@ -855,6 +1027,8 @@ export const aiRouter = router({
 				userApiKey,
 				resolvedModel
 			);
+
+			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'agent', inputTokens: agentIn, outputTokens: agentOut });
 
 			// ── Persist assistant response ────────────────────────────────────
 			const assistantMsgId = crypto.randomUUID();
@@ -907,7 +1081,8 @@ export const aiRouter = router({
 					projectId: input.projectId,
 					title: input.action.title,
 					type: input.action.docType,
-					draftContent: input.action.content
+					draftContent: input.action.content,
+					generatedByAi: true
 				});
 				await db.insert(documentVersion).values({
 					id: versionId,
@@ -981,56 +1156,11 @@ export const aiRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const [profileRows, allConfigs] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
-						.from(userProfile)
-						.where(eq(userProfile.userId, userId))
-						.limit(1)
-				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+			const { apiKey: userApiKey, model: resolvedModel, resolvedOrgId: draftOrgId } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'draft', input.projectId, 'anthropic/claude-sonnet-4-5'
+			);
 
-				ctx.withRLS((db) =>
-					db
-						.select({
-							encryptedApiKey: userAiConfig.encryptedApiKey,
-							encryptedDataKey: userAiConfig.encryptedDataKey,
-							iv: userAiConfig.iv,
-							authTag: userAiConfig.authTag,
-							enabled: userAiConfig.enabled,
-							provider: userAiConfig.provider,
-							model: userAiConfig.model
-						})
-						.from(userAiConfig)
-						.where(eq(userAiConfig.userId, userId))
-				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
-			]);
-
-			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
-
-			if (!configRow) {
-				const label = 'OpenRouter';
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: `Configura tu API key de ${label} en Ajustes → Asistente IA.`
-				});
-			}
-
-			const resolvedModel =
-				profileRows[0]?.defaultAiModel ??
-				configRow.model ??
-				'anthropic/claude-sonnet-4-5';
-
-			let userApiKey: string;
-			try {
-				userApiKey = await decryptSecret(configRow);
-			} catch {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
-				});
-			}
+			if (draftOrgId) await checkOrgQuota(ctx.db as Db, draftOrgId);
 
 			const [proj, selectedDocs, ctxLinks] = await Promise.all([
 				ctx.withRLS((db) =>
@@ -1148,8 +1278,10 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 
 			const data = (await response.json()) as {
 				choices: { message: { content: string } }[];
+				usage?: { prompt_tokens: number; completion_tokens: number };
 			};
 			const generatedContent = data.choices[0]?.message?.content ?? '';
+			logUsage(ctx.db as Db, { orgId: draftOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			const docId = crypto.randomUUID();
 			const versionId = crypto.randomUUID();
@@ -1162,7 +1294,8 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 					projectId: input.projectId,
 					title: docTitle,
 					type: 'paper',
-					draftContent: generatedContent
+					draftContent: generatedContent,
+					generatedByAi: true
 				});
 				await db.insert(documentVersion).values({
 					id: versionId,
@@ -1189,60 +1322,17 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const [profileRows, allConfigs] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
-						.from(userProfile)
-						.where(eq(userProfile.userId, userId))
-						.limit(1)
-				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+			const { apiKey: userApiKey, model, resolvedOrgId: sectionOrgId } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'draft', input.projectId
+			);
 
-				ctx.withRLS((db) =>
-					db
-						.select({
-							encryptedApiKey: userAiConfig.encryptedApiKey,
-							encryptedDataKey: userAiConfig.encryptedDataKey,
-							iv: userAiConfig.iv,
-							authTag: userAiConfig.authTag,
-							enabled: userAiConfig.enabled,
-							provider: userAiConfig.provider,
-							model: userAiConfig.model
-						})
-						.from(userAiConfig)
-						.where(eq(userAiConfig.userId, userId))
-				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
-			]);
-
-			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
-
-			if (!configRow) {
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: 'Configura tu API key en Ajustes → Asistente IA para usar el borrador asistido.'
-				});
-			}
-
-			let userApiKey: string;
-			try {
-				userApiKey = await decryptSecret(configRow);
-			} catch {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
-				});
-			}
+			if (sectionOrgId) await checkOrgQuota(ctx.db as Db, sectionOrgId);
 
 			const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
 			if (!projectContext) {
 				throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
 			}
 
-			const model =
-				profileRows[0]?.defaultAiModel ??
-				configRow.model ??
-				DEFAULT_MODEL;
 			const baseUrl = OPENROUTER_URL;
 			const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
@@ -1285,6 +1375,7 @@ Reglas:
 
 			const data = await res.json();
 			const text = data.choices?.[0]?.message?.content?.trim() ?? '';
+			logUsage(ctx.db as Db, { orgId: sectionOrgId, projectId: input.projectId, userId, model, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			console.log('[draftSection] response ←', { chars: text.length });
 
@@ -1301,50 +1392,11 @@ Reglas:
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.user.id;
 
-			const [profileRows, allConfigs] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({ defaultAiProvider: userProfile.defaultAiProvider, defaultAiModel: userProfile.defaultAiModel })
-						.from(userProfile)
-						.where(eq(userProfile.userId, userId))
-						.limit(1)
-				) as Promise<{ defaultAiProvider: string | null; defaultAiModel: string | null }[]>,
+			const { apiKey: userApiKey, model: resolvedReviewModel, resolvedOrgId: reviewOrgId } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'review', input.projectId
+			);
 
-				ctx.withRLS((db) =>
-					db
-						.select({
-							encryptedApiKey: userAiConfig.encryptedApiKey,
-							encryptedDataKey: userAiConfig.encryptedDataKey,
-							iv: userAiConfig.iv,
-							authTag: userAiConfig.authTag,
-							enabled: userAiConfig.enabled,
-							provider: userAiConfig.provider,
-							model: userAiConfig.model
-						})
-						.from(userAiConfig)
-						.where(eq(userAiConfig.userId, userId))
-				) as Promise<{ encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean; provider: string; model: string | null }[]>
-			]);
-
-			const activeProvider = profileRows[0]?.defaultAiProvider ?? 'openrouter';
-			const configRow = allConfigs.find((c) => c.provider === activeProvider && c.enabled);
-
-			if (!configRow) {
-				throw new TRPCError({
-					code: 'PRECONDITION_FAILED',
-					message: 'Configura tu API key en Ajustes → Asistente IA para usar la revisión.'
-				});
-			}
-
-			let userApiKey: string;
-			try {
-				userApiKey = await decryptSecret(configRow);
-			} catch {
-				throw new TRPCError({
-					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
-				});
-			}
+			if (reviewOrgId) await checkOrgQuota(ctx.db as Db, reviewOrgId);
 
 			// Load document content + project context in parallel
 			const [docRows, projectContext] = await Promise.all([
@@ -1373,10 +1425,7 @@ Reglas:
 				});
 			}
 
-			const model =
-				profileRows[0]?.defaultAiModel ??
-				configRow.model ??
-				DEFAULT_MODEL;
+			const model = resolvedReviewModel;
 			const baseUrl = OPENROUTER_URL;
 			const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
@@ -1422,6 +1471,7 @@ Rules:
 			const data = await res.json();
 			const rawContent = data.choices?.[0]?.message?.content?.trim() ?? '{}';
 			const raw = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+			logUsage(ctx.db as Db, { orgId: reviewOrgId, projectId: input.projectId, userId, model: resolvedReviewModel, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			console.log('[reviewDocument] response ←', raw.slice(0, 200));
 
@@ -1443,5 +1493,196 @@ Rules:
 			}
 
 			return parsed;
+		}),
+
+	generateReviewQuestions: protectedProcedure
+		.input(z.object({
+			projectId: z.string(),
+			documentId: z.string()
+		}))
+		.mutation(async ({ ctx, input }) => {
+			const userId = ctx.user.id;
+
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'review', input.projectId
+			);
+
+			const [docRows, projectContext] = await Promise.all([
+				ctx.withRLS((db) =>
+					db
+						.select({ draftContent: document.draftContent, title: document.title, type: document.type })
+						.from(document)
+						.where(and(eq(document.id, input.documentId), eq(document.projectId, input.projectId)))
+						.limit(1)
+				) as Promise<{ draftContent: string | null; title: string; type: string }[]>,
+				buildProjectContext(ctx.withRLS, input.projectId)
+			]);
+
+			if (!docRows[0]) throw new TRPCError({ code: 'NOT_FOUND', message: 'Document not found.' });
+
+			const docContent = docRows[0].draftContent?.trim() ?? '';
+			if (!docContent) throw new TRPCError({ code: 'BAD_REQUEST', message: 'The document is empty.' });
+
+			const systemPrompt = `You are a rigorous academic peer reviewer. Given a document, generate 3–5 critical questions that a real reviewer would raise: gaps in argument, missing evidence, methodological concerns, unclear claims, or citation needs.
+
+Respond ONLY with a valid JSON array of strings. No markdown, no explanation outside the JSON.
+Example: ["Why does the author assume X without evidence?", "How does this account for Y?"]
+
+Rules:
+- Each question must be specific to the document content, not generic.
+- Use the language of the document.`;
+
+			const userMessage = `Document type: ${docRows[0].type}\nDocument: "${docRows[0].title}"\n\n${docContent.slice(0, 10000)}${projectContext ? `\n\n---\nProject context:\n${projectContext}` : ''}`;
+
+			const res = await fetch(OPENROUTER_URL, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model,
+					max_tokens: 512,
+					messages: [
+						{ role: 'system', content: systemPrompt },
+						{ role: 'user', content: userMessage }
+					]
+				})
+			});
+
+			if (!res.ok) await throwProviderError(res);
+
+			const data = await res.json();
+			const rawContent = (data.choices?.[0]?.message?.content ?? '[]').trim()
+				.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
+
+			let questions: string[] = [];
+			try {
+				const parsed = JSON.parse(rawContent);
+				if (Array.isArray(parsed)) questions = parsed.filter((q): q is string => typeof q === 'string').slice(0, 5);
+			} catch { questions = []; }
+
+			return questions;
+		}),
+
+	// Quick name lookup for @@ trigger in the editor
+	lookupNames: protectedProcedure
+		.input(z.object({
+			partial: z.string().min(1).max(80),
+			context: z.string().max(500).optional(),
+			projectId: z.string().optional()
+		}))
+		.query(async ({ ctx, input }) => {
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS, ctx.db, ctx.user.id, 'lookup', input.projectId
+			);
+
+			const prompt = [
+				'You are helping an academic writer. Given a partial name and optional document context, return 4–6 full names of people (scholars, historical figures, theologians, philosophers, scientists, etc.) that best match.',
+				'Reply with ONLY a JSON array of strings. No explanation.',
+				input.context ? `Document context (last sentences): """${input.context}"""` : '',
+				`Partial name: "${input.partial}"`
+			].filter(Boolean).join('\n');
+
+			const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': 'https://scholio.review',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model,
+					messages: [{ role: 'user', content: prompt }],
+					max_tokens: 200,
+					temperature: 0.2
+				})
+			});
+
+			if (!res.ok) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Lookup failed' });
+
+			const data = await res.json() as { choices: { message: { content: string } }[]; usage?: { prompt_tokens: number; completion_tokens: number } };
+			const raw = data.choices[0]?.message?.content ?? '[]';
+
+			let names: string[] = [];
+			try {
+				const parsed = JSON.parse(raw.trim());
+				if (Array.isArray(parsed)) names = parsed.filter((n): n is string => typeof n === 'string').slice(0, 6);
+			} catch { names = []; }
+
+			logUsage(ctx.db as Db, {
+				userId: ctx.user.id,
+				orgId: resolvedOrgId, projectId: input.projectId,
+				model, task: 'lookup',
+				inputTokens: data.usage?.prompt_tokens ?? 0,
+				outputTokens: data.usage?.completion_tokens ?? 0
+			});
+
+			return names;
+		}),
+
+	// Explain a citation key in the context of the surrounding text
+	explainCitation: protectedProcedure
+		.input(z.object({
+			projectId: z.string().optional(),
+			citeKey: z.string().max(200),
+			refTitle: z.string().max(500),
+			refAuthors: z.string().max(300),
+			refYear: z.string().max(10),
+			surrounding: z.string().max(1000)
+		}))
+		.query(async ({ ctx, input }) => {
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS, ctx.db, ctx.user.id, 'lookup', input.projectId
+			);
+
+			const refLine = [
+				input.refTitle,
+				input.refAuthors,
+				input.refYear
+			].filter(Boolean).join(' — ');
+
+			const prompt = [
+				'You are an academic writing assistant. Briefly explain (1–2 sentences) why this citation is likely being used, based on the surrounding text and the reference details.',
+				`Reference: ${refLine || input.citeKey}`,
+				`Surrounding text: """${input.surrounding}"""`,
+				'Reply with only the explanation, no preamble.'
+			].filter(Boolean).join('\n');
+
+			const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': 'https://scholio.review',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model,
+					messages: [{ role: 'user', content: prompt }],
+					max_tokens: 150,
+					temperature: 0.3
+				})
+			});
+
+			if (!res.ok) await throwProviderError(res);
+
+			const data = await res.json() as { choices: { message: { content: string } }[]; usage?: { prompt_tokens: number; completion_tokens: number } };
+			const explanation = data.choices[0]?.message?.content?.trim() ?? '';
+
+			logUsage(ctx.db as Db, {
+				userId: ctx.user.id,
+				orgId: resolvedOrgId, projectId: input.projectId,
+				model, task: 'lookup',
+				inputTokens: data.usage?.prompt_tokens ?? 0,
+				outputTokens: data.usage?.completion_tokens ?? 0
+			});
+
+			return explanation;
 		})
 });

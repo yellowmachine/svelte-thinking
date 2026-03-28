@@ -1,4 +1,4 @@
-import { text, timestamp, index, uniqueIndex, pgPolicy, boolean } from 'drizzle-orm/pg-core';
+import { text, timestamp, index, uniqueIndex, pgPolicy, boolean, numeric } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 
@@ -32,6 +32,10 @@ export const project = scholioSchema.table(
 		isSearchable: boolean('is_searchable').notNull().default(false),
 		requirementsPrompt: text('requirements_prompt'),
 		requirementsTemplate: text('requirements_template'),
+		// Optional org link — when set, AI key is resolved from the org (not the user)
+		orgId: text('org_id'),
+		// Per-project spend cap in EUR (null = inherits org limit)
+		projectBudgetEur: numeric('project_budget_eur', { precision: 10, scale: 2 }),
 		doi: text('doi'),
 		version: text('version'),
 		publishedAt: timestamp('published_at'),

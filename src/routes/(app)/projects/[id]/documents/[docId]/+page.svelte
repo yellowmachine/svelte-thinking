@@ -11,6 +11,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { findAnchor, posToLine, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import { CITATION_STYLE_LABELS, type CitationStyle, type CiteRef } from '$lib/utils/citations';
+	import { MODEL_SHORT_LABEL } from '$lib/ai-config';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -19,6 +20,36 @@
 	let content = $state(untrack(() => data.document?.content ?? ''));
 	let lastSavedContent = $state(untrack(() => data.document?.content ?? ''));
 	const isDirty = $derived(content !== lastSavedContent);
+
+	// Editable title
+	let docTitle = $state(untrack(() => data.document?.title ?? ''));
+	let editingTitle = $state(false);
+	let titleError = $state('');
+	let titleInputEl = $state<HTMLInputElement | null>(null);
+
+	function startEditTitle() {
+		editingTitle = true;
+		titleError = '';
+		setTimeout(() => titleInputEl?.select(), 0);
+	}
+
+	async function commitTitle() {
+		const trimmed = docTitle.trim();
+		if (!trimmed || trimmed === data.document?.title) { editingTitle = false; docTitle = data.document?.title ?? ''; return; }
+		try {
+			await trpc.documents.update.mutate({ id: data.document!.id, title: trimmed });
+			data.document!.title = trimmed;
+			editingTitle = false;
+			titleError = '';
+		} catch (e: unknown) {
+			titleError = e instanceof Error ? e.message : 'Could not rename document.';
+		}
+	}
+
+	function onTitleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') { e.preventDefault(); commitTitle(); }
+		if (e.key === 'Escape') { editingTitle = false; docTitle = data.document?.title ?? ''; titleError = ''; }
+	}
 	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' = $state(
 		untrack(() => (data.document?.hasDraft ? 'pending' : 'idle'))
 	);
@@ -60,6 +91,29 @@
 		);
 	});
 
+	function isNoKeyError(e: unknown): boolean {
+		return !!(e && typeof e === 'object' && 'data' in e && (e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED');
+	}
+
+	const NO_KEY_MSG = 'No AI key configured. Go to Settings → AI to add one.';
+
+	let lookupUnavailable = $state(false);
+
+	async function lookupNames(partial: string, context: string): Promise<string[]> {
+		try {
+			const result = await trpc.ai.lookupNames.query({
+				partial,
+				context,
+				projectId: data.document.projectId
+			});
+			lookupUnavailable = false;
+			return result;
+		} catch (e: unknown) {
+			if (isNoKeyError(e)) lookupUnavailable = true;
+			return [];
+		}
+	}
+
 	async function loadRefs() {
 		if (refsLoaded) return;
 		try {
@@ -78,7 +132,7 @@
 	}
 
 	function insertCitation(ref: CiteRef) {
-		editorEl?.insertAtCursor(`[@${ref.citeKey}]`);
+		editorEl?.insertAtCursor(`[[@${ref.citeKey}]]`);
 		showCitePicker = false;
 	}
 
@@ -209,6 +263,39 @@
 	let showNewComment = $state(false);
 	let newCommentText = $state('');
 	let submittingComment = $state(false);
+
+	// Citation explain popover
+	let citationExplain: { citeKey: string; coords: { bottom: number; left: number }; result: string; loading: boolean } | null = $state(null);
+
+	const CITE_SELECTION_RE = /^\[\[@([\w:._-]+)\]\]$/;
+
+	function selectedCiteKey(): string | null {
+		if (!currentSelection) return null;
+		const m = currentSelection.text.trim().match(CITE_SELECTION_RE);
+		return m ? m[1] : null;
+	}
+
+	async function explainCitation(citeKey: string, coords: { bottom: number; left: number }) {
+		const ref = projectRefs.find((r) => r.citeKey === citeKey);
+		citationExplain = { citeKey, coords, result: '', loading: true };
+		const surrounding = (() => {
+			const pos = currentSelection?.from ?? 0;
+			return content.slice(Math.max(0, pos - 400), pos + 400);
+		})();
+		try {
+			const res = await trpc.ai.explainCitation.query({
+				projectId: data.document.projectId,
+				citeKey,
+				refTitle: ref?.title ?? '',
+				refAuthors: (ref?.authors ?? []).map((a) => `${a.last}${a.first ? ', ' + a.first : ''}`).join('; '),
+				refYear: ref?.year ?? '',
+				surrounding
+			});
+			citationExplain = { ...citationExplain, result: res, loading: false };
+		} catch {
+			citationExplain = { ...citationExplain, result: 'Could not explain this citation.', loading: false };
+		}
+	}
 
 	// Scroll target for editor
 	let scrollToRange: { from: number; to: number } | null = $state(null);
@@ -404,6 +491,14 @@
 	// Export dropdown
 	let showExport = $state(false);
 
+	// ── AI task model labels (from layout data) ──────────────────────────────────
+	const aiTaskConfig = $derived(data.aiTaskConfig ?? {});
+	const hasAiKey = $derived(data.hasAiKey ?? false);
+	function taskModel(task: 'agent' | 'draft' | 'review') {
+		const modelId = aiTaskConfig[task]?.model;
+		return modelId ? (MODEL_SHORT_LABEL[modelId] ?? modelId.split('/').pop() ?? '') : null;
+	}
+
 	// ── Chat assistant ───────────────────────────────────────────────────────────
 	let showChat = $state(false);
 
@@ -427,6 +522,9 @@
 	let loadingReview = $state(false);
 	let reviewResult = $state<ReviewResult | null>(null);
 	let reviewError = $state('');
+	let reviewQuestions = $state<string[] | null>(null);
+	let loadingQuestions = $state(false);
+	let questionsError = $state('');
 
 	function toggleReview() {
 		showReview = !showReview;
@@ -450,9 +548,26 @@
 				documentId: data.document.id
 			});
 		} catch (e: unknown) {
-			reviewError = e instanceof Error ? e.message : 'Error al revisar el documento.';
+			reviewError = isNoKeyError(e) ? NO_KEY_MSG : (e instanceof Error ? e.message : 'Error reviewing document.');
 		} finally {
 			loadingReview = false;
+		}
+	}
+
+	async function runReviewQuestions() {
+		if (loadingQuestions) return;
+		loadingQuestions = true;
+		questionsError = '';
+		reviewQuestions = null;
+		try {
+			reviewQuestions = await trpc.ai.generateReviewQuestions.mutate({
+				projectId: data.document.projectId,
+				documentId: data.document.id
+			});
+		} catch (e: unknown) {
+			questionsError = isNoKeyError(e) ? NO_KEY_MSG : (e instanceof Error ? e.message : 'Error generating questions.');
+		} finally {
+			loadingQuestions = false;
 		}
 	}
 
@@ -521,7 +636,7 @@
 				draftResult = text;
 			}
 		} catch (e: unknown) {
-			draftError = e instanceof Error ? e.message : 'Error generating draft.';
+			draftError = isNoKeyError(e) ? NO_KEY_MSG : (e instanceof Error ? e.message : 'Error generating draft.');
 		} finally {
 			loadingDraft = false;
 		}
@@ -606,7 +721,7 @@
 			{data.projectTitle}
 		</button>
 		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-		<span class="truncate font-medium text-ink dark:text-dark-ink">{data.document.title}</span>
+		<span class="truncate font-medium text-ink dark:text-dark-ink">{docTitle}</span>
 	</div>
 
 	<div class="flex shrink-0 items-center gap-3">
@@ -647,31 +762,43 @@
 		<button
 			type="button"
 			onclick={toggleChat}
-			title="Chat with the assistant about this document"
-			class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showChat
+			disabled={!hasAiKey}
+			title={hasAiKey ? 'Chat with the assistant about this document' : 'No AI key configured — go to Settings → AI'}
+			class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showChat
 				? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 		>
-			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-			</svg>
-			Chat
+			<span class="flex items-center gap-1.5">
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+				Chat
+			</span>
+			{#if taskModel('agent')}
+				<span class="text-[10px] opacity-50">{taskModel('agent')}</span>
+			{/if}
 		</button>
 
 		<!-- Review button -->
 		<button
 			type="button"
 			onclick={toggleReview}
-			title="Review document against project requirements"
-			class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showReview
+			disabled={!hasAiKey}
+			title={hasAiKey ? 'Review document against project requirements' : 'No AI key configured — go to Settings → AI'}
+			class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showReview
 				? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 		>
-			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-				<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-			</svg>
-			Review
+			<span class="flex items-center gap-1.5">
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+				Review
+			</span>
+			{#if taskModel('review')}
+				<span class="text-[10px] opacity-50">{taskModel('review')}</span>
+			{/if}
 		</button>
 
 		<!-- Draft assistant button -->
@@ -679,16 +806,22 @@
 			<button
 				type="button"
 				onclick={toggleDraft}
-				title="Draft assistant — generate text from your project context"
-				class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showDraft
+				disabled={!hasAiKey}
+				title={hasAiKey ? 'Draft assistant — generate text from your project context' : 'No AI key configured — go to Settings → AI'}
+				class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showDraft
 					? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 					: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 			>
-				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M12 19l7-7 3 3-7 7-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-					<path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-				Draft
+				<span class="flex items-center gap-1.5">
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M12 19l7-7 3 3-7 7-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					Draft
+				</span>
+				{#if taskModel('draft')}
+					<span class="text-[10px] opacity-50">{taskModel('draft')}</span>
+				{/if}
 			</button>
 		{/if}
 
@@ -699,7 +832,7 @@
 				title="Insert bibliographic citation"
 				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
-				[@cite]
+				[[@cite]]
 			</button>
 		{/if}
 
@@ -881,12 +1014,53 @@
 	oncancel={() => (showDeleteDoc = false)}
 />
 
+{#snippet editableTitle()}
+	<div class="mb-6">
+		{#if editingTitle}
+			<input
+				bind:this={titleInputEl}
+				bind:value={docTitle}
+				onblur={commitTitle}
+				onkeydown={onTitleKeydown}
+				class="w-full border-none bg-transparent font-serif text-3xl font-semibold text-ink outline-none dark:text-dark-ink"
+			/>
+			{#if titleError}
+				<p class="mt-1 font-sans text-xs text-red-500">{titleError}</p>
+			{/if}
+		{:else}
+			<h1
+				role="button"
+				tabindex="0"
+				onclick={startEditTitle}
+				onkeydown={(e) => e.key === 'Enter' && startEditTitle()}
+				class="cursor-text font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
+			>
+				{docTitle}
+			</h1>
+		{/if}
+	{#if data.document?.generatedByAi}
+		<div class="mt-2 inline-flex items-center gap-1.5 rounded border border-paper-border px-2 py-1 dark:border-dark-paper-border">
+			<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="text-ink-faint dark:text-dark-ink-faint">
+				<path d="M12 2L9.5 9.5L2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+			</svg>
+			<span class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">Generated by AI</span>
+		</div>
+	{/if}
+	</div>
+{/snippet}
+
 <!-- Main layout -->
 <div class="flex overflow-hidden" style="height: calc(100vh - 57px)">
 	{#if viewMode === 'split'}
 		<!-- Split: editor left, preview right -->
-		<div class="relative flex flex-1 overflow-hidden">
-			<div class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-10 dark:border-dark-paper-border">
+		<div class="relative flex flex-1 flex-col overflow-hidden">
+			<div class="border-b border-paper-border px-6 pt-10 pb-4 dark:border-dark-paper-border">
+				<div class="mx-auto w-full max-w-4xl">
+					{@render editableTitle()}
+				</div>
+			</div>
+			<div class="flex flex-1 overflow-hidden">
+			<div class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-6 dark:border-dark-paper-border">
 				<div class="mx-auto w-full max-w-2xl">
 					<MarkdownEditor
 						bind:this={editorEl}
@@ -900,10 +1074,12 @@
 						}}
 						{commentRanges}
 						{scrollToRange}
+						onlookup={lookupNames}
+						showLookupHint={lookupUnavailable}
 					/>
 				</div>
 			</div>
-			<div class="flex-1 overflow-y-auto px-6 py-10">
+			<div class="flex-1 overflow-y-auto px-6 py-6">
 				<div class="mx-auto w-full max-w-2xl">
 					<MarkdownPreview
 						{content}
@@ -914,11 +1090,13 @@
 					/>
 				</div>
 			</div>
+			</div>
 		</div>
 	{:else}
 	<!-- Editor / Preview (single panel) -->
 	<div class="relative flex-1 overflow-y-auto px-6 py-10">
 		<div class="mx-auto w-full max-w-2xl">
+			{@render editableTitle()}
 			{#if viewMode === 'preview'}
 				<MarkdownPreview
 					{content}
@@ -940,14 +1118,16 @@
 					}}
 					{commentRanges}
 					{scrollToRange}
+					onlookup={lookupNames}
+					showLookupHint={lookupUnavailable}
 				/>
 			{/if}
 		</div>
 
-		<!-- Floating "Comentar" button -->
-		{#if currentSelection && currentSelection.coords && !showNewComment}
+		<!-- Floating action buttons on selection -->
+		{#if currentSelection && currentSelection.coords && !showNewComment && !citationExplain}
 			<div
-				class="pointer-events-none fixed z-20"
+				class="pointer-events-none fixed z-20 flex gap-1.5"
 				style="top: {currentSelection.coords.bottom + 8}px; left: {currentSelection.coords.left}px;"
 			>
 				<button
@@ -960,6 +1140,50 @@
 				>
 					+ Comment
 				</button>
+				{#if selectedCiteKey() && hasAiKey}
+					<button
+						class="pointer-events-auto rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-semibold text-white shadow-md transition-colors hover:bg-accent-hover"
+						onclick={() => {
+							const key = selectedCiteKey()!;
+							const coords = currentSelection!.coords!;
+							explainCitation(key, coords);
+						}}
+					>
+						Explain citation
+					</button>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- Citation explain popover -->
+		{#if citationExplain && citationExplain.coords}
+			<div
+				class="pointer-events-none fixed z-20"
+				style="top: {citationExplain.coords.bottom + 8}px; left: {citationExplain.coords.left}px;"
+			>
+				<div class="pointer-events-auto w-80 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="flex items-center justify-between border-b border-paper-border px-3 py-2 dark:border-dark-paper-border">
+						<span class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">@{citationExplain.citeKey}</span>
+						<button
+							onclick={() => (citationExplain = null)}
+							class="text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+							aria-label="Close"
+						>
+							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+						</button>
+					</div>
+					<div class="px-3 py-2.5">
+						{#if citationExplain.loading}
+							<div class="flex items-center gap-2">
+								<div class="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+								<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Explaining…</span>
+							</div>
+						{:else}
+							<p class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{citationExplain.result}</p>
+							<p class="mt-2 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">Generated by AI · may be inaccurate</p>
+						{/if}
+					</div>
+				</div>
 			</div>
 		{/if}
 
@@ -1035,6 +1259,8 @@
 							onreopened={handleCommentReopened}
 							onreplyadded={handleReplyAdded}
 							ondeleted={(id) => { inlineComments = inlineComments.filter((x) => x.id !== id); }}
+							{chapters}
+							onlookup={lookupNames}
 						/>
 					{/each}
 				{/if}
@@ -1120,9 +1346,13 @@
 				{/if}
 
 				{#if reviewError}
-					<p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
-						{reviewError}
-					</p>
+					<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+						{#if reviewError === NO_KEY_MSG}
+							No AI key configured. <a href="/settings?tab=ai" class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a> to add one.
+						{:else}
+							{reviewError}
+						{/if}
+					</div>
 				{/if}
 
 				{#if reviewResult}
@@ -1162,11 +1392,11 @@
 								{#each reviewResult.uncitedRefs as citeKey}
 									<button
 										type="button"
-										onclick={() => editorEl?.insertAtCursor(`[@${citeKey}]`)}
+										onclick={() => editorEl?.insertAtCursor(`[[@${citeKey}]]`)}
 										title="Insert citation"
 										class="flex items-center justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-left transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 									>
-										<span class="font-mono text-xs text-ink dark:text-dark-ink">[@{citeKey}]</span>
+										<span class="font-mono text-xs text-ink dark:text-dark-ink">[[@{citeKey}]]</span>
 										<span class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">insert</span>
 									</button>
 								{/each}
@@ -1177,6 +1407,47 @@
 							All relevant references are cited.
 						</p>
 					{/if}
+
+					<!-- Review questions -->
+					<div class="border-t border-paper-border pt-4 dark:border-dark-paper-border">
+						<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+							Critical questions
+						</p>
+						{#if !reviewQuestions && !loadingQuestions}
+							<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								Questions a peer reviewer would likely raise about this document.
+							</p>
+							<button
+								type="button"
+								onclick={runReviewQuestions}
+								disabled={!hasAiKey}
+								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							>
+								Generate questions
+							</button>
+						{:else if loadingQuestions}
+							<p class="py-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Generating…</p>
+						{:else if questionsError}
+							<p class="font-sans text-xs text-red-500">{questionsError}</p>
+						{:else if reviewQuestions}
+							<ol class="flex flex-col gap-2">
+								{#each reviewQuestions as q, i}
+									<li class="flex items-start gap-2">
+										<span class="mt-0.5 shrink-0 font-sans text-[10px] font-semibold text-ink-faint dark:text-dark-ink-faint">{i + 1}.</span>
+										<span class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{q}</span>
+									</li>
+								{/each}
+							</ol>
+							<button
+								type="button"
+								onclick={runReviewQuestions}
+								disabled={loadingQuestions}
+								class="mt-3 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							>
+								Regenerate
+							</button>
+						{/if}
+					</div>
 
 					<button
 						type="button"
@@ -1276,9 +1547,13 @@
 				</button>
 
 				{#if draftError}
-					<p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
-						{draftError}
-					</p>
+					<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+						{#if draftError === NO_KEY_MSG}
+							No AI key configured. <a href="/settings?tab=ai" class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a> to add one.
+						{:else}
+							{draftError}
+						{/if}
+					</div>
 				{/if}
 
 				{#if draftResult}
@@ -1585,16 +1860,16 @@
 				<table class="w-full">
 					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[@citeKey]</td>
+							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[@citeKey]]</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Single citation</td>
 						</tr>
 						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[@key1; @key2]</td>
+							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[@key1; @key2]]</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Multiple citations</td>
 						</tr>
 					</tbody>
 				</table>
-				<p class="mt-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">Escribe <span class="font-mono">[@</span> para autocompletar.</p>
+				<p class="mt-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">Type <span class="font-mono">[[@</span> to autocomplete.</p>
 			</div>
 
 			<div>

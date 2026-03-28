@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import MarkdownEditor from './MarkdownEditor.svelte';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 
@@ -33,7 +34,9 @@
 		onreopened,
 		onreplyadded,
 		ondeleted,
-		onclick
+		onclick,
+		onlookup,
+		chapters = []
 	}: {
 		comment: Comment;
 		currentUserId: string;
@@ -42,11 +45,16 @@
 		onreplyadded?: (commentId: string, reply: Reply) => void;
 		ondeleted?: (id: string) => void;
 		onclick?: (id: string) => void;
+		onlookup?: (partial: string, context: string) => Promise<string[]>;
+		chapters?: { id: string; title: string }[];
 	} = $props();
 
 	let replyText = $state('');
+	let replyEditorActive = $state(false);
 	let submittingReply = $state(false);
 	let resolving = $state(false);
+
+	const COMMENT_COMPLETIONS = new Set<'citation' | 'heading' | 'mention'>(['citation', 'heading', 'mention']);
 
 	// Delete
 	let showDelete = $state(false);
@@ -75,6 +83,7 @@
 			});
 			onreplyadded?.(comment.id, reply);
 			replyText = '';
+			replyEditorActive = false;
 		} finally {
 			submittingReply = false;
 		}
@@ -199,22 +208,45 @@
 
 	<!-- Reply input -->
 	{#if !comment.resolved}
-		<div class="mt-3" onclick={(e) => e.stopPropagation()} role="presentation">
-			<div class="flex gap-2">
-				<input
-					bind:value={replyText}
-					onkeydown={(e) => e.key === 'Enter' && !e.shiftKey && submitReply()}
-					placeholder="Reply…"
-					class="min-w-0 flex-1 rounded border border-paper-border bg-paper-ui px-2 py-1 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-				/>
+		<div
+			class="mt-3"
+			onclick={(e) => e.stopPropagation()}
+			onmousedown={(e) => e.stopPropagation()}
+			role="presentation"
+		>
+			{#if !replyEditorActive}
 				<button
-					onclick={submitReply}
-					disabled={submittingReply || !replyText.trim()}
-					class="shrink-0 rounded bg-accent px-2 py-1 font-sans text-xs text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+					class="w-full rounded border border-paper-border bg-paper-ui px-2 py-1.5 text-left font-sans text-xs text-ink-faint transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+					onclick={(e) => { e.stopPropagation(); replyEditorActive = true; }}
 				>
-					{submittingReply ? '…' : 'OK'}
+					Reply…
 				</button>
-			</div>
+			{:else}
+				<div class="reply-editor rounded border border-accent/40 bg-paper-ui dark:bg-dark-paper-ui">
+					<MarkdownEditor
+						bind:value={replyText}
+						{chapters}
+						{onlookup}
+						completions={COMMENT_COMPLETIONS}
+						ondocchange={(v) => (replyText = v)}
+					/>
+				</div>
+				<div class="mt-1.5 flex justify-end gap-2">
+					<button
+						onclick={(e) => { e.stopPropagation(); replyEditorActive = false; replyText = ''; }}
+						class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						Cancel
+					</button>
+					<button
+						onclick={(e) => { e.stopPropagation(); submitReply(); }}
+						disabled={submittingReply || !replyText.trim()}
+						class="rounded bg-accent px-2 py-1 font-sans text-xs text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+					>
+						{submittingReply ? '…' : 'Send'}
+					</button>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -229,6 +261,25 @@
 />
 
 <style>
+	/* Mini reply editor */
+	.reply-editor :global(.codemirror-host) {
+		min-height: 3rem;
+		max-height: 12rem;
+		overflow-y: auto;
+		padding: 0.375rem 0.5rem;
+	}
+	.reply-editor :global(.cm-editor) {
+		font-size: 13px;
+		line-height: 1.5;
+	}
+	.reply-editor :global(.cm-gutters) {
+		display: none;
+	}
+	.reply-editor :global(.cm-activeLine),
+	.reply-editor :global(.cm-activeLineGutter) {
+		background: transparent !important;
+	}
+
 	/* Basic markdown in comment bodies */
 	:global(.comment-body > p) {
 		margin: 0;

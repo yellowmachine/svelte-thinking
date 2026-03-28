@@ -89,15 +89,15 @@
 		</p>
 		<div class="space-y-3">
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[@darwin1859]</span></p>
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[@darwin1859]]</span></p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Single citation — renders as "(Darwin, 1859)" in APA or "[1]" in IEEE/Vancouver</p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[@dawkins1976; @gould1979]</span></p>
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[@dawkins1976; @gould1979]]</span></p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Multiple citations separated by semicolons</p>
 			</div>
 		</div>
-		<Callout>Use the <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[@cite]</code> button in the editor toolbar to search and insert references without typing the key manually. The bibliography is generated automatically at the end of the document in the selected style (APA 7, IEEE or Vancouver).</Callout>
+		<Callout>Use the <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[[@cite]]</code> button in the editor toolbar to search and insert references without typing the key manually. The bibliography is generated automatically at the end of the document in the selected style (APA 7, IEEE or Vancouver).</Callout>
 	</section>
 
 	<!-- ── Mathematics ───────────────────────────────────────────────────────── -->
@@ -241,7 +241,7 @@
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Note definition — can go anywhere in the document, usually at the end.</p>
 			</div>
 		</div>
-		<Callout>Footnotes and bibliographic citations <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[@key]</code> are complementary: use citations for formal references that appear in the bibliography, and footnotes for clarifications, comments or informal references.</Callout>
+		<Callout>Footnotes and bibliographic citations <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[[@key]]</code> are complementary: use citations for formal references that appear in the bibliography, and footnotes for clarifications, comments or informal references.</Callout>
 	</section>
 
 	<!-- ── Gráficos ──────────────────────────────────────────────────────────── -->

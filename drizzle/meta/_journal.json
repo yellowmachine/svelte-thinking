@@ -50,6 +50,41 @@
       "when": 1774599421989,
       "tag": "0006_chilly_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774608043910,
+      "tag": "0007_messy_roxanne_simpson",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774612400000,
+      "tag": "0008_add_user_theme",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774613996373,
+      "tag": "0009_regular_champions",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774627534369,
+      "tag": "0010_omniscient_greymalkin",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1774695088477,
+      "tag": "0011_moaning_loners",
+      "breakpoints": true
     }
   ]
 }

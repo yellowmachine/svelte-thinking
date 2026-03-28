@@ -23,8 +23,11 @@
 		chapters = [],
 		ondocchange,
 		onselectionchange,
+		onlookup,
 		commentRanges = [],
-		scrollToRange = null
+		scrollToRange = null,
+		completions = undefined,
+		showLookupHint = false
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -37,8 +40,13 @@
 			to: number;
 			coords: { top: number; bottom: number; left: number; right: number } | null;
 		} | null) => void;
+		onlookup?: (partial: string, context: string) => Promise<string[]>;
 		commentRanges?: CommentRange[];
 		scrollToRange?: { from: number; to: number } | null;
+		/** Which [[ completions to enable. undefined = all active. */
+		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph'>;
+		/** Show a footer hint that @@ lookup is unavailable (no AI key configured). */
+		showLookupHint?: boolean;
 	} = $props();
 
 	let container: HTMLDivElement | null = null;
@@ -48,10 +56,16 @@
 		return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 	}
 
-	function chapterCompletion(context: CompletionContext) {
-		if (chapters.length === 0) return null;
+	// [[ dispatcher — character after [[ determines completion type:
+	//   [[        → wikilinks / chapters
+	//   [[@       → bibliographic citations  (inserts [[@key]])
+	//   [[#       → heading anchor in current document
+	//   [[^       → footnote (inserts [^N] inline + [^N]: at end)
+	//   [[! [[~   → reserved (embeds, snippets)
 
-		const match = context.matchBefore(/\[\[[^\]]*$/);
+	function wikilinkCompletion(context: CompletionContext) {
+		// Matches [[ NOT immediately followed by a special dispatcher char (@, #, !, ^, ~)
+		const match = context.matchBefore(/\[\[(?![@#!^~])[^\]]*$/);
 		if (!match) return null;
 
 		const typed = match.text.slice(2).toLowerCase(); // strip [[
@@ -63,23 +77,16 @@
 				apply: `[[doc:${c.id}|${c.title}]]`
 			}));
 
+		if (options.length === 0) return null;
 		return { from: match.from, options };
 	}
 
-	function allCompletions(context: CompletionContext) {
-		// Try epigraph completion first
-		const epigraphResult = epigraphCompletion(context);
-		if (epigraphResult) return epigraphResult;
-
-		// Try chapter completion for [[ in book documents
-		const chapterResult = chapterCompletion(context);
-		if (chapterResult) return chapterResult;
-
-		// Then try citation completions
-		const match = context.matchBefore(/\[@[\w.-]*/);
+	function citationCompletion(context: CompletionContext) {
+		// Matches [[@key…  — user typed [[ then @
+		const match = context.matchBefore(/\[\[@[\w.-]*/);
 		if (!match) return null;
 
-		const typed = match.text.slice(2); // strip [@
+		const typed = match.text.slice(3); // strip [[@
 		const options: Completion[] = references
 			.filter((r) => !typed || r.citeKey.toLowerCase().includes(typed.toLowerCase()))
 			.map((r) => {
@@ -89,11 +96,97 @@
 					label: r.citeKey,
 					detail: [author, year].filter(Boolean).join(', '),
 					info: r.title,
-					apply: `@${r.citeKey}]`
+					apply: `@${r.citeKey}]]` // keeps leading [[ from match.from+2
 				};
 			});
 
-		return { from: match.from + 1, options }; // +1 para dejar el [ y reemplazar solo @key
+		if (options.length === 0) return null;
+		return { from: match.from + 2, options }; // +2: skip [[, replace @key…
+	}
+
+	function headingCompletion(context: CompletionContext) {
+		const match = context.matchBefore(/\[\[#[^\]]*$/);
+		if (!match) return null;
+
+		const typed = match.text.slice(3).toLowerCase(); // strip [[#
+		const options: Completion[] = [];
+		for (const line of value.split('\n')) {
+			const m = line.match(/^(#{1,6})\s+(.+)$/);
+			if (!m) continue;
+			const text = m[2].trim();
+			if (!typed || text.toLowerCase().includes(typed)) {
+				options.push({
+					label: text,
+					detail: m[1], // heading level (##, ###…)
+					apply: `[[#${text}]]`
+				});
+			}
+		}
+
+		if (options.length === 0) return null;
+		return { from: match.from, options };
+	}
+
+	function footnoteCompletion(context: CompletionContext) {
+		const match = context.matchBefore(/\[\[\^[^\]]*$/);
+		if (!match) return null;
+
+		const n = (value.match(/\[\^\d+\]:/g) ?? []).length + 1;
+		const options: Completion[] = [
+			{
+				label: `footnote ${n}`,
+				detail: `[^${n}]`,
+				apply: (view, _c, from, to) => {
+					const ref = `[^${n}]`;
+					const def = `\n\n[^${n}]: `;
+					const docEnd = view.state.doc.length;
+					view.dispatch({
+						changes: [
+							{ from, to, insert: ref },
+							{ from: docEnd, insert: def }
+						],
+						selection: { anchor: docEnd + ref.length - (to - from) + def.length }
+					});
+				}
+			}
+		];
+
+		return { from: match.from, options };
+	}
+
+	async function mentionCompletion(context: CompletionContext) {
+		if (!onlookup) return null;
+		const match = context.matchBefore(/@@[\w\s.-]*/);
+		if (!match || match.text.length < 3) return null; // need at least @@x
+
+		const partial = match.text.slice(2); // strip @@
+		if (!partial.trim()) return null;
+
+		// Pass last ~300 chars as context for relevance
+		const docContext = value.slice(Math.max(0, context.pos - 300), context.pos);
+
+		const names = await onlookup(partial, docContext);
+		if (names.length === 0) return null;
+
+		return {
+			from: match.from,
+			options: names.map((name) => ({
+				label: name,
+				apply: name // plain text, no wrapper
+			}))
+		};
+	}
+
+	function allCompletions(context: CompletionContext) {
+		const all = completions === undefined;
+		return (
+			(all || completions.has('epigraph') ? epigraphCompletion(context) : null) ??
+			(all || completions.has('citation') ? citationCompletion(context) : null) ??
+			(all || completions.has('heading') ? headingCompletion(context) : null) ??
+			(all || completions.has('footnote') ? footnoteCompletion(context) : null) ??
+			(all || completions.has('mention') ? mentionCompletion(context) : null) ??
+			(all || completions.has('wikilink') ? wikilinkCompletion(context) : null)
+		);
 	}
 
 	function buildExtensions() {
@@ -239,6 +332,12 @@
 </script>
 
 <div bind:this={container} class="codemirror-host w-full"></div>
+{#if showLookupHint}
+	<div class="mt-6 inline-flex items-center gap-1.5 rounded border border-paper-border px-2.5 py-1.5 dark:border-dark-paper-border">
+		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">@@ lookup unavailable —</span>
+		<a href="/settings?tab=ai" class="font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">assign an AI model in Settings</a>
+	</div>
+{/if}
 
 <style>
 	.codemirror-host :global(.cm-editor) {

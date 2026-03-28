@@ -5,8 +5,14 @@
 
 // Matches [[doc:uuid|Title]]
 const UUID_LINK_RE = /\[\[doc:([a-f0-9-]{36})\|([^\]]+)\]\]/g;
-// Matches [[Title]] — no doc: prefix, no pipe
-const TITLE_LINK_RE = /\[\[([^\]|]+)\]\]/g;
+// Matches [[#Heading]] — internal section anchor
+const HEADING_LINK_RE = /\[\[#([^\]]+)\]\]/g;
+// Matches [[Title]] — no doc: prefix, no pipe, no #
+const TITLE_LINK_RE = /\[\[([^\]|#]+)\]\]/g;
+
+function headingAnchor(text: string): string {
+	return text.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+}
 
 /** Extract all link targets from a markdown string.
  *  Returns UUIDs (from [[doc:uuid|...]]) and titles (from [[Title]]).
@@ -38,8 +44,13 @@ export function processWikilinks(
 	markdown: string,
 	docMap: Map<string, { id: string; projectId: string }>
 ): string {
-	// First pass: resolve [[doc:uuid|Title]] links
-	let result = markdown.replace(UUID_LINK_RE, (_match, uuid: string, title: string) => {
+	// First pass: resolve [[#Heading]] → markdown anchor links
+	let result = markdown.replace(HEADING_LINK_RE, (_match, heading: string) => {
+		return `[${heading.trim()}](#${headingAnchor(heading)})`;
+	});
+
+	// Second pass: resolve [[doc:uuid|Title]] links
+	result = result.replace(UUID_LINK_RE, (_match, uuid: string, title: string) => {
 		const doc = docMap.get(uuid.trim());
 		if (doc) {
 			return `[${title.trim()}](/projects/${doc.projectId}/documents/${doc.id})`;
@@ -47,7 +58,7 @@ export function processWikilinks(
 		return `<span class="wikilink-unresolved" title="Chapter not found">[[doc:${uuid}|${title}]]</span>`;
 	});
 
-	// Second pass: resolve [[Title]] links
+	// Third pass: resolve [[Title]] links
 	result = result.replace(TITLE_LINK_RE, (_match, raw: string) => {
 		const title = raw.trim();
 		const doc = docMap.get(title);

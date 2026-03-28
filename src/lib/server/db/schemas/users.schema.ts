@@ -1,4 +1,4 @@
-import { text, timestamp, boolean, pgPolicy, unique, uniqueIndex } from 'drizzle-orm/pg-core';
+import { text, timestamp, boolean, pgPolicy, unique } from 'drizzle-orm/pg-core';
 import { customType } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
@@ -32,9 +32,10 @@ export const userProfile = scholioSchema.table(
 		planCurrentPeriodEnd: timestamp('plan_current_period_end'),
 		// Embedding del perfil para búsqueda semántica (null hasta primer indexado)
 		profileEmbedding: vector384('profile_embedding'),
-		// Default AI provider/model for the agent
-		defaultAiProvider: text('default_ai_provider').default('openrouter'),
-		defaultAiModel: text('default_ai_model'),
+		// Per-task AI configuration: { agent, draft, review, requirements } → { keyId, model }
+		aiTaskConfig: text('ai_task_config'), // JSON stored as text
+		// UI theme preference: 'warm' | 'github' | 'solarized' | 'nord' | 'catppuccin' | 'gruvbox'
+		theme: text('theme'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
@@ -54,15 +55,15 @@ export const userProfile = scholioSchema.table(
 ).enableRLS();
 
 // API keys del usuario cifradas con AWS KMS (envelope encryption)
-export const userAiConfig = scholioSchema.table(
-	'user_ai_config',
+// Múltiples keys por usuario, identificadas por nombre descriptivo
+export const userApiKey = scholioSchema.table(
+	'user_api_key',
 	{
 		id: text('id').primaryKey(),
 		userId: text('user_id').notNull(),
-		provider: text('provider').notNull().default('openrouter'),
-		model: text('model'), // selected model for this provider (null = use provider default)
+		name: text('name').notNull(), // e.g. "Mi key Anthropic", "Perplexity via OR"
 		encryptedApiKey: text('encrypted_api_key').notNull(),
-		encryptedDataKey: text('encrypted_data_key').notNull(), // data key cifrada por KMS
+		encryptedDataKey: text('encrypted_data_key').notNull(),
 		iv: text('iv').notNull(),
 		authTag: text('auth_tag').notNull(),
 		enabled: boolean('enabled').notNull().default(true),
@@ -70,10 +71,7 @@ export const userAiConfig = scholioSchema.table(
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
 	(t) => [
-		uniqueIndex('user_ai_config_user_provider_idx').on(t.userId, t.provider),
-
-		// Solo el propio usuario puede ver/modificar su config de IA
-		pgPolicy('user_ai_config_access', {
+		pgPolicy('user_api_key_access', {
 			for: 'all',
 			using: sql`${t.userId} = ${currentUserId}`
 		})

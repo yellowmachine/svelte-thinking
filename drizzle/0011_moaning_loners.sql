@@ -1,0 +1,1 @@
+ALTER TABLE "scholio"."document" ADD COLUMN "generated_by_ai" boolean DEFAULT false NOT NULL;
