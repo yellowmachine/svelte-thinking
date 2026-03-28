@@ -589,6 +589,60 @@
 		}
 	}
 
+	// ── Enrich (find untagged) ───────────────────────────────────────────────────
+	type UntaggedResult = { persons: string[]; refs: { text: string; citeKey: string }[] };
+	let showEnrich = $state(false);
+	let loadingEnrich = $state(false);
+	let enrichResult = $state<UntaggedResult | null>(null);
+	let enrichError = $state('');
+
+	function toggleEnrich() {
+		showEnrich = !showEnrich;
+		if (showEnrich) {
+			showChat = false;
+			showReview = false;
+			showDraft = false;
+			showHistory = false;
+			showComments = false;
+		}
+	}
+
+	async function runEnrich() {
+		if (loadingEnrich) return;
+		loadingEnrich = true;
+		enrichError = '';
+		enrichResult = null;
+		try {
+			enrichResult = await trpc.ai.findUntagged.mutate({
+				projectId: data.document.projectId,
+				documentId: data.document.id
+			});
+		} catch (e: unknown) {
+			enrichError = isNoKeyError(e) ? NO_KEY_MSG : (e instanceof Error ? e.message : 'Error analysing document.');
+		} finally {
+			loadingEnrich = false;
+		}
+	}
+
+	function applyPerson(name: string) {
+		const token = `[[person:${name}]]`;
+		// Replace all occurrences of the bare name not already inside [[person:...]]
+		const re = new RegExp(`(?<!\\[\\[person:)\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b(?![^\\[]*\\]\\])`, 'g');
+		content = content.replace(re, token);
+		enrichResult = enrichResult ? { ...enrichResult, persons: enrichResult.persons.filter(p => p !== name) } : null;
+	}
+
+	function applyRef(text: string, citeKey: string) {
+		content = content.replace(text, `[[@${citeKey}]]`);
+		enrichResult = enrichResult ? { ...enrichResult, refs: enrichResult.refs.filter(r => r.text !== text) } : null;
+	}
+
+	function applyAll() {
+		if (!enrichResult) return;
+		enrichResult.persons.forEach(applyPerson);
+		enrichResult.refs.forEach(r => applyRef(r.text, r.citeKey));
+	}
+
 	// ── Draft assistant ──────────────────────────────────────────────────────────
 	let showDraft = $state(false);
 	let draftMode = $state<'new' | 'rewrite'>('new');
@@ -842,6 +896,23 @@
 				{/if}
 			</button>
 		{/if}
+
+		<!-- Enrich button -->
+		<button
+			type="button"
+			onclick={toggleEnrich}
+			disabled={!hasAiKey}
+			title="Find untagged persons and informal citations"
+			class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors disabled:opacity-40 {showEnrich ? 'border-accent/40 bg-accent/5 text-accent dark:border-accent/30' : 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+		>
+			<span class="flex items-center gap-1.5">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
+					<path d="M21 21l-4.35-4.35M11 8v6M8 11h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+				</svg>
+				Enrich
+			</span>
+		</button>
 
 		<!-- Citar button (editor + split) -->
 		{#if viewMode !== 'preview'}
@@ -1553,6 +1624,105 @@
 						class="mt-auto rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						Re-run review
+					</button>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Enrich sidebar -->
+	{#if showEnrich}
+		<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+			<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
+				<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Enrich document</h3>
+				<button
+					type="button"
+					onclick={toggleEnrich}
+					class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+					aria-label="Close"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+				</button>
+			</div>
+
+			<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+				{#if !enrichResult && !loadingEnrich}
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						Finds person names not yet tagged as <code class="rounded bg-paper-ui px-1 font-mono text-[11px] dark:bg-dark-paper-ui">[[person:]]</code> and informal citations that match a reference in your bibliography.
+					</p>
+					<button
+						type="button"
+						onclick={runEnrich}
+						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						Analyse document
+					</button>
+				{:else if loadingEnrich}
+					<p class="py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Analysing…</p>
+				{:else if enrichError}
+					<p class="font-sans text-xs text-red-500">{enrichError}</p>
+				{:else if enrichResult}
+					{#if enrichResult.persons.length === 0 && enrichResult.refs.length === 0}
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">No untagged persons or informal citations found.</p>
+					{:else}
+						<button
+							type="button"
+							onclick={applyAll}
+							class="rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-xs text-accent transition-colors hover:bg-accent/10"
+						>
+							Apply all
+						</button>
+					{/if}
+
+					{#if enrichResult.persons.length > 0}
+						<div>
+							<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">People</p>
+							<div class="flex flex-col gap-1.5">
+								{#each enrichResult.persons as name}
+									<div class="flex items-center justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+										<div class="min-w-0">
+											<span class="font-sans text-xs text-ink dark:text-dark-ink">{name}</span>
+											<span class="ml-1 font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint">→ [[person:]]</span>
+										</div>
+										<button
+											type="button"
+											onclick={() => applyPerson(name)}
+											class="ml-2 shrink-0 font-sans text-[10px] text-accent hover:underline"
+										>Apply</button>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					{#if enrichResult.refs.length > 0}
+						<div>
+							<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">Informal citations</p>
+							<div class="flex flex-col gap-1.5">
+								{#each enrichResult.refs as ref}
+									<div class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+										<div class="min-w-0">
+											<span class="font-sans text-xs italic text-ink dark:text-dark-ink">"{ref.text}"</span>
+											<span class="mt-0.5 block font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint">→ [[@{ref.citeKey}]]</span>
+										</div>
+										<button
+											type="button"
+											onclick={() => applyRef(ref.text, ref.citeKey)}
+											class="ml-2 shrink-0 font-sans text-[10px] text-accent hover:underline"
+										>Apply</button>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<button
+						type="button"
+						onclick={runEnrich}
+						disabled={loadingEnrich}
+						class="mt-auto rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						Re-analyse
 					</button>
 				{/if}
 			</div>

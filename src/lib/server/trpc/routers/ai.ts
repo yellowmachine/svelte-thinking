@@ -1619,6 +1619,102 @@ Rules:
 			}
 		}),
 
+	// Find untagged persons and informal citations in a document
+	findUntagged: protectedProcedure
+		.input(z.object({
+			projectId: z.string(),
+			documentId: z.string()
+		}))
+		.mutation(async ({ ctx, input }) => {
+			const userId = ctx.user.id;
+
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS as WithRLS, ctx.db as Db, userId, 'review', input.projectId
+			);
+
+			const [docRows, refs] = await Promise.all([
+				ctx.withRLS((db) =>
+					db.select({ draftContent: document.draftContent, title: document.title })
+						.from(document)
+						.where(and(eq(document.id, input.documentId), eq(document.projectId, input.projectId)))
+						.limit(1)
+				) as Promise<{ draftContent: string | null; title: string }[]>,
+				ctx.withRLS((db) =>
+					db.select({ citeKey: projectReference.citeKey, title: projectReference.title, authors: projectReference.authors })
+						.from(projectReference)
+						.where(eq(projectReference.projectId, input.projectId))
+				) as Promise<{ citeKey: string; title: string | null; authors: unknown }[]>
+			]);
+
+			if (!docRows[0]) throw new TRPCError({ code: 'NOT_FOUND', message: 'Document not found.' });
+			const docContent = docRows[0].draftContent?.trim() ?? '';
+			if (!docContent) throw new TRPCError({ code: 'BAD_REQUEST', message: 'The document is empty.' });
+
+			const citeKeyList = refs.map(r => r.citeKey).join(', ');
+
+			const systemPrompt = `You are an academic text analyst. Given a document, find:
+1. Person names mentioned in plain text that are NOT already wrapped in [[person:Name]] tokens.
+2. Informal citation patterns (e.g. "Darwin (1859)", "according to Kuhn", "as Barth argues") that match a known citeKey.
+
+Respond ONLY with valid JSON (no markdown) in this exact shape:
+{
+  "persons": ["Full Name 1", "Full Name 2"],
+  "refs": [
+    { "text": "exact text in document", "citeKey": "matchingCiteKey" }
+  ]
+}
+
+Rules:
+- persons: only full names of real people (scholars, historical figures). Max 10.
+- Do NOT include names already in [[person:...]] tokens.
+- refs: only if the informal text clearly refers to a known citeKey from the list provided. Max 10.
+- text in refs must be an exact substring of the document.
+- Use the document language.`;
+
+			const userMessage = `Known citeKeys: ${citeKeyList || '(none)'}
+
+Document:
+${docContent.slice(0, 10000)}`;
+
+			const res = await fetch(OPENROUTER_URL, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model, max_tokens: 800,
+					messages: [
+						{ role: 'system', content: systemPrompt },
+						{ role: 'user', content: userMessage }
+					]
+				})
+			});
+
+			if (!res.ok) await throwProviderError(res);
+
+			const data = await res.json();
+			const raw = (data.choices?.[0]?.message?.content ?? '{}').trim()
+				.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model, task: 'review',
+				inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
+
+			type UntaggedResult = { persons: string[]; refs: { text: string; citeKey: string }[] };
+			try {
+				const parsed = JSON.parse(raw) as UntaggedResult;
+				return {
+					persons: Array.isArray(parsed.persons) ? parsed.persons.filter((p): p is string => typeof p === 'string').slice(0, 10) : [],
+					refs: Array.isArray(parsed.refs) ? parsed.refs.filter((r): r is { text: string; citeKey: string } =>
+						typeof r?.text === 'string' && typeof r?.citeKey === 'string').slice(0, 10) : []
+				};
+			} catch {
+				return { persons: [], refs: [] };
+			}
+		}),
+
 	// Quick name lookup for @@ trigger in the editor
 	lookupNames: protectedProcedure
 		.input(z.object({
