@@ -554,9 +554,9 @@ export function processCitations(
 ): string {
 	if (!refs.size) return markdown;
 
-	// Pattern: [@key] or [@key1; @key2; ...]
+	// Pattern: [@key] (legacy) or [[@key]] (new) or multi-key variants
 	// citeKey chars: letters, digits, :, -, _, .
-	const CITE_PATTERN = /\[(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]/g;
+	const CITE_PATTERN = /\[{1,2}(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]{1,2}/g;
 
 	// For numbered styles: collect unique keys in order of first appearance
 	const orderedKeys: string[] = [];

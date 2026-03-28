@@ -48,10 +48,14 @@
 		return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 	}
 
-	function chapterCompletion(context: CompletionContext) {
-		if (chapters.length === 0) return null;
+	// [[ dispatcher — character after [[ determines completion type:
+	//   [[        → wikilinks / chapters
+	//   [[@       → bibliographic citations  (inserts [[@key]])
+	//   [[#  etc. → future (headings, embeds…)
 
-		const match = context.matchBefore(/\[\[[^\]]*$/);
+	function wikilinkCompletion(context: CompletionContext) {
+		// Matches [[ NOT immediately followed by a special dispatcher char (@, #, !, ^, ~)
+		const match = context.matchBefore(/\[\[(?![@#!^~])[^\]]*$/);
 		if (!match) return null;
 
 		const typed = match.text.slice(2).toLowerCase(); // strip [[
@@ -63,23 +67,16 @@
 				apply: `[[doc:${c.id}|${c.title}]]`
 			}));
 
+		if (options.length === 0) return null;
 		return { from: match.from, options };
 	}
 
-	function allCompletions(context: CompletionContext) {
-		// Try epigraph completion first
-		const epigraphResult = epigraphCompletion(context);
-		if (epigraphResult) return epigraphResult;
-
-		// Try chapter completion for [[ in book documents
-		const chapterResult = chapterCompletion(context);
-		if (chapterResult) return chapterResult;
-
-		// Then try citation completions
-		const match = context.matchBefore(/\[@[\w.-]*/);
+	function citationCompletion(context: CompletionContext) {
+		// Matches [[@key…  — user typed [[ then @
+		const match = context.matchBefore(/\[\[@[\w.-]*/);
 		if (!match) return null;
 
-		const typed = match.text.slice(2); // strip [@
+		const typed = match.text.slice(3); // strip [[@
 		const options: Completion[] = references
 			.filter((r) => !typed || r.citeKey.toLowerCase().includes(typed.toLowerCase()))
 			.map((r) => {
@@ -89,11 +86,20 @@
 					label: r.citeKey,
 					detail: [author, year].filter(Boolean).join(', '),
 					info: r.title,
-					apply: `@${r.citeKey}]`
+					apply: `@${r.citeKey}]]` // keeps leading [[ from match.from+2
 				};
 			});
 
-		return { from: match.from + 1, options }; // +1 para dejar el [ y reemplazar solo @key
+		if (options.length === 0) return null;
+		return { from: match.from + 2, options }; // +2: skip [[, replace @key…
+	}
+
+	function allCompletions(context: CompletionContext) {
+		return (
+			epigraphCompletion(context) ??
+			citationCompletion(context) ??
+			wikilinkCompletion(context)
+		);
 	}
 
 	function buildExtensions() {
