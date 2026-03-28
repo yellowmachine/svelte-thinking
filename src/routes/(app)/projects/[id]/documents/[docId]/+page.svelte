@@ -36,7 +36,7 @@
 		const trimmed = docTitle.trim();
 		if (!trimmed || trimmed === data.document?.title) { editingTitle = false; docTitle = data.document?.title ?? ''; return; }
 		try {
-			await trpc.documents.update.mutate({ documentId: data.document!.id, title: trimmed });
+			await trpc.documents.update.mutate({ id: data.document!.id, title: trimmed });
 			data.document!.title = trimmed;
 			editingTitle = false;
 			titleError = '';
@@ -954,10 +954,15 @@
 <div class="flex overflow-hidden" style="height: calc(100vh - 57px)">
 	{#if viewMode === 'split'}
 		<!-- Split: editor left, preview right -->
-		<div class="relative flex flex-1 overflow-hidden">
-			<div class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-10 dark:border-dark-paper-border">
-				<div class="mx-auto w-full max-w-2xl">
+		<div class="relative flex flex-1 flex-col overflow-hidden">
+			<div class="border-b border-paper-border px-6 pt-10 pb-4 dark:border-dark-paper-border">
+				<div class="mx-auto w-full max-w-4xl">
 					{@render editableTitle()}
+				</div>
+			</div>
+			<div class="flex flex-1 overflow-hidden">
+			<div class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-6 dark:border-dark-paper-border">
+				<div class="mx-auto w-full max-w-2xl">
 					<MarkdownEditor
 						bind:this={editorEl}
 						bind:value={content}
@@ -974,7 +979,7 @@
 					/>
 				</div>
 			</div>
-			<div class="flex-1 overflow-y-auto px-6 py-10">
+			<div class="flex-1 overflow-y-auto px-6 py-6">
 				<div class="mx-auto w-full max-w-2xl">
 					<MarkdownPreview
 						{content}
@@ -985,11 +990,13 @@
 					/>
 				</div>
 			</div>
+			</div>
 		</div>
 	{:else}
 	<!-- Editor / Preview (single panel) -->
 	<div class="relative flex-1 overflow-y-auto px-6 py-10">
 		<div class="mx-auto w-full max-w-2xl">
+			{@render editableTitle()}
 			{#if viewMode === 'preview'}
 				<MarkdownPreview
 					{content}
@@ -999,7 +1006,6 @@
 					docMap={docMap()}
 				/>
 			{:else}
-				{@render editableTitle()}
 				<MarkdownEditor
 					bind:this={editorEl}
 					bind:value={content}
