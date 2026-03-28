@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { eq, and, ne, count, max, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
-import { userProfile } from '$lib/server/db/schemas/users.schema';
+import { userProfile, userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
 import { user } from '$lib/server/db/auth.schema';
 import { projectCollaborator, project } from '$lib/server/db/schemas/projects.schema';
 import { documentVersion } from '$lib/server/db/schemas/documents.schema';

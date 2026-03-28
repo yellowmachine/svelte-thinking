@@ -693,6 +693,14 @@
 		terminology: 'Terminology'
 	};
 
+	async function ignoreWord(word: string) {
+		try {
+			await trpc.users.addSpellAllowlist.mutate({ word });
+		} catch {
+			// silently ignore
+		}
+	}
+
 	function extractHeadings(text: string): string[] {
 		return [...text.matchAll(/^#{1,6}\s+(.+)$/gm)].map(m => m[1].trim());
 	}

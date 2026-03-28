@@ -121,3 +121,17 @@ export const notificationPreference = scholioSchema.table(
 		})
 	]
 ).enableRLS();
+
+export const userSpellAllowlist = scholioSchema.table(
+	'user_spell_allowlist',
+	{
+		userId: text('user_id').notNull(),
+		word: text('word').notNull()
+	},
+	(t) => [
+		pgPolicy('user_spell_allowlist_access', {
+			for: 'all',
+			using: sql`${t.userId} = ${currentUserId}`
+		})
+	]
+).enableRLS();

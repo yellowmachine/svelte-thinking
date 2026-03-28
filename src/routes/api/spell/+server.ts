@@ -1,5 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { eq } from 'drizzle-orm';
+import { userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
 import type { RequestHandler } from './$types';
 
 const LANGUAGETOOL_URL = env.LANGUAGETOOL_URL ?? 'http://localhost:8010';
@@ -64,6 +66,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Must be authenticated
 	if (!locals.user) throw error(401, 'Unauthorized');
 
+	// Fetch user's allowlist
+	const allowlistRows = await locals.withRLS((db: Parameters<typeof locals.withRLS>[0] extends (db: infer D) => unknown ? D : never) =>
+		db.select({ word: userSpellAllowlist.word })
+			.from(userSpellAllowlist)
+			.where(eq(userSpellAllowlist.userId, locals.user!.id))
+	) as { word: string }[];
+	const allowlist = new Set(allowlistRows.map((r) => r.word.toLowerCase()));
+
 	const body = await request.json();
 	const { text, language = 'en-US' } = body as { text: string; language?: string };
 
@@ -95,14 +105,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ matches: [] });
 	}
 
-	// Translate clean-text offsets back to original Markdown offsets
-	const matches = ltData.matches.map((m) => ({
-		from: map[m.offset] ?? m.offset,
-		to: (map[m.offset + m.length - 1] ?? m.offset + m.length - 1) + 1,
-		message: m.message,
-		severity: m.rule.issueType === 'misspelling' ? 'error' : 'warning',
-		replacements: m.replacements.slice(0, 5).map((r) => r.value)
-	}));
+	// Translate clean-text offsets back to original Markdown offsets, filtering allowlist
+	const matches = ltData.matches
+		.filter((m) => {
+			const word = clean.slice(m.offset, m.offset + m.length).toLowerCase();
+			return !allowlist.has(word);
+		})
+		.map((m) => ({
+			from: map[m.offset] ?? m.offset,
+			to: (map[m.offset + m.length - 1] ?? m.offset + m.length - 1) + 1,
+			message: m.message,
+			severity: m.rule.issueType === 'misspelling' ? 'error' : 'warning',
+			replacements: m.replacements.slice(0, 5).map((r) => r.value)
+		}));
 
 	return json({ matches });
 };

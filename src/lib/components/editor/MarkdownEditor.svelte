@@ -32,7 +32,8 @@
 		scrollToRange = null,
 		completions = undefined,
 		showLookupHint = false,
-	spellLanguage = 'en-US'
+	spellLanguage = 'en-US',
+	onignoreword
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -60,6 +61,8 @@
 		showLookupHint?: boolean;
 		/** BCP-47 language tag for LanguageTool spell check (e.g. 'es-ES', 'en-US'). */
 		spellLanguage?: string;
+		/** Called when user clicks "Ignore always" on a spell diagnostic. */
+		onignoreword?: (word: string) => void;
 	} = $props();
 
 	let container: HTMLDivElement | null = null;
@@ -91,18 +94,24 @@
 				matches: { from: number; to: number; message: string; severity: string; replacements: string[] }[]
 			};
 			// Translate slice-relative offsets back to document positions
-			return data.matches.map((m) => ({
-				from: m.from + sliceFrom,
-				to: m.to + sliceFrom,
-				severity: m.severity as 'error' | 'warning' | 'info',
-				message: m.message,
-				actions: m.replacements.map((r) => ({
+			return data.matches.map((m) => {
+				const from = m.from + sliceFrom;
+				const to = m.to + sliceFrom;
+				const replaceActions = m.replacements.map((r) => ({
 					name: r,
-					apply(view, from, to) {
+					apply(view: EditorView, from: number, to: number) {
 						view.dispatch({ changes: { from, to, insert: r } });
 					}
-				}))
-			}));
+				}));
+				const ignoreAction = onignoreword ? [{
+					name: 'Ignore always',
+					apply(view: EditorView, from: number, to: number) {
+						const word = view.state.doc.sliceString(from, to);
+						onignoreword!(word);
+					}
+				}] : [];
+				return { from, to, severity: m.severity as 'error' | 'warning' | 'info', message: m.message, actions: [...replaceActions, ...ignoreAction] };
+			});
 		} catch {
 			return [];
 		}
