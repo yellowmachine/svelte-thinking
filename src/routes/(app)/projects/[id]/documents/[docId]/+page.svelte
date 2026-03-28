@@ -90,6 +90,18 @@
 		);
 	});
 
+	async function lookupNames(partial: string, context: string): Promise<string[]> {
+		try {
+			return await trpc.ai.lookupNames.query({
+				partial,
+				context,
+				projectId: data.document.projectId
+			});
+		} catch {
+			return [];
+		}
+	}
+
 	async function loadRefs() {
 		if (refsLoaded) return;
 		try {
@@ -958,6 +970,7 @@
 						}}
 						{commentRanges}
 						{scrollToRange}
+						onlookup={lookupNames}
 					/>
 				</div>
 			</div>
@@ -999,6 +1012,7 @@
 					}}
 					{commentRanges}
 					{scrollToRange}
+					onlookup={lookupNames}
 				/>
 			{/if}
 		</div>

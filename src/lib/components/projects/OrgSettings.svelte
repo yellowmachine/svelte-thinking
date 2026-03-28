@@ -159,7 +159,7 @@
 
 	async function setTask(task: string, keyId: string, model: string) {
 		if (!selectedOrgId) return;
-		await trpc.orgs.setTaskConfig.mutate({ orgId: selectedOrgId, task: task as 'agent' | 'draft' | 'review' | 'requirements', keyId, model });
+		await trpc.orgs.setTaskConfig.mutate({ orgId: selectedOrgId, task: task as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup', keyId, model });
 		taskConfig = { ...taskConfig, [task]: { keyId, model } };
 	}
 </script>

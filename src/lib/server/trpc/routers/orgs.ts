@@ -282,7 +282,7 @@ export const orgsRouter = router({
 		.input(
 			z.object({
 				orgId: z.string(),
-				task: z.enum(['agent', 'draft', 'review', 'requirements']),
+				task: z.enum(['agent', 'draft', 'review', 'requirements', 'lookup']),
 				keyId: z.string(),
 				model: z.string().min(1)
 			})
@@ -312,7 +312,7 @@ export const orgsRouter = router({
 		}),
 
 	clearTaskConfig: protectedProcedure
-		.input(z.object({ orgId: z.string(), task: z.enum(['agent', 'draft', 'review', 'requirements']) }))
+		.input(z.object({ orgId: z.string(), task: z.enum(['agent', 'draft', 'review', 'requirements', 'lookup']) }))
 		.mutation(async ({ ctx, input }) => {
 			const rows = await ctx.withRLS((db) =>
 				db

@@ -23,6 +23,7 @@
 		chapters = [],
 		ondocchange,
 		onselectionchange,
+		onlookup,
 		commentRanges = [],
 		scrollToRange = null
 	}: {
@@ -37,6 +38,7 @@
 			to: number;
 			coords: { top: number; bottom: number; left: number; right: number } | null;
 		} | null) => void;
+		onlookup?: (partial: string, context: string) => Promise<string[]>;
 		commentRanges?: CommentRange[];
 		scrollToRange?: { from: number; to: number } | null;
 	} = $props();
@@ -146,12 +148,36 @@
 		return { from: match.from, options };
 	}
 
+	async function mentionCompletion(context: CompletionContext) {
+		if (!onlookup) return null;
+		const match = context.matchBefore(/@@[\w\s.-]*/);
+		if (!match || match.text.length < 3) return null; // need at least @@x
+
+		const partial = match.text.slice(2); // strip @@
+		if (!partial.trim()) return null;
+
+		// Pass last ~300 chars as context for relevance
+		const docContext = value.slice(Math.max(0, context.pos - 300), context.pos);
+
+		const names = await onlookup(partial, docContext);
+		if (names.length === 0) return null;
+
+		return {
+			from: match.from,
+			options: names.map((name) => ({
+				label: name,
+				apply: name // plain text, no wrapper
+			}))
+		};
+	}
+
 	function allCompletions(context: CompletionContext) {
 		return (
 			epigraphCompletion(context) ??
 			citationCompletion(context) ??
 			headingCompletion(context) ??
 			footnoteCompletion(context) ??
+			mentionCompletion(context) ??
 			wikilinkCompletion(context)
 		);
 	}

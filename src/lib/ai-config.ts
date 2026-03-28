@@ -1,6 +1,6 @@
 // Shared AI configuration constants — safe to import in both client and server code.
 
-export type AiTask = 'agent' | 'draft' | 'review' | 'requirements';
+export type AiTask = 'agent' | 'draft' | 'review' | 'requirements' | 'lookup';
 
 export interface TaskConfig {
 	keyId: string;
@@ -13,7 +13,8 @@ export const AI_TASKS: { id: AiTask; label: string; description: string }[] = [
 	{ id: 'agent', label: 'Agent (chat)', description: 'Conversational assistant with tool use' },
 	{ id: 'draft', label: 'Draft', description: 'Generate document drafts and sections' },
 	{ id: 'review', label: 'Review', description: 'Review and give feedback on documents' },
-	{ id: 'requirements', label: 'Requirements', description: 'Generate project requirements' }
+	{ id: 'requirements', label: 'Requirements', description: 'Generate project requirements' },
+	{ id: 'lookup', label: 'Lookup', description: 'Quick in-editor lookups (name suggestions, @@ trigger)' }
 ];
 
 export const MODELS: { id: string; label: string; toolCalling: boolean }[] = [

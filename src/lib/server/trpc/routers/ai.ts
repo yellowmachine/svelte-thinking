@@ -659,7 +659,7 @@ async function logUsage(
 		outputTokens
 	}: {
 		orgId?: string;
-		projectId: string;
+		projectId?: string;
 		userId: string;
 		model: string;
 		task: string;
@@ -678,7 +678,7 @@ async function logUsage(
 		await db.insert(aiUsageLog).values({
 			id: crypto.randomUUID(),
 			orgId: orgId ?? null,
-			projectId,
+			projectId: projectId ?? '',
 			userId,
 			model,
 			task,
@@ -1491,5 +1491,62 @@ Rules:
 			}
 
 			return parsed;
+		}),
+
+	// Quick name lookup for @@ trigger in the editor
+	lookupNames: protectedProcedure
+		.input(z.object({
+			partial: z.string().min(1).max(80),
+			context: z.string().max(500).optional(),
+			projectId: z.string().optional()
+		}))
+		.query(async ({ ctx, input }) => {
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+				ctx.withRLS, ctx.db, ctx.user.id, 'lookup', input.projectId
+			);
+
+			const prompt = [
+				'You are helping an academic writer. Given a partial name and optional document context, return 4–6 full names of people (scholars, historical figures, theologians, philosophers, scientists, etc.) that best match.',
+				'Reply with ONLY a JSON array of strings. No explanation.',
+				input.context ? `Document context (last sentences): """${input.context}"""` : '',
+				`Partial name: "${input.partial}"`
+			].filter(Boolean).join('\n');
+
+			const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': 'https://scholio.review',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model,
+					messages: [{ role: 'user', content: prompt }],
+					max_tokens: 200,
+					temperature: 0.2
+				})
+			});
+
+			if (!res.ok) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Lookup failed' });
+
+			const data = await res.json() as { choices: { message: { content: string } }[]; usage?: { prompt_tokens: number; completion_tokens: number } };
+			const raw = data.choices[0]?.message?.content ?? '[]';
+
+			let names: string[] = [];
+			try {
+				const parsed = JSON.parse(raw.trim());
+				if (Array.isArray(parsed)) names = parsed.filter((n): n is string => typeof n === 'string').slice(0, 6);
+			} catch { names = []; }
+
+			logUsage(ctx.db as Db, {
+				userId: ctx.user.id,
+				orgId: resolvedOrgId, projectId: input.projectId,
+				model, task: 'lookup',
+				inputTokens: data.usage?.prompt_tokens ?? 0,
+				outputTokens: data.usage?.completion_tokens ?? 0
+			});
+
+			return names;
 		})
 });
