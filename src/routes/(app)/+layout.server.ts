@@ -2,9 +2,10 @@ import { redirect } from '@sveltejs/kit';
 import { eq, and } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
-import { userProfile } from '$lib/server/db/schemas/users.schema';
+import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { sql } from 'drizzle-orm';
+import { parseTaskConfig } from '$lib/ai-config';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async (event) => {
@@ -19,7 +20,7 @@ export const load: LayoutServerLoad = async (event) => {
 
 	const userId = event.locals.user.id;
 
-	const [pending, profile, ownedOrgs, memberOrgs] = await Promise.all([
+	const [pending, profile, ownedOrgs, memberOrgs, aiKeys] = await Promise.all([
 		db
 			.select({ id: projectInvitation.id })
 			.from(projectInvitation)
@@ -30,7 +31,7 @@ export const load: LayoutServerLoad = async (event) => {
 				)
 			),
 		db
-			.select({ theme: userProfile.theme })
+			.select({ theme: userProfile.theme, aiTaskConfig: userProfile.aiTaskConfig })
 			.from(userProfile)
 			.where(eq(userProfile.userId, userId))
 			.limit(1),
@@ -42,7 +43,11 @@ export const load: LayoutServerLoad = async (event) => {
 			.select({ id: organization.id, name: organization.name, slug: organization.slug, role: organizationMember.role })
 			.from(organizationMember)
 			.innerJoin(organization, eq(organization.id, organizationMember.orgId))
-			.where(eq(organizationMember.userId, userId))
+			.where(eq(organizationMember.userId, userId)),
+		db
+			.select({ id: userApiKey.id, enabled: userApiKey.enabled })
+			.from(userApiKey)
+			.where(eq(userApiKey.userId, userId))
 	]);
 
 	// Deduplicate
@@ -57,6 +62,8 @@ export const load: LayoutServerLoad = async (event) => {
 		},
 		pendingInvitationCount: pending.length,
 		theme: (profile[0]?.theme ?? 'warm') as string,
-		orgs
+		orgs,
+		aiTaskConfig: parseTaskConfig(profile[0]?.aiTaskConfig ?? null),
+		hasAiKey: aiKeys.some((k) => k.enabled)
 	};
 };

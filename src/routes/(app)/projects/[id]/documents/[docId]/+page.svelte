@@ -11,6 +11,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { findAnchor, posToLine, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import { CITATION_STYLE_LABELS, type CitationStyle, type CiteRef } from '$lib/utils/citations';
+	import { MODEL_SHORT_LABEL } from '$lib/ai-config';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -457,6 +458,14 @@
 	// Export dropdown
 	let showExport = $state(false);
 
+	// ── AI task model labels (from layout data) ──────────────────────────────────
+	const aiTaskConfig = $derived(data.aiTaskConfig ?? {});
+	const hasAiKey = $derived(data.hasAiKey ?? false);
+	function taskModel(task: 'agent' | 'draft' | 'review') {
+		const modelId = aiTaskConfig[task]?.model;
+		return modelId ? (MODEL_SHORT_LABEL[modelId] ?? modelId.split('/').pop() ?? '') : null;
+	}
+
 	// ── Chat assistant ───────────────────────────────────────────────────────────
 	let showChat = $state(false);
 
@@ -700,31 +709,43 @@
 		<button
 			type="button"
 			onclick={toggleChat}
-			title="Chat with the assistant about this document"
-			class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showChat
+			disabled={!hasAiKey}
+			title={hasAiKey ? 'Chat with the assistant about this document' : 'No AI key configured — go to Settings → AI'}
+			class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showChat
 				? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 		>
-			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-			</svg>
-			Chat
+			<span class="flex items-center gap-1.5">
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+				Chat
+			</span>
+			{#if taskModel('agent')}
+				<span class="text-[10px] opacity-50">{taskModel('agent')}</span>
+			{/if}
 		</button>
 
 		<!-- Review button -->
 		<button
 			type="button"
 			onclick={toggleReview}
-			title="Review document against project requirements"
-			class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showReview
+			disabled={!hasAiKey}
+			title={hasAiKey ? 'Review document against project requirements' : 'No AI key configured — go to Settings → AI'}
+			class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showReview
 				? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 				: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 		>
-			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-				<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-			</svg>
-			Review
+			<span class="flex items-center gap-1.5">
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					<path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+				Review
+			</span>
+			{#if taskModel('review')}
+				<span class="text-[10px] opacity-50">{taskModel('review')}</span>
+			{/if}
 		</button>
 
 		<!-- Draft assistant button -->
@@ -732,16 +753,22 @@
 			<button
 				type="button"
 				onclick={toggleDraft}
-				title="Draft assistant — generate text from your project context"
-				class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showDraft
+				disabled={!hasAiKey}
+				title={hasAiKey ? 'Draft assistant — generate text from your project context' : 'No AI key configured — go to Settings → AI'}
+				class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showDraft
 					? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 					: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 			>
-				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M12 19l7-7 3 3-7 7-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-					<path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-				Draft
+				<span class="flex items-center gap-1.5">
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M12 19l7-7 3 3-7 7-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+					Draft
+				</span>
+				{#if taskModel('draft')}
+					<span class="text-[10px] opacity-50">{taskModel('draft')}</span>
+				{/if}
 			</button>
 		{/if}
 
