@@ -192,5 +192,41 @@ export const usersRouter = router({
 
 				return updated;
 			});
+		}),
+
+	getSpellAllowlist: protectedProcedure.query(async ({ ctx }) => {
+		const rows = await ctx.withRLS((db) =>
+			db.select({ word: userSpellAllowlist.word })
+				.from(userSpellAllowlist)
+				.where(eq(userSpellAllowlist.userId, ctx.user.id))
+		) as { word: string }[];
+		return rows.map((r) => r.word);
+	}),
+
+	addSpellAllowlist: protectedProcedure
+		.input(z.object({ word: z.string().min(1).max(100) }))
+		.mutation(async ({ ctx, input }) => {
+			const word = input.word.toLowerCase().trim();
+			await ctx.withRLS((db) =>
+				db.insert(userSpellAllowlist)
+					.values({ userId: ctx.user.id, word })
+					.onConflictDoNothing()
+			);
+			return { word };
+		}),
+
+	removeSpellAllowlist: protectedProcedure
+		.input(z.object({ word: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.withRLS((db) =>
+				db.delete(userSpellAllowlist)
+					.where(
+						and(
+							eq(userSpellAllowlist.userId, ctx.user.id),
+							eq(userSpellAllowlist.word, input.word.toLowerCase())
+						)
+					)
+			);
+			return { ok: true };
 		})
 });
