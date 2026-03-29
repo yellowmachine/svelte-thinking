@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
+	import { EditorView, keymap, lineNumbers, highlightActiveLine, tooltips } from '@codemirror/view';
 	import { EditorState } from '@codemirror/state';
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { markdown } from '@codemirror/lang-markdown';
@@ -25,6 +25,9 @@
 		ondocchange,
 		onselectionchange,
 		onlookup,
+		onmentionquery,
+		onmentionclose,
+		onmentionkeydown,
 		oncitehover,
 		onauthorhover,
 		onheadinghover,
@@ -47,6 +50,9 @@
 			coords: { top: number; bottom: number; left: number; right: number } | null;
 		} | null) => void;
 		onlookup?: (partial: string, context: string) => Promise<string[]>;
+		onmentionquery?: (data: { partial: string; from: number; coords: { top: number; bottom: number; left: number; right: number } | null }) => void;
+		onmentionclose?: () => void;
+		onmentionkeydown?: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape') => boolean;
 		/** Called when cursor dwells on a [[@citeKey]] token (debounced 700ms). */
 		oncitehover?: (citeKey: string, coords: { bottom: number; left: number }) => void;
 		/** Called when cursor dwells on a [[person:Name]] token (debounced 700ms). */
@@ -67,6 +73,7 @@
 
 	let container: HTMLDivElement | null = null;
 	let view: EditorView | null = null;
+	let mentionActive = false; // tracks whether @@ dropdown is open (used by keymap)
 
 	const SPELL_WINDOW = 3000; // chars around cursor to send to LanguageTool
 
@@ -297,7 +304,7 @@
 			(all || completions.has('citation') ? citationCompletion(context) : null) ??
 			(all || completions.has('heading') ? headingCompletion(context) : null) ??
 			(all || completions.has('footnote') ? footnoteCompletion(context) : null) ??
-			(all || completions.has('mention') ? mentionCompletion(context) : null) ??
+			// mention (@@) is handled via onmentionquery/onmentionclose — custom floating dropdown in parent
 			(all || completions.has('wikilink') ? wikilinkCompletion(context) : null)
 		);
 	}
@@ -308,6 +315,22 @@
 			lineNumbers(),
 			highlightActiveLine(),
 			keymap.of([
+				{
+					key: 'ArrowDown',
+					run() { return mentionActive ? (onmentionkeydown?.('ArrowDown') ?? false) : false; }
+				},
+				{
+					key: 'ArrowUp',
+					run() { return mentionActive ? (onmentionkeydown?.('ArrowUp') ?? false) : false; }
+				},
+				{
+					key: 'Enter',
+					run() { return mentionActive ? (onmentionkeydown?.('Enter') ?? false) : false; }
+				},
+				{
+					key: 'Escape',
+					run() { return mentionActive ? (onmentionkeydown?.('Escape') ?? false) : false; }
+				},
 				{
 					key: 'Mod-Shift-i',
 					run(view) {
@@ -324,6 +347,7 @@
 				...historyKeymap,
 			]),
 			markdown({ codeLanguages }),
+			tooltips({ position: 'fixed' }),
 			autocompletion({ override: [allCompletions], closeOnBlur: true }),
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
@@ -344,6 +368,27 @@
 						const text = update.state.doc.sliceString(sel.from, sel.to);
 						const coords = update.view.coordsAtPos(sel.to);
 						onselectionchange({ text, from: sel.from, to: sel.to, coords });
+					}
+				}
+				// @@ mention detection — fires custom floating dropdown instead of CM tooltip
+				if ((update.docChanged || update.selectionSet) && (onmentionquery || onmentionclose)) {
+					const sel = update.state.selection.main;
+					if (sel.empty) {
+						const line = update.state.doc.lineAt(sel.head);
+						const textBefore = line.text.slice(0, sel.head - line.from);
+						const match = textBefore.match(/@@([\w\s.-]*)$/);
+						if (match && match[1].trim().length >= 1) {
+							const from = sel.head - match[0].length;
+							const coords = update.view.coordsAtPos(sel.head);
+							mentionActive = true;
+							onmentionquery?.({ partial: match[1], from, coords });
+						} else {
+							mentionActive = false;
+							onmentionclose?.();
+						}
+					} else {
+						mentionActive = false;
+						onmentionclose?.();
 					}
 				}
 				// Token hover — cursor dwell on [[@key]], [[person:Name]], or ## heading
@@ -482,6 +527,17 @@
 		const { from, to } = view.state.selection.main;
 		if (from === to) return null;
 		return { text: view.state.doc.sliceString(from, to), from, to };
+	}
+
+	export function insertMention(name: string, from: number) {
+		if (!view) return;
+		const cursor = view.state.selection.main.head;
+		const insert = `[[person:${name}]]`;
+		view.dispatch({
+			changes: { from, to: cursor, insert },
+			selection: { anchor: from + insert.length }
+		});
+		view.focus();
 	}
 
 	export function replaceRange(from: number, to: number, text: string) {

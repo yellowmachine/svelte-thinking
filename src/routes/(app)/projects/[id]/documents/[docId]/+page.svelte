@@ -79,7 +79,62 @@
 		insertAtCursor: (text: string) => void;
 		getSelection: () => { text: string; from: number; to: number } | null;
 		replaceRange: (from: number, to: number, text: string) => void;
+		insertMention: (name: string, from: number) => void;
 	} | null = $state(null);
+
+	// @@ mention floating dropdown
+	type MentionQuery = { partial: string; from: number; coords: { top: number; bottom: number; left: number; right: number } | null };
+	let mentionQuery = $state<MentionQuery | null>(null);
+	let mentionNames = $state<string[]>([]);
+	let mentionLoading = $state(false);
+	let mentionSelectedIndex = $state(-1);
+	let mentionDebounce: ReturnType<typeof setTimeout> | null = null;
+
+	function onmentionquery(data: MentionQuery) {
+		mentionQuery = data;
+		mentionSelectedIndex = -1;
+		if (mentionDebounce) clearTimeout(mentionDebounce);
+		mentionDebounce = setTimeout(async () => {
+			mentionLoading = true;
+			mentionNames = await lookupNames(data.partial, '');
+			mentionLoading = false;
+			mentionSelectedIndex = mentionNames.length > 0 ? 0 : -1;
+		}, 200);
+	}
+
+	function onmentionclose() {
+		mentionQuery = null;
+		mentionNames = [];
+		mentionSelectedIndex = -1;
+		if (mentionDebounce) { clearTimeout(mentionDebounce); mentionDebounce = null; }
+	}
+
+	function applyMention(name: string) {
+		if (!mentionQuery) return;
+		editorEl?.insertMention(name, mentionQuery.from);
+		onmentionclose();
+	}
+
+	function onmentionkeydown(key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape'): boolean {
+		if (!mentionQuery || mentionNames.length === 0) return false;
+		if (key === 'ArrowDown') {
+			mentionSelectedIndex = (mentionSelectedIndex + 1) % mentionNames.length;
+			return true;
+		}
+		if (key === 'ArrowUp') {
+			mentionSelectedIndex = (mentionSelectedIndex - 1 + mentionNames.length) % mentionNames.length;
+			return true;
+		}
+		if (key === 'Enter' && mentionSelectedIndex >= 0) {
+			applyMention(mentionNames[mentionSelectedIndex]);
+			return true;
+		}
+		if (key === 'Escape') {
+			onmentionclose();
+			return true;
+		}
+		return false;
+	}
 
 	const filteredRefs = $derived(() => {
 		const q = citeSearch.toLowerCase();
@@ -1298,6 +1353,8 @@
 						{commentRanges}
 						{scrollToRange}
 						onlookup={lookupNames}
+						{onmentionquery}
+						{onmentionclose}
 						showLookupHint={lookupUnavailable}
 						spellLanguage={spellLanguage}
 						onignoreword={ignoreWord}
@@ -1344,6 +1401,9 @@
 					{commentRanges}
 					{scrollToRange}
 					onlookup={lookupNames}
+					{onmentionquery}
+					{onmentionclose}
+					{onmentionkeydown}
 					showLookupHint={lookupUnavailable}
 					spellLanguage={spellLanguage}
 					onignoreword={ignoreWord}
@@ -1402,6 +1462,35 @@
 							</div>
 						{/if}
 					</div>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- @@ mention floating dropdown -->
+		{#if mentionQuery && mentionQuery.coords && (mentionNames.length > 0 || mentionLoading)}
+			<div
+				class="fixed z-50 w-64 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+				style="top: {mentionQuery.coords.bottom + 6}px; left: {mentionQuery.coords.left}px;"
+			>
+				{#if mentionLoading}
+					<div class="flex items-center gap-2 px-3 py-2.5">
+						<div class="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Looking up…</span>
+					</div>
+				{:else}
+					<ul class="py-1">
+						{#each mentionNames as name, i}
+							<li>
+								<button
+									class="w-full px-3 py-2 text-left font-sans text-sm {i === mentionSelectedIndex ? 'bg-accent text-white' : 'text-ink hover:bg-paper-muted dark:text-dark-ink dark:hover:bg-dark-paper-muted'}"
+									onmousedown={(e) => { e.preventDefault(); applyMention(name); }}
+									onmouseenter={() => { mentionSelectedIndex = i; }}
+								>
+									{name}
+								</button>
+							</li>
+						{/each}
+					</ul>
 				{/if}
 			</div>
 		{/if}
