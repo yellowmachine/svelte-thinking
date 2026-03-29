@@ -1756,10 +1756,10 @@ ${docContent.slice(0, 10000)}`;
 			);
 
 			const prompt = [
-				'You are helping an academic writer. Given a partial name and optional document context, return 4–6 full names of people (scholars, historical figures, theologians, philosophers, scientists, etc.) that best match.',
+				'You are helping an academic writer. Given a partial name, return 4–6 full names of real people (scholars, historical figures, theologians, philosophers, scientists, etc.) whose first name OR last name STARTS WITH the partial string given. Do not return names based on topic or semantic similarity — only names that literally begin with the partial.',
 				'Reply with ONLY a JSON array of strings. No explanation.',
 				input.context ? `Document context (last sentences): """${input.context}"""` : '',
-				`Partial name: "${input.partial}"`
+				`Partial name (names returned must start with this): "${input.partial}"`
 			].filter(Boolean).join('\n');
 
 			const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {

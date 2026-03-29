@@ -295,7 +295,9 @@
 		const seen = new Set<string>();
 		let m: RegExpExecArray | null;
 		while ((m = localRe.exec(value)) !== null) seen.add(m[1]);
-		const local = [...seen].filter(n => n.toLowerCase().includes(partial.toLowerCase()));
+		const local = [...seen].filter(n =>
+			n.split(/\s+/).some(w => w.toLowerCase().startsWith(partial.toLowerCase()))
+		);
 
 		// from: right after @@, so CM6 filters labels against the partial naturally.
 		// label = matching word ("Dennett"), detail = full name ("Daniel Dennett") for context.
