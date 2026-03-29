@@ -833,19 +833,26 @@
 		draftResult = '';
 	}
 
-	// Hide floating button while the user is still dragging a selection
-	let isSelecting = $state(false);
-	const onPointerDown = () => { isSelecting = true; };
-	const onPointerUp = () => { isSelecting = false; };
-	if (typeof document !== 'undefined') {
-		document.addEventListener('pointerdown', onPointerDown);
-		document.addEventListener('pointerup', onPointerUp);
+	// Show floating button only after selection stabilizes (not during drag)
+	let showFloating = $state(false);
+	let floatingDebounce: ReturnType<typeof setTimeout> | null = null;
+
+	function updateSelection(sel: typeof currentSelection) {
+		currentSelection = sel;
+		if (!sel) {
+			showNewComment = false;
+			showReviewTypeMenu = false;
+			showFloating = false;
+			if (floatingDebounce) { clearTimeout(floatingDebounce); floatingDebounce = null; }
+		} else {
+			if (floatingDebounce) clearTimeout(floatingDebounce);
+			floatingDebounce = setTimeout(() => { showFloating = true; }, 150);
+		}
 	}
 
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
-		document.removeEventListener('pointerdown', onPointerDown);
-		document.removeEventListener('pointerup', onPointerUp);
+		if (floatingDebounce) clearTimeout(floatingDebounce);
 	});
 </script>
 
@@ -1284,10 +1291,7 @@
 						references={projectRefs}
 						{chapters}
 						ondocchange={handleDocChange}
-						onselectionchange={(sel) => {
-							currentSelection = sel;
-							if (!sel) { showNewComment = false; showReviewTypeMenu = false; }
-						}}
+						onselectionchange={updateSelection}
 						oncitehover={hasAiKey ? (key, coords) => explainCitation(key, coords) : undefined}
 						onauthorhover={hasAiKey ? (name, coords) => showAuthorInfo(name, coords) : undefined}
 						onheadinghover={(info, coords) => { headingTooltip = { title: info.title, wordCount: info.wordCount, coords }; }}
@@ -1350,7 +1354,7 @@
 	{/if}
 
 	<!-- Floating action buttons on selection -->
-		{#if currentSelection && currentSelection.coords && !isSelecting && !showNewComment && !citationExplain}
+		{#if showFloating && currentSelection && currentSelection.coords && !showNewComment && !citationExplain}
 			<div
 				class="pointer-events-none fixed z-20 flex gap-1.5"
 				style="top: {currentSelection.coords.bottom + 8}px; left: {currentSelection.coords.left}px;"
