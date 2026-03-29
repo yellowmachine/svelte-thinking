@@ -1335,8 +1335,10 @@
 				/>
 			{/if}
 		</div>
+	</div>
+	{/if}
 
-		<!-- Floating action buttons on selection -->
+	<!-- Floating action buttons on selection -->
 		{#if currentSelection && currentSelection.coords && !showNewComment && !citationExplain}
 			<div
 				class="pointer-events-none fixed z-20 flex gap-1.5"
@@ -1583,8 +1585,6 @@
 				</div>
 			</div>
 		{/if}
-	</div>
-	{/if}
 
 	<!-- Comments sidebar -->
 	{#if showComments}
