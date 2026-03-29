@@ -160,3 +160,49 @@ html.dark ::-webkit-scrollbar-thumb {
 	--color-dark-ink-muted: #d5c4a1;
 	--color-dark-ink-faint: #928374;
 }
+
+/* ── CodeMirror autocomplete popup ──────────────────────────────────────── */
+/* Inherits whichever of the 12 themes is active via CSS variables.         */
+.cm-tooltip.cm-tooltip-autocomplete {
+	border: 1px solid var(--color-paper-border) !important;
+	border-radius: 8px !important;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+	overflow: hidden !important;
+	background: var(--color-paper) !important;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul {
+	margin: 0 !important;
+	padding: 4px !important;
+	list-style: none !important;
+	max-height: 240px !important;
+	font-family: var(--font-sans) !important;
+	font-size: 13px !important;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+	padding: 5px 10px !important;
+	border-radius: 5px !important;
+	color: var(--color-ink) !important;
+	line-height: 1.4 !important;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background: var(--color-accent) !important;
+	color: #fff !important;
+}
+.cm-completionDetail {
+	opacity: 0.6;
+	font-style: normal !important;
+	margin-left: 8px;
+	font-size: 11px;
+}
+
+html.dark .cm-tooltip.cm-tooltip-autocomplete {
+	border-color: var(--color-dark-paper-border) !important;
+	background: var(--color-dark-paper) !important;
+}
+html.dark .cm-tooltip.cm-tooltip-autocomplete > ul > li {
+	color: var(--color-dark-ink) !important;
+}
+html.dark .cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background: var(--color-accent) !important;
+	color: #fff !important;
+}
