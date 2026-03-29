@@ -400,6 +400,35 @@
 				'.cm-activeLine': { backgroundColor: 'transparent' },
 				'.cm-selectionBackground, ::selection': {
 					backgroundColor: 'rgba(124, 92, 62, 0.15) !important'
+				},
+				// Autocomplete dropdown — Tailwind preflight resets ul/li so we must restyle
+				'.cm-tooltip': {
+					zIndex: '50',
+					border: '1px solid var(--color-paper-border, #D9CCBF)',
+					borderRadius: '8px',
+					boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+					overflow: 'hidden',
+					backgroundColor: 'var(--color-paper, #FAF7F4)'
+				},
+				'.cm-tooltip-autocomplete ul': {
+					margin: '0',
+					padding: '4px',
+					listStyle: 'none',
+					maxHeight: '240px',
+					overflowY: 'auto'
+				},
+				'.cm-tooltip-autocomplete ul li': {
+					padding: '6px 10px',
+					borderRadius: '5px',
+					cursor: 'pointer',
+					fontFamily: 'system-ui, sans-serif',
+					fontSize: '13px',
+					color: 'var(--color-ink, #2C1F14)',
+					lineHeight: '1.4'
+				},
+				'.cm-tooltip-autocomplete ul li[aria-selected="true"]': {
+					backgroundColor: 'var(--color-accent, #7C5C3E)',
+					color: '#fff'
 				}
 			})
 		];
