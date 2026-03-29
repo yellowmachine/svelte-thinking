@@ -276,6 +276,14 @@
 		return { from: match.from, options };
 	}
 
+	// Returns the word in `name` that starts with `partial`, or the full name as fallback.
+	// e.g. partial="Dawk", name="Richard Dawkins" → "Dawkins"
+	function tokenNameFor(name: string, partial: string): string {
+		const p = partial.toLowerCase();
+		const word = name.split(/\s+/).find(w => w.toLowerCase().startsWith(p));
+		return word ?? name;
+	}
+
 	async function mentionCompletion(context: CompletionContext) {
 		const match = context.matchBefore(/@@[\w\s.-]*/);
 		if (!match || match.text.length < 3) return null;
@@ -292,7 +300,7 @@
 		if (local.length > 0) {
 			return {
 				from: match.from,
-				options: local.map(name => ({ label: name, apply: `[[person:${name}]]`, type: 'variable' })),
+				options: local.map(name => ({ label: name, apply: `[[person:${tokenNameFor(name, partial)}]]`, type: 'variable' })),
 				validFor: /^@@[\w\s.-]*$/
 			};
 		}
@@ -305,7 +313,7 @@
 
 		return {
 			from: match.from,
-			options: names.map(name => ({ label: name, apply: `[[person:${name}]]`, type: 'variable' })),
+			options: names.map(name => ({ label: name, apply: `[[person:${tokenNameFor(name, partial)}]]`, type: 'variable' })),
 			validFor: /^@@[\w\s.-]*$/
 		};
 	}
