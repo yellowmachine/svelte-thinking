@@ -300,6 +300,7 @@
 		if (local.length > 0) {
 			return {
 				from: match.from,
+				filter: false,
 				options: local.map(name => ({ label: name, apply: `[[person:${tokenNameFor(name, partial)}]]`, type: 'variable' })),
 				validFor: /^@@[\w\s.-]*$/
 			};
@@ -313,6 +314,7 @@
 
 		return {
 			from: match.from,
+			filter: false,
 			options: names.map(name => ({ label: name, apply: `[[person:${tokenNameFor(name, partial)}]]`, type: 'variable' })),
 			validFor: /^@@[\w\s.-]*$/
 		};
