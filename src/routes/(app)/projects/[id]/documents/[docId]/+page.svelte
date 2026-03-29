@@ -1600,7 +1600,7 @@
 							{/if}
 							<div class="min-w-0 flex-1">
 								{#if authorPopover.result.note}
-									<p class="font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">{authorPopover.result.note}</p>
+									<p class="font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">{authorPopover.result.note}</p>
 								{/if}
 								<p class="mt-2 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">AI · may be inaccurate</p>
 							</div>
