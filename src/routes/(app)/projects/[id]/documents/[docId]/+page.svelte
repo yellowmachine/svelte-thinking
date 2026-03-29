@@ -911,6 +911,18 @@
 		}
 	}
 
+	function onDocKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && authorPopover) {
+			authorPopover = null;
+			e.stopPropagation();
+		}
+	}
+
+	$effect(() => {
+		document.addEventListener('keydown', onDocKeydown);
+		return () => document.removeEventListener('keydown', onDocKeydown);
+	});
+
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (floatingDebounce) clearTimeout(floatingDebounce);
