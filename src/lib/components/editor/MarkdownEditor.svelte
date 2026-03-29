@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, keymap, lineNumbers, highlightActiveLine, tooltips } from '@codemirror/view';
-	import { EditorState } from '@codemirror/state';
+	import { EditorView, keymap, lineNumbers, highlightActiveLine, tooltips, Decoration, WidgetType } from '@codemirror/view';
+	import { EditorState, StateEffect, StateField } from '@codemirror/state';
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { markdown } from '@codemirror/lang-markdown';
 	import { oneDark } from '@codemirror/theme-one-dark';
@@ -360,6 +360,8 @@
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
 			spellLinter,
+			ghostTextField,
+			EditorView.baseTheme({ '.cm-ghost-text': { color: 'var(--color-ink-faint, #aaa)', pointerEvents: 'none' } }),
 			commentRangesField,
 			commentTheme,
 			EditorView.updateListener.of((update) => {
@@ -490,6 +492,37 @@
 		return exts;
 	}
 
+	// Ghost text (inline mention suggestion)
+	const setGhostTextEffect = StateEffect.define<string | null>();
+
+	class GhostWidget extends WidgetType {
+		constructor(readonly text: string) { super(); }
+		toDOM() {
+			const span = document.createElement('span');
+			span.className = 'cm-ghost-text';
+			span.textContent = this.text;
+			return span;
+		}
+		eq(other: GhostWidget) { return other.text === this.text; }
+		ignoreEvent() { return true; }
+	}
+
+	const ghostTextField = StateField.define<{ text: string; pos: number } | null>({
+		create: () => null,
+		update(val, tr) {
+			for (const e of tr.effects) {
+				if (e.is(setGhostTextEffect)) return e.value ? { text: e.value, pos: tr.state.selection.main.head } : null;
+			}
+			// Clear ghost text on any document change
+			if (tr.docChanged) return null;
+			return val ? { text: val.text, pos: tr.newSelection.main.head } : null;
+		},
+		provide: f => EditorView.decorations.from(f, val => {
+			if (!val) return Decoration.none;
+			return Decoration.set([Decoration.widget({ widget: new GhostWidget(val.text), side: 1 }).range(val.pos)]);
+		})
+	});
+
 	function createView(el: HTMLDivElement, doc: string) {
 		view = new EditorView({
 			state: EditorState.create({ doc, extensions: buildExtensions() }),
@@ -545,6 +578,11 @@
 		const { from, to } = view.state.selection.main;
 		if (from === to) return null;
 		return { text: view.state.doc.sliceString(from, to), from, to };
+	}
+
+	export function setGhostText(text: string | null) {
+		if (!view) return;
+		view.dispatch({ effects: setGhostTextEffect.of(text) });
 	}
 
 	export function insertMention(name: string, from: number) {

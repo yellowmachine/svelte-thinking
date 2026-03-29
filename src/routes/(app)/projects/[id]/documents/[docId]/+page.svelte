@@ -80,6 +80,7 @@
 		getSelection: () => { text: string; from: number; to: number } | null;
 		replaceRange: (from: number, to: number, text: string) => void;
 		insertMention: (name: string, from: number) => void;
+		setGhostText: (text: string | null) => void;
 	} | null = $state(null);
 
 	// @@ mention floating dropdown
@@ -112,6 +113,7 @@
 			mentionNames = local;
 			mentionShowSearchOthers = true;
 			mentionSelectedIndex = 0;
+			editorEl?.setGhostText(local[0]);
 			return;
 		}
 
@@ -120,6 +122,7 @@
 			mentionNames = await lookupNames(data.partial, '');
 			mentionLoading = false;
 			mentionSelectedIndex = mentionNames.length > 0 ? 0 : -1;
+			if (mentionNames.length > 0) editorEl?.setGhostText(mentionNames[0]);
 		}, 200);
 	}
 
@@ -128,6 +131,7 @@
 		mentionNames = [];
 		mentionSelectedIndex = -1;
 		mentionShowSearchOthers = false;
+		editorEl?.setGhostText(null);
 		if (mentionDebounce) { clearTimeout(mentionDebounce); mentionDebounce = null; }
 	}
 
@@ -150,10 +154,12 @@
 		if (!mentionQuery || mentionNames.length === 0) return false;
 		if (key === 'ArrowDown') {
 			mentionSelectedIndex = (mentionSelectedIndex + 1) % mentionNames.length;
+			editorEl?.setGhostText(mentionNames[mentionSelectedIndex]);
 			return true;
 		}
 		if (key === 'ArrowUp') {
 			mentionSelectedIndex = (mentionSelectedIndex - 1 + mentionNames.length) % mentionNames.length;
+			editorEl?.setGhostText(mentionNames[mentionSelectedIndex]);
 			return true;
 		}
 		if (key === 'Enter' || key === 'Tab' || key === 'ArrowRight') {
