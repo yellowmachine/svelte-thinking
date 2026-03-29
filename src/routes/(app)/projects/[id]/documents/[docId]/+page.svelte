@@ -1114,12 +1114,13 @@
 		</a>
 
 		<!-- Spell language selector -->
-		<div class="relative">
+		<div class="flex items-center gap-1 rounded-md border border-paper-border px-2 py-1.5 dark:border-dark-paper-border">
+			<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Spell:</span>
 			<select
 				value={spellLanguage}
 				onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
 				title="Spell check language"
-				class="cursor-pointer rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="cursor-pointer bg-paper font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper dark:text-dark-ink-muted"
 			>
 				{#each SPELL_LANGUAGES as lang}
 					<option value={lang.code}>{lang.label}</option>
