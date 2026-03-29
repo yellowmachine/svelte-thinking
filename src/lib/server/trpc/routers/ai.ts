@@ -648,7 +648,7 @@ function startOfMonth(): Date {
 
 // Fire-and-forget: inserts a usage record after each AI call
 async function logUsage(
-	db: Db,
+	withRLS: WithRLS,
 	{
 		orgId,
 		projectId,
@@ -675,7 +675,7 @@ async function logUsage(
 			const costUsd = inputTokens * price.input + outputTokens * price.output;
 			estimatedCostEur = (costUsd * USD_TO_EUR).toFixed(6);
 		}
-		await db.insert(aiUsageLog).values({
+		await withRLS((db) => db.insert(aiUsageLog).values({
 			id: crypto.randomUUID(),
 			orgId: orgId ?? null,
 			projectId: projectId ?? '',
@@ -685,7 +685,7 @@ async function logUsage(
 			inputTokens,
 			outputTokens,
 			estimatedCostEur
-		});
+		}));
 	} catch (e) {
 		console.error('[logUsage] failed:', e);
 	}
@@ -1028,7 +1028,7 @@ export const aiRouter = router({
 				resolvedModel
 			);
 
-			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'agent', inputTokens: agentIn, outputTokens: agentOut });
+			logUsage(ctx.withRLS, { orgId: resolvedOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'agent', inputTokens: agentIn, outputTokens: agentOut });
 
 			// ── Persist assistant response ────────────────────────────────────
 			const assistantMsgId = crypto.randomUUID();
@@ -1281,7 +1281,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				usage?: { prompt_tokens: number; completion_tokens: number };
 			};
 			const generatedContent = data.choices[0]?.message?.content ?? '';
-			logUsage(ctx.db as Db, { orgId: draftOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
+			logUsage(ctx.withRLS, { orgId: draftOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			const docId = crypto.randomUUID();
 			const versionId = crypto.randomUUID();
@@ -1375,7 +1375,7 @@ Reglas:
 
 			const data = await res.json();
 			const text = data.choices?.[0]?.message?.content?.trim() ?? '';
-			logUsage(ctx.db as Db, { orgId: sectionOrgId, projectId: input.projectId, userId, model, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
+			logUsage(ctx.withRLS, { orgId: sectionOrgId, projectId: input.projectId, userId, model, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			console.log('[draftSection] response ←', { chars: text.length });
 
@@ -1471,7 +1471,7 @@ Rules:
 			const data = await res.json();
 			const rawContent = data.choices?.[0]?.message?.content?.trim() ?? '{}';
 			const raw = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-			logUsage(ctx.db as Db, { orgId: reviewOrgId, projectId: input.projectId, userId, model: resolvedReviewModel, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
+			logUsage(ctx.withRLS, { orgId: reviewOrgId, projectId: input.projectId, userId, model: resolvedReviewModel, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			console.log('[reviewDocument] response ←', raw.slice(0, 200));
 
@@ -1558,7 +1558,7 @@ Rules:
 			const rawContent = (data.choices?.[0]?.message?.content ?? '[]').trim()
 				.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
-			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
+			logUsage(ctx.withRLS, { orgId: resolvedOrgId, projectId: input.projectId, userId, model, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			let questions: string[] = [];
 			try {
@@ -1604,7 +1604,7 @@ Rules:
 			const raw = (data.choices[0]?.message?.content ?? '{}').trim()
 				.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
-			logUsage(ctx.db as Db, {
+			logUsage(ctx.withRLS, {
 				userId: ctx.user.id, orgId: resolvedOrgId, projectId: input.projectId,
 				model, task: 'lookup',
 				inputTokens: data.usage?.prompt_tokens ?? 0,
@@ -1700,7 +1700,7 @@ ${docContent.slice(0, 10000)}`;
 			const raw = (data.choices?.[0]?.message?.content ?? '{}').trim()
 				.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
-			logUsage(ctx.db as Db, { orgId: resolvedOrgId, projectId: input.projectId, userId, model, task: 'review',
+			logUsage(ctx.withRLS, { orgId: resolvedOrgId, projectId: input.projectId, userId, model, task: 'review',
 				inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
 
 			type UntaggedResult = { persons: string[]; refs: { context: string; text: string; citeKey: string }[] };
@@ -1754,15 +1754,17 @@ ${docContent.slice(0, 10000)}`;
 			if (!res.ok) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Lookup failed' });
 
 			const data = await res.json() as { choices: { message: { content: string } }[]; usage?: { prompt_tokens: number; completion_tokens: number } };
-			const raw = data.choices[0]?.message?.content ?? '[]';
+			const rawContent = data.choices[0]?.message?.content ?? '[]';
+			// Strip markdown code fences if the model wraps the response
+			const raw = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
 			let names: string[] = [];
 			try {
-				const parsed = JSON.parse(raw.trim());
+				const parsed = JSON.parse(raw);
 				if (Array.isArray(parsed)) names = parsed.filter((n): n is string => typeof n === 'string').slice(0, 6);
 			} catch { names = []; }
 
-			logUsage(ctx.db as Db, {
+			logUsage(ctx.withRLS, {
 				userId: ctx.user.id,
 				orgId: resolvedOrgId, projectId: input.projectId,
 				model, task: 'lookup',
@@ -1822,7 +1824,7 @@ ${docContent.slice(0, 10000)}`;
 			const data = await res.json() as { choices: { message: { content: string } }[]; usage?: { prompt_tokens: number; completion_tokens: number } };
 			const explanation = data.choices[0]?.message?.content?.trim() ?? '';
 
-			logUsage(ctx.db as Db, {
+			logUsage(ctx.withRLS, {
 				userId: ctx.user.id,
 				orgId: resolvedOrgId, projectId: input.projectId,
 				model, task: 'lookup',
@@ -1908,7 +1910,7 @@ Rules:
 				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI returned invalid JSON.' });
 			}
 
-			logUsage(ctx.db as Db, {
+			logUsage(ctx.withRLS, {
 				userId,
 				orgId: resolvedOrgId, projectId: input.projectId,
 				model, task: 'review',
