@@ -83,56 +83,12 @@
 		setGhostText: (text: string | null) => void;
 	} | null = $state(null);
 
-	// @@ mention floating dropdown
-	type MentionQuery = { partial: string; from: number; coords: { top: number; bottom: number; left: number; right: number } | null };
-	let mentionQuery = $state<MentionQuery | null>(null);
-	let mentionNames = $state<string[]>([]);
-	let mentionLoading = $state(false);
-	let mentionSelectedIndex = $state(-1);
-	let mentionShowSearchOthers = $state(false);
-	let mentionDebounce: ReturnType<typeof setTimeout> | null = null;
-
 	function extractDocumentPersons(): string[] {
 		const re = /\[\[person:([^\]]+)\]\]/g;
 		const seen = new Set<string>();
 		let m: RegExpExecArray | null;
 		while ((m = re.exec(content)) !== null) seen.add(m[1]);
 		return [...seen];
-	}
-
-	function onmentionquery(data: MentionQuery) {
-		mentionQuery = data;
-		mentionSelectedIndex = -1;
-		mentionShowSearchOthers = false;
-		if (mentionDebounce) clearTimeout(mentionDebounce);
-
-		// Check document-local persons first
-		const partial = data.partial.toLowerCase();
-		const local = extractDocumentPersons().filter(n => n.toLowerCase().includes(partial));
-		if (local.length > 0) {
-			mentionNames = local;
-			mentionShowSearchOthers = true;
-			mentionSelectedIndex = 0;
-			editorEl?.setGhostText(local[0]);
-			return;
-		}
-
-		mentionDebounce = setTimeout(async () => {
-			mentionLoading = true;
-			mentionNames = await lookupNames(data.partial, '');
-			mentionLoading = false;
-			mentionSelectedIndex = mentionNames.length > 0 ? 0 : -1;
-			if (mentionNames.length > 0) editorEl?.setGhostText(mentionNames[0]);
-		}, 200);
-	}
-
-	function onmentionclose() {
-		mentionQuery = null;
-		mentionNames = [];
-		mentionSelectedIndex = -1;
-		mentionShowSearchOthers = false;
-		editorEl?.setGhostText(null);
-		if (mentionDebounce) { clearTimeout(mentionDebounce); mentionDebounce = null; }
 	}
 
 	// Word-level ghost text state
@@ -184,45 +140,6 @@
 		editorEl.setGhostText(null);
 		editorEl.insertMention(name, saved.from);
 		return true;
-	}
-
-	async function mentionSearchOthers() {
-		if (!mentionQuery) return;
-		mentionShowSearchOthers = false;
-		mentionLoading = true;
-		mentionNames = await lookupNames(mentionQuery.partial, '');
-		mentionLoading = false;
-		mentionSelectedIndex = mentionNames.length > 0 ? 0 : -1;
-	}
-
-	function applyMention(name: string) {
-		if (!mentionQuery) return;
-		editorEl?.insertMention(name, mentionQuery.from);
-		onmentionclose();
-	}
-
-	function onmentionkeydown(key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab' | 'ArrowRight'): boolean {
-		if (!mentionQuery || mentionNames.length === 0) return false;
-		if (key === 'ArrowDown') {
-			mentionSelectedIndex = (mentionSelectedIndex + 1) % mentionNames.length;
-			editorEl?.setGhostText(mentionNames[mentionSelectedIndex]);
-			return true;
-		}
-		if (key === 'ArrowUp') {
-			mentionSelectedIndex = (mentionSelectedIndex - 1 + mentionNames.length) % mentionNames.length;
-			editorEl?.setGhostText(mentionNames[mentionSelectedIndex]);
-			return true;
-		}
-		if (key === 'Enter' || key === 'Tab' || key === 'ArrowRight') {
-			const idx = mentionSelectedIndex >= 0 ? mentionSelectedIndex : 0;
-			applyMention(mentionNames[idx]);
-			return true;
-		}
-		if (key === 'Escape') {
-			onmentionclose();
-			return true;
-		}
-		return false;
 	}
 
 	const filteredRefs = $derived(() => {
@@ -1442,8 +1359,6 @@
 						{commentRanges}
 						{scrollToRange}
 						onlookup={lookupNames}
-						{onmentionquery}
-						{onmentionclose}
 						{onwordprefix}
 						{onwordprefixclear}
 						{onwordghosttab}
@@ -1493,9 +1408,6 @@
 					{commentRanges}
 					{scrollToRange}
 					onlookup={lookupNames}
-					{onmentionquery}
-					{onmentionclose}
-					{onmentionkeydown}
 					{onwordprefix}
 					{onwordprefixclear}
 					{onwordghosttab}
@@ -1557,45 +1469,6 @@
 							</div>
 						{/if}
 					</div>
-				{/if}
-			</div>
-		{/if}
-
-		<!-- @@ mention floating dropdown -->
-		{#if mentionQuery && mentionQuery.coords && (mentionNames.length > 0 || mentionLoading)}
-			<div
-				class="fixed z-50 w-64 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-				style="top: {mentionQuery.coords.bottom + 6}px; left: {mentionQuery.coords.left}px;"
-			>
-				{#if mentionLoading}
-					<div class="flex items-center gap-2 px-3 py-2.5">
-						<div class="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Looking up…</span>
-					</div>
-				{:else}
-					<ul class="py-1">
-						{#each mentionNames as name, i}
-							<li>
-								<button
-									class="w-full px-3 py-2 text-left font-sans text-sm {i === mentionSelectedIndex ? 'bg-accent text-white' : 'text-ink hover:bg-paper-muted dark:text-dark-ink dark:hover:bg-dark-paper-muted'}"
-									onmousedown={(e) => { e.preventDefault(); applyMention(name); }}
-									onmouseenter={() => { mentionSelectedIndex = i; }}
-								>
-									{name}
-								</button>
-							</li>
-						{/each}
-						{#if mentionShowSearchOthers}
-							<li class="border-t border-paper-border dark:border-dark-paper-border">
-								<button
-									class="w-full px-3 py-2 text-left font-sans text-xs text-ink-faint hover:bg-paper-muted dark:text-dark-ink-faint dark:hover:bg-dark-paper-muted"
-									onmousedown={(e) => { e.preventDefault(); mentionSearchOthers(); }}
-								>
-									Search others…
-								</button>
-							</li>
-						{/if}
-					</ul>
 				{/if}
 			</div>
 		{/if}

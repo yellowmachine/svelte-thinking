@@ -5,7 +5,7 @@
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { markdown } from '@codemirror/lang-markdown';
 	import { oneDark } from '@codemirror/theme-one-dark';
-	import { autocompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
+	import { autocompletion, acceptCompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
 	import {
 		commentRangesField,
 		commentTheme,
@@ -25,9 +25,6 @@
 		ondocchange,
 		onselectionchange,
 		onlookup,
-		onmentionquery,
-		onmentionclose,
-		onmentionkeydown,
 		onwordprefix,
 		onwordprefixclear,
 		onwordghosttab,
@@ -53,9 +50,6 @@
 			coords: { top: number; bottom: number; left: number; right: number } | null;
 		} | null) => void;
 		onlookup?: (partial: string, context: string) => Promise<string[]>;
-		onmentionquery?: (data: { partial: string; from: number; coords: { top: number; bottom: number; left: number; right: number } | null }) => void;
-		onmentionclose?: () => void;
-		onmentionkeydown?: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab' | 'ArrowRight') => boolean;
 		/** Called when cursor is inside a capitalised mid-sentence word ≥3 chars. */
 		onwordprefix?: (prefix: string, from: number, cursorPos: number) => void;
 		onwordprefixclear?: () => void;
@@ -81,7 +75,6 @@
 
 	let container: HTMLDivElement | null = null;
 	let view: EditorView | null = null;
-	let mentionActive = false; // tracks whether @@ dropdown is open (used by keymap)
 	let wordGhostActive = false; // tracks whether word-level ghost text is active
 
 	const SPELL_WINDOW = 3000; // chars around cursor to send to LanguageTool
@@ -284,36 +277,47 @@
 	}
 
 	async function mentionCompletion(context: CompletionContext) {
-		if (!onlookup) return null;
 		const match = context.matchBefore(/@@[\w\s.-]*/);
-		if (!match || match.text.length < 3) return null; // need at least @@x
-
-		const partial = match.text.slice(2); // strip @@
+		if (!match || match.text.length < 3) return null;
+		const partial = match.text.slice(2);
 		if (!partial.trim()) return null;
 
-		// Pass last ~300 chars as context for relevance
-		const docContext = value.slice(Math.max(0, context.pos - 300), context.pos);
+		// Check document-local persons first (instant, no AI cost)
+		const localRe = /\[\[person:([^\]]+)\]\]/g;
+		const seen = new Set<string>();
+		let m: RegExpExecArray | null;
+		while ((m = localRe.exec(value)) !== null) seen.add(m[1]);
+		const local = [...seen].filter(n => n.toLowerCase().includes(partial.toLowerCase()));
 
+		if (local.length > 0) {
+			return {
+				from: match.from,
+				options: local.map(name => ({ label: name, apply: `[[person:${name}]]`, type: 'variable' })),
+				validFor: /^@@[\w\s.-]*$/
+			};
+		}
+
+		// No local match → AI lookup
+		if (!onlookup) return null;
+		const docContext = value.slice(Math.max(0, context.pos - 300), context.pos);
 		const names = await onlookup(partial, docContext);
 		if (names.length === 0) return null;
 
 		return {
 			from: match.from,
-			options: names.map((name) => ({
-				label: name,
-				apply: `[[person:${name}]]` // stored as structured mention token
-			}))
+			options: names.map(name => ({ label: name, apply: `[[person:${name}]]`, type: 'variable' })),
+			validFor: /^@@[\w\s.-]*$/
 		};
 	}
 
-	function allCompletions(context: CompletionContext) {
+	async function allCompletions(context: CompletionContext) {
 		const all = completions === undefined;
 		return (
 			(all || completions.has('epigraph') ? epigraphCompletion(context) : null) ??
 			(all || completions.has('citation') ? citationCompletion(context) : null) ??
 			(all || completions.has('heading') ? headingCompletion(context) : null) ??
 			(all || completions.has('footnote') ? footnoteCompletion(context) : null) ??
-			// mention (@@) is handled via onmentionquery/onmentionclose — custom floating dropdown in parent
+			(all || completions.has('mention') ? await mentionCompletion(context) : null) ??
 			(all || completions.has('wikilink') ? wikilinkCompletion(context) : null)
 		);
 	}
@@ -325,35 +329,17 @@
 			highlightActiveLine(),
 			keymap.of([
 				{
-					key: 'ArrowDown',
-					run() { return mentionActive ? (onmentionkeydown?.('ArrowDown') ?? false) : false; }
-				},
-				{
-					key: 'ArrowUp',
-					run() { return mentionActive ? (onmentionkeydown?.('ArrowUp') ?? false) : false; }
-				},
-				{
-					key: 'Enter',
-					run() { return mentionActive ? (onmentionkeydown?.('Enter') ?? false) : false; }
-				},
-				{
-					key: 'Escape',
-					run() { return mentionActive ? (onmentionkeydown?.('Escape') ?? false) : false; }
-				},
-				{
 					key: 'Tab',
-					run() {
-						if (mentionActive) return onmentionkeydown?.('Tab') ?? false;
+					run(view) {
 						if (wordGhostActive) return onwordghosttab?.() ?? false;
-						return false;
+						return acceptCompletion(view);
 					}
 				},
 				{
 					key: 'ArrowRight',
-					run() {
-						if (mentionActive) return onmentionkeydown?.('ArrowRight') ?? false;
+					run(view) {
 						if (wordGhostActive) return onwordghosttab?.() ?? false;
-						return false;
+						return acceptCompletion(view);
 					}
 				},
 				{
@@ -378,7 +364,12 @@
 			EditorView.lineWrapping,
 			spellLinter,
 			ghostTextField,
-			EditorView.baseTheme({ '.cm-ghost-text': { color: 'var(--color-ink-faint, #aaa)', pointerEvents: 'none' } }),
+			EditorView.baseTheme({
+				'.cm-ghost-text': { color: 'var(--color-ink-faint, #aaa)', pointerEvents: 'none' },
+				'&.cm-editor .cm-tooltip-autocomplete': { border: '1px solid var(--color-paper-border, #e2e2e2)', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', background: 'var(--color-paper, #fff)', fontFamily: 'var(--font-sans, sans-serif)', fontSize: '0.875rem' },
+				'&.cm-editor .cm-tooltip-autocomplete ul li': { padding: '6px 12px', color: 'var(--color-ink, #111)' },
+				'&.cm-editor .cm-tooltip-autocomplete ul li[aria-selected]': { background: 'var(--color-accent, #6366f1)', color: '#fff' },
+			}),
 			commentRangesField,
 			commentTheme,
 			EditorView.updateListener.of((update) => {
@@ -397,29 +388,8 @@
 						onselectionchange({ text, from: sel.from, to: sel.to, coords });
 					}
 				}
-				// @@ mention detection — fires custom floating dropdown instead of CM tooltip
-				if ((update.docChanged || update.selectionSet) && (onmentionquery || onmentionclose)) {
-					const sel = update.state.selection.main;
-					if (sel.empty) {
-						const line = update.state.doc.lineAt(sel.head);
-						const textBefore = line.text.slice(0, sel.head - line.from);
-						const match = textBefore.match(/@@([\w\s.-]*)$/);
-						if (match && match[1].trim().length >= 1) {
-							const from = sel.head - match[0].length;
-							const coords = update.view.coordsAtPos(sel.head);
-							mentionActive = true;
-							onmentionquery?.({ partial: match[1], from, coords });
-						} else {
-							mentionActive = false;
-							onmentionclose?.();
-						}
-					} else {
-						mentionActive = false;
-						onmentionclose?.();
-					}
-				}
 				// Word-level ghost text — capitalised mid-sentence word ≥3 chars
-				if ((update.docChanged || update.selectionSet) && (onwordprefix || onwordprefixclear) && !mentionActive) {
+				if ((update.docChanged || update.selectionSet) && (onwordprefix || onwordprefixclear)) {
 					const sel = update.state.selection.main;
 					if (sel.empty) {
 						const doc = update.state.doc.toString();
@@ -584,7 +554,7 @@
 		// Prevent browser focus cycling on Tab when mention dropdown is open.
 		// Must be capture phase so it fires before the browser shifts focus.
 		function onTabCapture(e: KeyboardEvent) {
-			if (e.key === 'Tab' && (mentionActive || wordGhostActive)) e.preventDefault();
+			if (e.key === 'Tab' && wordGhostActive) e.preventDefault();
 		}
 		container.addEventListener('keydown', onTabCapture, { capture: true });
 
