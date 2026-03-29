@@ -506,7 +506,8 @@
 	const setGhostTextEffect = StateEffect.define<string | null>();
 
 	class GhostWidget extends WidgetType {
-		constructor(readonly text: string) { super(); }
+		text: string;
+		constructor(text: string) { super(); this.text = text; }
 		toDOM() {
 			const span = document.createElement('span');
 			span.className = 'cm-ghost-text';
