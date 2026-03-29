@@ -332,5 +332,82 @@ export const referencesRouter = router({
 				extra: (r.extra as Record<string, string>) ?? {}
 			}))
 		);
-	})
+	}),
+
+	// ── Fetch metadata from a DOI via CrossRef ────────────────────────────
+	fetchDoi: protectedProcedure
+		.input(z.string().min(1).max(300))
+		.query(async ({ input: doi }) => {
+			// Normalize: strip URL prefix if present
+			const normalized = doi
+				.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
+				.trim();
+
+			let data: Record<string, unknown>;
+			try {
+				const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(normalized)}`, {
+					headers: { 'User-Agent': 'Scholio/1.0 (https://scholio.review; mailto:support@scholio.review)' },
+					signal: AbortSignal.timeout(8000)
+				});
+				if (!res.ok) throw new TRPCError({ code: 'NOT_FOUND', message: 'DOI not found in CrossRef.' });
+				const json = await res.json() as { message: Record<string, unknown> };
+				data = json.message;
+			} catch (e) {
+				if (e instanceof TRPCError) throw e;
+				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not reach CrossRef.' });
+			}
+
+			// Map CrossRef fields → reference shape
+			const titleArr = data['title'] as string[] | undefined;
+			const title = titleArr?.[0] ?? '(no title)';
+
+			const authorsRaw = (data['author'] ?? []) as { given?: string; family?: string }[];
+			const authors: Author[] = authorsRaw.map((a) => ({
+				first: a.given ?? '',
+				last: a.family ?? ''
+			})).filter((a) => a.last);
+
+			const editorsRaw = (data['editor'] ?? []) as { given?: string; family?: string }[];
+			const editors: Author[] = editorsRaw.map((a) => ({ first: a.given ?? '', last: a.family ?? '' })).filter((a) => a.last);
+
+			const yearParts = (data['published'] as { 'date-parts'?: number[][] } | undefined)?.['date-parts']?.[0];
+			const year = yearParts?.[0] ? String(yearParts[0]) : null;
+
+			const type = (data['type'] as string | undefined);
+			const refType: typeof referenceTypeValues[number] =
+				type === 'journal-article' ? 'article'
+				: type === 'book' ? 'book'
+				: type === 'proceedings-article' ? 'inproceedings'
+				: type === 'book-chapter' ? 'incollection'
+				: 'misc';
+
+			const journal = (data['container-title'] as string[] | undefined)?.[0] ?? null;
+			const volume = data['volume'] as string | null ?? null;
+			const issue = data['issue'] as string | null ?? null;
+			const pages = data['page'] as string | null ?? null;
+			const publisher = data['publisher'] as string | null ?? null;
+			const abstractRaw = data['abstract'] as string | null ?? null;
+			// Strip JATS XML tags from abstract if present
+			const abstract = abstractRaw ? abstractRaw.replace(/<[^>]+>/g, '').trim() : null;
+			const url = `https://doi.org/${normalized}`;
+
+			const citeKey = generateCiteKey(authors, year ?? '');
+
+			return {
+				citeKey,
+				type: refType,
+				title,
+				authors,
+				editors,
+				year,
+				journal,
+				volume,
+				issue,
+				pages,
+				publisher,
+				abstract,
+				doi: normalized,
+				url
+			};
+		})
 });
