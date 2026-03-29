@@ -833,8 +833,19 @@
 		draftResult = '';
 	}
 
+	// Hide floating button while the user is still dragging a selection
+	let isSelecting = $state(false);
+	const onPointerDown = () => { isSelecting = true; };
+	const onPointerUp = () => { isSelecting = false; };
+	if (typeof document !== 'undefined') {
+		document.addEventListener('pointerdown', onPointerDown);
+		document.addEventListener('pointerup', onPointerUp);
+	}
+
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
+		document.removeEventListener('pointerdown', onPointerDown);
+		document.removeEventListener('pointerup', onPointerUp);
 	});
 </script>
 
@@ -1339,7 +1350,7 @@
 	{/if}
 
 	<!-- Floating action buttons on selection -->
-		{#if currentSelection && currentSelection.coords && !showNewComment && !citationExplain}
+		{#if currentSelection && currentSelection.coords && !isSelecting && !showNewComment && !citationExplain}
 			<div
 				class="pointer-events-none fixed z-20 flex gap-1.5"
 				style="top: {currentSelection.coords.bottom + 8}px; left: {currentSelection.coords.left}px;"

@@ -342,7 +342,7 @@
 						onselectionchange(null);
 					} else {
 						const text = update.state.doc.sliceString(sel.from, sel.to);
-						const coords = update.view.coordsAtPos(sel.from);
+						const coords = update.view.coordsAtPos(sel.to);
 						onselectionchange({ text, from: sel.from, to: sel.to, coords });
 					}
 				}
