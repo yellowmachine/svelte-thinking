@@ -52,7 +52,7 @@
 		onlookup?: (partial: string, context: string) => Promise<string[]>;
 		onmentionquery?: (data: { partial: string; from: number; coords: { top: number; bottom: number; left: number; right: number } | null }) => void;
 		onmentionclose?: () => void;
-		onmentionkeydown?: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape') => boolean;
+		onmentionkeydown?: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab' | 'ArrowRight') => boolean;
 		/** Called when cursor dwells on a [[@citeKey]] token (debounced 700ms). */
 		oncitehover?: (citeKey: string, coords: { bottom: number; left: number }) => void;
 		/** Called when cursor dwells on a [[person:Name]] token (debounced 700ms). */
@@ -330,6 +330,14 @@
 				{
 					key: 'Escape',
 					run() { return mentionActive ? (onmentionkeydown?.('Escape') ?? false) : false; }
+				},
+				{
+					key: 'Tab',
+					run() { return mentionActive ? (onmentionkeydown?.('Tab') ?? false) : false; }
+				},
+				{
+					key: 'ArrowRight',
+					run() { return mentionActive ? (onmentionkeydown?.('ArrowRight') ?? false) : false; }
 				},
 				{
 					key: 'Mod-Shift-i',

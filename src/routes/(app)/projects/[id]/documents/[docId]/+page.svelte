@@ -146,7 +146,7 @@
 		onmentionclose();
 	}
 
-	function onmentionkeydown(key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape'): boolean {
+	function onmentionkeydown(key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab' | 'ArrowRight'): boolean {
 		if (!mentionQuery || mentionNames.length === 0) return false;
 		if (key === 'ArrowDown') {
 			mentionSelectedIndex = (mentionSelectedIndex + 1) % mentionNames.length;
@@ -156,8 +156,9 @@
 			mentionSelectedIndex = (mentionSelectedIndex - 1 + mentionNames.length) % mentionNames.length;
 			return true;
 		}
-		if (key === 'Enter' && mentionSelectedIndex >= 0) {
-			applyMention(mentionNames[mentionSelectedIndex]);
+		if (key === 'Enter' || key === 'Tab' || key === 'ArrowRight') {
+			const idx = mentionSelectedIndex >= 0 ? mentionSelectedIndex : 0;
+			applyMention(mentionNames[idx]);
 			return true;
 		}
 		if (key === 'Escape') {
