@@ -420,8 +420,9 @@
 						let wordFrom = pos;
 						while (wordFrom > 0 && /\w/.test(doc[wordFrom - 1])) wordFrom--;
 						const word = doc.slice(wordFrom, pos);
-						// Must be ≥3 chars, start with uppercase
-						if (word.length >= 3 && /^[A-Z]/.test(word)) {
+						// Must be ≥3 chars, start with uppercase, not inside [[person:...]]
+						const charBefore = wordFrom > 0 ? doc[wordFrom - 1] : '';
+						if (word.length >= 3 && /^[A-Z]/.test(word) && charBefore !== ':') {
 							wordGhostActive = true;
 							onwordprefix?.(word, wordFrom, pos);
 						} else {
