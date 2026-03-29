@@ -915,6 +915,10 @@ Prefiere reconocer incertidumbre antes que inventar contenido, secciones, result
 Cuando sea posible, indica qué documento o fragmento fundamenta cada afirmación importante sobre el proyecto.`;
 
 // ---------------------------------------------------------------------------
+// Author info cache (module-level, TTL 24h)
+const AUTHOR_CACHE_TTL = 24 * 60 * 60 * 1000;
+const authorInfoCache = new Map<string, { note: string; photo?: string; expiresAt: number }>();
+
 // Router
 // ---------------------------------------------------------------------------
 
@@ -1576,33 +1580,52 @@ Rules:
 			projectId: z.string().optional()
 		}))
 		.query(async ({ ctx, input }) => {
+			const cacheKey = input.name.trim().toLowerCase();
+			const cached = authorInfoCache.get(cacheKey);
+			if (cached && cached.expiresAt > Date.now()) {
+				return { note: cached.note, photo: cached.photo };
+			}
+
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS, ctx.db, ctx.user.id, 'lookup', input.projectId
 			);
 
-			const prompt = `You are an academic reference assistant. For the person named "${input.name}", provide a brief factual summary in this exact JSON format:\n{"dates":"birth–death or fl. period (e.g. 1844–1900)","field":"main field or discipline","nationality":"nationality or origin","note":"one sentence summary of why they matter academically"}\nIf the person is unknown or fictional, return {"dates":"","field":"","nationality":"","note":"Unknown person"}.\nReply with ONLY the JSON object, no explanation.`;
+			const prompt = `You are an academic reference assistant. For the person named "${input.name}", provide a brief factual summary in this exact JSON format:\n{"note":"one sentence summary of who they are and why they matter academically"}\nIf the person is unknown or fictional, return {"note":"Unknown person"}.\nReply with ONLY the JSON object, no explanation.`;
 
-			const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${apiKey}`,
-					'Content-Type': 'application/json',
-					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
-					'X-Title': 'Scholio'
-				},
-				body: JSON.stringify({
-					model,
-					messages: [{ role: 'user', content: prompt }],
-					max_tokens: 150,
-					temperature: 0.1
-				})
-			});
+			const wikiSlug = encodeURIComponent(input.name.replace(/ /g, '_'));
+			const [res, wikiRes] = await Promise.all([
+				fetch('https://openrouter.ai/api/v1/chat/completions', {
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${apiKey}`,
+						'Content-Type': 'application/json',
+						'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+						'X-Title': 'Scholio'
+					},
+					body: JSON.stringify({
+						model,
+						messages: [{ role: 'user', content: prompt }],
+						max_tokens: 150,
+						temperature: 0.1
+					})
+				}),
+				fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${wikiSlug}`, {
+					headers: { 'Accept': 'application/json' },
+					signal: AbortSignal.timeout(3000)
+				}).catch(() => null)
+			]);
 
 			if (!res.ok) await throwProviderError(res);
 
 			const data = await res.json() as { choices: { message: { content: string } }[]; usage?: { prompt_tokens: number; completion_tokens: number } };
 			const raw = (data.choices[0]?.message?.content ?? '{}').trim()
 				.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+			let photo: string | undefined;
+			if (wikiRes?.ok) {
+				const wikiData = await wikiRes.json() as { thumbnail?: { source: string } };
+				photo = wikiData.thumbnail?.source;
+			}
 
 			logUsage(ctx.withRLS, {
 				userId: ctx.user.id, orgId: resolvedOrgId, projectId: input.projectId,
@@ -1611,12 +1634,16 @@ Rules:
 				outputTokens: data.usage?.completion_tokens ?? 0
 			});
 
-			type AuthorInfo = { dates: string; field: string; nationality: string; note: string };
+			type AuthorInfo = { note: string };
+			let note: string;
 			try {
-				return JSON.parse(raw) as AuthorInfo;
+				note = (JSON.parse(raw) as AuthorInfo).note ?? 'Unknown person';
 			} catch {
-				return { dates: '', field: '', nationality: '', note: 'Unknown person' };
+				note = 'Unknown person';
 			}
+
+			authorInfoCache.set(cacheKey, { note, photo, expiresAt: Date.now() + AUTHOR_CACHE_TTL });
+			return { note, photo };
 		}),
 
 	// Find untagged persons and informal citations in a document
