@@ -508,9 +508,19 @@
 		if (!container) return;
 		createView(container, value);
 
+		// Prevent browser focus cycling on Tab when mention dropdown is open.
+		// Must be capture phase so it fires before the browser shifts focus.
+		function onTabCapture(e: KeyboardEvent) {
+			if (e.key === 'Tab' && mentionActive) e.preventDefault();
+		}
+		container.addEventListener('keydown', onTabCapture, { capture: true });
+
 		const observer = new MutationObserver(rebuildView);
 		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-		return () => observer.disconnect();
+		return () => {
+			container!.removeEventListener('keydown', onTabCapture, { capture: true });
+			observer.disconnect();
+		};
 	});
 
 	onDestroy(() => {
