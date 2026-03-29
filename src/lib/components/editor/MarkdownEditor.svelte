@@ -28,6 +28,9 @@
 		onmentionquery,
 		onmentionclose,
 		onmentionkeydown,
+		onwordprefix,
+		onwordprefixclear,
+		onwordghosttab,
 		oncitehover,
 		onauthorhover,
 		onheadinghover,
@@ -53,6 +56,11 @@
 		onmentionquery?: (data: { partial: string; from: number; coords: { top: number; bottom: number; left: number; right: number } | null }) => void;
 		onmentionclose?: () => void;
 		onmentionkeydown?: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab' | 'ArrowRight') => boolean;
+		/** Called when cursor is inside a capitalised mid-sentence word ≥3 chars. */
+		onwordprefix?: (prefix: string, from: number, cursorPos: number) => void;
+		onwordprefixclear?: () => void;
+		/** Called when Tab/ArrowRight is pressed while word-ghost is active. */
+		onwordghosttab?: () => boolean;
 		/** Called when cursor dwells on a [[@citeKey]] token (debounced 700ms). */
 		oncitehover?: (citeKey: string, coords: { bottom: number; left: number }) => void;
 		/** Called when cursor dwells on a [[person:Name]] token (debounced 700ms). */
@@ -74,6 +82,7 @@
 	let container: HTMLDivElement | null = null;
 	let view: EditorView | null = null;
 	let mentionActive = false; // tracks whether @@ dropdown is open (used by keymap)
+	let wordGhostActive = false; // tracks whether word-level ghost text is active
 
 	const SPELL_WINDOW = 3000; // chars around cursor to send to LanguageTool
 
@@ -333,11 +342,19 @@
 				},
 				{
 					key: 'Tab',
-					run() { return mentionActive ? (onmentionkeydown?.('Tab') ?? false) : false; }
+					run() {
+						if (mentionActive) return onmentionkeydown?.('Tab') ?? false;
+						if (wordGhostActive) return onwordghosttab?.() ?? false;
+						return false;
+					}
 				},
 				{
 					key: 'ArrowRight',
-					run() { return mentionActive ? (onmentionkeydown?.('ArrowRight') ?? false) : false; }
+					run() {
+						if (mentionActive) return onmentionkeydown?.('ArrowRight') ?? false;
+						if (wordGhostActive) return onwordghosttab?.() ?? false;
+						return false;
+					}
 				},
 				{
 					key: 'Mod-Shift-i',
@@ -399,6 +416,39 @@
 					} else {
 						mentionActive = false;
 						onmentionclose?.();
+					}
+				}
+				// Word-level ghost text — capitalised mid-sentence word ≥3 chars
+				if ((update.docChanged || update.selectionSet) && (onwordprefix || onwordprefixclear) && !mentionActive) {
+					const sel = update.state.selection.main;
+					if (sel.empty) {
+						const doc = update.state.doc.toString();
+						const pos = sel.head;
+						// Walk back to find word start
+						let wordFrom = pos;
+						while (wordFrom > 0 && /\w/.test(doc[wordFrom - 1])) wordFrom--;
+						const word = doc.slice(wordFrom, pos);
+						// Must be ≥3 chars, start with uppercase
+						if (word.length >= 3 && /^[A-Z]/.test(word)) {
+							// Not at sentence start: char before word must be a space,
+							// and char before that must not be sentence-ending punctuation or newline
+							const prevChar = wordFrom > 0 ? doc[wordFrom - 1] : '';
+							const prevPrevChar = wordFrom > 1 ? doc[wordFrom - 2] : '';
+							const isMidSentence = prevChar === ' ' && !/[.!?\n]/.test(prevPrevChar) && wordFrom > 1;
+							if (isMidSentence) {
+								wordGhostActive = true;
+								onwordprefix?.(word, wordFrom, pos);
+							} else {
+								wordGhostActive = false;
+								onwordprefixclear?.();
+							}
+						} else {
+							wordGhostActive = false;
+							onwordprefixclear?.();
+						}
+					} else {
+						wordGhostActive = false;
+						onwordprefixclear?.();
 					}
 				}
 				// Token hover — cursor dwell on [[@key]], [[person:Name]], or ## heading
@@ -544,7 +594,7 @@
 		// Prevent browser focus cycling on Tab when mention dropdown is open.
 		// Must be capture phase so it fires before the browser shifts focus.
 		function onTabCapture(e: KeyboardEvent) {
-			if (e.key === 'Tab' && mentionActive) e.preventDefault();
+			if (e.key === 'Tab' && (mentionActive || wordGhostActive)) e.preventDefault();
 		}
 		container.addEventListener('keydown', onTabCapture, { capture: true });
 

@@ -135,6 +135,57 @@
 		if (mentionDebounce) { clearTimeout(mentionDebounce); mentionDebounce = null; }
 	}
 
+	// Word-level ghost text state
+	let ghostWord: { from: number; name: string } | null = $state(null);
+
+	function onwordprefix(prefix: string, from: number, cursorPos: number) {
+		const persons = extractDocumentPersons();
+		const matches = persons.filter(n => n.toLowerCase().startsWith(prefix.toLowerCase()));
+		if (matches.length === 0) { editorEl?.setGhostText(null); ghostWord = null; return; }
+
+		// Find the match whose last occurrence before cursorPos is closest to cursorPos
+		let bestName: string | null = null;
+		let bestDist = Infinity;
+		for (const name of matches) {
+			const token = `[[person:${name}]]`;
+			let idx = 0, lastBefore = -1;
+			while (true) {
+				const found = content.indexOf(token, idx);
+				if (found === -1 || found >= cursorPos) break;
+				lastBefore = found;
+				idx = found + 1;
+			}
+			if (lastBefore !== -1) {
+				const dist = cursorPos - lastBefore;
+				if (dist < bestDist) { bestDist = dist; bestName = name; }
+			}
+		}
+		if (bestName) {
+			ghostWord = { from, name: bestName };
+			editorEl?.setGhostText(bestName.slice(prefix.length));
+		} else {
+			ghostWord = null;
+			editorEl?.setGhostText(null);
+		}
+	}
+
+	function onwordprefixclear() {
+		ghostWord = null;
+		editorEl?.setGhostText(null);
+	}
+
+	function onwordghosttab(): boolean {
+		if (!ghostWord || !editorEl) return false;
+		const { from, name } = ghostWord;
+		// 'from' is word start; cursor is somewhere inside the word (the typed prefix).
+		// insertMention replaces from..cursor with [[person:Name]], same behaviour as @@ flow.
+		const saved = ghostWord;
+		ghostWord = null;
+		editorEl.setGhostText(null);
+		editorEl.insertMention(name, saved.from);
+		return true;
+	}
+
 	async function mentionSearchOthers() {
 		if (!mentionQuery) return;
 		mentionShowSearchOthers = false;
@@ -1393,6 +1444,9 @@
 						onlookup={lookupNames}
 						{onmentionquery}
 						{onmentionclose}
+						{onwordprefix}
+						{onwordprefixclear}
+						{onwordghosttab}
 						showLookupHint={lookupUnavailable}
 						spellLanguage={spellLanguage}
 						onignoreword={ignoreWord}
@@ -1442,6 +1496,9 @@
 					{onmentionquery}
 					{onmentionclose}
 					{onmentionkeydown}
+					{onwordprefix}
+					{onwordprefixclear}
+					{onwordghosttab}
 					showLookupHint={lookupUnavailable}
 					spellLanguage={spellLanguage}
 					onignoreword={ignoreWord}
