@@ -299,13 +299,22 @@
 			n.split(/\s+/).some(w => w.toLowerCase().startsWith(partial.toLowerCase()))
 		);
 
-		// from: right after @@, so CM6 filters labels against the partial naturally.
-		// label = matching word ("Dennett"), detail = full name ("Daniel Dennett") for context.
+		// from: right after @@ so CM6 filters labels against the partial.
+		// apply: function so the replacement covers the full @@partial (back to match.from).
 		const from = match.from + 2;
+		const mentionFrom = match.from;
 
 		const toOption = (name: string) => {
 			const word = tokenNameFor(name, partial);
-			return { label: word, detail: word !== name ? name : undefined, apply: `[[person:${word}]]`, type: 'variable' as const };
+			const insert = `[[person:${word}]]`;
+			return {
+				label: word,
+				detail: word !== name ? name : undefined,
+				type: 'variable' as const,
+				apply: (view: EditorView, _c: unknown, _f: number, to: number) => {
+					view.dispatch({ changes: { from: mentionFrom, to, insert } });
+				}
+			};
 		};
 
 		if (local.length > 0) {
