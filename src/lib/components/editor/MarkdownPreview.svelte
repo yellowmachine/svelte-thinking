@@ -99,7 +99,10 @@
 		const { processed: withEpigraphPlaceholders, epigraphs } = extractEpigraphsForProcessing(withPlaceholders);
 		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withEpigraphPlaceholders);
 		const withWikilinks = wikilinkMap.size > 0 ? processWikilinks(withMathPlaceholders, wikilinkMap) : withMathPlaceholders;
-		const withCitations = refs.size > 0 ? processCitations(withWikilinks, refs, style) : withWikilinks;
+		const withPersons = withWikilinks.replace(/\[\[person:([^\]]+)\]\]/g, (_, name) =>
+			`<span class="mention-person">${name}</span>`
+		);
+		const withCitations = refs.size > 0 ? processCitations(withPersons, refs, style) : withPersons;
 		const rawHtml = marked.parse(withCitations) as string;
 		const restored = restoreMath(rawHtml, mathBlocks);
 		const withEpigraphs = restoreEpigraphs(restored, epigraphs);
