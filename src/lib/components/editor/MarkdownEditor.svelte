@@ -297,16 +297,17 @@
 		while ((m = localRe.exec(value)) !== null) seen.add(m[1]);
 		const local = [...seen].filter(n => n.toLowerCase().includes(partial.toLowerCase()));
 
-		// Keep results only while the new text still starts with the same partial.
-		const validFor = (text: string) => text.startsWith('@@') && text.slice(2).toLowerCase().startsWith(partial.toLowerCase());
+		// from: right after @@, so CM6 filters labels against the partial naturally.
+		// label = matching word ("Dennett"), detail = full name ("Daniel Dennett") for context.
+		const from = match.from + 2;
+
+		const toOption = (name: string) => {
+			const word = tokenNameFor(name, partial);
+			return { label: word, detail: word !== name ? name : undefined, apply: `[[person:${word}]]`, type: 'variable' as const };
+		};
 
 		if (local.length > 0) {
-			return {
-				from: match.from,
-				filter: false,
-				options: local.map(name => ({ label: name, apply: `[[person:${tokenNameFor(name, partial)}]]`, type: 'variable' })),
-				validFor
-			};
+			return { from, options: local.map(toOption) };
 		}
 
 		// No local match → AI lookup
@@ -315,12 +316,7 @@
 		const names = await onlookup(partial, docContext);
 		if (names.length === 0) return null;
 
-		return {
-			from: match.from,
-			filter: false,
-			options: names.map(name => ({ label: name, apply: `[[person:${tokenNameFor(name, partial)}]]`, type: 'variable' })),
-			validFor
-		};
+		return { from, options: names.map(toOption) };
 	}
 
 	function allCompletions(context: CompletionContext) {
