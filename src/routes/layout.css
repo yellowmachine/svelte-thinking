@@ -176,7 +176,7 @@ html.dark ::-webkit-scrollbar-thumb {
 	list-style: none !important;
 	max-height: 240px !important;
 	font-family: var(--font-sans) !important;
-	font-size: 13px !important;
+	font-size: 15px !important;
 }
 .cm-tooltip.cm-tooltip-autocomplete > ul > li {
 	padding: 5px 10px !important;
