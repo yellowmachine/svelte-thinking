@@ -88,12 +88,33 @@
 	let mentionNames = $state<string[]>([]);
 	let mentionLoading = $state(false);
 	let mentionSelectedIndex = $state(-1);
+	let mentionShowSearchOthers = $state(false);
 	let mentionDebounce: ReturnType<typeof setTimeout> | null = null;
+
+	function extractDocumentPersons(): string[] {
+		const re = /\[\[person:([^\]]+)\]\]/g;
+		const seen = new Set<string>();
+		let m: RegExpExecArray | null;
+		while ((m = re.exec(content)) !== null) seen.add(m[1]);
+		return [...seen];
+	}
 
 	function onmentionquery(data: MentionQuery) {
 		mentionQuery = data;
 		mentionSelectedIndex = -1;
+		mentionShowSearchOthers = false;
 		if (mentionDebounce) clearTimeout(mentionDebounce);
+
+		// Check document-local persons first
+		const partial = data.partial.toLowerCase();
+		const local = extractDocumentPersons().filter(n => n.toLowerCase().includes(partial));
+		if (local.length > 0) {
+			mentionNames = local;
+			mentionShowSearchOthers = true;
+			mentionSelectedIndex = 0;
+			return;
+		}
+
 		mentionDebounce = setTimeout(async () => {
 			mentionLoading = true;
 			mentionNames = await lookupNames(data.partial, '');
@@ -106,7 +127,17 @@
 		mentionQuery = null;
 		mentionNames = [];
 		mentionSelectedIndex = -1;
+		mentionShowSearchOthers = false;
 		if (mentionDebounce) { clearTimeout(mentionDebounce); mentionDebounce = null; }
+	}
+
+	async function mentionSearchOthers() {
+		if (!mentionQuery) return;
+		mentionShowSearchOthers = false;
+		mentionLoading = true;
+		mentionNames = await lookupNames(mentionQuery.partial, '');
+		mentionLoading = false;
+		mentionSelectedIndex = mentionNames.length > 0 ? 0 : -1;
 	}
 
 	function applyMention(name: string) {
@@ -1490,6 +1521,16 @@
 								</button>
 							</li>
 						{/each}
+						{#if mentionShowSearchOthers}
+							<li class="border-t border-paper-border dark:border-dark-paper-border">
+								<button
+									class="w-full px-3 py-2 text-left font-sans text-xs text-ink-faint hover:bg-paper-muted dark:text-dark-ink-faint dark:hover:bg-dark-paper-muted"
+									onmousedown={(e) => { e.preventDefault(); mentionSearchOthers(); }}
+								>
+									Search others…
+								</button>
+							</li>
+						{/if}
 					</ul>
 				{/if}
 			</div>
