@@ -36,8 +36,20 @@ export default defineConfig({
 				]
 			},
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-				navigateFallback: '/offline.html',
+				// html excluded — no hash in filename, must always revalidate from network
+				globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
+				navigateFallback: null,
+				runtimeCaching: [
+					{
+						urlPattern: ({ request }) => request.mode === 'navigate',
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'html-cache',
+							networkTimeoutSeconds: 3,
+							cacheableResponse: { statuses: [200] }
+						}
+					}
+				],
 				navigateFallbackDenylist: [/^\/api/, /^\/trpc/]
 			}
 		}),
