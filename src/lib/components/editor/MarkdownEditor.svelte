@@ -310,16 +310,21 @@
 		};
 	}
 
-	async function allCompletions(context: CompletionContext) {
+	function allCompletions(context: CompletionContext) {
 		const all = completions === undefined;
 		return (
 			(all || completions.has('epigraph') ? epigraphCompletion(context) : null) ??
 			(all || completions.has('citation') ? citationCompletion(context) : null) ??
 			(all || completions.has('heading') ? headingCompletion(context) : null) ??
 			(all || completions.has('footnote') ? footnoteCompletion(context) : null) ??
-			(all || completions.has('mention') ? await mentionCompletion(context) : null) ??
 			(all || completions.has('wikilink') ? wikilinkCompletion(context) : null)
 		);
+	}
+
+	function mentionCompletionSource(context: CompletionContext) {
+		const all = completions === undefined;
+		if (!all && !completions.has('mention')) return null;
+		return mentionCompletion(context);
 	}
 
 	function buildExtensions() {
@@ -359,7 +364,7 @@
 			]),
 			markdown({ codeLanguages }),
 			tooltips({ position: 'fixed' }),
-			autocompletion({ override: [allCompletions], closeOnBlur: true }),
+			autocompletion({ override: [allCompletions, mentionCompletionSource], closeOnBlur: true }),
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
 			spellLinter,
