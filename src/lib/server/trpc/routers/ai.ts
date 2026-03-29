@@ -512,6 +512,12 @@ async function resolveTaskKey(
 	projectId?: string,
 	fallbackModel: string = DEFAULT_MODEL
 ): Promise<{ apiKey: string; model: string; resolvedOrgId?: string }> {
+	const cacheKey = `${userId}:${task}:${projectId ?? ''}`;
+	const cached = taskKeyCache.get(cacheKey);
+	if (cached && cached.expiresAt > Date.now()) {
+		return { apiKey: cached.apiKey, model: cached.model, resolvedOrgId: cached.resolvedOrgId };
+	}
+
 	// ── 1. Check if project is linked to an org ───────────────────────────────
 	let orgId: string | null = null;
 	if (projectId) {
@@ -581,7 +587,9 @@ async function resolveTaskKey(
 					});
 				}
 				const model = orgTaskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
-				return { apiKey, model, resolvedOrgId: orgId };
+				const result = { apiKey, model, resolvedOrgId: orgId };
+				taskKeyCache.set(cacheKey, { ...result, expiresAt: Date.now() + TASK_KEY_TTL });
+				return result;
 			}
 		}
 	}
@@ -635,7 +643,9 @@ async function resolveTaskKey(
 	}
 
 	const model = taskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
-	return { apiKey, model };
+	const result = { apiKey, model };
+	taskKeyCache.set(cacheKey, { ...result, expiresAt: Date.now() + TASK_KEY_TTL });
+	return result;
 }
 const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
 // Fixed USD→EUR rate for cost estimates (good enough for beta quotas)
@@ -918,6 +928,10 @@ Cuando sea posible, indica qué documento o fragmento fundamenta cada afirmació
 // Author info cache (module-level, TTL 24h)
 const AUTHOR_CACHE_TTL = 24 * 60 * 60 * 1000;
 const authorInfoCache = new Map<string, { note: string; photo?: string; expiresAt: number }>();
+
+// Resolved key/model cache — avoids DB + KMS on every AI call (TTL 5 min)
+const TASK_KEY_TTL = 5 * 60 * 1000;
+const taskKeyCache = new Map<string, { apiKey: string; model: string; resolvedOrgId?: string; expiresAt: number }>();
 
 // Router
 // ---------------------------------------------------------------------------
