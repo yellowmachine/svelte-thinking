@@ -229,7 +229,8 @@ export const documentsRouter = router({
 		.input(z.object({
 			id: z.string(),
 			title: z.string().min(1).max(255).optional(),
-			isPublic: z.boolean().optional()
+			isPublic: z.boolean().optional(),
+			spellLanguage: z.string().nullable().optional()
 		}))
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;

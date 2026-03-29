@@ -2,12 +2,10 @@ import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { eq } from 'drizzle-orm';
 import { userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
+import { SUPPORTED_SPELL_CODES } from '$lib/spell-languages';
 import type { RequestHandler } from './$types';
 
 const LANGUAGETOOL_URL = env.LANGUAGETOOL_URL ?? 'http://localhost:8010';
-
-// Supported languages
-const SUPPORTED_LANGUAGES = new Set(['es', 'es-ES', 'en', 'en-US', 'en-GB']);
 
 interface LtMatch {
 	message: string;
@@ -80,7 +78,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!text || typeof text !== 'string') throw error(400, 'Missing text');
 	if (text.length > 20000) throw error(400, 'Text too long');
 
-	const lang = SUPPORTED_LANGUAGES.has(language) ? language : 'en-US';
+	const lang = SUPPORTED_SPELL_CODES.has(language) ? language : 'auto';
 
 	const { clean, map } = stripMarkdown(text);
 

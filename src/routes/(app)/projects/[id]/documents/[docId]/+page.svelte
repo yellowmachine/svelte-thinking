@@ -12,6 +12,7 @@
 	import { findAnchor, posToLine, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import { CITATION_STYLE_LABELS, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import { MODEL_SHORT_LABEL } from '$lib/ai-config';
+	import { SPELL_LANGUAGES } from '$lib/spell-languages';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -209,6 +210,22 @@
 			await trpc.documents.update.mutate({ id: data.document.id, isPublic });
 		} catch {
 			isPublic = !isPublic; // revert on error
+		}
+	}
+
+	// Spell check language
+	let spellLanguage = $state(untrack(() => data.document?.spellLanguage ?? 'auto'));
+
+	async function setSpellLanguage(lang: string) {
+		const prev = spellLanguage;
+		spellLanguage = lang;
+		try {
+			await trpc.documents.update.mutate({
+				id: data.document.id,
+				spellLanguage: lang === 'auto' ? null : lang
+			});
+		} catch {
+			spellLanguage = prev;
 		}
 	}
 
@@ -1096,6 +1113,20 @@
 			?
 		</a>
 
+		<!-- Spell language selector -->
+		<div class="relative">
+			<select
+				value={spellLanguage}
+				onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
+				title="Spell check language"
+				class="cursor-pointer rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			>
+				{#each SPELL_LANGUAGES as lang}
+					<option value={lang.code}>{lang.label}</option>
+				{/each}
+			</select>
+		</div>
+
 		<!-- Export dropdown -->
 		<div class="relative">
 			<button
@@ -1252,7 +1283,7 @@
 						{scrollToRange}
 						onlookup={lookupNames}
 						showLookupHint={lookupUnavailable}
-						spellLanguage={navigator.language}
+						spellLanguage={spellLanguage}
 						onignoreword={ignoreWord}
 					/>
 				</div>
@@ -1298,7 +1329,7 @@
 					{scrollToRange}
 					onlookup={lookupNames}
 					showLookupHint={lookupUnavailable}
-					spellLanguage={navigator.language}
+					spellLanguage={spellLanguage}
 					onignoreword={ignoreWord}
 				/>
 			{/if}
