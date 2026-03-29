@@ -1090,6 +1090,11 @@
 							Pega el contenido de un archivo <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.bib</code> o varias entradas BibTeX.
 						</p>
 
+						<label class="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-paper-border px-3 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+							Load .bib file
+							<input type="file" accept=".bib,.bibtex" class="sr-only" onchange={async (e) => { const file = (e.currentTarget as HTMLInputElement).files?.[0]; if (file) importRaw = await file.text(); }} />
+						</label>
 						<div>
 							<label for="import-raw" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
 								Contenido BibTeX
