@@ -430,18 +430,8 @@
 						const word = doc.slice(wordFrom, pos);
 						// Must be ≥3 chars, start with uppercase
 						if (word.length >= 3 && /^[A-Z]/.test(word)) {
-							// Not at sentence start: char before word must be a space,
-							// and char before that must not be sentence-ending punctuation or newline
-							const prevChar = wordFrom > 0 ? doc[wordFrom - 1] : '';
-							const prevPrevChar = wordFrom > 1 ? doc[wordFrom - 2] : '';
-							const isMidSentence = prevChar === ' ' && !/[.!?\n]/.test(prevPrevChar) && wordFrom > 1;
-							if (isMidSentence) {
-								wordGhostActive = true;
-								onwordprefix?.(word, wordFrom, pos);
-							} else {
-								wordGhostActive = false;
-								onwordprefixclear?.();
-							}
+							wordGhostActive = true;
+							onwordprefix?.(word, wordFrom, pos);
 						} else {
 							wordGhostActive = false;
 							onwordprefixclear?.();
