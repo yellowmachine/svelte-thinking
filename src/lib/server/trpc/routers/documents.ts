@@ -588,6 +588,59 @@ export const documentsRouter = router({
 			});
 		}),
 
+	// Transfiere o revoca el rol de escritor en el documento.
+	// Solo el propietario del proyecto puede cambiar el writer.
+	// writerUserId = null → owner recupera el acceso; SET → delega a un colaborador.
+	setWriter: protectedProcedure
+		.input(z.object({
+			documentId: z.string(),
+			writerUserId: z.string().nullable()
+		}))
+		.mutation(async ({ ctx, input }) => {
+			return ctx.withRLS(async (db) => {
+				const [doc] = await db
+					.select({ projectId: document.projectId })
+					.from(document)
+					.where(eq(document.id, input.documentId))
+					.limit(1);
+
+				if (!doc) throw new TRPCError({ code: 'NOT_FOUND' });
+
+				const [proj] = await db
+					.select({ ownerId: project.ownerId })
+					.from(project)
+					.where(eq(project.id, doc.projectId))
+					.limit(1);
+
+				if (!proj || proj.ownerId !== ctx.user.id) {
+					throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario puede delegar la escritura' });
+				}
+
+				if (input.writerUserId !== null) {
+					const [collab] = await db
+						.select({ userId: projectCollaborator.userId })
+						.from(projectCollaborator)
+						.where(and(
+							eq(projectCollaborator.projectId, doc.projectId),
+							eq(projectCollaborator.userId, input.writerUserId)
+						))
+						.limit(1);
+
+					if (!collab) {
+						throw new TRPCError({ code: 'BAD_REQUEST', message: 'El usuario no es colaborador de este proyecto' });
+					}
+				}
+
+				const [updated] = await db
+					.update(document)
+					.set({ writerUserId: input.writerUserId, updatedAt: new Date() })
+					.where(eq(document.id, input.documentId))
+					.returning();
+
+				return updated;
+			});
+		}),
+
 	// Restaura una versión anterior: la copia como nuevo draft (sin commitear)
 	// El usuario puede revisar antes de hacer commit
 	restoreVersion: protectedProcedure

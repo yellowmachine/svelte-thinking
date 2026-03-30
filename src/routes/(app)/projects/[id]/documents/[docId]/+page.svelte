@@ -9,6 +9,8 @@
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
 	import { trpc } from '$lib/utils/trpc';
+	import { onlineStore } from '$lib/stores/online.svelte';
+	import { offlineDb } from '$lib/offline.db';
 	import { findAnchor, posToLine, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import { CITATION_STYLE_LABELS, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import { MODEL_SHORT_LABEL } from '$lib/ai-config';
@@ -51,7 +53,45 @@
 		if (e.key === 'Enter') { e.preventDefault(); commitTitle(); }
 		if (e.key === 'Escape') { editingTitle = false; docTitle = data.document?.title ?? ''; titleError = ''; }
 	}
-	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' = $state(
+	let writerLostContent = $state<string | null>(null);
+
+	// ── 1 writer / N readers ─────────────────────────────────────────────────────
+	const isOwner = $derived(data.currentUserId === data.projectOwnerId);
+	// writerUserId null → owner writes; set → only that user writes
+	let currentWriterUserId = $state(untrack(() => data.document?.writerUserId ?? null));
+	let currentWriterName = $state(untrack(() => data.writerName ?? null));
+	// Current user can write if: writer is null (owner writes) and I'm owner, or writer is me
+	const canWrite = $derived(
+		currentWriterUserId === null
+			? isOwner
+			: data.currentUserId === currentWriterUserId
+	);
+
+	let showDelegate = $state(false);
+	let delegating = $state(false);
+	let delegateError = $state('');
+
+	async function handleSetWriter(userId: string | null) {
+		delegating = true;
+		delegateError = '';
+		try {
+			await trpc.documents.setWriter.mutate({ documentId: data.document.id, writerUserId: userId });
+			currentWriterUserId = userId;
+			if (userId === null) {
+				currentWriterName = null;
+			} else {
+				const collab = data.collaborators.find((c) => c.userId === userId);
+				currentWriterName = collab?.name ?? userId;
+			}
+			showDelegate = false;
+		} catch (e: unknown) {
+			delegateError = e instanceof Error ? e.message : 'Error updating writer';
+		} finally {
+			delegating = false;
+		}
+	}
+
+	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state(
 		untrack(() => (data.document?.hasDraft ? 'pending' : 'idle'))
 	);
 
@@ -416,6 +456,19 @@
 
 	async function doSaveDraft() {
 		if (!isDirty) return;
+
+		if (!onlineStore.online) {
+			await offlineDb.pendingEdits.add({
+				id: crypto.randomUUID(),
+				documentId: data.document.id,
+				content,
+				savedAt: new Date(),
+				status: 'pending'
+			});
+			saveStatus = 'offline';
+			return;
+		}
+
 		saveStatus = 'saving';
 		try {
 			await trpc.documents.saveDraft.mutate({ documentId: data.document.id, content });
@@ -428,6 +481,45 @@
 			saveStatus = 'error';
 		}
 	}
+
+	async function syncOfflineEdits() {
+		const documentId = data.document?.id;
+		if (!documentId) return;
+
+		const pending = await offlineDb.pendingEdits
+			.where({ documentId, status: 'pending' })
+			.sortBy('savedAt');
+		if (pending.length === 0) return;
+
+		// Verify session before syncing
+		try {
+			const res = await fetch('/api/auth/session');
+			if (res.status === 401) { goto('/'); return; }
+		} catch { return; }
+
+		// Apply the latest snapshot (most recent manual save)
+		const latest = pending[pending.length - 1];
+		try {
+			await trpc.documents.saveDraft.mutate({ documentId, content: latest.content });
+			await offlineDb.pendingEdits
+				.where({ documentId, status: 'pending' })
+				.modify({ status: 'synced' });
+			content = latest.content;
+			lastSavedContent = latest.content;
+			saveStatus = 'saved';
+			setTimeout(() => { if (saveStatus === 'saved') saveStatus = 'idle'; }, 2000);
+		} catch {
+			// FORBIDDEN → no longer writer; preserve content for manual recovery
+			await offlineDb.pendingEdits
+				.where({ documentId, status: 'pending' })
+				.modify({ status: 'writer_lost' });
+			writerLostContent = latest.content;
+		}
+	}
+
+	$effect(() => {
+		if (onlineStore.online) syncOfflineEdits();
+	});
 
 	async function doCommit() {
 		if (!commitMessage.trim()) return;
@@ -574,12 +666,13 @@
 		);
 	}
 
-	const saveStatusLabel: Record<'idle' | 'pending' | 'saving' | 'saved' | 'error', string> = {
+	const saveStatusLabel: Record<'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline', string> = {
 		idle: '',
 		pending: 'Unsaved changes',
 		saving: 'Saving...',
 		saved: 'Saved',
-		error: 'Error saving'
+		error: 'Error saving',
+		offline: 'Guardado offline'
 	};
 
 	const openCommentsCount = $derived(inlineComments.filter((c) => c.status === 'open').length);
@@ -986,6 +1079,18 @@
 		</button>
 		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
 		<span class="truncate font-medium text-ink dark:text-dark-ink">{docTitle}</span>
+
+		<!-- Writer badge -->
+		{#if currentWriterUserId !== null}
+			<span class="shrink-0 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-sans text-[10px] text-amber-700 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400">
+				Writer: {currentWriterName ?? currentWriterUserId}
+			</span>
+		{/if}
+		{#if !canWrite}
+			<span class="shrink-0 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] text-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint">
+				Read-only
+			</span>
+		{/if}
 	</div>
 
 	<div class="flex shrink-0 items-center gap-3">
@@ -1001,9 +1106,30 @@
 			</span>
 		{/if}
 
+		<!-- Delegate / Reclaim writer -->
+		{#if isOwner}
+			{#if currentWriterUserId !== null}
+				<button
+					onclick={() => handleSetWriter(null)}
+					disabled={delegating}
+					title="Reclaim write access from {currentWriterName ?? currentWriterUserId}"
+					class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
+				>
+					Reclaim
+				</button>
+			{:else if data.collaborators.length > 0}
+				<button
+					onclick={() => { showDelegate = true; delegateError = ''; }}
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					Delegate
+				</button>
+			{/if}
+		{/if}
+
 		<button
 			onclick={doSaveDraft}
-			disabled={!isDirty || saveStatus === 'saving'}
+			disabled={!isDirty || saveStatus === 'saving' || !canWrite}
 			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			Save
@@ -1293,7 +1419,7 @@
 
 		<button
 			onclick={() => (showCommit = true)}
-			disabled={!content.trim()}
+			disabled={!content.trim() || !canWrite}
 			class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 		>
 			Commit
@@ -1363,6 +1489,7 @@
 						bind:value={content}
 						references={projectRefs}
 						{chapters}
+						readonly={!canWrite}
 						ondocchange={handleDocChange}
 						onselectionchange={updateSelection}
 						oncitehover={hasAiKey ? (key, coords) => explainCitation(key, coords) : undefined}
@@ -1412,6 +1539,7 @@
 					bind:value={content}
 					references={projectRefs}
 					{chapters}
+					readonly={!canWrite}
 					ondocchange={handleDocChange}
 					onselectionchange={(sel) => {
 						currentSelection = sel;
@@ -2506,6 +2634,82 @@
 				</table>
 			</div>
 
+		</div>
+	</div>
+{/if}
+
+<!-- ── Delegate writer modal ── -->
+{#if showDelegate}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 backdrop-blur-sm dark:bg-dark-ink/30">
+		<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Delegate writing</h2>
+			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Select a collaborator to give exclusive write access. You will lose write access until you reclaim it.
+			</p>
+
+			<div class="mt-4 flex flex-col gap-2">
+				{#each data.collaborators as collab (collab.userId)}
+					<button
+						onclick={() => handleSetWriter(collab.userId)}
+						disabled={delegating}
+						class="flex items-center justify-between rounded-lg border border-paper-border px-4 py-2.5 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
+					>
+						<div>
+							<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{collab.name}</p>
+							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint capitalize">{collab.role}</p>
+						</div>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+					</button>
+				{/each}
+			</div>
+
+			{#if delegateError}
+				<p class="mt-3 font-sans text-sm text-red-600 dark:text-red-400">{delegateError}</p>
+			{/if}
+
+			<div class="mt-4 flex justify-end">
+				<button
+					onclick={() => (showDelegate = false)}
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+				>
+					Cancel
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- ── Writer lost modal ── -->
+{#if writerLostContent !== null}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+		<div class="flex w-full max-w-lg flex-col gap-4 rounded-2xl bg-paper p-6 shadow-xl dark:bg-dark-paper">
+			<div>
+				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Cambios offline no sincronizados</h2>
+				<p class="mt-1 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					Mientras estabas sin conexión, otro colaborador tomó el control de edición. Tus cambios no se han sincronizado. Cópialos antes de cerrar.
+				</p>
+			</div>
+			<textarea
+				readonly
+				value={writerLostContent}
+				class="h-48 w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+			></textarea>
+			<div class="flex justify-end">
+				<button
+					type="button"
+					onclick={async () => {
+						await offlineDb.pendingEdits
+							.where({ documentId: data.document.id, status: 'writer_lost' })
+							.modify({ status: 'synced' });
+						writerLostContent = null;
+					}}
+					class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
+				>
+					Descartar
+				</button>
+			</div>
 		</div>
 	</div>
 {/if}

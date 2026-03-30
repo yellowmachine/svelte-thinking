@@ -12,7 +12,7 @@
 		onsave
 	}: {
 		content: string;
-		saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+		saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline';
 		isDirty: boolean;
 		projectTitle: string;
 		projectId: string;
@@ -28,7 +28,8 @@
 		pending: 'Not saved',
 		saving: 'Saving…',
 		saved: 'Saved',
-		error: 'Error'
+		error: 'Error',
+		offline: 'Guardado offline'
 	};
 </script>
 

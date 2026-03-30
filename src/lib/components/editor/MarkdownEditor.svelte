@@ -387,7 +387,7 @@
 			autocompletion({ override: [allCompletions, mentionCompletionSource], closeOnBlur: true }),
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
-			spellLinter,
+			// spellLinter, // disabled: LanguageTool removed in beta (see #32)
 			ghostTextField,
 			EditorView.baseTheme({
 				'.cm-ghost-text': { color: 'var(--color-ink-faint, #aaa)', pointerEvents: 'none' },

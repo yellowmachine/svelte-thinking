@@ -122,6 +122,34 @@ export const notificationPreference = scholioSchema.table(
 	]
 ).enableRLS();
 
+// Configuración S3 del usuario (BYOS3 — Bring Your Own S3)
+// Un único registro por usuario. Credenciales cifradas con KMS (mismo patrón que userApiKey).
+// encryptedCredentials contiene JSON { accessKey, secretKey }
+export const userS3Config = scholioSchema.table(
+	'user_s3_config',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id').notNull().unique(),
+		endpoint: text('endpoint').notNull(),
+		bucket: text('bucket').notNull(),
+		region: text('region').notNull().default('us-east-1'),
+		publicUrl: text('public_url'), // URL pública opcional (CDN, dominio custom)
+		encryptedCredentials: text('encrypted_credentials').notNull(),
+		encryptedDataKey: text('encrypted_data_key').notNull(),
+		iv: text('iv').notNull(),
+		authTag: text('auth_tag').notNull(),
+		verified: boolean('verified').notNull().default(false),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
+		updatedAt: timestamp('updated_at').notNull().defaultNow()
+	},
+	(t) => [
+		pgPolicy('user_s3_config_access', {
+			for: 'all',
+			using: sql`${t.userId} = ${currentUserId}`
+		})
+	]
+).enableRLS();
+
 export const userSpellAllowlist = scholioSchema.table(
 	'user_spell_allowlist',
 	{

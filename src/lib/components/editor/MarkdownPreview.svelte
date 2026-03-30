@@ -9,6 +9,8 @@
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import { processWikilinks } from '$lib/utils/wikilinks';
 	import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
+	import { einkStore } from '$lib/stores/eink.svelte';
+	import { untrack } from 'svelte';
 
 	let {
 		content = '',
@@ -26,6 +28,17 @@
 
 	// Build a key → ref map for fast lookup in the citation processor
 	const refsMap = $derived(new Map(references.map((r) => [r.citeKey, r])));
+
+	// E-ink: freeze snapshot until manual refresh
+	let snapshot = $state(untrack(() => content));
+
+	$effect(() => {
+		if (!einkStore.enabled) snapshot = content;
+	});
+
+	function refresh() {
+		snapshot = content;
+	}
 
 	let container: HTMLDivElement | null = null;
 
@@ -161,7 +174,7 @@
 		}
 	}
 
-	let parsed = $derived(parseMarkdown(content, refsMap, citationStyle, docMap));
+	let parsed = $derived(parseMarkdown(snapshot, refsMap, citationStyle, docMap));
 
 	$effect(() => {
 		const { plots } = parsed;
@@ -177,9 +190,21 @@
 	/>
 </svelte:head>
 
-<div bind:this={container} class="prose prose-serif max-w-none dark:prose-invert">
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	{@html parsed.html}
+<div class="relative">
+	{#if einkStore.enabled}
+		<button
+			type="button"
+			onclick={refresh}
+			title="Refresh preview"
+			class="absolute right-0 top-0 z-10 rounded border border-ink/20 bg-paper px-2 py-0.5 font-sans text-xs text-ink-muted hover:bg-paper-ui hover:text-ink"
+		>
+			↻ Refresh
+		</button>
+	{/if}
+	<div bind:this={container} class="prose prose-serif max-w-none dark:prose-invert">
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+		{@html parsed.html}
+	</div>
 </div>
 
 <style>

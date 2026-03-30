@@ -3,14 +3,14 @@ import type { PageServerLoad } from './$types';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
-import { project } from '$lib/server/db/schemas/projects.schema';
+import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { eq, and, isNull, isNotNull, sql } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	const { id: projectId, docId } = event.params;
 
-	const [docResult, projectResult, inlineComments, projectDocs, backlinks, externalDocs] = await Promise.all([
+	const [docResult, projectResult, inlineComments, projectDocs, backlinks, externalDocs, collaborators] = await Promise.all([
 		// Document + content
 		event.locals.withRLS(async (db) => {
 			const docs = await db.select().from(document).where(eq(document.id, docId)).limit(1);
@@ -34,10 +34,10 @@ export const load: PageServerLoad = async (event) => {
 			return { ...doc, content: versions[0]?.content ?? '', hasDraft: false };
 		}),
 
-		// Project title
+		// Project info (title + owner)
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: project.id, title: project.title })
+				.select({ id: project.id, title: project.title, ownerId: project.ownerId })
 				.from(project)
 				.where(eq(project.id, projectId))
 				.limit(1)
@@ -122,14 +122,45 @@ export const load: PageServerLoad = async (event) => {
 				.from(projectContextLink)
 				.innerJoin(document, eq(document.id, projectContextLink.linkedDocumentId))
 				.where(eq(projectContextLink.projectId, projectId))
-		) as Promise<{ id: string; title: string; projectId: string }[]>
+		) as Promise<{ id: string; title: string; projectId: string }[]>,
+
+		// Project collaborators (visible to owner via collaborator_select_owner policy)
+		event.locals.withRLS((db) =>
+			db
+				.select({
+					userId: projectCollaborator.userId,
+					role: projectCollaborator.role,
+					name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
+				})
+				.from(projectCollaborator)
+				.where(eq(projectCollaborator.projectId, projectId))
+		) as Promise<{ userId: string; role: string; name: string }[]>
 	]);
 
 	if (!docResult) error(404, 'Documento no encontrado');
 
+	const proj = projectResult[0];
+
+	// Resolve writer name if set
+	let writerName: string | null = null;
+	if (docResult.writerUserId) {
+		const writerId = docResult.writerUserId;
+		const writerRow = await event.locals.withRLS((db) =>
+			db
+				.select({ name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${writerId})` })
+				.from(document)
+				.where(eq(document.id, docId))
+				.limit(1)
+		);
+		writerName = writerRow[0]?.name ?? null;
+	}
+
 	return {
 		document: docResult,
-		projectTitle: projectResult[0]?.title ?? '',
+		projectTitle: proj?.title ?? '',
+		projectOwnerId: proj?.ownerId ?? '',
+		writerName,
+		collaborators,
 		inlineComments,
 		currentUserId: event.locals.user!.id,
 		projectDocs,

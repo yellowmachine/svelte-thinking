@@ -18,7 +18,7 @@
 	let confirmPassword = $state('');
 
 	// Active section
-	let activeTab: 'profile' | 'billing' | 'ai' | 'security' | 'appearance' | 'organizations' = $state('profile');
+	let activeTab: 'profile' | 'billing' | 'ai' | 'security' | 'appearance' | 'organizations' | 'storage' = $state('profile');
 
 	// Billing state
 	type PlanInfo = {
@@ -305,6 +305,108 @@
 		await handleDeleteKey(keyId);
 	}
 
+	// ── S3 config state ──────────────────────────────────────────────────────
+	type S3Config = { endpoint: string; bucket: string; region: string; publicUrl: string | null; verified: boolean; createdAt: Date };
+	let s3Loaded = $state(false);
+	let loadingS3 = $state(false);
+	let s3Error = $state('');
+	let s3Success = $state('');
+	let s3Config = $state<S3Config | null>(null);
+	let s3Endpoint = $state('');
+	let s3Bucket = $state('');
+	let s3Region = $state('us-east-1');
+	let s3PublicUrl = $state('');
+	let s3AccessKey = $state('');
+	let s3SecretKey = $state('');
+	let s3Saving = $state(false);
+	let s3Testing = $state(false);
+	let s3Removing = $state(false);
+
+	async function loadS3Config() {
+		loadingS3 = true;
+		try {
+			s3Config = await trpc.s3Config.get.query();
+			if (s3Config) {
+				s3Endpoint = s3Config.endpoint;
+				s3Bucket = s3Config.bucket;
+				s3Region = s3Config.region;
+				s3PublicUrl = s3Config.publicUrl ?? '';
+			}
+			s3Loaded = true;
+		} catch {
+			s3Error = 'Error cargando la configuración S3.';
+		} finally {
+			loadingS3 = false;
+		}
+	}
+
+	async function handleSaveS3() {
+		if (!s3Endpoint.trim() || !s3Bucket.trim() || !s3AccessKey.trim() || !s3SecretKey.trim()) return;
+		s3Saving = true;
+		s3Error = '';
+		s3Success = '';
+		try {
+			await trpc.s3Config.set.mutate({
+				endpoint: s3Endpoint.trim(),
+				bucket: s3Bucket.trim(),
+				region: s3Region.trim() || 'us-east-1',
+				publicUrl: s3PublicUrl.trim() || undefined,
+				accessKey: s3AccessKey,
+				secretKey: s3SecretKey
+			});
+			s3AccessKey = '';
+			s3SecretKey = '';
+			s3Config = await trpc.s3Config.get.query();
+			s3Success = 'Configuración guardada. Prueba la conexión para verificarla.';
+		} catch (e: unknown) {
+			s3Error = e instanceof Error ? e.message : 'Error guardando la configuración.';
+		} finally {
+			s3Saving = false;
+		}
+	}
+
+	async function handleTestS3() {
+		s3Testing = true;
+		s3Error = '';
+		s3Success = '';
+		try {
+			const result = await trpc.s3Config.test.mutate();
+			if (result.ok) {
+				s3Success = 'Conexión verificada correctamente.';
+				s3Config = await trpc.s3Config.get.query();
+			} else {
+				s3Error = result.error ?? 'La conexión falló. Revisa las credenciales y el bucket.';
+			}
+		} catch (e: unknown) {
+			s3Error = e instanceof Error ? e.message : 'Error al probar la conexión.';
+		} finally {
+			s3Testing = false;
+		}
+	}
+
+	async function handleRemoveS3() {
+		s3Removing = true;
+		s3Error = '';
+		s3Success = '';
+		try {
+			await trpc.s3Config.remove.mutate();
+			s3Config = null;
+			s3Endpoint = '';
+			s3Bucket = '';
+			s3Region = 'us-east-1';
+			s3PublicUrl = '';
+			s3Success = 'Configuración eliminada.';
+		} catch (e: unknown) {
+			s3Error = e instanceof Error ? e.message : 'Error eliminando la configuración.';
+		} finally {
+			s3Removing = false;
+		}
+	}
+
+	$effect(() => {
+		if (activeTab === 'storage' && !s3Loaded && !loadingS3) loadS3Config();
+	});
+
 	// ── Delete account ────────────────────────────────────────────────────────
 	let showDeleteDialog = $state(false);
 	let deleteConfirmText = $state('');
@@ -394,6 +496,15 @@
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Organizations
+		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = 'storage')}
+			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'storage'
+				? 'border-b-2 border-accent font-medium text-accent'
+				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+		>
+			Almacenamiento
 		</button>
 	</div>
 
@@ -1170,6 +1281,134 @@
 				Create or join organizations to share AI billing and collaborate on projects.
 			</p>
 			<OrgSettings initialOrgs={data.orgs ?? []} />
+		</div>
+
+	<!-- ── STORAGE TAB ── -->
+	{:else if activeTab === 'storage'}
+		<div class="flex flex-col gap-6">
+
+			{#if s3Error}
+				<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
+					{s3Error}
+				</div>
+			{/if}
+			{#if s3Success}
+				<div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
+					{s3Success}
+				</div>
+			{/if}
+
+			{#if loadingS3}
+				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando...</p>
+			{:else}
+				<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Almacenamiento S3</h2>
+					<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						Conecta tu propio bucket S3 (AWS, Cloudflare R2, Backblaze B2, MinIO…) para subir fotos y datasets.
+						Sin configuración, la subida de archivos queda deshabilitada.
+					</p>
+
+					<!-- Privacy notice -->
+					<div class="mb-5 flex gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900/50 dark:bg-blue-950/30">
+						<svg class="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+						</svg>
+						<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
+							Las credenciales se cifran con AWS KMS antes de guardarse. Scholio no accede a tu bucket salvo para subir o eliminar archivos que tú mismo gestionas.
+						</p>
+					</div>
+
+					<!-- Current config status -->
+					{#if s3Config}
+						<div class="mb-5 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+							<div class="min-w-0 flex-1">
+								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{s3Config.bucket} <span class="font-normal text-ink-faint dark:text-dark-ink-faint">@ {s3Config.endpoint}</span></p>
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									{s3Config.verified ? 'Verificado' : 'Sin verificar'} · Región: {s3Config.region}
+								</p>
+							</div>
+							<div class="flex items-center gap-3">
+								<span class="font-sans text-xs {s3Config.verified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}">
+									{s3Config.verified ? '✓ OK' : '⚠ Sin verificar'}
+								</span>
+								<button
+									type="button"
+									onclick={handleTestS3}
+									disabled={s3Testing}
+									class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+								>
+									{s3Testing ? 'Probando...' : 'Probar conexión'}
+								</button>
+								<button
+									type="button"
+									onclick={handleRemoveS3}
+									disabled={s3Removing}
+									class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+								>
+									Eliminar
+								</button>
+							</div>
+						</div>
+					{/if}
+
+					<!-- Form -->
+					<div class="flex flex-col gap-3">
+						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							{s3Config ? 'Actualizar configuración' : 'Configurar bucket'}
+						</p>
+						<div class="grid grid-cols-2 gap-3">
+							<input
+								type="url"
+								bind:value={s3Endpoint}
+								placeholder="https://s3.amazonaws.com"
+								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<input
+								type="text"
+								bind:value={s3Bucket}
+								placeholder="nombre-del-bucket"
+								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<input
+								type="text"
+								bind:value={s3Region}
+								placeholder="us-east-1"
+								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<input
+								type="url"
+								bind:value={s3PublicUrl}
+								placeholder="https://cdn.example.com (opcional)"
+								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+						</div>
+						<input
+							type="text"
+							bind:value={s3AccessKey}
+							placeholder="Access Key ID"
+							autocomplete="off"
+							class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						/>
+						<div class="flex gap-3">
+							<input
+								type="password"
+								bind:value={s3SecretKey}
+								placeholder="Secret Access Key"
+								autocomplete="off"
+								class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<button
+								type="button"
+								onclick={handleSaveS3}
+								disabled={!s3Endpoint.trim() || !s3Bucket.trim() || !s3AccessKey.trim() || !s3SecretKey.trim() || s3Saving}
+								class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+							>
+								{s3Saving ? 'Guardando...' : 'Guardar'}
+							</button>
+						</div>
+					</div>
+				</section>
+			{/if}
 		</div>
 	{/if}
 </div>
