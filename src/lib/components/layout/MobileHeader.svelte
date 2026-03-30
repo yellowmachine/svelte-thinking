@@ -1,9 +1,17 @@
 <script lang="ts">
+	import { offlineDb } from '$lib/offline.db';
+
 	let {
 		user
 	}: {
 		user: { name: string; email: string };
 	} = $props();
+
+	async function handleLogout(e: SubmitEvent) {
+		e.preventDefault();
+		try { await offlineDb.delete(); } catch {}
+		(e.target as HTMLFormElement).submit();
+	}
 
 	const initials = $derived(
 		user.name
@@ -75,7 +83,7 @@
 						</a>
 					</li>
 					<li>
-						<form method="post" action="/logout">
+						<form method="post" action="/logout" onsubmit={handleLogout}>
 							<button
 								type="submit"
 								class="w-full px-4 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"

@@ -2,6 +2,13 @@
 	import QuickNoteButton from './QuickNoteButton.svelte';
 	import ThemePicker from './ThemePicker.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { offlineDb } from '$lib/offline.db';
+
+	async function handleLogout(e: SubmitEvent) {
+		e.preventDefault();
+		try { await offlineDb.delete(); } catch {}
+		(e.target as HTMLFormElement).submit();
+	}
 
 	let themeOpen = $state(false);
 	let workspaceOpen = $state(false);
@@ -169,7 +176,7 @@
 				</div>
 			</div>
 
-			<form method="post" action="/logout">
+			<form method="post" action="/logout" onsubmit={handleLogout}>
 				<button
 					type="submit"
 					class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
