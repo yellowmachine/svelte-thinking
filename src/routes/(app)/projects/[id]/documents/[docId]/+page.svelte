@@ -12,7 +12,7 @@
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { offlineDb } from '$lib/offline.db';
 	import { findAnchor, posToLine, type CommentRange } from '$lib/components/editor/commentsExtension';
-	import { CITATION_STYLE_LABELS, type CitationStyle, type CiteRef } from '$lib/utils/citations';
+	import { CITATION_STYLE_LABELS, formatFullCitation, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import { MODEL_SHORT_LABEL } from '$lib/ai-config';
 	import { SPELL_LANGUAGES } from '$lib/spell-languages';
 	import type { PageData } from './$types';
@@ -252,7 +252,10 @@
 		localStorage.setItem(`cite-style-${data.document.id}`, s);
 	}
 
-	// Load refs when preview is opened
+	// Load refs: always (needed for hover popup) + when preview is opened
+	$effect(() => {
+		loadRefs();
+	});
 	$effect(() => {
 		if (viewMode !== 'editor') loadRefs();
 	});
@@ -383,7 +386,7 @@
 	let submittingComment = $state(false);
 
 	// Citation explain popover
-	let citationExplain: { citeKey: string; coords: { bottom: number; left: number }; result: string; loading: boolean } | null = $state(null);
+	let citationExplain: { citeKey: string; ref: CiteRef | null; coords: { bottom: number; left: number }; result: string; loading: boolean } | null = $state(null);
 
 	const CITE_SELECTION_RE = /^\[\[@([\w:._-]+)\]\]$/;
 
@@ -395,7 +398,8 @@
 
 	async function explainCitation(citeKey: string, coords: { bottom: number; left: number }) {
 		const ref = projectRefs.find((r) => r.citeKey === citeKey);
-		citationExplain = { citeKey, coords, result: '', loading: true };
+		citationExplain = { citeKey, ref: ref ?? null, coords, result: '', loading: hasAiKey };
+		if (!hasAiKey) return;
 		const surrounding = (() => {
 			const pos = currentSelection?.from ?? 0;
 			return content.slice(Math.max(0, pos - 400), pos + 400);
@@ -1491,7 +1495,7 @@
 						readonly={!canWrite}
 						ondocchange={handleDocChange}
 						onselectionchange={updateSelection}
-						oncitehover={hasAiKey ? (key, coords) => explainCitation(key, coords) : undefined}
+						oncitehover={(key, coords) => explainCitation(key, coords)}
 						onauthorhover={hasAiKey ? (name, coords) => showAuthorInfo(name, coords) : undefined}
 						onheadinghover={(info, coords) => { headingTooltip = { title: info.title, wordCount: info.wordCount, coords }; }}
 						{commentRanges}
@@ -1620,7 +1624,7 @@
 			>
 				<div class="pointer-events-auto w-80 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
 					<div class="flex items-center justify-between border-b border-paper-border px-3 py-2 dark:border-dark-paper-border">
-						<span class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">@{citationExplain.citeKey}</span>
+						<span class="font-mono text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">@{citationExplain.citeKey}</span>
 						<button
 							onclick={() => (citationExplain = null)}
 							class="text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
@@ -1629,17 +1633,69 @@
 							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
 						</button>
 					</div>
-					<div class="px-3 py-2.5">
-						{#if citationExplain.loading}
-							<div class="flex items-center gap-2">
-								<div class="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
-								<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Explaining…</span>
+
+					<!-- Bibliographic data -->
+					{#if citationExplain.ref}
+						{@const ref = citationExplain.ref}
+						<div class="px-3 py-2.5">
+							<p class="font-sans text-sm font-medium leading-snug text-ink dark:text-dark-ink">{ref.title}</p>
+							{#if ref.authors?.length}
+								<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+									{ref.authors.map(a => `${a.last}${a.first ? ', ' + a.first : ''}`).join(' · ')}
+								</p>
+							{/if}
+							<div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+								{#if ref.year}
+									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{ref.year}</span>
+								{/if}
+								{#if ref.journal}
+									<span class="font-sans text-xs italic text-ink-faint dark:text-dark-ink-faint">{ref.journal}</span>
+								{:else if ref.publisher}
+									<span class="font-sans text-xs italic text-ink-faint dark:text-dark-ink-faint">{ref.publisher}</span>
+								{:else if ref.booktitle}
+									<span class="font-sans text-xs italic text-ink-faint dark:text-dark-ink-faint">{ref.booktitle}</span>
+								{/if}
 							</div>
-						{:else}
-							<p class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{citationExplain.result}</p>
-							<p class="mt-2 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">Generated by AI · may be inaccurate</p>
-						{/if}
-					</div>
+							{#if ref.doi}
+								<a
+									href="https://doi.org/{ref.doi}"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="mt-1.5 block font-sans text-[10px] text-accent underline decoration-dotted hover:opacity-80"
+								>
+									doi:{ref.doi}
+								</a>
+							{/if}
+							<button
+								onclick={() => {
+									const formatted = formatFullCitation(citationExplain!.ref!, citationStyle, 1);
+									navigator.clipboard.writeText(formatted).catch(() => {});
+								}}
+								class="mt-2 font-sans text-[10px] text-ink-faint underline decoration-dotted transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+							>
+								Copy {citationStyle.toUpperCase()} citation
+							</button>
+						</div>
+					{:else}
+						<div class="px-3 py-2.5">
+							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Reference not found in project bibliography.</p>
+						</div>
+					{/if}
+
+					<!-- AI explanation (only if key configured) -->
+					{#if hasAiKey && (citationExplain.loading || citationExplain.result)}
+						<div class="border-t border-paper-border px-3 py-2.5 dark:border-dark-paper-border">
+							{#if citationExplain.loading}
+								<div class="flex items-center gap-2">
+									<div class="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Explaining in context…</span>
+								</div>
+							{:else}
+								<p class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{citationExplain.result}</p>
+								<p class="mt-1.5 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">Generated by AI · may be inaccurate</p>
+							{/if}
+						</div>
+					{/if}
 				</div>
 			</div>
 		{/if}
