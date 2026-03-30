@@ -113,6 +113,8 @@ export const actions: Actions = {
 				userId,
 				displayName: name
 			});
+			// Email was validated by admin approval — mark as verified immediately
+			await tx.update(user).set({ emailVerified: true }).where(eq(user.id, userId));
 		});
 
 		// Invalidate token so it can't be reused
@@ -121,7 +123,7 @@ export const actions: Actions = {
 			.set({ registrationToken: null, tokenExpiresAt: null })
 			.where(eq(waitlist.id, rows[0].id));
 
-		redirect(302, `/check-email?email=${encodeURIComponent(email)}`);
+		redirect(302, '/projects');
 	},
 
 	signInSocial: async (event) => {
