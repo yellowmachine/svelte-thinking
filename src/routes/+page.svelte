@@ -54,7 +54,7 @@
 			</a>
 		</div>
 		<p class="mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			Closed beta · Open source · No credit card
+			Closed beta · Open source · Free, sponsor-supported
 		</p>
 	</section>
 
@@ -229,6 +229,32 @@ para el diseño del estudio.</code></pre>
 					</p>
 				</div>
 
+				<!-- Offline -->
+				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M1 6l5 5 5-5"/><path d="M22 12a10 10 0 00-20 0"/><path d="M6 17l6 5 6-5"/><path d="M12 12v10"/>
+						</svg>
+					</div>
+					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Works offline</h3>
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Write without internet. Your work saves locally and syncs automatically when you reconnect. No interruptions when the connection is unstable.
+					</p>
+				</div>
+
+				<!-- E-ink -->
+				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h4"/>
+						</svg>
+					</div>
+					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">E-ink display mode</h3>
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						High-contrast mode designed for e-ink readers like Boox. Maximum readability with no eye strain — your research environment even on the best reading hardware.
+					</p>
+				</div>
+
 				<!-- Open source -->
 				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
@@ -328,6 +354,9 @@ para el diseño del estudio.</code></pre>
 			<p class="mt-4 font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
 				Scholio is free software. The code is auditable, the platform is self-hostable, and the data is completely yours. Built for the academic community, not to extract value from it.
 			</p>
+			<p class="mt-4 font-sans text-sm leading-relaxed text-ink-faint dark:text-dark-ink-faint">
+				Scholio is free to use and sustained by sponsors, not subscriptions. No plans, no paywalls, no credit card required.
+			</p>
 		</div>
 	</section>
 
@@ -385,7 +414,7 @@ para el diseño del estudio.</code></pre>
 					</div>
 				</form>
 				<p class="mt-4 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Closed beta · No credit card · We notify by email
+					Closed beta · Free, sponsor-supported · We notify by email
 				</p>
 			{/if}
 		</div>

@@ -2,7 +2,6 @@
 	import type { PageData } from './$types';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
 	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
 	import OrgSettings from '$lib/components/projects/OrgSettings.svelte';
@@ -18,59 +17,7 @@
 	let confirmPassword = $state('');
 
 	// Active section
-	let activeTab: 'profile' | 'billing' | 'ai' | 'security' | 'appearance' | 'organizations' | 'storage' = $state('profile');
-
-	// Billing state
-	type PlanInfo = {
-		plan: string;
-		planStatus: string | null;
-		planCurrentPeriodEnd: Date | null;
-		stripeCustomerId: string | null;
-	};
-	let planData = $state<PlanInfo | null>(null);
-	let loadingPlan = $state(false);
-	let checkoutLoading: string | null = $state(null);
-	let portalLoading = $state(false);
-	let billingError = $state('');
-
-	onMount(async () => {
-		loadingPlan = true;
-		try {
-			planData = await trpc.billing.currentPlan.query();
-		} catch {
-			billingError = 'Could not load plan information.';
-		} finally {
-			loadingPlan = false;
-		}
-	});
-
-	const currentPlanName = $derived(planData?.plan ?? 'free');
-
-	async function handleUpgrade(plan: 'pro' | 'team') {
-		checkoutLoading = plan;
-		billingError = '';
-		try {
-			const result = await trpc.billing.createCheckoutSession.mutate({ plan });
-			if (result.url) window.location.href = result.url;
-		} catch (e: unknown) {
-			billingError = e instanceof Error ? e.message : 'Error starting payment.';
-		} finally {
-			checkoutLoading = null;
-		}
-	}
-
-	async function handleManage() {
-		portalLoading = true;
-		billingError = '';
-		try {
-			const result = await trpc.billing.createPortalSession.mutate();
-			if (result.url) window.location.href = result.url;
-		} catch (e: unknown) {
-			billingError = e instanceof Error ? e.message : 'Error opening portal.';
-		} finally {
-			portalLoading = false;
-		}
-	}
+	let activeTab: 'profile' | 'ai' | 'security' | 'appearance' | 'organizations' | 'storage' = $state('profile');
 
 	function formatDate(d: Date | null): string {
 		if (!d) return '—';
@@ -451,15 +398,6 @@
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Perfil
-		</button>
-		<button
-			type="button"
-			onclick={() => (activeTab = 'billing')}
-			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'billing'
-				? 'border-b-2 border-accent font-medium text-accent'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
-		>
-			Plan & billing
 		</button>
 		<button
 			type="button"
@@ -1067,200 +1005,6 @@
 			</section>
 		</div>
 
-	<!-- ── BILLING TAB ── -->
-	{:else if activeTab === 'billing'}
-		<div class="flex flex-col gap-6">
-
-			{#if billingError}
-				<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
-					{billingError}
-				</div>
-			{/if}
-
-			<!-- Current plan -->
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-				<div class="flex items-start justify-between gap-4">
-					<div>
-						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Current plan</h2>
-						{#if loadingPlan}
-							<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
-						{:else if planData}
-							<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								{#if planData.plan === 'free'}
-									You are on the free plan.
-								{:else}
-									Active subscription.
-									{#if planData.planCurrentPeriodEnd}
-										Next renewal: {formatDate(planData.planCurrentPeriodEnd)}.
-									{/if}
-								{/if}
-							</p>
-						{/if}
-					</div>
-					{#if !loadingPlan && planData}
-						<span class="shrink-0 rounded-full border border-accent/40 px-3 py-1 font-sans text-xs font-semibold uppercase tracking-wide text-accent">
-							{planData.plan}
-							{#if planData.planStatus && planData.planStatus !== 'active'}
-								· {planData.planStatus}
-							{/if}
-						</span>
-					{/if}
-				</div>
-
-				{#if !loadingPlan && planData && planData.plan !== 'free' && planData.stripeCustomerId}
-					<div class="mt-4">
-						<button
-							type="button"
-							onclick={handleManage}
-							disabled={portalLoading}
-							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink dark:hover:bg-dark-paper-ui"
-						>
-							{portalLoading ? 'Redirecting...' : 'Manage subscription'}
-						</button>
-					</div>
-				{/if}
-
-				<div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-					{#each [
-						{ label: 'Projects', value: 'Unlimited' },
-						{ label: 'Documents', value: 'Unlimited' },
-						{ label: 'Collaborators', value: '3 per project' },
-						{ label: 'AI queries', value: 'Included (beta)' }
-					] as item}
-						<div class="rounded-lg border border-paper-border bg-paper-ui px-3 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{item.label}</p>
-							<p class="mt-0.5 font-sans text-sm font-medium text-ink dark:text-dark-ink">{item.value}</p>
-						</div>
-					{/each}
-				</div>
-			</section>
-
-			<!-- Plans comparison -->
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Available plans
-				</h2>
-				<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					All plans are free during the beta. Final pricing will be announced before launch.
-				</p>
-
-				<div class="grid gap-4 sm:grid-cols-3">
-					<!-- Free -->
-					<div class="flex flex-col rounded-xl border-2 {currentPlanName === 'free' ? 'border-accent bg-accent/5' : 'border-paper-border dark:border-dark-paper-border'} p-5">
-						<div class="mb-3 flex items-center justify-between">
-							<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Free</span>
-							{#if currentPlanName === 'free'}
-								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Current</span>
-							{/if}
-						</div>
-						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-							Free during beta
-						</p>
-						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							{#each ['3 projects', '3 collaborators per project', 'Basic AI (beta)', '30-day history'] as f}
-								<li class="flex items-center gap-2">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-accent" aria-hidden="true">
-										<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-									</svg>
-									{f}
-								</li>
-							{/each}
-						</ul>
-					</div>
-
-					<!-- Pro -->
-					<div class="flex flex-col rounded-xl border-2 {currentPlanName === 'pro' ? 'border-accent bg-accent/5' : 'border-paper-border dark:border-dark-paper-border'} p-5">
-						<div class="mb-3 flex items-center justify-between">
-							<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Pro</span>
-							{#if currentPlanName === 'pro'}
-								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Current</span>
-							{/if}
-						</div>
-						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-							Free during beta
-						</p>
-						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							{#each ['Unlimited projects', '10 collaborators per project', 'Advanced AI with suggestions', 'Unlimited history', 'PDF / LaTeX export'] as f}
-								<li class="flex items-center gap-2">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-accent" aria-hidden="true">
-										<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-									</svg>
-									{f}
-								</li>
-							{/each}
-						</ul>
-						{#if currentPlanName !== 'pro'}
-							<button
-								type="button"
-								onclick={() => handleUpgrade('pro')}
-								disabled={checkoutLoading === 'pro'}
-								class="mt-5 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-							>
-								{checkoutLoading === 'pro' ? 'Redirecting...' : 'Upgrade to Pro'}
-							</button>
-						{/if}
-					</div>
-
-					<!-- Team -->
-					<div class="flex flex-col rounded-xl border-2 {currentPlanName === 'team' ? 'border-accent bg-accent/5' : 'border-paper-border dark:border-dark-paper-border'} p-5">
-						<div class="mb-3 flex items-center justify-between">
-							<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Team</span>
-							{#if currentPlanName === 'team'}
-								<span class="rounded-full bg-accent px-2 py-0.5 font-sans text-xs font-semibold text-white">Current</span>
-							{/if}
-						</div>
-						<p class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-							Free during beta
-						</p>
-						<ul class="flex flex-1 flex-col gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							{#each ['Everything in Pro', 'Unlimited collaborators', 'Admin panel', 'SSO / SAML', 'Priority support'] as f}
-								<li class="flex items-center gap-2">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="shrink-0 text-accent" aria-hidden="true">
-										<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-									</svg>
-									{f}
-								</li>
-							{/each}
-						</ul>
-						{#if currentPlanName !== 'team'}
-							<button
-								type="button"
-								onclick={() => handleUpgrade('team')}
-								disabled={checkoutLoading === 'team'}
-								class="mt-5 rounded-md border border-accent px-4 py-2 font-sans text-sm font-medium text-accent transition-colors hover:bg-accent/5 disabled:opacity-50"
-							>
-								{checkoutLoading === 'team' ? 'Redirecting...' : 'Upgrade to Team'}
-							</button>
-						{/if}
-					</div>
-				</div>
-			</section>
-
-			<!-- Invoices -->
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-				<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Invoices</h2>
-				{#if planData?.stripeCustomerId}
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Access the Stripe portal to view and download your invoices.
-					</p>
-					<button
-						type="button"
-						onclick={handleManage}
-						disabled={portalLoading}
-						class="mt-3 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink dark:hover:bg-dark-paper-ui"
-					>
-						{portalLoading ? 'Redirecting...' : 'View invoices in Stripe'}
-					</button>
-				{:else}
-					<div class="rounded-lg border border-dashed border-paper-border py-10 text-center dark:border-dark-paper-border">
-						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							No invoices yet. Invoices will appear here once you have a paid plan.
-						</p>
-					</div>
-				{/if}
-			</section>
-		</div>
-
 	<!-- ── APPEARANCE TAB ── -->
 	{:else if activeTab === 'appearance'}
 		<div class="flex flex-col gap-8">
@@ -1278,7 +1022,7 @@
 		<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
 			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Organizations</h2>
 			<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Create or join organizations to share AI billing and collaborate on projects.
+				Create or join organizations to collaborate on projects with a shared AI key.
 			</p>
 			<OrgSettings initialOrgs={data.orgs ?? []} />
 		</div>
