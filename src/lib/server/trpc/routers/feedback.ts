@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { desc } from 'drizzle-orm';
 import { router, protectedProcedure, publicProcedure } from '../init';
 import { feedback } from '$lib/server/db/schemas/feedback.schema';
+import { notifySlack } from '$lib/server/slack';
 
 export const feedbackRouter = router({
 	submit: protectedProcedure
@@ -18,6 +19,7 @@ export const feedbackRouter = router({
 				showName: input.showName,
 				userName
 			});
+			notifySlack({ type: 'feedback', user: userName, message: input.message });
 			return { ok: true };
 		}),
 

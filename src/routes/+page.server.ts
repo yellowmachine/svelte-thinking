@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { waitlist } from '$lib/server/db/schemas/waitlist.schema';
+import { notifySlack } from '$lib/server/slack';
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) redirect(302, '/projects');
@@ -39,6 +40,7 @@ export const actions: Actions = {
 			message: message || null
 		});
 
+		notifySlack({ type: 'waitlist_signup', name: name || email, email });
 		return { success: true, email };
 	}
 };

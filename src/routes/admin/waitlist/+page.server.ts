@@ -5,6 +5,7 @@ import { db } from '$lib/server/db';
 import { waitlist } from '$lib/server/db/schemas/waitlist.schema';
 import { env } from '$env/dynamic/private';
 import { sendWaitlistApprovalEmail } from '$lib/server/resend';
+import { notifySlack } from '$lib/server/slack';
 
 export const load: PageServerLoad = async () => {
 	const entries = await db
@@ -38,6 +39,7 @@ export const actions: Actions = {
 			registrationUrl: `${origin}/register?token=${token}`
 		});
 
+		notifySlack({ type: 'waitlist_approved', name: rows[0].name ?? rows[0].email, email: rows[0].email });
 		return { ok: true };
 	},
 
@@ -46,7 +48,15 @@ export const actions: Actions = {
 		const id = data.get('id')?.toString();
 		if (!id) return fail(400, { error: 'ID required' });
 
-		await db.update(waitlist).set({ status: 'rejected' }).where(eq(waitlist.id, id));
+		const rejected = await db
+			.update(waitlist)
+			.set({ status: 'rejected' })
+			.where(eq(waitlist.id, id))
+			.returning({ email: waitlist.email, name: waitlist.name });
+
+		if (rejected[0]) {
+			notifySlack({ type: 'waitlist_rejected', name: rejected[0].name ?? rejected[0].email, email: rejected[0].email });
+		}
 		return { ok: true };
 	}
 };
