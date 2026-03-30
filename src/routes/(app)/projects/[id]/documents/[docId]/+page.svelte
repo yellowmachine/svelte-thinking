@@ -1450,15 +1450,14 @@
 				<p class="mt-1 font-sans text-xs text-red-500">{titleError}</p>
 			{/if}
 		{:else}
-			<h1
-				role="button"
-				tabindex="0"
+			<button
+				type="button"
 				onclick={startEditTitle}
-				onkeydown={(e) => e.key === 'Enter' && startEditTitle()}
-				class="cursor-text font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
+				aria-label="Edit document title"
+				class="cursor-text text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
 			>
 				{docTitle}
-			</h1>
+			</button>
 		{/if}
 	{#if data.document?.generatedByAi}
 		<div class="mt-2 inline-flex items-center gap-1.5 rounded border border-paper-border px-2 py-1 dark:border-dark-paper-border">

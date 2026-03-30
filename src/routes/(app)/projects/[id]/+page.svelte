@@ -974,6 +974,7 @@
 							onclick={toggleSearchable}
 							disabled={togglingSearchable}
 							aria-pressed={isSearchable}
+							aria-label="Toggle public search visibility"
 							class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50
 								{isSearchable ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
 						>

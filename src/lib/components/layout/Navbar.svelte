@@ -139,6 +139,7 @@
 				<button
 					type="button"
 					title="Appearance"
+					aria-label="Appearance"
 					onclick={() => (themeOpen = !themeOpen)}
 					class="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 				>

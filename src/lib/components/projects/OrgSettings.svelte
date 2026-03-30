@@ -227,8 +227,9 @@
 						</p>
 						{#if isOwner}
 							<div class="mt-3 flex items-center gap-2">
-								<label class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Monthly limit (€)</label>
+								<label for="org-budget-limit" class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Monthly limit (€)</label>
 								<input
+									id="org-budget-limit"
 									bind:value={budgetInput}
 									type="number"
 									min="0"

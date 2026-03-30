@@ -64,8 +64,9 @@
 	<div class="mt-8 space-y-6">
 		<!-- Dataset -->
 		<div>
-			<label class="block text-sm font-medium text-ink dark:text-dark-ink">Dataset</label>
+			<label for="analysis-dataset" class="block text-sm font-medium text-ink dark:text-dark-ink">Dataset</label>
 			<select
+				id="analysis-dataset"
 				bind:value={selectedDataset}
 				class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 			>
@@ -108,8 +109,9 @@
 		{#if selectedType === 'ttest'}
 			<div class="space-y-4 rounded-lg border border-paper-border p-4 dark:border-dark-paper-border">
 				<div>
-					<label class="block text-sm font-medium text-ink dark:text-dark-ink">Test type</label>
+					<label for="ttest-type" class="block text-sm font-medium text-ink dark:text-dark-ink">Test type</label>
 					<select
+						id="ttest-type"
 						bind:value={ttestType}
 						class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 					>
@@ -119,8 +121,9 @@
 					</select>
 				</div>
 				<div>
-					<label class="block text-sm font-medium text-ink dark:text-dark-ink">Column A</label>
+					<label for="ttest-col-a" class="block text-sm font-medium text-ink dark:text-dark-ink">Column A</label>
 					<input
+						id="ttest-col-a"
 						type="text"
 						bind:value={ttestColumnA}
 						placeholder="e.g. control"
@@ -129,8 +132,9 @@
 				</div>
 				{#if ttestType !== 'one_sample'}
 					<div>
-						<label class="block text-sm font-medium text-ink dark:text-dark-ink">Column B</label>
+						<label for="ttest-col-b" class="block text-sm font-medium text-ink dark:text-dark-ink">Column B</label>
 						<input
+							id="ttest-col-b"
 							type="text"
 							bind:value={ttestColumnB}
 							placeholder="e.g. treatment"
@@ -140,8 +144,9 @@
 				{/if}
 				<div class="flex gap-4">
 					<div class="flex-1">
-						<label class="block text-sm font-medium text-ink dark:text-dark-ink">Alternative</label>
+						<label for="ttest-alternative" class="block text-sm font-medium text-ink dark:text-dark-ink">Alternative</label>
 						<select
+							id="ttest-alternative"
 							bind:value={ttestAlternative}
 							class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 						>
@@ -151,8 +156,9 @@
 						</select>
 					</div>
 					<div class="w-24">
-						<label class="block text-sm font-medium text-ink dark:text-dark-ink">α</label>
+						<label for="ttest-alpha" class="block text-sm font-medium text-ink dark:text-dark-ink">α</label>
 						<input
+							id="ttest-alpha"
 							type="number"
 							bind:value={ttestAlpha}
 							min="0.001" max="0.1" step="0.005"

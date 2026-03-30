@@ -29,7 +29,7 @@
 	<!-- Mobile header -->
 	<MobileHeader user={data.user} />
 
-	<main class="flex-1 overflow-y-auto pb-16 sm:pb-0">
+	<main id="main-content" class="flex-1 overflow-y-auto pb-16 sm:pb-0">
 		{@render children()}
 	</main>
 	<FeedbackButton />
