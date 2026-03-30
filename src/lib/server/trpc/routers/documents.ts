@@ -182,7 +182,8 @@ export const documentsRouter = router({
 			z.object({
 				projectId: z.string(),
 				title: z.string().min(1).max(255),
-				type: z.enum(documentTypeValues).default('paper')
+				type: z.enum(documentTypeValues).default('paper'),
+				isPrivate: z.boolean().optional().default(false)
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -192,7 +193,14 @@ export const documentsRouter = router({
 				try {
 					const [created] = await db
 						.insert(document)
-						.values({ id: docId, projectId: input.projectId, title: input.title, type: input.type })
+						.values({
+							id: docId,
+							projectId: input.projectId,
+							title: input.title,
+							type: input.type,
+							isPrivate: input.isPrivate,
+							ownerUserId: ctx.user.id
+						})
 						.returning();
 
 					// Versión inicial (v1) — con plantilla si el tipo la tiene

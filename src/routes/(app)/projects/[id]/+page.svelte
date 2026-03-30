@@ -109,9 +109,10 @@
 	let creatingDoc = $state(false);
 	let createDocError = $state('');
 
-	// Split templates from normal documents
+	// Split templates, private notes, and normal documents
 	const templates = $derived(documents.filter((d) => d.isTemplate));
-	const normalDocs = $derived(documents.filter((d) => !d.isTemplate));
+	const privateDocs = $derived(documents.filter((d) => d.isPrivate && !d.isTemplate));
+	const normalDocs = $derived(documents.filter((d) => !d.isTemplate && !d.isPrivate));
 
 	const docTypeOptions = [
 		{ value: 'paper' as const, label: 'Article / Essay', description: 'Main academic text: article, thesis, essay, treatise or commentary.' },
@@ -137,6 +138,23 @@
 		} catch (e) {
 			createDocError = e instanceof Error ? e.message : 'Error creating document';
 			creatingDoc = false;
+		}
+	}
+
+	let creatingPrivateNote = $state(false);
+	async function createPrivateNote() {
+		creatingPrivateNote = true;
+		try {
+			const title = `Note ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+			const doc = await trpc.documents.create.mutate({
+				projectId: data.project.id,
+				title,
+				type: 'notes',
+				isPrivate: true
+			});
+			window.location.href = `/projects/${data.project.id}/documents/${doc.id}`;
+		} catch {
+			creatingPrivateNote = false;
 		}
 	}
 
@@ -679,6 +697,40 @@
 					{/each}
 				</div>
 			{/if}
+
+			<!-- My notes (private) -->
+			<div class="mt-6">
+				<div class="mb-2 flex items-center justify-between">
+					<h3 class="font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">My notes</h3>
+					<button
+						onclick={createPrivateNote}
+						disabled={creatingPrivateNote}
+						class="font-sans text-xs text-ink-faint transition-colors hover:text-ink disabled:opacity-50 dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					>
+						+ New private note
+					</button>
+				</div>
+				{#if privateDocs.length > 0}
+					<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper">
+						{#each privateDocs as doc (doc.id)}
+							<div class="group relative flex items-center">
+								<div class="flex-1 min-w-0">
+									<DocumentItem
+										title={doc.title}
+										type={doc.type as 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter'}
+										onclick={() => (window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
+									/>
+								</div>
+								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 shrink-0 text-ink-faint dark:text-dark-ink-faint" aria-label="Private note">
+									<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+								</svg>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">No private notes yet. Only you can see them.</p>
+				{/if}
+			</div>
 
 			<!-- Templates section -->
 			{#if templates.length > 0}
