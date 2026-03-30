@@ -29,6 +29,7 @@ export interface CiteRef {
 	doi?: string | null;
 	url?: string | null;
 	note?: string | null;
+	readingNotes?: string | null;
 	reportNumber?: string | null;
 	// Theological source metadata (stored in `extra` JSONB)
 	extra?: Record<string, string> | null;

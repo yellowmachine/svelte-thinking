@@ -398,8 +398,9 @@
 
 	async function explainCitation(citeKey: string, coords: { bottom: number; left: number }) {
 		const ref = projectRefs.find((r) => r.citeKey === citeKey);
-		citationExplain = { citeKey, ref: ref ?? null, coords, result: '', loading: hasAiKey };
-		if (!hasAiKey) return;
+		const needsAi = hasAiKey && !ref?.readingNotes;
+		citationExplain = { citeKey, ref: ref ?? null, coords, result: '', loading: needsAi };
+		if (!needsAi) return;
 		const surrounding = (() => {
 			const pos = currentSelection?.from ?? 0;
 			return content.slice(Math.max(0, pos - 400), pos + 400);
@@ -1682,8 +1683,13 @@
 						</div>
 					{/if}
 
-					<!-- AI explanation (only if key configured) -->
-					{#if hasAiKey && (citationExplain.loading || citationExplain.result)}
+					<!-- Reading notes (own) or AI explanation (fallback) -->
+					{#if citationExplain.ref?.readingNotes}
+						<div class="border-t border-paper-border px-3 py-2.5 dark:border-dark-paper-border">
+							<p class="mb-1 font-sans text-[10px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">My notes</p>
+							<p class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{citationExplain.ref.readingNotes}</p>
+						</div>
+					{:else if hasAiKey && (citationExplain.loading || citationExplain.result)}
 						<div class="border-t border-paper-border px-3 py-2.5 dark:border-dark-paper-border">
 							{#if citationExplain.loading}
 								<div class="flex items-center gap-2">
