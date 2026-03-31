@@ -872,7 +872,7 @@
 						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
 					>
 						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							{panel === 'edit' ? 'Editar referencia' : 'Nueva referencia'}
+							{panel === 'edit' ? 'Edit reference' : 'New reference'}
 						</h2>
 						<button
 							onclick={closePanel}

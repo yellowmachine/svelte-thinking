@@ -20,9 +20,8 @@
 	};
 
 	const documents = $derived(data.documents);
-	const canEdit = $derived(
-		data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor'
-	);
+	const canEdit = $derived(data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor');
+	const canUploadS3 = $derived(data.hasUserS3Config);
 	const invitations: InvitationType[] = $derived(
 		data.invitations.map((inv) => ({
 			...inv,
@@ -59,15 +58,28 @@
 
 	function startEdit(field: EditableField) {
 		if (!data.isOwner) return;
-		const proj = data.project as typeof data.project & { notes?: string | null; doi?: string | null; version?: string | null; publishedAt?: Date | null };
+		const proj = data.project as typeof data.project & {
+			notes?: string | null;
+			doi?: string | null;
+			version?: string | null;
+			publishedAt?: Date | null;
+		};
 		editBuffer =
-			field === 'title' ? proj.title :
-			field === 'description' ? (proj.description ?? '') :
-			field === 'notes' ? (proj.notes ?? '') :
-			field === 'doi' ? (proj.doi ?? '') :
-			field === 'version' ? (proj.version ?? '') :
-			field === 'publishedAt' ? (proj.publishedAt ? proj.publishedAt.toISOString().slice(0, 10) : '') :
-			'';
+			field === 'title'
+				? proj.title
+				: field === 'description'
+					? (proj.description ?? '')
+					: field === 'notes'
+						? (proj.notes ?? '')
+						: field === 'doi'
+							? (proj.doi ?? '')
+							: field === 'version'
+								? (proj.version ?? '')
+								: field === 'publishedAt'
+									? proj.publishedAt
+										? proj.publishedAt.toISOString().slice(0, 10)
+										: ''
+									: '';
 		editingField = field;
 	}
 
@@ -90,7 +102,9 @@
 				...(field === 'notes' ? { notes: editBuffer.trim() || null } : {}),
 				...(field === 'doi' ? { doi: editBuffer.trim() || null } : {}),
 				...(field === 'version' ? { version: editBuffer.trim() || null } : {}),
-				...(field === 'publishedAt' ? { publishedAt: editBuffer ? new Date(editBuffer) : null } : {})
+				...(field === 'publishedAt'
+					? { publishedAt: editBuffer ? new Date(editBuffer) : null }
+					: {})
 			});
 			await invalidateAll();
 		} catch {
@@ -104,8 +118,14 @@
 	let showCreateDoc = $state(false);
 	let showGenerateDraft = $state(false);
 	let newDocTitle = $state('');
-	let newDocType: 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter' =
-		$state('paper');
+	let newDocType:
+		| 'paper'
+		| 'notes'
+		| 'outline'
+		| 'bibliography'
+		| 'supplementary'
+		| 'book'
+		| 'chapter' = $state('paper');
 	let creatingDoc = $state(false);
 	let createDocError = $state('');
 
@@ -115,13 +135,37 @@
 	const normalDocs = $derived(documents.filter((d) => !d.isTemplate && !d.isPrivate));
 
 	const docTypeOptions = [
-		{ value: 'paper' as const, label: 'Article / Essay', description: 'Main academic text: article, thesis, essay, treatise or commentary.' },
+		{
+			value: 'paper' as const,
+			label: 'Article / Essay',
+			description: 'Main academic text: article, thesis, essay, treatise or commentary.'
+		},
 		{ value: 'notes' as const, label: 'Notes', description: 'Ideas and annotations in progress.' },
-		{ value: 'outline' as const, label: 'Outline', description: 'Index or hierarchical argument structure.' },
-		{ value: 'bibliography' as const, label: 'Bibliography', description: 'List of references and sources.' },
-		{ value: 'supplementary' as const, label: 'Supplementary', description: 'Annexes, appendices and supplementary material.' },
-		{ value: 'book' as const, label: 'Book', description: 'Manifest that references chapters. Pre-filled with a starter template.' },
-		{ value: 'chapter' as const, label: 'Chapter', description: 'A book chapter, referenced from a book document.' }
+		{
+			value: 'outline' as const,
+			label: 'Outline',
+			description: 'Index or hierarchical argument structure.'
+		},
+		{
+			value: 'bibliography' as const,
+			label: 'Bibliography',
+			description: 'List of references and sources.'
+		},
+		{
+			value: 'supplementary' as const,
+			label: 'Supplementary',
+			description: 'Annexes, appendices and supplementary material.'
+		},
+		{
+			value: 'book' as const,
+			label: 'Book',
+			description: 'Manifest that references chapters. Pre-filled with a starter template.'
+		},
+		{
+			value: 'chapter' as const,
+			label: 'Chapter',
+			description: 'A book chapter, referenced from a book document.'
+		}
 	];
 
 	async function createDocument() {
@@ -221,7 +265,13 @@
 	}
 
 	// Notebooks
-	type Notebook = { id: string; filename: string; size: number; languageName: string | null; createdAt: Date };
+	type Notebook = {
+		id: string;
+		filename: string;
+		size: number;
+		languageName: string | null;
+		createdAt: Date;
+	};
 	let notebooks = $state<Notebook[]>([]);
 	let uploadingNotebook = $state(false);
 	let notebookError = $state('');
@@ -231,7 +281,9 @@
 		try {
 			const res = await fetch(`/api/projects/${data.project.id}/notebooks`);
 			if (res.ok) notebooks = await res.json();
-		} catch { /* non-critical */ }
+		} catch {
+			/* non-critical */
+		}
 	}
 
 	async function uploadNotebook(e: Event) {
@@ -307,7 +359,10 @@
 		if (!collaboratorToRemove) return;
 		removingCollaborator = true;
 		try {
-			await trpc.projects.removeCollaborator.mutate({ projectId: data.project.id, userId: collaboratorToRemove.userId });
+			await trpc.projects.removeCollaborator.mutate({
+				projectId: data.project.id,
+				userId: collaboratorToRemove.userId
+			});
 			await invalidateAll();
 		} finally {
 			removingCollaborator = false;
@@ -322,7 +377,9 @@
 		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	}
 
-	$effect(() => { loadNotebooks(); });
+	$effect(() => {
+		loadNotebooks();
+	});
 
 	// ── Context links ────────────────────────────────────────────────────────
 
@@ -352,7 +409,9 @@
 	async function loadContextLinks() {
 		try {
 			contextLinks = await trpc.contextLinks.list.query(data.project.id);
-		} catch { /* non-critical */ }
+		} catch {
+			/* non-critical */
+		}
 	}
 
 	async function openContextPicker() {
@@ -381,9 +440,7 @@
 		const unlinked = availableDocs.filter((d) => !linkedIds.has(d.id));
 		if (!q) return unlinked;
 		return unlinked.filter(
-			(d) =>
-				d.title.toLowerCase().includes(q) ||
-				(d.projectTitle?.toLowerCase() ?? '').includes(q)
+			(d) => d.title.toLowerCase().includes(q) || (d.projectTitle?.toLowerCase() ?? '').includes(q)
 		);
 	});
 
@@ -405,21 +462,32 @@
 
 		const result = [...groups.entries()].map(([id, g]) => ({ id, ...g }));
 		if (publicOthers.length > 0) {
-			result.push({ id: '__public__', title: 'Public documents from other users', docs: publicOthers });
+			result.push({
+				id: '__public__',
+				title: 'Public documents from other users',
+				docs: publicOthers
+			});
 		}
 		return result;
 	});
 
-	$effect(() => { loadContextLinks(); });
+	$effect(() => {
+		loadContextLinks();
+	});
 
 	// ── Searchable toggle ────────────────────────────────────────────────────
-	let isSearchable = $state((data.project as typeof data.project & { isSearchable?: boolean }).isSearchable ?? false);
+	let isSearchable = $state(
+		(data.project as typeof data.project & { isSearchable?: boolean }).isSearchable ?? false
+	);
 	let togglingSearchable = $state(false);
 
 	async function toggleSearchable() {
 		togglingSearchable = true;
 		try {
-			const result = await trpc.projects.setSearchable.mutate({ id: data.project.id, isSearchable: !isSearchable });
+			const result = await trpc.projects.setSearchable.mutate({
+				id: data.project.id,
+				isSearchable: !isSearchable
+			});
 			isSearchable = result.isSearchable;
 		} finally {
 			togglingSearchable = false;
@@ -427,7 +495,16 @@
 	}
 
 	// ── Interesados ──────────────────────────────────────────────────────────
-	type InterestedUser = { id: string; userId: string; name: string; displayName: string | null; institution: string | null; orcid: string | null; bio: string | null; createdAt: Date };
+	type InterestedUser = {
+		id: string;
+		userId: string;
+		name: string;
+		displayName: string | null;
+		institution: string | null;
+		orcid: string | null;
+		bio: string | null;
+		createdAt: Date;
+	};
 	let interestedUsers = $state<InterestedUser[]>([]);
 	let loadedInterested = $state(false);
 	let loadingInterested = $state(false);
@@ -436,7 +513,9 @@
 		if (loadedInterested) return;
 		loadingInterested = true;
 		try {
-			interestedUsers = await trpc.projects.listInterested.query(data.project.id) as InterestedUser[];
+			interestedUsers = (await trpc.projects.listInterested.query(
+				data.project.id
+			)) as InterestedUser[];
 			loadedInterested = true;
 		} finally {
 			loadingInterested = false;
@@ -489,8 +568,12 @@
 						bind:value={editBuffer}
 						onblur={() => saveField('title')}
 						onkeydown={(e) => {
-							if (e.key === 'Enter') { e.currentTarget.blur(); }
-							if (e.key === 'Escape') { cancelEdit(); }
+							if (e.key === 'Enter') {
+								e.currentTarget.blur();
+							}
+							if (e.key === 'Escape') {
+								cancelEdit();
+							}
 						}}
 						class="w-full rounded-md border border-accent/40 bg-transparent px-2 py-1 font-serif text-3xl font-semibold text-ink focus:outline-none dark:text-dark-ink"
 					/>
@@ -499,7 +582,9 @@
 						type="button"
 						onclick={() => startEdit('title')}
 						disabled={!data.isOwner}
-						class="block text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink {data.isOwner ? 'cursor-text hover:opacity-80' : 'cursor-default'}"
+						class="block text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink {data.isOwner
+							? 'cursor-text hover:opacity-80'
+							: 'cursor-default'}"
 					>
 						{data.project.title}
 					</button>
@@ -511,7 +596,11 @@
 						{@attach focusEl}
 						bind:value={editBuffer}
 						onblur={() => saveField('description')}
-						onkeydown={(e) => { if (e.key === 'Escape') { cancelEdit(); } }}
+						onkeydown={(e) => {
+							if (e.key === 'Escape') {
+								cancelEdit();
+							}
+						}}
 						rows={3}
 						placeholder="Add a description…"
 						class="mt-2 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink-muted focus:outline-none dark:text-dark-ink-muted"
@@ -521,7 +610,11 @@
 						type="button"
 						onclick={() => startEdit('description')}
 						disabled={!data.isOwner}
-						class="mt-2 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner ? 'cursor-text hover:opacity-80' : 'cursor-default'} {!data.project.description ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink-muted dark:text-dark-ink-muted'}"
+						class="mt-2 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner
+							? 'cursor-text hover:opacity-80'
+							: 'cursor-default'} {!data.project.description
+							? 'text-ink-faint italic dark:text-dark-ink-faint'
+							: 'text-ink-muted dark:text-dark-ink-muted'}"
 					>
 						{data.project.description || 'Add a description…'}
 					</button>
@@ -533,7 +626,11 @@
 						{@attach focusEl}
 						bind:value={editBuffer}
 						onblur={() => saveField('notes')}
-						onkeydown={(e) => { if (e.key === 'Escape') { cancelEdit(); } }}
+						onkeydown={(e) => {
+							if (e.key === 'Escape') {
+								cancelEdit();
+							}
+						}}
 						rows={4}
 						placeholder="Private project notes…"
 						class="mt-3 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink focus:outline-none dark:text-dark-ink"
@@ -542,12 +639,19 @@
 					{@const notes = (data.project as typeof data.project & { notes?: string | null }).notes}
 					{#if notes || data.isOwner}
 						<div class="mt-3">
-							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Notes</span>
+							<span
+								class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+								>Notes</span
+							>
 							<button
 								type="button"
 								onclick={() => startEdit('notes')}
 								disabled={!data.isOwner}
-								class="mt-0.5 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner ? 'cursor-text hover:opacity-80' : 'cursor-default'} {!notes ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
+								class="mt-0.5 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner
+									? 'cursor-text hover:opacity-80'
+									: 'cursor-default'} {!notes
+									? 'text-ink-faint italic dark:text-dark-ink-faint'
+									: 'text-ink dark:text-dark-ink'}"
 							>
 								{notes || 'Add notes…'}
 							</button>
@@ -562,10 +666,20 @@
 					title="Export project as YAML"
 					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-						<polyline points="7 10 12 15 17 10"/>
-						<line x1="12" y1="15" x2="12" y2="3"/>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+						<polyline points="7 10 12 15 17 10" />
+						<line x1="12" y1="15" x2="12" y2="3" />
 					</svg>
 					Export
 				</a>
@@ -579,7 +693,9 @@
 
 		{#if data.myRole}
 			<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Your role: <span class="font-medium text-accent">{roleLabel[data.myRole] ?? data.myRole}</span>
+				Your role: <span class="font-medium text-accent"
+					>{roleLabel[data.myRole] ?? data.myRole}</span
+				>
 				· {data.collaborators.length}
 				{data.collaborators.length === 1 ? 'collaborator' : 'collaborators'}
 			</p>
@@ -592,23 +708,29 @@
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
 				<div class="hidden items-center gap-2 sm:flex">
-				{#if canEdit}
-					<button
-						onclick={() => (showGenerateDraft = true)}
-						class="flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-						Generate draft
-					</button>
-					<button
-						onclick={() => (showCreateDoc = !showCreateDoc)}
-						class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						+ New
-					</button>
-				{/if}
+					{#if canEdit}
+						<button
+							onclick={() => (showGenerateDraft = true)}
+							class="flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+							Generate draft
+						</button>
+						<button
+							onclick={() => (showCreateDoc = !showCreateDoc)}
+							class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						>
+							+ New
+						</button>
+					{/if}
 				</div>
 			</div>
 
@@ -621,17 +743,29 @@
 							bind:value={newDocTitle}
 							placeholder="Document title"
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							onkeydown={(e) => { if (e.key === 'Enter' && newDocTitle.trim() && !creatingDoc) createDocument(); }}
+							onkeydown={(e) => {
+								if (e.key === 'Enter' && newDocTitle.trim() && !creatingDoc) createDocument();
+							}}
 						/>
 						<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
 							{#each docTypeOptions as opt (opt.value)}
 								<button
 									type="button"
 									onclick={() => (newDocType = opt.value)}
-									class="flex flex-col gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors {newDocType === opt.value ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-paper-border hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui'}"
+									class="flex flex-col gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors {newDocType ===
+									opt.value
+										? 'border-accent bg-accent/5 dark:bg-accent/10'
+										: 'border-paper-border hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui'}"
 								>
-									<span class="font-sans text-sm font-medium {newDocType === opt.value ? 'text-accent' : 'text-ink dark:text-dark-ink'}">{opt.label}</span>
-									<span class="font-sans text-xs leading-tight text-ink-faint dark:text-dark-ink-faint">{opt.description}</span>
+									<span
+										class="font-sans text-sm font-medium {newDocType === opt.value
+											? 'text-accent'
+											: 'text-ink dark:text-dark-ink'}">{opt.label}</span
+									>
+									<span
+										class="font-sans text-xs leading-tight text-ink-faint dark:text-dark-ink-faint"
+										>{opt.description}</span
+									>
 								</button>
 							{/each}
 						</div>
@@ -674,22 +808,42 @@
 				>
 					{#each normalDocs as doc (doc.id)}
 						<div class="group relative flex items-center">
-							<div class="flex-1 min-w-0">
+							<div class="min-w-0 flex-1">
 								<DocumentItem
 									title={doc.title}
-									type={doc.type as 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter'}
+									type={doc.type as
+										| 'paper'
+										| 'notes'
+										| 'outline'
+										| 'bibliography'
+										| 'supplementary'
+										| 'book'
+										| 'chapter'}
 									badge={getDocumentBadge(doc)}
-									onclick={() => (window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
+									onclick={() =>
+										(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 								/>
 							</div>
 							{#if canEdit}
 								<button
 									onclick={() => openSaveAsTemplate(doc.id, doc.title)}
 									title="Save as template"
-									class="absolute right-1 shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 text-ink-faint hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+									class="absolute right-1 shrink-0 rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
 								>
-									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-										<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v4h8V3"/><path d="M8 21v-6h8v6"/>
+									<svg
+										width="13"
+										height="13"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 3v4h8V3" /><path
+											d="M8 21v-6h8v6"
+										/>
 									</svg>
 								</button>
 							{/if}
@@ -701,7 +855,11 @@
 			<!-- My notes (private) -->
 			<div class="mt-6">
 				<div class="mb-2 flex items-center justify-between">
-					<h3 class="font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">My notes</h3>
+					<h3
+						class="font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+					>
+						My notes
+					</h3>
 					<button
 						onclick={createPrivateNote}
 						disabled={creatingPrivateNote}
@@ -711,39 +869,86 @@
 					</button>
 				</div>
 				{#if privateDocs.length > 0}
-					<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div
+						class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
+					>
 						{#each privateDocs as doc (doc.id)}
 							<div class="group relative flex items-center">
-								<div class="flex-1 min-w-0">
+								<div class="min-w-0 flex-1">
 									<DocumentItem
 										title={doc.title}
-										type={doc.type as 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter'}
-										onclick={() => (window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
+										type={doc.type as
+											| 'paper'
+											| 'notes'
+											| 'outline'
+											| 'bibliography'
+											| 'supplementary'
+											| 'book'
+											| 'chapter'}
+										onclick={() =>
+											(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 									/>
 								</div>
-								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 shrink-0 text-ink-faint dark:text-dark-ink-faint" aria-label="Private note">
-									<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+								<svg
+									width="11"
+									height="11"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									class="mr-2 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+									aria-label="Private note"
+								>
+									<rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path
+										d="M7 11V7a5 5 0 0 1 10 0v4"
+									/>
 								</svg>
 							</div>
 						{/each}
 					</div>
 				{:else}
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">No private notes yet. Only you can see them.</p>
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						No private notes yet. Only you can see them.
+					</p>
 				{/if}
 			</div>
 
 			<!-- Templates section -->
 			{#if templates.length > 0}
 				<div class="mt-6">
-					<h3 class="mb-2 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Templates</h3>
-					<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper">
+					<h3
+						class="mb-2 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+					>
+						Templates
+					</h3>
+					<div
+						class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
+					>
 						{#each templates as tmpl (tmpl.id)}
-							<div class="flex items-center gap-1 pl-2 pr-1 py-1.5">
-								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-ink-faint dark:text-dark-ink-faint" aria-hidden="true">
-									<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 3v4h8V3"/><path d="M8 21v-6h8v6"/>
+							<div class="flex items-center gap-1 py-1.5 pr-1 pl-2">
+								<svg
+									width="13"
+									height="13"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									class="shrink-0 text-ink-faint dark:text-dark-ink-faint"
+									aria-hidden="true"
+								>
+									<rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 3v4h8V3" /><path
+										d="M8 21v-6h8v6"
+									/>
 								</svg>
-								<span class="flex-1 min-w-0 truncate font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{tmpl.title}</span>
-								<div class="flex items-center gap-1 shrink-0">
+								<span
+									class="min-w-0 flex-1 truncate font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+									>{tmpl.title}</span
+								>
+								<div class="flex shrink-0 items-center gap-1">
 									{#if canEdit}
 										<button
 											onclick={() => openUseTemplate(tmpl.id, tmpl.title)}
@@ -772,29 +977,58 @@
 				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Notebooks</h2>
 				<div class="relative">
 					<button
-						onclick={() => notebookDropdownOpen = !notebookDropdownOpen}
+						onclick={() => (notebookDropdownOpen = !notebookDropdownOpen)}
 						disabled={uploadingNotebook}
-						class="flex cursor-pointer items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui disabled:pointer-events-none disabled:opacity-50"
+						class="flex cursor-pointer items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:pointer-events-none disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						{uploadingNotebook ? 'Importing…' : '+ Import notebook'}
-						<svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
+						<svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"
+							><path
+								fill-rule="evenodd"
+								d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+								clip-rule="evenodd"
+							/></svg
+						>
 					</button>
 
 					{#if notebookDropdownOpen}
 						<div
-							class="absolute right-0 top-full z-10 mt-1 w-52 rounded-lg border border-paper-border bg-paper shadow-md dark:border-dark-paper-border dark:bg-dark-paper"
-							onmouseleave={() => notebookDropdownOpen = false}
+							class="absolute top-full right-0 z-10 mt-1 w-52 rounded-lg border border-paper-border bg-paper shadow-md dark:border-dark-paper-border dark:bg-dark-paper"
+							onmouseleave={() => (notebookDropdownOpen = false)}
 						>
-							<label class="flex cursor-pointer items-center gap-2.5 rounded-t-lg px-4 py-2.5 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui">
-								<svg class="h-4 w-4 shrink-0 text-ink-muted dark:text-dark-ink-muted" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
+							<label
+								class="flex cursor-pointer items-center gap-2.5 rounded-t-lg px-4 py-2.5 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+							>
+								<svg
+									class="h-4 w-4 shrink-0 text-ink-muted dark:text-dark-ink-muted"
+									viewBox="0 0 20 20"
+									fill="currentColor"
+									><path
+										d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"
+									/><path
+										d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
+									/></svg
+								>
 								From local file
 								<input type="file" class="hidden" accept=".ipynb" onchange={uploadNotebook} />
 							</label>
 							<button
-								onclick={() => { notebookDropdownOpen = false; showJupyterModal = true; }}
+								onclick={() => {
+									notebookDropdownOpen = false;
+									showJupyterModal = true;
+								}}
 								class="flex w-full items-center gap-2.5 rounded-b-lg px-4 py-2.5 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 							>
-								<svg class="h-4 w-4 shrink-0 text-ink-muted dark:text-dark-ink-muted" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M13.887 3.182c.396.037.79.08 1.183.128C16.194 3.45 17 4.414 17 5.517V16.75A2.25 2.25 0 0 1 14.75 19h-9.5A2.25 2.25 0 0 1 3 16.75V5.517c0-1.103.806-2.068 1.93-2.207.393-.048.787-.09 1.183-.128A3.001 3.001 0 0 1 9 1h2c1.373 0 2.531.923 2.887 2.182ZM7.5 4A1.5 1.5 0 0 1 9 2.5h2A1.5 1.5 0 0 1 12.5 4v.5h-5V4Z" clip-rule="evenodd"/></svg>
+								<svg
+									class="h-4 w-4 shrink-0 text-ink-muted dark:text-dark-ink-muted"
+									viewBox="0 0 20 20"
+									fill="currentColor"
+									><path
+										fill-rule="evenodd"
+										d="M13.887 3.182c.396.037.79.08 1.183.128C16.194 3.45 17 4.414 17 5.517V16.75A2.25 2.25 0 0 1 14.75 19h-9.5A2.25 2.25 0 0 1 3 16.75V5.517c0-1.103.806-2.068 1.93-2.207.393-.048.787-.09 1.183-.128A3.001 3.001 0 0 1 9 1h2c1.373 0 2.531.923 2.887 2.182ZM7.5 4A1.5 1.5 0 0 1 9 2.5h2A1.5 1.5 0 0 1 12.5 4v.5h-5V4Z"
+										clip-rule="evenodd"
+									/></svg
+								>
 								From remote Jupyter
 							</button>
 						</div>
@@ -808,16 +1042,26 @@
 
 			{#if notebooks.length === 0}
 				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					No notebooks. Import a <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.ipynb</code> file to use it as context for the agent.
+					No notebooks. Import a <code
+						class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.ipynb</code
+					> file to use it as context for the agent.
 				</p>
 			{:else}
-				<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					{#each notebooks as notebook (notebook.id)}
-						<div class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
+						<div
+							class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+						>
 							<div class="min-w-0">
-								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{notebook.filename}</p>
+								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+									{notebook.filename}
+								</p>
 								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									{formatSize(notebook.size)}{notebook.languageName ? ` · ${notebook.languageName}` : ''}
+									{formatSize(notebook.size)}{notebook.languageName
+										? ` · ${notebook.languageName}`
+										: ''}
 								</p>
 							</div>
 							<button
@@ -835,14 +1079,44 @@
 		<!-- Sidebar -->
 		<div class="hidden flex-col gap-6 sm:flex">
 			<!-- Project navigation -->
-			<div class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper">
+			<div
+				class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
 				<div class="flex flex-col gap-1">
-					<a href="/projects/{data.project.id}/ai" class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+					<a
+						href="/projects/{data.project.id}/ai"
+						class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+							><path
+								d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/></svg
+						>
 						Assistant
 					</a>
-					<a href="/projects/{data.project.id}/requirements" class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+					<a
+						href="/projects/{data.project.id}/requirements"
+						class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+							><path
+								d="M9 11l3 3L22 4"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/><path
+								d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/></svg
+						>
 						Requirements
 						<RequirementsProgress
 							fulfilled={data.requirementCounts.fulfilled}
@@ -851,15 +1125,51 @@
 							requiredTotal={data.requirementCounts.requiredTotal}
 						/>
 					</a>
-					<a href="/projects/{data.project.id}/bib" class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+					<a
+						href="/projects/{data.project.id}/bib"
+						class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+							><path
+								d="M4 19.5A2.5 2.5 0 016.5 17H20"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/><path
+								d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/></svg
+						>
 						Bibliography
 					</a>
-					{#if canEdit}
-					<a href="/projects/{data.project.id}/photos" class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-						Photos
-					</a>
+					{#if canEdit && canUploadS3}
+						<a
+							href="/projects/{data.project.id}/photos"
+							class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+								><rect
+									x="3"
+									y="3"
+									width="18"
+									height="18"
+									rx="2"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="1.5" /><path
+									d="M21 15l-5-5L5 21"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/></svg
+							>
+							S3
+						</a>
 					{/if}
 				</div>
 			</div>
@@ -868,9 +1178,18 @@
 				<InviteCollaborator
 					projectId={data.project.id}
 					{invitations}
-					collaborators={data.collaborators as { id: string; userId: string; role: 'author' | 'coauthor' | 'reviewer' | 'commenter'; name: string; email: string }[]}
+					collaborators={data.collaborators as {
+						id: string;
+						userId: string;
+						role: 'author' | 'coauthor' | 'reviewer' | 'commenter';
+						name: string;
+						email: string;
+					}[]}
 					oninvited={reloadInvitations}
-					onremove={(c) => { collaboratorToRemove = c; showRemoveCollaborator = true; }}
+					onremove={(c) => {
+						collaboratorToRemove = c;
+						showRemoveCollaborator = true;
+					}}
 				/>
 			{:else}
 				<div
@@ -894,20 +1213,34 @@
 
 			<!-- Publication metadata -->
 			{#if data.isOwner || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).doi || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).version || (data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }).publishedAt}
-				{@const pub = data.project as typeof data.project & { doi?: string | null; version?: string | null; publishedAt?: Date | null }}
-				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
-					<h3 class="mb-3 font-serif text-base font-semibold text-ink dark:text-dark-ink">Publication</h3>
+				{@const pub = data.project as typeof data.project & {
+					doi?: string | null;
+					version?: string | null;
+					publishedAt?: Date | null;
+				}}
+				<div
+					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
+					<h3 class="mb-3 font-serif text-base font-semibold text-ink dark:text-dark-ink">
+						Publication
+					</h3>
 					<div class="flex flex-col gap-2">
 						<!-- DOI -->
 						<div>
-							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">DOI</span>
+							<span
+								class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+								>DOI</span
+							>
 							{#if editingField === 'doi'}
 								<input
 									{@attach focusEl}
 									type="text"
 									bind:value={editBuffer}
 									onblur={() => saveField('doi')}
-									onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') cancelEdit(); }}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') e.currentTarget.blur();
+										if (e.key === 'Escape') cancelEdit();
+									}}
 									placeholder="10.1000/xyz123"
 									class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-mono text-xs text-ink focus:outline-none dark:text-dark-ink"
 								/>
@@ -916,7 +1249,11 @@
 									type="button"
 									onclick={() => startEdit('doi')}
 									disabled={!data.isOwner}
-									class="mt-0.5 block w-full text-left font-mono text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.doi ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
+									class="mt-0.5 block w-full text-left font-mono text-xs {data.isOwner
+										? 'cursor-text hover:opacity-70'
+										: 'cursor-default'} {!pub.doi
+										? 'text-ink-faint italic dark:text-dark-ink-faint'
+										: 'text-ink dark:text-dark-ink'}"
 								>
 									{pub.doi || (data.isOwner ? 'Add DOI…' : '—')}
 								</button>
@@ -924,14 +1261,20 @@
 						</div>
 						<!-- Version -->
 						<div>
-							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Version</span>
+							<span
+								class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+								>Version</span
+							>
 							{#if editingField === 'version'}
 								<input
 									{@attach focusEl}
 									type="text"
 									bind:value={editBuffer}
 									onblur={() => saveField('version')}
-									onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') cancelEdit(); }}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') e.currentTarget.blur();
+										if (e.key === 'Escape') cancelEdit();
+									}}
 									placeholder="1.0.0"
 									class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-sans text-xs text-ink focus:outline-none dark:text-dark-ink"
 								/>
@@ -940,7 +1283,11 @@
 									type="button"
 									onclick={() => startEdit('version')}
 									disabled={!data.isOwner}
-									class="mt-0.5 block w-full text-left font-sans text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.version ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
+									class="mt-0.5 block w-full text-left font-sans text-xs {data.isOwner
+										? 'cursor-text hover:opacity-70'
+										: 'cursor-default'} {!pub.version
+										? 'text-ink-faint italic dark:text-dark-ink-faint'
+										: 'text-ink dark:text-dark-ink'}"
 								>
 									{pub.version || (data.isOwner ? 'Add version…' : '—')}
 								</button>
@@ -948,14 +1295,20 @@
 						</div>
 						<!-- Published date -->
 						<div>
-							<span class="font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">Publication date</span>
+							<span
+								class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+								>Publication date</span
+							>
 							{#if editingField === 'publishedAt'}
 								<input
 									{@attach focusEl}
 									type="date"
 									bind:value={editBuffer}
 									onblur={() => saveField('publishedAt')}
-									onkeydown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') cancelEdit(); }}
+									onkeydown={(e) => {
+										if (e.key === 'Enter') e.currentTarget.blur();
+										if (e.key === 'Escape') cancelEdit();
+									}}
 									class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-sans text-xs text-ink focus:outline-none dark:text-dark-ink"
 								/>
 							{:else}
@@ -963,9 +1316,21 @@
 									type="button"
 									onclick={() => startEdit('publishedAt')}
 									disabled={!data.isOwner}
-									class="mt-0.5 block w-full text-left font-sans text-xs {data.isOwner ? 'cursor-text hover:opacity-70' : 'cursor-default'} {!pub.publishedAt ? 'italic text-ink-faint dark:text-dark-ink-faint' : 'text-ink dark:text-dark-ink'}"
+									class="mt-0.5 block w-full text-left font-sans text-xs {data.isOwner
+										? 'cursor-text hover:opacity-70'
+										: 'cursor-default'} {!pub.publishedAt
+										? 'text-ink-faint italic dark:text-dark-ink-faint'
+										: 'text-ink dark:text-dark-ink'}"
 								>
-									{pub.publishedAt ? pub.publishedAt.toLocaleDateString('en', { year: 'numeric', month: 'long', day: 'numeric' }) : (data.isOwner ? 'Add date…' : '—')}
+									{pub.publishedAt
+										? pub.publishedAt.toLocaleDateString('en', {
+												year: 'numeric',
+												month: 'long',
+												day: 'numeric'
+											})
+										: data.isOwner
+											? 'Add date…'
+											: '—'}
 								</button>
 							{/if}
 						</div>
@@ -973,12 +1338,18 @@
 				</div>
 			{/if}
 
-		<!-- Context links for AI -->
-			<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+			<!-- Context links for AI -->
+			<div
+				class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
 				<div class="mb-3 flex items-center justify-between gap-2">
 					<div>
-						<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">External context</h3>
-						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Documents from other projects visible to the AI</p>
+						<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+							External context
+						</h3>
+						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							Documents from other projects visible to the AI
+						</p>
 					</div>
 					<button
 						onclick={openContextPicker}
@@ -995,14 +1366,20 @@
 				{:else}
 					<div class="flex flex-col gap-1">
 						{#each contextLinks as link (link.id)}
-							<div class="group flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
+							<div
+								class="group flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+							>
 								<div class="min-w-0 flex-1">
-									<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">{link.docTitle}</p>
-									<p class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">{link.sourceProjectTitle}</p>
+									<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+										{link.docTitle}
+									</p>
+									<p class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+										{link.sourceProjectTitle}
+									</p>
 								</div>
 								<button
 									onclick={() => removeContextLink(link.id)}
-									class="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 font-sans text-[11px] text-ink-faint hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+									class="mt-0.5 shrink-0 font-sans text-[11px] text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
 									title="Remove"
 								>
 									✕
@@ -1014,12 +1391,18 @@
 			</div>
 			<!-- Visibilidad pública — owner only -->
 			{#if data.isOwner}
-				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<div class="flex items-center justify-between gap-3">
 						<div>
-							<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Public search</h3>
+							<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+								Public search
+							</h3>
 							<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								{isSearchable ? 'Visible in Explore. Shows title, description and Abstract.' : 'Visible to collaborators only.'}
+								{isSearchable
+									? 'Visible in Explore. Shows title, description and Abstract.'
+									: 'Visible to collaborators only.'}
 							</p>
 						</div>
 						<button
@@ -1030,8 +1413,10 @@
 							class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50
 								{isSearchable ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
 						>
-							<span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform
-								{isSearchable ? 'translate-x-6' : 'translate-x-1'}"></span>
+							<span
+								class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform
+								{isSearchable ? 'translate-x-6' : 'translate-x-1'}"
+							></span>
 						</button>
 					</div>
 
@@ -1039,7 +1424,9 @@
 						<!-- Interesados -->
 						<div class="mt-4 border-t border-paper-border pt-4 dark:border-dark-paper-border">
 							<div class="mb-2 flex items-center justify-between">
-								<h4 class="font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
+								<h4
+									class="font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+								>
 									Interested
 								</h4>
 								{#if !loadedInterested}
@@ -1065,15 +1452,21 @@
 													href="/u/{u.userId}"
 													class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 												>
-													<span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/20 font-sans text-xs font-semibold text-accent">
+													<span
+														class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/20 font-sans text-xs font-semibold text-accent"
+													>
 														{(u.displayName ?? u.name).charAt(0).toUpperCase()}
 													</span>
 													<div class="min-w-0">
-														<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+														<p
+															class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink"
+														>
 															{u.displayName ?? u.name}
 														</p>
 														{#if u.institution}
-															<p class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+															<p
+																class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
+															>
 																{u.institution}
 															</p>
 														{/if}
@@ -1089,7 +1482,7 @@
 				</div>
 			{/if}
 
-		<!-- Danger zone — owner only -->
+			<!-- Danger zone — owner only -->
 			{#if data.isOwner}
 				<div class="mt-2">
 					<button
@@ -1133,30 +1526,50 @@
 	warning="They will immediately lose access to the project. You can invite them again."
 	deleting={removingCollaborator}
 	onconfirm={handleRemoveCollaborator}
-	oncancel={() => { showRemoveCollaborator = false; collaboratorToRemove = null; }}
+	oncancel={() => {
+		showRemoveCollaborator = false;
+		collaboratorToRemove = null;
+	}}
 />
 
 {#if showJupyterModal}
 	<JupyterImportModal
 		projectId={data.project.id}
 		onimported={loadNotebooks}
-		onclose={() => { showJupyterModal = false; }}
+		onclose={() => {
+			showJupyterModal = false;
+		}}
 	/>
 {/if}
 
 {#if showContextPicker}
 	<!-- Context doc picker modal -->
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-		<div class="flex w-full max-w-md flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper" style="max-height: 80vh">
-			<div class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border">
-				<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Add external context</h2>
+		<div
+			class="flex w-full max-w-md flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+			style="max-height: 80vh"
+		>
+			<div
+				class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border"
+			>
+				<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+					Add external context
+				</h2>
 				<button
-					onclick={() => { showContextPicker = false; contextPickerSearch = ''; }}
+					onclick={() => {
+						showContextPicker = false;
+						contextPickerSearch = '';
+					}}
 					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					aria-label="Close"
 				>
 					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-						<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						<path
+							d="M1 1l12 12M13 1L1 13"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
 					</svg>
 				</button>
 			</div>
@@ -1172,36 +1585,70 @@
 
 			<div class="flex-1 overflow-y-auto px-5 py-3">
 				{#if loadingAvailable}
-					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Loading…</p>
+					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+						Loading…
+					</p>
 				{:else if availableByProject().length === 0}
 					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						{availableDocs.length === 0 ? 'No documents in other projects' : 'All documents already added'}
+						{availableDocs.length === 0
+							? 'No documents in other projects'
+							: 'All documents already added'}
 					</p>
 				{:else}
 					{#each availableByProject() as group (group.id)}
 						<div class="mb-3">
-							<p class="mb-1 font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">{group.title}</p>
+							<p
+								class="mb-1 font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+							>
+								{group.title}
+							</p>
 							{#each group.docs as doc (doc.id)}
-								<div class="flex items-center gap-1 rounded-lg px-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
+								<div
+									class="flex items-center gap-1 rounded-lg px-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+								>
 									<button
-										onclick={async () => { await addContextLink(doc.id); }}
+										onclick={async () => {
+											await addContextLink(doc.id);
+										}}
 										class="flex min-w-0 flex-1 items-center gap-2 py-2 pl-2 text-left"
 									>
-										<span class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink">{doc.title}</span>
+										<span
+											class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink"
+											>{doc.title}</span
+										>
 										{#if doc.isPublic && doc.projectTitle === null}
-											<svg width="11" height="11" viewBox="0 0 24 24" fill="none" class="shrink-0 text-green-500" aria-label="Public">
-												<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
-												<path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+											<svg
+												width="11"
+												height="11"
+												viewBox="0 0 24 24"
+												fill="none"
+												class="shrink-0 text-green-500"
+												aria-label="Public"
+											>
+												<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
+												<path
+													d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"
+													stroke="currentColor"
+													stroke-width="1.5"
+													stroke-linecap="round"
+												/>
 											</svg>
 										{/if}
-										<span class="shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint">{doc.type}</span>
+										<span
+											class="shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+											>{doc.type}</span
+										>
 									</button>
 									{#if doc.isPublic && doc.projectTitle === null}
 										<button
-											onclick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`[[${doc.title}:${doc.id.slice(0, 8)}]]`); }}
+											onclick={(e) => {
+												e.stopPropagation();
+												navigator.clipboard.writeText(`[[${doc.title}:${doc.id.slice(0, 8)}]]`);
+											}}
 											title="Copy wikilink syntax"
 											class="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-ink-faint transition-colors hover:bg-paper-border hover:text-accent dark:text-dark-ink-faint dark:hover:bg-dark-paper-border"
-										>[[·]]</button>
+											>[[·]]</button
+										>
 									{/if}
 								</div>
 							{/each}
@@ -1216,7 +1663,7 @@
 {#if showGenerateDraft}
 	<GenerateDraftModal
 		projectId={data.project.id}
-		documents={documents}
+		{documents}
 		onclose={() => (showGenerateDraft = false)}
 		oncreated={(docId) => {
 			showGenerateDraft = false;
@@ -1227,18 +1674,33 @@
 
 <!-- Use template modal -->
 {#if showUseTemplate}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-		<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
-			<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">New document from template</h2>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="dialog"
+		aria-modal="true"
+	>
+		<div
+			class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+		>
+			<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+				New document from template
+			</h2>
 			<div class="flex flex-col gap-3">
 				<div>
-					<label for="from-tmpl-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Document title</label>
+					<label
+						for="from-tmpl-title"
+						class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+						>Document title</label
+					>
 					<input
 						id="from-tmpl-title"
 						type="text"
 						bind:value={fromTemplateTitle}
 						placeholder="Document title"
-						onkeydown={(e) => { if (e.key === 'Enter' && fromTemplateTitle.trim() && !fromTemplateCreating) createFromTemplate(); }}
+						onkeydown={(e) => {
+							if (e.key === 'Enter' && fromTemplateTitle.trim() && !fromTemplateCreating)
+								createFromTemplate();
+						}}
 						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					/>
 				</div>
@@ -1267,18 +1729,34 @@
 
 <!-- Save as template modal -->
 {#if saveAsTemplateDocId}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-		<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Save as template</h2>
-			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">A copy of this document will be saved as a reusable template in this project.</p>
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+		role="dialog"
+		aria-modal="true"
+	>
+		<div
+			class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+		>
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+				Save as template
+			</h2>
+			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				A copy of this document will be saved as a reusable template in this project.
+			</p>
 			<div class="flex flex-col gap-3">
 				<div>
-					<label for="tmpl-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Template name</label>
+					<label
+						for="tmpl-title"
+						class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+						>Template name</label
+					>
 					<input
 						id="tmpl-title"
 						type="text"
 						bind:value={templateTitle}
-						onkeydown={(e) => { if (e.key === 'Enter' && templateTitle.trim() && !savingTemplate) saveAsTemplate(); }}
+						onkeydown={(e) => {
+							if (e.key === 'Enter' && templateTitle.trim() && !savingTemplate) saveAsTemplate();
+						}}
 						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					/>
 				</div>
