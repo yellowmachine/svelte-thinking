@@ -24,9 +24,7 @@
 
 	// Render markdown inline: *text* → <em>text</em>, **text** → <strong>text</strong>
 	function renderInlineMarkdown(md: string): string {
-		return md
-			.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-			.replace(/\*(.+?)\*/g, '<em>$1</em>');
+		return md.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
 	}
 
 	let { data }: { data: PageData } = $props();
@@ -220,7 +218,9 @@
 			type: ref.type as ReferenceType,
 			title: ref.title,
 			authors:
-				(ref.authors as Author[]).length > 0 ? (ref.authors as Author[]) : [{ first: '', last: '' }],
+				(ref.authors as Author[]).length > 0
+					? (ref.authors as Author[])
+					: [{ first: '', last: '' }],
 			year: ref.year ?? '',
 			abstract: ref.abstract ?? '',
 			doi: ref.doi ?? '',
@@ -234,15 +234,14 @@
 			edition: ref.edition ?? '',
 			address: ref.address ?? '',
 			isbn: ref.isbn ?? '',
-			editors:
-				((ref.editors as Author[]) ?? []).length > 0 ? (ref.editors as Author[]) : [],
+			editors: ((ref.editors as Author[]) ?? []).length > 0 ? (ref.editors as Author[]) : [],
 			booktitle: ref.booktitle ?? '',
 			organization: ref.organization ?? '',
 			series: ref.series ?? '',
 			school: ref.school ?? '',
 			institution: ref.institution ?? '',
 			reportNumber: ref.reportNumber ?? '',
-			extra: ((ref.extra ?? {}) as Record<string, string>)
+			extra: (ref.extra ?? {}) as Record<string, string>
 		};
 		panel = 'edit';
 	}
@@ -351,7 +350,22 @@
 	let importError = $state('');
 
 	// ── DOI lookup ──────────────────────────────────────────────────────────
-	type DoiResult = { citeKey: string; type: string; title: string; authors: { first: string; last: string }[]; year: string | null; journal: string | null; doi: string; abstract: string | null; url: string; volume: string | null; issue: string | null; pages: string | null; publisher: string | null; editors: { first: string; last: string }[] };
+	type DoiResult = {
+		citeKey: string;
+		type: string;
+		title: string;
+		authors: { first: string; last: string }[];
+		year: string | null;
+		journal: string | null;
+		doi: string;
+		abstract: string | null;
+		url: string;
+		volume: string | null;
+		issue: string | null;
+		pages: string | null;
+		publisher: string | null;
+		editors: { first: string; last: string }[];
+	};
 	let doiInput = $state('');
 	let doiLoading = $state(false);
 	let doiResult = $state<DoiResult | null>(null);
@@ -363,7 +377,7 @@
 		doiResult = null;
 		doiError = '';
 		try {
-			doiResult = await trpc.references.fetchDoi.query(doiInput.trim()) as DoiResult;
+			doiResult = (await trpc.references.fetchDoi.query(doiInput.trim())) as DoiResult;
 		} catch (e) {
 			doiError = e instanceof Error ? e.message : 'DOI not found.';
 		} finally {
@@ -505,9 +519,9 @@
 	function formatAuthors(ref: Ref): string {
 		const authors = ref.authors as Author[];
 		if (!authors.length) return '';
-		if (authors.length === 1) return `${authors[0].last}${authors[0].first ? ', ' + authors[0].first : ''}`;
-		if (authors.length === 2)
-			return `${authors[0].last} & ${authors[1].last}`;
+		if (authors.length === 1)
+			return `${authors[0].last}${authors[0].first ? ', ' + authors[0].first : ''}`;
+		if (authors.length === 2) return `${authors[0].last} & ${authors[1].last}`;
 		return `${authors[0].last} et al.`;
 	}
 </script>
@@ -520,7 +534,13 @@
 			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-				<path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+				<path
+					d="M10 12L6 8l4-4"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
 			</svg>
 			{data.project.title}
 		</a>
@@ -529,35 +549,56 @@
 			<div>
 				<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Bibliography</h1>
 				<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					{references.length} {references.length === 1 ? 'referencia' : 'referencias'}
+					{references.length}
+					{references.length === 1 ? 'referencia' : 'referencias'}
 				</p>
 			</div>
 			<div class="flex items-center gap-2">
 				{#if references.length > 0}
-					<div class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border">
+					<div
+						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
+					>
 						{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
 							<button
 								onclick={() => (citationStyle = s as CitationStyle)}
-								class="px-3 py-1.5 font-sans text-xs transition-colors {citationStyle === s ? 'bg-accent text-white' : 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							>{label}</button>
+								class="px-3 py-1.5 font-sans text-xs transition-colors {citationStyle === s
+									? 'bg-accent text-white'
+									: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+								>{label}</button
+							>
 						{/each}
 					</div>
 				{/if}
 				<button
-					onclick={() => { showSemanticSearch = true; semanticQuery = ''; semanticResults = []; semanticError = ''; }}
+					onclick={() => {
+						showSemanticSearch = true;
+						semanticQuery = '';
+						semanticResults = [];
+						semanticError = '';
+					}}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					title="Buscar en Semantic Scholar"
 				>
 					Buscar paper
 				</button>
 				<button
-					onclick={() => { panel = 'doi'; doiInput = ''; doiResult = null; doiError = ''; }}
+					onclick={() => {
+						panel = 'doi';
+						doiInput = '';
+						doiResult = null;
+						doiError = '';
+					}}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					DOI lookup
 				</button>
 				<button
-					onclick={() => { panel = 'import'; importRaw = ''; importResult = null; importError = ''; }}
+					onclick={() => {
+						panel = 'import';
+						importRaw = '';
+						importResult = null;
+						importError = '';
+					}}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					Importar .bib
@@ -594,18 +635,28 @@
 
 	<!-- Reference list -->
 	<div class="flex flex-1 gap-6">
-		<div class="flex-1 min-w-0">
+		<div class="min-w-0 flex-1">
 			{#if references.length === 0}
-				<div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paper-border py-20 text-center dark:border-dark-paper-border">
+				<div
+					class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paper-border py-20 text-center dark:border-dark-paper-border"
+				>
 					<p class="font-serif text-lg text-ink-muted dark:text-dark-ink-muted">Sin referencias</p>
 					<p class="mt-1 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
 						Add references manually or import a .bib file
 					</p>
 					<div class="mt-4 flex gap-3">
-						<button onclick={openNew} class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover">
+						<button
+							onclick={openNew}
+							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover"
+						>
 							+ Nueva referencia
 						</button>
-						<button onclick={() => { panel = 'import'; }} class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted">
+						<button
+							onclick={() => {
+								panel = 'import';
+							}}
+							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+						>
 							Importar .bib
 						</button>
 					</div>
@@ -617,7 +668,9 @@
 			{:else}
 				<div class="flex flex-col gap-1">
 					{#each filtered() as ref (ref.id)}
-						<div class="group flex items-start gap-3 rounded-xl border border-paper-border bg-paper px-4 py-3 transition-colors hover:border-accent/30 dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/20">
+						<div
+							class="group flex items-start gap-3 rounded-xl border border-paper-border bg-paper px-4 py-3 transition-colors hover:border-accent/30 dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/20"
+						>
 							<!-- Cite key badge -->
 							<button
 								onclick={() => copyCiteKey(ref)}
@@ -653,29 +706,72 @@
 									</a>
 								{/if}
 								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-								<p class="mt-1.5 font-sans text-[11px] leading-snug text-ink-faint dark:text-dark-ink-faint">{@html renderInlineMarkdown(formatFullCitation(ref as unknown as CiteRef, citationStyle, filtered().indexOf(ref) + 1))}</p>
+								<p
+									class="mt-1.5 font-sans text-[11px] leading-snug text-ink-faint dark:text-dark-ink-faint"
+								>
+									{@html renderInlineMarkdown(
+										formatFullCitation(
+											ref as unknown as CiteRef,
+											citationStyle,
+											filtered().indexOf(ref) + 1
+										)
+									)}
+								</p>
 							</div>
 
 							<!-- Type badge -->
-							<span class="mt-0.5 shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint">
+							<span
+								class="mt-0.5 shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+							>
 								{TYPE_LABELS[ref.type] ?? ref.type}
 							</span>
 
 							<!-- Actions -->
-							<div class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+							<div
+								class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+							>
 								<button
 									onclick={() => toggleNotes(ref)}
-									class="relative rounded-md p-1.5 transition-colors {expandedNotes === ref.id ? 'text-accent' : 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
+									class="relative rounded-md p-1.5 transition-colors {expandedNotes === ref.id
+										? 'text-accent'
+										: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
 									title="Notas de lectura"
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-										<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-										<polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-										<line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-										<line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+										<path
+											d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
+										<polyline
+											points="14 2 14 8 20 8"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
+										<line
+											x1="16"
+											y1="13"
+											x2="8"
+											y2="13"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
+										<line
+											x1="16"
+											y1="17"
+											x2="8"
+											y2="17"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
 									</svg>
 									{#if ref.readingNotes}
-										<span class="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-accent"></span>
+										<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-accent"
+										></span>
 									{/if}
 								</button>
 								<button
@@ -684,8 +780,18 @@
 									title="Editar"
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-										<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-										<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+										<path
+											d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
+										<path
+											d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
 									</svg>
 								</button>
 								<button
@@ -694,9 +800,24 @@
 									title="Eliminar"
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-										<polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-										<path d="M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-										<path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+										<polyline
+											points="3 6 5 6 21 6"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
+										<path
+											d="M19 6l-1 14H6L5 6"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
+										<path
+											d="M10 11v6M14 11v6"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+										/>
 									</svg>
 								</button>
 							</div>
@@ -704,8 +825,13 @@
 
 						<!-- Reading notes panel (expandable) -->
 						{#if expandedNotes === ref.id}
-							<div class="border-t border-paper-border px-4 pb-3 pt-2.5 dark:border-dark-paper-border">
-								<label for="notes-{ref.id}" class="mb-1.5 block font-sans text-[11px] font-medium uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
+							<div
+								class="border-t border-paper-border px-4 pt-2.5 pb-3 dark:border-dark-paper-border"
+							>
+								<label
+									for="notes-{ref.id}"
+									class="mb-1.5 block font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+								>
 									Notas de lectura
 								</label>
 								<textarea
@@ -725,7 +851,7 @@
 										disabled={notesSaving}
 										class="rounded-md px-3 py-1 font-sans text-xs font-medium text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
 									>
-										Guardar
+										Save
 									</button>
 								</div>
 							</div>
@@ -738,25 +864,46 @@
 		<!-- ── Side panel ───────────────────────────────────────────────── -->
 		{#if panel === 'new' || panel === 'edit'}
 			<div class="w-full max-w-sm shrink-0">
-				<div class="sticky top-20 rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper overflow-hidden">
+				<div
+					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<!-- Panel header -->
-					<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border">
+					<div
+						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
+					>
 						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
 							{panel === 'edit' ? 'Editar referencia' : 'Nueva referencia'}
 						</h2>
-						<button onclick={closePanel} aria-label="Cerrar" class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+						<button
+							onclick={closePanel}
+							aria-label="Cerrar"
+							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						>
 							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-								<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+								<path
+									d="M1 1l12 12M13 1L1 13"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
 							</svg>
 						</button>
 					</div>
 
 					<!-- Panel body -->
-					<div class="max-h-[calc(100vh-10rem)] overflow-y-auto px-5 py-4 space-y-4">
+					<div class="max-h-[calc(100vh-10rem)] space-y-4 overflow-y-auto px-5 py-4">
 						<!-- Type -->
 						<div>
-							<label for="ref-type" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Tipo</label>
-							<select id="ref-type" bind:value={form.type} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+							<label
+								for="ref-type"
+								class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+								>Tipo</label
+							>
+							<select
+								id="ref-type"
+								bind:value={form.type}
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							>
 								{#each ALL_TYPES as t (t)}
 									<option value={t}>{TYPE_LABELS[t]}</option>
 								{/each}
@@ -765,125 +912,294 @@
 
 						<!-- Title -->
 						<div>
-							<label for="ref-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Title *</label>
-							<input id="ref-title" type="text" bind:value={form.title} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+							<label
+								for="ref-title"
+								class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+								>Title *</label
+							>
+							<input
+								id="ref-title"
+								type="text"
+								bind:value={form.title}
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
 						</div>
 
 						<!-- Authors (hidden for CCC — no personal author) -->
 						{#if !(form.type === 'magisterial' && form.extra.doctype === 'catechism')}
-						<div>
-							<div class="mb-1 flex items-center justify-between">
-								<span class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Autores</span>
-								<button onclick={addAuthor} class="font-sans text-xs text-accent hover:underline">+ Add</button>
+							<div>
+								<div class="mb-1 flex items-center justify-between">
+									<span
+										class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Autores</span
+									>
+									<button onclick={addAuthor} class="font-sans text-xs text-accent hover:underline"
+										>+ Add</button
+									>
+								</div>
+								<div class="space-y-1.5">
+									{#each form.authors as author, i (i)}
+										<div class="flex gap-1.5">
+											<input
+												type="text"
+												placeholder="Apellido"
+												value={author.last}
+												oninput={(e) =>
+													updateAuthor(i, 'last', (e.target as HTMLInputElement).value)}
+												onblur={autoCiteKey}
+												class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+											/>
+											<input
+												type="text"
+												placeholder="Nombre"
+												value={author.first}
+												oninput={(e) =>
+													updateAuthor(i, 'first', (e.target as HTMLInputElement).value)}
+												class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+											/>
+											{#if form.authors.length > 1}
+												<button
+													onclick={() => removeAuthor(i)}
+													class="shrink-0 rounded-md px-1.5 text-ink-faint hover:text-red-500"
+													>×</button
+												>
+											{/if}
+										</div>
+									{/each}
+								</div>
 							</div>
-							<div class="space-y-1.5">
-								{#each form.authors as author, i (i)}
-									<div class="flex gap-1.5">
-										<input
-											type="text"
-											placeholder="Apellido"
-											value={author.last}
-											oninput={(e) => updateAuthor(i, 'last', (e.target as HTMLInputElement).value)}
-											onblur={autoCiteKey}
-											class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-										/>
-										<input
-											type="text"
-											placeholder="Nombre"
-											value={author.first}
-											oninput={(e) => updateAuthor(i, 'first', (e.target as HTMLInputElement).value)}
-											class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-										/>
-										{#if form.authors.length > 1}
-											<button onclick={() => removeAuthor(i)} class="shrink-0 rounded-md px-1.5 text-ink-faint hover:text-red-500">×</button>
-										{/if}
-									</div>
-								{/each}
-							</div>
-						</div>
 						{/if}
 
 						<!-- Year + Cite key -->
 						<div class="grid grid-cols-2 gap-2">
 							<div>
-								<label for="ref-year" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Year</label>
-								<input id="ref-year" type="text" bind:value={form.year} maxlength={4} onblur={autoCiteKey} placeholder="2024" class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-year"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Year</label
+								>
+								<input
+									id="ref-year"
+									type="text"
+									bind:value={form.year}
+									maxlength={4}
+									onblur={autoCiteKey}
+									placeholder="2024"
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 							<div>
-								<label for="ref-key" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Clave (@cite)</label>
-								<input id="ref-key" type="text" bind:value={form.citeKey} placeholder="smith2024" class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-key"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Clave (@cite)</label
+								>
+								<input
+									id="ref-key"
+									type="text"
+									bind:value={form.citeKey}
+									placeholder="smith2024"
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 						</div>
 
 						<!-- Type-specific fields -->
 						{#if form.type === 'article'}
 							<div>
-								<label for="ref-journal" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Revista</label>
-								<input id="ref-journal" type="text" bind:value={form.journal} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-journal"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Revista</label
+								>
+								<input
+									id="ref-journal"
+									type="text"
+									bind:value={form.journal}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 							<div class="grid grid-cols-3 gap-2">
 								<div>
-									<label for="ref-vol" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Vol.</label>
-									<input id="ref-vol" type="text" bind:value={form.volume} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-vol"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Vol.</label
+									>
+									<input
+										id="ref-vol"
+										type="text"
+										bind:value={form.volume}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-issue" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">No.</label>
-									<input id="ref-issue" type="text" bind:value={form.issue} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-issue"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>No.</label
+									>
+									<input
+										id="ref-issue"
+										type="text"
+										bind:value={form.issue}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-pages" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Pages</label>
-									<input id="ref-pages" type="text" bind:value={form.pages} placeholder="1--12" class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-pages"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Pages</label
+									>
+									<input
+										id="ref-pages"
+										type="text"
+										bind:value={form.pages}
+										placeholder="1--12"
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 						{:else if form.type === 'book'}
 							<div>
-								<label for="ref-publisher" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Editorial</label>
-								<input id="ref-publisher" type="text" bind:value={form.publisher} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-publisher"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Editorial</label
+								>
+								<input
+									id="ref-publisher"
+									type="text"
+									bind:value={form.publisher}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 							<div class="grid grid-cols-2 gap-2">
 								<div>
-									<label for="ref-edition" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Edition</label>
-									<input id="ref-edition" type="text" bind:value={form.edition} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-edition"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Edition</label
+									>
+									<input
+										id="ref-edition"
+										type="text"
+										bind:value={form.edition}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-isbn" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">ISBN</label>
-									<input id="ref-isbn" type="text" bind:value={form.isbn} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-isbn"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>ISBN</label
+									>
+									<input
+										id="ref-isbn"
+										type="text"
+										bind:value={form.isbn}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 						{:else if form.type === 'inproceedings' || form.type === 'incollection'}
 							<div>
-								<label for="ref-booktitle" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">{form.type === 'incollection' ? 'Libro' : 'Conferencia / Proceedings'}</label>
-								<input id="ref-booktitle" type="text" bind:value={form.booktitle} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-booktitle"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>{form.type === 'incollection' ? 'Libro' : 'Conferencia / Proceedings'}</label
+								>
+								<input
+									id="ref-booktitle"
+									type="text"
+									bind:value={form.booktitle}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 							<div class="grid grid-cols-2 gap-2">
 								<div>
-									<label for="ref-pages2" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Pages</label>
-									<input id="ref-pages2" type="text" bind:value={form.pages} placeholder="1--12" class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-pages2"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Pages</label
+									>
+									<input
+										id="ref-pages2"
+										type="text"
+										bind:value={form.pages}
+										placeholder="1--12"
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-org" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Organization</label>
-									<input id="ref-org" type="text" bind:value={form.organization} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-org"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Organization</label
+									>
+									<input
+										id="ref-org"
+										type="text"
+										bind:value={form.organization}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 						{:else if form.type === 'phdthesis' || form.type === 'mastersthesis'}
 							<div>
-								<label for="ref-school" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">University / Institution</label>
-								<input id="ref-school" type="text" bind:value={form.school} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-school"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>University / Institution</label
+								>
+								<input
+									id="ref-school"
+									type="text"
+									bind:value={form.school}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 						{:else if form.type === 'techreport'}
 							<div>
-								<label for="ref-inst" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Institution</label>
-								<input id="ref-inst" type="text" bind:value={form.institution} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-inst"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Institution</label
+								>
+								<input
+									id="ref-inst"
+									type="text"
+									bind:value={form.institution}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 							<div>
-								<label for="ref-repnum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Report number</label>
-								<input id="ref-repnum" type="text" bind:value={form.reportNumber} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-repnum"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Report number</label
+								>
+								<input
+									id="ref-repnum"
+									type="text"
+									bind:value={form.reportNumber}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 						{:else if form.type === 'magisterial'}
 							<!-- Document type selector — comes first so the rest of the form adapts -->
 							<div>
-								<label for="ref-doctype" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Document type</label>
-								<select id="ref-doctype" bind:value={form.extra.doctype} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+								<label
+									for="ref-doctype"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Document type</label
+								>
+								<select
+									id="ref-doctype"
+									bind:value={form.extra.doctype}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								>
 									<option value="">— select —</option>
 									<option value="encyclical">Encyclical</option>
 									<option value="apostolic_exhortation">Apostolic Exhortation</option>
@@ -899,75 +1215,180 @@
 
 							{#if form.extra.doctype === 'catechism'}
 								<!-- CCC: fixed document, no personal author, cite by paragraph -->
-								<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+								<p
+									class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+								>
 									Use <strong>Catechism of the Catholic Church</strong> as the title. No author needed.
 								</p>
 								<div>
-									<label for="ref-paragraph" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Paragraph §</label>
-									<input id="ref-paragraph" type="text" placeholder="1234" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-paragraph"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Paragraph §</label
+									>
+									<input
+										id="ref-paragraph"
+										type="text"
+										placeholder="1234"
+										bind:value={form.extra.paragraph}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
-
 							{:else if form.extra.doctype === 'canon_law'}
 								<!-- Canon Law: CIC 1983 or CCEO, canon number -->
 								<div class="grid grid-cols-2 gap-2">
 									<div>
-										<label for="ref-canon-code" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Code</label>
-										<select id="ref-canon-code" bind:value={form.extra.canon_code} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+										<label
+											for="ref-canon-code"
+											class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+											>Code</label
+										>
+										<select
+											id="ref-canon-code"
+											bind:value={form.extra.canon_code}
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										>
 											<option value="CIC1983">CIC 1983</option>
 											<option value="CCEO">CCEO</option>
 										</select>
 									</div>
 									<div>
-										<label for="ref-canon" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Canon c.</label>
-										<input id="ref-canon" type="text" placeholder="1024" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+										<label
+											for="ref-canon"
+											class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+											>Canon c.</label
+										>
+										<input
+											id="ref-canon"
+											type="text"
+											placeholder="1024"
+											bind:value={form.extra.paragraph}
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										/>
 									</div>
 								</div>
-
 							{:else if form.extra.doctype === 'conciliar_constitution' || form.extra.doctype === 'conciliar_decree' || form.extra.doctype === 'conciliar_declaration'}
 								<!-- Conciliar: Latin title + siglum + paragraph -->
 								<div class="grid grid-cols-2 gap-2">
 									<div>
-										<label for="ref-latin-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Latin title</label>
-										<input id="ref-latin-title" type="text" placeholder="Gaudium et Spes" bind:value={form.extra.latin_title} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-serif text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+										<label
+											for="ref-latin-title"
+											class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+											>Latin title</label
+										>
+										<input
+											id="ref-latin-title"
+											type="text"
+											placeholder="Gaudium et Spes"
+											bind:value={form.extra.latin_title}
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-serif text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										/>
 									</div>
 									<div>
-										<label for="ref-siglum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Siglum</label>
-										<input id="ref-siglum" type="text" placeholder="GS" bind:value={form.extra.siglum} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+										<label
+											for="ref-siglum"
+											class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+											>Siglum</label
+										>
+										<input
+											id="ref-siglum"
+											type="text"
+											placeholder="GS"
+											bind:value={form.extra.siglum}
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										/>
 									</div>
 								</div>
 								<div>
-									<label for="ref-paragraph" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Paragraph §</label>
-									<input id="ref-paragraph" type="text" placeholder="45" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-paragraph"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Paragraph §</label
+									>
+									<input
+										id="ref-paragraph"
+										type="text"
+										placeholder="45"
+										bind:value={form.extra.paragraph}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
-
 							{:else}
 								<!-- Papal (encyclical, exhortation, etc.) and generic -->
 								{#if form.extra.doctype === 'encyclical' || form.extra.doctype === 'apostolic_exhortation' || form.extra.doctype === 'apostolic_constitution'}
 									<div>
-										<label for="ref-pope" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Pope</label>
-										<input id="ref-pope" type="text" placeholder="Francis, John Paul II…" bind:value={form.extra.pope} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+										<label
+											for="ref-pope"
+											class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+											>Pope</label
+										>
+										<input
+											id="ref-pope"
+											type="text"
+											placeholder="Francis, John Paul II…"
+											bind:value={form.extra.pope}
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										/>
 									</div>
 								{/if}
 								<div class="grid grid-cols-2 gap-2">
 									<div>
-										<label for="ref-siglum" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Siglum</label>
-										<input id="ref-siglum" type="text" placeholder="EG, LS, GS…" bind:value={form.extra.siglum} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+										<label
+											for="ref-siglum"
+											class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+											>Siglum</label
+										>
+										<input
+											id="ref-siglum"
+											type="text"
+											placeholder="EG, LS, GS…"
+											bind:value={form.extra.siglum}
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										/>
 									</div>
 									<div>
-										<label for="ref-paragraph" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Paragraph §</label>
-										<input id="ref-paragraph" type="text" placeholder="45" bind:value={form.extra.paragraph} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+										<label
+											for="ref-paragraph"
+											class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+											>Paragraph §</label
+										>
+										<input
+											id="ref-paragraph"
+											type="text"
+											placeholder="45"
+											bind:value={form.extra.paragraph}
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										/>
 									</div>
 								</div>
 							{/if}
 						{:else if form.type === 'patristic'}
 							<div>
-								<label for="ref-section" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Section (book.chapter.§)</label>
-								<input id="ref-section" type="text" placeholder="10.8.15" bind:value={form.extra.section} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-section"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Section (book.chapter.§)</label
+								>
+								<input
+									id="ref-section"
+									type="text"
+									placeholder="10.8.15"
+									bind:value={form.extra.section}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 							<div class="grid grid-cols-2 gap-2">
 								<div>
-									<label for="ref-edition" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Critical edition</label>
-									<select id="ref-edition" bind:value={form.extra.edition} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+									<label
+										for="ref-edition"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Critical edition</label
+									>
+									<select
+										id="ref-edition"
+										bind:value={form.extra.edition}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									>
 										<option value="">— none —</option>
 										<option value="PG">PG (Patrologia Graeca)</option>
 										<option value="PL">PL (Patrologia Latina)</option>
@@ -978,31 +1399,82 @@
 									</select>
 								</div>
 								<div>
-									<label for="ref-column" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Vol:col / page</label>
-									<input id="ref-column" type="text" placeholder="32:456" bind:value={form.extra.column} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-column"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Vol:col / page</label
+									>
+									<input
+										id="ref-column"
+										type="text"
+										placeholder="32:456"
+										bind:value={form.extra.column}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 						{:else if form.type === 'scholastic'}
-							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
-								Use <strong>Title</strong> for the work name (e.g. <em>Summa Theologiae</em>) and fill Author as usual.
+							<p
+								class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+							>
+								Use <strong>Title</strong> for the work name (e.g. <em>Summa Theologiae</em>) and
+								fill Author as usual.
 							</p>
 							<div class="grid grid-cols-3 gap-2">
 								<div>
-									<label for="ref-part" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Part</label>
-									<input id="ref-part" type="text" placeholder="I-II" bind:value={form.extra.part} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-part"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Part</label
+									>
+									<input
+										id="ref-part"
+										type="text"
+										placeholder="I-II"
+										bind:value={form.extra.part}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-question" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Question (q.)</label>
-									<input id="ref-question" type="text" placeholder="94" bind:value={form.extra.question} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-question"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Question (q.)</label
+									>
+									<input
+										id="ref-question"
+										type="text"
+										placeholder="94"
+										bind:value={form.extra.question}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-article" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Article (a.)</label>
-									<input id="ref-article" type="text" placeholder="2" bind:value={form.extra.article} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-article"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Article (a.)</label
+									>
+									<input
+										id="ref-article"
+										type="text"
+										placeholder="2"
+										bind:value={form.extra.article}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 							<div>
-								<label for="ref-subdivision" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Subdivision</label>
-								<select id="ref-subdivision" bind:value={form.extra.subdivision} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+								<label
+									for="ref-subdivision"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Subdivision</label
+								>
+								<select
+									id="ref-subdivision"
+									bind:value={form.extra.subdivision}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								>
 									<option value="">— none —</option>
 									<option value="corp.">corp. (corpus)</option>
 									<option value="s.c.">s.c. (sed contra)</option>
@@ -1015,12 +1487,24 @@
 								</select>
 							</div>
 						{:else if form.type === 'biblical'}
-							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
-								Use <strong>Title</strong> for the full name of the translation (e.g. <em>The Holy Bible, New Revised Standard Version</em>). Biblical citations appear as inline parentheticals — usually not in the bibliography.
+							<p
+								class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+							>
+								Use <strong>Title</strong> for the full name of the translation (e.g.
+								<em>The Holy Bible, New Revised Standard Version</em>). Biblical citations appear as
+								inline parentheticals — usually not in the bibliography.
 							</p>
 							<div>
-								<label for="ref-translation" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Translation</label>
-								<select id="ref-translation" bind:value={form.extra.translation} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+								<label
+									for="ref-translation"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Translation</label
+								>
+								<select
+									id="ref-translation"
+									bind:value={form.extra.translation}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								>
 									<option value="">— select —</option>
 									<option value="RSV">RSV (Revised Standard Version)</option>
 									<option value="NRSV">NRSV (New Revised Standard Version)</option>
@@ -1037,30 +1521,83 @@
 							<!-- Book / chapter / verse for inline citation (Jn 1:1 NRSV) -->
 							<div class="grid grid-cols-4 gap-2">
 								<div class="col-span-2">
-									<label for="ref-bib-book" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Book</label>
-									<input id="ref-bib-book" type="text" placeholder="Jn, Rom, Gen…" bind:value={form.extra.book} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-bib-book"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Book</label
+									>
+									<input
+										id="ref-bib-book"
+										type="text"
+										placeholder="Jn, Rom, Gen…"
+										bind:value={form.extra.book}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-bib-chapter" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Chapter</label>
-									<input id="ref-bib-chapter" type="text" placeholder="1" bind:value={form.extra.chapter} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-bib-chapter"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Chapter</label
+									>
+									<input
+										id="ref-bib-chapter"
+										type="text"
+										placeholder="1"
+										bind:value={form.extra.chapter}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-bib-verse" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Verse(s)</label>
-									<input id="ref-bib-verse" type="text" placeholder="1–3" bind:value={form.extra.verse} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-bib-verse"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Verse(s)</label
+									>
+									<input
+										id="ref-bib-verse"
+										type="text"
+										placeholder="1–3"
+										bind:value={form.extra.verse}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 							<div class="flex items-center gap-2">
-								<input id="ref-deutero" type="checkbox" checked={form.extra.deuterocanonical === 'true'} onchange={(e) => { form.extra.deuterocanonical = (e.currentTarget as HTMLInputElement).checked ? 'true' : ''; }} class="h-4 w-4 rounded border-paper-border accent-accent" />
-								<label for="ref-deutero" class="font-sans text-sm text-ink dark:text-dark-ink">Includes deuterocanonical / apocryphal books</label>
+								<input
+									id="ref-deutero"
+									type="checkbox"
+									checked={form.extra.deuterocanonical === 'true'}
+									onchange={(e) => {
+										form.extra.deuterocanonical = (e.currentTarget as HTMLInputElement).checked
+											? 'true'
+											: '';
+									}}
+									class="h-4 w-4 rounded border-paper-border accent-accent"
+								/>
+								<label for="ref-deutero" class="font-sans text-sm text-ink dark:text-dark-ink"
+									>Includes deuterocanonical / apocryphal books</label
+								>
 							</div>
 						{:else if form.type === 'classical'}
-							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
-								For Plato (Stephanus), Aristotle (Bekker), and other ancient authors with canonical numbering. Cite by canonical passage, independent of edition.
+							<p
+								class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+							>
+								For Plato (Stephanus), Aristotle (Bekker), and other ancient authors with canonical
+								numbering. Cite by canonical passage, independent of edition.
 							</p>
 							<div class="grid grid-cols-2 gap-2">
 								<div>
-									<label for="ref-pagination" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Pagination system</label>
-									<select id="ref-pagination" bind:value={form.extra.pagination_system} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
+									<label
+										for="ref-pagination"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Pagination system</label
+									>
+									<select
+										id="ref-pagination"
+										bind:value={form.extra.pagination_system}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									>
 										<option value="">— select —</option>
 										<option value="stephanus">Stephanus (Plato)</option>
 										<option value="bekker">Bekker (Aristotle)</option>
@@ -1069,66 +1606,177 @@
 									</select>
 								</div>
 								<div>
-									<label for="ref-work-abbrev" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Work abbreviation</label>
-									<input id="ref-work-abbrev" type="text" placeholder="Rep., Met., NE…" bind:value={form.extra.work_abbrev} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-work-abbrev"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Work abbreviation</label
+									>
+									<input
+										id="ref-work-abbrev"
+										type="text"
+										placeholder="Rep., Met., NE…"
+										bind:value={form.extra.work_abbrev}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 							<div>
-								<label for="ref-passage" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Passage</label>
-								<input id="ref-passage" type="text" placeholder="514a–520a  or  1045b23–35" bind:value={form.extra.passage} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-passage"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Passage</label
+								>
+								<input
+									id="ref-passage"
+									type="text"
+									placeholder="514a–520a  or  1045b23–35"
+									bind:value={form.extra.passage}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 							<div>
-								<label for="ref-translator" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Translator</label>
-								<input id="ref-translator" type="text" placeholder="G.M.A. Grube" bind:value={form.extra.translator} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+								<label
+									for="ref-translator"
+									class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+									>Translator</label
+								>
+								<input
+									id="ref-translator"
+									type="text"
+									placeholder="G.M.A. Grube"
+									bind:value={form.extra.translator}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
 							</div>
 						{:else if form.type === 'earlymodern'}
-							<p class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
-								For Descartes, Kant, Spinoza, Hegel, Hume, Leibniz, etc. Cite by standard edition sigla (AT, AA, KrV A/B, GW…) or section/paragraph.
+							<p
+								class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+							>
+								For Descartes, Kant, Spinoza, Hegel, Hume, Leibniz, etc. Cite by standard edition
+								sigla (AT, AA, KrV A/B, GW…) or section/paragraph.
 							</p>
 							<div class="grid grid-cols-2 gap-2">
 								<div>
-									<label for="ref-sigla" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Edition sigla</label>
-									<input id="ref-sigla" type="text" placeholder="AT, AA, KrV, GW…" bind:value={form.extra.edition_sigla} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-sigla"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Edition sigla</label
+									>
+									<input
+										id="ref-sigla"
+										type="text"
+										placeholder="AT, AA, KrV, GW…"
+										bind:value={form.extra.edition_sigla}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-em-section" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Section / §</label>
-									<input id="ref-em-section" type="text" placeholder="A123/B456  or  §142  or  7:45" bind:value={form.extra.section} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-em-section"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Section / §</label
+									>
+									<input
+										id="ref-em-section"
+										type="text"
+										placeholder="A123/B456  or  §142  or  7:45"
+										bind:value={form.extra.section}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 							<div class="grid grid-cols-2 gap-2">
 								<div>
-									<label for="ref-em-translator" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Translator</label>
-									<input id="ref-em-translator" type="text" placeholder="Norman Kemp Smith" bind:value={form.extra.translator} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-em-translator"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Translator</label
+									>
+									<input
+										id="ref-em-translator"
+										type="text"
+										placeholder="Norman Kemp Smith"
+										bind:value={form.extra.translator}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 								<div>
-									<label for="ref-orig-year" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Original year</label>
-									<input id="ref-orig-year" type="text" placeholder="1781" bind:value={form.extra.original_year} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+									<label
+										for="ref-orig-year"
+										class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+										>Original year</label
+									>
+									<input
+										id="ref-orig-year"
+										type="text"
+										placeholder="1781"
+										bind:value={form.extra.original_year}
+										class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									/>
 								</div>
 							</div>
 						{/if}
 
 						<!-- Common optional fields -->
 						<div>
-							<label for="ref-doi" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">DOI</label>
-							<input id="ref-doi" type="text" bind:value={form.doi} placeholder="10.xxxx/xxxxx" class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+							<label
+								for="ref-doi"
+								class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+								>DOI</label
+							>
+							<input
+								id="ref-doi"
+								type="text"
+								bind:value={form.doi}
+								placeholder="10.xxxx/xxxxx"
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
 						</div>
 						<div>
-							<label for="ref-url" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">URL</label>
-							<input id="ref-url" type="text" bind:value={form.url} class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
+							<label
+								for="ref-url"
+								class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+								>URL</label
+							>
+							<input
+								id="ref-url"
+								type="text"
+								bind:value={form.url}
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
 						</div>
 						<div>
-							<label for="ref-abstract" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">Resumen</label>
-							<textarea id="ref-abstract" bind:value={form.abstract} rows={3} class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"></textarea>
+							<label
+								for="ref-abstract"
+								class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+								>Resumen</label
+							>
+							<textarea
+								id="ref-abstract"
+								bind:value={form.abstract}
+								rows={3}
+								class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							></textarea>
 						</div>
 
 						{#if saveError}
-							<p class="rounded-lg bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:bg-red-950/30 dark:text-red-400">{saveError}</p>
+							<p
+								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:bg-red-950/30 dark:text-red-400"
+							>
+								{saveError}
+							</p>
 						{/if}
 					</div>
 
 					<!-- Panel footer -->
-					<div class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border">
-						<button onclick={closePanel} disabled={saving} class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted">
+					<div
+						class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border"
+					>
+						<button
+							onclick={closePanel}
+							disabled={saving}
+							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
+						>
 							Cancelar
 						</button>
 						<button
@@ -1136,23 +1784,40 @@
 							disabled={saving || !form.title.trim()}
 							class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 						>
-							{saving ? 'Guardando…' : panel === 'edit' ? 'Guardar cambios' : 'Crear referencia'}
+							{saving ? 'Saving…' : panel === 'edit' ? 'Save changes' : 'Create reference'}
 						</button>
 					</div>
 				</div>
 			</div>
 
-		<!-- ── DOI lookup panel ─────────────────────────────────────────────── -->
+			<!-- ── DOI lookup panel ─────────────────────────────────────────────── -->
 		{:else if panel === 'doi'}
 			<div class="w-full max-w-sm shrink-0">
-				<div class="sticky top-20 rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper overflow-hidden">
-					<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border">
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">DOI lookup</h2>
-						<button onclick={closePanel} aria-label="Close" class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+				<div
+					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+				>
+					<div
+						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
+					>
+						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+							DOI lookup
+						</h2>
+						<button
+							onclick={closePanel}
+							aria-label="Close"
+							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						>
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+								><path
+									d="M1 1l12 12M13 1L1 13"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/></svg
+							>
 						</button>
 					</div>
-					<div class="px-5 py-4 space-y-4">
+					<div class="space-y-4 px-5 py-4">
 						<div class="flex gap-2">
 							<input
 								type="text"
@@ -1171,14 +1836,24 @@
 						</div>
 
 						{#if doiError}
-							<p class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">{doiError}</p>
+							<p
+								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
+							>
+								{doiError}
+							</p>
 						{/if}
 
 						{#if doiResult}
-							<div class="rounded-lg border border-paper-border bg-paper-ui px-4 py-3 space-y-1.5 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-								<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">{doiResult.title}</p>
+							<div
+								class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+							>
+								<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+									{doiResult.title}
+								</p>
 								{#if doiResult.authors.length}
-									<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">{doiResult.authors.map(a => `${a.last}, ${a.first}`).join(' · ')}</p>
+									<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+										{doiResult.authors.map((a) => `${a.last}, ${a.first}`).join(' · ')}
+									</p>
 								{/if}
 								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 									{[doiResult.journal, doiResult.year].filter(Boolean).join(', ')}
@@ -1197,49 +1872,95 @@
 				</div>
 			</div>
 
-		<!-- ── Import panel ──────────────────────────────────────────────── -->
+			<!-- ── Import panel ──────────────────────────────────────────────── -->
 		{:else if panel === 'import'}
 			<div class="w-full max-w-sm shrink-0">
-				<div class="sticky top-20 rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper overflow-hidden">
-					<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border">
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Importar BibTeX</h2>
-						<button onclick={closePanel} aria-label="Cerrar" class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+				<div
+					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+				>
+					<div
+						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
+					>
+						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+							Importar BibTeX
+						</h2>
+						<button
+							onclick={closePanel}
+							aria-label="Cerrar"
+							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						>
 							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-								<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+								<path
+									d="M1 1l12 12M13 1L1 13"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
 							</svg>
 						</button>
 					</div>
 
-					<div class="px-5 py-4 space-y-4">
+					<div class="space-y-4 px-5 py-4">
 						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Pega el contenido de un archivo <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.bib</code> o varias entradas BibTeX.
+							Pega el contenido de un archivo <code
+								class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.bib</code
+							> o varias entradas BibTeX.
 						</p>
 
-						<label class="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-paper-border px-3 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+						<label
+							class="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-paper-border px-3 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted"
+						>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline
+									points="17 8 12 3 7 8"
+								/><line x1="12" y1="3" x2="12" y2="15" /></svg
+							>
 							Load .bib file
-							<input type="file" accept=".bib,.bibtex" class="sr-only" onchange={async (e) => { const file = (e.currentTarget as HTMLInputElement).files?.[0]; if (file) importRaw = await file.text(); }} />
+							<input
+								type="file"
+								accept=".bib,.bibtex"
+								class="sr-only"
+								onchange={async (e) => {
+									const file = (e.currentTarget as HTMLInputElement).files?.[0];
+									if (file) importRaw = await file.text();
+								}}
+							/>
 						</label>
 						<div>
-							<label for="import-raw" class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
+							<label
+								for="import-raw"
+								class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+							>
 								Contenido BibTeX
 								{#if importPreview() > 0}
-									<span class="ml-1 text-accent">· {importPreview()} {importPreview() === 1 ? 'entrada' : 'entradas'} detectadas</span>
+									<span class="ml-1 text-accent"
+										>· {importPreview()}
+										{importPreview() === 1 ? 'entrada' : 'entradas'} detectadas</span
+									>
 								{/if}
 							</label>
 							<textarea
 								id="import-raw"
 								bind:value={importRaw}
 								rows={12}
-								placeholder={"@article{smith2024,\n  title = {Example},\n  author = {Smith, John},\n  year = {2024},\n  journal = {Nature}\n}"}
+								placeholder={'@article{smith2024,\n  title = {Example},\n  author = {Smith, John},\n  year = {2024},\n  journal = {Nature}\n}'}
 								class="w-full resize-y rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 							></textarea>
 						</div>
 
 						{#if importResult}
-							<div class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30">
+							<div
+								class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30"
+							>
 								<p class="font-sans text-sm text-green-700 dark:text-green-400">
-									✓ {importResult.inserted} {importResult.inserted === 1 ? 'referencia importada' : 'referencias importadas'}
+									✓ {importResult.inserted}
+									{importResult.inserted === 1 ? 'referencia importada' : 'referencias importadas'}
 									{#if importResult.skipped > 0}
 										· {importResult.skipped} omitidas
 									{/if}
@@ -1248,12 +1969,21 @@
 						{/if}
 
 						{#if importError}
-							<p class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">{importError}</p>
+							<p
+								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
+							>
+								{importError}
+							</p>
 						{/if}
 					</div>
 
-					<div class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border">
-						<button onclick={closePanel} class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted">
+					<div
+						class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border"
+					>
+						<button
+							onclick={closePanel}
+							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+						>
 							Cerrar
 						</button>
 						<button
@@ -1277,9 +2007,14 @@
 		aria-modal="true"
 		aria-labelledby="semantic-search-title"
 	>
-		<div class="flex w-full max-w-2xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+		<div
+			class="flex w-full max-w-2xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+		>
 			<div class="flex items-center justify-between">
-				<h2 id="semantic-search-title" class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+				<h2
+					id="semantic-search-title"
+					class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
+				>
 					Buscar en Semantic Scholar
 				</h2>
 				<button
@@ -1288,13 +2023,21 @@
 					aria-label="Cerrar"
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						<path
+							d="M18 6 6 18M6 6l12 12"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
 					</svg>
 				</button>
 			</div>
 
 			<form
-				onsubmit={(e) => { e.preventDefault(); searchSemantic(); }}
+				onsubmit={(e) => {
+					e.preventDefault();
+					searchSemantic();
+				}}
 				class="flex gap-2"
 			>
 				<input
@@ -1319,15 +2062,22 @@
 			{#if semanticResults.length > 0}
 				<div class="flex flex-col gap-2 overflow-y-auto" style="max-height: 420px;">
 					{#each semanticResults as result (result.paperId)}
-						<div class="flex items-start gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+						<div
+							class="flex items-start gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+						>
 							<div class="min-w-0 flex-1">
-								<p class="font-sans text-sm font-medium leading-snug text-ink dark:text-dark-ink">
+								<p class="font-sans text-sm leading-snug font-medium text-ink dark:text-dark-ink">
 									{result.title}
 								</p>
 								<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-									{result.authors.slice(0, 3).map((a) => a.name).join(', ')}{result.authors.length > 3 ? ' et al.' : ''}
-									{#if result.year} · {result.year}{/if}
-									{#if result.venue} · <span class="italic">{result.venue}</span>{/if}
+									{result.authors
+										.slice(0, 3)
+										.map((a) => a.name)
+										.join(', ')}{result.authors.length > 3 ? ' et al.' : ''}
+									{#if result.year}
+										· {result.year}{/if}
+									{#if result.venue}
+										· <span class="italic">{result.venue}</span>{/if}
 								</p>
 								{#if result.externalIds?.DOI}
 									<p class="mt-0.5 font-mono text-xs text-ink-faint dark:text-dark-ink-faint">

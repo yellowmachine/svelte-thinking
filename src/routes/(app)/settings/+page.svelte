@@ -17,7 +17,8 @@
 	let confirmPassword = $state('');
 
 	// Active section
-	let activeTab: 'profile' | 'ai' | 'security' | 'appearance' | 'organizations' | 'storage' = $state('profile');
+	let activeTab: 'profile' | 'ai' | 'security' | 'appearance' | 'organizations' | 'storage' =
+		$state('profile');
 
 	function formatDate(d: Date | null): string {
 		if (!d) return '—';
@@ -57,7 +58,12 @@
 	let deletingKeyId = $state<string | null>(null);
 
 	// Task config saving state
-	let savingTask = $state<Record<AiTaskId, boolean>>({ agent: false, draft: false, review: false, requirements: false });
+	let savingTask = $state<Record<AiTaskId, boolean>>({
+		agent: false,
+		draft: false,
+		review: false,
+		requirements: false
+	});
 
 	async function loadAiConfig() {
 		loadingAi = true;
@@ -253,7 +259,14 @@
 	}
 
 	// ── S3 config state ──────────────────────────────────────────────────────
-	type S3Config = { endpoint: string; bucket: string; region: string; publicUrl: string | null; verified: boolean; createdAt: Date };
+	type S3Config = {
+		endpoint: string;
+		bucket: string;
+		region: string;
+		publicUrl: string | null;
+		verified: boolean;
+		createdAt: Date;
+	};
 	let s3Loaded = $state(false);
 	let loadingS3 = $state(false);
 	let s3Error = $state('');
@@ -288,7 +301,8 @@
 	}
 
 	async function handleSaveS3() {
-		if (!s3Endpoint.trim() || !s3Bucket.trim() || !s3AccessKey.trim() || !s3SecretKey.trim()) return;
+		if (!s3Endpoint.trim() || !s3Bucket.trim() || !s3AccessKey.trim() || !s3SecretKey.trim())
+			return;
 		s3Saving = true;
 		s3Error = '';
 		s3Success = '';
@@ -449,9 +463,10 @@
 	<!-- ── PROFILE TAB ── -->
 	{#if activeTab === 'profile'}
 		<div class="flex flex-col gap-8">
-
 			<!-- Personal info -->
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+			<section
+				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
 				<h2 class="mb-5 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
 					Personal information
 				</h2>
@@ -459,8 +474,15 @@
 				<div class="flex flex-col gap-4">
 					<!-- Avatar placeholder -->
 					<div class="flex items-center gap-4">
-						<div class="flex h-16 w-16 items-center justify-center rounded-full bg-accent font-serif text-2xl font-semibold text-white">
-							{data.user.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()}
+						<div
+							class="flex h-16 w-16 items-center justify-center rounded-full bg-accent font-serif text-2xl font-semibold text-white"
+						>
+							{data.user.name
+								.split(' ')
+								.map((w: string) => w[0])
+								.slice(0, 2)
+								.join('')
+								.toUpperCase()}
 						</div>
 						<div>
 							<button
@@ -470,7 +492,9 @@
 							>
 								Cambiar foto
 							</button>
-							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Coming soon</p>
+							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								Coming soon
+							</p>
 						</div>
 					</div>
 
@@ -506,79 +530,115 @@
 							disabled
 							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white opacity-50"
 						>
-							Guardar cambios
+							Save changes
 						</button>
 					</div>
 				</div>
 			</section>
 
 			<!-- ORCID -->
-		<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-			<div class="mb-4 flex items-start justify-between gap-4">
-				<div>
-					<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">ORCID</h2>
-					<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Connect your ORCID account to verify your academic identity.
-					</p>
-				</div>
-				<svg width="32" height="32" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true" class="shrink-0">
-					<path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"/>
-				</svg>
-			</div>
-
-			{#if data.orcidStatus === 'connected'}
-				<p class="mb-4 rounded-lg bg-green-50 px-4 py-2 font-sans text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-					ORCID connected successfully.
-				</p>
-			{:else if data.orcidStatus === 'error'}
-				<p class="mb-4 rounded-lg bg-red-50 px-4 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-					Error connecting ORCID. Please try again.
-				</p>
-			{/if}
-
-			{#if data.orcid && data.orcidVerified}
-				<div class="flex items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/40 dark:bg-green-900/10">
-					<div class="flex items-center gap-2">
-						<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" class="shrink-0 text-green-600 dark:text-green-400">
-							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
-						</svg>
-						<span class="font-sans text-sm font-medium text-green-700 dark:text-green-400">Verified</span>
-						<span class="font-mono text-sm text-ink dark:text-dark-ink">{data.orcid}</span>
+			<section
+				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
+				<div class="mb-4 flex items-start justify-between gap-4">
+					<div>
+						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">ORCID</h2>
+						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+							Connect your ORCID account to verify your academic identity.
+						</p>
 					</div>
-					<a
-						href="/api/auth/orcid/connect"
-						class="font-sans text-xs text-ink-muted underline hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					<svg
+						width="32"
+						height="32"
+						viewBox="0 0 24 24"
+						fill="#A6CE39"
+						aria-hidden="true"
+						class="shrink-0"
 					>
-						Reconnect
-					</a>
+						<path
+							d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"
+						/>
+					</svg>
 				</div>
-			{:else}
-				{#if data.orcid}
-					<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Current ORCID (unverified): <span class="font-mono">{data.orcid}</span>
+
+				{#if data.orcidStatus === 'connected'}
+					<p
+						class="mb-4 rounded-lg bg-green-50 px-4 py-2 font-sans text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400"
+					>
+						ORCID connected successfully.
+					</p>
+				{:else if data.orcidStatus === 'error'}
+					<p
+						class="mb-4 rounded-lg bg-red-50 px-4 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
+					>
+						Error connecting ORCID. Please try again.
 					</p>
 				{/if}
-				<a
-					href="/api/auth/orcid/connect"
-					class="inline-flex items-center gap-2 rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
-				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true">
-						<path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"/>
-					</svg>
-					Connect with ORCID
-				</a>
-			{/if}
-		</section>
 
-		<!-- Change password -->
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+				{#if data.orcid && data.orcidVerified}
+					<div
+						class="flex items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/40 dark:bg-green-900/10"
+					>
+						<div class="flex items-center gap-2">
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+								class="shrink-0 text-green-600 dark:text-green-400"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							<span class="font-sans text-sm font-medium text-green-700 dark:text-green-400"
+								>Verified</span
+							>
+							<span class="font-mono text-sm text-ink dark:text-dark-ink">{data.orcid}</span>
+						</div>
+						<a
+							href="/api/auth/orcid/connect"
+							class="font-sans text-xs text-ink-muted underline hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+						>
+							Reconnect
+						</a>
+					</div>
+				{:else}
+					{#if data.orcid}
+						<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+							Current ORCID (unverified): <span class="font-mono">{data.orcid}</span>
+						</p>
+					{/if}
+					<a
+						href="/api/auth/orcid/connect"
+						class="inline-flex items-center gap-2 rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
+					>
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true">
+							<path
+								d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"
+							/>
+						</svg>
+						Connect with ORCID
+					</a>
+				{/if}
+			</section>
+
+			<!-- Change password -->
+			<section
+				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
 				<h2 class="mb-5 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
 					Change password
 				</h2>
 
 				<div class="flex flex-col gap-4">
 					<div class="flex flex-col gap-1.5">
-						<label for="current-password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						<label
+							for="current-password"
+							class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+						>
 							Current password
 						</label>
 						<input
@@ -592,7 +652,10 @@
 
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div class="flex flex-col gap-1.5">
-							<label for="new-password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							<label
+								for="new-password"
+								class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+							>
 								New password
 							</label>
 							<input
@@ -604,7 +667,10 @@
 							/>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label for="confirm-password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							<label
+								for="confirm-password"
+								class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+							>
 								Confirm password
 							</label>
 							<input
@@ -630,12 +696,16 @@
 			</section>
 
 			<!-- Danger zone -->
-			<div class="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
+			<div
+				class="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30"
+			>
 				<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
 				<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
 					These actions are permanent and irreversible.
 				</p>
-				<div class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper">
+				<div
+					class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper"
+				>
 					<div>
 						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Delete account</p>
 						<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
@@ -653,17 +723,20 @@
 			</div>
 		</div>
 
-	<!-- ── AI TAB ── -->
+		<!-- ── AI TAB ── -->
 	{:else if activeTab === 'ai'}
 		<div class="flex flex-col gap-6">
-
 			{#if aiError}
-				<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
+				<div
+					class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"
+				>
 					{aiError}
 				</div>
 			{/if}
 			{#if aiSuccess}
-				<div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
+				<div
+					class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+				>
 					{aiSuccess}
 				</div>
 			{/if}
@@ -671,23 +744,49 @@
 			{#if loadingAi}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
 			{:else}
-
 				<!-- ── Section 1: API Keys ── -->
-				<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">API Keys</h2>
+				<section
+					class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
+					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+						API Keys
+					</h2>
 					<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Add one or more OpenRouter keys. Each key can be assigned to a specific task below.
-						Get your keys at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">openrouter.ai/keys</a>.
+						Add one or more OpenRouter keys. Each key can be assigned to a specific task below. Get
+						your keys at <a
+							href="https://openrouter.ai/keys"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-accent underline underline-offset-2">openrouter.ai/keys</a
+						>.
 					</p>
 
 					<!-- Privacy notice -->
-					<div class="mb-5 flex gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900/50 dark:bg-blue-950/30">
-						<svg class="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+					<div
+						class="mb-5 flex gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900/50 dark:bg-blue-950/30"
+					>
+						<svg
+							class="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400"
+							viewBox="0 0 24 24"
+							fill="none"
+							aria-hidden="true"
+						>
+							<path
+								d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linejoin="round"
+							/>
 						</svg>
 						<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-							Your documents are sent to OpenRouter only to process your query. OpenRouter does not use API data to train models.
-							<a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" class="font-medium underline underline-offset-2">Privacy Policy →</a>
+							Your documents are sent to OpenRouter only to process your query. OpenRouter does not
+							use API data to train models.
+							<a
+								href="https://openrouter.ai/privacy"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="font-medium underline underline-offset-2">Privacy Policy →</a
+							>
 						</p>
 					</div>
 
@@ -695,13 +794,23 @@
 					{#if aiKeys.length > 0}
 						<div class="mb-5 flex flex-col gap-2">
 							{#each aiKeys as key}
-								<div class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+								<div
+									class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+								>
 									<div class="min-w-0 flex-1">
-										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{key.name}</p>
-										<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Added {formatDate(key.createdAt)}</p>
+										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+											{key.name}
+										</p>
+										<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+											Added {formatDate(key.createdAt)}
+										</p>
 									</div>
 									<div class="flex items-center gap-3">
-										<span class="font-sans text-xs {key.enabled ? 'text-green-600 dark:text-green-400' : 'text-ink-muted dark:text-dark-ink-muted'}">
+										<span
+											class="font-sans text-xs {key.enabled
+												? 'text-green-600 dark:text-green-400'
+												: 'text-ink-muted dark:text-dark-ink-muted'}"
+										>
 											{key.enabled ? 'Active' : 'Inactive'}
 										</span>
 										<button
@@ -714,8 +823,10 @@
 											class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50
 												{key.enabled ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
 										>
-											<span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200
-												{key.enabled ? 'translate-x-4' : 'translate-x-0'}"></span>
+											<span
+												class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200
+												{key.enabled ? 'translate-x-4' : 'translate-x-0'}"
+											></span>
 										</button>
 										<button
 											type="button"
@@ -736,7 +847,7 @@
 						<input
 							type="text"
 							bind:value={newKeyName}
-							placeholder='Name (e.g. "My Anthropic key")'
+							placeholder="Name (e.g. "My Anthropic key")"
 							class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 						<div class="flex gap-3">
@@ -756,27 +867,40 @@
 								{savingNewKey ? 'Saving...' : 'Save'}
 							</button>
 						</div>
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Encrypted with AWS KMS before storage.</p>
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							Encrypted with AWS KMS before storage.
+						</p>
 					</div>
 				</section>
 
 				<!-- ── Section 2: Task configuration ── -->
 				{#if aiKeys.length > 0}
-					<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-						<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Task configuration</h2>
+					<section
+						class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+					>
+						<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+							Task configuration
+						</h2>
 						<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Choose which key and model to use for each AI feature. Falls back to the first active key if not configured.
+							Choose which key and model to use for each AI feature. Falls back to the first active
+							key if not configured.
 						</p>
 
 						<div class="flex flex-col gap-4">
 							{#each aiTasks as task}
 								{@const cfg = aiTaskConfig[task.id as AiTaskId]}
 								{@const enabledKeys = aiKeys.filter((k) => k.enabled)}
-								<div class="rounded-lg border border-paper-border bg-paper-ui px-4 py-4 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+								<div
+									class="rounded-lg border border-paper-border bg-paper-ui px-4 py-4 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+								>
 									<div class="mb-3 flex items-center justify-between">
 										<div>
-											<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{task.label}</p>
-											<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{task.description}</p>
+											<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+												{task.label}
+											</p>
+											<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+												{task.description}
+											</p>
 										</div>
 										{#if cfg}
 											<button
@@ -808,14 +932,19 @@
 											onchange={async (e) => {
 												const model = (e.target as HTMLSelectElement).value;
 												const keyId = cfg?.keyId ?? enabledKeys[0]?.id ?? '';
-												if (model && keyId) await handleSetTaskConfig(task.id as AiTaskId, keyId, model);
+												if (model && keyId)
+													await handleSetTaskConfig(task.id as AiTaskId, keyId, model);
 											}}
 											class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 										>
 											<option value="">— Default model —</option>
 											{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
-												{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(task.id as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup')}
-												<option value={m.id}>{isRec ? '★ ' : ''}{m.label}{m.pricing ? ` — ${m.pricing}` : ''}</option>
+												{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
+													task.id as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup'
+												)}
+												<option value={m.id}
+													>{isRec ? '★ ' : ''}{m.label}{m.pricing ? ` — ${m.pricing}` : ''}</option
+												>
 											{/each}
 										</select>
 									</div>
@@ -829,31 +958,37 @@
 						</div>
 					</section>
 				{/if}
-
 			{/if}
 		</div>
 
-	<!-- ── SECURITY TAB ── -->
+		<!-- ── SECURITY TAB ── -->
 	{:else if activeTab === 'security'}
 		<div class="flex flex-col gap-6">
-
 			{#if twoFaError}
-				<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
+				<div
+					class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"
+				>
 					{twoFaError}
 				</div>
 			{/if}
 
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+			<section
+				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
 				<div class="flex items-start justify-between gap-4">
 					<div>
-						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Two-factor authentication (2FA)</h2>
+						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+							Two-factor authentication (2FA)
+						</h2>
 						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 							Secure your account with an authenticator app like Google Authenticator or Authy.
 						</p>
 					</div>
-					<span class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold {twoFaEnabled
-						? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
-						: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}">
+					<span
+						class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold {twoFaEnabled
+							? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
+							: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+					>
 						{twoFaEnabled ? 'Enabled' : 'Disabled'}
 					</span>
 				</div>
@@ -883,7 +1018,11 @@
 								</button>
 								<button
 									type="button"
-									onclick={() => { twoFaStep = 'idle'; twoFaPassword = ''; twoFaError = ''; }}
+									onclick={() => {
+										twoFaStep = 'idle';
+										twoFaPassword = '';
+										twoFaError = '';
+									}}
 									class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 								>
 									Cancelar
@@ -894,21 +1033,26 @@
 						<div class="mt-5">
 							<button
 								type="button"
-								onclick={() => { twoFaStep = 'disabling'; twoFaError = ''; }}
+								onclick={() => {
+									twoFaStep = 'disabling';
+									twoFaError = '';
+								}}
 								class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
 							>
 								Desactivar 2FA
 							</button>
 						</div>
 					{/if}
-
 				{:else if twoFaStep === 'idle' || twoFaStep === 'enabling'}
 					<!-- Enable step 1: enter password -->
 					<div class="mt-5 flex flex-col gap-3">
 						{#if twoFaStep === 'idle'}
 							<button
 								type="button"
-								onclick={() => { twoFaStep = 'enabling'; twoFaError = ''; }}
+								onclick={() => {
+									twoFaStep = 'enabling';
+									twoFaError = '';
+								}}
 								class="self-start rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 							>
 								Activar 2FA
@@ -935,7 +1079,11 @@
 								</button>
 								<button
 									type="button"
-									onclick={() => { twoFaStep = 'idle'; twoFaPassword = ''; twoFaError = ''; }}
+									onclick={() => {
+										twoFaStep = 'idle';
+										twoFaPassword = '';
+										twoFaError = '';
+									}}
 									class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 								>
 									Cancelar
@@ -943,34 +1091,49 @@
 							</div>
 						{/if}
 					</div>
-
 				{:else if twoFaStep === 'qr'}
 					<!-- Enable step 2: scan QR and enter code -->
 					<div class="mt-5 flex flex-col gap-5">
-						<div class="flex flex-col items-center gap-3 rounded-lg border border-paper-border bg-paper-ui p-5 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+						<div
+							class="flex flex-col items-center gap-3 rounded-lg border border-paper-border bg-paper-ui p-5 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+						>
 							<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
 								Scan with your authenticator app
 							</p>
 							{#if twoFaQrDataUrl}
-								<img src={twoFaQrDataUrl} alt="QR code to configure 2FA" class="h-44 w-44 rounded" />
+								<img
+									src={twoFaQrDataUrl}
+									alt="QR code to configure 2FA"
+									class="h-44 w-44 rounded"
+								/>
 							{/if}
 						</div>
 
 						{#if twoFaBackupCodes.length > 0}
-							<div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
-								<p class="mb-2 font-sans text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+							<div
+								class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
+							>
+								<p
+									class="mb-2 font-sans text-xs font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-400"
+								>
 									Backup codes — store them in a safe place
 								</p>
 								<div class="grid grid-cols-2 gap-1.5">
 									{#each twoFaBackupCodes as code}
-										<span class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300">{code}</span>
+										<span
+											class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300"
+											>{code}</span
+										>
 									{/each}
 								</div>
 							</div>
 						{/if}
 
 						<div class="flex flex-col gap-2">
-							<label for="totp-verify" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							<label
+								for="totp-verify"
+								class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+							>
 								Enter the 6-digit code to confirm
 							</label>
 							<div class="flex gap-2">
@@ -983,7 +1146,7 @@
 									pattern="[0-9]*"
 									maxlength="6"
 									autocomplete="one-time-code"
-									class="w-36 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-center text-sm tracking-widest text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									class="w-36 rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-center font-mono text-sm tracking-widest text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 								/>
 								<button
 									type="button"
@@ -996,20 +1159,23 @@
 							</div>
 						</div>
 					</div>
-
 				{:else if twoFaStep === 'done'}
 					<!-- Success state -->
-					<div class="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
+					<div
+						class="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+					>
 						2FA enabled successfully. Your account is now protected.
 					</div>
 				{/if}
 			</section>
 		</div>
 
-	<!-- ── APPEARANCE TAB ── -->
+		<!-- ── APPEARANCE TAB ── -->
 	{:else if activeTab === 'appearance'}
 		<div class="flex flex-col gap-8">
-			<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
+			<section
+				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
 				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Theme</h2>
 				<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 					Choose a color scheme. Top row is light, bottom row is dark.
@@ -1018,27 +1184,34 @@
 			</section>
 		</div>
 
-	<!-- ── ORGANIZATIONS TAB ── -->
+		<!-- ── ORGANIZATIONS TAB ── -->
 	{:else if activeTab === 'organizations'}
-		<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Organizations</h2>
+		<div
+			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+		>
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+				Organizations
+			</h2>
 			<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				Create or join organizations to collaborate on projects with a shared AI key.
 			</p>
 			<OrgSettings initialOrgs={data.orgs ?? []} />
 		</div>
 
-	<!-- ── STORAGE TAB ── -->
+		<!-- ── STORAGE TAB ── -->
 	{:else if activeTab === 'storage'}
 		<div class="flex flex-col gap-6">
-
 			{#if s3Error}
-				<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
+				<div
+					class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"
+				>
 					{s3Error}
 				</div>
 			{/if}
 			{#if s3Success}
-				<div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400">
+				<div
+					class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+				>
 					{s3Success}
 				</div>
 			{/if}
@@ -1046,34 +1219,62 @@
 			{#if loadingS3}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando...</p>
 			{:else}
-				<section class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Almacenamiento S3</h2>
+				<section
+					class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
+					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+						Almacenamiento S3
+					</h2>
 					<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Conecta tu propio bucket S3 (AWS, Cloudflare R2, Backblaze B2, MinIO…) para subir fotos y datasets.
-						Sin configuración, la subida de archivos queda deshabilitada.
+						Conecta tu propio bucket S3 (AWS, Cloudflare R2, Backblaze B2, MinIO…) para subir fotos
+						y datasets. Sin configuración, la subida de archivos queda deshabilitada.
 					</p>
 
 					<!-- Privacy notice -->
-					<div class="mb-5 flex gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900/50 dark:bg-blue-950/30">
-						<svg class="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+					<div
+						class="mb-5 flex gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 dark:border-blue-900/50 dark:bg-blue-950/30"
+					>
+						<svg
+							class="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400"
+							viewBox="0 0 24 24"
+							fill="none"
+							aria-hidden="true"
+						>
+							<path
+								d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linejoin="round"
+							/>
 						</svg>
 						<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-							Las credenciales se cifran con AWS KMS antes de guardarse. Scholio no accede a tu bucket salvo para subir o eliminar archivos que tú mismo gestionas.
+							Las credenciales se cifran con AWS KMS antes de guardarse. Scholio no accede a tu
+							bucket salvo para subir o eliminar archivos que tú mismo gestionas.
 						</p>
 					</div>
 
 					<!-- Current config status -->
 					{#if s3Config}
-						<div class="mb-5 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+						<div
+							class="mb-5 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+						>
 							<div class="min-w-0 flex-1">
-								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{s3Config.bucket} <span class="font-normal text-ink-faint dark:text-dark-ink-faint">@ {s3Config.endpoint}</span></p>
+								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+									{s3Config.bucket}
+									<span class="font-normal text-ink-faint dark:text-dark-ink-faint"
+										>@ {s3Config.endpoint}</span
+									>
+								</p>
 								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 									{s3Config.verified ? 'Verificado' : 'Sin verificar'} · Región: {s3Config.region}
 								</p>
 							</div>
 							<div class="flex items-center gap-3">
-								<span class="font-sans text-xs {s3Config.verified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}">
+								<span
+									class="font-sans text-xs {s3Config.verified
+										? 'text-green-600 dark:text-green-400'
+										: 'text-amber-600 dark:text-amber-400'}"
+								>
 									{s3Config.verified ? '✓ OK' : '⚠ Sin verificar'}
 								</span>
 								<button
@@ -1145,10 +1346,14 @@
 							<button
 								type="button"
 								onclick={handleSaveS3}
-								disabled={!s3Endpoint.trim() || !s3Bucket.trim() || !s3AccessKey.trim() || !s3SecretKey.trim() || s3Saving}
+								disabled={!s3Endpoint.trim() ||
+									!s3Bucket.trim() ||
+									!s3AccessKey.trim() ||
+									!s3SecretKey.trim() ||
+									s3Saving}
 								class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 							>
-								{s3Saving ? 'Guardando...' : 'Guardar'}
+								{s3Saving ? 'Saving...' : 'Save'}
 							</button>
 						</div>
 					</div>
@@ -1166,9 +1371,7 @@
 		aria-modal="true"
 	>
 		<div class="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-xl dark:bg-dark-paper">
-			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Delete API key?
-			</h2>
+			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Delete API key?</h2>
 			<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
 				<strong>{aiKeys.find((k) => k.id === deletingKeyId)?.name ?? 'This key'}</strong> will be deleted.
 				Any task configured with this key will fall back to the first active key.
@@ -1201,17 +1404,25 @@
 		aria-modal="true"
 		aria-labelledby="delete-dialog-title"
 	>
-		<div class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
-			<h3 id="delete-dialog-title" class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">
+		<div
+			class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+		>
+			<h3
+				id="delete-dialog-title"
+				class="font-serif text-xl font-semibold text-ink dark:text-dark-ink"
+			>
 				Delete your account?
 			</h3>
 			<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				This action will permanently delete your account and <strong>all your data</strong>: projects,
-			documents, version history, comments and files. This cannot be undone.
+				This action will permanently delete your account and <strong>all your data</strong>:
+				projects, documents, version history, comments and files. This cannot be undone.
 			</p>
 
 			<div class="mt-5">
-				<label for="delete-confirm" class="block font-sans text-sm font-medium text-ink dark:text-dark-ink">
+				<label
+					for="delete-confirm"
+					class="block font-sans text-sm font-medium text-ink dark:text-dark-ink"
+				>
 					Type <span class="font-mono font-bold">{DELETE_KEYWORD}</span> to confirm
 				</label>
 				<input
@@ -1230,7 +1441,11 @@
 			<div class="mt-5 flex gap-3">
 				<button
 					type="button"
-					onclick={() => { showDeleteDialog = false; deleteConfirmText = ''; deleteError = ''; }}
+					onclick={() => {
+						showDeleteDialog = false;
+						deleteConfirmText = '';
+						deleteError = '';
+					}}
 					disabled={deletingAccount}
 					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
@@ -1248,4 +1463,3 @@
 		</div>
 	</div>
 {/if}
-
