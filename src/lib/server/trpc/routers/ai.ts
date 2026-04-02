@@ -16,7 +16,7 @@ import { type AiTask, DEFAULT_MODEL as AI_DEFAULT_MODEL, parseTaskConfig, fetchO
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import type { Db } from '$lib/server/db';
 
-type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
+export type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
 
 // Pending actions are proposed by the agent and must be confirmed by the user before executing.
 export type PendingAction = {
@@ -497,14 +497,14 @@ type OAMessage = {
   tool_call_id?: string;
 };
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+export const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 type KeyRow = { id: string; encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean };
 
 // Resolves the API key and model for a given task.
 // If the project belongs to an org and the user is a member, uses the org key.
 // Falls back to the user's personal key otherwise.
-async function resolveTaskKey(
+export async function resolveTaskKey(
   withRLS: WithRLS,
   db: Db,
   userId: string,

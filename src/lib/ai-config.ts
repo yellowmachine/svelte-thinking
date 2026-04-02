@@ -1,6 +1,6 @@
 // Shared AI configuration constants — safe to import in both client and server code.
 
-export type AiTask = 'agent' | 'draft' | 'review' | 'requirements' | 'lookup';
+export type AiTask = 'agent' | 'draft' | 'review' | 'requirements' | 'lookup' | 'bibliography';
 
 export interface TaskConfig {
 	keyId: string;
@@ -14,7 +14,8 @@ export const AI_TASKS: { id: AiTask; label: string; description: string }[] = [
 	{ id: 'draft', label: 'Draft', description: 'Generate document drafts and sections' },
 	{ id: 'review', label: 'Review', description: 'Review and give feedback on documents' },
 	{ id: 'requirements', label: 'Requirements', description: 'Generate project requirements' },
-	{ id: 'lookup', label: 'Lookup', description: 'Quick in-editor lookups (name suggestions, @@ trigger)' }
+	{ id: 'lookup', label: 'Lookup', description: 'Quick in-editor lookups (name suggestions, @@ trigger)' },
+	{ id: 'bibliography', label: 'Bibliography', description: 'Extract bibliographic metadata from a URL' }
 ];
 
 // Tasks for which each model is recommended (empty = no specific recommendation)
@@ -22,7 +23,7 @@ export const AI_TASKS: { id: AiTask; label: string; description: string }[] = [
 export const MODEL_RECOMMENDATIONS: Record<string, AiTask[]> = {
 	'anthropic/claude-opus-4-5': ['agent', 'draft'],
 	'anthropic/claude-sonnet-4-6': ['agent', 'draft', 'review'],
-	'anthropic/claude-haiku-4-5': ['lookup'],
+	'anthropic/claude-haiku-4-5': ['lookup', 'bibliography'],
 	'google/gemini-2.5-pro-preview': ['draft', 'review'],
 	'google/gemini-2.5-flash-preview': ['requirements', 'lookup'],
 	'openai/gpt-4o': ['agent', 'draft'],

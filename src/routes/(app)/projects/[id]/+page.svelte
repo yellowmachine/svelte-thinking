@@ -778,7 +778,12 @@
 							<button
 								onclick={createDocument}
 								disabled={creatingDoc || !newDocTitle.trim()}
-								class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+								title={creatingDoc
+									? 'Creating dcoment...'
+									: !newDocTitle.trim()
+										? 'Must have a title'
+										: ''}
+								class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{creatingDoc ? 'Creating...' : 'Create and open'}
 							</button>

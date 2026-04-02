@@ -1,12 +1,16 @@
 import { z } from 'zod';
 import { eq, and, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { env } from '$env/dynamic/private';
+import { Readability } from '@mozilla/readability';
+import { parseHTML } from 'linkedom';
 import { router, protectedProcedure } from '../init';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { parseBibtexFile, formatBibtexFile, generateCiteKey } from '$lib/utils/bibtex';
 import type { Author } from '$lib/utils/bibtex';
 import type { Db } from '$lib/server/db';
+import { resolveTaskKey, OPENROUTER_URL, type WithRLS } from './ai';
 
 const authorSchema = z.object({ first: z.string(), last: z.string() });
 
@@ -333,6 +337,143 @@ export const referencesRouter = router({
 			}))
 		);
 	}),
+
+	// ── Fetch metadata from a URL via AI extraction ───────────────────────
+	fetchUrl: protectedProcedure
+		.input(z.object({ url: z.string().url().max(2000), projectId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const { url, projectId } = input;
+
+			// 1. Fetch page and extract main text with Readability
+			let text: string;
+			let pageTitle: string | null = null;
+			try {
+				const res = await fetch(url, {
+					headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
+					signal: AbortSignal.timeout(10_000)
+				});
+				if (!res.ok)
+					throw new TRPCError({
+						code: 'BAD_REQUEST',
+						message: `Could not fetch URL (HTTP ${res.status}).`
+					});
+				const html = await res.text();
+				const { document } = parseHTML(html);
+				const article = new Readability(document as unknown as Document).parse();
+				text = article?.textContent?.trim() ?? '';
+				pageTitle = article?.title ?? null;
+			} catch (e) {
+				if (e instanceof TRPCError) throw e;
+				throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch or parse the URL.' });
+			}
+
+			if (!text) {
+				throw new TRPCError({
+					code: 'BAD_REQUEST',
+					message: 'No readable content found at that URL.'
+				});
+			}
+
+			// Limit to ~8 000 chars to keep token cost reasonable
+			const truncated = text.slice(0, 8_000);
+
+			// 2. Resolve API key and model for the bibliography task
+			const { apiKey, model } = await resolveTaskKey(
+				ctx.withRLS as WithRLS,
+				ctx.db as Db,
+				ctx.user.id,
+				'bibliography',
+				projectId
+			);
+
+			// 3. Ask the model to extract bibliographic metadata
+			const prompt = `Extract bibliographic metadata from the text below (source URL: ${url}).
+Return ONLY a valid JSON object — no explanation, no markdown — with these fields (omit any you cannot determine):
+{
+  "type": "<article|book|inproceedings|incollection|phdthesis|mastersthesis|techreport|misc>",
+  "title": "<string>",
+  "authors": [{"first": "<string>", "last": "<string>"}],
+  "year": "<4-digit string or null>",
+  "abstract": "<string or null>",
+  "journal": "<string or null>",
+  "volume": "<string or null>",
+  "issue": "<string or null>",
+  "pages": "<string or null>",
+  "publisher": "<string or null>",
+  "booktitle": "<string or null>",
+  "school": "<string or null>",
+  "institution": "<string or null>"
+}
+
+Text:
+${truncated}`;
+
+			const aiRes = await fetch(OPENROUTER_URL, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+					'X-Title': 'Scholio'
+				},
+				body: JSON.stringify({
+					model,
+					messages: [{ role: 'user', content: prompt }],
+					temperature: 0,
+					max_tokens: 800
+				}),
+				signal: AbortSignal.timeout(30_000)
+			});
+
+			if (!aiRes.ok)
+				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI model error.' });
+
+			const aiJson = (await aiRes.json()) as { choices: { message: { content: string } }[] };
+			const content = aiJson.choices?.[0]?.message?.content ?? '';
+
+			const jsonMatch = content.match(/\{[\s\S]*\}/);
+			if (!jsonMatch)
+				throw new TRPCError({
+					code: 'INTERNAL_SERVER_ERROR',
+					message: 'Could not parse model response.'
+				});
+
+			let extracted: Record<string, unknown>;
+			try {
+				extracted = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
+			} catch {
+				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Invalid JSON from model.' });
+			}
+
+			// 4. Map to reference shape
+			const authorsRaw = (extracted.authors ?? []) as { first?: string; last?: string }[];
+			const authors: Author[] = authorsRaw
+				.map((a) => ({ first: a.first ?? '', last: a.last ?? '' }))
+				.filter((a) => a.last);
+
+			const year = typeof extracted.year === 'string' && extracted.year ? extracted.year : null;
+			const type = referenceTypeValues.includes(extracted.type as never)
+				? (extracted.type as (typeof referenceTypeValues)[number])
+				: 'misc';
+
+			return {
+				citeKey: generateCiteKey(authors, year ?? ''),
+				type,
+				title: (extracted.title as string) || pageTitle || '(no title)',
+				authors,
+				year,
+				abstract: (extracted.abstract as string | null) ?? null,
+				journal: (extracted.journal as string | null) ?? null,
+				volume: (extracted.volume as string | null) ?? null,
+				issue: (extracted.issue as string | null) ?? null,
+				pages: (extracted.pages as string | null) ?? null,
+				publisher: (extracted.publisher as string | null) ?? null,
+				booktitle: (extracted.booktitle as string | null) ?? null,
+				school: (extracted.school as string | null) ?? null,
+				institution: (extracted.institution as string | null) ?? null,
+				url
+			};
+		}),
 
 	// ── Fetch metadata from a DOI via CrossRef ────────────────────────────
 	fetchDoi: protectedProcedure

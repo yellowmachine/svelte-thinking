@@ -158,7 +158,7 @@
 
 	// ── Side panel (create / edit) ───────────────────────────────────────────
 
-	type Panel = 'closed' | 'new' | 'edit' | 'import' | 'doi' | null;
+	type Panel = 'closed' | 'new' | 'edit' | 'import' | 'doi' | 'url' | null;
 	let panel = $state<Panel>('closed');
 	let editingRef = $state<Ref | null>(null);
 
@@ -428,6 +428,89 @@
 		}
 	}
 
+	// ── URL lookup ──────────────────────────────────────────────────────────
+	type UrlResult = {
+		citeKey: string;
+		type: string;
+		title: string;
+		authors: { first: string; last: string }[];
+		year: string | null;
+		abstract: string | null;
+		journal: string | null;
+		volume: string | null;
+		issue: string | null;
+		pages: string | null;
+		publisher: string | null;
+		booktitle: string | null;
+		school: string | null;
+		institution: string | null;
+		url: string;
+	};
+	let urlInput = $state('');
+	let urlLoading = $state(false);
+	let urlResult = $state<UrlResult | null>(null);
+	let urlError = $state('');
+
+	async function runUrlLookup() {
+		if (!urlInput.trim()) return;
+		urlLoading = true;
+		urlResult = null;
+		urlError = '';
+		try {
+			urlResult = (await trpc.references.fetchUrl.query({
+				url: urlInput.trim(),
+				projectId: data.project.id
+			})) as UrlResult;
+		} catch (e) {
+			urlError = e instanceof Error ? e.message : 'Could not extract metadata from URL.';
+		} finally {
+			urlLoading = false;
+		}
+	}
+
+	async function acceptUrlResult() {
+		if (!urlResult) return;
+		try {
+			await trpc.references.create.mutate({
+				projectId: data.project.id,
+				reference: {
+					citeKey: urlResult.citeKey,
+					type: urlResult.type as never,
+					title: urlResult.title,
+					authors: urlResult.authors,
+					editors: [],
+					year: urlResult.year ?? '',
+					abstract: urlResult.abstract ?? '',
+					journal: urlResult.journal ?? '',
+					volume: urlResult.volume ?? '',
+					issue: urlResult.issue ?? '',
+					pages: urlResult.pages ?? '',
+					publisher: urlResult.publisher ?? '',
+					booktitle: urlResult.booktitle ?? '',
+					school: urlResult.school ?? '',
+					institution: urlResult.institution ?? '',
+					url: urlResult.url,
+					doi: '',
+					note: '',
+					isbn: '',
+					organization: '',
+					series: '',
+					reportNumber: '',
+					address: '',
+					edition: '',
+					extra: {}
+				}
+			});
+			const fresh = await trpc.references.list.query(data.project.id);
+			references = fresh as typeof references;
+			urlInput = '';
+			urlResult = null;
+			panel = null;
+		} catch (e) {
+			urlError = e instanceof Error ? e.message : 'Could not save reference.';
+		}
+	}
+
 	// Preview how many entries would be imported
 	const importPreview = $derived(() => {
 		if (!importRaw.trim()) return 0;
@@ -591,6 +674,17 @@
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					DOI lookup
+				</button>
+				<button
+					onclick={() => {
+						panel = 'url';
+						urlInput = '';
+						urlResult = null;
+						urlError = '';
+					}}
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					URL → AI
 				</button>
 				<button
 					onclick={() => {
@@ -1863,6 +1957,103 @@
 							</div>
 							<button
 								onclick={acceptDoiResult}
+								class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover"
+							>
+								Add to bibliography
+							</button>
+						{/if}
+					</div>
+				</div>
+			</div>
+
+			<!-- ── URL lookup panel ─────────────────────────────────────────────── -->
+		{:else if panel === 'url'}
+			<div class="w-full max-w-sm shrink-0">
+				<div
+					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+				>
+					<div
+						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
+					>
+						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+							URL → AI
+						</h2>
+						<button
+							onclick={closePanel}
+							aria-label="Close"
+							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						>
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"
+								><path
+									d="M1 1l12 12M13 1L1 13"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/></svg
+							>
+						</button>
+					</div>
+					<div class="space-y-4 px-5 py-4">
+						<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+							Paste the URL of a webpage. Your AI model will extract the bibliographic metadata.
+							The page must be publicly accessible.
+						</p>
+						<div class="flex gap-2">
+							<input
+								type="url"
+								bind:value={urlInput}
+								placeholder="https://..."
+								class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								onkeydown={(e) => e.key === 'Enter' && runUrlLookup()}
+							/>
+							<button
+								onclick={runUrlLookup}
+								disabled={urlLoading || !urlInput.trim()}
+								class="rounded-md bg-accent px-3 py-2 font-sans text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
+							>
+								{urlLoading ? '…' : 'Extract'}
+							</button>
+						</div>
+
+						{#if urlLoading}
+							<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+								Fetching page and extracting metadata…
+							</p>
+						{/if}
+
+						{#if urlError}
+							<p
+								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
+							>
+								{urlError}
+							</p>
+						{/if}
+
+						{#if urlResult}
+							<div
+								class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+							>
+								<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+									{urlResult.title}
+								</p>
+								{#if urlResult.authors.length}
+									<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+										{urlResult.authors.map((a) => `${a.last}, ${a.first}`).join(' · ')}
+									</p>
+								{/if}
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									{[urlResult.journal, urlResult.year].filter(Boolean).join(', ')}
+								</p>
+								<p class="font-mono text-[10px] text-accent">@{urlResult.citeKey}</p>
+								<p class="truncate font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+									{urlResult.url}
+								</p>
+							</div>
+							<p class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">
+								Review and edit the fields after adding if needed.
+							</p>
+							<button
+								onclick={acceptUrlResult}
 								class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover"
 							>
 								Add to bibliography
