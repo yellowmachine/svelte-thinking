@@ -20,9 +20,8 @@
 	let members = $state<{ id: string; userId: string; role: string; createdAt: Date }[]>([]);
 	let invitations = $state<{ id: string; invitedEmail: string; status: string; expiresAt: Date }[]>([]);
 	let keys = $state<{ id: string; name: string; enabled: boolean; createdAt: Date }[]>([]);
-	let monthlyUsage = $state<{ totalEur: string; since: Date } | null>(null);
 	let taskConfig = $state<Record<string, { keyId: string; model: string }>>({});
-	let orgData = $state<{ monthlyBudgetEur: string | null; ownerId: string } | null>(null);
+	let orgData = $state<{ ownerId: string } | null>(null);
 
 	let loadingDetail = $state(false);
 
@@ -36,10 +35,6 @@
 	let newKeyValue = $state('');
 	let addingKey = $state(false);
 	let keyError = $state('');
-
-	// Budget form
-	let budgetInput = $state('');
-	let savingBudget = $state(false);
 
 	// S3 form (owner only)
 	type OrgS3Config = { endpoint: string; bucket: string; region: string; publicUrl: string | null; verified: boolean };
@@ -63,19 +58,16 @@
 	async function loadDetail(orgId: string) {
 		loadingDetail = true;
 		try {
-			const [m, inv, k, usage, org] = await Promise.all([
+			const [m, inv, k, org] = await Promise.all([
 				trpc.orgs.listMembers.query(orgId),
 				trpc.orgs.listInvitations.query(orgId),
 				trpc.orgs.listKeys.query(orgId),
-				trpc.orgs.getMonthlyUsage.query(orgId),
 				trpc.orgs.get.query(orgId)
 			]);
 			members = m as typeof members;
 			invitations = inv as typeof invitations;
 			keys = k as typeof keys;
-			monthlyUsage = usage as typeof monthlyUsage;
-			orgData = { monthlyBudgetEur: org.monthlyBudgetEur, ownerId: org.ownerId };
-			budgetInput = org.monthlyBudgetEur ?? '';
+			orgData = { ownerId: org.ownerId };
 			try {
 				taskConfig = org.aiTaskConfig ? JSON.parse(org.aiTaskConfig) : {};
 			} catch {
@@ -178,17 +170,6 @@
 		keys = keys.filter((k) => k.id !== keyId);
 	}
 
-	async function saveBudget() {
-		if (!selectedOrgId) return;
-		savingBudget = true;
-		try {
-			const val = budgetInput.trim() === '' ? null : budgetInput.trim();
-			await trpc.orgs.update.mutate({ orgId: selectedOrgId, monthlyBudgetEur: val });
-			if (orgData) orgData = { ...orgData, monthlyBudgetEur: val };
-		} finally {
-			savingBudget = false;
-		}
-	}
 
 	async function saveOrgS3() {
 		if (!selectedOrgId) return;
@@ -312,42 +293,6 @@
 					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">{selectedOrg.name}</h3>
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">/{selectedOrg.slug}</p>
 				</div>
-
-				<!-- Usage & budget -->
-				<section>
-					<h4 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Usage & Budget</h4>
-					<div class="rounded-lg border border-paper-border p-4 dark:border-dark-paper-border">
-						<p class="font-sans text-sm text-ink dark:text-dark-ink">
-							This month: <span class="font-semibold">€{parseFloat(monthlyUsage?.totalEur ?? '0').toFixed(4)}</span>
-						</p>
-						{#if isOwner}
-							<div class="mt-3 flex items-center gap-2">
-								<label for="org-budget-limit" class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Monthly limit (€)</label>
-								<input
-									id="org-budget-limit"
-									bind:value={budgetInput}
-									type="number"
-									min="0"
-									step="1"
-									placeholder="Unlimited"
-									class="w-28 rounded-md border border-paper-border bg-paper px-2.5 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
-								/>
-								<button
-									type="button"
-									onclick={saveBudget}
-									disabled={savingBudget}
-									class="rounded-md bg-accent px-3 py-1 font-sans text-xs font-medium text-white hover:opacity-80 disabled:opacity-50"
-								>
-									{savingBudget ? 'Saving…' : 'Save'}
-								</button>
-							</div>
-						{:else}
-							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Limit: {orgData?.monthlyBudgetEur ? `€${orgData.monthlyBudgetEur}` : 'Unlimited'}
-							</p>
-						{/if}
-					</div>
-				</section>
 
 				<!-- API Keys (owner only) -->
 				{#if isOwner}

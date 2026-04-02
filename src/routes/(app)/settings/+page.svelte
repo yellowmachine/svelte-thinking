@@ -398,7 +398,7 @@
 	<div class="mb-8">
 		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Settings</h1>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Manage your account and subscription.
+			Manage your account and preferences.
 		</p>
 	</div>
 
