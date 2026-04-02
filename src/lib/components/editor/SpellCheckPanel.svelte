@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { trpc } from '$lib/utils/trpc';
-
-	export type SpellCorrection = {
+export type SpellCorrection = {
 		original: string;
 		suggestion: string;
 		explanation: string;
@@ -15,7 +13,9 @@
 		documentText = '',
 		onaccept,
 		onignore,
-		onclose
+		onclose,
+		onhover,
+		onhoverend
 	}: {
 		corrections?: SpellCorrection[];
 		loading?: boolean;
@@ -23,6 +23,8 @@
 		onaccept: (correction: SpellCorrection) => void;
 		onignore: (word: string) => Promise<void>;
 		onclose: () => void;
+		onhover?: (correction: SpellCorrection) => void;
+		onhoverend?: () => void;
 	} = $props();
 
 	let accepting = $state<number | null>(null); // index being processed
@@ -117,7 +119,11 @@
 			<ul class="divide-y divide-paper-border dark:divide-dark-paper-border">
 				{#each corrections as correction, i (correction.from)}
 					{@const ctx = getContext(correction)}
-					<li class="px-4 py-3">
+					<li
+						class="px-4 py-3"
+						onmouseenter={() => onhover?.(correction)}
+						onmouseleave={() => onhoverend?.()}
+					>
 						<!-- Context -->
 						<p class="mb-2 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
 							…{ctx.before}<span

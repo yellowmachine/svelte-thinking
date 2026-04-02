@@ -346,8 +346,10 @@
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
 			ghostTextField,
+			spellHoverField,
 			EditorView.baseTheme({
 				'.cm-ghost-text': { color: 'var(--color-ink-faint, #aaa)', pointerEvents: 'none' },
+				'.cm-spell-hover': { backgroundColor: 'oklch(92% 0.05 10 / 0.6)' },
 			}),
 			commentRangesField,
 			commentTheme,
@@ -495,6 +497,20 @@
 		return exts;
 	}
 
+	// Spell hover highlight
+	const setSpellHoverEffect = StateEffect.define<{ from: number; to: number } | null>();
+	const spellHoverField = StateField.define<{ from: number; to: number } | null>({
+		create: () => null,
+		update(val, tr) {
+			for (const e of tr.effects) if (e.is(setSpellHoverEffect)) return e.value;
+			return val;
+		},
+		provide: f => EditorView.decorations.from(f, val => {
+			if (!val) return Decoration.none;
+			return Decoration.set([Decoration.mark({ class: 'cm-spell-hover' }).range(val.from, val.to)]);
+		})
+	});
+
 	// Ghost text (inline mention suggestion)
 	const setGhostTextEffect = StateEffect.define<string | null>();
 
@@ -598,6 +614,16 @@
 			selection: { anchor: from + insert.length }
 		});
 		view.focus();
+	}
+
+	export function setSpellHover(from: number, to: number) {
+		if (!view) return;
+		view.dispatch({ effects: setSpellHoverEffect.of({ from, to }) });
+	}
+
+	export function clearSpellHover() {
+		if (!view) return;
+		view.dispatch({ effects: setSpellHoverEffect.of(null) });
 	}
 
 	export function replaceRange(from: number, to: number, text: string) {

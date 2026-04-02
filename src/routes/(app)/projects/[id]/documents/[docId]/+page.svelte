@@ -143,6 +143,8 @@
 		replaceRange: (from: number, to: number, text: string) => void;
 		insertMention: (name: string, from: number) => void;
 		setGhostText: (text: string | null) => void;
+		setSpellHover: (from: number, to: number) => void;
+		clearSpellHover: () => void;
 	} | null = $state(null);
 
 	function extractDocumentPersons(): string[] {
@@ -2485,7 +2487,9 @@
 						documentText={content}
 						onaccept={applySpellCorrection}
 						onignore={ignoreSpellWord}
-						onclose={() => { showSpellPanel = false; spellCorrections = []; }}
+						onclose={() => { showSpellPanel = false; spellCorrections = []; editorEl?.clearSpellHover(); }}
+						onhover={(c) => editorEl?.setSpellHover(c.from, c.to)}
+						onhoverend={() => editorEl?.clearSpellHover()}
 					/>
 				</div>
 			{/if}
