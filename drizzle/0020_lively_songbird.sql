@@ -1,0 +1,1 @@
+ALTER TABLE "scholio"."project" DROP COLUMN "notes";
