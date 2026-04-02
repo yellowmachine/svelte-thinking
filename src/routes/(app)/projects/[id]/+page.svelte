@@ -47,7 +47,7 @@
 	}
 
 	// ── Click-to-edit ────────────────────────────────────────────────────────
-	type EditableField = 'title' | 'description' | 'notes' | 'doi' | 'version' | 'publishedAt';
+	type EditableField = 'title' | 'description' | 'doi' | 'version' | 'publishedAt';
 	let editingField = $state<EditableField | null>(null);
 	let editBuffer = $state('');
 	let savingField = $state(false);
@@ -59,7 +59,6 @@
 	function startEdit(field: EditableField) {
 		if (!data.isOwner) return;
 		const proj = data.project as typeof data.project & {
-			notes?: string | null;
 			doi?: string | null;
 			version?: string | null;
 			publishedAt?: Date | null;
@@ -69,17 +68,15 @@
 				? proj.title
 				: field === 'description'
 					? (proj.description ?? '')
-					: field === 'notes'
-						? (proj.notes ?? '')
-						: field === 'doi'
-							? (proj.doi ?? '')
-							: field === 'version'
-								? (proj.version ?? '')
-								: field === 'publishedAt'
-									? proj.publishedAt
-										? proj.publishedAt.toISOString().slice(0, 10)
-										: ''
-									: '';
+					: field === 'doi'
+						? (proj.doi ?? '')
+						: field === 'version'
+							? (proj.version ?? '')
+							: field === 'publishedAt'
+								? proj.publishedAt
+									? proj.publishedAt.toISOString().slice(0, 10)
+									: ''
+								: '';
 		editingField = field;
 	}
 
@@ -99,7 +96,6 @@
 				id: data.project.id,
 				...(field === 'title' ? { title: editBuffer.trim() } : {}),
 				...(field === 'description' ? { description: editBuffer.trim() || null } : {}),
-				...(field === 'notes' ? { notes: editBuffer.trim() || null } : {}),
 				...(field === 'doi' ? { doi: editBuffer.trim() || null } : {}),
 				...(field === 'version' ? { version: editBuffer.trim() || null } : {}),
 				...(field === 'publishedAt'
@@ -620,44 +616,6 @@
 					</button>
 				{/if}
 
-				<!-- Notes -->
-				{#if editingField === 'notes'}
-					<textarea
-						{@attach focusEl}
-						bind:value={editBuffer}
-						onblur={() => saveField('notes')}
-						onkeydown={(e) => {
-							if (e.key === 'Escape') {
-								cancelEdit();
-							}
-						}}
-						rows={4}
-						placeholder="Private project notes…"
-						class="mt-3 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink focus:outline-none dark:text-dark-ink"
-					></textarea>
-				{:else}
-					{@const notes = (data.project as typeof data.project & { notes?: string | null }).notes}
-					{#if notes || data.isOwner}
-						<div class="mt-3">
-							<span
-								class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-								>Notes</span
-							>
-							<button
-								type="button"
-								onclick={() => startEdit('notes')}
-								disabled={!data.isOwner}
-								class="mt-0.5 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner
-									? 'cursor-text hover:opacity-80'
-									: 'cursor-default'} {!notes
-									? 'text-ink-faint italic dark:text-dark-ink-faint'
-									: 'text-ink dark:text-dark-ink'}"
-							>
-								{notes || 'Add notes…'}
-							</button>
-						</div>
-					{/if}
-				{/if}
 			</div>
 			<div class="hidden shrink-0 items-center gap-2 sm:flex">
 				<a

@@ -26,7 +26,6 @@ export const project = scholioSchema.table(
 		id: text('id').primaryKey(),
 		title: text('title').notNull(),
 		description: text('description'),
-		notes: text('notes'),
 		status: projectStatusEnum('status').notNull().default('draft'),
 		ownerId: text('owner_id').notNull(),
 		isSearchable: boolean('is_searchable').notNull().default(false),
