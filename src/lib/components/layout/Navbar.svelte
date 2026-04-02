@@ -3,6 +3,8 @@
 	import ThemePicker from './ThemePicker.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { offlineDb } from '$lib/offline.db';
+	import { goto, preloadData } from '$app/navigation';
+	import { page } from '$app/state';
 
 	async function handleLogout(e: SubmitEvent) {
 		e.preventDefault();
@@ -87,7 +89,11 @@
 							{#each orgs as org (org.id)}
 								<button
 									type="button"
-									onclick={() => { workspaceStore.set({ id: org.id, name: org.name }); workspaceOpen = false; }}
+									onclick={() => {
+									workspaceStore.set({ id: org.id, name: org.name });
+									workspaceOpen = false;
+									if (page.url.pathname.startsWith('/projects/')) goto('/projects');
+								}}
 									class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore.current.id === org.id ? 'text-accent' : 'text-ink dark:text-dark-ink'}"
 								>
 									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
