@@ -1893,9 +1893,11 @@
 									{onwordprefix}
 									{onwordprefixclear}
 									{onwordghosttab}
+									{onheadingprefix}
+									{onheadingprefixclear}
+									{onheadingghosttab}
 									showLookupHint={lookupUnavailable}
 									{spellLanguage}
-	
 								/>
 							</div>
 						</div>
