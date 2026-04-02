@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, untrack } from 'svelte';
 	import { goto, beforeNavigate } from '$app/navigation';
+	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
@@ -1139,10 +1140,15 @@
 	});
 
 	// Guard: unsaved changes — SvelteKit client-side navigation
+	// Capture workspace at page entry so we can restore it if the user cancels.
+	const entryWorkspace = { ...workspaceStore.current };
 	beforeNavigate(({ cancel }) => {
 		if (isDirty) {
 			const ok = confirm('You have unsaved changes. Leave anyway?');
-			if (!ok) cancel();
+			if (!ok) {
+				cancel();
+				workspaceStore.set(entryWorkspace);
+			}
 		}
 	});
 
