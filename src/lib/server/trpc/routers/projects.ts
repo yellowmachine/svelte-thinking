@@ -181,6 +181,7 @@ export const projectsRouter = router({
 
       if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
       if (proj[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+      if (input.userId === proj[0].ownerId) throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot remove the project owner.' });
 
       await ctx.db
         .delete(projectCollaborator)
