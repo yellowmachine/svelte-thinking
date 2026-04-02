@@ -9,6 +9,7 @@
 	import CommentThread from '$lib/components/editor/CommentThread.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
+	import SpellCheckPanel, { type SpellCorrection } from '$lib/components/editor/SpellCheckPanel.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { offlineDb } from '$lib/offline.db';
@@ -366,6 +367,37 @@
 		} catch {
 			spellLanguage = prev;
 		}
+	}
+
+	// ── Spell check panel ───────────────────────────────────────────────────────
+	let showSpellPanel = $state(false);
+	let spellLoading = $state(false);
+	let spellCorrections = $state<SpellCorrection[]>([]);
+
+	async function runSpellCheck() {
+		showSpellPanel = true;
+		spellLoading = true;
+		spellCorrections = [];
+		try {
+			const result = await trpc.ai.spellCheck.mutate({
+				text: content,
+				language: spellLanguage,
+				projectId: data.document.projectId
+			});
+			spellCorrections = result.corrections;
+		} catch {
+			showSpellPanel = false;
+		} finally {
+			spellLoading = false;
+		}
+	}
+
+	function applySpellCorrection(correction: SpellCorrection) {
+		editorEl?.replaceRange(correction.from, correction.to, correction.suggestion);
+	}
+
+	async function ignoreSpellWord(word: string) {
+		await trpc.users.addSpellAllowlist.mutate({ word });
 	}
 
 	// Markdown cheatsheet
@@ -1581,6 +1613,18 @@
 					?
 				</a>
 
+				<!-- Spell check button -->
+				<button
+					onclick={runSpellCheck}
+					disabled={spellLoading}
+					title="Check spelling and grammar"
+					class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
+						? 'border-accent bg-accent text-white'
+						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
+				>
+					{spellLoading ? 'Checking…' : 'Spell'}
+				</button>
+
 				<!-- Spell language selector -->
 				<div
 					class="flex items-center gap-1 rounded-md border border-paper-border px-2 py-1.5 dark:border-dark-paper-border"
@@ -2380,6 +2424,20 @@
 							</a>
 						{/each}
 					</div>
+				</div>
+			{/if}
+
+			<!-- Spell check sidebar -->
+			{#if showSpellPanel}
+				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border">
+					<SpellCheckPanel
+						bind:corrections={spellCorrections}
+						loading={spellLoading}
+						documentText={content}
+						onaccept={applySpellCorrection}
+						onignore={ignoreSpellWord}
+						onclose={() => { showSpellPanel = false; spellCorrections = []; }}
+					/>
 				</div>
 			{/if}
 
