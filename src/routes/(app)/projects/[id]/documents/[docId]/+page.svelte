@@ -1651,7 +1651,7 @@
 
 				<!-- Spell check button -->
 				<button
-					onclick={runSpellCheck}
+					onclick={() => runSpellCheck()}
 					disabled={spellLoading}
 					title="Check spelling and grammar"
 					class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel

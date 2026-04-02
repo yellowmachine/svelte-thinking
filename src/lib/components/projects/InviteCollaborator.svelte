@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 
-	type Role = 'owner' | 'author' | 'coauthor' | 'reviewer' | 'commenter';
+	type InvitableRole = 'author' | 'coauthor' | 'reviewer' | 'commenter';
+	type Role = 'owner' | InvitableRole;
 	type Invitation = {
 		id: string;
 		invitedEmail: string;
@@ -47,7 +48,7 @@
 	};
 
 	let email = $state('');
-	let role: Role = $state('reviewer');
+	let role: InvitableRole = $state('reviewer');
 	let reqState: 'idle' | 'sending' | 'sent' | 'error' = $state('idle');
 	let errorMsg = $state('');
 
