@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
 	import QRCode from 'qrcode';
 	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
 	import OrgSettings from '$lib/components/projects/OrgSettings.svelte';
@@ -16,9 +17,13 @@
 	let newPassword = $state('');
 	let confirmPassword = $state('');
 
-	// Active section
-	let activeTab: 'profile' | 'ai' | 'security' | 'appearance' | 'organizations' | 'storage' =
-		$state('profile');
+	// Active section — initialise from ?tab= query param if present
+	const VALID_TABS = ['profile', 'ai', 'security', 'appearance', 'organizations', 'storage'] as const;
+	type Tab = typeof VALID_TABS[number];
+	const initialTab = $page.url.searchParams.get('tab');
+	let activeTab: Tab = $state(
+		VALID_TABS.includes(initialTab as Tab) ? (initialTab as Tab) : 'profile'
+	);
 
 	function formatDate(d: Date | null): string {
 		if (!d) return '—';
