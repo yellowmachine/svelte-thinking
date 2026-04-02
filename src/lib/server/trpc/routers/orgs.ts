@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { eq, and, gte, sum, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { AI_TASKS, type AiTask } from '$lib/ai-config';
 import { router, protectedProcedure, publicProcedure } from '../init';
 import {
 	organization,
@@ -282,7 +283,7 @@ export const orgsRouter = router({
 		.input(
 			z.object({
 				orgId: z.string(),
-				task: z.enum(['agent', 'draft', 'review', 'requirements', 'lookup']),
+				task: z.enum(AI_TASKS.map((t) => t.id) as [AiTask, ...AiTask[]]),
 				keyId: z.string(),
 				model: z.string().min(1)
 			})
@@ -312,7 +313,7 @@ export const orgsRouter = router({
 		}),
 
 	clearTaskConfig: protectedProcedure
-		.input(z.object({ orgId: z.string(), task: z.enum(['agent', 'draft', 'review', 'requirements', 'lookup']) }))
+		.input(z.object({ orgId: z.string(), task: z.enum(AI_TASKS.map((t) => t.id) as [AiTask, ...AiTask[]]) }))
 		.mutation(async ({ ctx, input }) => {
 			const rows = await ctx.withRLS((db) =>
 				db
