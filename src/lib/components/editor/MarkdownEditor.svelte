@@ -231,8 +231,10 @@
 		if (!match) return null;
 
 		const typed = match.text.slice(3).toLowerCase(); // strip [[#
+		// Read from editor state directly — avoids stale closure over the `value` prop
+		const doc = context.state.doc.toString();
 		const options: Completion[] = [];
-		for (const line of value.split('\n')) {
+		for (const line of doc.split('\n')) {
 			const m = line.match(/^(#{1,6})\s+(.+)$/);
 			if (!m) continue;
 			const text = m[2].trim();
@@ -245,7 +247,13 @@
 			}
 		}
 
-		if (options.length === 0) return null;
+		if (options.length === 0) {
+			// Still show the dropdown so the user knows [[# triggered — but there's nothing to link
+			return {
+				from: match.from,
+				options: [{ label: 'No headings in this document', detail: '', apply: '' }]
+			};
+		}
 		return { from: match.from, options };
 	}
 
