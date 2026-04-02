@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, untrack } from 'svelte';
-	import { goto } from '$app/navigation';
+	import { goto, beforeNavigate } from '$app/navigation';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
@@ -1136,6 +1136,23 @@
 	$effect(() => {
 		document.addEventListener('keydown', onDocKeydown);
 		return () => document.removeEventListener('keydown', onDocKeydown);
+	});
+
+	// Guard: unsaved changes — SvelteKit client-side navigation
+	beforeNavigate(({ cancel }) => {
+		if (isDirty) {
+			const ok = confirm('You have unsaved changes. Leave anyway?');
+			if (!ok) cancel();
+		}
+	});
+
+	// Guard: tab close / hard refresh
+	$effect(() => {
+		const handler = (e: BeforeUnloadEvent) => {
+			if (isDirty) e.preventDefault();
+		};
+		window.addEventListener('beforeunload', handler);
+		return () => window.removeEventListener('beforeunload', handler);
 	});
 
 	onDestroy(() => {
