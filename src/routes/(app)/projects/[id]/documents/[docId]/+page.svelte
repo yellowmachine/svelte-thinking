@@ -7,6 +7,7 @@
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
 	import CommentThread from '$lib/components/editor/CommentThread.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import AddToCitationModal from '$lib/components/editor/AddToCitationModal.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
@@ -1141,6 +1142,25 @@
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (floatingDebounce) clearTimeout(floatingDebounce);
 	});
+
+	// ── Add to citation (reading_note documents) ─────────────────────────────
+	let showCitationModal = $state(false);
+	let citationSavedCreated = $state<boolean | null>(null); // null = not yet saved
+
+	function parseFrontmatter(text: string): Record<string, string> {
+		const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+		if (!match) return {};
+		const result: Record<string, string> = {};
+		for (const line of match[1].split('\n')) {
+			const m = line.match(/^(\w+):\s*(.+)$/);
+			if (m) result[m[1].trim()] = m[2].trim();
+		}
+		return result;
+	}
+
+	const frontmatter = $derived(
+		data.document?.type === 'reading_note' ? parseFrontmatter(content) : {}
+	);
 </script>
 
 {#if data.document}
@@ -1883,6 +1903,14 @@
 							}}
 						>
 							Explain citation
+						</button>
+					{/if}
+					{#if data.document?.type === 'reading_note' && currentSelection && currentSelection.text.trim().length > 10}
+						<button
+							class="pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
+							onclick={() => { showCitationModal = true; citationSavedCreated = null; }}
+						>
+							+ Citation
 						</button>
 					{/if}
 					{#if hasAiKey && currentSelection && currentSelection.text.trim().length > 20}
@@ -3411,6 +3439,32 @@
 					Descartar
 				</button>
 			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showCitationModal && currentSelection && data.document}
+	<AddToCitationModal
+		projectId={data.document.projectId}
+		paragraph={currentSelection.text.trim()}
+		initialTitle={frontmatter.title ?? ''}
+		initialAuthor={frontmatter.author ?? ''}
+		initialYear={frontmatter.year ?? ''}
+		onclose={() => { showCitationModal = false; }}
+		onsaved={(created) => {
+			showCitationModal = false;
+			citationSavedCreated = created;
+			setTimeout(() => { citationSavedCreated = null; }, 3000);
+		}}
+	/>
+{/if}
+
+{#if citationSavedCreated !== null}
+	<div class="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+		<div class="rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 shadow-md dark:border-green-800/40 dark:bg-green-900/20">
+			<p class="font-sans text-sm font-medium text-green-700 dark:text-green-400">
+				{citationSavedCreated ? 'Added to bibliography' : 'Passage added to existing citation'}
+			</p>
 		</div>
 	</div>
 {/if}

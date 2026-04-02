@@ -17,6 +17,7 @@
 	} from '$lib/utils/citations';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 
 	// ── Citation style ────────────────────────────────────────────────────────
 
@@ -58,6 +59,7 @@
 	let expandedNotes = $state<string | null>(null); // ref.id with open notes
 	let notesText = $state('');
 	let notesSaving = $state(false);
+	let notesDebounce: ReturnType<typeof setTimeout> | null = null;
 
 	function toggleNotes(ref: Ref) {
 		if (expandedNotes === ref.id) {
@@ -69,14 +71,16 @@
 	}
 
 	async function saveNotes(ref: Ref) {
-		if (notesSaving) return;
-		notesSaving = true;
-		try {
-			await trpc.references.updateReadingNotes.mutate({ id: ref.id, readingNotes: notesText });
-			ref.readingNotes = notesText || null;
-		} finally {
-			notesSaving = false;
-		}
+		if (notesDebounce) clearTimeout(notesDebounce);
+		notesDebounce = setTimeout(async () => {
+			notesSaving = true;
+			try {
+				await trpc.references.updateReadingNotes.mutate({ id: ref.id, readingNotes: notesText });
+				ref.readingNotes = notesText || null;
+			} finally {
+				notesSaving = false;
+			}
+		}, 1000);
 	}
 
 	// ── Semantic Scholar search ───────────────────────────────────────────────
@@ -922,31 +926,19 @@
 							<div
 								class="border-t border-paper-border px-4 pt-2.5 pb-3 dark:border-dark-paper-border"
 							>
-								<label
-									for="notes-{ref.id}"
-									class="mb-1.5 block font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-								>
-									Notas de lectura
-								</label>
-								<textarea
-									id="notes-{ref.id}"
-									bind:value={notesText}
-									onblur={() => saveNotes(ref)}
-									rows="5"
-									placeholder="Apuntes, citas relevantes, conexiones con otros textos…"
-									class="w-full resize-y rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
-								></textarea>
-								<div class="mt-1.5 flex items-center justify-between">
-									<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-										{notesSaving ? 'Guardando…' : 'Se guarda al salir del campo'}
+								<div class="mb-1.5 flex items-center justify-between">
+									<span class="font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+										Notas de lectura
 									</span>
-									<button
-										onclick={() => saveNotes(ref)}
-										disabled={notesSaving}
-										class="rounded-md px-3 py-1 font-sans text-xs font-medium text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
-									>
-										Save
-									</button>
+									{#if notesSaving}
+										<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">Guardando…</span>
+									{/if}
+								</div>
+								<div class="min-h-[8rem] rounded-lg border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+									<MarkdownEditor
+										bind:value={notesText}
+										ondocchange={() => saveNotes(ref)}
+									/>
 								</div>
 							</div>
 						{/if}

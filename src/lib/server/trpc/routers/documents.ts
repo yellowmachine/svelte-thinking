@@ -105,7 +105,8 @@ const documentTypeValues = [
 	'bibliography',
 	'supplementary',
 	'book',
-	'chapter'
+	'chapter',
+	'reading_note'
 ] as const;
 
 const BOOK_TEMPLATE = `---
@@ -128,8 +129,17 @@ Write a brief introduction to your book here.
 *Reference chapters below using \`[[\` to insert chapter links.*
 `;
 
+const READING_NOTE_TEMPLATE = `---
+title:
+author:
+year:
+---
+
+`;
+
 function initialContent(type: (typeof documentTypeValues)[number]): string {
 	if (type === 'book') return BOOK_TEMPLATE;
+	if (type === 'reading_note') return READING_NOTE_TEMPLATE;
 	return '';
 }
 

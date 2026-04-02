@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, ilike } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
@@ -550,5 +550,84 @@ ${truncated}`;
 				doi: normalized,
 				url
 			};
+		}),
+
+	// ── Add passage from reading note ─────────────────────────────────────────
+	// Creates a new reference (type 'book') or appends to readingNotes of an
+	// existing one. Passage is stored as "> p.N — text" markdown block.
+
+	addFromReadingNote: protectedProcedure
+		.input(
+			z.object({
+				projectId: z.string(),
+				title: z.string().min(1).max(1000),
+				authorRaw: z.string().max(300), // "First Last" — parsed server-side
+				year: z.string().max(4).optional(),
+				paragraph: z.string().min(1).max(5000),
+				page: z.string().max(20).optional()
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			// Verify project access
+			const [proj] = (await ctx.withRLS((db) =>
+				db.select({ id: project.id }).from(project).where(eq(project.id, input.projectId)).limit(1)
+			)) as { id: string }[];
+			if (!proj) throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' });
+
+			// Format passage entry for readingNotes
+			const pagePrefix = input.page?.trim() ? `p. ${input.page.trim()} — ` : '';
+			const passage = `> ${pagePrefix}"${input.paragraph.trim()}"`;
+
+			// Check for existing reference with same title (case-insensitive)
+			const [existing] = (await ctx.withRLS((db) =>
+				db
+					.select({ id: projectReference.id, readingNotes: projectReference.readingNotes })
+					.from(projectReference)
+					.where(
+						and(
+							eq(projectReference.projectId, input.projectId),
+							ilike(projectReference.title, input.title.trim())
+						)
+					)
+					.limit(1)
+			)) as { id: string; readingNotes: string | null }[];
+
+			if (existing) {
+				const updated = ((existing.readingNotes?.trim() ?? '') + '\n\n' + passage).trimStart();
+				await ctx.withRLS((db) =>
+					db
+						.update(projectReference)
+						.set({ readingNotes: updated, updatedAt: new Date() })
+						.where(eq(projectReference.id, existing.id))
+				);
+				return { created: false, id: existing.id };
+			}
+
+			// Parse "First Last" → {first, last}
+			const parts = input.authorRaw.trim().split(/\s+/);
+			const last = parts.length > 1 ? parts.pop()! : parts[0];
+			const first = parts.join(' ');
+			const authors = input.authorRaw.trim() ? [{ first, last }] : [];
+
+			const baseKey = generateCiteKey(authors as Author[], input.year ?? '');
+			const citeKey = await ensureUniqueCiteKey(ctx.withRLS, input.projectId, baseKey);
+
+			const [created] = (await ctx.withRLS((db) =>
+				db
+					.insert(projectReference)
+					.values({
+						id: crypto.randomUUID(),
+						projectId: input.projectId,
+						citeKey,
+						type: 'book',
+						title: input.title.trim(),
+						authors,
+						year: input.year ?? null,
+						readingNotes: passage
+					})
+					.returning({ id: projectReference.id })
+			)) as { id: string }[];
+
+			return { created: true, id: created.id };
 		})
 });
