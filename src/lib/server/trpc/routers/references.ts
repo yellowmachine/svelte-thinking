@@ -275,22 +275,22 @@ export const referencesRouter = router({
 
 			const docId = crypto.randomUUID();
 			const versionId = crypto.randomUUID();
-			const now = new Date();
+			const now = new Date().toISOString();
 
 			await ctx.withRLS(async (db) => {
 				await db.execute(
 					sql`INSERT INTO scholio.document (id, project_id, title, type, draft_content, owner_user_id, created_at, updated_at)
-					    VALUES (${docId}, ${ref.projectId}, ${docTitle}, 'reading_note', ${content}, ${ctx.user.id}, ${now}, ${now})`
+					    VALUES (${docId}, ${ref.projectId}, ${docTitle}, 'reading_note', ${content}, ${ctx.user.id}, ${now}::timestamptz, ${now}::timestamptz)`
 				);
 				await db.execute(
 					sql`INSERT INTO scholio.document_version (id, document_id, content, version_number, change_description, created_by, created_at)
-					    VALUES (${versionId}, ${docId}, ${content}, 1, 'Initial version', ${ctx.user.id}, ${now})`
+					    VALUES (${versionId}, ${docId}, ${content}, 1, 'Initial version', ${ctx.user.id}, ${now}::timestamptz)`
 				);
 				await db.execute(
 					sql`UPDATE scholio.document SET current_version_id = ${versionId} WHERE id = ${docId}`
 				);
 				await db.execute(
-					sql`UPDATE scholio.project_reference SET reading_notes_doc_id = ${docId}, updated_at = ${now} WHERE id = ${refId}`
+					sql`UPDATE scholio.project_reference SET reading_notes_doc_id = ${docId}, updated_at = ${now}::timestamptz WHERE id = ${refId}`
 				);
 			});
 
