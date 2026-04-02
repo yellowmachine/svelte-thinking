@@ -893,7 +893,7 @@
 						<input
 							type="text"
 							bind:value={newKeyName}
-							placeholder="Name (e.g. "My Anthropic key")"
+							placeholder="Name (e.g. 'My Anthropic key')"
 							class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 						<div class="flex gap-3">
