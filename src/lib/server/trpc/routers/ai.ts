@@ -512,11 +512,9 @@ export async function resolveTaskKey(
   projectId?: string,
   fallbackModel: string = DEFAULT_MODEL
 ): Promise<{ apiKey: string; model: string; resolvedOrgId?: string }> {
-  const cacheKey = `${userId}:${task}:${projectId ?? ''}`;
-  const cached = taskKeyCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return { apiKey: cached.apiKey, model: cached.model, resolvedOrgId: cached.resolvedOrgId };
-  }
+  const cacheKey = CACHE_KEY.taskKey(userId, task, projectId ?? '');
+  const cached = await cacheGet<{ apiKey: string; model: string; resolvedOrgId?: string }>(cacheKey);
+  if (cached) return cached;
 
   // ── 1. Check if project is linked to an org ───────────────────────────────
   let orgId: string | null = null;
@@ -588,7 +586,7 @@ export async function resolveTaskKey(
         }
         const model = orgTaskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
         const result = { apiKey, model, resolvedOrgId: orgId };
-        taskKeyCache.set(cacheKey, { ...result, expiresAt: Date.now() + TASK_KEY_TTL });
+        await cacheSet(cacheKey, result, TTL.taskKey);
         return result;
       }
       else {
@@ -650,7 +648,7 @@ export async function resolveTaskKey(
 
   const model = taskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
   const result = { apiKey, model };
-  taskKeyCache.set(cacheKey, { ...result, expiresAt: Date.now() + TASK_KEY_TTL });
+  await cacheSet(cacheKey, result, TTL.taskKey);
   return result;
 }
 const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
@@ -931,13 +929,8 @@ Prefiere reconocer incertidumbre antes que inventar contenido, secciones, result
 Cuando sea posible, indica qué documento o fragmento fundamenta cada afirmación importante sobre el proyecto.`;
 
 // ---------------------------------------------------------------------------
-// Author info cache (module-level, TTL 24h)
-const AUTHOR_CACHE_TTL = 24 * 60 * 60 * 1000;
-const authorInfoCache = new Map<string, { note: string; photo?: string; expiresAt: number }>();
-
-// Resolved key/model cache — avoids DB + KMS on every AI call (TTL 5 min)
-const TASK_KEY_TTL = 5 * 60 * 1000;
-const taskKeyCache = new Map<string, { apiKey: string; model: string; resolvedOrgId?: string; expiresAt: number }>();
+// Cache (Redis-backed via src/lib/server/cache.ts, in-process Map fallback)
+import { cacheGet, cacheSet, CACHE_KEY, TTL } from '$lib/server/cache';
 
 // Router
 // ---------------------------------------------------------------------------
@@ -1600,11 +1593,9 @@ Rules:
       projectId: z.string().optional()
     }))
     .query(async ({ ctx, input }) => {
-      const cacheKey = input.name.trim().toLowerCase();
-      const cached = authorInfoCache.get(cacheKey);
-      if (cached && cached.expiresAt > Date.now()) {
-        return { note: cached.note, photo: cached.photo };
-      }
+      const cacheKey = CACHE_KEY.authorInfo(input.name.trim());
+      const cached = await cacheGet<{ note: string; photo?: string }>(cacheKey);
+      if (cached) return cached;
 
       const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
         ctx.withRLS, ctx.db, ctx.user.id, 'lookup', input.projectId
@@ -1662,7 +1653,7 @@ Rules:
         note = 'Unknown person';
       }
 
-      authorInfoCache.set(cacheKey, { note, photo, expiresAt: Date.now() + AUTHOR_CACHE_TTL });
+      await cacheSet(cacheKey, { note, photo }, TTL.authorInfo);
       return { note, photo };
     }),
 

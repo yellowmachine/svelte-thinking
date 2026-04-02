@@ -33,6 +33,33 @@ await migrate(db, { migrationsFolder: './drizzle' });
 
 console.log('Migrations applied successfully');
 
+// ── Post-migrate grants ──────────────────────────────────────────────────────
+// Idempotent — safe to run on every migrate (fresh or incremental).
+// MIGRATION_DATABASE_URL connects as superuser so GRANT/ALTER DEFAULT PRIVILEGES work.
+const appUser = process.env.APP_DB_USER;
+if (appUser) {
+	console.log(`Granting scholio schema privileges to "${appUser}"...`);
+	await sql.unsafe(`GRANT USAGE ON SCHEMA scholio TO "${appUser}"`);
+	await sql.unsafe(
+		`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA scholio TO "${appUser}"`
+	);
+	await sql.unsafe(
+		`GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA scholio TO "${appUser}"`
+	);
+	await sql.unsafe(
+		`ALTER DEFAULT PRIVILEGES IN SCHEMA scholio GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "${appUser}"`
+	);
+	await sql.unsafe(
+		`ALTER DEFAULT PRIVILEGES IN SCHEMA scholio GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO "${appUser}"`
+	);
+	await sql.unsafe(
+		`ALTER DEFAULT PRIVILEGES IN SCHEMA scholio GRANT EXECUTE ON FUNCTIONS TO "${appUser}"`
+	);
+	console.log('Grants applied');
+} else {
+	console.log('APP_DB_USER not set — skipping scholio grants');
+}
+
 // ── Admin seed ──────────────────────────────────────────────────────────────
 const adminEmail = process.env.ADMIN_EMAIL;
 const adminPassword = process.env.ADMIN_PASSWORD;

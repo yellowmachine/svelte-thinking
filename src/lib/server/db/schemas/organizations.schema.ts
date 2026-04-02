@@ -221,3 +221,62 @@ export const orgInvitation = scholioSchema.table(
 		})
 	]
 ).enableRLS();
+
+// ── org_s3_config ─────────────────────────────────────────────────────────
+// BYOS3 for organizations — same KMS envelope encryption pattern as userS3Config.
+// encryptedCredentials contains JSON { accessKey, secretKey }.
+// Access restricted to org owner only (same as organization_api_key).
+
+export const orgS3Config = scholioSchema.table(
+	'org_s3_config',
+	{
+		id: text('id').primaryKey(),
+		orgId: text('org_id')
+			.notNull()
+			.unique()
+			.references(() => organization.id, { onDelete: 'cascade' }),
+		endpoint: text('endpoint').notNull(),
+		bucket: text('bucket').notNull(),
+		region: text('region').notNull().default('us-east-1'),
+		publicUrl: text('public_url'),
+		encryptedCredentials: text('encrypted_credentials').notNull(),
+		encryptedDataKey: text('encrypted_data_key').notNull(),
+		iv: text('iv').notNull(),
+		authTag: text('auth_tag').notNull(),
+		verified: boolean('verified').notNull().default(false),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
+		updatedAt: timestamp('updated_at').notNull().defaultNow()
+	},
+	(t) => [
+		index('org_s3_config_org_idx').on(t.orgId),
+
+		// SELECT: org owner or any org member (members need to resolve credentials for uploads)
+		pgPolicy('org_s3_config_read', {
+			for: 'select',
+			using: sql`
+				EXISTS (
+					SELECT 1 FROM scholio.organization
+					WHERE organization.id = ${t.orgId}
+					AND organization.owner_id = ${currentUserId}
+				)
+				OR EXISTS (
+					SELECT 1 FROM scholio.organization_member
+					WHERE organization_member.org_id = ${t.orgId}
+					AND organization_member.user_id = ${currentUserId}
+				)
+			`
+		}),
+
+		// INSERT/UPDATE/DELETE: org owner only
+		pgPolicy('org_s3_config_write', {
+			for: 'all',
+			using: sql`
+				EXISTS (
+					SELECT 1 FROM scholio.organization
+					WHERE organization.id = ${t.orgId}
+					AND organization.owner_id = ${currentUserId}
+				)
+			`
+		})
+	]
+).enableRLS();

@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { uploadFileWithConfig, deleteFileWithConfig } from '$lib/server/storage';
-import { getDecryptedS3Config } from '$lib/server/userStorage';
+import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { projectDataset } from '$lib/server/db/schemas/datasets.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { eq, and } from 'drizzle-orm';
@@ -62,7 +62,7 @@ export const POST: RequestHandler = async (event) => {
 	const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
 	const key = `projects/${projectId}/datasets/${crypto.randomUUID()}/${safeName}`;
 
-	const s3 = await getDecryptedS3Config(user.id, event.locals.withRLS);
+	const s3 = await resolveProjectS3Config(projectId, user.id, event.locals.withRLS);
 	if (!s3) error(422, 'Almacenamiento S3 no configurado. Configúralo en Ajustes → Almacenamiento.');
 
 	const buffer = Buffer.from(await file.arrayBuffer());
@@ -111,7 +111,7 @@ export const DELETE: RequestHandler = async (event) => {
 	);
 	if (!dataset) error(404, 'Dataset no encontrado');
 
-	const s3 = await getDecryptedS3Config(user.id, event.locals.withRLS);
+	const s3 = await resolveProjectS3Config(projectId, user.id, event.locals.withRLS);
 	if (!s3) error(422, 'Almacenamiento S3 no configurado.');
 	await deleteFileWithConfig(s3, dataset.key);
 	await event.locals.withRLS((rdb) =>

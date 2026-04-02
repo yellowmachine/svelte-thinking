@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { uploadFileWithConfig } from '$lib/server/storage';
-import { getDecryptedS3Config } from '$lib/server/userStorage';
+import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { eq } from 'drizzle-orm';
@@ -35,7 +35,7 @@ export const POST: RequestHandler = async (event) => {
 
 	const description = formData.get('description');
 
-	const s3 = await getDecryptedS3Config(user.id, event.locals.withRLS);
+	const s3 = await resolveProjectS3Config(projectId, user.id, event.locals.withRLS);
 	if (!s3) error(422, 'Almacenamiento S3 no configurado. Configúralo en Ajustes → Almacenamiento.');
 
 	const ext = file.name.split('.').pop() ?? 'jpg';

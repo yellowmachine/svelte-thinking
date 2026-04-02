@@ -46,10 +46,25 @@ services:
     ports:
       - '3200:3200'
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   postgres_dev_data:
     name: scholio_postgres_dev
   minio_dev_data:
     name: scholio_minio_dev
+  redis_dev_data:
+    name: scholio_redis_dev
   languagetool_ngrams:
     name: scholio_languagetool_ngrams

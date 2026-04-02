@@ -41,6 +41,20 @@
 	let budgetInput = $state('');
 	let savingBudget = $state(false);
 
+	// S3 form (owner only)
+	type OrgS3Config = { endpoint: string; bucket: string; region: string; publicUrl: string | null; verified: boolean };
+	let orgS3Config = $state<OrgS3Config | null>(null);
+	let orgS3Endpoint = $state('');
+	let orgS3Bucket = $state('');
+	let orgS3Region = $state('us-east-1');
+	let orgS3PublicUrl = $state('');
+	let orgS3AccessKey = $state('');
+	let orgS3SecretKey = $state('');
+	let orgS3Saving = $state(false);
+	let orgS3Testing = $state(false);
+	let orgS3Error = $state('');
+	let orgS3Success = $state('');
+
 	// ── Derived ──────────────────────────────────────────────────────────────
 	const selectedOrg = $derived(orgs.find((o) => o.id === selectedOrgId) ?? null);
 	const isOwner = $derived(selectedOrg?.role === 'owner');
@@ -66,6 +80,25 @@
 				taskConfig = org.aiTaskConfig ? JSON.parse(org.aiTaskConfig) : {};
 			} catch {
 				taskConfig = {};
+			}
+			// Load org S3 config (owner only — silently skip on error)
+			try {
+				const s3 = await trpc.s3Config.getOrg.query(orgId) as OrgS3Config | null;
+				orgS3Config = s3;
+				if (s3) {
+					orgS3Endpoint = s3.endpoint;
+					orgS3Bucket = s3.bucket;
+					orgS3Region = s3.region;
+					orgS3PublicUrl = s3.publicUrl ?? '';
+				} else {
+					orgS3Endpoint = '';
+					orgS3Bucket = '';
+					orgS3Region = 'us-east-1';
+					orgS3PublicUrl = '';
+				}
+			} catch {
+				// Non-owner members get FORBIDDEN — ignore silently
+				orgS3Config = null;
 			}
 		} finally {
 			loadingDetail = false;
@@ -154,6 +187,68 @@
 			if (orgData) orgData = { ...orgData, monthlyBudgetEur: val };
 		} finally {
 			savingBudget = false;
+		}
+	}
+
+	async function saveOrgS3() {
+		if (!selectedOrgId) return;
+		orgS3Saving = true;
+		orgS3Error = '';
+		orgS3Success = '';
+		try {
+			await trpc.s3Config.setOrg.mutate({
+				orgId: selectedOrgId,
+				config: {
+					endpoint: orgS3Endpoint.trim(),
+					bucket: orgS3Bucket.trim(),
+					region: orgS3Region.trim() || 'us-east-1',
+					publicUrl: orgS3PublicUrl.trim() || undefined,
+					accessKey: orgS3AccessKey.trim(),
+					secretKey: orgS3SecretKey.trim()
+				}
+			});
+			orgS3AccessKey = '';
+			orgS3SecretKey = '';
+			orgS3Config = await trpc.s3Config.getOrg.query(selectedOrgId) as OrgS3Config | null;
+			orgS3Success = 'Configuration saved. Test the connection to verify it.';
+		} catch (e: unknown) {
+			orgS3Error = e instanceof Error ? e.message : 'Error saving S3 config.';
+		} finally {
+			orgS3Saving = false;
+		}
+	}
+
+	async function testOrgS3() {
+		if (!selectedOrgId) return;
+		orgS3Testing = true;
+		orgS3Error = '';
+		orgS3Success = '';
+		try {
+			const result = await trpc.s3Config.testOrg.mutate(selectedOrgId);
+			if (result.ok) {
+				orgS3Success = 'Connection verified successfully.';
+				orgS3Config = await trpc.s3Config.getOrg.query(selectedOrgId) as OrgS3Config | null;
+			} else {
+				orgS3Error = (result as { error?: string }).error ?? 'Connection failed. Check credentials and bucket.';
+			}
+		} catch (e: unknown) {
+			orgS3Error = e instanceof Error ? e.message : 'Error testing connection.';
+		} finally {
+			orgS3Testing = false;
+		}
+	}
+
+	async function removeOrgS3() {
+		if (!selectedOrgId) return;
+		try {
+			await trpc.s3Config.removeOrg.mutate(selectedOrgId);
+			orgS3Config = null;
+			orgS3Endpoint = '';
+			orgS3Bucket = '';
+			orgS3Region = 'us-east-1';
+			orgS3PublicUrl = '';
+		} catch (e: unknown) {
+			orgS3Error = e instanceof Error ? e.message : 'Error removing S3 config.';
 		}
 	}
 
@@ -344,7 +439,7 @@
 										>
 											<option value="">— model —</option>
 											{#each MODELS as model (model.id)}
-												{@const isRec = MODEL_RECOMMENDATIONS[model.id]?.includes(task.id as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup')}
+												{@const isRec = MODEL_RECOMMENDATIONS[model.id]?.includes(task.id)}
 												<option value={model.id}>{isRec ? '★ ' : ''}{model.label}</option>
 											{/each}
 										</select>
@@ -352,6 +447,86 @@
 								{/each}
 							</div>
 						{/if}
+					</section>
+
+					<!-- S3 Storage (owner only) -->
+					<section>
+						<h4 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">S3 Storage</h4>
+
+						{#if orgS3Config}
+							<div class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+								<div class="min-w-0 flex-1">
+									<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+										{orgS3Config.bucket}
+										<span class="font-normal text-ink-faint dark:text-dark-ink-faint">@ {orgS3Config.endpoint}</span>
+									</p>
+									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+										{orgS3Config.verified ? 'Verified' : 'Unverified'} · Region: {orgS3Config.region}
+									</p>
+								</div>
+								<div class="flex items-center gap-3">
+									<span class="font-sans text-xs {orgS3Config.verified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}">
+										{orgS3Config.verified ? '✓ OK' : '⚠ Unverified'}
+									</span>
+									<button type="button" onclick={testOrgS3} disabled={orgS3Testing}
+										class="font-sans text-xs text-accent hover:underline disabled:opacity-50">
+										{orgS3Testing ? 'Testing…' : 'Test'}
+									</button>
+									<button type="button" onclick={removeOrgS3}
+										class="font-sans text-xs text-red-500 hover:text-red-700">
+										Remove
+									</button>
+								</div>
+							</div>
+						{/if}
+
+						{#if orgS3Error}
+							<p class="mb-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">{orgS3Error}</p>
+						{/if}
+						{#if orgS3Success}
+							<p class="mb-3 rounded-lg bg-green-50 px-3 py-2 font-sans text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">{orgS3Success}</p>
+						{/if}
+
+						<p class="mb-3 font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							{orgS3Config ? 'Update configuration' : 'Configure bucket'}
+						</p>
+						<div class="grid grid-cols-2 gap-3">
+							<div class="col-span-2">
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Endpoint URL</label>
+								<input bind:value={orgS3Endpoint} type="url" placeholder="https://…"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+							</div>
+							<div>
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Bucket</label>
+								<input bind:value={orgS3Bucket} placeholder="my-bucket"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+							</div>
+							<div>
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Region</label>
+								<input bind:value={orgS3Region} placeholder="us-east-1"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+							</div>
+							<div class="col-span-2">
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Public URL (optional)</label>
+								<input bind:value={orgS3PublicUrl} type="url" placeholder="https://cdn.example.com"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+							</div>
+							<div>
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Access Key ID</label>
+								<input bind:value={orgS3AccessKey} autocomplete="off"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+							</div>
+							<div>
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Secret Access Key</label>
+								<input bind:value={orgS3SecretKey} type="password" autocomplete="new-password"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+							</div>
+						</div>
+						<button type="button" onclick={saveOrgS3}
+							disabled={orgS3Saving || !orgS3Endpoint.trim() || !orgS3Bucket.trim() || !orgS3AccessKey.trim() || !orgS3SecretKey.trim()}
+							class="mt-3 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:opacity-80 disabled:opacity-50">
+							{orgS3Saving ? 'Saving…' : 'Save'}
+						</button>
 					</section>
 				{/if}
 
