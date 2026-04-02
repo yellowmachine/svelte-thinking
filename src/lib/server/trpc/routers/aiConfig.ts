@@ -215,7 +215,7 @@ export const aiConfigRouter = router({
 	setTaskConfig: protectedProcedure
 		.input(
 			z.object({
-				task: z.enum(['agent', 'draft', 'review', 'requirements', 'lookup']),
+				task: z.enum(AI_TASKS.map((t) => t.id) as [AiTask, ...AiTask[]]),
 				keyId: z.string(),
 				model: z.string().min(1)
 			})
@@ -244,7 +244,7 @@ export const aiConfigRouter = router({
 
 	// Clear config for a specific task (fallback to default)
 	clearTaskConfig: protectedProcedure
-		.input(z.object({ task: z.enum(['agent', 'draft', 'review', 'requirements', 'lookup']) }))
+		.input(z.object({ task: z.enum(AI_TASKS.map((t) => t.id) as [AiTask, ...AiTask[]]) }))
 		.mutation(async ({ ctx, input }) => {
 			const rows = await ctx.withRLS((db) =>
 				db
