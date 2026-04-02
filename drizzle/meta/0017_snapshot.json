@@ -4476,8 +4476,7 @@
           "to": [
             "public"
           ],
-          "using": "(EXISTS (SELECT 1 FROM scholio.organization WHERE organization.id = \"scholio\".\"org_s3_config\".\"org_id\" AND organization.owner_id = nullif(current_setting('app.current_user_id', true), '')) OR EXISTS (SELECT 1 FROM scholio.organization_member WHERE organization_member.org_id = \"scholio\".\"org_s3_config\".\"org_id\" AND organization_member.user_id = nullif(current_setting('app.current_user_id', true), '')))",
-          "withCheck": null
+          "using": "(EXISTS (SELECT 1 FROM scholio.organization WHERE organization.id = \"scholio\".\"org_s3_config\".\"org_id\" AND organization.owner_id = nullif(current_setting('app.current_user_id', true), '')) OR EXISTS (SELECT 1 FROM scholio.organization_member WHERE organization_member.org_id = \"scholio\".\"org_s3_config\".\"org_id\" AND organization_member.user_id = nullif(current_setting('app.current_user_id', true), '')))"
         },
         "org_s3_config_write": {
           "name": "org_s3_config_write",
@@ -4486,8 +4485,7 @@
           "to": [
             "public"
           ],
-          "using": "(EXISTS (SELECT 1 FROM scholio.organization WHERE organization.id = \"scholio\".\"org_s3_config\".\"org_id\" AND organization.owner_id = nullif(current_setting('app.current_user_id', true), '')))",
-          "withCheck": null
+          "using": "(EXISTS (SELECT 1 FROM scholio.organization WHERE organization.id = \"scholio\".\"org_s3_config\".\"org_id\" AND organization.owner_id = nullif(current_setting('app.current_user_id', true), '')))"
         }
       },
       "checkConstraints": {},
