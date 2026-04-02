@@ -21,7 +21,14 @@
 
 	const documents = $derived(data.documents);
 	const canEdit = $derived(data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor');
-	const canUploadS3 = $derived(data.hasUserS3Config);
+	// S3 is available if: personal project with user S3, or org project with org S3
+	const hasS3 = $derived(data.projectOrgId ? data.hasOrgS3Config : data.hasUserS3Config);
+	const canUploadS3 = $derived(hasS3);
+	const s3CtaType = $derived(
+		hasS3 ? 'ok' :
+		!data.projectOrgId ? 'personal' :
+		(data.orgs ?? []).find((o) => o.id === data.projectOrgId)?.role === 'owner' ? 'org-owner' : 'org-member'
+	);
 	const invitations: InvitationType[] = $derived(
 		data.invitations.map((inv) => ({
 			...inv,
@@ -1132,6 +1139,28 @@
 								/></svg
 							>
 							S3
+						</a>
+					{:else if canEdit && s3CtaType === 'personal'}
+						<a
+							href="/settings?tab=storage"
+							class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" />
+								<path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+							</svg>
+							Configure S3
+						</a>
+					{:else if canEdit && s3CtaType === 'org-owner'}
+						<a
+							href="/settings?tab=organizations"
+							class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" />
+								<path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+							</svg>
+							Configure org S3
 						</a>
 					{/if}
 				</div>

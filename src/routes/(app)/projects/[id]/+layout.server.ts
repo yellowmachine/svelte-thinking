@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { project } from '$lib/server/db/schemas/projects.schema';
+import { orgS3Config } from '$lib/server/db/schemas/organizations.schema';
 import { eq } from 'drizzle-orm';
 
 export const load: LayoutServerLoad = async (event) => {
@@ -12,5 +13,15 @@ export const load: LayoutServerLoad = async (event) => {
 
   if (!rows[0]) error(404, 'Project not found');
 
-  return { projectOrgId: rows[0].orgId };
+  const orgId = rows[0].orgId;
+
+  let hasOrgS3Config = false;
+  if (orgId) {
+    const s3Rows = await event.locals.withRLS((db) =>
+      db.select({ id: orgS3Config.id }).from(orgS3Config).where(eq(orgS3Config.orgId, orgId)).limit(1)
+    ) as { id: string }[];
+    hasOrgS3Config = s3Rows.length > 0;
+  }
+
+  return { projectOrgId: orgId, hasOrgS3Config };
 };
