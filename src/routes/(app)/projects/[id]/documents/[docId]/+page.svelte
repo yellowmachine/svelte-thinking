@@ -156,6 +156,9 @@
 	// Word-level ghost text state
 	let ghostWord: { from: number; name: string } | null = $state(null);
 
+	// Heading ghost text state
+	let ghostHeading: { from: number; cursorPos: number; title: string } | null = $state(null);
+
 	function onwordprefix(prefix: string, from: number, cursorPos: number) {
 		const persons = extractDocumentPersons();
 		const matches = persons.filter((n) => n.toLowerCase().startsWith(prefix.toLowerCase()));
@@ -198,6 +201,36 @@
 	function onwordprefixclear() {
 		ghostWord = null;
 		editorEl?.setGhostText(null);
+	}
+
+	function onheadingprefix(partial: string, from: number, cursorPos: number) {
+		const headings: string[] = [];
+		for (const line of content.split('\n')) {
+			const m = line.match(/^#{1,6}\s+(.+)$/);
+			if (m) headings.push(m[1].trim());
+		}
+		const match = headings.find((h) => h.toLowerCase().startsWith(partial.toLowerCase()));
+		if (match) {
+			ghostHeading = { from, cursorPos, title: match };
+			editorEl?.setGhostText(match.slice(partial.length) + ']]');
+		} else {
+			ghostHeading = null;
+			editorEl?.setGhostText(null);
+		}
+	}
+
+	function onheadingprefixclear() {
+		ghostHeading = null;
+		editorEl?.setGhostText(null);
+	}
+
+	function onheadingghosttab(): boolean {
+		if (!ghostHeading || !editorEl) return false;
+		const { from, cursorPos, title } = ghostHeading;
+		ghostHeading = null;
+		editorEl.setGhostText(null);
+		editorEl.replaceRange(from, cursorPos, title + ']]');
+		return true;
 	}
 
 	function onwordghosttab(): boolean {
@@ -1908,6 +1941,9 @@
 								{onwordprefix}
 								{onwordprefixclear}
 								{onwordghosttab}
+								{onheadingprefix}
+								{onheadingprefixclear}
+								{onheadingghosttab}
 								showLookupHint={lookupUnavailable}
 								{spellLanguage}
 

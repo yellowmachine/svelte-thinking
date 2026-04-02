@@ -26,6 +26,9 @@
 		onwordprefix,
 		onwordprefixclear,
 		onwordghosttab,
+		onheadingprefix,
+		onheadingprefixclear,
+		onheadingghosttab,
 		oncitehover,
 		onauthorhover,
 		onheadinghover,
@@ -52,6 +55,11 @@
 		onwordprefixclear?: () => void;
 		/** Called when Tab/ArrowRight is pressed while word-ghost is active. */
 		onwordghosttab?: () => boolean;
+		/** Called when cursor is inside [[#partial — partial is text after [[#. */
+		onheadingprefix?: (partial: string, from: number, cursorPos: number) => void;
+		onheadingprefixclear?: () => void;
+		/** Called when Tab/ArrowRight is pressed while heading-ghost is active. */
+		onheadingghosttab?: () => boolean;
 		/** Called when cursor dwells on a [[@citeKey]] token (debounced 700ms). */
 		oncitehover?: (citeKey: string, coords: { bottom: number; left: number }) => void;
 		/** Called when cursor dwells on a [[person:Name]] token (debounced 700ms). */
@@ -70,7 +78,8 @@
 
 	let container: HTMLDivElement | null = null;
 	let view: EditorView | null = null;
-	let wordGhostActive = false; // tracks whether word-level ghost text is active
+	let wordGhostActive = false;
+	let headingGhostActive = false;
 
 	// Debounce timer for citation hover
 	let citeHoverTimer: ReturnType<typeof setTimeout> | null = null;
@@ -315,6 +324,7 @@
 				{
 					key: 'Tab',
 					run(view) {
+						if (headingGhostActive) return onheadingghosttab?.() ?? false;
 						if (wordGhostActive) return onwordghosttab?.() ?? false;
 						return acceptCompletion(view);
 					}
@@ -322,6 +332,7 @@
 				{
 					key: 'ArrowRight',
 					run(view) {
+						if (headingGhostActive) return onheadingghosttab?.() ?? false;
 						if (wordGhostActive) return onwordghosttab?.() ?? false;
 						return acceptCompletion(view);
 					}
@@ -356,24 +367,53 @@
 						onselectionchange({ text, from: sel.from, to: sel.to, coords });
 					}
 				}
+				// Heading ghost text — cursor inside [[#partial
+				if ((update.docChanged || update.selectionSet) && (onheadingprefix || onheadingprefixclear)) {
+					const sel = update.state.selection.main;
+					if (sel.empty) {
+						const doc = update.state.doc.toString();
+						const pos = sel.head;
+						const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
+						const textBefore = doc.slice(lineStart, pos);
+						const hm = textBefore.match(/\[\[#([^\]]*)$/);
+						if (hm) {
+							const partial = hm[1];
+							const from = pos - partial.length; // position right after [[#
+							headingGhostActive = true;
+							onheadingprefix?.(partial, from, pos);
+						} else {
+							headingGhostActive = false;
+							onheadingprefixclear?.();
+						}
+					} else {
+						headingGhostActive = false;
+						onheadingprefixclear?.();
+					}
+				}
 				// Word-level ghost text — capitalised mid-sentence word ≥3 chars
+				// Skip if cursor is inside [[#... to avoid conflict with heading ghost
 				if ((update.docChanged || update.selectionSet) && (onwordprefix || onwordprefixclear)) {
 					const sel = update.state.selection.main;
 					if (sel.empty) {
 						const doc = update.state.doc.toString();
 						const pos = sel.head;
-						// Walk back to find word start
-						let wordFrom = pos;
-						while (wordFrom > 0 && /\w/.test(doc[wordFrom - 1])) wordFrom--;
-						const word = doc.slice(wordFrom, pos);
-						// Must be ≥3 chars, start with uppercase, not inside [[person:...]]
-						const charBefore = wordFrom > 0 ? doc[wordFrom - 1] : '';
-						if (word.length >= 3 && /^[A-Z]/.test(word) && charBefore !== ':') {
-							wordGhostActive = true;
-							onwordprefix?.(word, wordFrom, pos);
-						} else {
-							wordGhostActive = false;
-							onwordprefixclear?.();
+						const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
+						const textBefore = doc.slice(lineStart, pos);
+						// Skip if inside [[#... context
+						if (!textBefore.match(/\[\[#[^\]]*$/)) {
+							// Walk back to find word start
+							let wordFrom = pos;
+							while (wordFrom > 0 && /\w/.test(doc[wordFrom - 1])) wordFrom--;
+							const word = doc.slice(wordFrom, pos);
+							// Must be ≥3 chars, start with uppercase, not inside [[person:...]]
+							const charBefore = wordFrom > 0 ? doc[wordFrom - 1] : '';
+							if (word.length >= 3 && /^[A-Z]/.test(word) && charBefore !== ':') {
+								wordGhostActive = true;
+								onwordprefix?.(word, wordFrom, pos);
+							} else {
+								wordGhostActive = false;
+								onwordprefixclear?.();
+							}
 						}
 					} else {
 						wordGhostActive = false;
