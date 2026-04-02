@@ -17,7 +17,7 @@
 	} from '$lib/utils/citations';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
-	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
+	import { goto } from '$app/navigation';
 
 	// ── Citation style ────────────────────────────────────────────────────────
 
@@ -56,31 +56,16 @@
 
 	// ── Reading notes ────────────────────────────────────────────────────────
 
-	let expandedNotes = $state<string | null>(null); // ref.id with open notes
-	let notesText = $state('');
-	let notesSaving = $state(false);
-	let notesDebounce: ReturnType<typeof setTimeout> | null = null;
+	let openingNotes = $state<string | null>(null); // ref.id currently loading
 
-	function toggleNotes(ref: Ref) {
-		if (expandedNotes === ref.id) {
-			expandedNotes = null;
-		} else {
-			expandedNotes = ref.id;
-			notesText = (ref.readingNotes as string | null) ?? '';
+	async function openReadingNotes(ref: Ref) {
+		openingNotes = ref.id;
+		try {
+			const { docId } = await trpc.references.openReadingNotes.mutate(ref.id);
+			await goto(`/projects/${data.project.id}/documents/${docId}`);
+		} finally {
+			openingNotes = null;
 		}
-	}
-
-	async function saveNotes(ref: Ref) {
-		if (notesDebounce) clearTimeout(notesDebounce);
-		notesDebounce = setTimeout(async () => {
-			notesSaving = true;
-			try {
-				await trpc.references.updateReadingNotes.mutate({ id: ref.id, readingNotes: notesText });
-				ref.readingNotes = notesText || null;
-			} finally {
-				notesSaving = false;
-			}
-		}, 1000);
 	}
 
 	// ── Semantic Scholar search ───────────────────────────────────────────────
@@ -829,47 +814,37 @@
 								class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
 							>
 								<button
-									onclick={() => toggleNotes(ref)}
-									class="relative rounded-md p-1.5 transition-colors {expandedNotes === ref.id
+									onclick={() => openReadingNotes(ref)}
+									disabled={openingNotes === ref.id}
+									class="relative rounded-md p-1.5 transition-colors {ref.readingNotesDocId
 										? 'text-accent'
-										: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
-									title="Notas de lectura"
+										: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'} disabled:opacity-50"
+									title="Reading notes"
 								>
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-										<path
-											d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-										/>
-										<polyline
-											points="14 2 14 8 20 8"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-										/>
-										<line
-											x1="16"
-											y1="13"
-											x2="8"
-											y2="13"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-										/>
-										<line
-											x1="16"
-											y1="17"
-											x2="8"
-											y2="17"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-										/>
-									</svg>
-									{#if ref.readingNotes}
-										<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-accent"
-										></span>
+									{#if openingNotes === ref.id}
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="animate-spin">
+											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="12"/>
+										</svg>
+									{:else}
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+											<path
+												d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+												stroke="currentColor"
+												stroke-width="1.5"
+												stroke-linecap="round"
+											/>
+											<polyline
+												points="14 2 14 8 20 8"
+												stroke="currentColor"
+												stroke-width="1.5"
+												stroke-linecap="round"
+											/>
+											<line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+											<line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+										</svg>
+										{#if ref.readingNotesDocId}
+											<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-accent"></span>
+										{/if}
 									{/if}
 								</button>
 								<button
@@ -921,27 +896,6 @@
 							</div>
 						</div>
 
-						<!-- Reading notes panel (expandable) -->
-						{#if expandedNotes === ref.id}
-							<div
-								class="border-t border-paper-border px-4 pt-2.5 pb-3 dark:border-dark-paper-border"
-							>
-								<div class="mb-1.5 flex items-center justify-between">
-									<span class="font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
-										Notas de lectura
-									</span>
-									{#if notesSaving}
-										<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">Guardando…</span>
-									{/if}
-								</div>
-								<div class="min-h-[8rem] rounded-lg border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-									<MarkdownEditor
-										bind:value={notesText}
-										ondocchange={() => saveNotes(ref)}
-									/>
-								</div>
-							</div>
-						{/if}
 					{/each}
 				</div>
 			{/if}

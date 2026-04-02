@@ -2,6 +2,7 @@ import { text, timestamp, jsonb, index, uniqueIndex, pgPolicy } from 'drizzle-or
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';
+import { document } from './documents.schema';
 
 export const referenceTypeEnum = scholioSchema.enum('reference_type', [
 	'article',
@@ -50,8 +51,10 @@ export const projectReference = scholioSchema.table(
 		url: text('url'),
 		note: text('note'),
 
-		// Personal reading notes (markdown, not exported to BibTeX)
-		readingNotes: text('reading_notes'),
+		// FK to a reading_note document — created on demand from /bib.
+		// SET NULL automatically when the document is deleted.
+		readingNotesDocId: text('reading_notes_doc_id')
+			.references(() => document.id, { onDelete: 'set null' }),
 
 		// Article / journal fields
 		journal: text('journal'),

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, asc, ilike } from 'drizzle-orm';
+import { eq, and, asc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
@@ -235,19 +235,66 @@ export const referencesRouter = router({
 		return rows[0];
 	}),
 
-	updateReadingNotes: protectedProcedure
-		.input(z.object({ id: z.string(), readingNotes: z.string() }))
-		.mutation(async ({ ctx, input }) => {
-			const rows = (await ctx.withRLS((db) =>
-				db
-					.update(projectReference)
-					.set({ readingNotes: input.readingNotes || null, updatedAt: new Date() })
-					.where(eq(projectReference.id, input.id))
-					.returning({ id: projectReference.id })
-			)) as { id: string }[];
+	// ── Reading notes document ───────────────────────────────────────────────
+	// Returns the linked reading_note document id, creating it if needed.
 
-			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			return rows[0];
+	openReadingNotes: protectedProcedure
+		.input(z.string()) // refId
+		.mutation(async ({ ctx, input: refId }) => {
+			const [ref] = (await ctx.withRLS((db) =>
+				db
+					.select({
+						id: projectReference.id,
+						projectId: projectReference.projectId,
+						title: projectReference.title,
+						authors: projectReference.authors,
+						year: projectReference.year,
+						readingNotesDocId: projectReference.readingNotesDocId
+					})
+					.from(projectReference)
+					.where(eq(projectReference.id, refId))
+					.limit(1)
+			)) as {
+				id: string;
+				projectId: string;
+				title: string;
+				authors: { first: string; last: string }[];
+				year: string | null;
+				readingNotesDocId: string | null;
+			}[];
+
+			if (!ref) throw new TRPCError({ code: 'NOT_FOUND' });
+			if (ref.readingNotesDocId) return { docId: ref.readingNotesDocId };
+
+			// Build frontmatter from reference metadata
+			const authorStr = ref.authors[0]
+				? `${ref.authors[0].first} ${ref.authors[0].last}`.trim()
+				: '';
+			const content = `---\ntitle: ${ref.title}\nauthor: ${authorStr}\nyear: ${ref.year ?? ''}\n---\n\n`;
+			const docTitle = ref.title.length > 80 ? ref.title.slice(0, 80) + '…' : ref.title;
+
+			const docId = crypto.randomUUID();
+			const versionId = crypto.randomUUID();
+			const now = new Date();
+
+			await ctx.withRLS(async (db) => {
+				await db.execute(
+					sql`INSERT INTO scholio.document (id, project_id, title, type, draft_content, owner_user_id, created_at, updated_at)
+					    VALUES (${docId}, ${ref.projectId}, ${docTitle}, 'reading_note', ${content}, ${ctx.user.id}, ${now}, ${now})`
+				);
+				await db.execute(
+					sql`INSERT INTO scholio.document_version (id, document_id, content, version_number, change_description, created_by, created_at)
+					    VALUES (${versionId}, ${docId}, ${content}, 1, 'Initial version', ${ctx.user.id}, ${now})`
+				);
+				await db.execute(
+					sql`UPDATE scholio.document SET current_version_id = ${versionId} WHERE id = ${docId}`
+				);
+				await db.execute(
+					sql`UPDATE scholio.project_reference SET reading_notes_doc_id = ${docId}, updated_at = ${now} WHERE id = ${refId}`
+				);
+			});
+
+			return { docId };
 		}),
 
 	// ── Bulk import from raw BibTeX text ─────────────────────────────────
@@ -552,82 +599,4 @@ ${truncated}`;
 			};
 		}),
 
-	// ── Add passage from reading note ─────────────────────────────────────────
-	// Creates a new reference (type 'book') or appends to readingNotes of an
-	// existing one. Passage is stored as "> p.N — text" markdown block.
-
-	addFromReadingNote: protectedProcedure
-		.input(
-			z.object({
-				projectId: z.string(),
-				title: z.string().min(1).max(1000),
-				authorRaw: z.string().max(300), // "First Last" — parsed server-side
-				year: z.string().max(4).optional(),
-				paragraph: z.string().min(1).max(5000),
-				page: z.string().max(20).optional()
-			})
-		)
-		.mutation(async ({ ctx, input }) => {
-			// Verify project access
-			const [proj] = (await ctx.withRLS((db) =>
-				db.select({ id: project.id }).from(project).where(eq(project.id, input.projectId)).limit(1)
-			)) as { id: string }[];
-			if (!proj) throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' });
-
-			// Format passage entry for readingNotes
-			const pagePrefix = input.page?.trim() ? `p. ${input.page.trim()} — ` : '';
-			const passage = `> ${pagePrefix}"${input.paragraph.trim()}"`;
-
-			// Check for existing reference with same title (case-insensitive)
-			const [existing] = (await ctx.withRLS((db) =>
-				db
-					.select({ id: projectReference.id, readingNotes: projectReference.readingNotes })
-					.from(projectReference)
-					.where(
-						and(
-							eq(projectReference.projectId, input.projectId),
-							ilike(projectReference.title, input.title.trim())
-						)
-					)
-					.limit(1)
-			)) as { id: string; readingNotes: string | null }[];
-
-			if (existing) {
-				const updated = ((existing.readingNotes?.trim() ?? '') + '\n\n' + passage).trimStart();
-				await ctx.withRLS((db) =>
-					db
-						.update(projectReference)
-						.set({ readingNotes: updated, updatedAt: new Date() })
-						.where(eq(projectReference.id, existing.id))
-				);
-				return { created: false, id: existing.id };
-			}
-
-			// Parse "First Last" → {first, last}
-			const parts = input.authorRaw.trim().split(/\s+/);
-			const last = parts.length > 1 ? parts.pop()! : parts[0];
-			const first = parts.join(' ');
-			const authors = input.authorRaw.trim() ? [{ first, last }] : [];
-
-			const baseKey = generateCiteKey(authors as Author[], input.year ?? '');
-			const citeKey = await ensureUniqueCiteKey(ctx.withRLS, input.projectId, baseKey);
-
-			const [created] = (await ctx.withRLS((db) =>
-				db
-					.insert(projectReference)
-					.values({
-						id: crypto.randomUUID(),
-						projectId: input.projectId,
-						citeKey,
-						type: 'book',
-						title: input.title.trim(),
-						authors,
-						year: input.year ?? null,
-						readingNotes: passage
-					})
-					.returning({ id: projectReference.id })
-			)) as { id: string }[];
-
-			return { created: true, id: created.id };
-		})
 });
