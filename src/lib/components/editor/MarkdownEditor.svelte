@@ -5,7 +5,7 @@
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { markdown } from '@codemirror/lang-markdown';
 	import { oneDark } from '@codemirror/theme-one-dark';
-	import { autocompletion, acceptCompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
+	import { autocompletion, acceptCompletion, startCompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
 	import {
 		commentRangesField,
 		commentTheme,
@@ -432,6 +432,16 @@
 				}
 			})
 		];
+
+		// Trigger completion on non-word dispatcher chars: [[# [[^ [[!
+		exts.push(EditorView.updateListener.of((update) => {
+			if (!update.docChanged) return;
+			const cursor = update.state.selection.main.head;
+			const prefix = update.state.doc.sliceString(Math.max(0, cursor - 3), cursor);
+			if (prefix === '[[#' || prefix === '[[^' || prefix === '[[!') {
+				startCompletion(update.view);
+			}
+		}));
 
 		if (isDarkMode()) exts.push(oneDark);
 		return exts;
