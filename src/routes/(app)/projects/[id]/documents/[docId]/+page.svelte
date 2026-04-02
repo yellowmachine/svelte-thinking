@@ -831,6 +831,11 @@
 	// ── AI task model labels (from layout data) ──────────────────────────────────
 	const aiTaskConfig = $derived(data.aiTaskConfig ?? {});
 	const hasAiKey = $derived(data.hasAiKey ?? false);
+	const aiCtaType = $derived(
+		hasAiKey ? 'ok' :
+		!data.projectOrgId ? 'personal' :
+		(data.orgs ?? []).find((o) => o.id === data.projectOrgId)?.role === 'owner' ? 'org-owner' : 'org-member'
+	);
 	function taskModel(task: 'agent' | 'draft' | 'review') {
 		const modelId = aiTaskConfig[task]?.model;
 		return modelId ? (MODEL_SHORT_LABEL[modelId] ?? modelId.split('/').pop() ?? '') : null;
@@ -1388,15 +1393,15 @@
 					</a>
 				{/if}
 
+				<!-- AI buttons or CTA -->
+				{#if aiCtaType === 'ok'}
 				<!-- Chat assistant button -->
 				<button
 					type="button"
 					onclick={toggleChat}
-					disabled={!hasAiKey}
-					title={hasAiKey
-						? 'Chat with the assistant about this document'
-						: 'No AI key configured — go to Settings → AI'}
-					class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showChat
+					disabled={false}
+					title="Chat with the assistant about this document"
+					class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showChat
 						? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
@@ -1421,11 +1426,8 @@
 				<button
 					type="button"
 					onclick={toggleReview}
-					disabled={!hasAiKey}
-					title={hasAiKey
-						? 'Review document against project requirements'
-						: 'No AI key configured — go to Settings → AI'}
-					class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showReview
+					title="Review document against project requirements"
+					class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
 						? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
@@ -1458,11 +1460,8 @@
 					<button
 						type="button"
 						onclick={toggleDraft}
-						disabled={!hasAiKey}
-						title={hasAiKey
-							? 'Draft assistant — generate text from your project context'
-							: 'No AI key configured — go to Settings → AI'}
-						class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 {showDraft
+						title="Draft assistant — generate text from your project context"
+						class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showDraft
 							? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 					>
@@ -1495,9 +1494,8 @@
 				<button
 					type="button"
 					onclick={toggleEnrich}
-					disabled={!hasAiKey}
 					title="Find untagged persons and informal citations"
-					class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors disabled:opacity-40 {showEnrich
+					class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
 						? 'border-accent/40 bg-accent/5 text-accent dark:border-accent/30'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
@@ -1514,6 +1512,34 @@
 						Enrich
 					</span>
 				</button>
+
+				{:else if aiCtaType === 'personal'}
+				<a
+					href="/settings?tab=ai"
+					class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
+				>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+					</svg>
+					Configure AI
+				</a>
+
+				{:else if aiCtaType === 'org-owner'}
+				<a
+					href="/settings?tab=organizations"
+					class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
+				>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+					</svg>
+					Configure org AI
+				</a>
+
+				{:else}
+				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					AI not configured · contact your org owner
+				</span>
+				{/if}
 
 				<!-- Citar button (editor + split) -->
 				{#if viewMode !== 'preview'}
