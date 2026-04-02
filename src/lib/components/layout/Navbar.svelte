@@ -3,7 +3,7 @@
 	import ThemePicker from './ThemePicker.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { offlineDb } from '$lib/offline.db';
-	import { goto, preloadData } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
 	async function handleLogout(e: SubmitEvent) {
