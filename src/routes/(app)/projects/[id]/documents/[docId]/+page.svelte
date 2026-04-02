@@ -407,17 +407,20 @@
 	let spellLoading = $state(false);
 	let spellCorrections = $state<SpellCorrection[]>([]);
 
-	async function runSpellCheck() {
+	async function runSpellCheck(scoped?: { text: string; offset: number }) {
 		showSpellPanel = true;
 		spellLoading = true;
 		spellCorrections = [];
 		try {
 			const result = await trpc.ai.spellCheck.mutate({
-				text: content,
+				text: scoped ? scoped.text : content,
 				language: spellLanguage,
 				projectId: data.document.projectId
 			});
-			spellCorrections = result.corrections;
+			// If scoped, shift all offsets to document positions
+			spellCorrections = scoped
+				? result.corrections.map((c) => ({ ...c, from: c.from + scoped.offset, to: c.to + scoped.offset }))
+				: result.corrections;
 		} catch {
 			showSpellPanel = false;
 		} finally {
@@ -2005,6 +2008,16 @@
 								</div>
 							{/if}
 						</div>
+						<button
+							class="pointer-events-auto hover:bg-paper-muted dark:hover:bg-dark-paper-muted rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+							onclick={() => {
+								const sel = currentSelection!;
+								showFloating = false;
+								runSpellCheck({ text: sel.text, offset: sel.from });
+							}}
+						>
+							Spell
+						</button>
 					{/if}
 				</div>
 			{/if}

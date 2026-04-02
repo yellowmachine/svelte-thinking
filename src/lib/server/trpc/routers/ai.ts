@@ -2038,7 +2038,10 @@ ${input.text}`;
 
       let raw: { original: string; suggestion: string; explanation: string }[];
       try {
-        const content = (data.choices[0]?.message?.content ?? '[]').trim();
+        const content = (data.choices[0]?.message?.content ?? '[]')
+          .trim()
+          .replace(/^```(?:json)?\n?/, '')
+          .replace(/\n?```$/, '');
         raw = JSON.parse(content);
         if (!Array.isArray(raw)) raw = [];
       } catch {
