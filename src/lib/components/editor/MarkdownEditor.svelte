@@ -188,19 +188,24 @@
 				options.push({
 					label: text,
 					detail: m[1], // heading level (##, ###…)
-					apply: `[[#${text}]]`
+					// from is after [[#, so apply only needs the title + closing ]]
+					apply: `${text}]]`
 				});
 			}
 		}
 
+		// from: match.from + 3 skips [[# so CM6 filters labels against the partial title,
+		// not against [[# (which would filter everything out)
+		const from = match.from + 3;
+
 		if (options.length === 0) {
-			// Still show the dropdown so the user knows [[# triggered — but there's nothing to link
 			return {
-				from: match.from,
-				options: [{ label: 'No headings in this document', detail: '', apply: '' }]
+				from,
+				options: [{ label: 'No headings in this document', detail: '', apply: '' }],
+				validFor: /^[^\]]*$/
 			};
 		}
-		return { from: match.from, options };
+		return { from, options, validFor: /^[^\]]*$/ };
 	}
 
 	function footnoteCompletion(context: CompletionContext) {
@@ -433,15 +438,18 @@
 			})
 		];
 
-		// Trigger completion on non-word dispatcher chars: [[# [[^ [[!
-		exts.push(EditorView.updateListener.of((update) => {
-			if (!update.docChanged) return;
-			const cursor = update.state.selection.main.head;
-			const prefix = update.state.doc.sliceString(Math.max(0, cursor - 3), cursor);
-			if (prefix === '[[#' || prefix === '[[^' || prefix === '[[!') {
-				startCompletion(update.view);
+		// Trigger completion immediately when # is typed after [[ (non-word char, CM6 won't auto-trigger)
+		exts.push(keymap.of([{
+			key: '#',
+			run(view) {
+				const cursor = view.state.selection.main.head;
+				const before = view.state.doc.sliceString(Math.max(0, cursor - 2), cursor);
+				if (before !== '[[') return false;
+				view.dispatch({ changes: { from: cursor, insert: '#' }, selection: { anchor: cursor + 1 } });
+				startCompletion(view);
+				return true;
 			}
-		}));
+		}]));
 
 		if (isDarkMode()) exts.push(oneDark);
 		return exts;
