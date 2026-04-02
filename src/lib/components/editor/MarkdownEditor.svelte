@@ -15,8 +15,6 @@
 	import { codeBlockExtension, codeLanguages } from './codeBlockExtension';
 	import { epigraphCompletion } from './epigraphExtension';
 	import type { CiteRef } from '$lib/utils/citations';
-	import { linter, type Diagnostic } from '@codemirror/lint';
-
 	let {
 		value = $bindable(''),
 		readonly = false,
@@ -35,8 +33,7 @@
 		scrollToRange = null,
 		completions = undefined,
 		showLookupHint = false,
-	spellLanguage = 'en-US',
-	onignoreword
+		spellLanguage = 'en-US'
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -67,64 +64,13 @@
 		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph'>;
 		/** Show a footer hint that @@ lookup is unavailable (no AI key configured). */
 		showLookupHint?: boolean;
-		/** BCP-47 language tag for LanguageTool spell check (e.g. 'es-ES', 'en-US'). */
+		/** BCP-47 language tag for spell check (e.g. 'es-ES', 'en-US'). */
 		spellLanguage?: string;
-		/** Called when user clicks "Ignore always" on a spell diagnostic. */
-		onignoreword?: (word: string) => void;
 	} = $props();
 
 	let container: HTMLDivElement | null = null;
 	let view: EditorView | null = null;
 	let wordGhostActive = false; // tracks whether word-level ghost text is active
-
-	const SPELL_WINDOW = 3000; // chars around cursor to send to LanguageTool
-
-	const spellLinter = linter(async (view): Promise<Diagnostic[]> => {
-		const full = view.state.doc.toString();
-		if (full.trim().length < 10) return [];
-
-		// Extract window around cursor, snapping to word boundaries
-		const cursor = view.state.selection.main.head;
-		const rawFrom = Math.max(0, cursor - SPELL_WINDOW);
-		const rawTo = Math.min(full.length, cursor + SPELL_WINDOW);
-		// Snap to nearest whitespace to avoid cutting mid-word
-		const sliceFrom = rawFrom === 0 ? 0 : (full.indexOf(' ', rawFrom) + 1 || rawFrom);
-		const sliceTo = rawTo === full.length ? full.length : (full.lastIndexOf(' ', rawTo) || rawTo);
-		const text = full.slice(sliceFrom, sliceTo);
-
-		try {
-			const res = await fetch('/api/spell', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ text, language: spellLanguage })
-			});
-			if (!res.ok) return [];
-			const data = await res.json() as {
-				matches: { from: number; to: number; message: string; severity: string; replacements: string[] }[]
-			};
-			// Translate slice-relative offsets back to document positions
-			return data.matches.map((m) => {
-				const from = m.from + sliceFrom;
-				const to = m.to + sliceFrom;
-				const replaceActions = m.replacements.map((r) => ({
-					name: r,
-					apply(view: EditorView, from: number, to: number) {
-						view.dispatch({ changes: { from, to, insert: r } });
-					}
-				}));
-				const ignoreAction = onignoreword ? [{
-					name: 'Ignore always',
-					apply(view: EditorView, from: number, to: number) {
-						const word = view.state.doc.sliceString(from, to);
-						onignoreword!(word);
-					}
-				}] : [];
-				return { from, to, severity: m.severity as 'error' | 'warning' | 'info', message: m.message, actions: [...replaceActions, ...ignoreAction] };
-			});
-		} catch {
-			return [];
-		}
-	}, { delay: 1500 });
 
 	// Debounce timer for citation hover
 	let citeHoverTimer: ReturnType<typeof setTimeout> | null = null;
@@ -375,18 +321,6 @@
 						return acceptCompletion(view);
 					}
 				},
-				{
-					key: 'Mod-Shift-i',
-					run(view) {
-						if (!onignoreword) return false;
-						const pos = view.state.selection.main.head;
-						const range = view.state.wordAt(pos);
-						if (!range) return false;
-						const word = view.state.doc.sliceString(range.from, range.to);
-						if (word) onignoreword(word);
-						return true;
-					}
-				},
 				...defaultKeymap,
 				...historyKeymap,
 			]),
@@ -395,7 +329,6 @@
 			autocompletion({ override: [allCompletions, mentionCompletionSource], closeOnBlur: true }),
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
-			// spellLinter, // disabled: LanguageTool removed in beta (see #32)
 			ghostTextField,
 			EditorView.baseTheme({
 				'.cm-ghost-text': { color: 'var(--color-ink-faint, #aaa)', pointerEvents: 'none' },

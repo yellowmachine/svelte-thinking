@@ -9,7 +9,7 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
-import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
+import { userApiKey, userProfile, userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember, organizationApiKey } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
 import { type AiTask, DEFAULT_MODEL as AI_DEFAULT_MODEL, parseTaskConfig, fetchOpenRouterPrices } from './aiConfig';
@@ -1959,5 +1959,105 @@ Rules:
       });
 
       return parsed;
+    }),
+
+  // ---------------------------------------------------------------------------
+  // Spell check — on-demand AI-powered correction
+  // ---------------------------------------------------------------------------
+
+  spellCheck: protectedProcedure
+    .input(z.object({
+      text: z.string().max(50000),
+      language: z.string().default('auto'),
+      projectId: z.string().optional()
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+      const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+        ctx.withRLS, ctx.db, userId, 'spell', input.projectId,
+        'anthropic/claude-haiku-4-5'
+      );
+
+      // Fetch user allowlist (words previously rejected)
+      const allowlistRows = await ctx.withRLS((db) =>
+        (db as Db).select({ word: userSpellAllowlist.word })
+          .from(userSpellAllowlist)
+          .where(eq(userSpellAllowlist.userId, userId))
+      ) as { word: string }[];
+      const allowlist = new Set(allowlistRows.map((r) => r.word.toLowerCase()));
+
+      const langNote = input.language === 'auto'
+        ? 'Detect the language automatically.'
+        : `The text is in language code: ${input.language}.`;
+
+      const prompt = `You are a professional proofreader. Analyze the following text for spelling and grammar errors.
+${langNote}
+Return a JSON array of corrections. Each item must have:
+- "original": the exact substring from the text that needs correction
+- "suggestion": the corrected replacement
+- "explanation": a brief explanation in English (max 15 words)
+
+Rules:
+- Only report genuine errors, not stylistic preferences
+- Ignore proper nouns, technical terms, citation keys like [[@smith2023]], and Markdown syntax
+- If the text is correct, return an empty array []
+- Return ONLY valid JSON, no markdown fences or other text
+
+Text to check:
+${input.text}`;
+
+      const res = await fetch(OPENROUTER_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+          'X-Title': 'Scholio'
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0,
+          max_tokens: 2000
+        })
+      });
+
+      if (!res.ok) await throwProviderError(res);
+
+      const data = await res.json() as {
+        choices: { message: { content: string } }[];
+        usage?: { prompt_tokens: number; completion_tokens: number };
+      };
+
+      logUsage(ctx.withRLS, {
+        userId, orgId: resolvedOrgId, projectId: input.projectId,
+        model, task: 'spell',
+        inputTokens: data.usage?.prompt_tokens ?? 0,
+        outputTokens: data.usage?.completion_tokens ?? 0
+      });
+
+      let raw: { original: string; suggestion: string; explanation: string }[];
+      try {
+        const content = (data.choices[0]?.message?.content ?? '[]').trim();
+        raw = JSON.parse(content);
+        if (!Array.isArray(raw)) raw = [];
+      } catch {
+        return { corrections: [] };
+      }
+
+      // Find positions in text and filter allowlisted originals
+      const corrections = raw
+        .filter((c) => c.original && c.suggestion && !allowlist.has(c.original.toLowerCase()))
+        .flatMap((c) => {
+          const results: { original: string; suggestion: string; explanation: string; from: number; to: number }[] = [];
+          let idx = 0;
+          while ((idx = input.text.indexOf(c.original, idx)) !== -1) {
+            results.push({ original: c.original, suggestion: c.suggestion, explanation: c.explanation, from: idx, to: idx + c.original.length });
+            idx++;
+          }
+          return results;
+        });
+
+      return { corrections };
     })
 });
