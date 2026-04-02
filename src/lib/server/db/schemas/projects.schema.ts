@@ -133,7 +133,8 @@ export const projectCollaborator = scholioSchema.table(
 		pgPolicy('collaborator_delete', {
 			for: 'delete',
 			using: sql`
-				EXISTS (
+				${t.role} != 'owner'
+				AND EXISTS (
 					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = ${currentUserId}
