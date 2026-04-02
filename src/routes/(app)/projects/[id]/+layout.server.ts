@@ -17,10 +17,14 @@ export const load: LayoutServerLoad = async (event) => {
 
   let hasOrgS3Config = false;
   if (orgId) {
-    const s3Rows = await event.locals.withRLS((db) =>
-      db.select({ id: orgS3Config.id }).from(orgS3Config).where(eq(orgS3Config.orgId, orgId)).limit(1)
-    ) as { id: string }[];
-    hasOrgS3Config = s3Rows.length > 0;
+    try {
+      const s3Rows = await event.locals.withRLS((db) =>
+        db.select({ id: orgS3Config.id }).from(orgS3Config).where(eq(orgS3Config.orgId, orgId)).limit(1)
+      ) as { id: string }[];
+      hasOrgS3Config = s3Rows.length > 0;
+    } catch {
+      // Non-critical — S3 CTA simply won't show
+    }
   }
 
   return { projectOrgId: orgId, hasOrgS3Config };
