@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 
-	type Role = 'author' | 'coauthor' | 'reviewer' | 'commenter';
+	type Role = 'owner' | 'author' | 'coauthor' | 'reviewer' | 'commenter';
 	type Invitation = {
 		id: string;
 		invitedEmail: string;
@@ -39,6 +39,7 @@
 	];
 
 	const roleLabel: Record<Role, string> = {
+		owner: 'Owner',
 		author: 'Author',
 		coauthor: 'Co-author',
 		reviewer: 'Reviewer',
@@ -89,12 +90,16 @@
 						<p class="truncate text-sm text-ink dark:text-dark-ink">{c.name || c.email}</p>
 						<p class="text-xs text-ink-faint dark:text-dark-ink-faint">{roleLabel[c.role]}</p>
 					</div>
-					<button
-						onclick={() => remove(c.userId, c.name || c.email)}
-						class="ml-3 shrink-0 text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint"
-					>
-						Remove…
-					</button>
+					{#if c.role === 'owner'}
+						<span class="ml-3 shrink-0 text-xs text-ink-faint dark:text-dark-ink-faint">Owner</span>
+					{:else}
+						<button
+							onclick={() => remove(c.userId, c.name || c.email)}
+							class="ml-3 shrink-0 text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint"
+						>
+							Remove…
+						</button>
+					{/if}
 				</li>
 			{/each}
 		</ul>
