@@ -1,0 +1,3 @@
+ALTER TABLE "scholio"."project_reference" ADD COLUMN "reading_notes_doc_id" text;--> statement-breakpoint
+ALTER TABLE "scholio"."project_reference" ADD CONSTRAINT "project_reference_reading_notes_doc_id_document_id_fk" FOREIGN KEY ("reading_notes_doc_id") REFERENCES "scholio"."document"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."project_reference" DROP COLUMN "reading_notes";
