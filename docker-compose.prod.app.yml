@@ -8,6 +8,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      BODY_SIZE_LIMIT: 20M
       # App
       ORIGIN: ${ORIGIN}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
