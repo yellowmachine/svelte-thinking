@@ -137,6 +137,28 @@
 	const privateDocs = $derived(documents.filter((d) => d.isPrivate && !d.isTemplate));
 	const normalDocs = $derived(documents.filter((d) => !d.isTemplate && !d.isPrivate));
 
+	const DOCS_PAGE_SIZE = 20;
+	let docFilter = $state('');
+	let normalDocsLimit = $state(DOCS_PAGE_SIZE);
+	let privateDocsLimit = $state(DOCS_PAGE_SIZE);
+
+	const normalDocsFiltered = $derived(
+		docFilter.trim()
+			? normalDocs.filter((d) => d.title.toLowerCase().includes(docFilter.toLowerCase()))
+			: normalDocs
+	);
+	const privateDocsFiltered = $derived(
+		docFilter.trim()
+			? privateDocs.filter((d) => d.title.toLowerCase().includes(docFilter.toLowerCase()))
+			: privateDocs
+	);
+	const normalDocsVisible = $derived(
+		docFilter.trim() ? normalDocsFiltered : normalDocsFiltered.slice(0, normalDocsLimit)
+	);
+	const privateDocsVisible = $derived(
+		docFilter.trim() ? privateDocsFiltered : privateDocsFiltered.slice(0, privateDocsLimit)
+	);
+
 	const docTypeOptions = [
 		{
 			value: 'paper' as const,
@@ -763,6 +785,48 @@
 				</div>
 			{/if}
 
+			<!-- Semantic search -->
+			<form
+				method="GET"
+				action="/projects/{data.project.id}/search"
+				class="mb-3"
+			>
+				<div class="relative">
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						class="absolute top-1/2 left-3 -translate-y-1/2 text-ink-faint dark:text-dark-ink-faint"
+						aria-hidden="true"
+					>
+						<circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+					</svg>
+					<input
+						type="search"
+						name="q"
+						placeholder="Search in this project…"
+						class="w-full rounded-lg border border-paper-border bg-paper px-3 py-1.5 pl-8 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+					/>
+				</div>
+			</form>
+
+			<!-- Document filter -->
+			{#if normalDocs.length > 0 || privateDocs.length > 0}
+				<div class="mb-3">
+					<input
+						type="search"
+						bind:value={docFilter}
+						placeholder="Filter by title…"
+						class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+					/>
+				</div>
+			{/if}
+
 			<!-- Document list -->
 			{#if normalDocs.length === 0 && templates.length === 0}
 				<div
@@ -773,10 +837,13 @@
 					</p>
 				</div>
 			{:else if normalDocs.length > 0}
+				{#if normalDocsFiltered.length === 0}
+					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">No documents match your filter.</p>
+				{:else}
 				<div
 					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
-					{#each normalDocs as doc (doc.id)}
+					{#each normalDocsVisible as doc (doc.id)}
 						<div class="group relative flex items-center">
 							<div class="min-w-0 flex-1">
 								<DocumentItem
@@ -820,6 +887,15 @@
 						</div>
 					{/each}
 				</div>
+				{#if !docFilter.trim() && normalDocsFiltered.length > normalDocsLimit}
+					<button
+						onclick={() => (normalDocsLimit += DOCS_PAGE_SIZE)}
+						class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+					>
+						Show {Math.min(DOCS_PAGE_SIZE, normalDocsFiltered.length - normalDocsLimit)} more
+					</button>
+				{/if}
+				{/if}
 			{/if}
 
 			<!-- My notes (private) -->
@@ -839,10 +915,13 @@
 					</button>
 				</div>
 				{#if privateDocs.length > 0}
+					{#if privateDocsFiltered.length === 0}
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">No notes match your filter.</p>
+					{:else}
 					<div
 						class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
 					>
-						{#each privateDocs as doc (doc.id)}
+						{#each privateDocsVisible as doc (doc.id)}
 							<div class="group relative flex items-center">
 								<div class="min-w-0 flex-1">
 									<DocumentItem
@@ -878,6 +957,15 @@
 							</div>
 						{/each}
 					</div>
+					{#if !docFilter.trim() && privateDocsFiltered.length > privateDocsLimit}
+						<button
+							onclick={() => (privateDocsLimit += DOCS_PAGE_SIZE)}
+							class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+						>
+							Show {Math.min(DOCS_PAGE_SIZE, privateDocsFiltered.length - privateDocsLimit)} more
+						</button>
+					{/if}
+					{/if}
 				{:else}
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 						No private notes yet. Only you can see them.

@@ -1,0 +1,58 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # App
+      ORIGIN: ${ORIGIN}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      # Database
+      DATABASE_URL: ${DATABASE_URL}
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
+      # Internal services
+      REDIS_URL: ${REDIS_URL}
+      EMBED_SERVICE_URL: ${EMBED_SERVICE_URL}
+      TYPST_SERVICE_URL: ${TYPST_SERVICE_URL}
+      SCIPY_SERVICE_URL: ${SCIPY_SERVICE_URL}
+      SCIPY_API_KEY: ${SCIPY_API_KEY}
+      # Storage (S3-compatible)
+      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
+      STORAGE_BUCKET: ${STORAGE_BUCKET}
+      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL}
+      # Auth providers
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      ORCID_CLIENT_ID: ${ORCID_CLIENT_ID}
+      ORCID_CLIENT_SECRET: ${ORCID_CLIENT_SECRET}
+      ORCID_REDIRECT_URI: ${ORCID_REDIRECT_URI}
+      ORCID_BASE_URL: ${ORCID_BASE_URL}
+      # Email
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM}
+      # Stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PRICE_PRO_MONTHLY: ${STRIPE_PRICE_PRO_MONTHLY}
+      STRIPE_PRICE_TEAM_MONTHLY: ${STRIPE_PRICE_TEAM_MONTHLY}
+      # AWS KMS (encryption)
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_KMS_KEY_ID: ${AWS_KMS_KEY_ID}
+      # Notifications
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+    ports:
+      - '3000:3000'
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
