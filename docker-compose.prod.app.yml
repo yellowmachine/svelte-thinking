@@ -1,5 +1,5 @@
 services:
-  app:
+  scholio:
     build:
       context: .
       dockerfile: Dockerfile
@@ -15,6 +15,7 @@ services:
       # Database (external, accessed by hostname)
       DATABASE_URL: ${DATABASE_URL}
       MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
+      APP_DB_USER: ${APP_DB_USER}
       # Internal services (scholio-network)
       REDIS_URL: ${REDIS_URL}
       EMBED_SERVICE_URL: ${EMBED_SERVICE_URL}
@@ -51,6 +52,11 @@ services:
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
     ports:
       - '3300:3000'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scholio.rule=Host(`scholio.home.arpa`)"
+      - "traefik.http.routers.scholio.entrypoints=web"
+      - "traefik.http.services.scholio.loadbalancer.server.port=3000"
     networks:
       - scholio-network
       - dokploy-network
