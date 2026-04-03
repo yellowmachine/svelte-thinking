@@ -53,7 +53,10 @@ services:
       - '3300:3000'
     networks:
       - scholio-network
+      - dokploy-network
 
 networks:
   scholio-network:
+    external: true
+  dokploy-network:
     external: true
