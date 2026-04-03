@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."project_invitation" ADD COLUMN "project_title" text;
