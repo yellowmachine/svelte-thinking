@@ -317,6 +317,23 @@ export const referencesRouter = router({
 
 			for (const entry of parsed) {
 				try {
+					// Skip entries whose DOI already exists in this project
+					if (entry.doi) {
+						const existing = await ctx.withRLS((db) =>
+							db.query.projectReference.findFirst({
+								where: and(
+									eq(projectReference.projectId, projectId),
+									eq(projectReference.doi, entry.doi!)
+								),
+								columns: { id: true }
+							})
+						);
+						if (existing) {
+							skipped++;
+							continue;
+						}
+					}
+
 					const baseKey = entry.citeKey || generateCiteKey(entry.authors, entry.year);
 					const uniqueKey = await ensureUniqueCiteKey(
 						ctx.withRLS as Parameters<typeof ensureUniqueCiteKey>[0],
