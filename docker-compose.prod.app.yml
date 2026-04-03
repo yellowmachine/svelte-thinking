@@ -49,7 +49,7 @@ services:
       # Notifications
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
     ports:
-      - '3000:3000'
+      - '3300:3000'
     networks:
       - dokploy-network
 
