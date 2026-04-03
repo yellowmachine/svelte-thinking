@@ -38,6 +38,8 @@ ENV NODE_ENV=production
 ENV ORIGIN=https://placeholder.local
 ENV BETTER_AUTH_SECRET=build-placeholder
 ENV DATABASE_URL=postgres://placeholder
+ENV SCIPY_SERVICE_URL=http://placeholder
+ENV SCIPY_API_KEY=build-placeholder
 ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
 
 RUN bun run build
