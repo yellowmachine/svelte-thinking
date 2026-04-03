@@ -4,14 +4,14 @@ services:
       context: ./typst-service
     restart: unless-stopped
     networks:
-      - dokploy-network
+      - scholio-network
 
   embed:
     build:
       context: ./embed-service
     restart: unless-stopped
     networks:
-      - dokploy-network
+      - scholio-network
 
   redis:
     image: redis:7-alpine
@@ -24,12 +24,12 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - dokploy-network
+      - scholio-network
 
 volumes:
   redis_prod_data:
     name: scholio_redis_prod
 
 networks:
-  dokploy-network:
-    external: true
+  scholio-network:
+    name: scholio-network

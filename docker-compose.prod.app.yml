@@ -12,16 +12,17 @@ services:
       ORIGIN: ${ORIGIN}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
-      # Database
+      # Database (external, accessed by hostname)
       DATABASE_URL: ${DATABASE_URL}
       MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
-      # Internal services
+      # Internal services (scholio-network)
       REDIS_URL: ${REDIS_URL}
       EMBED_SERVICE_URL: ${EMBED_SERVICE_URL}
       TYPST_SERVICE_URL: ${TYPST_SERVICE_URL}
+      # External services
       SCIPY_SERVICE_URL: ${SCIPY_SERVICE_URL}
       SCIPY_API_KEY: ${SCIPY_API_KEY}
-      # Storage (S3-compatible)
+      # Storage (S3-compatible, external)
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
       STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
@@ -51,8 +52,8 @@ services:
     ports:
       - '3300:3000'
     networks:
-      - dokploy-network
+      - scholio-network
 
 networks:
-  dokploy-network:
+  scholio-network:
     external: true
