@@ -52,11 +52,6 @@ services:
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
     ports:
       - '3300:3000'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.scholio.rule=Host(`scholio.home.arpa`)"
-      - "traefik.http.routers.scholio.entrypoints=web"
-      - "traefik.http.services.scholio.loadbalancer.server.port=3000"
     networks:
       - scholio-network
       - dokploy-network
