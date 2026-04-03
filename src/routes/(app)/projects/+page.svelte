@@ -3,9 +3,19 @@
 	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { page } from '$app/state';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	$effect(() => {
+		const orgParam = page.url.searchParams.get('org');
+		if (orgParam === 'personal') {
+			workspaceStore.set({ id: null, name: 'Personal' });
+		} else if (orgParam) {
+			workspaceStore.syncToOrg(orgParam);
+		}
+	});
 
 	// Filter projects by active workspace
 	const projects = $derived(

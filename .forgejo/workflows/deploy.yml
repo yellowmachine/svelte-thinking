@@ -1,0 +1,31 @@
+name: Build and deploy
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t registry:2/scholio:latest \
+            -t registry:2/scholio:${{ github.sha }} \
+            .
+
+      - name: Push to registry
+        run: |
+          docker push registry:2/scholio:latest
+          docker push registry:2/scholio:${{ github.sha }}
+
+      - name: Trigger Dokploy deploy
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_WEBHOOK_TOKEN }}"
