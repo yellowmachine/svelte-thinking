@@ -1,21 +1,51 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
+	import ActionCard from '$lib/components/ai/ActionCard.svelte';
+	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import type { PageData } from './$types';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 
 	let { data }: { data: PageData } = $props();
 
-	type Message = { id: string; role: 'user' | 'assistant'; content: string };
-	type Conversation = (typeof data.conversations)[number];
+	type Message = { id: string; role: 'user' | 'assistant'; content: string; docsUsed?: { id: string; title: string }[] };
+	type Conversation = NonNullable<typeof data.conversations>[number];
 
-	let conversations = $state(data.conversations);
+	let conversations = $state<Conversation[]>([]);
+	$effect(() => { conversations = data.conversations ?? []; });
 	let activeConvId = $state<string | null>(null);
 	let messages = $state<Message[]>([]);
 	let loadingConv = $state(false);
 
 	let input = $state('');
 	let sending = $state(false);
+	let sendError = $state<string | null>(null);
 
-	let messagesEnd: HTMLDivElement;
+	// Pending actions from the latest agent response (in-memory, cleared on next send)
+	let pendingActions = $state<PendingAction[]>([]);
+	let lastAssistantMsgId = $state<string | null>(null);
+
+	// Cycle through status hints while the agent loop runs
+	const thinkingHints = [
+		'Consultando el proyecto…',
+		'Leyendo documentos…',
+		'Analizando el contenido…',
+		'Preparando la respuesta…'
+	];
+	let thinkingIndex = $state(0);
+	let thinkingInterval: ReturnType<typeof setInterval> | undefined;
+
+	function startThinking() {
+		thinkingIndex = 0;
+		thinkingInterval = setInterval(() => {
+			thinkingIndex = (thinkingIndex + 1) % thinkingHints.length;
+		}, 1800);
+	}
+	function stopThinking() {
+		clearInterval(thinkingInterval);
+		thinkingInterval = undefined;
+	}
+
+	let messagesEnd = $state<HTMLDivElement | undefined>(undefined);
 
 	async function selectConversation(conv: Conversation) {
 		if (loadingConv) return;
@@ -42,6 +72,10 @@
 
 		input = '';
 		sending = true;
+		sendError = null;
+		pendingActions = [];
+		lastAssistantMsgId = null;
+		startThinking();
 
 		// Optimistic user message
 		const tempId = crypto.randomUUID();
@@ -57,12 +91,16 @@
 
 			activeConvId = result.conversationId;
 			messages = [...messages, result.message];
+			if (result.pendingActions?.length) {
+				pendingActions = result.pendingActions;
+				lastAssistantMsgId = result.message.id;
+			}
 
 			// Update sidebar conversation list
 			const existing = conversations.find((c) => c.id === result.conversationId);
 			if (!existing) {
 				const conv = await trpc.ai.listConversations.query(data.project.id);
-				conversations = conv;
+				conversations = conv ?? [];
 			} else {
 				conversations = conversations.map((c) =>
 					c.id === result.conversationId ? { ...c, updatedAt: new Date() } : c
@@ -72,18 +110,32 @@
 			scrollToBottom();
 		} catch (e) {
 			messages = messages.filter((m) => m.id !== tempId);
-			alert(e instanceof Error ? e.message : 'Error al enviar');
+			sendError = e instanceof Error ? e.message : 'Error al enviar';
 		} finally {
+			stopThinking();
 			sending = false;
 		}
 	}
 
-	async function deleteConversation(id: string, e: MouseEvent) {
+	let convToDelete = $state<string | null>(null);
+	let deletingConv = $state(false);
+
+	function requestDeleteConversation(id: string, e: MouseEvent) {
 		e.stopPropagation();
-		if (!confirm('¿Eliminar esta conversación?')) return;
-		await trpc.ai.deleteConversation.mutate(id);
-		conversations = conversations.filter((c) => c.id !== id);
-		if (activeConvId === id) newConversation();
+		convToDelete = id;
+	}
+
+	async function confirmDeleteConversation() {
+		if (!convToDelete) return;
+		deletingConv = true;
+		try {
+			await trpc.ai.deleteConversation.mutate(convToDelete);
+			conversations = conversations.filter((c) => c.id !== convToDelete);
+			if (activeConvId === convToDelete) newConversation();
+		} finally {
+			deletingConv = false;
+			convToDelete = null;
+		}
 	}
 
 	function scrollToBottom() {
@@ -101,8 +153,50 @@
 	function formatDate(date: Date | string) {
 		return new Date(date).toLocaleDateString('es', { day: 'numeric', month: 'short' });
 	}
+
+	// ── Agent model badge ────────────────────────────────────────────────────
+	const MODEL_LABELS: Record<string, string> = {
+		'anthropic/claude-haiku-4-5': 'Claude Haiku 4.5',
+		'anthropic/claude-sonnet-4-5': 'Claude Sonnet 4.5',
+		'openai/gpt-4o-mini': 'GPT-4o mini',
+		'openai/gpt-4o': 'GPT-4o',
+		'google/gemini-flash-1.5': 'Gemini Flash 1.5',
+		'meta-llama/llama-3.3-70b-instruct': 'Llama 3.3 70B',
+		'perplexity/sonar': 'Perplexity Sonar',
+		'perplexity/sonar-pro': 'Perplexity Sonar Pro'
+	};
+	const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
+
+	let agentModel = $state<string>(DEFAULT_MODEL);
+	const activeModelLabel = $derived(MODEL_LABELS[agentModel] ?? agentModel);
+
+	async function loadAiConfig() {
+		try {
+			const taskData = await trpc.aiConfig.getTaskConfig.query();
+			const agentCfg = (taskData.taskConfig as Record<string, { keyId: string; model: string }>)['agent'];
+			if (agentCfg?.model) agentModel = agentCfg.model;
+		} catch {
+			// non-critical — badge just won't show
+		}
+	}
+
+	$effect(() => {
+		loadAiConfig();
+	});
+
+	// ── Privacy onboarding ────────────────────────────────────────────────────
+	const PRIVACY_KEY = 'scholio_ai_privacy_seen';
+	let showPrivacyNotice = $state(
+		typeof localStorage !== 'undefined' && !localStorage.getItem(PRIVACY_KEY)
+	);
+
+	function dismissPrivacyNotice() {
+		localStorage.setItem(PRIVACY_KEY, '1');
+		showPrivacyNotice = false;
+	}
 </script>
 
+{#if data.project}
 <div class="flex h-[calc(100vh-4rem)] overflow-hidden">
 	<!-- Sidebar: conversation list -->
 	<aside
@@ -121,7 +215,7 @@
 			<button
 				type="button"
 				onclick={newConversation}
-				title="Nueva conversación"
+				title="New conversation"
 				class="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -146,7 +240,7 @@
 							class="flex min-w-0 flex-1 flex-col px-4 py-2.5 text-left"
 						>
 							<span class="block truncate font-sans text-sm text-ink dark:text-dark-ink">
-								{conv.title ?? 'Conversación'}
+								{conv.title ?? 'Conversation'}
 							</span>
 							<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 								{formatDate(conv.updatedAt)}
@@ -154,8 +248,8 @@
 						</button>
 						<button
 							type="button"
-							aria-label="Eliminar conversación"
-							onclick={(e) => deleteConversation(conv.id, e)}
+							aria-label="Delete conversation"
+							onclick={(e) => requestDeleteConversation(conv.id, e)}
 							class="mr-2 mt-2.5 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-dark-ink-faint"
 						>
 							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -181,13 +275,13 @@
 					</div>
 					<div>
 						<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-							Asistente de investigación
+							Research assistant
 						</p>
 						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 							Hazme preguntas sobre el contenido de tu proyecto.
 						</p>
 						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Ej: "¿Qué referencias hay a Mises en el borrador?"
+							E.g. "What references to Mises are in the draft?"
 						</p>
 					</div>
 				</div>
@@ -199,15 +293,42 @@
 							<div
 								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold {msg.role === 'user' ? 'bg-accent text-white' : 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted'}"
 							>
-								{msg.role === 'user' ? 'Tú' : 'AI'}
+								{msg.role === 'user' ? 'You' : 'AI'}
 							</div>
-							<!-- Bubble -->
-							<div
-								class="max-w-[80%] rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role === 'user'
-									? 'rounded-tr-sm bg-accent text-white'
-									: 'rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
-							>
-								{msg.content}
+							<!-- Bubble + pending actions for this message -->
+							<div class="flex max-w-[80%] flex-col">
+								<div
+									class="rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role === 'user'
+										? 'rounded-tr-sm bg-accent text-white'
+										: 'rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
+								>
+									{msg.content}
+								</div>
+								{#if msg.role === 'assistant' && msg.docsUsed?.length}
+								<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
+									<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">Sources:</span>
+									{#each msg.docsUsed as doc (doc.id)}
+										<a
+											href="/projects/{data.project.id}/documents/{doc.id}"
+											class="font-sans text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										>{doc.title}</a>
+									{/each}
+								</div>
+							{/if}
+							{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
+									{#each pendingActions as action, i (i)}
+										<ActionCard
+											{action}
+											projectId={data.project.id}
+											onconfirm={() => {
+												pendingActions = pendingActions.filter((_, idx) => idx !== i);
+											}}
+											ondiscard={() => {
+												pendingActions = pendingActions.filter((_, idx) => idx !== i);
+											}}
+										/>
+									{/each}
+								{/if}
 							</div>
 						</div>
 					{/each}
@@ -218,10 +339,15 @@
 								AI
 							</div>
 							<div class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 dark:bg-dark-paper-ui">
-								<div class="flex gap-1">
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:0ms] dark:bg-dark-ink-faint"></span>
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:150ms] dark:bg-dark-ink-faint"></span>
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms] dark:bg-dark-ink-faint"></span>
+								<div class="flex items-center gap-2">
+									<div class="flex gap-1">
+										<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:0ms] dark:bg-dark-ink-faint"></span>
+										<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:150ms] dark:bg-dark-ink-faint"></span>
+										<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms] dark:bg-dark-ink-faint"></span>
+									</div>
+									<span class="font-sans text-xs text-ink-faint transition-all dark:text-dark-ink-faint">
+										{thinkingHints[thinkingIndex]}
+									</span>
 								</div>
 							</div>
 						</div>
@@ -234,12 +360,27 @@
 
 		<!-- Input -->
 		<div class="border-t border-paper-border bg-paper px-6 py-4 dark:border-dark-paper-border dark:bg-dark-paper">
+			{#if sendError}
+				<div class="mx-auto mb-3 max-w-2xl flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/30">
+					<p class="font-sans text-sm text-red-700 dark:text-red-400">{sendError}</p>
+					<button
+						type="button"
+						onclick={() => (sendError = null)}
+						aria-label="Cerrar"
+						class="shrink-0 text-red-400 hover:text-red-600 dark:text-red-500"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+					</button>
+				</div>
+			{/if}
 			<div class="mx-auto max-w-2xl">
 				<div class="flex items-end gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui">
 					<textarea
 						bind:value={input}
 						onkeydown={onKeydown}
-						placeholder="Pregunta sobre tu proyecto... (Enter para enviar, Shift+Enter para nueva línea)"
+						placeholder="Ask about your project... (Enter to send, Shift+Enter for new line)"
 						rows="1"
 						class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
 						style="max-height: 160px; overflow-y: auto;"
@@ -256,10 +397,70 @@
 						</svg>
 					</button>
 				</div>
-				<p class="mt-2 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					El asistente tiene acceso al contenido de todos los documentos del proyecto.
-				</p>
+				<div class="mt-2 flex items-center justify-between">
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						El asistente tiene acceso al contenido de todos los documentos del proyecto.
+					</p>
+					<div class="flex items-center gap-1.5 rounded-full border border-paper-border px-2.5 py-1 dark:border-dark-paper-border">
+						<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">OpenRouter</span>
+						<span class="text-ink-faint dark:text-dark-ink-faint">·</span>
+						<span class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">{activeModelLabel}</span>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
+{/if}
+
+{#if showPrivacyNotice}
+	<!-- Privacy onboarding modal -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="privacy-notice-title"
+	>
+		<div class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+			<div class="flex items-start gap-3">
+				<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950">
+					<svg class="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+					</svg>
+				</div>
+				<div>
+					<h2 id="privacy-notice-title" class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+						Tus documentos son privados
+					</h2>
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						When you use the AI assistant, the content of your documents is sent to OpenRouter <strong class="font-medium text-ink dark:text-dark-ink">only to process your query</strong>.
+					</p>
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						None of these providers use data sent via API to train their models. Your research stays within the query.
+					</p>
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						You can review the privacy policy at
+						<a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">OpenRouter</a>.
+					</p>
+				</div>
+			</div>
+			<div class="mt-5 flex justify-end">
+				<button
+					onclick={dismissPrivacyNotice}
+					class="rounded-lg bg-accent px-5 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+				>
+					Entendido
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<SafeDeleteDialog
+	open={!!convToDelete}
+	label="this conversation"
+	warning="All messages in this conversation will be permanently deleted."
+	deleting={deletingConv}
+	onconfirm={confirmDeleteConversation}
+	oncancel={() => (convToDelete = null)}
+/>

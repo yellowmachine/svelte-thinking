@@ -1,12 +1,13 @@
-import { pgTable, text, timestamp, integer, pgEnum, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { text, timestamp, integer, index, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 import { document } from './documents.schema';
 
-export const commentTypeEnum = pgEnum('comment_type', ['general', 'inline']);
+export const commentTypeEnum = scholioSchema.enum('comment_type', ['general', 'inline']);
 
-export const commentStatusEnum = pgEnum('comment_status', ['open', 'resolved']);
+export const commentStatusEnum = scholioSchema.enum('comment_status', ['open', 'resolved']);
 
-export const comment = pgTable(
+export const comment = scholioSchema.table(
 	'comment',
 	{
 		id: text('id').primaryKey(),
@@ -35,7 +36,7 @@ export const comment = pgTable(
 		pgPolicy('comment_select', {
 			for: 'select',
 			using: sql`
-				EXISTS (SELECT 1 FROM document WHERE document.id = ${t.documentId})
+				EXISTS (SELECT 1 FROM scholio.document WHERE document.id = ${t.documentId})
 			`
 		}),
 
@@ -44,7 +45,7 @@ export const comment = pgTable(
 			for: 'insert',
 			withCheck: sql`
 				${t.authorId} = current_setting('app.current_user_id', true)
-				AND EXISTS (SELECT 1 FROM document WHERE document.id = ${t.documentId})
+				AND EXISTS (SELECT 1 FROM scholio.document WHERE document.id = ${t.documentId})
 			`
 		}),
 

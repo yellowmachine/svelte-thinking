@@ -6,8 +6,14 @@ import type { Db } from '$lib/server/db';
 declare global {
 	namespace App {
 		interface Locals {
+			app: 'scholio' | 'scipy';
 			user?: User;
 			session?: Session;
+			/**
+			 * true si el usuario autenticado tiene user_profile en scholio.
+			 * false si existe en public.user (e.g. usuario de Librarian) pero no en Scholio.
+			 */
+			hasScholioProfile: boolean;
 			/**
 			 * Ejecuta `fn` dentro de una transacción con `app.current_user_id` seteado.
 			 * Las políticas RLS de PostgreSQL usan esa variable para filtrar filas.

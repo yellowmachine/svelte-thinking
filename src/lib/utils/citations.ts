@@ -1,0 +1,702 @@
+// ────────────────────────────────────────────────────────────────────────────
+// Citation formatting utilities — APA 7, IEEE, Vancouver
+// Pure functions, no server imports, safe for client and server.
+// ────────────────────────────────────────────────────────────────────────────
+
+import type { Author } from './bibtex';
+
+export type CitationStyle = 'apa' | 'ieee' | 'vancouver' | 'chicago';
+
+export interface CiteRef {
+	citeKey: string;
+	type: string;
+	title: string;
+	authors: Author[];
+	editors?: Author[];
+	year?: string | null;
+	journal?: string | null;
+	volume?: string | null;
+	issue?: string | null;
+	pages?: string | null;
+	publisher?: string | null;
+	school?: string | null;
+	institution?: string | null;
+	booktitle?: string | null;
+	organization?: string | null;
+	edition?: string | null;
+	address?: string | null;
+	isbn?: string | null;
+	doi?: string | null;
+	url?: string | null;
+	note?: string | null;
+	readingNotes?: string | null;
+	reportNumber?: string | null;
+	// Theological source metadata (stored in `extra` JSONB)
+	extra?: Record<string, string> | null;
+}
+
+// ── Name helpers ──────────────────────────────────────────────────────────
+
+function initials(first: string): string {
+	return first
+		.split(/[\s\-]+/)
+		.filter(Boolean)
+		.map((n) => n[0].toUpperCase() + '.')
+		.join(' ');
+}
+
+// "Smith, J. A."
+function apaName(a: Author): string {
+	if (!a.last.trim()) return '';
+	return a.first ? `${a.last}, ${initials(a.first)}` : a.last;
+}
+
+// "J. A. Smith"
+function ieeeName(a: Author): string {
+	if (!a.last.trim()) return '';
+	return a.first ? `${initials(a.first)} ${a.last}` : a.last;
+}
+
+// "Smith JA"
+function vancouverName(a: Author): string {
+	if (!a.last.trim()) return '';
+	if (!a.first) return a.last;
+	const ini = a.first
+		.split(/[\s\-]+/)
+		.filter(Boolean)
+		.map((n) => n[0].toUpperCase())
+		.join('');
+	return `${a.last} ${ini}`;
+}
+
+function apaAuthorList(authors: Author[]): string {
+	const valid = authors.filter((a) => a.last.trim());
+	if (!valid.length) return '';
+	if (valid.length === 1) return apaName(valid[0]);
+	if (valid.length <= 20) {
+		return valid
+			.slice(0, -1)
+			.map(apaName)
+			.join(', ')
+			.concat(`, & ${apaName(valid[valid.length - 1])}`);
+	}
+	// >20 authors: first 19, ..., last
+	return (
+		valid
+			.slice(0, 19)
+			.map(apaName)
+			.join(', ')
+			.concat(` . . . ${apaName(valid[valid.length - 1])}`)
+	);
+}
+
+function ieeeAuthorList(authors: Author[]): string {
+	const valid = authors.filter((a) => a.last.trim());
+	if (!valid.length) return '';
+	if (valid.length > 6) {
+		return valid
+			.slice(0, 6)
+			.map(ieeeName)
+			.join(', ')
+			.concat(' *et al.*');
+	}
+	if (valid.length === 1) return ieeeName(valid[0]);
+	return valid
+		.slice(0, -1)
+		.map(ieeeName)
+		.join(', ')
+		.concat(` and ${ieeeName(valid[valid.length - 1])}`);
+}
+
+function vancouverAuthorList(authors: Author[]): string {
+	const valid = authors.filter((a) => a.last.trim());
+	if (!valid.length) return '';
+	if (valid.length > 6) {
+		return valid.slice(0, 6).map(vancouverName).join(', ').concat(', et al');
+	}
+	return valid.map(vancouverName).join(', ');
+}
+
+// ── Inline citations ──────────────────────────────────────────────────────
+
+function apaInlineOne(ref: CiteRef): string {
+	const authors = ref.authors.filter((a) => a.last.trim());
+	const year = ref.year ?? 'n.d.';
+	if (!authors.length) return `(*${ref.title}*, ${year})`;
+	if (authors.length === 1) return `(${authors[0].last}, ${year})`;
+	if (authors.length === 2) return `(${authors[0].last} & ${authors[1].last}, ${year})`;
+	return `(${authors[0].last} et al., ${year})`;
+}
+
+function ieeeInlineNums(nums: number[]): string {
+	return `[${nums.join(', ')}]`;
+}
+
+function vancouverInlineNums(nums: number[]): string {
+	return `(${nums.join(', ')})`;
+}
+
+// ── Full references ───────────────────────────────────────────────────────
+
+function dot(s: string | null | undefined): string {
+	if (!s) return '';
+	return s.endsWith('.') ? s : s + '.';
+}
+
+// ── APA full references ───────────────────────────────────────────────────
+
+function apaFull(ref: CiteRef): string {
+	const authors = apaAuthorList(ref.authors);
+	const year = ref.year ? `(${ref.year}).` : '(n.d.).';
+	const title = ref.title;
+
+	switch (ref.type) {
+		case 'article': {
+			const journal = ref.journal ? `*${ref.journal}*` : '';
+			const vol = ref.volume ? `, *${ref.volume}*` : '';
+			const issue = ref.issue ? `(${ref.issue})` : '';
+			const pages = ref.pages ? `, ${ref.pages}` : '';
+			const doi = ref.doi ? ` https://doi.org/${ref.doi}` : ref.url ? ` ${ref.url}` : '';
+			return `${authors} ${year} ${title}.${journal ? ' ' + journal : ''}${vol}${issue}${pages}.${doi}`;
+		}
+		case 'book': {
+			const eds = (ref.edition ? ` (${ref.edition} ed.)` : '');
+			const pub = ref.publisher ? ` ${ref.publisher}.` : '';
+			return `${authors} ${year} *${title}*${eds}.${pub}`;
+		}
+		case 'incollection': {
+			const editorList = (ref.editors ?? []).filter((e) => e.last.trim());
+			const eds =
+				editorList.length > 0 ? ` In ${apaAuthorList(editorList)} (Ed${editorList.length > 1 ? 's' : ''}.),` : ' In';
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const pp = ref.pages ? ` (pp. ${ref.pages})` : '';
+			const pub = ref.publisher ? ` ${ref.publisher}.` : '';
+			return `${authors} ${year} ${title}.${eds}${book}${pp}.${pub}`;
+		}
+		case 'inproceedings': {
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const pp = ref.pages ? ` (pp. ${ref.pages})` : '';
+			const org = ref.organization ? ` ${ref.organization}.` : '';
+			return `${authors} ${year} ${title}. In${book}${pp}.${org}`;
+		}
+		case 'phdthesis':
+			return `${authors} ${year} *${title}* [Doctoral dissertation, ${ref.school ?? ''}].${ref.url ? ' ' + ref.url : ''}`;
+		case 'mastersthesis':
+			return `${authors} ${year} *${title}* [Master's thesis, ${ref.school ?? ''}].${ref.url ? ' ' + ref.url : ''}`;
+		case 'techreport': {
+			const num = ref.reportNumber ? ` (Report No. ${ref.reportNumber})` : '';
+			const inst = ref.institution ? ` ${ref.institution}.` : '';
+			return `${authors} ${year} *${title}*${num}.${inst}`;
+		}
+		default: {
+			// misc / online
+			const url = ref.url ? ` ${ref.url}` : '';
+			return `${authors} ${year} *${title}*.${url}`;
+		}
+	}
+}
+
+// ── IEEE full references ──────────────────────────────────────────────────
+
+function ieeeFull(ref: CiteRef, num: number): string {
+	const authors = ieeeAuthorList(ref.authors);
+	const year = ref.year ?? 'n.d.';
+	const prefix = `[${num}]`;
+
+	switch (ref.type) {
+		case 'article': {
+			const journal = ref.journal ? ` *${ref.journal}*,` : '';
+			const vol = ref.volume ? ` vol. ${ref.volume},` : '';
+			const no = ref.issue ? ` no. ${ref.issue},` : '';
+			const pp = ref.pages ? ` pp. ${ref.pages},` : '';
+			const doi = ref.doi ? ` doi: ${ref.doi}.` : '.';
+			return `${prefix} ${authors}, "${ref.title},"${journal}${vol}${no}${pp} ${year}${doi}`;
+		}
+		case 'book': {
+			const ed = ref.edition ? `, ${ref.edition} ed.` : '';
+			const pub = ref.publisher ? ` ${ref.publisher},` : '';
+			return `${prefix} ${authors}, *${ref.title}*${ed}.${pub} ${year}.`;
+		}
+		case 'incollection':
+		case 'inproceedings': {
+			const book = ref.booktitle ? ` in *${ref.booktitle}*,` : '';
+			const pp = ref.pages ? ` pp. ${ref.pages},` : '';
+			return `${prefix} ${authors}, "${ref.title},"${book} ${year}${pp}.`;
+		}
+		case 'phdthesis':
+		case 'mastersthesis': {
+			const kind = ref.type === 'phdthesis' ? 'Ph.D. dissertation' : 'M.S. thesis';
+			const school = ref.school ? `, ${ref.school}` : '';
+			return `${prefix} ${authors}, "${ref.title}," ${kind}${school}, ${year}.`;
+		}
+		case 'techreport': {
+			const inst = ref.institution ? `, ${ref.institution}` : '';
+			const num = ref.reportNumber ? `, Rep. ${ref.reportNumber}` : '';
+			return `${prefix} ${authors}, "${ref.title}"${inst}${num}, ${year}.`;
+		}
+		default: {
+			const url = ref.url ? ` [Online]. Available: ${ref.url}` : '';
+			return `${prefix} ${authors}, "${ref.title}," ${year}.${url}`;
+		}
+	}
+}
+
+// ── Vancouver full references ─────────────────────────────────────────────
+
+function vancouverFull(ref: CiteRef, num: number): string {
+	const authors = vancouverAuthorList(ref.authors);
+	const year = ref.year ?? '';
+	const prefix = `${num}.`;
+
+	switch (ref.type) {
+		case 'article': {
+			const journal = ref.journal ?? '';
+			const vol = ref.volume ? `${ref.volume}` : '';
+			const issue = ref.issue ? `(${ref.issue})` : '';
+			const pp = ref.pages ? `:${ref.pages}` : '';
+			const doi = ref.doi ? `. doi:${ref.doi}` : ref.url ? `. ${ref.url}` : '';
+			return `${prefix} ${dot(authors)} ${dot(ref.title)} ${journal}. ${year};${vol}${issue}${pp}${doi}`;
+		}
+		case 'book': {
+			const ed = ref.edition ? ` ${ref.edition} ed.` : '';
+			const pub = ref.publisher ? ` ${ref.publisher};` : '';
+			return `${prefix} ${dot(authors)} ${ref.title}${ed}.${pub} ${year}.`;
+		}
+		case 'incollection':
+		case 'inproceedings': {
+			const book = ref.booktitle ? ` In: ${ref.booktitle}` : '';
+			const pp = ref.pages ? `. p. ${ref.pages}` : '';
+			return `${prefix} ${dot(authors)} ${dot(ref.title)}${book}${pp}. ${year}.`;
+		}
+		case 'phdthesis':
+		case 'mastersthesis': {
+			const school = ref.school ? ` ${ref.school};` : '';
+			return `${prefix} ${dot(authors)} ${ref.title} [thesis].${school} ${year}.`;
+		}
+		default: {
+			const url = ref.url ? ` Available from: ${ref.url}` : '';
+			return `${prefix} ${dot(authors)} ${dot(ref.title)}${url}. ${year}.`;
+		}
+	}
+}
+
+// ── Chicago Notes-Bibliography ────────────────────────────────────────────
+// Notes: "Firstname Lastname, *Title* (Place: Publisher, Year)."
+// Bibliography: "Lastname, Firstname. *Title*. Place: Publisher, Year."
+
+// "Daniel C. Dennett" — full first name for notes
+function chicagoNoteName(a: Author): string {
+	if (!a.last.trim()) return '';
+	return a.first ? `${a.first} ${a.last}` : a.last;
+}
+
+// "Dennett, Daniel C." — inverted for bibliography (first author only)
+function chicagoBibName(a: Author): string {
+	if (!a.last.trim()) return '';
+	return a.first ? `${a.last}, ${a.first}` : a.last;
+}
+
+function chicagoNoteAuthorList(authors: Author[]): string {
+	const valid = authors.filter((a) => a.last.trim());
+	if (!valid.length) return '';
+	if (valid.length === 1) return chicagoNoteName(valid[0]);
+	if (valid.length === 2) return `${chicagoNoteName(valid[0])} and ${chicagoNoteName(valid[1])}`;
+	if (valid.length <= 3)
+		return valid.slice(0, -1).map(chicagoNoteName).join(', ') + ', and ' + chicagoNoteName(valid[valid.length - 1]);
+	return `${chicagoNoteName(valid[0])} et al.`;
+}
+
+function chicagoBibAuthorList(authors: Author[]): string {
+	const valid = authors.filter((a) => a.last.trim());
+	if (!valid.length) return '';
+	if (valid.length === 1) return chicagoBibName(valid[0]);
+	// First author inverted, rest normal
+	const rest = valid.slice(1).map(chicagoNoteName);
+	return [chicagoBibName(valid[0]), ...rest].join(', ');
+}
+
+// Footnote (note) format — full citation
+function chicagoNote(ref: CiteRef): string {
+	const authors = chicagoNoteAuthorList(ref.authors);
+	const year = ref.year ?? 'n.d.';
+
+	switch (ref.type) {
+		case 'article': {
+			const journal = ref.journal ? ` *${ref.journal}*` : '';
+			const vol = ref.volume ? ` ${ref.volume}` : '';
+			const no = ref.issue ? `, no. ${ref.issue}` : '';
+			const pp = ref.pages ? `: ${ref.pages}` : '';
+			const doi = ref.doi ? `, https://doi.org/${ref.doi}` : '';
+			return `${authors}, "${ref.title},"${journal}${vol}${no} (${year})${pp}${doi}.`;
+		}
+		case 'book': {
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? `${place}${ref.publisher}, ` : '';
+			const ed = ref.edition ? `, ${ref.edition} ed.` : '';
+			return `${authors}, *${ref.title}*${ed} (${pub}${year}).`;
+		}
+		case 'incollection': {
+			const edList = (ref.editors ?? []).filter((e) => e.last.trim());
+			const eds = edList.length > 0
+				? `, ed. ${edList.map(chicagoNoteName).join(' and ')}`
+				: '';
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? `${place}${ref.publisher}, ` : '';
+			const pp = ref.pages ? `, ${ref.pages}` : '';
+			return `${authors}, "${ref.title}," in${book}${eds} (${pub}${year})${pp}.`;
+		}
+		case 'inproceedings': {
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const pp = ref.pages ? `, ${ref.pages}` : '';
+			return `${authors}, "${ref.title}," in${book} (${year})${pp}.`;
+		}
+		case 'phdthesis':
+			return `${authors}, "${ref.title}" (PhD diss., ${ref.school ?? ''}, ${year}).`;
+		case 'mastersthesis':
+			return `${authors}, "${ref.title}" (MA thesis, ${ref.school ?? ''}, ${year}).`;
+		case 'techreport': {
+			const num = ref.reportNumber ? ` no. ${ref.reportNumber}` : '';
+			const inst = ref.institution ? `, ${ref.institution}` : '';
+			return `${authors}, "${ref.title}"${inst}${num}, ${year}.`;
+		}
+		case 'magisterial': {
+			const doctype = ref.extra?.doctype ?? '';
+			// CCC — no author, no year, cite by paragraph
+			if (doctype === 'catechism') {
+				const para = ref.extra?.paragraph ? `, §${ref.extra.paragraph}` : '';
+				return `*Catechism of the Catholic Church*${para}.`;
+			}
+			// Canon Law — code + canon number
+			if (doctype === 'canon_law') {
+				const code = ref.extra?.canon_code === 'CCEO' ? 'CCEO' : '1983 CIC';
+				const canon = ref.extra?.paragraph ? `, c. ${ref.extra.paragraph}` : '';
+				return `${code}${canon}.`;
+			}
+			// Conciliar — Latin title in footnote
+			if (doctype === 'conciliar_constitution' || doctype === 'conciliar_decree' || doctype === 'conciliar_declaration') {
+				const latTitle = ref.extra?.latin_title || ref.title;
+				const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
+				const para = ref.extra?.paragraph ? `, §${ref.extra.paragraph}` : '';
+				return `*${latTitle}*${siglum}${para}.`;
+			}
+			// Papal + generic — include pope name if available
+			const pope = ref.extra?.pope ? ` (Pope ${ref.extra.pope})` : '';
+			const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
+			const paragraph = ref.extra?.paragraph ? `, §${ref.extra.paragraph}` : '';
+			const url = ref.url ? `, ${ref.url}` : '';
+			const auth = authors ? `${authors}${pope}, ` : '';
+			return `${auth}*${ref.title}*${siglum} (${year})${paragraph}${url}.`;
+		}
+		case 'patristic': {
+			const section = ref.extra?.section ? ` ${ref.extra.section}` : '';
+			const ed = ref.extra?.edition && ref.volume
+				? `, ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}`
+				: ref.extra?.edition ? `, ${ref.extra.edition}` : '';
+			const pub = ref.publisher
+				? ` (${ref.address ? ref.address + ': ' : ''}${ref.publisher}, ${year})`
+				: ` (${year})`;
+			return `${authors}, *${ref.title}*${section}${ed}${pub}.`;
+		}
+		case 'scholastic': {
+			const part = ref.extra?.part ? ` ${ref.extra.part}` : '';
+			const q = ref.extra?.question ? `, q. ${ref.extra.question}` : '';
+			const a = ref.extra?.article ? `, a. ${ref.extra.article}` : '';
+			const sub = ref.extra?.subdivision ? `, ${ref.extra.subdivision}` : '';
+			return `${authors}, *${ref.title}*${part}${q}${a}${sub}.`;
+		}
+		case 'biblical': {
+			// Prefer inline parenthetical (Jn 1:1 NRSV) if book/chapter/verse are set
+			const book = ref.extra?.book;
+			const chapter = ref.extra?.chapter;
+			const verse = ref.extra?.verse;
+			const trans = ref.extra?.translation;
+			if (book && chapter) {
+				const passage = verse ? `${chapter}:${verse}` : chapter;
+				const t = trans ? ` ${trans}` : '';
+				return `(${book} ${passage}${t})`;
+			}
+			const transStr = trans ? ` (${trans})` : '';
+			return `*${ref.title}*${transStr}.`;
+		}
+		case 'classical': {
+			const passage = ref.extra?.passage ? ` ${ref.extra.passage}` : '';
+			const trans = ref.extra?.translator ? `, trans. ${ref.extra.translator}` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? `(${place}${ref.publisher}, ${year})` : `(${year})`;
+			return `${authors}, *${ref.title}*${passage}${trans} ${pub}.`;
+		}
+		case 'earlymodern': {
+			const trans = ref.extra?.translator ? `, trans. ${ref.extra.translator}` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` (${place}${ref.publisher}, ${year})` : ` (${year})`;
+			const sigla = ref.extra?.edition_sigla ? ` ${ref.extra.edition_sigla}` : '';
+			const section = ref.extra?.section ? ` ${ref.extra.section}` : '';
+			return `${authors}, *${ref.title}*${trans}${pub},${sigla}${section}.`;
+		}
+		default: {
+			const url = ref.url ? `, ${ref.url}` : '';
+			return `${authors}, *${ref.title}* (${year})${url}.`;
+		}
+	}
+}
+
+// Bibliography entry format — inverted author, ends with period
+function chicagoBib(ref: CiteRef): string {
+	const authors = chicagoBibAuthorList(ref.authors);
+	const year = ref.year ?? 'n.d.';
+
+	switch (ref.type) {
+		case 'article': {
+			const journal = ref.journal ? ` *${ref.journal}*` : '';
+			const vol = ref.volume ? ` ${ref.volume}` : '';
+			const no = ref.issue ? `, no. ${ref.issue}` : '';
+			const pp = ref.pages ? `: ${ref.pages}` : '';
+			const doi = ref.doi ? `. https://doi.org/${ref.doi}` : ref.url ? `. ${ref.url}` : '';
+			return `${authors}. "${ref.title}."${journal}${vol}${no} (${year})${pp}${doi}.`;
+		}
+		case 'book': {
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			const ed = ref.edition ? ` ${ref.edition} ed.` : '';
+			return `${authors}.${ed ? ' ' + ed : ''} *${ref.title}*.${pub} ${year}.`;
+		}
+		case 'incollection': {
+			const edList = (ref.editors ?? []).filter((e) => e.last.trim());
+			const eds = edList.length > 0
+				? `, edited by ${edList.map(chicagoNoteName).join(' and ')}`
+				: '';
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? `${place}${ref.publisher},` : '';
+			const pp = ref.pages ? ` ${ref.pages}` : '';
+			return `${authors}. "${ref.title}." In${book}${eds},${pp} ${pub} ${year}.`;
+		}
+		case 'inproceedings': {
+			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
+			const pp = ref.pages ? ` ${ref.pages}` : '';
+			return `${authors}. "${ref.title}." In${book}.${pp} ${year}.`;
+		}
+		case 'phdthesis':
+			return `${authors}. "${ref.title}." PhD diss., ${ref.school ?? ''}, ${year}.`;
+		case 'mastersthesis':
+			return `${authors}. "${ref.title}." MA thesis, ${ref.school ?? ''}, ${year}.`;
+		case 'techreport': {
+			const num = ref.reportNumber ? ` No. ${ref.reportNumber}.` : '';
+			const inst = ref.institution ? ` ${ref.institution}.` : '';
+			return `${authors}. *${ref.title}*.${inst}${num} ${year}.`;
+		}
+		case 'magisterial': {
+			const doctype = ref.extra?.doctype ?? '';
+			if (doctype === 'catechism') {
+				return `*Catechism of the Catholic Church*. ${year}.`;
+			}
+			if (doctype === 'canon_law') {
+				const code = ref.extra?.canon_code === 'CCEO' ? 'CCEO' : '1983 CIC';
+				return `*${ref.title}* [${code}]. ${year}.`;
+			}
+			if (doctype === 'conciliar_constitution' || doctype === 'conciliar_decree' || doctype === 'conciliar_declaration') {
+				const latTitle = ref.extra?.latin_title || ref.title;
+				const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
+				return `*${latTitle}*${siglum}. ${year}.`;
+			}
+			const url = ref.url ? ` ${ref.url}.` : '';
+			const auth = authors ? `${authors}. ` : '';
+			return `${auth}*${ref.title}*. ${year}.${url}`;
+		}
+		case 'patristic': {
+			const ed = ref.extra?.edition && ref.volume
+				? ` ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}.`
+				: ref.extra?.edition ? ` ${ref.extra.edition}.` : '.';
+			return `${authors}. *${ref.title}*.${ed} ${year}.`;
+		}
+		case 'scholastic': {
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			return `${authors}. *${ref.title}*.${pub} ${year}.`;
+		}
+		case 'biblical': {
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			return `*${ref.title}*.${pub} ${year}.`;
+		}
+		case 'classical': {
+			const trans = ref.extra?.translator ? ` Translated by ${ref.extra.translator}.` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			return `${authors}. *${ref.title}*.${trans}${pub} ${year}.`;
+		}
+		case 'earlymodern': {
+			const trans = ref.extra?.translator ? ` Translated by ${ref.extra.translator}.` : '';
+			const origYear = ref.extra?.original_year ? ` Originally published ${ref.extra.original_year}.` : '';
+			const place = ref.address ? `${ref.address}: ` : '';
+			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
+			return `${authors}. *${ref.title}*.${trans}${pub} ${year}.${origYear}`;
+		}
+		default: {
+			const url = ref.url ? ` ${ref.url}.` : '';
+			return `${authors}. *${ref.title}*. ${year}.${url}`;
+		}
+	}
+}
+
+// ── Main processor ────────────────────────────────────────────────────────
+//
+// Finds all [@key] and [@key1; @key2] patterns in the markdown,
+// replaces them with formatted inline citations, and appends a
+// bibliography section at the end.
+//
+// Returns the modified markdown string (still needs to go through marked).
+
+export function processCitations(
+	markdown: string,
+	refs: Map<string, CiteRef>,
+	style: CitationStyle
+): string {
+	if (!refs.size) return markdown;
+
+	// Pattern: [[@key]] or multi-key [[@key1; @key2]]
+	// citeKey chars: letters, digits, :, -, _, .
+	const CITE_PATTERN = /\[\[(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]\]/g;
+
+	// For numbered styles: collect unique keys in order of first appearance
+	const orderedKeys: string[] = [];
+	const keyIndex = new Map<string, number>(); // key → 1-based number
+
+	// First pass: enumerate all cited keys for numbering
+	if (style !== 'apa' && style !== 'chicago') {
+		let m: RegExpExecArray | null;
+		const src = markdown;
+		CITE_PATTERN.lastIndex = 0;
+		while ((m = CITE_PATTERN.exec(src)) !== null) {
+			const keys = m[1].split(';').map((k) => k.trim().replace(/^@/, ''));
+			for (const key of keys) {
+				if (!keyIndex.has(key)) {
+					orderedKeys.push(key);
+					keyIndex.set(key, orderedKeys.length);
+				}
+			}
+		}
+	}
+
+	// Chicago: footnote counter — each [@key] citation gets a unique footnote number
+	let chicagoCounter = 0;
+	const chicagoFootnotes: { id: string; key: string }[] = [];
+
+	// Second pass: replace patterns with inline citations
+	CITE_PATTERN.lastIndex = 0;
+	const usedKeys = new Set<string>();
+
+	const result = markdown.replace(CITE_PATTERN, (_match, inner: string) => {
+		const keys = inner.split(';').map((k: string) => k.trim().replace(/^@/, ''));
+
+		if (style === 'apa') {
+			const parts = keys.map((key) => {
+				const ref = refs.get(key);
+				if (!ref) return `[[@${key}]]`; // unknown key: leave as-is
+				usedKeys.add(key);
+				return apaInlineOne(ref).slice(1, -1); // strip outer parens for grouping
+			});
+			// Rejoin multiple in one bracket: (Smith, 2024; Jones, 2023)
+			const allKnown = keys.every((k) => refs.has(k));
+			if (!allKnown) return _match; // if any unknown, leave entire match
+			return `(${parts.join('; ')})`;
+		} else if (style === 'chicago') {
+			// Each [@key] becomes a footnote reference [^ch-N]
+			const ids: string[] = [];
+			for (const key of keys) {
+				if (!refs.has(key)) continue;
+				chicagoCounter++;
+				const id = `ch-${chicagoCounter}`;
+				chicagoFootnotes.push({ id, key });
+				usedKeys.add(key);
+				ids.push(id);
+			}
+			if (!ids.length) return _match;
+			return ids.map((id) => `[^${id}]`).join('');
+		} else {
+			const nums = keys
+				.map((key) => {
+					const n = keyIndex.get(key);
+					if (n !== undefined) usedKeys.add(key);
+					return n;
+				})
+				.filter((n): n is number => n !== undefined);
+			if (!nums.length) return _match;
+			return style === 'ieee' ? ieeeInlineNums(nums) : vancouverInlineNums(nums);
+		}
+	});
+
+	// Build bibliography for used keys
+	const sortedAlpha = (keys: Iterable<string>) =>
+		[...keys].sort((a, b) => {
+			const ra = refs.get(a)!;
+			const rb = refs.get(b)!;
+			const la = ra.authors[0]?.last ?? ra.title;
+			const lb = rb.authors[0]?.last ?? rb.title;
+			return la.localeCompare(lb) || (ra.year ?? '').localeCompare(rb.year ?? '');
+		});
+
+	const bibKeys =
+		style === 'apa' || style === 'chicago'
+			? sortedAlpha(usedKeys)
+			: orderedKeys.filter((k) => usedKeys.has(k));
+
+	if (!bibKeys.length && chicagoFootnotes.length === 0) return result;
+
+	const bibLines: string[] = [];
+
+	// Chicago: append footnote definitions first (rendered by marked-footnote)
+	if (style === 'chicago') {
+		bibLines.push('');
+		for (const { id, key } of chicagoFootnotes) {
+			const ref = refs.get(key);
+			if (!ref) continue;
+			bibLines.push(`[^${id}]: ${chicagoNote(ref)}`);
+		}
+	}
+
+	if (!bibKeys.length) return result + bibLines.join('\n');
+
+	bibLines.push('', '', '---', '');
+	bibLines.push(style === 'chicago' ? '## Bibliografía' : '## Referencias');
+	bibLines.push('');
+
+	for (const key of bibKeys) {
+		const ref = refs.get(key);
+		if (!ref) continue;
+		const num = keyIndex.get(key) ?? 0;
+
+		if (style === 'apa') {
+			bibLines.push(apaFull(ref));
+		} else if (style === 'ieee') {
+			bibLines.push(ieeeFull(ref, num));
+		} else if (style === 'chicago') {
+			bibLines.push(chicagoBib(ref));
+		} else {
+			bibLines.push(vancouverFull(ref, num));
+		}
+		bibLines.push('');
+	}
+
+	return result + bibLines.join('\n');
+}
+
+export const CITATION_STYLE_LABELS: Record<CitationStyle, string> = {
+	apa: 'APA 7',
+	ieee: 'IEEE',
+	vancouver: 'Vancouver',
+	chicago: 'Chicago'
+};
+
+/**
+ * Returns the fully formatted reference string for a single entry.
+ * `num` is the 1-based position in the list — used by IEEE and Vancouver.
+ * For APA the num is ignored.
+ */
+export function formatFullCitation(ref: CiteRef, style: CitationStyle, num: number): string {
+	if (style === 'ieee') return ieeeFull(ref, num);
+	if (style === 'vancouver') return vancouverFull(ref, num);
+	if (style === 'chicago') return chicagoBib(ref);
+	return apaFull(ref);
+}

@@ -6,7 +6,7 @@
 	<div class="mb-8 text-center">
 		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Scholio</h1>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Escritura académica colaborativa
+			Collaborative academic writing
 		</p>
 	</div>
 

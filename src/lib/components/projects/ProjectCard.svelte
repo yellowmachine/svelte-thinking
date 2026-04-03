@@ -6,6 +6,7 @@
 		description,
 		status = 'draft',
 		collaboratorCount = 1,
+		openComments = 0,
 		updatedAt,
 		onclick
 	}: {
@@ -13,16 +14,17 @@
 		description?: string;
 		status?: Status;
 		collaboratorCount?: number;
+		openComments?: number;
 		updatedAt?: Date;
 		onclick?: () => void;
 	} = $props();
 
 	const statusLabel: Record<Status, string> = {
-		draft: 'Borrador',
-		active: 'Activo',
-		review: 'En revisión',
-		published: 'Publicado',
-		archived: 'Archivado'
+		draft: 'Draft',
+		active: 'Active',
+		review: 'In review',
+		published: 'Published',
+		archived: 'Archived'
 	};
 
 	const statusStyle: Record<Status, string> = {
@@ -81,12 +83,21 @@
 				/>
 			</svg>
 			{collaboratorCount}
-			{collaboratorCount === 1 ? 'colaborador' : 'colaboradores'}
+			{collaboratorCount === 1 ? 'collaborator' : 'collaborators'}
 		</span>
 
 		{#if formattedDate}
 			<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Actualizado {formattedDate}
+				Updated {formattedDate}
+			</span>
+		{/if}
+
+		{#if openComments > 0}
+			<span class="ml-auto flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+				<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+				{openComments}
 			</span>
 		{/if}
 	</div>

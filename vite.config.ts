@@ -36,12 +36,50 @@ export default defineConfig({
 				]
 			},
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}']
+				// html excluded — no hash in filename, must always revalidate from network
+				globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
+				navigateFallback: null,
+				runtimeCaching: [
+					{
+						urlPattern: ({ request }) => request.mode === 'navigate',
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'html-cache',
+							networkTimeoutSeconds: 3,
+							cacheableResponse: { statuses: [200] }
+						}
+					},
+					// tRPC document and project queries — NetworkFirst with offline fallback
+					{
+						urlPattern: ({ url }) =>
+							url.pathname.startsWith('/api/trpc/documents.') ||
+							url.pathname.startsWith('/api/trpc/projects.'),
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'trpc-data-cache',
+							networkTimeoutSeconds: 5,
+							cacheableResponse: { statuses: [200] },
+							expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 }
+						}
+					},
+					// Auth session — cached manually for offline use
+					{
+						urlPattern: ({ url }) => url.pathname === '/api/auth/session',
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'auth-session-cache',
+							networkTimeoutSeconds: 5,
+							cacheableResponse: { statuses: [200] },
+							expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 }
+						}
+					}
+				],
+				navigateFallbackDenylist: [/^\/api/, /^\/trpc/]
 			}
 		}),
 		devtoolsJson()
 	],
-	server: { port: 5174 },
+	server: { port: 5174, host: true, allowedHosts: ['scholio-dev.local'] },
 	test: {
 		expect: {
 			requireAssertions: true

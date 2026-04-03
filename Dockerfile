@@ -1,4 +1,4 @@
-# ─── Stage 1: deps ────────────────────────────────────────────────────────────
+# ─── Stage 1: deps (all — needed for build) ───────────────────────────────────
 FROM oven/bun:1 AS deps
 WORKDIR /app
 
@@ -10,7 +10,18 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
-# ─── Stage 2: build ───────────────────────────────────────────────────────────
+# ─── Stage 2: prod-deps (runtime only, no devDependencies) ────────────────────
+FROM oven/bun:1 AS prod-deps
+WORKDIR /app
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+# ─── Stage 3: build ───────────────────────────────────────────────────────────
 FROM oven/bun:1 AS build
 WORKDIR /app
 
@@ -27,11 +38,13 @@ ENV NODE_ENV=production
 ENV ORIGIN=https://placeholder.local
 ENV BETTER_AUTH_SECRET=build-placeholder
 ENV DATABASE_URL=postgres://placeholder
+ENV SCIPY_SERVICE_URL=http://placeholder
+ENV SCIPY_API_KEY=build-placeholder
 ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
 
 RUN bun run build
 
-# ─── Stage 3: prod ────────────────────────────────────────────────────────────
+# ─── Stage 4: prod ────────────────────────────────────────────────────────────
 # svelte-adapter-bun genera un servidor que corre con Bun, no con Node.
 FROM oven/bun:1 AS prod
 WORKDIR /app
@@ -45,8 +58,8 @@ COPY --from=build /app/drizzle ./drizzle
 COPY scripts/entrypoint.sh ./entrypoint.sh
 COPY scripts/migrate.mjs ./scripts/migrate.mjs
 
-# Deps de runtime (postgres, drizzle-orm, etc.)
-COPY --from=deps /app/node_modules ./node_modules
+# Deps de runtime únicamente (sin devDependencies)
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 RUN chmod +x entrypoint.sh
 

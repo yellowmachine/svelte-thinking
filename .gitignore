@@ -12,6 +12,9 @@ node_modules
 .DS_Store
 Thumbs.db
 
+# Local scratch
+/tmp
+
 # Env
 .env
 .env.*
@@ -26,3 +29,5 @@ test-results
 
 *storybook.log
 storybook-static
+tests/e2e/.totp-secret
+tests/e2e/.test-doc-url

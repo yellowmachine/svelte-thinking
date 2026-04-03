@@ -1,0 +1,2 @@
+# Run backup daily at 03:00 UTC
+0 3 * * * /scripts/backup.sh >> /var/log/backup.log 2>&1

@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -38,6 +38,26 @@ services:
     networks:
       - internal
 
+  typst:
+    build:
+      context: ./typst-service
+    restart: unless-stopped
+    networks:
+      - internal
+
+  embed:
+    build:
+      context: ./embed-service
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://localhost:3200/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+
   app:
     build:
       context: .
@@ -69,8 +89,10 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_KMS_KEY_ID: ${AWS_KMS_KEY_ID}
-      # ── Anthropic (sugerencias inline) ────────────────────────────────────
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # ── Typst PDF service ─────────────────────────────────────────────────
+      TYPST_SERVICE_URL: http://typst:3100
+      # ── Embed service (semantic search) ──────────────────────────────────
+      EMBED_SERVICE_URL: http://embed:3200
       # ── Stripe ────────────────────────────────────────────────────────────
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
@@ -84,8 +106,15 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      typst:
+        condition: service_healthy
+      embed:
+        condition: service_healthy
     networks:
       - internal
+
+  # backup:  ← pendiente configurar antes del self-hosted (ver scripts/backup.sh)
+  #   Requiere: R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
 
 networks:
   internal:

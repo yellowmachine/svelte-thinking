@@ -7,17 +7,23 @@
 set -e
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+	-- pgvector extension (requires pgvector/pgvector image)
+	CREATE EXTENSION IF NOT EXISTS vector;
+
+	-- Las migraciones corren como POSTGRES_USER (superuser).
+	-- search_path explícito para que CREATE TABLE sin schema vaya a public,
+	-- no a scholio (que coincide con el nombre del usuario superuser).
+	ALTER ROLE ${POSTGRES_USER} SET search_path TO public, scholio;
+
 	-- Rol de la aplicación: non-superuser con login.
 	-- La app se conecta como este usuario → RLS se aplica normalmente.
-	-- Las migraciones corren como POSTGRES_USER (superuser).
 	CREATE ROLE ${APP_DB_USER} WITH LOGIN PASSWORD '${APP_DB_PASSWORD}';
 
-	-- Permisos de conexión y uso del schema
+	-- Permisos de conexión y uso de schemas
 	GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${APP_DB_USER};
 	GRANT USAGE ON SCHEMA public TO ${APP_DB_USER};
 
-	-- Default privileges: tablas/secuencias/funciones creadas por POSTGRES_USER
-	-- en el futuro (migraciones Drizzle) serán accesibles por APP_DB_USER automáticamente.
+	-- Default privileges en public (tablas better-auth)
 	ALTER DEFAULT PRIVILEGES IN SCHEMA public
 	    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${APP_DB_USER};
 
@@ -26,4 +32,5 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
 	ALTER DEFAULT PRIVILEGES IN SCHEMA public
 	    GRANT EXECUTE ON FUNCTIONS TO ${APP_DB_USER};
+
 EOSQL

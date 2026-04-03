@@ -10,10 +10,15 @@ export const load: PageServerLoad = async (event) => {
 				title: project.title,
 				description: project.description,
 				status: project.status,
+				orgId: project.orgId,
 				updatedAt: project.updatedAt,
 				collaboratorCount:
 					sql<number>`(SELECT COUNT(*)::int FROM project_collaborator WHERE project_collaborator.project_id = ${project.id})`.as(
 						'collaborator_count'
+					),
+				openComments:
+					sql<number>`(SELECT COUNT(*)::int FROM comment JOIN document ON comment.document_id = document.id WHERE document.project_id = project.id AND comment.status = 'open' AND comment.parent_comment_id IS NULL)`.as(
+						'open_comments'
 					)
 			})
 			.from(project)

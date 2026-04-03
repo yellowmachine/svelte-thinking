@@ -25,6 +25,22 @@ try {
 } catch (err) {
 	console.error('Error en migraciones:', err);
 	process.exit(1);
-} finally {
-	await client.end();
 }
+
+// ── Post-migrate grants ──────────────────────────────────────────────────────
+// Idempotent — safe to run on every deploy (fresh or incremental).
+const appUser = process.env.APP_DB_USER;
+if (appUser) {
+	console.log(`Aplicando grants a "${appUser}"...`);
+	await client.unsafe(`GRANT USAGE ON SCHEMA scholio TO "${appUser}"`);
+	await client.unsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA scholio TO "${appUser}"`);
+	await client.unsafe(`GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA scholio TO "${appUser}"`);
+	await client.unsafe(`ALTER DEFAULT PRIVILEGES IN SCHEMA scholio GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "${appUser}"`);
+	await client.unsafe(`ALTER DEFAULT PRIVILEGES IN SCHEMA scholio GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO "${appUser}"`);
+	await client.unsafe(`ALTER DEFAULT PRIVILEGES IN SCHEMA scholio GRANT EXECUTE ON FUNCTIONS TO "${appUser}"`);
+	console.log('Grants aplicados.');
+} else {
+	console.log('APP_DB_USER no definida — saltando grants de scholio.');
+}
+
+await client.end();

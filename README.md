@@ -40,6 +40,110 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 
 ---
 
+## Sintaxis del editor
+
+El editor usa Markdown estándar extendido con las siguientes funcionalidades propias de Scholio:
+
+### Citas bibliográficas
+
+```markdown
+La selección natural opera sobre variaciones heredables [@darwin1859].
+Algunos autores discrepan en el mecanismo [@dawkins1976; @gould1979].
+```
+
+Las citas se renderizan según el estilo seleccionado (APA 7, IEEE o Vancouver).
+Al final del documento se genera la bibliografía automáticamente.
+
+### Matemáticas (KaTeX)
+
+```markdown
+La entropía de Shannon se define como $H = -\sum_{i} p_i \log p_i$.
+
+Para distribuciones continuas:
+
+$$
+H(X) = -\int_{-\infty}^{\infty} f(x) \log f(x) \, dx
+$$
+```
+
+### Wikilinks
+
+```markdown
+Como se desarrolla en [[Introducción]], la hipótesis central es...
+
+Para más detalle ver [[Metodología:a3f9b2c1]] (documento externo público).
+```
+
+- `[[Título]]` — enlaza a un documento del mismo proyecto por título
+- `[[Título:hash]]` — enlaza a un documento público de otro usuario (los primeros 8 caracteres de su UUID)
+
+El panel "Mencionado en" del editor muestra los backlinks entrantes al documento actual.
+
+### Gráficos Vega-Lite
+
+````markdown
+```vega-lite
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": { "$ref": "dataset:resultados" },
+  "mark": "bar",
+  "encoding": {
+    "x": { "field": "grupo", "type": "nominal" },
+    "y": { "field": "valor", "type": "quantitative" }
+  }
+}
+```
+````
+
+`"$ref": "dataset:nombre"` hace referencia a un dataset subido al proyecto (CSV, TSV o JSON).
+
+### Ejemplo de documento completo
+
+````markdown
+# La paradoja de la inducción y el problema de Gettier
+
+## Introducción
+
+El problema de la justificación epistémica ocupa un lugar central en la
+filosofía analítica desde al menos [[Conocimiento y creencia]] [@ayer1956].
+La formulación clásica del conocimiento como *creencia verdadera justificada*
+fue cuestionada definitivamente por Edmund Gettier [@gettier1963].
+
+## Formalización
+
+Sea $K$ el operador de conocimiento. La definición tripartita establece:
+
+$$
+K(s, p) \iff B(s, p) \land V(p) \land J(s, p)
+$$
+
+donde $B$ es creencia, $V$ es verdad y $J$ es justificación.
+
+Gettier demostró que esta condición es **necesaria pero no suficiente**
+[@gettier1963; @chisholm1966].
+
+## Distribución de casos en la literatura
+
+```vega-lite
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": { "$ref": "dataset:casos_gettier" },
+  "mark": "arc",
+  "encoding": {
+    "theta": { "field": "frecuencia", "type": "quantitative" },
+    "color": { "field": "tipo", "type": "nominal" }
+  }
+}
+```
+
+## Conclusión
+
+Las soluciones contemporáneas al problema se discuten en
+[[Epistemología contemporánea:b7c3d1e2]].
+````
+
+---
+
 ## Stack técnico
 
 | Capa | Tecnología |
@@ -169,12 +273,12 @@ Antes de abrir acceso a usuarios reales:
 
 ### Infraestructura y operaciones
 - **Panel de administración** — sin métricas de uso ni gestión de usuarios desde la propia app; por ahora se gestiona desde los dashboards de Stripe y Sentry
-- **Rate limiting en IA** — sin límite por usuario en los endpoints de sugerencias y chat; en un crecimiento rápido podría suponer coste no controlado
+- **Rate limiting en IA** — sugerencias inline limitadas a 30/día por usuario; chat y borradores requieren BYOK (OpenRouter)
 - **Soft delete** para proyectos y documentos — el borrado actual es definitivo; anotado para implementar antes de escalar
 
 ### Funcionalidades académicas avanzadas
 - **Sugerencias de referencias externas** — el asistente podría enlazar fuentes de Semantic Scholar u OpenLibrary relevantes al contexto del documento (feature 1 del roadmap IA)
-- **Exportación PDF / LaTeX** — anunciado en el plan Pro, pendiente de implementación
+- **Exportación PDF** — pendiente; exportación a LaTeX (`.tex`) y Typst (`.typ`) ya implementada
 - **SSO / SAML** — anunciado en el plan Team, pendiente de implementación
 - **Transferencia de propiedad de proyectos** — esquema de base de datos preparado, sin UI ni endpoint
 - **Eliminación de cuenta** — botón presente en zona de peligro, sin acción conectada
