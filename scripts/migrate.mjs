@@ -8,7 +8,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
-import { hashPassword } from 'better-auth/crypto';
+import { hashPassword } from '../node_modules/better-auth/dist/crypto/password.mjs';
 
 const url = process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL;
 if (!url) {
