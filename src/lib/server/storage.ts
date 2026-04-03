@@ -55,29 +55,29 @@ export async function testS3Connection(config: UserS3Config): Promise<{ ok: bool
 }
 
 function classifyS3Error(e: unknown): string {
-	if (!(e instanceof Error)) return 'Error desconocido al conectar con el bucket.';
+	if (!(e instanceof Error)) return 'Unknown error connecting to the bucket.';
 
 	const code = (e as { name?: string; Code?: string }).name ?? (e as { Code?: string }).Code ?? '';
 	const status = (e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
 	const msg = e.message.toLowerCase();
 
 	if (code === 'NoSuchBucket' || code === 'NotFound' || status === 404)
-		return `El bucket "${config.bucket}" no existe. Créalo primero en la consola de Minio/S3.`;
+		return `Bucket "${config.bucket}" does not exist. Create it first in the Minio/S3 console.`;
 
 	if (code === 'AccessDenied' || code === 'Forbidden' || status === 403)
-		return 'Acceso denegado. Verifica el Access Key y Secret Key.';
+		return 'Access denied. Check your Access Key and Secret Key.';
 
 	if (code === 'InvalidAccessKeyId' || code === 'SignatureDoesNotMatch')
-		return 'Credenciales incorrectas. Revisa el Access Key y Secret Key.';
+		return 'Invalid credentials. Check your Access Key and Secret Key.';
 
 	if (code === 'AuthorizationHeaderMalformed')
-		return 'Región incorrecta. Verifica el campo Region.';
+		return 'Incorrect region. Check the Region field.';
 
 	if (msg.includes('econnrefused') || msg.includes('enotfound') || msg.includes('failed to fetch'))
-		return `No se puede conectar a "${config.endpoint}". Verifica que el servicio esté activo y la URL sea correcta.`;
+		return `Cannot connect to "${config.endpoint}". Check that the service is running and the URL is correct.`;
 
 	if (msg.includes('ssl') || msg.includes('certificate') || msg.includes('https'))
-		return 'Error de certificado SSL. Si es una instalación local, usa http:// en el endpoint.';
+		return 'SSL certificate error. For local installations, use http:// in the endpoint.';
 
 	return e.message;
 }
