@@ -54,11 +54,11 @@ services:
     ports:
       - '3300:3000'
     healthcheck:
-      test: ["CMD-SHELL", "exit 0"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ > /dev/null 2>&1 || exit 1"]
       interval: 30s
-      timeout: 5s
-      retries: 1
-      start_period: 0s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - scholio-network
       - dokploy-network
