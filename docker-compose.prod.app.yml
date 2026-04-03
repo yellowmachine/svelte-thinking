@@ -15,7 +15,7 @@ services:
       # Database (external, accessed by hostname)
       DATABASE_URL: ${DATABASE_URL}
       MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
-      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_USER: scholio_app
       # Internal services (scholio-network)
       REDIS_URL: ${REDIS_URL}
       EMBED_SERVICE_URL: ${EMBED_SERVICE_URL}
