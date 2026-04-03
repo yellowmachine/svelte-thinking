@@ -16,14 +16,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # No ports: accesible solo dentro de la red Docker de Dokploy
-    networks:
-      - dokploy-network
+    ports:
+      - '5432:5432'
 
 volumes:
   postgres_prod_data:
     name: scholio_postgres_prod
-
-networks:
-  dokploy-network:
-    external: true
