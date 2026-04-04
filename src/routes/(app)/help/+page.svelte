@@ -249,6 +249,10 @@
 				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">@@Karl</span> → inserts <span class="text-accent">[[person:Karl Barth]]</span></p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">@@</code> to search for a person by name using AI. Renders as the name in the preview with a dotted underline. Hovering the cursor over it shows a brief author card (dates, field, origin).</p>
 			</div>
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">![[whiteboard</span> → inserts <span class="text-accent">![caption](/api/photos/…)</span></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">![[</code> to search project photos by filename or description. A thumbnail preview appears in the dropdown. Selecting one embeds the image with a permanent proxy URL that never expires.</p>
+			</div>
 		</div>
 	</section>
 
@@ -294,6 +298,29 @@
 ```</code></pre>
 		</div>
 		<Callout><code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">"$ref": "dataset:name"</code> references a dataset uploaded to the project (<strong>/datasets</strong> section). You can also put the data directly in the <code class="font-mono">"data"</code> field.</Callout>
+	</section>
+
+	<!-- ── Photos ───────────────────────────────────────────────────────────── -->
+	<section class="mb-10">
+		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Photos</h2>
+		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			Upload photos of whiteboards, sketches or notes in the <strong>Photos</strong> section of a project. Each photo can have an optional description used for search and autocomplete.
+		</p>
+		<div class="space-y-3">
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Embed in a document</p>
+				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">![[</code> in the editor and start typing the filename or description. Select a photo from the dropdown to insert <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">![caption](/api/photos/id)</code>.</p>
+			</div>
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Copy as Markdown</p>
+				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Hover a photo in the gallery and click the copy icon to get the <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">![…](…)</code> snippet ready to paste anywhere.</p>
+			</div>
+			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Permanent URLs</p>
+				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Images are served via <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">/api/photos/&lt;id&gt;</code> — an authenticated proxy. Links embedded in documents never expire regardless of S3 bucket policy.</p>
+			</div>
+		</div>
+		<Callout>Photos require S3-compatible storage configured in <strong>Settings → Storage</strong>. For local development, point it at a Minio instance with a public bucket.</Callout>
 	</section>
 
 	<!-- ── Export ──────────────────────────────────────────────────────────── -->
