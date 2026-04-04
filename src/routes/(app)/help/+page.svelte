@@ -250,8 +250,8 @@
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">@@</code> to search for a person by name using AI. Renders as the name in the preview with a dotted underline. Hovering the cursor over it shows a brief author card (dates, field, origin).</p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">![[whiteboard</span> → inserts <span class="text-accent">![caption](/api/photos/…)</span></p>
-				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">![[</code> to search project photos by filename or description. A thumbnail preview appears in the dropdown. Selecting one embeds the image with a permanent proxy URL that never expires.</p>
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[!whiteboard</span> → inserts <span class="text-accent">![caption](/api/photos/…)</span></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[!</code> to search project photos by filename or description. A thumbnail preview appears in the dropdown. Selecting one embeds the image with a permanent proxy URL that never expires.</p>
 			</div>
 		</div>
 	</section>
@@ -309,7 +309,7 @@
 		<div class="space-y-3">
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Embed in a document</p>
-				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">![[</code> in the editor and start typing the filename or description. Select a photo from the dropdown to insert <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">![caption](/api/photos/id)</code>.</p>
+				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[[!</code> in the editor and start typing the filename or description. Select a photo from the dropdown to insert <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">![caption](/api/photos/id)</code>.</p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Copy as Markdown</p>

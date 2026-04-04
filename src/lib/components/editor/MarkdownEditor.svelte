@@ -137,7 +137,7 @@
 		return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 	}
 
-	// ![[  → photo embed autocomplete ─────────────────────────────────────────
+	// [[!  → photo embed autocomplete ─────────────────────────────────────────
 
 	type PhotoItem = { id: string; filename: string; description: string | null };
 	let cachedPhotos: PhotoItem[] | null = null;
@@ -159,10 +159,10 @@
 	}
 
 	async function imageCompletion(context: CompletionContext) {
-		const match = context.matchBefore(/!\[\[[^\]]*$/);
+		const match = context.matchBefore(/\[\[![^\]]*$/);
 		if (!match) return null;
 
-		const typed = match.text.slice(3).toLowerCase(); // strip ![[
+		const typed = match.text.slice(3).toLowerCase(); // strip [[!
 		const photos = await loadPhotos();
 		if (photos.length === 0) return null;
 
@@ -216,14 +216,12 @@
 	//   [[@       → bibliographic citations  (inserts [[@key]])
 	//   [[#       → heading anchor in current document
 	//   [[^       → footnote (inserts [^N] inline + [^N]: at end)
-	//   ![[       → photo embed (handled above)
+	//   [[!       → photo embed (handled above)
 
 	function wikilinkCompletion(context: CompletionContext) {
 		// Matches [[ NOT immediately followed by a special dispatcher char (@, #, !, ^, ~)
 		const match = context.matchBefore(/\[\[(?![@#!^~])[^\]]*$/);
 		if (!match) return null;
-		// Don't activate for ![[ — that's the photo embed trigger
-		if (context.state.doc.sliceString(Math.max(0, match.from - 1), match.from) === '!') return null;
 
 		const typed = match.text.slice(2).toLowerCase(); // strip [[
 		const options: Completion[] = chapters
