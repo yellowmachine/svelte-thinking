@@ -42,7 +42,7 @@ export const actions: Actions = {
 		if (!event.locals.user) return fail(401, { message: 'Not authenticated' });
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const result = await (auth.api as any).linkSocial({
+		const result = await (auth.api as any).linkSocialAccount({
 			body: { provider: 'github', callbackURL: '/settings' },
 			headers: event.request.headers
 		});
