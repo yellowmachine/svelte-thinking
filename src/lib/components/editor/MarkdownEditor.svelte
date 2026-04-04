@@ -72,7 +72,7 @@
 		scrollToRange?: { from: number; to: number } | null;
 		/** Which [[ completions to enable. undefined = all active. */
 		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph' | 'image'>;
-		/** Show a footer hint that @@ lookup is unavailable (no AI key configured). */
+		/** Show a footer hint that [[p lookup is unavailable (no AI key configured). */
 		showLookupHint?: boolean;
 		/** BCP-47 language tag for spell check (e.g. 'es-ES', 'en-US'). */
 		spellLanguage?: string;
@@ -211,29 +211,32 @@
 		return imageCompletion(context);
 	}
 
-	// [[ dispatcher — character after [[ determines completion type:
-	//   [[        → wikilinks / chapters
-	//   [[@       → bibliographic citations  (inserts [[@key]])
-	//   [[#       → heading anchor in current document
-	//   [[^       → footnote (inserts [^N] inline + [^N]: at end)
-	//   [[!       → photo embed (handled above)
+	// [[ dispatcher — character(s) after [[ determine completion type:
+	//   [[doc:    → wikilinks / chapters      (inserts [[doc:id|title]])
+	//   [[@       → bibliographic citations   (inserts [[@key]])
+	//   [[#       → heading anchor            (inserts [[#Heading]])
+	//   [[^       → footnote                  (inserts [^N] + definition)
+	//   [[!       → photo embed               (handled above)
+	//   [[p       → person mention / AI lookup (inserts [[person:Name]])
 
 	function wikilinkCompletion(context: CompletionContext) {
-		// Matches [[ NOT immediately followed by a special dispatcher char (@, #, !, ^, ~)
-		const match = context.matchBefore(/\[\[(?![@#!^~])[^\]]*$/);
+		// Matches [[doc: followed by optional text
+		const match = context.matchBefore(/\[\[doc:[^\]]*$/);
 		if (!match) return null;
 
-		const typed = match.text.slice(2).toLowerCase(); // strip [[
+		const typed = match.text.slice(6).toLowerCase(); // strip [[doc:
 		const options: Completion[] = chapters
 			.filter((c) => !typed || c.title.toLowerCase().includes(typed))
 			.map((c) => ({
 				label: c.title,
 				detail: 'chapter',
-				apply: `[[doc:${c.id}|${c.title}]]`
+				apply: (view: EditorView, _c: unknown, _f: number, to: number) => {
+					view.dispatch({ changes: { from: match.from, to, insert: `[[doc:${c.id}|${c.title}]]` } });
+				}
 			}));
 
 		if (options.length === 0) return null;
-		return { from: match.from, options };
+		return { from: match.from + 6, options };
 	}
 
 	function citationCompletion(context: CompletionContext) {
@@ -331,9 +334,9 @@
 	}
 
 	async function mentionCompletion(context: CompletionContext) {
-		const match = context.matchBefore(/@@[\w\s.-]*/);
-		if (!match || match.text.length < 3) return null;
-		const partial = match.text.slice(2);
+		const match = context.matchBefore(/\[\[p[\w\s.-]*/);
+		if (!match || match.text.length < 4) return null; // need at least [[p + 1 char
+		const partial = match.text.slice(3); // strip [[p
 		if (!partial.trim()) return null;
 
 		// Check document-local persons first (instant, no AI cost)
@@ -345,9 +348,9 @@
 			n.split(/\s+/).some(w => w.toLowerCase().startsWith(partial.toLowerCase()))
 		);
 
-		// from: right after @@ so CM6 filters labels against the partial.
-		// apply: function so the replacement covers the full @@partial (back to match.from).
-		const from = match.from + 2;
+		// from: right after [[p so CM6 filters labels against the partial.
+		// apply: function so the replacement covers the full [[ppartial (back to match.from).
+		const from = match.from + 3;
 		const mentionFrom = match.from;
 
 		const toOption = (name: string) => {
@@ -558,18 +561,33 @@
 			})
 		];
 
-		// Trigger completion immediately when # is typed after [[ (non-word char, CM6 won't auto-trigger)
-		exts.push(keymap.of([{
-			key: '#',
-			run(view) {
-				const cursor = view.state.selection.main.head;
-				const before = view.state.doc.sliceString(Math.max(0, cursor - 2), cursor);
-				if (before !== '[[') return false;
-				view.dispatch({ changes: { from: cursor, insert: '#' }, selection: { anchor: cursor + 1 } });
-				startCompletion(view);
-				return true;
+		// Trigger completion immediately for non-word chars that CM6 won't auto-trigger on:
+		//   # after [[  → heading completion
+		//   : after [[doc → wikilink completion
+		exts.push(keymap.of([
+			{
+				key: '#',
+				run(view) {
+					const cursor = view.state.selection.main.head;
+					const before = view.state.doc.sliceString(Math.max(0, cursor - 2), cursor);
+					if (before !== '[[') return false;
+					view.dispatch({ changes: { from: cursor, insert: '#' }, selection: { anchor: cursor + 1 } });
+					startCompletion(view);
+					return true;
+				}
+			},
+			{
+				key: ':',
+				run(view) {
+					const cursor = view.state.selection.main.head;
+					const before = view.state.doc.sliceString(Math.max(0, cursor - 5), cursor);
+					if (before !== '[[doc') return false;
+					view.dispatch({ changes: { from: cursor, insert: ':' }, selection: { anchor: cursor + 1 } });
+					startCompletion(view);
+					return true;
+				}
 			}
-		}]));
+		]));
 
 		if (isDarkMode()) exts.push(oneDark);
 		return exts;
@@ -741,7 +759,7 @@
 <div bind:this={container} class="codemirror-host w-full"></div>
 {#if showLookupHint}
 	<div class="mt-6 inline-flex items-center gap-1.5 rounded border border-paper-border px-2.5 py-1.5 dark:border-dark-paper-border">
-		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">@@ lookup unavailable —</span>
+		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">[[p lookup unavailable —</span>
 		<a href="/settings?tab=ai" class="font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">assign an AI model in Settings</a>
 	</div>
 {/if}

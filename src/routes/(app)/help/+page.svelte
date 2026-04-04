@@ -226,12 +226,12 @@
 	<section class="mb-10">
 		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Editor autocomplete (<code class="font-mono text-base">[[</code>)</h2>
 		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[</code> followed by a trigger character to open a specific autocomplete. Each trigger inserts a structured token.
+			Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[</code> followed by a trigger prefix to open a specific autocomplete. All structured tokens share the same <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[</code> dispatcher.
 		</p>
 		<div class="space-y-3">
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[Introduction]]</span></p>
-				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Link to another document in the project by title.</p>
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[doc:Introduction</span> → inserts <span class="text-accent">[[doc:&lt;id&gt;|Introduction]]</span></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[doc:</code> to search for a document in the project by title. Autocomplete opens automatically after the colon.</p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[@darwin1859]]</span></p>
@@ -246,8 +246,8 @@
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Insert a numbered footnote. The definition is added automatically at the bottom.</p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">@@Karl</span> → inserts <span class="text-accent">[[person:Karl Barth]]</span></p>
-				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">@@</code> to search for a person by name using AI. Renders as the name in the preview with a dotted underline. Hovering the cursor over it shows a brief author card (dates, field, origin).</p>
+				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[pKarl</span> → inserts <span class="text-accent">[[person:Karl Barth]]</span></p>
+				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Type <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[p</code> followed by at least one character to search for a person by name using AI. Renders as the name in the preview with a dotted underline. Hovering the cursor over it shows a brief author card (dates, field, origin).</p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-mono text-sm text-ink dark:text-dark-ink"><span class="text-accent">[[!whiteboard</span> → inserts <span class="text-accent">![caption](/api/photos/…)</span></p>
