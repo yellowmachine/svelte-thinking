@@ -378,14 +378,15 @@ export const projectsRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'El owner no puede abandonar su propio proyecto.' });
       }
 
-      // ctx.db para el delete: RLS en projectCollaborator no tiene política de DELETE
-      await ctx.db
-        .delete(projectCollaborator)
-        .where(
-          and(
-            eq(projectCollaborator.projectId, projectId),
-            eq(projectCollaborator.userId, ctx.user.id)
+      await ctx.withRLS((db) =>
+        db
+          .delete(projectCollaborator)
+          .where(
+            and(
+              eq(projectCollaborator.projectId, projectId),
+              eq(projectCollaborator.userId, ctx.user.id)
+            )
           )
-        );
+      );
     })
 });

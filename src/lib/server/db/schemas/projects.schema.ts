@@ -142,6 +142,12 @@ export const projectCollaborator = scholioSchema.table(
 			`
 		}),
 
+		// Colaborador puede abandonar su propio vínculo (leave project)
+		pgPolicy('collaborator_self_delete', {
+			for: 'delete',
+			using: sql`${t.userId} = ${currentUserId}`
+		}),
+
 		// INSERT extra: sin contexto de usuario (flujo accept — la app valida el token de invitación)
 		pgPolicy('collaborator_insert_invite', {
 			for: 'insert',

@@ -488,7 +488,7 @@
 		leavingProject = true;
 		try {
 			await trpc.projects.leave.mutate(data.project.id);
-			await goto('/projects');
+			await goto('/projects', { invalidateAll: true });
 		} catch (e: unknown) {
 			leavingProject = false;
 			showLeaveProject = false;
