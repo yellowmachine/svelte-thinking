@@ -49,5 +49,22 @@ export const actions: Actions = {
 
 		if (result?.url) redirect(302, result.url);
 		return fail(400, { message: 'Error initiating GitHub connection' });
+	},
+
+	unlinkGitHub: async (event) => {
+		if (!event.locals.user) return fail(401, { message: 'Not authenticated' });
+
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			await (auth.api as any).unlinkAccount({
+				body: { providerId: 'github' },
+				headers: event.request.headers
+			});
+		} catch (e: unknown) {
+			const msg = e instanceof Error ? e.message : 'Error unlinking GitHub account';
+			return fail(400, { message: msg });
+		}
+
+		return { success: true };
 	}
 };

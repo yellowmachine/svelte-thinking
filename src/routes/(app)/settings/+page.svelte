@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
+	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 	import QRCode from 'qrcode';
 	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
@@ -9,6 +10,10 @@
 	import { MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
 	let { data }: { data: PageData } = $props();
+
+	// GitHub unlink state
+	let unlinkingGitHub = $state(false);
+	let unlinkGitHubError = $state('');
 
 	// Profile form state
 	let name = $state(data.user.name);
@@ -565,12 +570,44 @@
 					</div>
 
 					{#if data.githubLinked}
-						<span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 font-sans text-xs font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
-							<svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-								<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
-							</svg>
-							Linked
-						</span>
+						<div class="flex flex-col items-end gap-1.5">
+							<div class="flex items-center gap-2">
+								<span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 font-sans text-xs font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+									<svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+									</svg>
+									Linked
+								</span>
+								<form
+									method="post"
+									action="?/unlinkGitHub"
+									use:enhance={() => {
+										unlinkingGitHub = true;
+										unlinkGitHubError = '';
+										return async ({ result, update }) => {
+											unlinkingGitHub = false;
+											if (result.type === 'failure') {
+												unlinkGitHubError = (result.data as { message?: string })?.message ?? 'Error unlinking account';
+											} else {
+												await update();
+												await invalidateAll();
+											}
+										};
+									}}
+								>
+									<button
+										type="submit"
+										disabled={unlinkingGitHub}
+										class="font-sans text-xs text-ink-faint underline underline-offset-2 transition-colors hover:text-red-500 disabled:opacity-50 dark:text-dark-ink-faint dark:hover:text-red-400"
+									>
+										{unlinkingGitHub ? 'Unlinking…' : 'Unlink'}
+									</button>
+								</form>
+							</div>
+							{#if unlinkGitHubError}
+								<p class="font-sans text-xs text-red-500 dark:text-red-400">{unlinkGitHubError}</p>
+							{/if}
+						</div>
 					{:else}
 						<form method="post" action="?/linkGitHub">
 							<button
