@@ -8,13 +8,6 @@
       "when": 1775203062248,
       "tag": "0000_large_screwball",
       "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775290800000,
-      "tag": "0001_datasets_to_postgres",
-      "breakpoints": true
     }
   ]
 }
