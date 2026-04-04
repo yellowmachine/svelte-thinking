@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, goto } from '$app/navigation';
 	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
@@ -60,6 +60,35 @@
 		newDescription = '';
 		createError = '';
 	}
+
+	let importing = $state(false);
+	let importError = $state('');
+	let importFileInput = $state<HTMLInputElement | null>(null);
+
+	async function handleImportFile(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		importing = true;
+		importError = '';
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			const res = await fetch('/api/projects/import', { method: 'POST', body: formData });
+			if (!res.ok) {
+				const text = await res.text();
+				throw new Error(text || `Error ${res.status}`);
+			}
+			const { projectId } = await res.json();
+			await goto(`/projects/${projectId}`, { invalidateAll: true });
+		} catch (e) {
+			importError = e instanceof Error ? e.message : 'Error al importar';
+		} finally {
+			importing = false;
+			input.value = '';
+		}
+	}
 </script>
 
 <div class="mx-auto max-w-5xl px-6 py-8">
@@ -78,13 +107,35 @@
 				{projects.length === 1 ? '1 project' : `${projects.length} projects`}
 			</p>
 		</div>
-		<button
-			onclick={() => (showCreate = true)}
-			class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-		>
-			New project
-		</button>
+		<div class="flex items-center gap-2">
+			<input
+				bind:this={importFileInput}
+				type="file"
+				accept=".zip"
+				class="hidden"
+				onchange={handleImportFile}
+			/>
+			<button
+				onclick={() => importFileInput?.click()}
+				disabled={importing}
+				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm font-medium text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			>
+				{importing ? 'Importing…' : 'Import'}
+			</button>
+			<button
+				onclick={() => (showCreate = true)}
+				class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+			>
+				New project
+			</button>
+		</div>
 	</div>
+
+	{#if importError}
+		<p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-sans text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400">
+			{importError}
+		</p>
+	{/if}
 
 	<!-- Create form -->
 	{#if showCreate}

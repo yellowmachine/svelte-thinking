@@ -770,7 +770,7 @@
 				<a
 					href="/api/projects/{data.project.id}/export"
 					download
-					title="Export project as YAML"
+					title="Export project as ZIP"
 					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					<svg
