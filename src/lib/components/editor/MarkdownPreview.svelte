@@ -17,13 +17,19 @@
 		projectId = null,
 		references = [],
 		citationStyle = 'apa',
-		docMap = new Map()
+		docMap = new Map(),
+		commentAnchors = [] as { id: string; anchorText: string }[],
+		oncommentclick = undefined as ((id: string) => void) | undefined,
+		onselection = undefined as ((sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) => void) | undefined
 	}: {
 		content: string;
 		projectId?: string | null;
 		references?: CiteRef[];
 		citationStyle?: CitationStyle;
 		docMap?: Map<string, { id: string; projectId: string }>;
+		commentAnchors?: { id: string; anchorText: string }[];
+		oncommentclick?: (id: string) => void;
+		onselection?: (sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) => void;
 	} = $props();
 
 	// Build a key → ref map for fast lookup in the citation processor
@@ -180,6 +186,64 @@
 		const { plots } = parsed;
 		Promise.resolve().then(() => renderPlots(plots));
 	});
+
+	// ── Comment anchor highlighting ───────────────────────────────────────────
+
+	function findAndWrapText(root: HTMLElement, text: string, commentId: string): boolean {
+		if (!text) return false;
+		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+		let node: Text | null;
+		while ((node = walker.nextNode() as Text | null)) {
+			const idx = node.nodeValue?.indexOf(text) ?? -1;
+			if (idx === -1) continue;
+			// Skip if already inside a comment-anchor mark
+			if ((node.parentElement as HTMLElement)?.closest?.('.comment-anchor')) continue;
+			const before = node.splitText(idx);
+			const after = before.splitText(text.length);
+			const mark = document.createElement('mark');
+			mark.className = 'comment-anchor';
+			mark.dataset.commentId = commentId;
+			mark.addEventListener('click', () => oncommentclick?.(commentId));
+			before.parentNode!.insertBefore(mark, after);
+			mark.appendChild(before);
+			return true;
+		}
+		return false;
+	}
+
+	function applyCommentMarks(anchors: { id: string; anchorText: string }[]) {
+		if (!container) return;
+		// Remove existing marks
+		container.querySelectorAll('mark.comment-anchor').forEach((el) => {
+			const parent = el.parentNode!;
+			while (el.firstChild) parent.insertBefore(el.firstChild, el);
+			parent.removeChild(el);
+			parent.normalize();
+		});
+		for (const anchor of anchors) {
+			findAndWrapText(container, anchor.anchorText, anchor.id);
+		}
+	}
+
+	$effect(() => {
+		// Re-apply marks whenever parsed HTML or anchors change
+		const _html = parsed.html;
+		const _anchors = commentAnchors;
+		Promise.resolve().then(() => applyCommentMarks(_anchors));
+	});
+
+	// ── Selection handler ─────────────────────────────────────────────────────
+
+	function handleMouseUp() {
+		if (!onselection) return;
+		const sel = window.getSelection();
+		if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
+		if (!container?.contains(sel.anchorNode)) return;
+		const text = sel.toString().trim();
+		const range = sel.getRangeAt(0);
+		const rect = range.getBoundingClientRect();
+		onselection({ text, coords: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right } });
+	}
 </script>
 
 <svelte:head>
@@ -201,7 +265,8 @@
 			↻ Refresh
 		</button>
 	{/if}
-	<div bind:this={container} class="prose prose-serif max-w-none dark:prose-invert">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div bind:this={container} class="prose prose-serif max-w-none dark:prose-invert" onmouseup={handleMouseUp}>
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html parsed.html}
 	</div>
@@ -323,5 +388,18 @@
 
 	.prose :global(.epigraph-source) {
 		font-size: 0.85rem;
+	}
+
+	/* Comment anchors */
+	.prose :global(mark.comment-anchor) {
+		background-color: oklch(0.92 0.08 85 / 0.55);
+		border-bottom: 2px solid oklch(0.75 0.12 75);
+		border-radius: 2px;
+		cursor: pointer;
+		padding: 0 1px;
+	}
+
+	.prose :global(mark.comment-anchor:hover) {
+		background-color: oklch(0.88 0.11 75 / 0.7);
 	}
 </style>

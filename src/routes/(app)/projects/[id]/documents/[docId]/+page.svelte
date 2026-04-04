@@ -111,10 +111,17 @@
 	// View mode: editor | split | preview
 	type ViewMode = 'editor' | 'split' | 'preview';
 	const VIEW_MODE_KEY = `view-mode-${data.document?.id ?? ''}`;
+	const initialCanWrite = (() => {
+		const wuid = data.document?.writerUserId ?? null;
+		const owner = data.currentUserId === data.projectOwnerId;
+		return wuid === null ? owner : data.currentUserId === wuid;
+	})();
 	let viewMode = $state<ViewMode>(
-		(typeof localStorage !== 'undefined'
-			? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
-			: null) ?? 'editor'
+		!initialCanWrite
+			? 'preview'
+			: (typeof localStorage !== 'undefined'
+					? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
+					: null) ?? 'editor'
 	);
 	function setViewMode(m: ViewMode) {
 		viewMode = m;
@@ -821,6 +828,22 @@
 	};
 
 	const openCommentsCount = $derived(inlineComments.filter((c) => c.status === 'open').length);
+
+	const previewCommentAnchors = $derived(
+		inlineComments
+			.filter((c) => c.status === 'open' && c.anchorText)
+			.map((c) => ({ id: c.id, anchorText: c.anchorText! }))
+	);
+
+	function handlePreviewSelection(sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) {
+		const from = content.indexOf(sel.text);
+		const to = from >= 0 ? from + sel.text.length : 0;
+		updateSelection({ text: sel.text, from: Math.max(from, 0), to: Math.max(to, 0), coords: sel.coords });
+	}
+
+	function handlePreviewCommentClick(id: string) {
+		showComments = true;
+	}
 
 	// Export dropdown
 	let showExport = $state(false);
@@ -1894,6 +1917,9 @@
 									references={projectRefs}
 									{citationStyle}
 									docMap={docMap()}
+									commentAnchors={previewCommentAnchors}
+									oncommentclick={handlePreviewCommentClick}
+									onselection={handlePreviewSelection}
 								/>
 							</div>
 						</div>
@@ -1911,6 +1937,9 @@
 								references={projectRefs}
 								{citationStyle}
 								docMap={docMap()}
+								commentAnchors={previewCommentAnchors}
+								oncommentclick={handlePreviewCommentClick}
+								onselection={handlePreviewSelection}
 							/>
 						{:else}
 							<MarkdownEditor
