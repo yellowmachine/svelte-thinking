@@ -117,7 +117,7 @@
 		return wuid === null ? owner : data.currentUserId === wuid;
 	})();
 	let viewMode = $state<ViewMode>(
-		!initialCanWrite
+		(!initialCanWrite || data.forcePublished)
 			? 'preview'
 			: (typeof localStorage !== 'undefined'
 					? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
@@ -1595,8 +1595,8 @@
 					{/if}
 				</button>
 
-				<!-- View mode selector (hidden for non-writers) -->
-				{#if canWrite}
+				<!-- View mode selector (hidden for non-writers and published view) -->
+				{#if canWrite && !data.forcePublished}
 				<div
 					class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
 					role="group"
