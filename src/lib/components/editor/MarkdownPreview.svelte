@@ -208,6 +208,15 @@
 </div>
 
 <style>
+	.prose :global(img) {
+		max-width: 100%;
+		max-height: 600px;
+		height: auto;
+		border-radius: 0.375rem;
+		display: block;
+		margin: 1rem auto;
+	}
+
 	.prose :global([data-vega-id]) {
 		margin: 1.5rem 0;
 	}
