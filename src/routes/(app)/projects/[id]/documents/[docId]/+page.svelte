@@ -1324,13 +1324,11 @@
 						Read-only
 					</span>
 				{/if}
-			</div>
 
-			<!-- Row 2: toolbar -->
-			<div class="flex items-center gap-2 overflow-x-auto px-4 py-2">
+				<!-- Save status (right-aligned) -->
 				{#if saveStatus !== 'idle'}
 					<span
-						class="font-sans text-xs {saveStatus === 'error'
+						class="ml-auto shrink-0 font-sans text-xs {saveStatus === 'error'
 							? 'text-red-500'
 							: saveStatus === 'saved'
 								? 'text-green-600'
@@ -1339,6 +1337,10 @@
 						{saveStatusLabel[saveStatus]}
 					</span>
 				{/if}
+			</div>
+
+			<!-- Row 2: toolbar -->
+			<div class="flex items-center gap-2 overflow-x-auto px-4 py-2">
 
 				<!-- Delegate / Reclaim writer -->
 				{#if isOwner}
@@ -1541,17 +1543,6 @@
 				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 					AI not configured · contact your org owner
 				</span>
-				{/if}
-
-				<!-- Citar button (editor + split) -->
-				{#if viewMode !== 'preview'}
-					<button
-						onclick={openCitePicker}
-						title="Insert bibliographic citation"
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						[[@cite]]
-					</button>
 				{/if}
 
 				<!-- Citation style selector (all modes) -->
