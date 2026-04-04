@@ -1669,14 +1669,12 @@
 				</div>
 				{/if}
 
-				<button
-					onclick={toggleHistory}
-					class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showHistory
-						? 'border-accent bg-accent text-white'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+				<a
+					href="/projects/{data.document.projectId}/documents/{data.document.id}/history"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					History
-				</button>
+				</a>
 
 				<a
 					href="/help"
