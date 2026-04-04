@@ -297,7 +297,7 @@
 						aria-label="Ver {photo.filename}"
 					>
 						<img
-							src={photo.presignedUrl}
+							src={`/api/photos/${photo.id}`}
 							alt={photo.description ?? photo.filename}
 							class="aspect-square w-full object-cover transition-transform duration-200 group-hover:scale-105"
 						/>
@@ -354,7 +354,7 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="relative max-h-full max-w-4xl" onclick={(e) => e.stopPropagation()}>
 			<img
-				src={lightboxPhoto.presignedUrl}
+				src={`/api/photos/${lightboxPhoto.id}`}
 				alt={lightboxPhoto.description ?? lightboxPhoto.filename}
 				class="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
 			/>
