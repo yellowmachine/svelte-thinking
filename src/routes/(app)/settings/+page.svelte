@@ -777,6 +777,12 @@
 		<!-- ── AI TAB ── -->
 	{:else if activeTab === 'ai'}
 		<div class="flex flex-col gap-6">
+			<div class="flex justify-end">
+				<a
+					href="/usage"
+					class="font-sans text-sm text-accent underline decoration-dotted hover:decoration-solid"
+				>View AI usage dashboard →</a>
+			</div>
 			{#if aiError}
 				<div
 					class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"

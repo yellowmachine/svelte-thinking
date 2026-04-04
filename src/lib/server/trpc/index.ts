@@ -18,6 +18,7 @@ import { discoverRouter } from './routers/discover';
 import { jupyterRouter } from './routers/jupyter';
 import { orgsRouter } from './routers/orgs';
 import { s3ConfigRouter } from './routers/s3Config';
+import { usageRouter } from './routers/usage';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -38,7 +39,8 @@ export const appRouter = router({
 	discover: discoverRouter,
 	jupyter: jupyterRouter,
 	orgs: orgsRouter,
-	s3Config: s3ConfigRouter
+	s3Config: s3ConfigRouter,
+	usage: usageRouter
 });
 
 export type AppRouter = typeof appRouter;
