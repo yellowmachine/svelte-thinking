@@ -952,6 +952,7 @@
 											class="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 											onclick={(e) => e.stopPropagation()}
 										>
+											{#if canEdit}
 											<a
 												href="/projects/{data.project.id}/documents/{doc.id}?published"
 												onclick={() => (docMenuOpenId = null)}
@@ -959,6 +960,7 @@
 											>
 												Ver publicado
 											</a>
+											{/if}
 											{#if data.isOwner && data.collaborators.length > 0}
 												<button
 													onclick={() => { delegateDocTarget = { id: doc.id, title: doc.title }; docMenuOpenId = null; }}
