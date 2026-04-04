@@ -17,6 +17,31 @@ export const load: PageServerLoad = async (event) => {
 			if (!docs[0]) return null;
 			const doc = docs[0];
 
+			// Determine if the current user can write this document
+			const currentUserId = event.locals.user!.id;
+			const projectRows = await db
+				.select({ ownerId: project.ownerId })
+				.from(project)
+				.where(eq(project.id, doc.projectId))
+				.limit(1);
+			const ownerId = projectRows[0]?.ownerId ?? '';
+			const canWrite = doc.writerUserId === null
+				? currentUserId === ownerId
+				: currentUserId === doc.writerUserId;
+
+			// Non-writers always see the last committed version
+			if (!canWrite) {
+				if (!doc.currentVersionId) {
+					return { ...doc, content: null, hasDraft: false };
+				}
+				const versions = await db
+					.select()
+					.from(documentVersion)
+					.where(eq(documentVersion.id, doc.currentVersionId))
+					.limit(1);
+				return { ...doc, content: versions[0]?.content ?? null, hasDraft: false };
+			}
+
 			if (doc.draftContent !== null) {
 				return { ...doc, content: doc.draftContent, hasDraft: true };
 			}
@@ -166,6 +191,7 @@ export const load: PageServerLoad = async (event) => {
 		currentUserId: event.locals.user!.id,
 		projectDocs,
 		backlinks,
-		externalDocs
+		externalDocs,
+		unpublished: docResult.content === null
 	};
 };
