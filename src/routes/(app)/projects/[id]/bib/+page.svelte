@@ -68,6 +68,45 @@
 		}
 	}
 
+	// ── PDF attachment ───────────────────────────────────────────────────────
+
+	let uploadingPdfId = $state<string | null>(null);
+	let deletingPdfId = $state<string | null>(null);
+
+	async function uploadPdf(ref: Ref, file: File) {
+		uploadingPdfId = ref.id;
+		try {
+			const form = new FormData();
+			form.append('file', file);
+			const res = await fetch(`/api/projects/${data.project.id}/references/${ref.id}/pdf`, {
+				method: 'POST',
+				body: form
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				alert(body.message ?? 'Error uploading PDF');
+				return;
+			}
+			references = references.map((r) =>
+				r.id === ref.id ? { ...r, pdfKey: 'set', pdfUrl: `/api/references/${ref.id}/pdf` } : r
+			);
+		} finally {
+			uploadingPdfId = null;
+		}
+	}
+
+	async function deletePdf(ref: Ref) {
+		deletingPdfId = ref.id;
+		try {
+			await fetch(`/api/projects/${data.project.id}/references/${ref.id}/pdf`, { method: 'DELETE' });
+			references = references.map((r) =>
+				r.id === ref.id ? { ...r, pdfKey: null, pdfUrl: null } : r
+			);
+		} finally {
+			deletingPdfId = null;
+		}
+	}
+
 	// ── Semantic Scholar search ───────────────────────────────────────────────
 
 	type SemanticResult = {
@@ -847,6 +886,64 @@
 										{/if}
 									{/if}
 								</button>
+								<!-- PDF attachment -->
+								{#if ref.pdfKey}
+									<a
+										href="/api/references/{ref.id}/pdf"
+										target="_blank"
+										rel="noopener noreferrer"
+										class="rounded-md p-1.5 text-accent transition-colors hover:bg-accent/10"
+										title="Open PDF"
+									>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+											<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+											<polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+											<path d="M9 13h1.5a1 1 0 010 2H9v-4h1.5a1 1 0 010 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+											<path d="M14 13v4M14 13h1a1 1 0 011 1v1a1 1 0 01-1 1h-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+											<path d="M17 13h2M18 13v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+										</svg>
+									</a>
+									<button
+										onclick={() => deletePdf(ref)}
+										disabled={deletingPdfId === ref.id}
+										class="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:text-dark-ink-faint dark:hover:bg-red-950/30 dark:hover:text-red-400"
+										title="Remove PDF"
+									>
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+											<line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+											<line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+										</svg>
+									</button>
+								{:else}
+									<label
+										class="cursor-pointer rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink {uploadingPdfId === ref.id ? 'opacity-40 pointer-events-none' : ''}"
+										title="Attach PDF"
+									>
+										<input
+											type="file"
+											accept=".pdf"
+											class="hidden"
+											onchange={(e) => {
+												const f = (e.target as HTMLInputElement).files?.[0];
+												if (f) uploadPdf(ref, f);
+												(e.target as HTMLInputElement).value = '';
+											}}
+										/>
+										{#if uploadingPdfId === ref.id}
+											<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="animate-spin">
+												<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="12"/>
+											</svg>
+										{:else}
+											<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+												<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+												<polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+												<line x1="12" y1="18" x2="12" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+												<polyline points="9 15 12 12 15 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+											</svg>
+										{/if}
+									</label>
+								{/if}
+
 								<button
 									onclick={() => openEdit(ref)}
 									class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"

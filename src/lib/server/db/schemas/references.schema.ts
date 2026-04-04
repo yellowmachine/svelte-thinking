@@ -56,6 +56,10 @@ export const projectReference = scholioSchema.table(
 		readingNotesDocId: text('reading_notes_doc_id')
 			.references(() => document.id, { onDelete: 'set null' }),
 
+		// PDF attachment stored in S3 (optional)
+		pdfKey: text('pdf_key'),
+		pdfUrl: text('pdf_url'),
+
 		// Article / journal fields
 		journal: text('journal'),
 		volume: text('volume'),

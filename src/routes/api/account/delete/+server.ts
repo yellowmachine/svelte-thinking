@@ -18,6 +18,7 @@ import { db } from '$lib/server/db';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
+import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { user as authUser, session as authSession } from '$lib/server/db/auth.schema';
 import { deleteFile } from '$lib/server/storage';
 
@@ -36,14 +37,23 @@ export const DELETE: RequestHandler = async (event) => {
 	const projectIds = ownedProjects.map((p) => p.id);
 
 	if (projectIds.length > 0) {
-		const photos = await db
-			.select({ key: projectPhoto.key })
-			.from(projectPhoto)
-			.where(inArray(projectPhoto.projectId, projectIds));
+		const [photos, refPdfs] = await Promise.all([
+			db
+				.select({ key: projectPhoto.key })
+				.from(projectPhoto)
+				.where(inArray(projectPhoto.projectId, projectIds)),
+			db
+				.select({ key: projectReference.pdfKey })
+				.from(projectReference)
+				.where(inArray(projectReference.projectId, projectIds))
+		]);
 
 		// ── 2. Delete MinIO files (best-effort, don't block on failure) ───────
 		// Datasets are stored in Postgres (no S3 files to delete)
-		await Promise.allSettled(photos.map((f) => deleteFile(f.key)));
+		await Promise.allSettled([
+			...photos.map((f) => deleteFile(f.key)),
+			...refPdfs.filter((r) => r.key).map((r) => deleteFile(r.key!))
+		]);
 
 		// ── 3. Delete owned projects (cascade handles everything under them) ──
 		await db.delete(project).where(inArray(project.id, projectIds));

@@ -228,11 +228,20 @@ export const referencesRouter = router({
 			db
 				.delete(projectReference)
 				.where(eq(projectReference.id, id))
-				.returning({ id: projectReference.id })
-		)) as { id: string }[];
+				.returning({ id: projectReference.id, pdfKey: projectReference.pdfKey, projectId: projectReference.projectId })
+		)) as { id: string; pdfKey: string | null; projectId: string }[];
 
 		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-		return rows[0];
+
+		// Best-effort S3 cleanup for attached PDF
+		if (rows[0].pdfKey) {
+			const { resolveProjectS3Config } = await import('$lib/server/s3Storage');
+			const { deleteFileWithConfig } = await import('$lib/server/storage');
+			const s3 = await resolveProjectS3Config(rows[0].projectId, ctx.user.id, ctx.withRLS).catch(() => null);
+			if (s3) await deleteFileWithConfig(s3, rows[0].pdfKey).catch(() => {});
+		}
+
+		return { id: rows[0].id };
 	}),
 
 	// ── Reading notes document ───────────────────────────────────────────────
