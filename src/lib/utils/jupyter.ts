@@ -48,13 +48,12 @@ function parseOutputs(rawOutputs: unknown[]): NotebookOutput[] {
 			};
 		}
 
-		// display_data or execute_result
+		// display_data or execute_result — keep only text/plain, drop image/* base64 blobs
 		const data = out['data'] as Record<string, unknown> | undefined;
 		const plainText = data?.['text/plain'];
 		return {
 			type: outputType as 'display_data' | 'execute_result',
-			text: plainText ? joinSource(plainText as string | string[]) : undefined,
-			data
+			text: plainText ? joinSource(plainText as string | string[]) : undefined
 		};
 	});
 }
