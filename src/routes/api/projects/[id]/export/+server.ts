@@ -8,6 +8,7 @@ import { document, documentVersion } from '$lib/server/db/schemas/documents.sche
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
+import { projectDataset } from '$lib/server/db/schemas/datasets.schema';
 import { user } from '$lib/server/db/auth.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
@@ -17,7 +18,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 export const GET: RequestHandler = async (event) => {
 	const projectId = event.params.id;
 
-	const [proj, documents, collaborators, references, photos, allComments] = await Promise.all([
+	const [proj, documents, collaborators, references, photos, datasets, allComments] = await Promise.all([
 		event.locals.withRLS((db) =>
 			db.select().from(project).where(eq(project.id, projectId)).limit(1)
 		),
@@ -43,6 +44,12 @@ export const GET: RequestHandler = async (event) => {
 		),
 		event.locals.withRLS((db) =>
 			db.select().from(projectPhoto).where(eq(projectPhoto.projectId, projectId))
+		),
+		event.locals.withRLS((db) =>
+			db
+				.select({ filename: projectDataset.filename, mimeType: projectDataset.mimeType, content: projectDataset.content })
+				.from(projectDataset)
+				.where(eq(projectDataset.projectId, projectId))
 		),
 		event.locals.withRLS((db) =>
 			db
@@ -226,6 +233,12 @@ export const GET: RequestHandler = async (event) => {
 				}
 			})
 		);
+	}
+
+	for (const ds of datasets) {
+		// Sanitize filename to avoid path traversal
+		const safe = ds.filename.replace(/[^\w.\-]/g, '_');
+		zipFiles[`datasets/${safe}`] = new TextEncoder().encode(ds.content);
 	}
 
 	const zipped = zipSync(zipFiles, { level: 1 }); // level 1: fast, images are already compressed

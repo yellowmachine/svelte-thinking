@@ -6,8 +6,17 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { projectDataset } from '$lib/server/db/schemas/datasets.schema';
 
 const MAX_SIZE = 200 * 1024 * 1024; // 200 MB
+
+function guessMime(filename: string): string {
+	const ext = filename.split('.').pop()?.toLowerCase();
+	if (ext === 'csv') return 'text/csv';
+	if (ext === 'tsv') return 'text/tab-separated-values';
+	if (ext === 'json') return 'application/json';
+	return 'text/plain';
+}
 
 const VALID_DOC_TYPES = new Set([
 	'paper', 'notes', 'outline', 'bibliography',
@@ -67,6 +76,15 @@ export const POST: RequestHandler = async (event) => {
 
 	const rawDocs = (data.documents as unknown[]) ?? [];
 	const rawRefs = (data.references as unknown[]) ?? [];
+
+	// Collect dataset files from the ZIP (datasets/<filename>)
+	const datasetEntries = Object.entries(zip)
+		.filter(([path]) => path.startsWith('datasets/') && path !== 'datasets/')
+		.map(([path, bytes]) => ({
+			filename: path.slice('datasets/'.length),
+			content: new TextDecoder().decode(bytes)
+		}))
+		.filter((d) => d.filename && d.content);
 
 	// Appends italic attribution to a comment's content
 	function withAttribution(content: string, raw: Record<string, unknown>): string {
@@ -217,6 +235,21 @@ export const POST: RequestHandler = async (event) => {
 					});
 				}
 			}
+		}
+
+		// 5. Datasets
+		if (datasetEntries.length > 0) {
+			await tx.insert(projectDataset).values(
+				datasetEntries.map((ds) => ({
+					id: crypto.randomUUID(),
+					projectId,
+					uploadedBy: user.id,
+					filename: ds.filename,
+					mimeType: guessMime(ds.filename),
+					size: new TextEncoder().encode(ds.content).byteLength,
+					content: ds.content
+				}))
+			);
 		}
 
 		return projectId;
