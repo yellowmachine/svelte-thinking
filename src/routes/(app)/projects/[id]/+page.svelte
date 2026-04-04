@@ -5,7 +5,6 @@
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
 	import RequirementsProgress from '$lib/components/projects/RequirementsProgress.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
-	import JupyterImportModal from '$lib/components/projects/JupyterImportModal.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 	import { offlineDb, type PendingCreate } from '$lib/offline.db';
@@ -367,63 +366,6 @@
 		await invalidateAll();
 	}
 
-	// Notebooks
-	type Notebook = {
-		id: string;
-		filename: string;
-		size: number;
-		languageName: string | null;
-		createdAt: Date;
-	};
-	let notebooks = $state<Notebook[]>([]);
-	let uploadingNotebook = $state(false);
-	let notebookError = $state('');
-	let notebookDropdownOpen = $state(false);
-
-	async function loadNotebooks() {
-		try {
-			const res = await fetch(`/api/projects/${data.project.id}/notebooks`);
-			if (res.ok) notebooks = await res.json();
-		} catch {
-			/* non-critical */
-		}
-	}
-
-	async function uploadNotebook(e: Event) {
-		const input = e.target as HTMLInputElement;
-		const file = input.files?.[0];
-		if (!file) return;
-
-		notebookDropdownOpen = false;
-		uploadingNotebook = true;
-		notebookError = '';
-		const form = new FormData();
-		form.append('file', file);
-
-		try {
-			const res = await fetch(`/api/projects/${data.project.id}/notebooks`, {
-				method: 'POST',
-				body: form
-			});
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({ message: 'Upload error' }));
-				throw new Error(err.message);
-			}
-			await loadNotebooks();
-		} catch (err) {
-			notebookError = err instanceof Error ? err.message : 'Error importing notebook';
-		} finally {
-			uploadingNotebook = false;
-			input.value = '';
-		}
-	}
-
-	async function deleteNotebook(id: string) {
-		await fetch(`/api/projects/${data.project.id}/notebooks/${id}`, { method: 'DELETE' });
-		notebooks = notebooks.filter((n) => n.id !== id);
-	}
-
-	let showJupyterModal = $state(false);
 
 	// ── Doc kebab menu ───────────────────────────────────────────────────────
 	let docMenuOpenId = $state<string | null>(null);
@@ -519,10 +461,6 @@
 		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
 		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	}
-
-	$effect(() => {
-		loadNotebooks();
-	});
 
 	// ── Context links ────────────────────────────────────────────────────────
 
@@ -1192,111 +1130,6 @@
 			{/if}
 		</div>
 
-		<!-- Notebooks -->
-		<div class="mt-8 hidden sm:block lg:mt-0">
-			<div class="mb-3 flex items-center justify-between">
-				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Notebooks</h2>
-				<div class="relative">
-					<button
-						onclick={() => (notebookDropdownOpen = !notebookDropdownOpen)}
-						disabled={uploadingNotebook}
-						class="flex cursor-pointer items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:pointer-events-none disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						{uploadingNotebook ? 'Importing…' : '+ Import notebook'}
-						<svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"
-							><path
-								fill-rule="evenodd"
-								d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-								clip-rule="evenodd"
-							/></svg
-						>
-					</button>
-
-					{#if notebookDropdownOpen}
-						<div
-							class="absolute top-full right-0 z-10 mt-1 w-52 rounded-lg border border-paper-border bg-paper shadow-md dark:border-dark-paper-border dark:bg-dark-paper"
-							onmouseleave={() => (notebookDropdownOpen = false)}
-						>
-							<label
-								class="flex cursor-pointer items-center gap-2.5 rounded-t-lg px-4 py-2.5 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
-							>
-								<svg
-									class="h-4 w-4 shrink-0 text-ink-muted dark:text-dark-ink-muted"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-									><path
-										d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"
-									/><path
-										d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
-									/></svg
-								>
-								From local file
-								<input type="file" class="hidden" accept=".ipynb" onchange={uploadNotebook} />
-							</label>
-							<button
-								onclick={() => {
-									notebookDropdownOpen = false;
-									showJupyterModal = true;
-								}}
-								class="flex w-full items-center gap-2.5 rounded-b-lg px-4 py-2.5 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
-							>
-								<svg
-									class="h-4 w-4 shrink-0 text-ink-muted dark:text-dark-ink-muted"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-									><path
-										fill-rule="evenodd"
-										d="M13.887 3.182c.396.037.79.08 1.183.128C16.194 3.45 17 4.414 17 5.517V16.75A2.25 2.25 0 0 1 14.75 19h-9.5A2.25 2.25 0 0 1 3 16.75V5.517c0-1.103.806-2.068 1.93-2.207.393-.048.787-.09 1.183-.128A3.001 3.001 0 0 1 9 1h2c1.373 0 2.531.923 2.887 2.182ZM7.5 4A1.5 1.5 0 0 1 9 2.5h2A1.5 1.5 0 0 1 12.5 4v.5h-5V4Z"
-										clip-rule="evenodd"
-									/></svg
-								>
-								From remote Jupyter
-							</button>
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			{#if notebookError}
-				<p class="mb-2 font-sans text-sm text-red-600 dark:text-red-400">{notebookError}</p>
-			{/if}
-
-			{#if notebooks.length === 0}
-				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					No notebooks. Import a <code
-						class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.ipynb</code
-					> file to use it as context for the agent.
-				</p>
-			{:else}
-				<div
-					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					{#each notebooks as notebook (notebook.id)}
-						<div
-							class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-						>
-							<div class="min-w-0">
-								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
-									{notebook.filename}
-								</p>
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									{formatSize(notebook.size)}{notebook.languageName
-										? ` · ${notebook.languageName}`
-										: ''}
-								</p>
-							</div>
-							<button
-								onclick={() => deleteNotebook(notebook.id)}
-								class="ml-3 shrink-0 font-sans text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint dark:hover:text-red-400"
-							>
-								Delete
-							</button>
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</div>
-
 		<!-- Sidebar -->
 		<div class="hidden flex-col gap-6 sm:flex">
 			<!-- Project navigation -->
@@ -1391,6 +1224,15 @@
 							>
 							Photos
 						</a>
+					<a
+						href="/projects/{data.project.id}/notebooks"
+						class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					>
+						<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path fill-rule="evenodd" d="M13.887 3.182c.396.037.79.08 1.183.128C16.194 3.45 17 4.414 17 5.517V16.75A2.25 2.25 0 0 1 14.75 19h-9.5A2.25 2.25 0 0 1 3 16.75V5.517c0-1.103.806-2.068 1.93-2.207.393-.048.787-.09 1.183-.128A3.001 3.001 0 0 1 9 1h2c1.373 0 2.531.923 2.887 2.182ZM7.5 4A1.5 1.5 0 0 1 9 2.5h2A1.5 1.5 0 0 1 12.5 4v.5h-5V4Z" clip-rule="evenodd" />
+						</svg>
+						Notebooks
+					</a>
 					{:else if canEdit && s3CtaType === 'personal'}
 						<a
 							href="/settings?tab=storage"
@@ -1821,15 +1663,6 @@
 	</div>
 {/if}
 
-{#if showJupyterModal}
-	<JupyterImportModal
-		projectId={data.project.id}
-		onimported={loadNotebooks}
-		onclose={() => {
-			showJupyterModal = false;
-		}}
-	/>
-{/if}
 
 {#if showContextPicker}
 	<!-- Context doc picker modal -->
