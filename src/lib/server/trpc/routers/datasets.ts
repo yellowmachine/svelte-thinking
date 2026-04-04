@@ -8,16 +8,26 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 export const datasetsRouter = router({
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
 		return ctx.withRLS((db) =>
-			db.select().from(projectDataset).where(eq(projectDataset.projectId, projectId))
+			db
+				.select({
+					id: projectDataset.id,
+					projectId: projectDataset.projectId,
+					uploadedBy: projectDataset.uploadedBy,
+					filename: projectDataset.filename,
+					mimeType: projectDataset.mimeType,
+					size: projectDataset.size,
+					createdAt: projectDataset.createdAt
+				})
+				.from(projectDataset)
+				.where(eq(projectDataset.projectId, projectId))
 		);
 	}),
 
-	// Resolves a "$ref": "dataset:filename.csv" to its public URL.
+	// Resolves a "$ref": "dataset:filename.csv" to its proxy URL.
 	// Called from MarkdownPreview before passing the spec to vega-embed.
 	resolveRef: protectedProcedure
 		.input(z.object({ projectId: z.string(), filename: z.string() }))
 		.query(async ({ ctx, input }) => {
-			// Verify access to project (RLS enforced)
 			const [proj] = await ctx.withRLS((db) =>
 				db
 					.select({ id: project.id })
@@ -29,7 +39,7 @@ export const datasetsRouter = router({
 
 			const [dataset] = await ctx.withRLS((db) =>
 				db
-					.select({ url: projectDataset.url, filename: projectDataset.filename })
+					.select({ id: projectDataset.id, filename: projectDataset.filename })
 					.from(projectDataset)
 					.where(
 						and(
@@ -47,15 +57,13 @@ export const datasetsRouter = router({
 				});
 			}
 
-			return { url: dataset.url };
+			return { url: `/api/projects/${input.projectId}/datasets/${dataset.id}` };
 		}),
 
 	delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: datasetId }) => {
-		const { deleteFile } = await import('$lib/server/storage');
-
 		const [dataset] = await ctx.withRLS((db) =>
 			db
-				.select()
+				.select({ id: projectDataset.id })
 				.from(projectDataset)
 				.where(
 					and(eq(projectDataset.id, datasetId), eq(projectDataset.uploadedBy, ctx.user.id))
@@ -64,7 +72,6 @@ export const datasetsRouter = router({
 		);
 		if (!dataset) throw new TRPCError({ code: 'NOT_FOUND' });
 
-		await deleteFile(dataset.key);
 		await ctx.withRLS((db) =>
 			db.delete(projectDataset).where(eq(projectDataset.id, datasetId))
 		);

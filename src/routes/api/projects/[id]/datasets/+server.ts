@@ -1,20 +1,11 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { uploadFileWithConfig, deleteFileWithConfig } from '$lib/server/storage';
-import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { projectDataset } from '$lib/server/db/schemas/datasets.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { eq, and } from 'drizzle-orm';
 
-const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
-const ALLOWED_TYPES = [
-	'text/csv',
-	'text/tab-separated-values',
-	'application/json',
-	'application/vnd.ms-excel',
-	'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-];
-const ALLOWED_EXTENSIONS = ['csv', 'tsv', 'json', 'xls', 'xlsx'];
+const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_EXTENSIONS = ['csv', 'tsv', 'json'];
 
 function hasAllowedExtension(filename: string): boolean {
 	const ext = filename.split('.').pop()?.toLowerCase() ?? '';
@@ -32,7 +23,18 @@ export const GET: RequestHandler = async (event) => {
 	if (!proj) error(404, 'Proyecto no encontrado');
 
 	const datasets = await event.locals.withRLS((rdb) =>
-		rdb.select().from(projectDataset).where(eq(projectDataset.projectId, projectId))
+		rdb
+			.select({
+				id: projectDataset.id,
+				projectId: projectDataset.projectId,
+				uploadedBy: projectDataset.uploadedBy,
+				filename: projectDataset.filename,
+				mimeType: projectDataset.mimeType,
+				size: projectDataset.size,
+				createdAt: projectDataset.createdAt
+			})
+			.from(projectDataset)
+			.where(eq(projectDataset.projectId, projectId))
 	);
 
 	return json(datasets);
@@ -52,21 +54,13 @@ export const POST: RequestHandler = async (event) => {
 	const file = formData.get('file');
 	if (!(file instanceof File)) error(400, 'No se recibió ningún archivo');
 
-	if (!ALLOWED_TYPES.includes(file.type) && !hasAllowedExtension(file.name)) {
-		error(400, 'Tipo no permitido. Se aceptan CSV, TSV, JSON, XLS, XLSX.');
+	if (!hasAllowedExtension(file.name)) {
+		error(400, 'Tipo no permitido. Se aceptan CSV, TSV, JSON.');
 	}
 
-	if (file.size > MAX_SIZE) error(400, 'Archivo demasiado grande. Máximo 100 MB.');
+	if (file.size > MAX_SIZE) error(400, 'Archivo demasiado grande. Máximo 5 MB.');
 
-	// Keep original filename in the key so $ref by name is human-readable
-	const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-	const key = `projects/${projectId}/datasets/${crypto.randomUUID()}/${safeName}`;
-
-	const s3 = await resolveProjectS3Config(projectId, user.id, event.locals.withRLS);
-	if (!s3) error(422, 'Almacenamiento S3 no configurado. Configúralo en Ajustes → Almacenamiento.');
-
-	const buffer = Buffer.from(await file.arrayBuffer());
-	const url = await uploadFileWithConfig(s3, key, buffer, file.type || 'application/octet-stream');
+	const content = await file.text();
 
 	const [dataset] = await event.locals.withRLS((rdb) =>
 		rdb
@@ -75,16 +69,26 @@ export const POST: RequestHandler = async (event) => {
 				id: crypto.randomUUID(),
 				projectId,
 				uploadedBy: user.id,
-				key,
-				url,
 				filename: file.name,
-				mimeType: file.type || 'application/octet-stream',
-				size: file.size
+				mimeType: file.type || 'text/plain',
+				size: file.size,
+				content
 			})
 			.returning()
 	);
 
-	return json(dataset, { status: 201 });
+	return json(
+		{
+			id: dataset.id,
+			projectId: dataset.projectId,
+			uploadedBy: dataset.uploadedBy,
+			filename: dataset.filename,
+			mimeType: dataset.mimeType,
+			size: dataset.size,
+			createdAt: dataset.createdAt
+		},
+		{ status: 201 }
+	);
 };
 
 export const DELETE: RequestHandler = async (event) => {
@@ -98,7 +102,7 @@ export const DELETE: RequestHandler = async (event) => {
 
 	const [dataset] = await event.locals.withRLS((rdb) =>
 		rdb
-			.select()
+			.select({ id: projectDataset.id })
 			.from(projectDataset)
 			.where(
 				and(
@@ -111,9 +115,6 @@ export const DELETE: RequestHandler = async (event) => {
 	);
 	if (!dataset) error(404, 'Dataset no encontrado');
 
-	const s3 = await resolveProjectS3Config(projectId, user.id, event.locals.withRLS);
-	if (!s3) error(422, 'Almacenamiento S3 no configurado.');
-	await deleteFileWithConfig(s3, dataset.key);
 	await event.locals.withRLS((rdb) =>
 		rdb.delete(projectDataset).where(eq(projectDataset.id, datasetId))
 	);
