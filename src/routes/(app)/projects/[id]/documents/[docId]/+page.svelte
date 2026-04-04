@@ -1693,7 +1693,6 @@
 				<div
 					class="flex items-center gap-1 rounded-md border border-paper-border px-2 py-1.5 dark:border-dark-paper-border"
 				>
-					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Spell:</span>
 					<select
 						value={spellLanguage}
 						onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
