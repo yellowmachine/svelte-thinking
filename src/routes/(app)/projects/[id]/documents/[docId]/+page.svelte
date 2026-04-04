@@ -1296,9 +1296,10 @@
 	<div class="hidden sm:block">
 		<!-- Sticky toolbar -->
 		<div
-			class="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-paper-border bg-paper/95 px-6 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+			class="sticky top-0 z-10 flex flex-col border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 		>
-			<div class="flex min-w-0 items-center gap-2 font-sans text-sm">
+			<!-- Row 1: breadcrumb -->
+			<div class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm dark:border-dark-paper-border/50">
 				<button
 					onclick={() => (window.location.href = `/projects/${data.document.projectId}`)}
 					class="shrink-0 text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
@@ -1325,7 +1326,8 @@
 				{/if}
 			</div>
 
-			<div class="flex shrink-0 items-center gap-3">
+			<!-- Row 2: toolbar -->
+			<div class="flex items-center gap-2 overflow-x-auto px-4 py-2">
 				{#if saveStatus !== 'idle'}
 					<span
 						class="font-sans text-xs {saveStatus === 'error'
