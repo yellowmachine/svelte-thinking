@@ -4,6 +4,7 @@ import { unzipSync } from 'fflate';
 import { parse } from 'yaml';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
+import { comment } from '$lib/server/db/schemas/comments.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 
 const MAX_SIZE = 200 * 1024 * 1024; // 200 MB
@@ -66,6 +67,15 @@ export const POST: RequestHandler = async (event) => {
 
 	const rawDocs = (data.documents as unknown[]) ?? [];
 	const rawRefs = (data.references as unknown[]) ?? [];
+
+	// Appends italic attribution to a comment's content
+	function withAttribution(content: string, raw: Record<string, unknown>): string {
+		const name = typeof raw.author_name === 'string' ? raw.author_name : null;
+		const email = typeof raw.author_email === 'string' ? raw.author_email : null;
+		const orcid = typeof raw.author_orcid === 'string' ? raw.author_orcid : null;
+		const id = orcid ? `${name ?? email} · ORCID ${orcid}` : (name ?? email);
+		return id ? `${content}\n\n*— ${id}*` : content;
+	}
 
 	// ── Build in a single transaction ───────────────────────────────────────────
 	const projectId = crypto.randomUUID();
@@ -165,6 +175,47 @@ export const POST: RequestHandler = async (event) => {
 
 			if (versionRows.length > 0) {
 				await tx.insert(documentVersion).values(versionRows);
+			}
+
+			// 4. Comments (top-level first, then replies)
+			const rawComments = Array.isArray(r.comments)
+				? r.comments as Record<string, unknown>[]
+				: [];
+
+			for (const rc of rawComments) {
+				if (!rc || typeof rc !== 'object') continue;
+				const commentId = crypto.randomUUID();
+				await tx.insert(comment).values({
+					id: commentId,
+					documentId: docId,
+					authorId: user.id,
+					type: rc.type === 'inline' ? 'inline' : 'general',
+					content: withAttribution(String(rc.content ?? ''), rc),
+					status: rc.status === 'resolved' ? 'resolved' : 'open',
+					anchorText: typeof rc.anchor_text === 'string' ? rc.anchor_text : null,
+					lineStart: typeof rc.line_start === 'number' ? rc.line_start : null,
+					lineEnd: typeof rc.line_end === 'number' ? rc.line_end : null,
+					parentCommentId: null
+				});
+
+				const rawReplies = Array.isArray(rc.replies)
+					? rc.replies as Record<string, unknown>[]
+					: [];
+				for (const rr of rawReplies) {
+					if (!rr || typeof rr !== 'object') continue;
+					await tx.insert(comment).values({
+						id: crypto.randomUUID(),
+						documentId: docId,
+						authorId: user.id,
+						type: rr.type === 'inline' ? 'inline' : 'general',
+						content: withAttribution(String(rr.content ?? ''), rr),
+						status: rr.status === 'resolved' ? 'resolved' : 'open',
+						anchorText: null,
+						lineStart: null,
+						lineEnd: null,
+						parentCommentId: commentId
+					});
+				}
 			}
 		}
 

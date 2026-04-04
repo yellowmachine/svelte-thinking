@@ -5,6 +5,7 @@ import { zipSync } from 'fflate';
 import { eq, asc } from 'drizzle-orm';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
+import { comment } from '$lib/server/db/schemas/comments.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { user } from '$lib/server/db/auth.schema';
@@ -16,7 +17,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 export const GET: RequestHandler = async (event) => {
 	const projectId = event.params.id;
 
-	const [proj, documents, collaborators, references, photos] = await Promise.all([
+	const [proj, documents, collaborators, references, photos, allComments] = await Promise.all([
 		event.locals.withRLS((db) =>
 			db.select().from(project).where(eq(project.id, projectId)).limit(1)
 		),
@@ -42,10 +43,66 @@ export const GET: RequestHandler = async (event) => {
 		),
 		event.locals.withRLS((db) =>
 			db.select().from(projectPhoto).where(eq(projectPhoto.projectId, projectId))
+		),
+		event.locals.withRLS((db) =>
+			db
+				.select({
+					id: comment.id,
+					documentId: comment.documentId,
+					parentCommentId: comment.parentCommentId,
+					type: comment.type,
+					content: comment.content,
+					status: comment.status,
+					anchorText: comment.anchorText,
+					lineStart: comment.lineStart,
+					lineEnd: comment.lineEnd,
+					createdAt: comment.createdAt,
+					authorEmail: user.email,
+					authorName: user.name,
+					authorOrcid: userProfile.orcid
+				})
+				.from(comment)
+				.innerJoin(document, eq(document.id, comment.documentId))
+				.innerJoin(user, eq(user.id, comment.authorId))
+				.leftJoin(userProfile, eq(userProfile.userId, comment.authorId))
+				.where(eq(document.projectId, projectId))
+				.orderBy(asc(comment.createdAt))
 		)
 	]);
 
 	if (!proj[0]) error(404, 'Proyecto no encontrado');
+
+	// Group comments by documentId, nest replies under their parent
+	type CommentRow = typeof allComments[number];
+	function serializeComment(c: CommentRow, replies: CommentRow[]) {
+		const entry: Record<string, unknown> = {
+			type: c.type,
+			content: c.content,
+			status: c.status,
+			created_at: c.createdAt.toISOString(),
+			author_email: c.authorEmail,
+			author_name: c.authorName
+		};
+		if (c.authorOrcid) entry.author_orcid = c.authorOrcid;
+		if (c.anchorText) entry.anchor_text = c.anchorText;
+		if (c.lineStart != null) entry.line_start = c.lineStart;
+		if (c.lineEnd != null) entry.line_end = c.lineEnd;
+		if (replies.length > 0) {
+			entry.replies = replies.map((r) => serializeComment(r, []));
+		}
+		return entry;
+	}
+
+	const commentsByDoc = new Map<string, ReturnType<typeof serializeComment>[]>();
+	const topLevel = allComments.filter((c) => !c.parentCommentId);
+	const replies = allComments.filter((c) => !!c.parentCommentId);
+
+	for (const c of topLevel) {
+		const children = replies.filter((r) => r.parentCommentId === c.id);
+		const list = commentsByDoc.get(c.documentId) ?? [];
+		list.push(serializeComment(c, children));
+		commentsByDoc.set(c.documentId, list);
+	}
 
 	// For each document, fetch all committed versions
 	const documentsWithVersions = await Promise.all(
@@ -63,6 +120,7 @@ export const GET: RequestHandler = async (event) => {
 					.orderBy(asc(documentVersion.versionNumber))
 			);
 
+			const docComments = commentsByDoc.get(doc.id) ?? [];
 			return {
 				title: doc.title,
 				type: doc.type,
@@ -76,7 +134,8 @@ export const GET: RequestHandler = async (event) => {
 					message: v.changeDescription ?? '',
 					date: v.createdAt.toISOString(),
 					content: v.content
-				}))
+				})),
+				...(docComments.length > 0 ? { comments: docComments } : {})
 			};
 		})
 	);
