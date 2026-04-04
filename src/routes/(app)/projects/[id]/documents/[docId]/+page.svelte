@@ -1554,23 +1554,21 @@
 					</button>
 				{/if}
 
-				<!-- Citation style selector (preview + split) -->
-				{#if viewMode !== 'editor'}
-					<div
-						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-					>
-						{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
-							<button
-								onclick={() => setCitationStyle(s as CitationStyle)}
-								class="px-2.5 py-1.5 font-sans text-xs transition-colors {citationStyle === s
-									? 'bg-accent text-white'
-									: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							>
-								{label}
-							</button>
-						{/each}
-					</div>
-				{/if}
+				<!-- Citation style selector (all modes) -->
+				<div
+					class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
+				>
+					{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
+						<button
+							onclick={() => setCitationStyle(s as CitationStyle)}
+							class="px-2.5 py-1.5 font-sans text-xs transition-colors {citationStyle === s
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+						>
+							{label}
+						</button>
+					{/each}
+				</div>
 
 				<button
 					onclick={toggleComments}
@@ -1964,13 +1962,7 @@
 								readonly={!canWrite}
 								projectId={data.document.projectId}
 								ondocchange={handleDocChange}
-								onselectionchange={(sel) => {
-									currentSelection = sel;
-									if (!sel) {
-										showNewComment = false;
-										showReviewTypeMenu = false;
-									}
-								}}
+								onselectionchange={updateSelection}
 								{commentRanges}
 								{scrollToRange}
 								onlookup={lookupNames}
