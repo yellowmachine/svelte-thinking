@@ -1594,7 +1594,8 @@
 					{/if}
 				</button>
 
-				<!-- View mode selector -->
+				<!-- View mode selector (hidden for non-writers) -->
+				{#if canWrite}
 				<div
 					class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
 					role="group"
@@ -1665,6 +1666,7 @@
 						</svg>
 					</button>
 				</div>
+				{/if}
 
 				<button
 					onclick={toggleHistory}
@@ -1931,16 +1933,22 @@
 					<div class="mx-auto w-full max-w-2xl">
 						{@render editableTitle()}
 						{#if viewMode === 'preview'}
-							<MarkdownPreview
-								{content}
-								projectId={data.document.projectId}
-								references={projectRefs}
-								{citationStyle}
-								docMap={docMap()}
-								commentAnchors={previewCommentAnchors}
-								oncommentclick={handlePreviewCommentClick}
-								onselection={handlePreviewSelection}
-							/>
+							{#if data.unpublished}
+								<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+									El autor aún no ha publicado este documento.
+								</p>
+							{:else}
+								<MarkdownPreview
+									{content}
+									projectId={data.document.projectId}
+									references={projectRefs}
+									{citationStyle}
+									docMap={docMap()}
+									commentAnchors={previewCommentAnchors}
+									oncommentclick={handlePreviewCommentClick}
+									onselection={handlePreviewSelection}
+								/>
+							{/if}
 						{:else}
 							<MarkdownEditor
 								bind:this={editorEl}
