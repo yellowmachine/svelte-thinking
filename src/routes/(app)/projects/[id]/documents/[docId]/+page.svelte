@@ -596,8 +596,28 @@
 			setTimeout(() => {
 				if (saveStatus === 'saved') saveStatus = 'idle';
 			}, 2000);
-		} catch {
-			saveStatus = 'error';
+		} catch (e) {
+			// Network error (fetch failed, no response) → save to Dexie as offline
+			const isNetworkError = e instanceof Error && (
+				e.message.includes('fetch') ||
+				e.message.includes('network') ||
+				e.message.includes('Failed to fetch') ||
+				e.message.toLowerCase().includes('networkerror') ||
+				('cause' in e && e.cause instanceof TypeError)
+			);
+			if (isNetworkError) {
+				await offlineDb.pendingEdits.add({
+					id: crypto.randomUUID(),
+					documentId: data.document.id,
+					content,
+					savedAt: new Date(),
+					status: 'pending'
+				});
+				saveStatus = 'offline';
+				onlineStore.online = false; // align state so subsequent saves go directly to Dexie
+			} else {
+				saveStatus = 'error';
+			}
 		}
 	}
 
@@ -1192,6 +1212,15 @@
 			if (!ok) {
 				cancel();
 				workspaceStore.set(entryWorkspace);
+			} else {
+				// Save to Dexie before leaving so content survives navigation
+				offlineDb.pendingEdits.add({
+					id: crypto.randomUUID(),
+					documentId: data.document.id,
+					content,
+					savedAt: new Date(),
+					status: 'pending'
+				});
 			}
 		}
 	});
