@@ -390,6 +390,99 @@ export const referencesRouter = router({
 			return { inserted, skipped };
 		}),
 
+	// ── Import references from another project ───────────────────────────
+
+	importFromProject: protectedProcedure
+		.input(z.object({
+			sourceProjectId: z.string(),
+			targetProjectId: z.string(),
+			referenceIds: z.array(z.string()).optional() // undefined = all
+		}))
+		.mutation(async ({ ctx, input }) => {
+			const { sourceProjectId, targetProjectId, referenceIds } = input;
+
+			// Load source refs — withRLS ensures the user has read access to the source project
+			const sourceRefs = (await ctx.withRLS((db) =>
+				db
+					.select()
+					.from(projectReference)
+					.where(eq(projectReference.projectId, sourceProjectId))
+					.orderBy(asc(projectReference.citeKey))
+			)) as (typeof projectReference.$inferSelect)[];
+
+			const toImport = referenceIds
+				? sourceRefs.filter((r) => referenceIds.includes(r.id))
+				: sourceRefs;
+
+			if (toImport.length === 0) {
+				return { inserted: 0, skipped: 0 };
+			}
+
+			let inserted = 0;
+			let skipped = 0;
+
+			for (const ref of toImport) {
+				try {
+					// Skip if DOI already exists in target project
+					if (ref.doi) {
+						const existing = await ctx.withRLS((db) =>
+							db.query.projectReference.findFirst({
+								where: and(
+									eq(projectReference.projectId, targetProjectId),
+									eq(projectReference.doi, ref.doi!)
+								),
+								columns: { id: true }
+							})
+						);
+						if (existing) { skipped++; continue; }
+					}
+
+					const uniqueKey = await ensureUniqueCiteKey(
+						ctx.withRLS as Parameters<typeof ensureUniqueCiteKey>[0],
+						targetProjectId,
+						ref.citeKey
+					);
+
+					await ctx.withRLS((db) =>
+						db.insert(projectReference).values({
+							id: crypto.randomUUID(),
+							projectId: targetProjectId,
+							citeKey: uniqueKey,
+							type: ref.type,
+							title: ref.title,
+							authors: ref.authors,
+							year: ref.year,
+							abstract: ref.abstract,
+							doi: ref.doi,
+							url: ref.url,
+							note: ref.note,
+							journal: ref.journal,
+							volume: ref.volume,
+							issue: ref.issue,
+							pages: ref.pages,
+							publisher: ref.publisher,
+							edition: ref.edition,
+							address: ref.address,
+							isbn: ref.isbn,
+							editors: ref.editors,
+							booktitle: ref.booktitle,
+							organization: ref.organization,
+							series: ref.series,
+							school: ref.school,
+							institution: ref.institution,
+							reportNumber: ref.reportNumber,
+							extra: ref.extra
+						})
+					);
+					inserted++;
+				} catch {
+					skipped++;
+				}
+			}
+
+			return { inserted, skipped };
+		}),
+
 	// ── Export all references as a .bib file string ───────────────────────
 
 	exportBibtex: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
