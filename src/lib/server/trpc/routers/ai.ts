@@ -978,7 +978,8 @@ export const aiRouter = router({
       z.object({
         projectId: z.string(),
         conversationId: z.string().optional(),
-        message: z.string().min(1).max(4000)
+        message: z.string().min(1).max(4000),
+        modelOverride: z.string().optional()
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -1026,6 +1027,8 @@ export const aiRouter = router({
       const { apiKey: userApiKey, model: resolvedModel, resolvedOrgId } = await resolveTaskKey(
         ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId
       );
+      // Personal project: allow user to override the model for this request
+      const effectiveModel = (!resolvedOrgId && input.modelOverride) ? input.modelOverride : resolvedModel;
 
       if (resolvedOrgId) await checkOrgQuota(ctx.db as Db, resolvedOrgId);
 
@@ -1042,10 +1045,10 @@ export const aiRouter = router({
         ctx.withRLS as WithRLS,
         input.projectId,
         userApiKey,
-        resolvedModel
+        effectiveModel
       );
 
-      logUsage(ctx.withRLS, { orgId: resolvedOrgId, projectId: input.projectId, userId, model: resolvedModel, task: 'agent', inputTokens: agentIn, outputTokens: agentOut });
+      logUsage(ctx.withRLS, { orgId: resolvedOrgId, projectId: input.projectId, userId, model: effectiveModel, task: 'agent', inputTokens: agentIn, outputTokens: agentOut });
 
       // ── Persist assistant response ────────────────────────────────────
       const assistantMsgId = crypto.randomUUID();

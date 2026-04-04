@@ -2456,6 +2456,7 @@
 						documentId={data.document.id}
 						documentTitle={data.document.title}
 						onClose={toggleChat}
+						orgId={data.projectOrgId}
 					/>
 				</div>
 			{/if}

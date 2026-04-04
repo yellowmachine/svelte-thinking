@@ -245,18 +245,34 @@
 		if (!match) return null;
 
 		const typed = match.text.slice(3); // strip [[@
-		const options: Completion[] = references
-			.filter((r) => !typed || r.citeKey.toLowerCase().includes(typed.toLowerCase()))
-			.map((r) => {
-				const author = r.authors[0] ? `${r.authors[0].last}` : '';
-				const year = r.year ?? '';
-				return {
-					label: r.citeKey,
-					detail: [author, year].filter(Boolean).join(', '),
-					info: r.title,
-					apply: `@${r.citeKey}]]` // keeps leading [[ from match.from+2
-				};
-			});
+		const filtered = references.filter(
+			(r) => !typed || r.citeKey.toLowerCase().includes(typed.toLowerCase())
+		);
+		const showAbstract = filtered.length <= 5;
+		const options: Completion[] = filtered.map((r) => {
+			const author = r.authors[0] ? `${r.authors[0].last}` : '';
+			const year = r.year ?? '';
+			const abstract = r.abstract?.trim() ?? null;
+			return {
+				label: r.citeKey,
+				detail: [author, year].filter(Boolean).join(', '),
+				info: showAbstract && abstract
+					? () => {
+						const wrap = document.createElement('div');
+						const titleEl = document.createElement('div');
+						titleEl.style.cssText = 'font-weight:600;margin-bottom:4px;font-size:0.85em;';
+						titleEl.textContent = r.title;
+						wrap.appendChild(titleEl);
+						const absEl = document.createElement('div');
+						absEl.style.cssText = 'font-size:0.8em;opacity:0.75;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;';
+						absEl.textContent = abstract;
+						wrap.appendChild(absEl);
+						return wrap;
+					}
+					: r.title,
+				apply: `@${r.citeKey}]]` // keeps leading [[ from match.from+2
+			};
+		});
 
 		if (options.length === 0) return null;
 		return { from: match.from + 2, options }; // +2: skip [[, replace @key…

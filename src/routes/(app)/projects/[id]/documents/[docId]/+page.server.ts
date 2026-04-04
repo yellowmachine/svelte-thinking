@@ -37,7 +37,7 @@ export const load: PageServerLoad = async (event) => {
 		// Project info (title + owner)
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: project.id, title: project.title, ownerId: project.ownerId })
+				.select({ id: project.id, title: project.title, ownerId: project.ownerId, orgId: project.orgId })
 				.from(project)
 				.where(eq(project.id, projectId))
 				.limit(1)
@@ -159,6 +159,7 @@ export const load: PageServerLoad = async (event) => {
 		document: docResult,
 		projectTitle: proj?.title ?? '',
 		projectOwnerId: proj?.ownerId ?? '',
+		projectOrgId: proj?.orgId ?? null,
 		writerName,
 		collaborators,
 		inlineComments,

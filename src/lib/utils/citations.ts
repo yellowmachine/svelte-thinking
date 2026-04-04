@@ -28,6 +28,7 @@ export interface CiteRef {
 	isbn?: string | null;
 	doi?: string | null;
 	url?: string | null;
+	abstract?: string | null;
 	note?: string | null;
 	readingNotes?: string | null;
 	reportNumber?: string | null;

@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { tick } from 'svelte';
+	import { MODELS } from '$lib/ai-config';
 
 	type Props = {
 		projectId: string;
 		documentId: string;
 		documentTitle: string;
 		onClose: () => void;
-		provider?: string;
-		model?: string;
+		orgId?: string | null;
+		defaultModel?: string;
 	};
 
 	let {
@@ -16,9 +17,12 @@
 		documentId,
 		documentTitle,
 		onClose,
-		provider = 'OpenRouter',
-		model = ''
+		orgId = null,
+		defaultModel = ''
 	}: Props = $props();
+
+	const toolCallingModels = MODELS.filter((m) => m.toolCalling);
+	let selectedModel = $state(defaultModel);
 
 	type Message = {
 		role: 'user' | 'assistant';
@@ -99,7 +103,8 @@
 			const result = await trpc.ai.sendMessage.mutate({
 				projectId,
 				conversationId,
-				message: withContext
+				message: withContext,
+				...((!orgId && selectedModel) ? { modelOverride: selectedModel } : {})
 			});
 
 			conversationId = result.conversationId;
@@ -160,10 +165,17 @@
 					Clear
 				</button>
 			{/if}
-			{#if provider}
-				<span class="rounded-full border border-paper-border px-2 py-0.5 font-sans text-[11px] text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint">
-					{provider}{model ? ` · ${model}` : ''}
-				</span>
+			{#if !orgId}
+				<select
+					bind:value={selectedModel}
+					class="rounded border border-paper-border bg-transparent px-1.5 py-0.5 font-sans text-[11px] text-ink-faint focus:outline-none dark:border-dark-paper-border dark:text-dark-ink-faint"
+					title="Model for this session"
+				>
+					<option value="">— model —</option>
+					{#each toolCallingModels as m (m.id)}
+						<option value={m.id}>{m.shortLabel}</option>
+					{/each}
+				</select>
 			{/if}
 			<button
 				type="button"
