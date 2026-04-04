@@ -1,7 +1,8 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { uploadFileWithConfig } from '$lib/server/storage';
+import { uploadFileWithConfig, getPresignedUrlWithConfig } from '$lib/server/storage';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
+import { cacheSet, CACHE_KEY, TTL } from '$lib/server/cache';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { eq } from 'drizzle-orm';
@@ -64,5 +65,8 @@ export const POST: RequestHandler = async (event) => {
 			.returning()
 	);
 
-	return json(photo, { status: 201 });
+	const presignedUrl = await getPresignedUrlWithConfig(s3, key, 3600);
+	await cacheSet(CACHE_KEY.photoPresign(id), presignedUrl, TTL.photoPresign);
+
+	return json({ ...photo, presignedUrl }, { status: 201 });
 };

@@ -2,10 +2,12 @@ import {
 	S3Client,
 	PutObjectCommand,
 	DeleteObjectCommand,
+	GetObjectCommand,
 	CreateBucketCommand,
 	HeadBucketCommand,
 	PutBucketPolicyCommand
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '$env/dynamic/private';
 
 // ── BYOS3: user-provided S3 config ───────────────────────────────────────────
@@ -42,6 +44,17 @@ export async function uploadFileWithConfig(config: UserS3Config, key: string, bo
 export async function deleteFileWithConfig(config: UserS3Config, key: string): Promise<void> {
 	const client = createS3Client(config);
 	await client.send(new DeleteObjectCommand({ Bucket: config.bucket, Key: key }));
+}
+
+export async function getPresignedUrlWithConfig(
+	config: UserS3Config,
+	key: string,
+	expiresIn = 3600
+): Promise<string> {
+	const client = createS3Client(config);
+	return getSignedUrl(client, new GetObjectCommand({ Bucket: config.bucket, Key: key }), {
+		expiresIn
+	});
 }
 
 export async function testS3Connection(config: UserS3Config): Promise<{ ok: boolean; error?: string }> {

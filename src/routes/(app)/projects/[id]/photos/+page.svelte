@@ -99,8 +99,18 @@
 	}
 
 	function copyMarkdown(photo: (typeof data.photos)[number]) {
-		const md = `![${photo.filename}](${photo.url})`;
-		navigator.clipboard.writeText(md);
+		const md = `![${photo.filename}](/api/photos/${photo.id})`;
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText(md);
+		} else {
+			const ta = document.createElement('textarea');
+			ta.value = md;
+			ta.style.cssText = 'position:fixed;opacity:0';
+			document.body.appendChild(ta);
+			ta.select();
+			document.execCommand('copy');
+			document.body.removeChild(ta);
+		}
 	}
 
 	function formatSize(bytes: number) {
@@ -287,7 +297,7 @@
 						aria-label="Ver {photo.filename}"
 					>
 						<img
-							src={photo.url}
+							src={photo.presignedUrl}
 							alt={photo.description ?? photo.filename}
 							class="aspect-square w-full object-cover transition-transform duration-200 group-hover:scale-105"
 						/>
@@ -344,7 +354,7 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="relative max-h-full max-w-4xl" onclick={(e) => e.stopPropagation()}>
 			<img
-				src={lightboxPhoto.url}
+				src={lightboxPhoto.presignedUrl}
 				alt={lightboxPhoto.description ?? lightboxPhoto.filename}
 				class="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
 			/>

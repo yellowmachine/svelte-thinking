@@ -10,6 +10,7 @@
  *   scholio:author:{name}                          Author bio         (TTL 24 h)
  *   scholio:s3:user:{userId}                       User S3 config     (TTL 10 min)
  *   scholio:s3:org:{orgId}                         Org S3 config      (TTL 10 min)
+ *   scholio:photo:presign:{photoId}                Photo presigned URL (TTL 55 min)
  */
 
 import Redis from 'ioredis';
@@ -22,7 +23,8 @@ import { env } from '$env/dynamic/private';
 export const TTL = {
 	taskKey: 5 * 60,        // 5 min — decrypted AI key + model
 	authorInfo: 24 * 60 * 60, // 24 h  — author bio lookup
-	s3Config: 10 * 60        // 10 min — decrypted S3 credentials
+	s3Config: 10 * 60,       // 10 min — decrypted S3 credentials
+	photoPresign: 55 * 60    // 55 min — presigned URL (valid for 60 min)
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -37,7 +39,9 @@ export const CACHE_KEY = {
 	userS3: (userId: string) =>
 		`scholio:s3:user:${userId}`,
 	orgS3: (orgId: string) =>
-		`scholio:s3:org:${orgId}`
+		`scholio:s3:org:${orgId}`,
+	photoPresign: (photoId: string) =>
+		`scholio:photo:presign:${photoId}`
 } as const;
 
 // ---------------------------------------------------------------------------

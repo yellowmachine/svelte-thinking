@@ -5,6 +5,7 @@ import { router, protectedProcedure } from '../init';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { deleteFileWithConfig } from '$lib/server/storage';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
+import { cacheDel, CACHE_KEY } from '$lib/server/cache';
 
 export const photosRouter = router({
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
@@ -36,6 +37,8 @@ export const photosRouter = router({
 		await ctx.withRLS((db) =>
 			db.delete(projectPhoto).where(and(eq(projectPhoto.id, photoId)))
 		);
+
+		await cacheDel(CACHE_KEY.photoPresign(photoId));
 
 		return { id: photoId };
 	})
