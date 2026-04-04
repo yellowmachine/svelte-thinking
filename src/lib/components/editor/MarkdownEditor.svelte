@@ -15,6 +15,7 @@
 	import { codeBlockExtension, codeLanguages } from './codeBlockExtension';
 	import { epigraphCompletion } from './epigraphExtension';
 	import type { CiteRef } from '$lib/utils/citations';
+	import { trpc } from '$lib/utils/trpc';
 	let {
 		value = $bindable(''),
 		readonly = false,
@@ -36,7 +37,8 @@
 		scrollToRange = null,
 		completions = undefined,
 		showLookupHint = false,
-		spellLanguage = 'en-US'
+		spellLanguage = 'en-US',
+		projectId = undefined
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -69,11 +71,13 @@
 		commentRanges?: CommentRange[];
 		scrollToRange?: { from: number; to: number } | null;
 		/** Which [[ completions to enable. undefined = all active. */
-		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph'>;
+		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph' | 'image'>;
 		/** Show a footer hint that @@ lookup is unavailable (no AI key configured). */
 		showLookupHint?: boolean;
 		/** BCP-47 language tag for spell check (e.g. 'es-ES', 'en-US'). */
 		spellLanguage?: string;
+		/** Project ID — enables ![[ image autocomplete when provided. */
+		projectId?: string;
 	} = $props();
 
 	let container: HTMLDivElement | null = null;
@@ -133,17 +137,93 @@
 		return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
 	}
 
+	// ![[  → photo embed autocomplete ─────────────────────────────────────────
+
+	type PhotoItem = { id: string; filename: string; description: string | null };
+	let cachedPhotos: PhotoItem[] | null = null;
+	let fetchingPhotos = false;
+
+	async function loadPhotos(): Promise<PhotoItem[]> {
+		if (cachedPhotos) return cachedPhotos;
+		if (!projectId || fetchingPhotos) return [];
+		fetchingPhotos = true;
+		try {
+			const rows = await trpc.photos.list.query(projectId);
+			cachedPhotos = rows;
+			return cachedPhotos;
+		} catch {
+			return [];
+		} finally {
+			fetchingPhotos = false;
+		}
+	}
+
+	async function imageCompletion(context: CompletionContext) {
+		const match = context.matchBefore(/!\[\[[^\]]*$/);
+		if (!match) return null;
+
+		const typed = match.text.slice(3).toLowerCase(); // strip ![[
+		const photos = await loadPhotos();
+		if (photos.length === 0) return null;
+
+		const filtered = typed
+			? photos.filter(
+					(p) =>
+						p.filename.toLowerCase().includes(typed) ||
+						p.description?.toLowerCase().includes(typed)
+				)
+			: photos;
+
+		if (filtered.length === 0) return null;
+
+		const options: Completion[] = filtered.map((p) => {
+			const label = p.description || p.filename;
+			return {
+				label,
+				detail: p.description ? p.filename : undefined,
+				type: 'text',
+				info: () => {
+					const img = document.createElement('img');
+					img.src = `/api/photos/${p.id}`;
+					img.alt = label;
+					img.style.cssText =
+						'max-width:200px;max-height:150px;border-radius:4px;display:block;object-fit:cover;';
+					const div = document.createElement('div');
+					div.style.cssText = 'padding:6px';
+					div.appendChild(img);
+					return div;
+				},
+				apply: (view, _c, _from, to) => {
+					const alt = p.description || p.filename;
+					const insert = `![${alt}](/api/photos/${p.id})`;
+					view.dispatch({ changes: { from: match.from, to, insert } });
+				}
+			};
+		});
+
+		return { from: match.from + 3, options };
+	}
+
+	function imageCompletionSource(context: CompletionContext) {
+		const all = completions === undefined;
+		if (!all && !completions.has('image')) return null;
+		if (!projectId) return null;
+		return imageCompletion(context);
+	}
+
 	// [[ dispatcher — character after [[ determines completion type:
 	//   [[        → wikilinks / chapters
 	//   [[@       → bibliographic citations  (inserts [[@key]])
 	//   [[#       → heading anchor in current document
 	//   [[^       → footnote (inserts [^N] inline + [^N]: at end)
-	//   [[! [[~   → reserved (embeds, snippets)
+	//   ![[       → photo embed (handled above)
 
 	function wikilinkCompletion(context: CompletionContext) {
 		// Matches [[ NOT immediately followed by a special dispatcher char (@, #, !, ^, ~)
 		const match = context.matchBefore(/\[\[(?![@#!^~])[^\]]*$/);
 		if (!match) return null;
+		// Don't activate for ![[ — that's the photo embed trigger
+		if (context.state.doc.sliceString(Math.max(0, match.from - 1), match.from) === '!') return null;
 
 		const typed = match.text.slice(2).toLowerCase(); // strip [[
 		const options: Completion[] = chapters
@@ -342,7 +422,7 @@
 			]),
 			markdown({ codeLanguages }),
 			tooltips({ position: 'fixed' }),
-			autocompletion({ override: [allCompletions, mentionCompletionSource], closeOnBlur: true }),
+			autocompletion({ override: [allCompletions, mentionCompletionSource, imageCompletionSource], closeOnBlur: true }),
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
 			ghostTextField,

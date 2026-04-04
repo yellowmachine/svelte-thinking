@@ -1904,6 +1904,7 @@
 									references={projectRefs}
 									{chapters}
 									readonly={!canWrite}
+									projectId={data.document.projectId}
 									ondocchange={handleDocChange}
 									onselectionchange={updateSelection}
 									oncitehover={(key, coords) => explainCitation(key, coords)}
@@ -1960,6 +1961,7 @@
 								references={projectRefs}
 								{chapters}
 								readonly={!canWrite}
+								projectId={data.document.projectId}
 								ondocchange={handleDocChange}
 								onselectionchange={(sel) => {
 									currentSelection = sel;
@@ -1979,7 +1981,6 @@
 								{onheadingghosttab}
 								showLookupHint={lookupUnavailable}
 								{spellLanguage}
-
 							/>
 						{/if}
 					</div>
