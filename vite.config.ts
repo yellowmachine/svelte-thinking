@@ -38,7 +38,7 @@ export default defineConfig({
 			workbox: {
 				// html excluded — no hash in filename, must always revalidate from network
 				globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
-				navigateFallback: null,
+				navigateFallback: '/offline',
 				runtimeCaching: [
 					{
 						urlPattern: ({ request }) => request.mode === 'navigate',
