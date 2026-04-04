@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, keymap, lineNumbers, highlightActiveLine, tooltips, Decoration, WidgetType } from '@codemirror/view';
+	import { EditorView, keymap, lineNumbers, highlightActiveLine, tooltips, Decoration, WidgetType, ViewPlugin } from '@codemirror/view';
 	import { EditorState, StateEffect, StateField } from '@codemirror/state';
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { markdown } from '@codemirror/lang-markdown';
@@ -396,6 +396,51 @@
 		return mentionCompletion(context);
 	}
 
+	// .cm-scroller has overflow:visible so the page handles scrolling.
+	// CM's built-in drag-autoscroll doesn't work in that case, so we implement it manually:
+	// while the user holds the mouse button down inside the editor and moves near the
+	// viewport edges, we scroll window proportionally.
+	function dragAutoScroll() {
+		return ViewPlugin.define((v) => {
+			let dragging = false;
+			let lastY = 0;
+			let raf: number | null = null;
+
+			function tick() {
+				if (dragging) {
+					const margin = 80;
+					const vh = window.innerHeight;
+					if (lastY < margin) {
+						window.scrollBy(0, -Math.ceil((margin - lastY) / 5));
+					} else if (lastY > vh - margin) {
+						window.scrollBy(0, Math.ceil((lastY - (vh - margin)) / 5));
+					}
+				}
+				raf = requestAnimationFrame(tick);
+			}
+
+			function onMouseDown(e: MouseEvent) {
+				if (e.button === 0 && v.contentDOM.contains(e.target as Node)) dragging = true;
+			}
+			function onMouseMove(e: MouseEvent) { lastY = e.clientY; }
+			function onMouseUp() { dragging = false; }
+
+			document.addEventListener('mousedown', onMouseDown);
+			document.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('mouseup', onMouseUp);
+			raf = requestAnimationFrame(tick);
+
+			return {
+				destroy() {
+					document.removeEventListener('mousedown', onMouseDown);
+					document.removeEventListener('mousemove', onMouseMove);
+					document.removeEventListener('mouseup', onMouseUp);
+					if (raf !== null) cancelAnimationFrame(raf);
+				}
+			};
+		});
+	}
+
 	function buildExtensions() {
 		const exts = [
 			history(),
@@ -558,7 +603,8 @@
 				'.cm-selectionBackground, ::selection': {
 					backgroundColor: 'rgba(124, 92, 62, 0.15) !important'
 				}
-			})
+			}),
+			dragAutoScroll()
 		];
 
 		// Trigger completion immediately for non-word chars that CM6 won't auto-trigger on:
