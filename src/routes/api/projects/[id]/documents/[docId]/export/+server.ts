@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { toLatex, toTypst, type RefData } from '$lib/utils/export';
+import { compileToPdf } from '$lib/server/typst';
 
 export const GET: RequestHandler = async (event) => {
 	if (!event.locals.user) error(401, 'No autenticado');
@@ -11,8 +12,8 @@ export const GET: RequestHandler = async (event) => {
 	const { docId, id: projectId } = event.params;
 	const format = event.url.searchParams.get('format');
 
-	if (format !== 'latex' && format !== 'typst') {
-		error(400, 'El parámetro format debe ser latex o typst');
+	if (format !== 'latex' && format !== 'typst' && format !== 'pdf') {
+		error(400, 'El parámetro format debe ser latex, typst o pdf');
 	}
 
 	// Load document content (draft > current version)
@@ -54,12 +55,26 @@ export const GET: RequestHandler = async (event) => {
 				'Content-Disposition': `attachment; filename="${slug}.tex"`
 			}
 		});
-	} else {
+	} else if (format === 'typst') {
 		const typ = toTypst(docResult.content, docResult.title, refs);
 		return new Response(typ, {
 			headers: {
 				'Content-Type': 'text/plain; charset=utf-8',
 				'Content-Disposition': `attachment; filename="${slug}.typ"`
+			}
+		});
+	} else {
+		const typ = toTypst(docResult.content, docResult.title, refs);
+		let pdf: Uint8Array;
+		try {
+			pdf = await compileToPdf(typ);
+		} catch (e) {
+			error(500, `Error compilando PDF: ${e instanceof Error ? e.message : e}`);
+		}
+		return new Response(pdf.buffer as ArrayBuffer, {
+			headers: {
+				'Content-Type': 'application/pdf',
+				'Content-Disposition': `attachment; filename="${slug}.pdf"`
 			}
 		});
 	}

@@ -847,6 +847,7 @@
 
 	// Export dropdown
 	let showExport = $state(false);
+	let exportMenuPos = $state({ top: 0, right: 0 });
 
 	// ── AI task model labels (from layout data) ──────────────────────────────────
 	const aiTaskConfig = $derived(data.aiTaskConfig ?? {});
@@ -1718,7 +1719,11 @@
 				<!-- Export dropdown -->
 				<div class="relative">
 					<button
-						onclick={() => (showExport = !showExport)}
+						onclick={(e) => {
+							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+							exportMenuPos = { top: rect.bottom + 4, right: window.innerWidth - rect.right };
+							showExport = !showExport;
+						}}
 						class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						Exportar
@@ -1740,7 +1745,8 @@
 							tabindex="-1"
 						></button>
 						<div
-							class="absolute top-full right-0 z-20 mt-1 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+							class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+							style="top: {exportMenuPos.top}px; right: {exportMenuPos.right}px;"
 						>
 							<a
 								href="/api/projects/{data.document.projectId}/documents/{data.document
@@ -1759,6 +1765,15 @@
 							>
 								<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>
 								Typst
+							</a>
+							<a
+								href="/api/projects/{data.document.projectId}/documents/{data.document
+									.id}/export?format=pdf"
+								onclick={() => (showExport = false)}
+								class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							>
+								<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.pdf</span>
+								PDF
 							</a>
 						</div>
 					{/if}
