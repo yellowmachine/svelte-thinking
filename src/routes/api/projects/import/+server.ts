@@ -2,7 +2,6 @@ import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { unzipSync } from 'fflate';
 import { parse } from 'yaml';
-import { db } from '$lib/server/db';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
@@ -71,7 +70,7 @@ export const POST: RequestHandler = async (event) => {
 	// ── Build in a single transaction ───────────────────────────────────────────
 	const projectId = crypto.randomUUID();
 
-	const newProjectId = await db.transaction(async (tx) => {
+	const newProjectId = await event.locals.withRLS(async (tx) => {
 		// 1. Project
 		await tx.insert(project).values({
 			id: projectId,
