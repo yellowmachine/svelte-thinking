@@ -855,7 +855,7 @@
 										| 'bibliography'
 										| 'supplementary'
 										| 'book'
-										| 'chapter'}
+										| 'chapter' | 'reading_note'}
 									badge={getDocumentBadge(doc)}
 									onclick={() =>
 										(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
@@ -933,7 +933,7 @@
 											| 'bibliography'
 											| 'supplementary'
 											| 'book'
-											| 'chapter'}
+											| 'chapter' | 'reading_note'}
 										onclick={() =>
 											(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 									/>

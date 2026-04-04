@@ -1,5 +1,5 @@
 <script lang="ts">
-	type DocType = 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter';
+	type DocType = 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter' | 'reading_note';
 
 	let {
 		title,
@@ -22,7 +22,8 @@
 		bibliography: 'M3 3h8v8H3zM5 6h4M5 8h2',
 		supplementary: 'M6 3v8M3 6h8',
 		book: 'M3 3h7v9H3zM10 3h1v9h-1',
-		chapter: 'M3 4h8M3 7h7M3 10h5'
+		chapter: 'M3 4h8M3 7h7M3 10h5',
+		reading_note: 'M2 4h9v9H2zM7 7h2M7 9h1M13 4l-2 9'
 	};
 </script>
 
