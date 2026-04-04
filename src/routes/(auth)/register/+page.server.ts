@@ -57,7 +57,8 @@ export const actions: Actions = {
 		let userId: string;
 		try {
 			const result = await auth.api.signUpEmail({
-				body: { name, email, password, callbackURL: '/projects' }
+				body: { name, email, password, callbackURL: '/projects' },
+				headers: event.request.headers
 			});
 			userId = result.user.id;
 		} catch (e) {

@@ -3,6 +3,10 @@
 	import type { ActionData, PageData } from './$types';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
+
+	let password = $state('');
+	let confirmPassword = $state('');
+	let passwordMismatch = $derived(confirmPassword.length > 0 && password !== confirmPassword);
 </script>
 
 <div class="rounded-2xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper">
@@ -25,6 +29,7 @@
 				name="name"
 				required
 				autocomplete="name"
+				value={data.name ?? ''}
 				class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
 		</div>
@@ -49,11 +54,31 @@
 				id="password"
 				type="password"
 				name="password"
+				bind:value={password}
 				required
 				autocomplete="new-password"
 				minlength={8}
 				class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
+		</div>
+
+		<div class="flex flex-col gap-1.5">
+			<label for="confirm-password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Confirm password</label>
+			<input
+				id="confirm-password"
+				type="password"
+				bind:value={confirmPassword}
+				required
+				autocomplete="new-password"
+				minlength={8}
+				class="rounded-md border px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:bg-dark-paper-ui dark:text-dark-ink
+					{passwordMismatch
+						? 'border-red-400 bg-red-50 focus:border-red-500 dark:border-red-700 dark:bg-red-950'
+						: 'border-paper-border bg-paper-ui focus:border-accent dark:border-dark-paper-border'}"
+			/>
+			{#if passwordMismatch}
+				<p class="font-sans text-xs text-red-500 dark:text-red-400">Passwords do not match.</p>
+			{/if}
 		</div>
 
 		{#if form?.message}
@@ -69,7 +94,8 @@
 
 		<button
 			type="submit"
-			class="rounded-md bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+			disabled={passwordMismatch}
+			class="rounded-md bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 		>
 			Create account
 		</button>
