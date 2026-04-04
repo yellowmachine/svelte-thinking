@@ -1292,7 +1292,7 @@
 									stroke-linejoin="round"
 								/></svg
 							>
-							S3
+							Photos
 						</a>
 					{:else if canEdit && s3CtaType === 'personal'}
 						<a

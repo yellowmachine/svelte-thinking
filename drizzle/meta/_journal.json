@@ -8,6 +8,13 @@
       "when": 1775203062248,
       "tag": "0000_large_screwball",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775291531877,
+      "tag": "0001_closed_arclight",
+      "breakpoints": true
     }
   ]
 }
