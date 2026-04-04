@@ -529,8 +529,15 @@
 								id="email"
 								type="email"
 								bind:value={email}
-								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								readonly={data.isAdmin}
+								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink
+									{data.isAdmin ? 'opacity-60 cursor-default' : ''}"
 							/>
+							{#if data.isAdmin}
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									Managed by environment config (<code class="font-mono">ADMIN_EMAIL</code>).
+								</p>
+							{/if}
 						</div>
 					</div>
 

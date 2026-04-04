@@ -5,6 +5,7 @@ import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { account } from '$lib/server/db/auth.schema';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '$lib/server/auth';
+import { env } from '$env/dynamic/private';
 
 export const load: PageServerLoad = async (event) => {
 	const user = event.locals.user!;
@@ -33,7 +34,8 @@ export const load: PageServerLoad = async (event) => {
 		orcid: profile?.orcid ?? null,
 		orcidVerified: profile?.orcidVerified ?? false,
 		orcidStatus: orcidStatus === 'connected' ? 'connected' : orcidStatus === 'error' ? 'error' : null,
-		githubLinked: !!githubAccount
+		githubLinked: !!githubAccount,
+		isAdmin: !!env.ADMIN_EMAIL && user.email === env.ADMIN_EMAIL
 	};
 };
 
