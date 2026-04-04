@@ -347,6 +347,44 @@
 
 	let showJupyterModal = $state(false);
 
+	// ── Doc kebab menu ───────────────────────────────────────────────────────
+	let docMenuOpenId = $state<string | null>(null);
+
+	// ── Delete document (from list) ──────────────────────────────────────────
+	let deleteDocTarget = $state<{ id: string; title: string } | null>(null);
+	let deletingDocInList = $state(false);
+
+	async function handleDeleteDocFromList() {
+		if (!deleteDocTarget) return;
+		deletingDocInList = true;
+		try {
+			await trpc.documents.delete.mutate(deleteDocTarget.id);
+			deleteDocTarget = null;
+			await invalidateAll();
+		} catch {
+			deletingDocInList = false;
+		}
+	}
+
+	// ── Delegate writing (from list) ─────────────────────────────────────────
+	let delegateDocTarget = $state<{ id: string; title: string } | null>(null);
+	let delegatingInList = $state(false);
+	let delegateErrorInList = $state('');
+
+	async function handleSetWriterFromList(docId: string, userId: string | null) {
+		delegatingInList = true;
+		delegateErrorInList = '';
+		try {
+			await trpc.documents.setWriter.mutate({ documentId: docId, writerUserId: userId });
+			delegateDocTarget = null;
+			await invalidateAll();
+		} catch (e: unknown) {
+			delegateErrorInList = e instanceof Error ? e.message : 'Error updating writer';
+		} finally {
+			delegatingInList = false;
+		}
+	}
+
 	// ── Delete project ────────────────────────────────────────────────────────
 	let showDeleteProject = $state(false);
 	let deletingProject = $state(false);
@@ -563,6 +601,8 @@
 		commenter: 'Commenter'
 	};
 </script>
+
+<svelte:window onclick={() => { if (docMenuOpenId) docMenuOpenId = null; }} />
 
 <div class="mx-auto max-w-5xl px-6 py-8">
 	<!-- Header -->
@@ -862,27 +902,45 @@
 								/>
 							</div>
 							{#if canEdit}
-								<button
-									onclick={() => openSaveAsTemplate(doc.id, doc.title)}
-									title="Save as template"
-									class="absolute right-1 shrink-0 rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
-								>
-									<svg
-										width="13"
-										height="13"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="1.5"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
+								<div class="relative">
+									<button
+										onclick={(e) => { e.stopPropagation(); docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id; }}
+										class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+										aria-label="Document options"
 									>
-										<rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 3v4h8V3" /><path
-											d="M8 21v-6h8v6"
-										/>
-									</svg>
-								</button>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+											<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+										</svg>
+									</button>
+									{#if docMenuOpenId === doc.id}
+										<div
+											class="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+											onclick={(e) => e.stopPropagation()}
+										>
+											{#if data.isOwner && data.collaborators.length > 0}
+												<button
+													onclick={() => { delegateDocTarget = { id: doc.id, title: doc.title }; docMenuOpenId = null; }}
+													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+												>
+													Delegate writing…
+												</button>
+											{/if}
+											<button
+												onclick={() => { openSaveAsTemplate(doc.id, doc.title); docMenuOpenId = null; }}
+												class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+											>
+												Save as template
+											</button>
+											<hr class="my-1 border-paper-border dark:border-dark-paper-border" />
+											<button
+												onclick={() => { deleteDocTarget = { id: doc.id, title: doc.title }; docMenuOpenId = null; }}
+												class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
+											>
+												Delete…
+											</button>
+										</div>
+									{/if}
+								</div>
 							{/if}
 						</div>
 					{/each}
@@ -938,22 +996,30 @@
 											(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 									/>
 								</div>
-								<svg
-									width="11"
-									height="11"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									class="mr-2 shrink-0 text-ink-faint dark:text-dark-ink-faint"
-									aria-label="Private note"
-								>
-									<rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path
-										d="M7 11V7a5 5 0 0 1 10 0v4"
-									/>
-								</svg>
+								<div class="relative">
+									<button
+										onclick={(e) => { e.stopPropagation(); docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id; }}
+										class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+										aria-label="Note options"
+									>
+										<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+											<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+										</svg>
+									</button>
+									{#if docMenuOpenId === doc.id}
+										<div
+											class="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+											onclick={(e) => e.stopPropagation()}
+										>
+											<button
+												onclick={() => { deleteDocTarget = { id: doc.id, title: doc.title }; docMenuOpenId = null; }}
+												class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
+											>
+												Delete…
+											</button>
+										</div>
+									{/if}
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -1611,6 +1677,52 @@
 		collaboratorToRemove = null;
 	}}
 />
+
+<!-- Delete document (from list) -->
+<SafeDeleteDialog
+	open={deleteDocTarget !== null}
+	label={deleteDocTarget?.title ?? 'this document'}
+	warning="The content, version history and associated comments will be permanently deleted."
+	deleting={deletingDocInList}
+	onconfirm={handleDeleteDocFromList}
+	oncancel={() => (deleteDocTarget = null)}
+/>
+
+<!-- Delegate writing (from list) -->
+{#if delegateDocTarget}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 backdrop-blur-sm dark:bg-dark-ink/30">
+		<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Delegate writing</h2>
+			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Select a collaborator to give exclusive write access to
+				<strong>{delegateDocTarget.title}</strong>. You will lose write access until you reclaim it.
+			</p>
+			<div class="mt-4 flex flex-col gap-2">
+				{#each data.collaborators as collab (collab.userId)}
+					<button
+						onclick={() => handleSetWriterFromList(delegateDocTarget!.id, collab.userId)}
+						disabled={delegatingInList}
+						class="flex items-center justify-between rounded-lg border border-paper-border px-4 py-2.5 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
+					>
+						<span class="font-sans text-sm text-ink dark:text-dark-ink">{collab.name ?? collab.userId}</span>
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{collab.role}</span>
+					</button>
+				{/each}
+			</div>
+			{#if delegateErrorInList}
+				<p class="mt-2 font-sans text-xs text-red-500">{delegateErrorInList}</p>
+			{/if}
+			<div class="mt-4 flex justify-end">
+				<button
+					onclick={() => (delegateDocTarget = null)}
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+				>
+					Cancel
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 {#if showJupyterModal}
 	<JupyterImportModal

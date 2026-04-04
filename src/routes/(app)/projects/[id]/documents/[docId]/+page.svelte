@@ -87,25 +87,16 @@
 		currentWriterUserId === null ? isOwner : data.currentUserId === currentWriterUserId
 	);
 
-	let showDelegate = $state(false);
 	let delegating = $state(false);
-	let delegateError = $state('');
 
 	async function handleSetWriter(userId: string | null) {
 		delegating = true;
-		delegateError = '';
 		try {
 			await trpc.documents.setWriter.mutate({ documentId: data.document.id, writerUserId: userId });
 			currentWriterUserId = userId;
-			if (userId === null) {
-				currentWriterName = null;
-			} else {
-				const collab = data.collaborators.find((c) => c.userId === userId);
-				currentWriterName = collab?.name ?? userId;
-			}
-			showDelegate = false;
-		} catch (e: unknown) {
-			delegateError = e instanceof Error ? e.message : 'Error updating writer';
+			currentWriterName = userId === null ? null : (data.collaborators.find((c) => c.userId === userId)?.name ?? userId);
+		} catch {
+			// ignore
 		} finally {
 			delegating = false;
 		}
@@ -445,20 +436,6 @@
 	let showCommit = $state(false);
 	let commitMessage = $state('');
 
-	// ── Delete document ───────────────────────────────────────────────────────
-	let showDeleteDoc = $state(false);
-	let deletingDoc = $state(false);
-
-	async function handleDeleteDoc() {
-		deletingDoc = true;
-		try {
-			await trpc.documents.delete.mutate(data.document.id);
-			await goto(`/projects/${data.document.projectId}`);
-		} catch {
-			deletingDoc = false;
-			showDeleteDoc = false;
-		}
-	}
 	let committing = $state(false);
 	let commitError = $state('');
 
@@ -1342,28 +1319,16 @@
 			<!-- Row 2: toolbar -->
 			<div class="flex items-center gap-2 overflow-x-auto px-4 py-2">
 
-				<!-- Delegate / Reclaim writer -->
-				{#if isOwner}
-					{#if currentWriterUserId !== null}
-						<button
-							onclick={() => handleSetWriter(null)}
-							disabled={delegating}
-							title="Reclaim write access from {currentWriterName ?? currentWriterUserId}"
-							class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
-						>
-							Reclaim
-						</button>
-					{:else if data.collaborators.length > 0}
-						<button
-							onclick={() => {
-								showDelegate = true;
-								delegateError = '';
-							}}
-							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-						>
-							Delegate
-						</button>
-					{/if}
+				<!-- Reclaim writer (Delegate moved to project doc list) -->
+				{#if isOwner && currentWriterUserId !== null}
+					<button
+						onclick={() => handleSetWriter(null)}
+						disabled={delegating}
+						title="Reclaim write access from {currentWriterName ?? currentWriterUserId}"
+						class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
+					>
+						Reclaim
+					</button>
 				{/if}
 
 				<button
@@ -1788,23 +1753,6 @@
 				</button>
 
 				<button
-					onclick={() => (showDeleteDoc = true)}
-					title="Eliminar documento"
-					class="flex h-7 w-7 items-center justify-center rounded-md border border-paper-border text-ink-faint transition-colors hover:border-red-300 hover:text-red-500 dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-red-700 dark:hover:text-red-400"
-					aria-label="Eliminar documento"
-				>
-					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-				</button>
-
-				<button
 					onclick={() => (showCommit = true)}
 					disabled={!content.trim() || !canWrite}
 					class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
@@ -1813,15 +1761,6 @@
 				</button>
 			</div>
 		</div>
-
-		<SafeDeleteDialog
-			open={showDeleteDoc}
-			label="el documento"
-			warning="The content, version history and associated comments will be permanently deleted."
-			deleting={deletingDoc}
-			onconfirm={handleDeleteDoc}
-			oncancel={() => (showDeleteDoc = false)}
-		/>
 
 		{#snippet editableTitle()}
 			<div class="mb-6">
@@ -3453,62 +3392,6 @@
 						{/each}
 					</tbody>
 				</table>
-			</div>
-		</div>
-	</div>
-{/if}
-
-<!-- ── Delegate writer modal ── -->
-{#if showDelegate}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 backdrop-blur-sm dark:bg-dark-ink/30"
-	>
-		<div
-			class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Delegate writing</h2>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Select a collaborator to give exclusive write access. You will lose write access until you
-				reclaim it.
-			</p>
-
-			<div class="mt-4 flex flex-col gap-2">
-				{#each data.collaborators as collab (collab.userId)}
-					<button
-						onclick={() => handleSetWriter(collab.userId)}
-						disabled={delegating}
-						class="flex items-center justify-between rounded-lg border border-paper-border px-4 py-2.5 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
-					>
-						<div>
-							<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{collab.name}</p>
-							<p class="font-sans text-xs text-ink-faint capitalize dark:text-dark-ink-faint">
-								{collab.role}
-							</p>
-						</div>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M9 18l6-6-6-6"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
-					</button>
-				{/each}
-			</div>
-
-			{#if delegateError}
-				<p class="mt-3 font-sans text-sm text-red-600 dark:text-red-400">{delegateError}</p>
-			{/if}
-
-			<div class="mt-4 flex justify-end">
-				<button
-					onclick={() => (showDelegate = false)}
-					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-				>
-					Cancel
-				</button>
 			</div>
 		</div>
 	</div>
