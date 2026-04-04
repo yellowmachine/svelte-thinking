@@ -1207,18 +1207,56 @@
 							<div
 								class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
 							>
-								<p
-									class="mb-2 font-sans text-xs font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-400"
-								>
-									Backup codes — store them in a safe place
-								</p>
-								<div class="grid grid-cols-2 gap-1.5">
+								<div class="mb-3 flex items-start gap-2">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true">
+										<path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+									</svg>
+									<div>
+										<p class="font-sans text-xs font-semibold text-amber-700 dark:text-amber-400">
+											Save these recovery codes now
+										</p>
+										<p class="mt-0.5 font-sans text-xs text-amber-600 dark:text-amber-500">
+											They will <strong>not</strong> be shown again. Store them somewhere safe.
+										</p>
+									</div>
+								</div>
+								<div class="mb-3 grid grid-cols-2 gap-1.5">
 									{#each twoFaBackupCodes as code}
 										<span
 											class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300"
 											>{code}</span
 										>
 									{/each}
+								</div>
+								<div class="flex gap-2">
+									<button
+										type="button"
+										onclick={() => navigator.clipboard.writeText(twoFaBackupCodes.join('\n'))}
+										class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+									>
+										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
+											<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5"/>
+										</svg>
+										Copy all
+									</button>
+									<button
+										type="button"
+										onclick={() => {
+											const blob = new Blob([`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`], { type: 'text/plain' });
+											const a = document.createElement('a');
+											a.href = URL.createObjectURL(blob);
+											a.download = 'scholio-recovery-codes.txt';
+											a.click();
+											URL.revokeObjectURL(a.href);
+										}}
+										class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+									>
+										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+										</svg>
+										Download
+									</button>
 								</div>
 							</div>
 						{/if}
@@ -1255,10 +1293,69 @@
 					</div>
 				{:else if twoFaStep === 'done'}
 					<!-- Success state -->
-					<div
-						class="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
-					>
-						2FA enabled successfully. Your account is now protected.
+					<div class="mt-5 flex flex-col gap-4">
+						<div
+							class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+						>
+							2FA enabled successfully. Your account is now protected.
+						</div>
+						{#if twoFaBackupCodes.length > 0}
+							<div
+								class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
+							>
+								<div class="mb-3 flex items-start gap-2">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true">
+										<path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+									</svg>
+									<div>
+										<p class="font-sans text-xs font-semibold text-amber-700 dark:text-amber-400">
+											Last chance to save your recovery codes
+										</p>
+										<p class="mt-0.5 font-sans text-xs text-amber-600 dark:text-amber-500">
+											These codes will disappear when you leave this page.
+										</p>
+									</div>
+								</div>
+								<div class="mb-3 grid grid-cols-2 gap-1.5">
+									{#each twoFaBackupCodes as code}
+										<span
+											class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300"
+											>{code}</span
+										>
+									{/each}
+								</div>
+								<div class="flex gap-2">
+									<button
+										type="button"
+										onclick={() => navigator.clipboard.writeText(twoFaBackupCodes.join('\n'))}
+										class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+									>
+										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
+											<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5"/>
+										</svg>
+										Copy all
+									</button>
+									<button
+										type="button"
+										onclick={() => {
+											const blob = new Blob([`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`], { type: 'text/plain' });
+											const a = document.createElement('a');
+											a.href = URL.createObjectURL(blob);
+											a.download = 'scholio-recovery-codes.txt';
+											a.click();
+											URL.revokeObjectURL(a.href);
+										}}
+										class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+									>
+										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+										</svg>
+										Download
+									</button>
+								</div>
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</section>
