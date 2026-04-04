@@ -19,6 +19,7 @@ export const load: PageServerLoad = async (event) => {
 
 			// Determine if the current user can write this document
 			const currentUserId = event.locals.user!.id;
+			const forcePublished = event.url.searchParams.has('published');
 			const projectRows = await db
 				.select({ ownerId: project.ownerId })
 				.from(project)
@@ -29,8 +30,8 @@ export const load: PageServerLoad = async (event) => {
 				? currentUserId === ownerId
 				: currentUserId === doc.writerUserId;
 
-			// Non-writers always see the last committed version
-			if (!canWrite) {
+			// Non-writers or ?published param always see the last committed version
+			if (!canWrite || forcePublished) {
 				if (!doc.currentVersionId) {
 					return { ...doc, content: null, hasDraft: false };
 				}
@@ -192,6 +193,7 @@ export const load: PageServerLoad = async (event) => {
 		projectDocs,
 		backlinks,
 		externalDocs,
-		unpublished: docResult.content === null
+		unpublished: docResult.content === null,
+		forcePublished: event.url.searchParams.has('published')
 	};
 };
