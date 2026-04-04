@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, keymap, highlightActiveLine, tooltips, Decoration, WidgetType, ViewPlugin } from '@codemirror/view';
+	import { EditorView, keymap, highlightActiveLine, tooltips, Decoration, WidgetType, ViewPlugin, placeholder } from '@codemirror/view';
 	import { EditorState, StateEffect, StateField } from '@codemirror/state';
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { markdown } from '@codemirror/lang-markdown';
@@ -460,6 +460,7 @@
 	function buildExtensions() {
 		const exts = [
 			history(),
+			placeholder('Empieza a escribir…'),
 			highlightActiveLine(),
 			keymap.of([
 				{
@@ -705,6 +706,7 @@
 			state: EditorState.create({ doc, extensions: buildExtensions() }),
 			parent: el
 		});
+		view.focus();
 	}
 
 	function rebuildView() {
