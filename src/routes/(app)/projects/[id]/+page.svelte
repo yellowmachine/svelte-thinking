@@ -427,10 +427,12 @@
 				userId: collaboratorToRemove.userId
 			});
 			await invalidateAll();
-		} finally {
-			removingCollaborator = false;
 			showRemoveCollaborator = false;
 			collaboratorToRemove = null;
+		} catch (e: unknown) {
+			alert(e instanceof Error ? e.message : 'Error removing collaborator');
+		} finally {
+			removingCollaborator = false;
 		}
 	}
 

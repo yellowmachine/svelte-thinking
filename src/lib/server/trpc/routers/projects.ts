@@ -173,24 +173,28 @@ export const projectsRouter = router({
   removeCollaborator: protectedProcedure
     .input(z.object({ projectId: z.string(), userId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const proj = await ctx.db
-        .select({ ownerId: project.ownerId })
-        .from(project)
-        .where(eq(project.id, input.projectId))
-        .limit(1);
+      const proj = await ctx.withRLS((db) =>
+        db
+          .select({ ownerId: project.ownerId })
+          .from(project)
+          .where(eq(project.id, input.projectId))
+          .limit(1)
+      );
 
       if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
       if (proj[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
       if (input.userId === proj[0].ownerId) throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot remove the project owner.' });
 
-      await ctx.db
-        .delete(projectCollaborator)
-        .where(
-          and(
-            eq(projectCollaborator.projectId, input.projectId),
-            eq(projectCollaborator.userId, input.userId)
+      await ctx.withRLS((db) =>
+        db
+          .delete(projectCollaborator)
+          .where(
+            and(
+              eq(projectCollaborator.projectId, input.projectId),
+              eq(projectCollaborator.userId, input.userId)
+            )
           )
-        );
+      );
     }),
 
   // Owner activa/desactiva visibilidad pública del proyecto
