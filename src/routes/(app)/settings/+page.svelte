@@ -23,8 +23,15 @@
 	let confirmPassword = $state('');
 
 	// Active section — initialise from ?tab= query param if present
-	const VALID_TABS = ['profile', 'ai', 'security', 'appearance', 'organizations', 'storage'] as const;
-	type Tab = typeof VALID_TABS[number];
+	const VALID_TABS = [
+		'profile',
+		'ai',
+		'security',
+		'appearance',
+		'organizations',
+		'storage'
+	] as const;
+	type Tab = (typeof VALID_TABS)[number];
 	const initialTab = $page.url.searchParams.get('tab');
 	let activeTab: Tab = $state(
 		VALID_TABS.includes(initialTab as Tab) ? (initialTab as Tab) : 'profile'
@@ -304,7 +311,7 @@
 			}
 			s3Loaded = true;
 		} catch {
-			s3Error = 'Error cargando la configuración S3.';
+			s3Error = 'Error loading the S3 configuration.';
 		} finally {
 			loadingS3 = false;
 		}
@@ -328,9 +335,9 @@
 			s3AccessKey = '';
 			s3SecretKey = '';
 			s3Config = await trpc.s3Config.get.query();
-			s3Success = 'Configuración guardada. Prueba la conexión para verificarla.';
+			s3Success = 'Configuration saved. Test the connection to verify it.';
 		} catch (e: unknown) {
-			s3Error = e instanceof Error ? e.message : 'Error guardando la configuración.';
+			s3Error = e instanceof Error ? e.message : 'Error saving the S3 configuration.';
 		} finally {
 			s3Saving = false;
 		}
@@ -343,13 +350,13 @@
 		try {
 			const result = await trpc.s3Config.test.mutate();
 			if (result.ok) {
-				s3Success = 'Conexión verificada correctamente.';
+				s3Success = 'Connection successfully verified.';
 				s3Config = await trpc.s3Config.get.query();
 			} else {
-				s3Error = result.error ?? 'La conexión falló. Revisa las credenciales y el bucket.';
+				s3Error = result.error ?? 'The connection failed. Check the credentials and the bucket.';
 			}
 		} catch (e: unknown) {
-			s3Error = e instanceof Error ? e.message : 'Error al probar la conexión.';
+			s3Error = e instanceof Error ? e.message : 'Error testing connection.';
 		} finally {
 			s3Testing = false;
 		}
@@ -366,9 +373,9 @@
 			s3Bucket = '';
 			s3Region = 'us-east-1';
 			s3PublicUrl = '';
-			s3Success = 'Configuración eliminada.';
+			s3Success = 'Configuration deleted.';
 		} catch (e: unknown) {
-			s3Error = e instanceof Error ? e.message : 'Error eliminando la configuración.';
+			s3Error = e instanceof Error ? e.message : 'Error deleting configuration.';
 		} finally {
 			s3Removing = false;
 		}
@@ -430,7 +437,7 @@
 				? 'border-b-2 border-accent font-medium text-accent'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
-			Asistente IA
+			AI Assistant
 		</button>
 		<button
 			type="button"
@@ -439,7 +446,7 @@
 				? 'border-b-2 border-accent font-medium text-accent'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
-			Seguridad
+			Security
 		</button>
 		<button
 			type="button"
@@ -466,7 +473,7 @@
 				? 'border-b-2 border-accent font-medium text-accent'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
-			Almacenamiento
+			Storage
 		</button>
 	</div>
 
@@ -500,7 +507,7 @@
 								disabled
 								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
 							>
-								Cambiar foto
+								Change photo
 							</button>
 							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 								Coming soon
@@ -511,7 +518,7 @@
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div class="flex flex-col gap-1.5">
 							<label for="name" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-								Nombre
+								Name
 							</label>
 							<input
 								id="name"
@@ -531,7 +538,7 @@
 								bind:value={email}
 								readonly={data.isAdmin}
 								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink
-									{data.isAdmin ? 'opacity-60 cursor-default' : ''}"
+									{data.isAdmin ? 'cursor-default opacity-60' : ''}"
 							/>
 							{#if data.isAdmin}
 								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
@@ -563,15 +570,26 @@
 
 				<div class="flex items-center justify-between gap-4">
 					<div class="flex items-center gap-3">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="shrink-0 text-ink dark:text-dark-ink">
-							<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="currentColor"
+							aria-hidden="true"
+							class="shrink-0 text-ink dark:text-dark-ink"
+						>
+							<path
+								d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"
+							/>
 						</svg>
 						<div>
 							<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">GitHub</p>
 							{#if data.githubLinked}
 								<p class="font-sans text-xs text-green-600 dark:text-green-400">Connected</p>
 							{:else}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Not connected</p>
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									Not connected
+								</p>
 							{/if}
 						</div>
 					</div>
@@ -579,9 +597,21 @@
 					{#if data.githubLinked}
 						<div class="flex flex-col items-end gap-1.5">
 							<div class="flex items-center gap-2">
-								<span class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 font-sans text-xs font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
-									<svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-										<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+								<span
+									class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 font-sans text-xs font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400"
+								>
+									<svg
+										width="12"
+										height="12"
+										viewBox="0 0 20 20"
+										fill="currentColor"
+										aria-hidden="true"
+									>
+										<path
+											fill-rule="evenodd"
+											d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+											clip-rule="evenodd"
+										/>
 									</svg>
 									Linked
 								</span>
@@ -594,7 +624,9 @@
 										return async ({ result, update }) => {
 											unlinkingGitHub = false;
 											if (result.type === 'failure') {
-												unlinkGitHubError = (result.data as { message?: string })?.message ?? 'Error unlinking account';
+												unlinkGitHubError =
+													(result.data as { message?: string })?.message ??
+													'Error unlinking account';
 											} else {
 												await update();
 												await invalidateAll();
@@ -621,8 +653,16 @@
 								type="submit"
 								class="inline-flex items-center gap-2 rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
 							>
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-									<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 24 24"
+									fill="currentColor"
+									aria-hidden="true"
+								>
+									<path
+										d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"
+									/>
 								</svg>
 								Connect GitHub
 							</button>
@@ -825,7 +865,8 @@
 				<a
 					href="/usage"
 					class="font-sans text-sm text-accent underline decoration-dotted hover:decoration-solid"
-				>View AI usage dashboard →</a>
+					>View AI usage dashboard →</a
+				>
 			</div>
 			{#if aiError}
 				<div
@@ -1215,8 +1256,21 @@
 								class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
 							>
 								<div class="mb-3 flex items-start gap-2">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true">
-										<path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+										aria-hidden="true"
+									>
+										<path
+											d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
 									</svg>
 									<div>
 										<p class="font-sans text-xs font-semibold text-amber-700 dark:text-amber-400">
@@ -1242,15 +1296,32 @@
 										class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
 									>
 										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-											<rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
-											<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5"/>
+											<rect
+												x="9"
+												y="9"
+												width="13"
+												height="13"
+												rx="2"
+												stroke="currentColor"
+												stroke-width="1.5"
+											/>
+											<path
+												d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+												stroke="currentColor"
+												stroke-width="1.5"
+											/>
 										</svg>
 										Copy all
 									</button>
 									<button
 										type="button"
 										onclick={() => {
-											const blob = new Blob([`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`], { type: 'text/plain' });
+											const blob = new Blob(
+												[
+													`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`
+												],
+												{ type: 'text/plain' }
+											);
 											const a = document.createElement('a');
 											a.href = URL.createObjectURL(blob);
 											a.download = 'scholio-recovery-codes.txt';
@@ -1260,7 +1331,13 @@
 										class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
 									>
 										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-											<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+											<path
+												d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+												stroke="currentColor"
+												stroke-width="1.5"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
 										</svg>
 										Download
 									</button>
@@ -1311,8 +1388,21 @@
 								class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
 							>
 								<div class="mb-3 flex items-start gap-2">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true">
-										<path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+										aria-hidden="true"
+									>
+										<path
+											d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
 									</svg>
 									<div>
 										<p class="font-sans text-xs font-semibold text-amber-700 dark:text-amber-400">
@@ -1338,15 +1428,32 @@
 										class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
 									>
 										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-											<rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
-											<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5"/>
+											<rect
+												x="9"
+												y="9"
+												width="13"
+												height="13"
+												rx="2"
+												stroke="currentColor"
+												stroke-width="1.5"
+											/>
+											<path
+												d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+												stroke="currentColor"
+												stroke-width="1.5"
+											/>
 										</svg>
 										Copy all
 									</button>
 									<button
 										type="button"
 										onclick={() => {
-											const blob = new Blob([`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`], { type: 'text/plain' });
+											const blob = new Blob(
+												[
+													`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`
+												],
+												{ type: 'text/plain' }
+											);
 											const a = document.createElement('a');
 											a.href = URL.createObjectURL(blob);
 											a.download = 'scholio-recovery-codes.txt';
@@ -1356,7 +1463,13 @@
 										class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
 									>
 										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-											<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+											<path
+												d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+												stroke="currentColor"
+												stroke-width="1.5"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
 										</svg>
 										Download
 									</button>
@@ -1424,8 +1537,8 @@
 						Almacenamiento S3
 					</h2>
 					<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Conecta tu propio bucket S3 (AWS, Cloudflare R2, Backblaze B2, MinIO…) para subir fotos
-						y datasets. Sin configuración, la subida de archivos queda deshabilitada.
+						Connect your own S3 bucket (AWS, Cloudflare R2, Backblaze B2, MinIO, etc.) 
+            to upload photos and datasets. Without configuration, file uploads are disabled.
 					</p>
 
 					<!-- Privacy notice -->
@@ -1446,8 +1559,8 @@
 							/>
 						</svg>
 						<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-							Las credenciales se cifran con AWS KMS antes de guardarse. Scholio no accede a tu
-							bucket salvo para subir o eliminar archivos que tú mismo gestionas.
+							Credentials are encrypted with AWS KMS before being stored. Scholio does not 
+              access your bucket except to upload or delete files that you manage yourself.
 						</p>
 					</div>
 
@@ -1464,7 +1577,7 @@
 									>
 								</p>
 								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									{s3Config.verified ? 'Verificado' : 'Sin verificar'} · Región: {s3Config.region}
+									{s3Config.verified ? 'Verified' : 'Not verified'} · Región: {s3Config.region}
 								</p>
 							</div>
 							<div class="flex items-center gap-3">
@@ -1481,7 +1594,7 @@
 									disabled={s3Testing}
 									class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 								>
-									{s3Testing ? 'Probando...' : 'Probar conexión'}
+									{s3Testing ? 'Testing...' : 'Test connection'}
 								</button>
 								<button
 									type="button"
@@ -1489,7 +1602,7 @@
 									disabled={s3Removing}
 									class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
 								>
-									Eliminar
+									Delete
 								</button>
 							</div>
 						</div>
