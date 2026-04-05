@@ -732,16 +732,32 @@
 		autoSaveTimer = setTimeout(doSaveDraft, 30_000);
 	}
 
+	function extractParagraph(md: string, from: number): string {
+		// Walk backwards to the previous blank line (paragraph boundary)
+		let start = from;
+		while (start > 0 && !(md[start - 1] === '\n' && (start < 2 || md[start - 2] === '\n'))) {
+			start--;
+		}
+		// Walk forwards to the next blank line
+		let end = from;
+		while (end < md.length && !(md[end] === '\n' && end + 1 < md.length && md[end + 1] === '\n')) {
+			end++;
+		}
+		return md.slice(start, end).trim();
+	}
+
 	async function submitComment() {
 		if (!currentSelection || !newCommentText.trim()) return;
 		submittingComment = true;
 		try {
 			const lineStart = posToLine(content, currentSelection.from);
 			const lineEnd = posToLine(content, currentSelection.to);
+			const anchorContext = extractParagraph(content, currentSelection.from);
 			const created = await trpc.comments.createInline.mutate({
 				documentId: data.document.id,
 				content: newCommentText.trim(),
 				anchorText: currentSelection.text,
+				anchorContext: anchorContext || undefined,
 				lineStart,
 				lineEnd,
 				characterStart: currentSelection.from,

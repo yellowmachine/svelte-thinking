@@ -19,6 +19,7 @@ export const comment = scholioSchema.table(
 		content: text('content').notNull(),
 		// Solo para comentarios inline
 		anchorText: text('anchor_text'),
+		anchorContext: text('anchor_context'),
 		lineStart: integer('line_start'),
 		lineEnd: integer('line_end'),
 		characterStart: integer('character_start'),
