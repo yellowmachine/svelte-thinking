@@ -35,7 +35,11 @@
 <div class="flex h-screen flex-col overflow-hidden bg-paper-ui dark:bg-dark-paper-ui">
 	<!-- Desktop nav -->
 	<div class="hidden sm:block">
-		<Navbar user={data.user} pendingInvitationCount={data.pendingInvitationCount} orgs={data.orgs} />
+		<Navbar
+			user={data.user}
+			pendingInvitationCount={data.pendingInvitationCount}
+			orgs={data.orgs}
+		/>
 	</div>
 	<!-- Mobile header -->
 	<MobileHeader user={data.user} />
@@ -45,17 +49,19 @@
 	</main>
 	<ConnectivityBanner />
 	<FeedbackButton />
-	<footer class="hidden border-t border-paper-border px-6 py-3 sm:block dark:border-dark-paper-border">
+	<footer
+		class="hidden border-t border-paper-border px-6 py-3 sm:block dark:border-dark-paper-border"
+	>
 		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			Scholio Beta · Desarrollado con
+			Scholio Beta · Developed with
 			<a
 				href="https://claude.ai/code"
 				target="_blank"
 				rel="noopener noreferrer"
 				class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
-			>Claude Code</a
+				>Claude Code</a
 			>
-			· Asistente IA impulsado por
+			· AI asistent powered by
 			<span class="font-medium">Claude Haiku 4.5</span> (Anthropic)
 		</p>
 	</footer>
