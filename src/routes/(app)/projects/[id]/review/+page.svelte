@@ -97,15 +97,23 @@
 							<div class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper">
 								<!-- Thread anchor / label -->
 								{#if thread.anchorContext && thread.anchorText}
-									<p class="mb-2 rounded-md border-l-2 border-amber-300 bg-amber-50 px-2.5 py-1.5 font-sans text-xs leading-relaxed text-amber-900 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-200">
+									<!-- Selection comment: paragraph with highlight -->
+									<p class="mb-2 rounded-md border-l-2 border-amber-300 bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink dark:border-amber-600 dark:bg-dark-paper-ui dark:text-dark-ink">
 										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 										{@html highlightAnchor(thread.anchorContext, thread.anchorText)}
 									</p>
+								{:else if thread.anchorContext && thread.paragraphNumber}
+									<!-- Paragraph comment: show the paragraph text -->
+									<p class="mb-2 rounded-md border-l-2 border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+										¶{thread.paragraphNumber} · {thread.anchorContext}
+									</p>
 								{:else if thread.anchorText}
-									<p class="mb-2 rounded-md border-l-2 border-amber-300 bg-amber-50 px-2.5 py-1.5 font-sans text-xs italic text-amber-800 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-300">
+									<!-- Fallback: plain quoted selection (no context stored) -->
+									<p class="mb-2 rounded-md border-l-2 border-amber-300 bg-paper-ui px-2.5 py-1.5 font-sans text-xs italic text-ink-muted dark:border-amber-600 dark:bg-dark-paper-ui dark:text-dark-ink-muted">
 										"{thread.anchorText}"
 									</p>
 								{:else if thread.paragraphNumber}
+									<!-- Fallback: paragraph number only (no context stored) -->
 									<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 										¶{thread.paragraphNumber}
 									</p>
@@ -127,16 +135,29 @@
 										</p>
 									</div>
 
-									{#if data.project.ownerId === data.currentUserId || thread.authorId === data.currentUserId}
-										<button
-											type="button"
-											onclick={() => resolveThread(thread.id)}
-											class="shrink-0 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-green-900/20 dark:hover:text-green-400"
-											title="Mark as resolved"
+									<div class="flex shrink-0 items-center gap-1.5">
+										<a
+											href="/projects/{data.project.id}/documents/{doc.documentId}?commentId={thread.id}"
+											class="rounded-md border border-paper-border px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
+											title="View in document"
 										>
-											Resolve
-										</button>
-									{/if}
+											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+												<polyline points="15 3 21 3 21 9"/>
+												<line x1="10" y1="14" x2="21" y2="3"/>
+											</svg>
+										</a>
+										{#if data.project.ownerId === data.currentUserId || thread.authorId === data.currentUserId}
+											<button
+												type="button"
+												onclick={() => resolveThread(thread.id)}
+												class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-green-900/20 dark:hover:text-green-400"
+												title="Mark as resolved"
+											>
+												Resolve
+											</button>
+										{/if}
+									</div>
 								</div>
 
 								<!-- Replies -->

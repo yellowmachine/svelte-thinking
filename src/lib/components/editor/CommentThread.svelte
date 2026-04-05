@@ -31,6 +31,7 @@
 	let {
 		comment,
 		currentUserId,
+		isActive = false,
 		onresolved,
 		onreopened,
 		onreplyadded,
@@ -41,6 +42,7 @@
 	}: {
 		comment: Comment;
 		currentUserId: string;
+		isActive?: boolean;
 		onresolved?: (id: string) => void;
 		onreopened?: (id: string) => void;
 		onreplyadded?: (commentId: string, reply: Reply) => void;
@@ -116,7 +118,9 @@
 </script>
 
 <div
-	class="group cursor-pointer rounded-lg border border-paper-border bg-paper p-3 transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper {comment.resolved
+	class="group cursor-pointer rounded-lg border bg-paper p-3 transition-colors dark:bg-dark-paper {isActive
+		? 'border-amber-400 ring-1 ring-amber-400/40 dark:border-amber-500 dark:ring-amber-500/30'
+		: 'border-paper-border hover:border-accent/40 dark:border-dark-paper-border'} {comment.resolved
 		? 'opacity-60'
 		: ''}"
 	role="button"
