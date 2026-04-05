@@ -274,5 +274,32 @@ export const invitationsRouter = router({
 
 		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 		return rows[0];
+	}),
+
+	// El invitado rechaza la invitación — usa ctx.db (superuser) porque RLS no permite
+	// al invitado modificar filas propias (solo el owner puede via RLS)
+	decline: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: invitationId }) => {
+		const me = await ctx.db
+			.select({ email: user.email })
+			.from(user)
+			.where(eq(user.id, ctx.user.id))
+			.limit(1);
+
+		if (!me[0]) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+		const rows = await ctx.db
+			.update(projectInvitation)
+			.set({ status: 'cancelled' })
+			.where(
+				and(
+					eq(projectInvitation.id, invitationId),
+					eq(projectInvitation.invitedEmail, me[0].email),
+					eq(projectInvitation.status, 'pending')
+				)
+			)
+			.returning({ id: projectInvitation.id });
+
+		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+		return rows[0];
 	})
 });
