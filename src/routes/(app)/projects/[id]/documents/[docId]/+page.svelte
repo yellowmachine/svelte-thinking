@@ -1615,43 +1615,17 @@
 				{/if}
 
 				<!-- Citation style selector (all modes) -->
-				<div class="relative">
-					<button
-						onclick={(e) => {
-							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-							citeStyleMenuPos = { top: rect.bottom + 4, left: rect.left };
-							showCiteStyleMenu = !showCiteStyleMenu;
-						}}
-						class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						{CITATION_STYLE_LABELS[citationStyle]}
-						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-					</button>
-					{#if showCiteStyleMenu}
-						<button
-							class="fixed inset-0 z-10"
-							onclick={() => (showCiteStyleMenu = false)}
-							aria-label="Close menu"
-							tabindex="-1"
-						></button>
-						<div
-							class="fixed z-20 w-28 overflow-hidden rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-							style="top: {citeStyleMenuPos.top}px; left: {citeStyleMenuPos.left}px;"
-						>
-							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
-								<button
-									onclick={() => { setCitationStyle(s as CitationStyle); showCiteStyleMenu = false; }}
-									class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle === s ? 'font-semibold text-accent' : 'text-ink-muted dark:text-dark-ink-muted'}"
-								>
-									{label}
-									{#if citationStyle === s}
-										<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-									{/if}
-								</button>
-							{/each}
-						</div>
-					{/if}
-				</div>
+				<button
+					onclick={(e) => {
+						const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+						citeStyleMenuPos = { top: rect.bottom + 4, left: rect.left };
+						showCiteStyleMenu = !showCiteStyleMenu;
+					}}
+					class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					{CITATION_STYLE_LABELS[citationStyle]}
+					<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+				</button>
 
 				<button
 					onclick={toggleComments}
@@ -1788,68 +1762,20 @@
 					</select>
 				</div>
 
-				<!-- Export dropdown -->
-				<div class="relative">
-					<button
-						onclick={(e) => {
-							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-							exportMenuPos = { top: rect.bottom + 4, right: window.innerWidth - rect.right };
-							showExport = !showExport;
-						}}
-						class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						Exportar
-						<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-							<path
-								d="M2 3.5l3 3 3-3"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
-					</button>
-					{#if showExport}
-						<button
-							class="fixed inset-0 z-10"
-							onclick={() => (showExport = false)}
-							aria-label="Close menu"
-							tabindex="-1"
-						></button>
-						<div
-							class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-							style="top: {exportMenuPos.top}px; right: {exportMenuPos.right}px;"
-						>
-							<a
-								href="/api/projects/{data.document.projectId}/documents/{data.document
-									.id}/export?format=latex"
-								onclick={() => (showExport = false)}
-								class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-							>
-								<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>
-								LaTeX
-							</a>
-							<a
-								href="/api/projects/{data.document.projectId}/documents/{data.document
-									.id}/export?format=typst"
-								onclick={() => (showExport = false)}
-								class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-							>
-								<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>
-								Typst
-							</a>
-							<a
-								href="/api/projects/{data.document.projectId}/documents/{data.document
-									.id}/export?format=pdf"
-								onclick={() => (showExport = false)}
-								class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-							>
-								<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.pdf</span>
-								PDF
-							</a>
-						</div>
-					{/if}
-				</div>
+				<!-- Export dropdown trigger only — menu rendered at root level to escape backdrop-filter -->
+				<button
+					onclick={(e) => {
+						const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+						exportMenuPos = { top: rect.bottom + 4, right: window.innerWidth - rect.right };
+						showExport = !showExport;
+					}}
+					class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					Exportar
+					<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+						<path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</button>
 
 				<button
 					onclick={togglePublic}
@@ -3443,6 +3369,45 @@
 		{/if}
 	</div>
 	<!-- end desktop editor wrapper -->
+{/if}
+
+<!-- Floating dropdown menus — rendered at root level to escape backdrop-filter containing block -->
+{#if showCiteStyleMenu}
+	<button class="fixed inset-0 z-10" onclick={() => (showCiteStyleMenu = false)} aria-label="Close menu" tabindex="-1"></button>
+	<div
+		class="fixed z-20 w-28 overflow-hidden rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		style="top: {citeStyleMenuPos.top}px; left: {citeStyleMenuPos.left}px;"
+	>
+		{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
+			<button
+				onclick={() => { setCitationStyle(s as CitationStyle); showCiteStyleMenu = false; }}
+				class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle === s ? 'font-semibold text-accent' : 'text-ink-muted dark:text-dark-ink-muted'}"
+			>
+				{label}
+				{#if citationStyle === s}
+					<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+				{/if}
+			</button>
+		{/each}
+	</div>
+{/if}
+
+{#if showExport}
+	<button class="fixed inset-0 z-10" onclick={() => (showExport = false)} aria-label="Close menu" tabindex="-1"></button>
+	<div
+		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		style="top: {exportMenuPos.top}px; right: {exportMenuPos.right}px;"
+	>
+		<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=latex" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
+		</a>
+		<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=typst" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
+		</a>
+		<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=pdf" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.pdf</span>PDF
+		</a>
+	</div>
 {/if}
 
 <svelte:window
