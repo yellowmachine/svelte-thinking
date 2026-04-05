@@ -12,6 +12,8 @@
 		title?: string;
 		/** Override the confirm button label. Defaults to "Delete" */
 		confirmLabel?: string;
+		/** Whether to require typing a 3-char code. Defaults to true. */
+		requireCode?: boolean;
 		onconfirm: () => void;
 		oncancel: () => void;
 	};
@@ -23,6 +25,7 @@
 		deleting = false,
 		title,
 		confirmLabel,
+		requireCode = true,
 		onconfirm,
 		oncancel
 	}: Props = $props();
@@ -38,7 +41,7 @@
 	let input = $state('');
 	let inputEl = $state<HTMLInputElement | undefined>(undefined);
 
-	const matches = $derived(input === code);
+	const matches = $derived(!requireCode || input === code);
 
 	// Regenerate code and reset input each time the dialog opens
 	$effect(() => {
@@ -130,33 +133,35 @@
 
 			<!-- Code confirmation -->
 			<div class="px-5 pt-4 pb-5">
-				<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					To confirm, type these three characters:
-				</p>
-				<div class="mb-3 flex justify-center gap-3">
-					{#each code.split('') as char}
-						<span
-							class="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-red-300 bg-red-50 font-mono text-xl font-bold tracking-widest text-red-700 dark:border-red-700/50 dark:bg-red-900/20 dark:text-red-300"
-						>
-							{char}
-						</span>
-					{/each}
-				</div>
-				<input
-					bind:this={inputEl}
-					bind:value={input}
-					type="text"
-					maxlength="3"
-					autocomplete="off"
-					autocorrect="off"
-					spellcheck="false"
-					onkeydown={(e) => e.key === 'Enter' && handleConfirm()}
-					placeholder="···"
-					class="w-full rounded-lg border px-3 py-2 text-center font-mono text-lg tracking-widest transition-colors focus:outline-none
-						{matches
-						? 'border-red-400 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-900/20 dark:text-red-300'
-						: 'border-paper-border bg-paper-ui text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink'}"
-				/>
+				{#if requireCode}
+					<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						To confirm, type these three characters:
+					</p>
+					<div class="mb-3 flex justify-center gap-3">
+						{#each code.split('') as char}
+							<span
+								class="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-red-300 bg-red-50 font-mono text-xl font-bold tracking-widest text-red-700 dark:border-red-700/50 dark:bg-red-900/20 dark:text-red-300"
+							>
+								{char}
+							</span>
+						{/each}
+					</div>
+					<input
+						bind:this={inputEl}
+						bind:value={input}
+						type="text"
+						maxlength="3"
+						autocomplete="off"
+						autocorrect="off"
+						spellcheck="false"
+						onkeydown={(e) => e.key === 'Enter' && handleConfirm()}
+						placeholder="···"
+						class="w-full rounded-lg border px-3 py-2 text-center font-mono text-lg tracking-widest transition-colors focus:outline-none
+							{matches
+							? 'border-red-400 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-900/20 dark:text-red-300'
+							: 'border-paper-border bg-paper-ui text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink'}"
+					/>
+				{/if}
 
 				<div class="mt-4 flex gap-3">
 					<button
