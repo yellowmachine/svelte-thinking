@@ -133,6 +133,7 @@
 	let refsLoaded = $state(false);
 	let showCitePicker = $state(false);
 	let showCiteStyleMenu = $state(false);
+	let citeStyleMenuPos = $state({ top: 0, left: 0 });
 	let citeSearch = $state('');
 	let editorEl: {
 		insertAtCursor: (text: string) => void;
@@ -1616,14 +1617,27 @@
 				<!-- Citation style selector (all modes) -->
 				<div class="relative">
 					<button
-						onclick={(e) => { e.stopPropagation(); showCiteStyleMenu = !showCiteStyleMenu; }}
+						onclick={(e) => {
+							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+							citeStyleMenuPos = { top: rect.bottom + 4, left: rect.left };
+							showCiteStyleMenu = !showCiteStyleMenu;
+						}}
 						class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						{CITATION_STYLE_LABELS[citationStyle]}
 						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 					</button>
 					{#if showCiteStyleMenu}
-						<div class="absolute top-full left-0 z-30 mt-1 w-28 rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+						<button
+							class="fixed inset-0 z-10"
+							onclick={() => (showCiteStyleMenu = false)}
+							aria-label="Close menu"
+							tabindex="-1"
+						></button>
+						<div
+							class="fixed z-20 w-28 overflow-hidden rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+							style="top: {citeStyleMenuPos.top}px; left: {citeStyleMenuPos.left}px;"
+						>
 							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
 								<button
 									onclick={() => { setCitationStyle(s as CitationStyle); showCiteStyleMenu = false; }}
