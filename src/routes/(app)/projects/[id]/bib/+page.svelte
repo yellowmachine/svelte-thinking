@@ -2589,6 +2589,7 @@
 	label={refToDelete?.citeKey ?? ''}
 	warning="The reference will be removed from this project. Documents citing it will keep the text but lose the formatted bibliography entry."
 	deleting={deletingRef}
+	requireCode={false}
 	onconfirm={confirmDeleteRef}
 	oncancel={() => (refToDelete = null)}
 />
