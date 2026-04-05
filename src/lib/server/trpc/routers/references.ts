@@ -483,6 +483,47 @@ export const referencesRouter = router({
 			return { inserted, skipped };
 		}),
 
+	// ── Generate PDF from the reference's URL via scipy ─────────────────────
+	generatePdfFromUrl: protectedProcedure
+		.input(z.string()) // refId
+		.mutation(async ({ ctx, input: refId }) => {
+			const [ref] = (await ctx.withRLS((db) =>
+				db
+					.select({ projectId: projectReference.projectId, url: projectReference.url })
+					.from(projectReference)
+					.where(eq(projectReference.id, refId))
+					.limit(1)
+			)) as { projectId: string; url: string | null }[];
+
+			if (!ref?.url) return { pdfKey: null };
+
+			try {
+				const { scipy } = await import('$lib/server/scipy');
+				const result = await scipy.pdfFromUrl(ref.url);
+				if (!result.ok) return { pdfKey: null };
+
+				const { resolveProjectS3Config } = await import('$lib/server/s3Storage');
+				const { uploadFileWithConfig } = await import('$lib/server/storage');
+				const s3 = await resolveProjectS3Config(ref.projectId, ctx.user.id, ctx.withRLS);
+				if (!s3) return { pdfKey: null };
+
+				const pdfBytes = Buffer.from(result.pdf, 'base64');
+				const key = `projects/${ref.projectId}/references/${refId}.pdf`;
+				await uploadFileWithConfig(s3, key, pdfBytes, 'application/pdf');
+
+				await ctx.withRLS((db) =>
+					db
+						.update(projectReference)
+						.set({ pdfKey: key, updatedAt: new Date() })
+						.where(eq(projectReference.id, refId))
+				);
+
+				return { pdfKey: key };
+			} catch {
+				return { pdfKey: null };
+			}
+		}),
+
 	// ── Export all references as a .bib file string ───────────────────────
 
 	exportBibtex: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {

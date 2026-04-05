@@ -559,6 +559,7 @@
 	let urlLoading = $state(false);
 	let urlResult = $state<UrlResult | null>(null);
 	let urlError = $state('');
+	let urlSavePdf = $state(false);
 
 	async function runUrlLookup() {
 		if (!urlInput.trim()) return;
@@ -579,8 +580,9 @@
 
 	async function acceptUrlResult() {
 		if (!urlResult) return;
+		const sourceUrl = urlResult.url;
 		try {
-			await trpc.references.create.mutate({
+			const newRef = await trpc.references.create.mutate({
 				projectId: data.project.id,
 				reference: {
 					citeKey: urlResult.citeKey,
@@ -598,7 +600,7 @@
 					booktitle: urlResult.booktitle ?? '',
 					school: urlResult.school ?? '',
 					institution: urlResult.institution ?? '',
-					url: urlResult.url,
+					url: sourceUrl,
 					doi: '',
 					note: '',
 					isbn: '',
@@ -612,9 +614,23 @@
 			});
 			const fresh = await trpc.references.list.query(data.project.id);
 			references = fresh as typeof references;
+			const shouldGeneratePdf = urlSavePdf;
 			urlInput = '';
 			urlResult = null;
+			urlSavePdf = false;
 			panel = null;
+			if (!shouldGeneratePdf) return;
+			// Best-effort: generate PDF in background and update the list item when done
+			const refId = newRef.id;
+			trpc.references.generatePdfFromUrl.mutate(refId)
+				.then((res) => {
+					if (res?.pdfKey) {
+						references = references.map((r) =>
+							r.id === refId ? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` } : r
+						);
+					}
+				})
+				.catch(() => {});
 		} catch (e) {
 			urlError = e instanceof Error ? e.message : 'Could not save reference.';
 		}
@@ -790,6 +806,7 @@
 						urlInput = '';
 						urlResult = null;
 						urlError = '';
+						urlSavePdf = false;
 					}}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
@@ -2182,6 +2199,16 @@
 							<p class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">
 								Review and edit the fields after adding if needed.
 							</p>
+							<label class="flex cursor-pointer items-center gap-2">
+								<input
+									type="checkbox"
+									bind:checked={urlSavePdf}
+									class="h-3.5 w-3.5 rounded accent-accent"
+								/>
+								<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+									Save a PDF snapshot
+								</span>
+							</label>
 							<button
 								onclick={acceptUrlResult}
 								class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover"
