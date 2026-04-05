@@ -804,17 +804,19 @@
 		);
 	}
 
-	const saveStatusLabel: Record<
-		'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline',
-		string
-	> = {
-		idle: '',
-		pending: 'Unsaved changes',
-		saving: 'Saving...',
-		saved: 'Saved',
-		error: 'Error saving',
-		offline: 'Guardado offline'
-	};
+	// 'pending' only shows "Unsaved changes" when content has actually diverged from last save.
+	// Without this guard, loading a document with an existing draft shows the label
+	// while the button is disabled (saveStatus='pending' but isDirty=false).
+	const saveStatusLabel = $derived((): string => {
+		switch (saveStatus) {
+			case 'pending': return isDirty ? 'Unsaved changes' : '';
+			case 'saving':  return 'Saving...';
+			case 'saved':   return 'Saved';
+			case 'error':   return 'Error saving';
+			case 'offline': return 'Guardado offline';
+			default:        return '';
+		}
+	});
 
 	const openCommentsCount = $derived(inlineComments.filter((c) => c.status === 'open').length);
 
@@ -1405,7 +1407,7 @@
 				{/if}
 
 				<!-- Save status (right-aligned) -->
-				{#if saveStatus !== 'idle'}
+				{#if saveStatusLabel()}
 					<span
 						class="ml-auto shrink-0 font-sans text-xs {saveStatus === 'error'
 							? 'text-red-500'
@@ -1413,7 +1415,7 @@
 								? 'text-green-600'
 								: 'text-ink-faint dark:text-dark-ink-faint'}"
 					>
-						{saveStatusLabel[saveStatus]}
+						{saveStatusLabel()}
 					</span>
 				{/if}
 			</div>
