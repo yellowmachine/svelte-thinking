@@ -454,19 +454,20 @@
 	/* Paragraph markers */
 	.prose :global(.para-marker) {
 		position: absolute;
-		right: -3.5rem;
-		top: 0.15em;
+		right: 0.25rem;
+		top: 0.2em;
 		font-family: var(--font-sans, sans-serif);
-		font-size: 0.7rem;
+		font-size: 0.65rem;
 		color: var(--color-ink-faint, #a8a29e);
-		background: none;
+		background: var(--color-paper-ui, #ede8df);
 		border: none;
 		cursor: pointer;
-		padding: 0.1em 0.3em;
+		padding: 0.1em 0.35em;
 		border-radius: 3px;
 		opacity: 0;
 		transition: opacity 0.15s, color 0.15s;
 		white-space: nowrap;
+		line-height: 1.4;
 	}
 
 	.prose :global(p:hover > .para-marker),
