@@ -13,6 +13,15 @@ services:
     networks:
       - scholio-network
 
+  scipy:
+    build:
+      context: ./scipy-service
+    restart: unless-stopped
+    environment:
+      SCIPY_API_KEY: ${SCIPY_API_KEY}
+    networks:
+      - scholio-network
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped

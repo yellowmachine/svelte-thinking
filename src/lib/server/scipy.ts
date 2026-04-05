@@ -57,5 +57,11 @@ export const scipy = {
 		call('/stats/describe', { dataset: ref, columns: columns ?? [] }),
 
 	ttest: (ref: DatasetRef, opts: Record<string, unknown>) =>
-		call('/stats/ttest', { dataset: ref, ...opts })
+		call('/stats/ttest', { dataset: ref, ...opts }),
+
+	pdfFromUrl: (url: string) =>
+		call<{ ok: true; pdf: string } | { ok: false; code: string; message: string }>(
+			'/pdf/from-url',
+			{ url }
+		)
 };
