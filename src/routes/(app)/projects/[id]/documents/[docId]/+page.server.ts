@@ -81,6 +81,7 @@ export const load: PageServerLoad = async (event) => {
 					lineStart: comment.lineStart,
 					characterStart: comment.characterStart,
 					characterEnd: comment.characterEnd,
+					paragraphNumber: comment.paragraphNumber,
 					status: comment.status,
 					createdAt: comment.createdAt
 				})

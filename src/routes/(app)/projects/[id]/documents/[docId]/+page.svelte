@@ -457,6 +457,7 @@
 		lineStart: number | null;
 		characterStart: number | null;
 		characterEnd: number | null;
+		paragraphNumber: number | null;
 		status: 'open' | 'resolved';
 		createdAt: Date;
 		replies: Reply[];
@@ -764,7 +765,8 @@
 				lineStart,
 				lineEnd,
 				characterStart: currentSelection.from,
-				characterEnd: currentSelection.to
+				characterEnd: currentSelection.to,
+				paragraphNumber: undefined
 			});
 
 			const newComment: InlineComment = {
@@ -776,6 +778,7 @@
 				lineStart: created.lineStart,
 				characterStart: created.characterStart,
 				characterEnd: created.characterEnd,
+				paragraphNumber: null,
 				status: 'open',
 				createdAt: created.createdAt,
 				replies: []
@@ -796,7 +799,7 @@
 
 	function handleCommentClick(id: string) {
 		const c = inlineComments.find((x) => x.id === id);
-		if (!c) return;
+		if (!c || c.paragraphNumber !== null) return;
 		const anchor = findAnchor(content, c.anchorText ?? '', c.characterStart ?? 0);
 		if (anchor) scrollToRange = { ...anchor };
 	}
@@ -835,6 +838,19 @@
 			.map((c) => ({ id: c.id, anchorText: c.anchorText! }))
 	);
 
+	const paragraphComments = $derived(
+		inlineComments
+			.filter((c) => c.status === 'open' && c.paragraphNumber !== null)
+			.map((c) => ({ id: c.id, paragraphNumber: c.paragraphNumber! }))
+	);
+
+	// Paragraph comment form
+	let showNewParagraphComment = $state(false);
+	let pendingParagraphNumber = $state<number | null>(null);
+	let paragraphCommentPos = $state({ top: 0, right: 0 });
+	let paragraphCommentText = $state('');
+	let submittingParagraphComment = $state(false);
+
 	function handlePreviewSelection(sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) {
 		const from = content.indexOf(sel.text);
 		const to = from >= 0 ? from + sel.text.length : 0;
@@ -843,6 +859,53 @@
 
 	function handlePreviewCommentClick(id: string) {
 		showComments = true;
+	}
+
+	function handleParagraphComment(paragraphNumber: number, coords: { top: number; right: number }) {
+		pendingParagraphNumber = paragraphNumber;
+		paragraphCommentPos = coords;
+		paragraphCommentText = '';
+		showNewParagraphComment = true;
+	}
+
+	async function submitParagraphComment() {
+		if (!pendingParagraphNumber || !paragraphCommentText.trim()) return;
+		submittingParagraphComment = true;
+		try {
+			const created = await trpc.comments.createInline.mutate({
+				documentId: data.document.id,
+				content: paragraphCommentText.trim(),
+				paragraphNumber: pendingParagraphNumber,
+				anchorText: undefined,
+				lineStart: undefined,
+				lineEnd: undefined,
+				characterStart: undefined,
+				characterEnd: undefined
+			});
+
+			const newComment: InlineComment = {
+				id: created.id,
+				authorId: created.authorId,
+				authorName: data.currentUserId === created.authorId ? ((data as any).user?.name ?? '') : '',
+				content: created.content,
+				anchorText: null,
+				lineStart: null,
+				characterStart: null,
+				characterEnd: null,
+				paragraphNumber: created.paragraphNumber,
+				status: 'open',
+				createdAt: created.createdAt,
+				replies: []
+			};
+
+			inlineComments = [...inlineComments, newComment];
+			paragraphCommentText = '';
+			showNewParagraphComment = false;
+			pendingParagraphNumber = null;
+			showComments = true;
+		} finally {
+			submittingParagraphComment = false;
+		}
 	}
 
 	// Export dropdown
@@ -1935,6 +1998,8 @@
 									commentAnchors={previewCommentAnchors}
 									oncommentclick={handlePreviewCommentClick}
 									onselection={handlePreviewSelection}
+									{paragraphComments}
+									onparagraphcomment={handleParagraphComment}
 								/>
 							</div>
 						</div>
@@ -1960,6 +2025,8 @@
 									commentAnchors={previewCommentAnchors}
 									oncommentclick={handlePreviewCommentClick}
 									onselection={handlePreviewSelection}
+									{paragraphComments}
+									onparagraphcomment={handleParagraphComment}
 								/>
 							{/if}
 						{:else}
@@ -2409,6 +2476,43 @@
 									showNewComment = false;
 									newCommentText = '';
 								}}
+								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+							>
+								Cancel
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Paragraph comment form -->
+			{#if showNewParagraphComment && pendingParagraphNumber !== null}
+				<div
+					class="pointer-events-none fixed z-20"
+					style="top: {paragraphCommentPos.top}px; right: {window.innerWidth - paragraphCommentPos.right + 8}px;"
+				>
+					<div
+						class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+					>
+						<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							Comentario en ¶{pendingParagraphNumber}
+						</p>
+						<textarea
+							bind:value={paragraphCommentText}
+							rows={3}
+							placeholder="Write your comment…"
+							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						></textarea>
+						<div class="mt-2 flex gap-2">
+							<button
+								onclick={submitParagraphComment}
+								disabled={submittingParagraphComment || !paragraphCommentText.trim()}
+								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+							>
+								{submittingParagraphComment ? 'Saving…' : 'Comment'}
+							</button>
+							<button
+								onclick={() => { showNewParagraphComment = false; paragraphCommentText = ''; }}
 								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 							>
 								Cancel
