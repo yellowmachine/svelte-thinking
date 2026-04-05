@@ -898,7 +898,7 @@
 
 	// Export dropdown
 	let showExport = $state(false);
-	let exportMenuPos = $state({ top: 0, right: 0 });
+	let exportMenuPos = $state({ top: 0, left: 0 });
 
 	// ── AI task model labels (from layout data) ──────────────────────────────────
 	const aiTaskConfig = $derived(data.aiTaskConfig ?? {});
@@ -1617,6 +1617,7 @@
 				<!-- Citation style selector (all modes) -->
 				<button
 					onclick={(e) => {
+						e.stopPropagation();
 						const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 						citeStyleMenuPos = { top: rect.bottom + 4, left: rect.left };
 						showCiteStyleMenu = !showCiteStyleMenu;
@@ -1766,7 +1767,7 @@
 				<button
 					onclick={(e) => {
 						const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-						exportMenuPos = { top: rect.bottom + 4, right: window.innerWidth - rect.right };
+						exportMenuPos = { top: rect.bottom + 4, left: rect.left };
 						showExport = !showExport;
 					}}
 					class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
@@ -3396,7 +3397,7 @@
 	<button class="fixed inset-0 z-10" onclick={() => (showExport = false)} aria-label="Close menu" tabindex="-1"></button>
 	<div
 		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-		style="top: {exportMenuPos.top}px; right: {exportMenuPos.right}px;"
+		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
 		<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=latex" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
