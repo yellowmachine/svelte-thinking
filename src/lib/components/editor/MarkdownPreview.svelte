@@ -278,6 +278,12 @@
 		Promise.resolve().then(() => applyParagraphMarkers());
 	});
 
+	export function getParagraphText(n: number): string {
+		if (!container) return '';
+		const paragraphs = container.querySelectorAll('p');
+		return paragraphs[n - 1]?.textContent?.trim() ?? '';
+	}
+
 	export function scrollToComment(commentId: string, paragraphNumber: number | null) {
 		if (!container) return;
 		let target: Element | null = null;

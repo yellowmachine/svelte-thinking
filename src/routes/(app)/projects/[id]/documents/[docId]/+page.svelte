@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { onDestroy, untrack } from 'svelte';
+	import { onMount, onDestroy, untrack } from 'svelte';
 	import { goto, beforeNavigate } from '$app/navigation';
+	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
@@ -468,6 +469,7 @@
 	};
 
 	let showComments = $state(false);
+	let currentCommentId = $state<string | null>(null);
 	let inlineComments: InlineComment[] = $state(
 		untrack(() => (data.inlineComments as InlineComment[]) ?? [])
 	);
@@ -796,6 +798,7 @@
 	function handleCommentClick(id: string) {
 		const c = inlineComments.find((x) => x.id === id);
 		if (!c) return;
+		currentCommentId = id;
 		// Scroll preview to the relevant element
 		previewRef?.scrollToComment(id, c.paragraphNumber);
 		splitPreviewRef?.scrollToComment(id, c.paragraphNumber);
@@ -876,10 +879,14 @@
 		if (!pendingParagraphNumber || !paragraphCommentText.trim()) return;
 		submittingParagraphComment = true;
 		try {
+			const paragraphText =
+				previewRef?.getParagraphText(pendingParagraphNumber) ??
+				splitPreviewRef?.getParagraphText(pendingParagraphNumber);
 			const created = await trpc.comments.createInline.mutate({
 				documentId: data.document.id,
 				content: paragraphCommentText.trim(),
 				paragraphNumber: pendingParagraphNumber,
+				anchorContext: paragraphText || undefined,
 				anchorText: undefined,
 				lineStart: undefined,
 				lineEnd: undefined,
@@ -1328,6 +1335,35 @@
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (floatingDebounce) clearTimeout(floatingDebounce);
+	});
+
+	onMount(() => {
+		const targetId = page.url.searchParams.get('commentId');
+		if (!targetId) return;
+		currentCommentId = targetId;
+		showComments = true;
+		if (viewMode === 'editor') setViewMode('preview');
+		// Scroll preview and sidebar after DOM renders
+		setTimeout(() => {
+			const c = inlineComments.find((x) => x.id === targetId);
+			if (c) {
+				(previewRef ?? splitPreviewRef)?.scrollToComment(targetId, c.paragraphNumber ?? null);
+			}
+			document
+				.querySelector(`[data-comment-id="${CSS.escape(targetId)}"]`)
+				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		}, 150);
+	});
+
+	// Scroll sidebar to current comment whenever it changes
+	$effect(() => {
+		const id = currentCommentId;
+		if (!id || !showComments) return;
+		Promise.resolve().then(() => {
+			document
+				.querySelector(`[data-comment-id="${CSS.escape(id)}"]`)
+				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		});
 	});
 
 </script>
@@ -2504,19 +2540,22 @@
 							</p>
 						{:else}
 							{#each inlineComments as c (c.id)}
-								<CommentThread
-									comment={{ ...c, resolved: c.status === 'resolved' }}
-									currentUserId={data.currentUserId}
-									onclick={handleCommentClick}
-									onresolved={handleCommentResolved}
-									onreopened={handleCommentReopened}
-									onreplyadded={handleReplyAdded}
-									ondeleted={(id) => {
-										inlineComments = inlineComments.filter((x) => x.id !== id);
-									}}
-									{chapters}
-									onlookup={lookupNames}
-								/>
+								<div data-comment-id={c.id}>
+									<CommentThread
+										comment={{ ...c, resolved: c.status === 'resolved' }}
+										currentUserId={data.currentUserId}
+										isActive={c.id === currentCommentId}
+										onclick={handleCommentClick}
+										onresolved={handleCommentResolved}
+										onreopened={handleCommentReopened}
+										onreplyadded={handleReplyAdded}
+										ondeleted={(id) => {
+											inlineComments = inlineComments.filter((x) => x.id !== id);
+										}}
+										{chapters}
+										onlookup={lookupNames}
+									/>
+								</div>
 							{/each}
 						{/if}
 					</div>
