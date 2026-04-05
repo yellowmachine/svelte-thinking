@@ -266,6 +266,7 @@
 					collaboratorCount={proj.collaboratorCount}
 					openComments={proj.openComments}
 					updatedAt={proj.updatedAt}
+					reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
 					onclick={() => (window.location.href = `/projects/${proj.id}`)}
 					ondelete={proj.ownerId === data.currentUserId
 						? () => { deleteTarget = { id: proj.id, title: proj.title }; }
