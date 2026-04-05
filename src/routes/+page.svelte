@@ -40,10 +40,10 @@
 			Collaborative academic writing
 		</p>
 		<h1 class="font-serif text-5xl font-semibold leading-tight text-ink dark:text-dark-ink sm:text-6xl">
-			The environment your<br/>research deserves
+			The research editor<br/>that knows your work
 		</h1>
 		<p class="mx-auto mt-6 max-w-xl font-sans text-lg leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-			Scholio combines a powerful Markdown editor, version control, role-based collaboration, automatic citations, and an AI assistant that knows your project — all in one place.
+			Markdown editor, automatic citations, version control, and an AI assistant with full context of your project — without switching tools.
 		</p>
 		<div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
 			<a href="#waitlist" class="rounded-lg bg-accent px-6 py-3 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90">
@@ -54,7 +54,7 @@
 			</a>
 		</div>
 		<p class="mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-			Closed beta · Open source · Free, sponsor-supported
+			Closed beta · Open source · Free
 		</p>
 	</section>
 
@@ -71,39 +71,39 @@
 			<div class="grid sm:grid-cols-2">
 				<!-- Editor side -->
 				<div class="border-r border-paper-border px-6 py-5 dark:border-dark-paper-border">
-					<pre class="overflow-x-auto font-mono text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"><code><span class="text-ink dark:text-dark-ink font-semibold"># Introducción</span>
+					<pre class="overflow-x-auto font-mono text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"><code><span class="text-ink dark:text-dark-ink font-semibold"># Introduction</span>
 
-La diversidad epistémica en equipos
-interdisciplinares mejora la calidad
-de las publicaciones [@page2007].
+Epistemic diversity in interdisciplinary
+teams improves publication quality
+[[@page2007]].
 
-El efecto es especialmente marcado
-en ciencias clínicas[^1] y STEM
-[@hong2004; @wuchty2007].
+The effect is especially pronounced
+in clinical sciences[^1] and STEM
+[[@hong2004; @wuchty2007]].
 
 <span class="text-accent">$$</span>
 D(E) = -\sum_&#123;i&#125; p_i \log p_i
 <span class="text-accent">$$</span>
 
-<span class="text-accent">[^1]</span>: Ver también [[Metodología]]
-para el diseño del estudio.</code></pre>
+<span class="text-accent">[^1]</span>: See also [[Methodology]]
+for the study design.</code></pre>
 				</div>
 				<!-- Preview side -->
 				<div class="px-6 py-5">
-					<h3 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Introducción</h3>
+					<h3 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Introduction</h3>
 					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						La diversidad epistémica en equipos interdisciplinares mejora la calidad de las publicaciones
+						Epistemic diversity in interdisciplinary teams improves publication quality
 						<span class="text-accent">(Page, 2007)</span>.
 					</p>
 					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						El efecto es especialmente marcado en ciencias clínicas<sup class="text-accent font-semibold">1</sup> y STEM
+						The effect is especially pronounced in clinical sciences<sup class="text-accent font-semibold">1</sup> and STEM
 						<span class="text-accent">(Hong & Page, 2004; Wuchty et al., 2007)</span>.
 					</p>
 					<div class="my-4 rounded bg-paper-ui px-4 py-3 text-center font-mono text-sm text-ink dark:bg-dark-paper-ui dark:text-dark-ink">
 						D(E) = −∑ pᵢ log pᵢ
 					</div>
 					<p class="border-t border-paper-border pt-3 font-sans text-xs text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint">
-						<sup class="text-accent font-semibold">1</sup> Ver también <span class="text-accent underline decoration-dotted">Metodología</span> para el diseño del estudio.
+						<sup class="text-accent font-semibold">1</sup> See also <span class="text-accent underline decoration-dotted">Methodology</span> for the study design.
 					</p>
 				</div>
 			</div>
@@ -123,148 +123,154 @@ para el diseño del estudio.</code></pre>
 				Designed for researchers who publish — not for quick note-taking.
 			</p>
 
-			<div class="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+			<!-- Core features — 2-column large cards -->
+			<div class="mt-14 grid gap-6 sm:grid-cols-2">
 
-				<!-- Citas -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<!-- Citations -->
+				<div class="rounded-xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Automatic citations and bibliography</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Manage your references with BibTeX. Cite with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[@author2024]</code> and Scholio generates the bibliography in APA 7, IEEE, Vancouver or Chicago Notes-Bibliography at the end of the document.
+					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Automatic citations and bibliography</h3>
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Manage your references with BibTeX. Cite with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[@author2024]]</code> and Scholio generates the bibliography in APA 7, IEEE, Vancouver, or Chicago Notes-Bibliography at the end of the document. Import from DOI, URL, or existing <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.bib</code> files.
 					</p>
 				</div>
 
-				<!-- Control de versiones -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-						</svg>
-					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Version control for writing</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Create labeled snapshots at any time. Compare versions with visual diff, restore previous versions. Your research is never lost.
-					</p>
-				</div>
-
-				<!-- Colaboración -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-						</svg>
-					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Role-based collaboration</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Invite co-authors, reviewers and commenters. Comments are anchored to the exact text. Threads resolve when the change is incorporated.
-					</p>
-				</div>
-
-				<!-- IA -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<!-- AI assistant -->
+				<div class="rounded-xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">AI assistant with real context</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						The assistant reads all the documents in your project before responding. It's not a generic chatbot — it knows your methodology, your data and your argument.
+					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">AI assistant with real context</h3>
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						The assistant reads every document in your project before responding. It's not a generic chatbot — it knows your methodology, your data, and your argument. Powered by OpenRouter; bring your own API key or leave it disabled.
 					</p>
 				</div>
 
-				<!-- Matemáticas -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<!-- Version control -->
+				<div class="rounded-xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+						</svg>
+					</div>
+					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Version control for writing</h3>
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Create labeled snapshots at any point. Compare versions with visual diff, restore any previous state. Your research history is never lost — even when offline.
+					</p>
+				</div>
+
+				<!-- Collaboration -->
+				<div class="rounded-xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+						</svg>
+					</div>
+					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Role-based collaboration</h3>
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Invite co-authors, reviewers, and commenters. Comments are anchored to exact passages. Threads resolve when the change is incorporated.
+					</p>
+				</div>
+
+			</div>
+
+			<!-- Secondary features — smaller 3-column cards -->
+			<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+				<!-- Math -->
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Math and formal notation</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Integrated KaTeX for inline and block LaTeX equations. Logical, statistical, chemical notation — without leaving the editor. Also numbered footnotes.
+					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Math and formal notation</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						KaTeX for inline and block equations, plus numbered footnotes — without leaving the editor.
 					</p>
 				</div>
 
-				<!-- Exportación -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<!-- Export -->
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Export to LaTeX and Typst</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						When the text is ready, export to <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.tex</code> or <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.typ</code> with the embedded bibliography. Ready to compile and submit to the journal.
+					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Export to LaTeX and Typst</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Export to <code class="rounded bg-paper-ui px-0.5 font-mono text-xs dark:bg-dark-paper-ui">.tex</code> or <code class="rounded bg-paper-ui px-0.5 font-mono text-xs dark:bg-dark-paper-ui">.typ</code> with bibliography embedded. Ready to submit.
 					</p>
 				</div>
 
-				<!-- Gráficos -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<!-- Charts -->
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Charts from your data</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Upload a CSV or JSON and generate Vega-Lite charts directly in the document. Data and visualization live together, versioned.
+					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Charts from your data</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Upload CSV or JSON and generate Vega-Lite charts inline — data and visualization versioned together.
 					</p>
 				</div>
 
 				<!-- Wikilinks -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Internal knowledge network</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Link documents with <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[Title]]</code>. Backlinks update automatically. Your project becomes a navigable network of ideas.
+					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Internal knowledge network</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Link documents with <code class="rounded bg-paper-ui px-0.5 font-mono text-xs dark:bg-dark-paper-ui">[[Title]]</code>. Backlinks update automatically.
 					</p>
 				</div>
 
 				<!-- Offline -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M1 6l5 5 5-5"/><path d="M22 12a10 10 0 00-20 0"/><path d="M6 17l6 5 6-5"/><path d="M12 12v10"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Works offline</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Write without internet. Your work saves locally and syncs automatically when you reconnect. No interruptions when the connection is unstable.
+					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Works offline</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Write without internet. Saves locally and syncs when you reconnect.
 					</p>
 				</div>
 
 				<!-- E-ink -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h4"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">E-ink display mode</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						High-contrast mode designed for e-ink readers like Boox. Maximum readability with no eye strain — your research environment even on the best reading hardware.
+					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">E-ink display mode</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						High-contrast mode for e-ink readers like Boox. Maximum readability, no eye strain.
 					</p>
 				</div>
 
 				<!-- Open source -->
-				<div class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Open source and self-hostable</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Scholio is open source. Your institution can deploy it on its own infrastructure. Your data is always yours.
+					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Open source and self-hostable</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						Public repo. Deploy on your own infrastructure. Your data, always yours.
 					</p>
 				</div>
 
@@ -355,7 +361,7 @@ para el diseño del estudio.</code></pre>
 				Scholio is free software. The code is auditable, the platform is self-hostable, and the data is completely yours. Built for the academic community, not to extract value from it.
 			</p>
 			<p class="mt-4 font-sans text-sm leading-relaxed text-ink-faint dark:text-dark-ink-faint">
-				Scholio is free to use and sustained by sponsors, not subscriptions. No plans, no paywalls, no credit card required.
+				Free to use, no plans, no paywalls, no credit card required. If infrastructure costs require it in the future, sponsorship may be introduced — but the core will always be free.
 			</p>
 		</div>
 	</section>
@@ -390,7 +396,7 @@ para el diseño del estudio.</code></pre>
 						<input
 							type="email"
 							name="email"
-							placeholder="tu@email.com"
+							placeholder="your@email.com"
 							required
 							class="rounded-lg border border-paper-border bg-paper px-4 py-3 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 						/>
@@ -414,7 +420,7 @@ para el diseño del estudio.</code></pre>
 					</div>
 				</form>
 				<p class="mt-4 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Closed beta · Free, sponsor-supported · We notify by email
+					Closed beta · Free · We notify by email
 				</p>
 			{/if}
 		</div>
@@ -441,7 +447,7 @@ para el diseño del estudio.</code></pre>
 				</a>
 			</div>
 			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Powered by Claude (Anthropic)
+				AI features powered by <a href="/help#ai" class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted">OpenRouter</a> · optional
 			</p>
 		</div>
 	</footer>
