@@ -691,6 +691,18 @@
 
 			</div>
 			<div class="hidden shrink-0 items-center gap-2 sm:flex">
+				{#if data.openComments > 0}
+					<a
+						href="/projects/{data.project.id}/review"
+						class="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+						title="View open comments"
+					>
+						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						{data.openComments}
+					</a>
+				{/if}
 				<a
 					href="/api/projects/{data.project.id}/export"
 					download
