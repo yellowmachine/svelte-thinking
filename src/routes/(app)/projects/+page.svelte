@@ -127,7 +127,7 @@
 			<input
 				bind:this={importFileInput}
 				type="file"
-				accept=".zip"
+				accept=".scholio,.zip"
 				class="hidden"
 				onchange={handleImportFile}
 			/>
