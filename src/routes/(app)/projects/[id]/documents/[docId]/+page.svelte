@@ -132,6 +132,7 @@
 	let projectRefs = $state<CiteRef[]>([]);
 	let refsLoaded = $state(false);
 	let showCitePicker = $state(false);
+	let showCiteStyleMenu = $state(false);
 	let citeSearch = $state('');
 	let editorEl: {
 		insertAtCursor: (text: string) => void;
@@ -1613,19 +1614,29 @@
 				{/if}
 
 				<!-- Citation style selector (all modes) -->
-				<div
-					class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-				>
-					{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
-						<button
-							onclick={() => setCitationStyle(s as CitationStyle)}
-							class="px-2.5 py-1.5 font-sans text-xs transition-colors {citationStyle === s
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-						>
-							{label}
-						</button>
-					{/each}
+				<div class="relative">
+					<button
+						onclick={(e) => { e.stopPropagation(); showCiteStyleMenu = !showCiteStyleMenu; }}
+						class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						{CITATION_STYLE_LABELS[citationStyle]}
+						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+					</button>
+					{#if showCiteStyleMenu}
+						<div class="absolute top-full left-0 z-30 mt-1 w-28 rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
+								<button
+									onclick={() => { setCitationStyle(s as CitationStyle); showCiteStyleMenu = false; }}
+									class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle === s ? 'font-semibold text-accent' : 'text-ink-muted dark:text-dark-ink-muted'}"
+								>
+									{label}
+									{#if citationStyle === s}
+										<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</div>
 
 				<button
@@ -3430,8 +3441,9 @@
 			e.preventDefault();
 			doSaveDraft();
 		}
-		if (e.key === 'Escape') showCheatsheet = false;
+		if (e.key === 'Escape') { showCheatsheet = false; showCiteStyleMenu = false; }
 	}}
+	onclick={() => { showCiteStyleMenu = false; }}
 />
 
 {#if showCheatsheet}
