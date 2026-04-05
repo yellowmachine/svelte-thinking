@@ -278,6 +278,23 @@
 		Promise.resolve().then(() => applyParagraphMarkers());
 	});
 
+	export function scrollToComment(commentId: string, paragraphNumber: number | null) {
+		if (!container) return;
+		let target: Element | null = null;
+
+		if (paragraphNumber != null) {
+			const paragraphs = container.querySelectorAll('p');
+			target = paragraphs[paragraphNumber - 1] ?? null;
+		} else {
+			target = container.querySelector(`mark.comment-anchor[data-comment-id="${commentId}"]`);
+		}
+
+		if (!target) return;
+		target.scrollIntoView({ behavior: 'instant', block: 'center' });
+		(target as HTMLElement).classList.add('comment-highlight');
+		setTimeout(() => (target as HTMLElement).classList.remove('comment-highlight'), 1800);
+	}
+
 	function handleMouseUp() {
 		if (!onselection) return;
 		const sel = window.getSelection();
@@ -478,5 +495,21 @@
 
 	.prose :global(mark.comment-anchor:hover) {
 		background-color: oklch(0.88 0.11 75 / 0.7);
+	}
+
+	@keyframes comment-highlight-fade {
+		0%   { background-color: oklch(0.92 0.12 85 / 0.55); }
+		100% { background-color: transparent; }
+	}
+
+	/* Applied to <mark> when clicked from sidebar */
+	.prose :global(mark.comment-highlight) {
+		animation: comment-highlight-fade 1.8s ease-out forwards;
+	}
+
+	/* Applied to <p> for paragraph comments */
+	.prose :global(p.comment-highlight) {
+		animation: comment-highlight-fade 1.8s ease-out forwards;
+		border-radius: 3px;
 	}
 </style>

@@ -145,6 +145,10 @@
 		clearSpellHover: () => void;
 	} | null = $state(null);
 
+	type PreviewRef = { scrollToComment: (id: string, paragraphNumber: number | null) => void } | null;
+	let previewRef = $state<PreviewRef>(null);
+	let splitPreviewRef = $state<PreviewRef>(null);
+
 	function extractDocumentPersons(): string[] {
 		const re = /\[\[person:([^\]]+)\]\]/g;
 		const seen = new Set<string>();
@@ -799,9 +803,15 @@
 
 	function handleCommentClick(id: string) {
 		const c = inlineComments.find((x) => x.id === id);
-		if (!c || c.paragraphNumber !== null) return;
-		const anchor = findAnchor(content, c.anchorText ?? '', c.characterStart ?? 0);
-		if (anchor) scrollToRange = { ...anchor };
+		if (!c) return;
+		// Scroll preview to the relevant element
+		previewRef?.scrollToComment(id, c.paragraphNumber);
+		splitPreviewRef?.scrollToComment(id, c.paragraphNumber);
+		// Also scroll editor (only for text-selection comments)
+		if (c.paragraphNumber === null) {
+			const anchor = findAnchor(content, c.anchorText ?? '', c.characterStart ?? 0);
+			if (anchor) scrollToRange = { ...anchor };
+		}
 	}
 
 	function handleCommentResolved(id: string) {
@@ -1990,6 +2000,7 @@
 						<div class="flex-1 overflow-y-auto px-6 py-6">
 							<div class="mx-auto w-full max-w-2xl">
 								<MarkdownPreview
+									bind:this={splitPreviewRef}
 									{content}
 									projectId={data.document.projectId}
 									references={projectRefs}
@@ -2017,6 +2028,7 @@
 								</p>
 							{:else}
 								<MarkdownPreview
+									bind:this={previewRef}
 									{content}
 									projectId={data.document.projectId}
 									references={projectRefs}
