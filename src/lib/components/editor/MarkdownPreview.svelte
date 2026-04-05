@@ -19,8 +19,10 @@
 		citationStyle = 'apa',
 		docMap = new Map(),
 		commentAnchors = [] as { id: string; anchorText: string }[],
+		paragraphComments = [] as { id: string; paragraphNumber: number }[],
 		oncommentclick = undefined as ((id: string) => void) | undefined,
-		onselection = undefined as ((sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) => void) | undefined
+		onselection = undefined as ((sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) => void) | undefined,
+		onparagraphcomment = undefined as ((paragraphNumber: number, coords: { top: number; right: number }) => void) | undefined
 	}: {
 		content: string;
 		projectId?: string | null;
@@ -28,8 +30,10 @@
 		citationStyle?: CitationStyle;
 		docMap?: Map<string, { id: string; projectId: string }>;
 		commentAnchors?: { id: string; anchorText: string }[];
+		paragraphComments?: { id: string; paragraphNumber: number }[];
 		oncommentclick?: (id: string) => void;
 		onselection?: (sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) => void;
+		onparagraphcomment?: (paragraphNumber: number, coords: { top: number; right: number }) => void;
 	} = $props();
 
 	// Build a key → ref map for fast lookup in the citation processor
@@ -234,6 +238,63 @@
 
 	// ── Selection handler ─────────────────────────────────────────────────────
 
+	// ── Paragraph markers ────────────────────────────────────────────────────
+
+	function applyParagraphMarkers() {
+		if (!container) return;
+		// Remove existing markers
+		container.querySelectorAll('.para-marker').forEach((el) => el.remove());
+		if (!onparagraphcomment && paragraphComments.length === 0) return;
+
+		const paragraphs = Array.from(container.querySelectorAll('p'));
+		paragraphs.forEach((p, i) => {
+			const n = i + 1;
+			const existing = paragraphComments.filter((c) => c.paragraphNumber === n);
+
+			const marker = document.createElement('button');
+			marker.className = 'para-marker' + (existing.length > 0 ? ' para-marker--has-comments' : '');
+			marker.setAttribute('type', 'button');
+			marker.setAttribute('aria-label', `Comentar párrafo ${n}`);
+			marker.dataset.paragraph = String(n);
+			marker.textContent = existing.length > 0 ? `¶${n} · ${existing.length}` : `¶${n}`;
+			marker.addEventListener('click', (e) => {
+				e.stopPropagation();
+				if (existing.length > 0) {
+					oncommentclick?.(existing[0].id);
+				} else {
+					const rect = (p as HTMLElement).getBoundingClientRect();
+					onparagraphcomment?.(n, { top: rect.top, right: rect.right });
+				}
+			});
+
+			(p as HTMLElement).style.position = 'relative';
+			p.appendChild(marker);
+		});
+	}
+
+	$effect(() => {
+		const _html = parsed.html;
+		const _para = paragraphComments;
+		Promise.resolve().then(() => applyParagraphMarkers());
+	});
+
+	export function scrollToComment(commentId: string, paragraphNumber: number | null) {
+		if (!container) return;
+		let target: Element | null = null;
+
+		if (paragraphNumber != null) {
+			const paragraphs = container.querySelectorAll('p');
+			target = paragraphs[paragraphNumber - 1] ?? null;
+		} else {
+			target = container.querySelector(`mark.comment-anchor[data-comment-id="${commentId}"]`);
+		}
+
+		if (!target) return;
+		target.scrollIntoView({ behavior: 'instant', block: 'center' });
+		(target as HTMLElement).classList.add('comment-highlight');
+		setTimeout(() => (target as HTMLElement).classList.remove('comment-highlight'), 1800);
+	}
+
 	function handleMouseUp() {
 		if (!onselection) return;
 		const sel = window.getSelection();
@@ -266,7 +327,7 @@
 		</button>
 	{/if}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div bind:this={container} class="prose prose-serif max-w-none dark:prose-invert" onmouseup={handleMouseUp}>
+	<div bind:this={container} class="prose prose-serif max-w-none dark:prose-invert" style="overflow: visible;" onmouseup={handleMouseUp}>
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html parsed.html}
 	</div>
@@ -390,6 +451,39 @@
 		font-size: 0.85rem;
 	}
 
+	/* Paragraph markers */
+	.prose :global(.para-marker) {
+		position: absolute;
+		right: -3.5rem;
+		top: 0.15em;
+		font-family: var(--font-sans, sans-serif);
+		font-size: 0.7rem;
+		color: var(--color-ink-faint, #a8a29e);
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.1em 0.3em;
+		border-radius: 3px;
+		opacity: 0;
+		transition: opacity 0.15s, color 0.15s;
+		white-space: nowrap;
+	}
+
+	.prose :global(p:hover > .para-marker),
+	.prose :global(.para-marker--has-comments) {
+		opacity: 1;
+	}
+
+	.prose :global(.para-marker--has-comments) {
+		color: var(--color-accent, #7c5c3e);
+		font-weight: 600;
+	}
+
+	.prose :global(.para-marker:hover) {
+		color: var(--color-accent, #7c5c3e);
+		background: var(--color-paper-ui, #ede8df);
+	}
+
 	/* Comment anchors */
 	.prose :global(mark.comment-anchor) {
 		background-color: oklch(0.92 0.08 85 / 0.55);
@@ -401,5 +495,21 @@
 
 	.prose :global(mark.comment-anchor:hover) {
 		background-color: oklch(0.88 0.11 75 / 0.7);
+	}
+
+	@keyframes comment-highlight-fade {
+		0%   { background-color: oklch(0.92 0.12 85 / 0.55); }
+		100% { background-color: transparent; }
+	}
+
+	/* Applied to <mark> when clicked from sidebar */
+	.prose :global(mark.comment-highlight) {
+		animation: comment-highlight-fade 1.8s ease-out forwards;
+	}
+
+	/* Applied to <p> for paragraph comments */
+	.prose :global(p.comment-highlight) {
+		animation: comment-highlight-fade 1.8s ease-out forwards;
+		border-radius: 3px;
 	}
 </style>

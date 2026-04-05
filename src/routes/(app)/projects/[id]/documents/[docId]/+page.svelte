@@ -102,9 +102,7 @@
 		}
 	}
 
-	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state(
-		untrack(() => (data.document?.hasDraft ? 'pending' : 'idle'))
-	);
+	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state('idle');
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -134,6 +132,7 @@
 	let projectRefs = $state<CiteRef[]>([]);
 	let refsLoaded = $state(false);
 	let showCitePicker = $state(false);
+	let showCiteStyleMenu = $state(false);
 	let citeSearch = $state('');
 	let editorEl: {
 		insertAtCursor: (text: string) => void;
@@ -144,6 +143,10 @@
 		setSpellHover: (from: number, to: number) => void;
 		clearSpellHover: () => void;
 	} | null = $state(null);
+
+	type PreviewRef = { scrollToComment: (id: string, paragraphNumber: number | null) => void } | null;
+	let previewRef = $state<PreviewRef>(null);
+	let splitPreviewRef = $state<PreviewRef>(null);
 
 	function extractDocumentPersons(): string[] {
 		const re = /\[\[person:([^\]]+)\]\]/g;
@@ -457,6 +460,7 @@
 		lineStart: number | null;
 		characterStart: number | null;
 		characterEnd: number | null;
+		paragraphNumber: number | null;
 		status: 'open' | 'resolved';
 		createdAt: Date;
 		replies: Reply[];
@@ -628,50 +632,26 @@
 		}
 	}
 
-	async function syncOfflineEdits() {
-		const documentId = data.document?.id;
-		if (!documentId) return;
-
-		const pending = await offlineDb.pendingEdits
-			.where({ documentId, status: 'pending' })
-			.sortBy('savedAt');
-		if (pending.length === 0) return;
-
-		// Verify session before syncing
-		try {
-			const res = await fetch('/api/auth/session');
-			if (res.status === 401) {
-				goto('/');
-				return;
-			}
-		} catch {
-			return;
-		}
-
-		// Apply the latest snapshot (most recent manual save)
-		const latest = pending[pending.length - 1];
-		try {
-			await trpc.documents.saveDraft.mutate({ documentId, content: latest.content });
-			await offlineDb.pendingEdits
-				.where({ documentId, status: 'pending' })
-				.modify({ status: 'synced' });
-			content = latest.content;
-			lastSavedContent = latest.content;
-			saveStatus = 'saved';
-			setTimeout(() => {
-				if (saveStatus === 'saved') saveStatus = 'idle';
-			}, 2000);
-		} catch {
-			// FORBIDDEN → no longer writer; preserve content for manual recovery
-			await offlineDb.pendingEdits
-				.where({ documentId, status: 'pending' })
-				.modify({ status: 'writer_lost' });
-			writerLostContent = latest.content;
-		}
-	}
-
+	// When reconnecting, update local save status once the global sync has pushed our edits.
+	// The actual push is handled by connectivity.syncAll() in the layout.
 	$effect(() => {
-		if (onlineStore.online) syncOfflineEdits();
+		if (onlineStore.online && saveStatus === 'offline') {
+			const documentId = data.document?.id;
+			if (!documentId) return;
+			offlineDb.pendingEdits
+				.where({ documentId })
+				.toArray()
+				.then((edits) => {
+					const hasPending = edits.some((e) => e.status === 'pending');
+					const writerLost = edits.find((e) => e.status === 'writer_lost');
+					if (writerLost) {
+						writerLostContent = writerLost.content;
+						saveStatus = 'error';
+					} else if (!hasPending) {
+						saveStatus = 'idle';
+					}
+				});
+		}
 	});
 
 	async function doCommit() {
@@ -764,7 +744,8 @@
 				lineStart,
 				lineEnd,
 				characterStart: currentSelection.from,
-				characterEnd: currentSelection.to
+				characterEnd: currentSelection.to,
+				paragraphNumber: undefined
 			});
 
 			const newComment: InlineComment = {
@@ -776,6 +757,7 @@
 				lineStart: created.lineStart,
 				characterStart: created.characterStart,
 				characterEnd: created.characterEnd,
+				paragraphNumber: null,
 				status: 'open',
 				createdAt: created.createdAt,
 				replies: []
@@ -797,8 +779,14 @@
 	function handleCommentClick(id: string) {
 		const c = inlineComments.find((x) => x.id === id);
 		if (!c) return;
-		const anchor = findAnchor(content, c.anchorText ?? '', c.characterStart ?? 0);
-		if (anchor) scrollToRange = { ...anchor };
+		// Scroll preview to the relevant element
+		previewRef?.scrollToComment(id, c.paragraphNumber);
+		splitPreviewRef?.scrollToComment(id, c.paragraphNumber);
+		// Also scroll editor (only for text-selection comments)
+		if (c.paragraphNumber === null) {
+			const anchor = findAnchor(content, c.anchorText ?? '', c.characterStart ?? 0);
+			if (anchor) scrollToRange = { ...anchor };
+		}
 	}
 
 	function handleCommentResolved(id: string) {
@@ -815,17 +803,19 @@
 		);
 	}
 
-	const saveStatusLabel: Record<
-		'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline',
-		string
-	> = {
-		idle: '',
-		pending: 'Unsaved changes',
-		saving: 'Saving...',
-		saved: 'Saved',
-		error: 'Error saving',
-		offline: 'Guardado offline'
-	};
+	// 'pending' only shows "Unsaved changes" when content has actually diverged from last save.
+	// Without this guard, loading a document with an existing draft shows the label
+	// while the button is disabled (saveStatus='pending' but isDirty=false).
+	const saveStatusLabel = $derived((): string => {
+		switch (saveStatus) {
+			case 'pending': return isDirty ? 'Unsaved changes' : '';
+			case 'saving':  return 'Saving...';
+			case 'saved':   return 'Saved';
+			case 'error':   return 'Error saving';
+			case 'offline': return 'Guardado offline';
+			default:        return '';
+		}
+	});
 
 	const openCommentsCount = $derived(inlineComments.filter((c) => c.status === 'open').length);
 
@@ -835,6 +825,19 @@
 			.map((c) => ({ id: c.id, anchorText: c.anchorText! }))
 	);
 
+	const paragraphComments = $derived(
+		inlineComments
+			.filter((c) => c.status === 'open' && c.paragraphNumber !== null)
+			.map((c) => ({ id: c.id, paragraphNumber: c.paragraphNumber! }))
+	);
+
+	// Paragraph comment form
+	let showNewParagraphComment = $state(false);
+	let pendingParagraphNumber = $state<number | null>(null);
+	let paragraphCommentPos = $state({ top: 0, right: 0 });
+	let paragraphCommentText = $state('');
+	let submittingParagraphComment = $state(false);
+
 	function handlePreviewSelection(sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) {
 		const from = content.indexOf(sel.text);
 		const to = from >= 0 ? from + sel.text.length : 0;
@@ -843,6 +846,53 @@
 
 	function handlePreviewCommentClick(id: string) {
 		showComments = true;
+	}
+
+	function handleParagraphComment(paragraphNumber: number, coords: { top: number; right: number }) {
+		pendingParagraphNumber = paragraphNumber;
+		paragraphCommentPos = coords;
+		paragraphCommentText = '';
+		showNewParagraphComment = true;
+	}
+
+	async function submitParagraphComment() {
+		if (!pendingParagraphNumber || !paragraphCommentText.trim()) return;
+		submittingParagraphComment = true;
+		try {
+			const created = await trpc.comments.createInline.mutate({
+				documentId: data.document.id,
+				content: paragraphCommentText.trim(),
+				paragraphNumber: pendingParagraphNumber,
+				anchorText: undefined,
+				lineStart: undefined,
+				lineEnd: undefined,
+				characterStart: undefined,
+				characterEnd: undefined
+			});
+
+			const newComment: InlineComment = {
+				id: created.id,
+				authorId: created.authorId,
+				authorName: data.currentUserId === created.authorId ? ((data as any).user?.name ?? '') : '',
+				content: created.content,
+				anchorText: null,
+				lineStart: null,
+				characterStart: null,
+				characterEnd: null,
+				paragraphNumber: created.paragraphNumber,
+				status: 'open',
+				createdAt: created.createdAt,
+				replies: []
+			};
+
+			inlineComments = [...inlineComments, newComment];
+			paragraphCommentText = '';
+			showNewParagraphComment = false;
+			pendingParagraphNumber = null;
+			showComments = true;
+		} finally {
+			submittingParagraphComment = false;
+		}
 	}
 
 	// Export dropdown
@@ -1356,7 +1406,7 @@
 				{/if}
 
 				<!-- Save status (right-aligned) -->
-				{#if saveStatus !== 'idle'}
+				{#if saveStatusLabel()}
 					<span
 						class="ml-auto shrink-0 font-sans text-xs {saveStatus === 'error'
 							? 'text-red-500'
@@ -1364,7 +1414,7 @@
 								? 'text-green-600'
 								: 'text-ink-faint dark:text-dark-ink-faint'}"
 					>
-						{saveStatusLabel[saveStatus]}
+						{saveStatusLabel()}
 					</span>
 				{/if}
 			</div>
@@ -1564,19 +1614,29 @@
 				{/if}
 
 				<!-- Citation style selector (all modes) -->
-				<div
-					class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-				>
-					{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
-						<button
-							onclick={() => setCitationStyle(s as CitationStyle)}
-							class="px-2.5 py-1.5 font-sans text-xs transition-colors {citationStyle === s
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-						>
-							{label}
-						</button>
-					{/each}
+				<div class="relative">
+					<button
+						onclick={(e) => { e.stopPropagation(); showCiteStyleMenu = !showCiteStyleMenu; }}
+						class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						{CITATION_STYLE_LABELS[citationStyle]}
+						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+					</button>
+					{#if showCiteStyleMenu}
+						<div class="absolute top-full left-0 z-30 mt-1 w-28 rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
+								<button
+									onclick={() => { setCitationStyle(s as CitationStyle); showCiteStyleMenu = false; }}
+									class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle === s ? 'font-semibold text-accent' : 'text-ink-muted dark:text-dark-ink-muted'}"
+								>
+									{label}
+									{#if citationStyle === s}
+										<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</div>
 
 				<button
@@ -1927,6 +1987,7 @@
 						<div class="flex-1 overflow-y-auto px-6 py-6">
 							<div class="mx-auto w-full max-w-2xl">
 								<MarkdownPreview
+									bind:this={splitPreviewRef}
 									{content}
 									projectId={data.document.projectId}
 									references={projectRefs}
@@ -1935,6 +1996,8 @@
 									commentAnchors={previewCommentAnchors}
 									oncommentclick={handlePreviewCommentClick}
 									onselection={handlePreviewSelection}
+									{paragraphComments}
+									onparagraphcomment={handleParagraphComment}
 								/>
 							</div>
 						</div>
@@ -1952,6 +2015,7 @@
 								</p>
 							{:else}
 								<MarkdownPreview
+									bind:this={previewRef}
 									{content}
 									projectId={data.document.projectId}
 									references={projectRefs}
@@ -1960,6 +2024,8 @@
 									commentAnchors={previewCommentAnchors}
 									oncommentclick={handlePreviewCommentClick}
 									onselection={handlePreviewSelection}
+									{paragraphComments}
+									onparagraphcomment={handleParagraphComment}
 								/>
 							{/if}
 						{:else}
@@ -2409,6 +2475,43 @@
 									showNewComment = false;
 									newCommentText = '';
 								}}
+								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+							>
+								Cancel
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Paragraph comment form -->
+			{#if showNewParagraphComment && pendingParagraphNumber !== null}
+				<div
+					class="pointer-events-none fixed z-20"
+					style="top: {paragraphCommentPos.top}px; right: {window.innerWidth - paragraphCommentPos.right + 8}px;"
+				>
+					<div
+						class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+					>
+						<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							Comentario en ¶{pendingParagraphNumber}
+						</p>
+						<textarea
+							bind:value={paragraphCommentText}
+							rows={3}
+							placeholder="Write your comment…"
+							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						></textarea>
+						<div class="mt-2 flex gap-2">
+							<button
+								onclick={submitParagraphComment}
+								disabled={submittingParagraphComment || !paragraphCommentText.trim()}
+								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+							>
+								{submittingParagraphComment ? 'Saving…' : 'Comment'}
+							</button>
+							<button
+								onclick={() => { showNewParagraphComment = false; paragraphCommentText = ''; }}
 								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 							>
 								Cancel
@@ -3338,8 +3441,9 @@
 			e.preventDefault();
 			doSaveDraft();
 		}
-		if (e.key === 'Escape') showCheatsheet = false;
+		if (e.key === 'Escape') { showCheatsheet = false; showCiteStyleMenu = false; }
 	}}
+	onclick={() => { showCiteStyleMenu = false; }}
 />
 
 {#if showCheatsheet}

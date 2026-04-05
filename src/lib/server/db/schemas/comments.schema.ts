@@ -23,6 +23,7 @@ export const comment = scholioSchema.table(
 		lineEnd: integer('line_end'),
 		characterStart: integer('character_start'),
 		characterEnd: integer('character_end'),
+		paragraphNumber: integer('paragraph_number'),
 		status: commentStatusEnum('status').notNull().default('open'),
 		// Para respuestas anidadas
 		parentCommentId: text('parent_comment_id'),

@@ -22,6 +22,7 @@
 		authorId: string;
 		authorName: string;
 		anchorText: string | null;
+		paragraphNumber?: number | null;
 		resolved: boolean;
 		createdAt: Date;
 		replies: Reply[];
@@ -123,12 +124,16 @@
 	onclick={() => onclick?.(comment.id)}
 	onkeydown={(e) => e.key === 'Enter' && onclick?.(comment.id)}
 >
-	<!-- Anchor text excerpt -->
+	<!-- Anchor text excerpt / paragraph badge -->
 	{#if comment.anchorText}
 		<p
 			class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
 		>
 			{comment.anchorText.slice(0, 80)}{comment.anchorText.length > 80 ? '…' : ''}
+		</p>
+	{:else if comment.paragraphNumber}
+		<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			¶{comment.paragraphNumber}
 		</p>
 	{/if}
 

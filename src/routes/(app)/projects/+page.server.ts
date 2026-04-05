@@ -11,6 +11,7 @@ export const load: PageServerLoad = async (event) => {
 				description: project.description,
 				status: project.status,
 				orgId: project.orgId,
+				ownerId: project.ownerId,
 				updatedAt: project.updatedAt,
 				collaboratorCount:
 					sql<number>`(SELECT COUNT(*)::int FROM project_collaborator WHERE project_collaborator.project_id = ${project.id})`.as(
@@ -25,5 +26,5 @@ export const load: PageServerLoad = async (event) => {
 			.orderBy(desc(project.updatedAt))
 	);
 
-	return { projects };
+	return { projects, currentUserId: event.locals.user!.id };
 };

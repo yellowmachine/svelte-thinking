@@ -23,14 +23,16 @@
 
 	let mode: 'edit' | 'preview' = $state('edit');
 
-	const saveLabel: Record<typeof saveStatus, string> = {
-		idle: '',
-		pending: 'Not saved',
-		saving: 'Saving…',
-		saved: 'Saved',
-		error: 'Error',
-		offline: 'Guardado offline'
-	};
+	const saveLabel = $derived((): string => {
+		switch (saveStatus) {
+			case 'pending': return isDirty ? 'Not saved' : '';
+			case 'saving':  return 'Saving…';
+			case 'saved':   return 'Saved';
+			case 'error':   return 'Error';
+			case 'offline': return 'Guardado offline';
+			default:        return '';
+		}
+	});
 </script>
 
 <div class="flex h-screen flex-col bg-paper dark:bg-dark-paper">
@@ -80,7 +82,7 @@
 			</div>
 
 			{#if mode === 'edit'}
-				{#if saveStatus !== 'idle'}
+				{#if saveLabel()}
 					<span
 						class="font-sans text-xs {saveStatus === 'error'
 							? 'text-red-500'
@@ -88,7 +90,7 @@
 								? 'text-green-600'
 								: 'text-ink-faint dark:text-dark-ink-faint'}"
 					>
-						{saveLabel[saveStatus]}
+						{saveLabel()}
 					</span>
 				{/if}
 				<button

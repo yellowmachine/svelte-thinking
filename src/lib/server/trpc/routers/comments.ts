@@ -91,15 +91,28 @@ const createGeneralCommentSchema = z.object({
 	parentCommentId: z.string().optional()
 });
 
-const createInlineCommentSchema = z.object({
-	documentId: z.string(),
-	content: z.string().min(1).max(10000),
-	anchorText: z.string(),
-	lineStart: z.number().int().nonnegative(),
-	lineEnd: z.number().int().nonnegative(),
-	characterStart: z.number().int().nonnegative(),
-	characterEnd: z.number().int().nonnegative()
-});
+const createInlineCommentSchema = z.union([
+	z.object({
+		documentId: z.string(),
+		content: z.string().min(1).max(10000),
+		anchorText: z.string(),
+		lineStart: z.number().int().nonnegative(),
+		lineEnd: z.number().int().nonnegative(),
+		characterStart: z.number().int().nonnegative(),
+		characterEnd: z.number().int().nonnegative(),
+		paragraphNumber: z.undefined()
+	}),
+	z.object({
+		documentId: z.string(),
+		content: z.string().min(1).max(10000),
+		paragraphNumber: z.number().int().positive(),
+		anchorText: z.undefined(),
+		lineStart: z.undefined(),
+		lineEnd: z.undefined(),
+		characterStart: z.undefined(),
+		characterEnd: z.undefined()
+	})
+]);
 
 export const commentsRouter = router({
 	// Comentarios generales de un documento (solo top-level, sin replies)
@@ -128,6 +141,7 @@ export const commentsRouter = router({
 					lineEnd: comment.lineEnd,
 					characterStart: comment.characterStart,
 					characterEnd: comment.characterEnd,
+					paragraphNumber: comment.paragraphNumber,
 					status: comment.status,
 					createdAt: comment.createdAt
 				})
@@ -228,11 +242,12 @@ export const commentsRouter = router({
 						authorId: ctx.user.id,
 						type: 'inline',
 						content: input.content,
-						anchorText: input.anchorText,
-						lineStart: input.lineStart,
-						lineEnd: input.lineEnd,
-						characterStart: input.characterStart,
-						characterEnd: input.characterEnd
+						anchorText: input.anchorText ?? null,
+						lineStart: input.lineStart ?? null,
+						lineEnd: input.lineEnd ?? null,
+						characterStart: input.characterStart ?? null,
+						characterEnd: input.characterEnd ?? null,
+						paragraphNumber: input.paragraphNumber ?? null
 					})
 					.returning()
 			);
