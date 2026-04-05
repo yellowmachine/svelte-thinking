@@ -40,7 +40,7 @@
 
 {#if visible}
 	<div
-		class="fixed top-3 right-4 z-50 flex items-center gap-2 rounded-full px-3.5 py-1.5 font-sans text-xs font-medium shadow-md backdrop-blur-sm transition-all {variantStyle[variant()]}"
+		class="fixed top-3 right-4 z-50 flex items-center gap-2 rounded-md px-3.5 py-1.5 font-sans text-xs font-medium shadow-md backdrop-blur-sm transition-all {variantStyle[variant()]}"
 		role="status"
 		aria-live="polite"
 	>

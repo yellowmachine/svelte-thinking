@@ -499,17 +499,25 @@ export const referencesRouter = router({
 
 			try {
 				const { scipy } = await import('$lib/server/scipy');
+				console.info(`[generatePdfFromUrl] calling scipy for ref=${refId} url=${ref.url}`);
 				const result = await scipy.pdfFromUrl(ref.url);
-				if (!result.ok) return { pdfKey: null };
+				if (!result.ok) {
+					console.warn(`[generatePdfFromUrl] scipy returned ok=false for ref=${refId}:`, result);
+					return { pdfKey: null };
+				}
 
 				const { resolveProjectS3Config } = await import('$lib/server/s3Storage');
 				const { uploadFileWithConfig } = await import('$lib/server/storage');
 				const s3 = await resolveProjectS3Config(ref.projectId, ctx.user.id, ctx.withRLS);
-				if (!s3) return { pdfKey: null };
+				if (!s3) {
+					console.warn(`[generatePdfFromUrl] no S3 config for project=${ref.projectId}`);
+					return { pdfKey: null };
+				}
 
 				const pdfBytes = Buffer.from(result.pdf, 'base64');
 				const key = `projects/${ref.projectId}/references/${refId}.pdf`;
 				await uploadFileWithConfig(s3, key, pdfBytes, 'application/pdf');
+				console.info(`[generatePdfFromUrl] PDF uploaded: ${key} (${Math.round(pdfBytes.length / 1024)} KB)`);
 
 				await ctx.withRLS((db) =>
 					db
@@ -519,7 +527,8 @@ export const referencesRouter = router({
 				);
 
 				return { pdfKey: key };
-			} catch {
+			} catch (err) {
+				console.error(`[generatePdfFromUrl] failed for ref=${refId}:`, err);
 				return { pdfKey: null };
 			}
 		}),
