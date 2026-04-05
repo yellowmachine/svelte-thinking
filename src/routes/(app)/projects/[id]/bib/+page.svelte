@@ -349,7 +349,7 @@
 			}
 			closePanel();
 		} catch (e) {
-			saveError = e instanceof Error ? e.message : 'Error al guardar';
+			saveError = e instanceof Error ? e.message : 'Failed to save';
 		} finally {
 			saving = false;
 		}
@@ -670,7 +670,7 @@
 			const fresh = await trpc.references.list.query(data.project.id);
 			references = fresh as Ref[];
 		} catch (e) {
-			importError = e instanceof Error ? e.message : 'Error al importar';
+			importError = e instanceof Error ? e.message : 'Failed to import';
 		} finally {
 			importing = false;
 		}
@@ -768,7 +768,7 @@
 				<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Bibliography</h1>
 				<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 					{references.length}
-					{references.length === 1 ? 'referencia' : 'referencias'}
+					{references.length === 1 ? 'reference' : 'references'}
 				</p>
 			</div>
 			<div class="flex items-center gap-2">
@@ -795,9 +795,9 @@
 						semanticError = '';
 					}}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					title="Buscar en Semantic Scholar"
+					title="Search on Semantic Scholar"
 				>
-					Buscar paper
+					Search paper
 				</button>
 				<button
 					onclick={() => {
@@ -831,27 +831,27 @@
 					}}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
-					Importar .bib
+					Import .bib
 				</button>
 				<button
 					onclick={openImportFromProject}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
-					Importar de proyecto
+					Import from project
 				</button>
 				{#if references.length > 0}
 					<button
 						onclick={exportBib}
 						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
-						Exportar .bib
+						Export .bib
 					</button>
 				{/if}
 				<button
 					onclick={openNew}
 					class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 				>
-					+ Nueva referencia
+					+ New reference
 				</button>
 			</div>
 		</div>
@@ -876,7 +876,7 @@
 				<div
 					class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paper-border py-20 text-center dark:border-dark-paper-border"
 				>
-					<p class="font-serif text-lg text-ink-muted dark:text-dark-ink-muted">Sin referencias</p>
+					<p class="font-serif text-lg text-ink-muted dark:text-dark-ink-muted">No references yet</p>
 					<p class="mt-1 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
 						Add references manually or import a .bib file
 					</p>
@@ -885,7 +885,7 @@
 							onclick={openNew}
 							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover"
 						>
-							+ Nueva referencia
+							+ New reference
 						</button>
 						<button
 							onclick={() => {
@@ -893,13 +893,13 @@
 							}}
 							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 						>
-							Importar .bib
+							Import .bib
 						</button>
 					</div>
 				</div>
 			{:else if filtered().length === 0}
 				<p class="py-8 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					Sin resultados para "<span class="font-medium">{searchQuery}</span>"
+					No results for "<span class="font-medium">{searchQuery}</span>"
 				</p>
 			{:else}
 				<div class="flex flex-col gap-1">
@@ -1061,7 +1061,7 @@
 								<button
 									onclick={() => openEdit(ref)}
 									class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
-									title="Editar"
+									title="Edit"
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
 										<path
@@ -1081,7 +1081,7 @@
 								<button
 									onclick={() => (refToDelete = ref)}
 									class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:text-dark-ink-muted dark:hover:bg-red-950/30 dark:hover:text-red-400"
-									title="Eliminar"
+									title="Delete"
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
 										<polyline
@@ -1127,7 +1127,7 @@
 						</h2>
 						<button
 							onclick={closePanel}
-							aria-label="Cerrar"
+							aria-label="Close"
 							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 						>
 							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -2028,7 +2028,7 @@
 							disabled={saving}
 							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
 						>
-							Cancelar
+							Cancel
 						</button>
 						<button
 							onclick={saveReference}
@@ -2151,6 +2151,19 @@
 						</button>
 					</div>
 					<div class="space-y-4 px-5 py-4">
+						{#if !data.hasAiKey}
+							<div class="flex flex-col gap-3 py-2">
+								<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+									This feature requires an AI model. Configure your API key to extract metadata from URLs.
+								</p>
+								<a
+									href="/settings#ai"
+									class="self-start rounded-md bg-accent px-3 py-2 font-sans text-xs font-semibold text-white transition-colors hover:bg-accent-hover"
+								>
+									Go to Settings → AI Assistant
+								</a>
+							</div>
+						{:else}
 						<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 							Paste the URL of a webpage. Your AI model will extract the bibliographic metadata.
 							The page must be publicly accessible.
@@ -2226,6 +2239,7 @@
 								Add to bibliography
 							</button>
 						{/if}
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -2240,11 +2254,11 @@
 						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
 					>
 						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							Importar BibTeX
+							Import BibTeX
 						</h2>
 						<button
 							onclick={closePanel}
-							aria-label="Cerrar"
+							aria-label="Close"
 							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 						>
 							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -2260,9 +2274,9 @@
 
 					<div class="space-y-4 px-5 py-4">
 						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Pega el contenido de un archivo <code
+							Paste the contents of a <code
 								class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.bib</code
-							> o varias entradas BibTeX.
+							> file or several BibTeX entries.
 						</p>
 
 						<label
@@ -2295,11 +2309,11 @@
 								for="import-raw"
 								class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
 							>
-								Contenido BibTeX
+								BibTeX content
 								{#if importPreview() > 0}
 									<span class="ml-1 text-accent"
 										>· {importPreview()}
-										{importPreview() === 1 ? 'entrada' : 'entradas'} detectadas</span
+										{importPreview() === 1 ? 'entry' : 'entries'} detected</span
 									>
 								{/if}
 							</label>
@@ -2318,9 +2332,9 @@
 							>
 								<p class="font-sans text-sm text-green-700 dark:text-green-400">
 									✓ {importResult.inserted}
-									{importResult.inserted === 1 ? 'referencia importada' : 'referencias importadas'}
+									{importResult.inserted === 1 ? 'reference imported' : 'references imported'}
 									{#if importResult.skipped > 0}
-										· {importResult.skipped} omitidas
+										· {importResult.skipped} skipped
 									{/if}
 								</p>
 							</div>
@@ -2342,14 +2356,14 @@
 							onclick={closePanel}
 							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 						>
-							Cerrar
+							Close
 						</button>
 						<button
 							onclick={runImport}
 							disabled={importing || importPreview() === 0}
 							class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 						>
-							{importing ? 'Importando…' : `Importar ${importPreview() > 0 ? importPreview() : ''}`}
+							{importing ? 'Importing…' : `Import ${importPreview() > 0 ? importPreview() : ''}`}
 						</button>
 					</div>
 				</div>
@@ -2364,11 +2378,11 @@
 						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
 					>
 						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							Importar de proyecto
+							Import from project
 						</h2>
 						<button
 							onclick={closePanel}
-							aria-label="Cerrar"
+							aria-label="Close"
 							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 						>
 							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -2381,10 +2395,10 @@
 						<!-- Project selector -->
 						<div class="flex flex-col gap-1.5">
 							<label for="ip-project-select" class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
-								Proyecto origen
+								Source project
 							</label>
 							{#if ipLoadingProjects}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Cargando proyectos…</p>
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Loading projects…</p>
 							{:else}
 								<select
 									id="ip-project-select"
@@ -2392,7 +2406,7 @@
 									onchange={loadSourceRefs}
 									class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 								>
-									<option value="">— selecciona un proyecto —</option>
+									<option value="">— select a project —</option>
 									{#each ipProjects as p (p.id)}
 										<option value={p.id}>{p.title}</option>
 									{/each}
@@ -2403,21 +2417,21 @@
 						<!-- Reference list -->
 						{#if ipSelectedProjectId}
 							{#if ipLoadingRefs}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Cargando referencias…</p>
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Loading references…</p>
 							{:else if ipSourceRefs.length === 0}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Este proyecto no tiene referencias.</p>
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">This project has no references.</p>
 							{:else}
 								<div class="flex flex-col gap-2">
 									<div class="flex items-center justify-between">
 										<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-											{ipSelectedIds.size} / {ipSourceRefs.length} seleccionadas
+											{ipSelectedIds.size} / {ipSourceRefs.length} selected
 										</span>
 										<button
 											type="button"
 											onclick={ipToggleAll}
 											class="font-sans text-xs text-accent hover:underline"
 										>
-											{ipSelectedIds.size === ipSourceRefs.length ? 'Deseleccionar todo' : 'Seleccionar todo'}
+											{ipSelectedIds.size === ipSourceRefs.length ? 'Deselect all' : 'Select all'}
 										</button>
 									</div>
 									<div class="max-h-72 overflow-y-auto rounded-md border border-paper-border dark:border-dark-paper-border">
@@ -2456,8 +2470,8 @@
 						{#if ipResult}
 							<div class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30">
 								<p class="font-sans text-sm text-green-700 dark:text-green-400">
-									✓ {ipResult.inserted} {ipResult.inserted === 1 ? 'referencia importada' : 'referencias importadas'}
-									{#if ipResult.skipped > 0}· {ipResult.skipped} omitidas{/if}
+									✓ {ipResult.inserted} {ipResult.inserted === 1 ? 'reference imported' : 'references imported'}
+									{#if ipResult.skipped > 0}· {ipResult.skipped} skipped{/if}
 								</p>
 							</div>
 						{/if}
@@ -2474,14 +2488,14 @@
 							onclick={closePanel}
 							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 						>
-							Cerrar
+							Close
 						</button>
 						<button
 							onclick={runImportFromProject}
 							disabled={ipImporting || ipSelectedIds.size === 0 || !ipSelectedProjectId}
 							class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 						>
-							{ipImporting ? 'Importando…' : `Importar ${ipSelectedIds.size > 0 ? ipSelectedIds.size : ''}`}
+							{ipImporting ? 'Importing…' : `Import ${ipSelectedIds.size > 0 ? ipSelectedIds.size : ''}`}
 						</button>
 					</div>
 				</div>
@@ -2505,12 +2519,12 @@
 					id="semantic-search-title"
 					class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
 				>
-					Buscar en Semantic Scholar
+					Search Semantic Scholar
 				</h2>
 				<button
 					onclick={() => (showSemanticSearch = false)}
 					class="rounded p-1 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-					aria-label="Cerrar"
+					aria-label="Close"
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<path
@@ -2541,7 +2555,7 @@
 					disabled={semanticLoading || !semanticQuery.trim()}
 					class="rounded-lg bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 				>
-					{semanticLoading ? 'Buscando…' : 'Buscar'}
+					{semanticLoading ? 'Searching…' : 'Search'}
 				</button>
 			</form>
 

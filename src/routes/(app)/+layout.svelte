@@ -61,7 +61,7 @@
 				class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
 				>Claude Code</a
 			>
-			· AI asistent powered by
+			· AI assistant powered by
 			<span class="font-medium">Claude Haiku 4.5</span> (Anthropic)
 		</p>
 	</footer>
