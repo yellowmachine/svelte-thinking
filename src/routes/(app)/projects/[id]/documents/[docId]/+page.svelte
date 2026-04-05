@@ -102,9 +102,7 @@
 		}
 	}
 
-	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state(
-		untrack(() => (data.document?.hasDraft ? 'pending' : 'idle'))
-	);
+	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state('idle');
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
