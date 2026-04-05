@@ -84,7 +84,11 @@ def pdf_from_url(body: PdfFromUrlRequest, x_api_key: str = Header(default="")):
         log.info("Rendering HTML → PDF with WeasyPrint: %s", url)
         res = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         res.raise_for_status()
-        html = res.text
+        # Use apparent_encoding (chardet) — HTTP headers often declare iso-8859-1
+        # even when the actual content is UTF-8, causing mojibake with res.text
+        encoding = res.apparent_encoding or "utf-8"
+        html = res.content.decode(encoding, errors="replace")
+        log.info("Decoded HTML as %s (%d chars)", encoding, len(html))
 
         try:
             pdf_bytes = render_pdf(html)
