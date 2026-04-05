@@ -938,7 +938,7 @@
 								<a
 									href="/projects/{data.project.id}/review#doc-{doc.id}"
 									onclick={(e) => e.stopPropagation()}
-									class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+									class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
 									title="View open comments"
 								>
 									<svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
