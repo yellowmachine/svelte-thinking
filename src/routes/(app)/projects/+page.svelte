@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { invalidateAll, goto } from '$app/navigation';
 	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { page } from '$app/state';
@@ -59,6 +60,21 @@
 		newTitle = '';
 		newDescription = '';
 		createError = '';
+	}
+
+	let deleteTarget = $state<{ id: string; title: string } | null>(null);
+	let deletingProject = $state(false);
+
+	async function handleDeleteProject() {
+		if (!deleteTarget) return;
+		deletingProject = true;
+		try {
+			await trpc.projects.delete.mutate(deleteTarget.id);
+			await invalidateAll();
+			deleteTarget = null;
+		} finally {
+			deletingProject = false;
+		}
 	}
 
 	let importing = $state(false);
@@ -251,8 +267,20 @@
 					openComments={proj.openComments}
 					updatedAt={proj.updatedAt}
 					onclick={() => (window.location.href = `/projects/${proj.id}`)}
+					ondelete={proj.ownerId === data.currentUserId
+						? () => { deleteTarget = { id: proj.id, title: proj.title }; }
+						: undefined}
 				/>
 			{/each}
 		</div>
 	{/if}
 </div>
+
+<SafeDeleteDialog
+	open={deleteTarget !== null}
+	label="the project «{deleteTarget?.title}»"
+	warning="All documents, versions, comments and associated data will be permanently deleted."
+	deleting={deletingProject}
+	onconfirm={handleDeleteProject}
+	oncancel={() => (deleteTarget = null)}
+/>

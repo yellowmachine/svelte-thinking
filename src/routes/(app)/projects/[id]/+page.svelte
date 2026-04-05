@@ -405,20 +405,6 @@
 		}
 	}
 
-	// ── Delete project ────────────────────────────────────────────────────────
-	let showDeleteProject = $state(false);
-	let deletingProject = $state(false);
-
-	async function handleDeleteProject() {
-		deletingProject = true;
-		try {
-			await trpc.projects.delete.mutate(data.project.id);
-			await goto('/projects');
-		} catch {
-			deletingProject = false;
-			showDeleteProject = false;
-		}
-	}
 
 	let showLeaveProject = $state(false);
 	let leavingProject = $state(false);
@@ -1583,30 +1569,9 @@
 				</div>
 			{/if}
 
-			<!-- Danger zone — owner only -->
-			{#if data.isOwner}
-				<div class="mt-2">
-					<button
-						type="button"
-						onclick={() => (showDeleteProject = true)}
-						class="w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
-					>
-						Delete project…
-					</button>
-				</div>
-			{/if}
 		</div>
 	</div>
 </div>
-
-<SafeDeleteDialog
-	open={showDeleteProject}
-	label="the project"
-	warning="All documents, versions, comments and associated data will be permanently deleted."
-	deleting={deletingProject}
-	onconfirm={handleDeleteProject}
-	oncancel={() => (showDeleteProject = false)}
-/>
 
 <SafeDeleteDialog
 	open={showLeaveProject}
