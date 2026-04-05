@@ -14,7 +14,7 @@ TMPFILE="/tmp/${FILENAME}"
 
 echo "[backup] Starting dump: ${FILENAME}"
 
-PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
+PGPASSWORD="${POSTGRES_PASSWORD}" PGSSLMODE=disable pg_dump \
   -h "${POSTGRES_HOST}" \
   -U "${POSTGRES_USER}" \
   -d "${POSTGRES_DB}" \
