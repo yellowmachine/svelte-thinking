@@ -78,7 +78,7 @@
 	{:else}
 		<div class="flex flex-col gap-8">
 			{#each data.documents as doc (doc.documentId)}
-				<section>
+				<section id="doc-{doc.documentId}">
 					<!-- Document heading -->
 					<div class="mb-3 flex items-center gap-2">
 						<a

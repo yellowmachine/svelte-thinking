@@ -934,6 +934,19 @@
 										(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 								/>
 							</div>
+							{#if (data.openCommentsByDoc[doc.id] ?? 0) > 0}
+								<a
+									href="/projects/{data.project.id}/review#doc-{doc.id}"
+									onclick={(e) => e.stopPropagation()}
+									class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+									title="View open comments"
+								>
+									<svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+										<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+									</svg>
+									{data.openCommentsByDoc[doc.id]}
+								</a>
+							{/if}
 							{#if canEdit}
 								<div class="relative">
 									<button
