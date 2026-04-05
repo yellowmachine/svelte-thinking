@@ -33,31 +33,51 @@ export const load: PageServerLoad = async (event) => {
 			// Non-writers or ?published param always see the last committed version
 			if (!canWrite || forcePublished) {
 				if (!doc.currentVersionId) {
-					return { ...doc, content: null, hasDraft: false };
+					return { ...doc, content: null, hasDraft: false, lastCommit: null };
 				}
 				const versions = await db
-					.select()
+					.select({
+						content: documentVersion.content,
+						createdAt: documentVersion.createdAt,
+						committerName: sql<string | null>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+					})
 					.from(documentVersion)
 					.where(eq(documentVersion.id, doc.currentVersionId))
 					.limit(1);
-				return { ...doc, content: versions[0]?.content ?? null, hasDraft: false };
+				const v = versions[0];
+				return {
+					...doc,
+					content: v?.content ?? null,
+					hasDraft: false,
+					lastCommit: v ? { committedAt: v.createdAt, committerName: v.committerName } : null
+				};
 			}
 
 			if (doc.draftContent !== null) {
-				return { ...doc, content: doc.draftContent, hasDraft: true };
+				return { ...doc, content: doc.draftContent, hasDraft: true, lastCommit: null };
 			}
 
 			if (!doc.currentVersionId) {
-				return { ...doc, content: '', hasDraft: false };
+				return { ...doc, content: '', hasDraft: false, lastCommit: null };
 			}
 
 			const versions = await db
-				.select()
+				.select({
+					content: documentVersion.content,
+					createdAt: documentVersion.createdAt,
+					committerName: sql<string | null>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+				})
 				.from(documentVersion)
 				.where(eq(documentVersion.id, doc.currentVersionId))
 				.limit(1);
 
-			return { ...doc, content: versions[0]?.content ?? '', hasDraft: false };
+			const v = versions[0];
+			return {
+				...doc,
+				content: v?.content ?? '',
+				hasDraft: false,
+				lastCommit: v ? { committedAt: v.createdAt, committerName: v.committerName } : null
+			};
 		}),
 
 		// Project info (title + owner)
