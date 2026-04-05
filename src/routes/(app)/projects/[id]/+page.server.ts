@@ -1,17 +1,17 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
-import { document } from '$lib/server/db/schemas/documents.schema';
+import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
+import { comment } from '$lib/server/db/schemas/comments.schema';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
-import { eq, desc, and, count, sql, inArray } from 'drizzle-orm';
-import { documentVersion } from '$lib/server/db/schemas/documents.schema';
+import { eq, desc, and, count, sql, inArray, isNull } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
 	const userId = event.locals.user!.id;
 
-	const [proj, documents, collaborators, invitations, requirementCounts] = await Promise.all([
+	const [proj, documents, collaborators, invitations, requirementCounts, openCommentsCount] = await Promise.all([
 		event.locals.withRLS((db) =>
 			db.select().from(project).where(eq(project.id, projectId)).limit(1)
 		),
@@ -80,7 +80,21 @@ export const load: PageServerLoad = async (event) => {
 				})
 				.from(projectRequirement)
 				.where(eq(projectRequirement.projectId, projectId))
-		) as Promise<{ total: number; fulfilled: number; requiredTotal: number; requiredFulfilled: number }[]>
+		) as Promise<{ total: number; fulfilled: number; requiredTotal: number; requiredFulfilled: number }[]>,
+
+		event.locals.withRLS((db) =>
+			db
+				.select({ value: count() })
+				.from(comment)
+				.innerJoin(document, eq(document.id, comment.documentId))
+				.where(
+					and(
+						eq(document.projectId, projectId),
+						eq(comment.status, 'open'),
+						isNull(comment.parentCommentId)
+					)
+				)
+		)
 	]);
 
 	if (!proj[0]) error(404, 'Proyecto no encontrado');
@@ -96,6 +110,7 @@ export const load: PageServerLoad = async (event) => {
 		invitations,
 		myRole,
 		isOwner: proj[0].ownerId === userId,
-		requirementCounts: reqCounts
+		requirementCounts: reqCounts,
+		openComments: openCommentsCount[0]?.value ?? 0
 	};
 };
