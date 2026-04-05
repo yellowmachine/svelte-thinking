@@ -18,6 +18,7 @@
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { goto } from '$app/navigation';
+	import { flash } from '$lib/stores/flash.svelte';
 
 	// ── Citation style ────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@
 
 	let uploadingPdfId = $state<string | null>(null);
 	let deletingPdfId = $state<string | null>(null);
+	let generatingPdfIds = new SvelteSet<string>();
 
 	async function uploadPdf(ref: Ref, file: File) {
 		uploadingPdfId = ref.id;
@@ -620,17 +622,25 @@
 			urlSavePdf = false;
 			panel = null;
 			if (!shouldGeneratePdf) return;
-			// Best-effort: generate PDF in background and update the list item when done
+			// Best-effort: generate PDF in background — show spinner, flash on failure
 			const refId = newRef.id;
+			generatingPdfIds.add(refId);
 			trpc.references.generatePdfFromUrl.mutate(refId)
 				.then((res) => {
 					if (res?.pdfKey) {
 						references = references.map((r) =>
 							r.id === refId ? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` } : r
 						);
+					} else {
+						flash.set('PDF generation failed — you can upload one manually.', 'error');
 					}
 				})
-				.catch(() => {});
+				.catch(() => {
+					flash.set('PDF generation failed — you can upload one manually.', 'error');
+				})
+				.finally(() => {
+					generatingPdfIds.delete(refId);
+				});
 		} catch (e) {
 			urlError = e instanceof Error ? e.message : 'Could not save reference.';
 		}
@@ -991,7 +1001,17 @@
 									{/if}
 								</button>
 								<!-- PDF badge (always visible) -->
-								{#if ref.pdfKey}
+								{#if generatingPdfIds.has(ref.id)}
+									<span
+										title="Generating PDF…"
+										class="flex items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+									>
+										<svg width="9" height="9" viewBox="0 0 24 24" fill="none" class="animate-spin">
+											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" stroke-dasharray="32" stroke-dashoffset="12"/>
+										</svg>
+										PDF
+									</span>
+								{:else if ref.pdfKey}
 									<div class="flex items-center gap-0.5">
 										<a
 											href="/api/references/{ref.id}/pdf"
