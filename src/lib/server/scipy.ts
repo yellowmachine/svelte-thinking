@@ -1,4 +1,7 @@
-import { SCIPY_SERVICE_URL, SCIPY_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
+
+const SCIPY_SERVICE_URL = env.SCIPY_SERVICE_URL ?? '';
+const SCIPY_API_KEY = env.SCIPY_API_KEY ?? '';
 
 type DatasetRef = {
 	bucket: string;
