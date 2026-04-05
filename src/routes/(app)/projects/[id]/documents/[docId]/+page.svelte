@@ -633,50 +633,26 @@
 		}
 	}
 
-	async function syncOfflineEdits() {
-		const documentId = data.document?.id;
-		if (!documentId) return;
-
-		const pending = await offlineDb.pendingEdits
-			.where({ documentId, status: 'pending' })
-			.sortBy('savedAt');
-		if (pending.length === 0) return;
-
-		// Verify session before syncing
-		try {
-			const res = await fetch('/api/auth/session');
-			if (res.status === 401) {
-				goto('/');
-				return;
-			}
-		} catch {
-			return;
-		}
-
-		// Apply the latest snapshot (most recent manual save)
-		const latest = pending[pending.length - 1];
-		try {
-			await trpc.documents.saveDraft.mutate({ documentId, content: latest.content });
-			await offlineDb.pendingEdits
-				.where({ documentId, status: 'pending' })
-				.modify({ status: 'synced' });
-			content = latest.content;
-			lastSavedContent = latest.content;
-			saveStatus = 'saved';
-			setTimeout(() => {
-				if (saveStatus === 'saved') saveStatus = 'idle';
-			}, 2000);
-		} catch {
-			// FORBIDDEN → no longer writer; preserve content for manual recovery
-			await offlineDb.pendingEdits
-				.where({ documentId, status: 'pending' })
-				.modify({ status: 'writer_lost' });
-			writerLostContent = latest.content;
-		}
-	}
-
+	// When reconnecting, update local save status once the global sync has pushed our edits.
+	// The actual push is handled by connectivity.syncAll() in the layout.
 	$effect(() => {
-		if (onlineStore.online) syncOfflineEdits();
+		if (onlineStore.online && saveStatus === 'offline') {
+			const documentId = data.document?.id;
+			if (!documentId) return;
+			offlineDb.pendingEdits
+				.where({ documentId })
+				.toArray()
+				.then((edits) => {
+					const hasPending = edits.some((e) => e.status === 'pending');
+					const writerLost = edits.find((e) => e.status === 'writer_lost');
+					if (writerLost) {
+						writerLostContent = writerLost.content;
+						saveStatus = 'error';
+					} else if (!hasPending) {
+						saveStatus = 'idle';
+					}
+				});
+		}
 	});
 
 	async function doCommit() {

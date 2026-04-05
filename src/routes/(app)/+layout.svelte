@@ -4,8 +4,11 @@
 	import MobileHeader from '$lib/components/layout/MobileHeader.svelte';
 	import MobileNav from '$lib/components/layout/MobileNav.svelte';
 	import FeedbackButton from '$lib/components/layout/FeedbackButton.svelte';
+	import ConnectivityBanner from '$lib/components/ui/ConnectivityBanner.svelte';
 	import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
+	import { onlineStore } from '$lib/stores/online.svelte';
+	import { connectivity } from '$lib/stores/connectivity.svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
@@ -18,6 +21,14 @@
 		const id = storedTheme ?? (data.theme as ThemeId) ?? 'warm';
 		themeStore.init(id, storedDark);
 		workspaceStore.init(data.orgs);
+		onlineStore.init();
+	});
+
+	// Trigger global sync whenever connection is restored
+	$effect(() => {
+		if (onlineStore.online) {
+			connectivity.syncAll();
+		}
 	});
 </script>
 
@@ -32,6 +43,7 @@
 	<main id="main-content" class="flex-1 overflow-y-auto pb-16 sm:pb-0">
 		{@render children()}
 	</main>
+	<ConnectivityBanner />
 	<FeedbackButton />
 	<footer class="hidden border-t border-paper-border px-6 py-3 sm:block dark:border-dark-paper-border">
 		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
