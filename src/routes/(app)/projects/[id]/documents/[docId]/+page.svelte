@@ -2002,6 +2002,14 @@
 					<div class="mx-auto w-full max-w-2xl">
 						{@render editableTitle()}
 						{#if viewMode === 'preview'}
+							{#if data.document?.lastCommit}
+								<p class="mb-6 -mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									{#if data.document.lastCommit.committerName}
+										{data.document.lastCommit.committerName} ·
+									{/if}
+									{new Date(data.document.lastCommit.committedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+								</p>
+							{/if}
 							{#if data.unpublished}
 								<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
 									El autor aún no ha publicado este documento.
