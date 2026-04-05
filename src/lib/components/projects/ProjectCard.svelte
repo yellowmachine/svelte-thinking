@@ -8,6 +8,7 @@
 		collaboratorCount = 1,
 		openComments = 0,
 		updatedAt,
+		reviewHref,
 		onclick,
 		ondelete
 	}: {
@@ -17,6 +18,7 @@
 		collaboratorCount?: number;
 		openComments?: number;
 		updatedAt?: Date;
+		reviewHref?: string;
 		onclick?: () => void;
 		ondelete?: () => void;
 	} = $props();
@@ -119,12 +121,26 @@
 			{/if}
 
 			{#if openComments > 0}
-				<span class="ml-auto flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-					<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
-					{openComments}
-				</span>
+				{#if reviewHref}
+					<a
+						href={reviewHref}
+						onclick={(e) => e.stopPropagation()}
+						class="ml-auto flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+						title="View open comments"
+					>
+						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						{openComments}
+					</a>
+				{:else}
+					<span class="ml-auto flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+						{openComments}
+					</span>
+				{/if}
 			{/if}
 		</div>
 	</div>

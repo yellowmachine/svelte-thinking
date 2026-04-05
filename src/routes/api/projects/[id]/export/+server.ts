@@ -246,7 +246,7 @@ export const GET: RequestHandler = async (event) => {
 	return new Response(zipped.buffer as ArrayBuffer, {
 		headers: {
 			'Content-Type': 'application/zip',
-			'Content-Disposition': `attachment; filename="${slug}-export.zip"`
+			'Content-Disposition': `attachment; filename="${slug}.scholio"`
 		}
 	});
 };

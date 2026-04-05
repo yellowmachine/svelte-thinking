@@ -43,7 +43,7 @@ export const POST: RequestHandler = async (event) => {
 	const formData = await event.request.formData();
 	const file = formData.get('file');
 	if (!(file instanceof File)) error(400, 'Se esperaba un campo "file"');
-	if (!file.name.endsWith('.zip')) error(400, 'El archivo debe ser un ZIP');
+	if (!file.name.endsWith('.scholio') && !file.name.endsWith('.zip')) error(400, 'Expected a .scholio file');
 
 	const buffer = new Uint8Array(await file.arrayBuffer());
 	if (buffer.byteLength > MAX_SIZE) error(413, 'El archivo es demasiado grande (máx. 200 MB)');
