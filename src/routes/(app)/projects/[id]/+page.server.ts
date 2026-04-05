@@ -11,7 +11,7 @@ export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
 	const userId = event.locals.user!.id;
 
-	const [proj, documents, collaborators, invitations, requirementCounts, openCommentsCount] = await Promise.all([
+	const [proj, documents, collaborators, invitations, requirementCounts, openCommentsCount, docCommentCounts] = await Promise.all([
 		event.locals.withRLS((db) =>
 			db.select().from(project).where(eq(project.id, projectId)).limit(1)
 		),
@@ -94,6 +94,21 @@ export const load: PageServerLoad = async (event) => {
 						isNull(comment.parentCommentId)
 					)
 				)
+		),
+
+		event.locals.withRLS((db) =>
+			db
+				.select({ documentId: comment.documentId, value: count() })
+				.from(comment)
+				.innerJoin(document, eq(document.id, comment.documentId))
+				.where(
+					and(
+						eq(document.projectId, projectId),
+						eq(comment.status, 'open'),
+						isNull(comment.parentCommentId)
+					)
+				)
+				.groupBy(comment.documentId)
 		)
 	]);
 
@@ -103,6 +118,10 @@ export const load: PageServerLoad = async (event) => {
 
 	const reqCounts = (requirementCounts as { total: number; fulfilled: number; requiredTotal: number; requiredFulfilled: number }[])[0] ?? { total: 0, fulfilled: 0, requiredTotal: 0, requiredFulfilled: 0 };
 
+	const openCommentsByDoc = Object.fromEntries(
+		docCommentCounts.map((r) => [r.documentId, r.value])
+	);
+
 	return {
 		project: proj[0],
 		documents,
@@ -111,6 +130,7 @@ export const load: PageServerLoad = async (event) => {
 		myRole,
 		isOwner: proj[0].ownerId === userId,
 		requirementCounts: reqCounts,
-		openComments: openCommentsCount[0]?.value ?? 0
+		openComments: openCommentsCount[0]?.value ?? 0,
+		openCommentsByDoc
 	};
 };
