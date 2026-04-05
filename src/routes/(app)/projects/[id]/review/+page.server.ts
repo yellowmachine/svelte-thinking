@@ -28,6 +28,7 @@ export const load: PageServerLoad = async (event) => {
 					authorName: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${comment.authorId})`,
 					content: comment.content,
 					anchorText: comment.anchorText,
+					anchorContext: comment.anchorContext,
 					paragraphNumber: comment.paragraphNumber,
 					type: comment.type,
 					status: comment.status,

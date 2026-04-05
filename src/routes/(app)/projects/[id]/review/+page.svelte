@@ -19,6 +19,23 @@
 			minute: '2-digit'
 		}).format(new Date(d));
 	}
+
+	/** Returns HTML with anchorText highlighted inside anchorContext */
+	function highlightAnchor(context: string, anchor: string): string {
+		const idx = context.indexOf(anchor);
+		if (idx === -1) return escapeHtml(context);
+		return (
+			escapeHtml(context.slice(0, idx)) +
+			'<mark class="bg-amber-200 dark:bg-amber-700/60 rounded px-0.5">' +
+			escapeHtml(anchor) +
+			'</mark>' +
+			escapeHtml(context.slice(idx + anchor.length))
+		);
+	}
+
+	function escapeHtml(s: string): string {
+		return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	}
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-8">
@@ -79,8 +96,13 @@
 						{#each doc.threads as thread (thread.id)}
 							<div class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper">
 								<!-- Thread anchor / label -->
-								{#if thread.anchorText}
-									<p class="mb-2 line-clamp-2 rounded-md bg-amber-50 px-2.5 py-1.5 font-sans text-xs italic text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+								{#if thread.anchorContext && thread.anchorText}
+									<p class="mb-2 rounded-md border-l-2 border-amber-300 bg-amber-50 px-2.5 py-1.5 font-sans text-xs leading-relaxed text-amber-900 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-200">
+										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+										{@html highlightAnchor(thread.anchorContext, thread.anchorText)}
+									</p>
+								{:else if thread.anchorText}
+									<p class="mb-2 rounded-md border-l-2 border-amber-300 bg-amber-50 px-2.5 py-1.5 font-sans text-xs italic text-amber-800 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-300">
 										"{thread.anchorText}"
 									</p>
 								{:else if thread.paragraphNumber}
