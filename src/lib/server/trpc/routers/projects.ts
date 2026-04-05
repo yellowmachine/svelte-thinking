@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, asc, ilike, or, sql } from 'drizzle-orm';
+import { eq, and, asc, ilike, or, sql, isNotNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import {
@@ -14,6 +14,10 @@ import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { user } from '$lib/server/db/auth.schema';
 import { embedQuery } from '$lib/server/embeddings';
+import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
+import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { resolveProjectS3Config } from '$lib/server/s3Storage';
+import { deleteFileWithConfig } from '$lib/server/storage';
 
 const projectStatusValues = ['draft', 'active', 'review', 'published', 'archived'] as const;
 
@@ -132,12 +136,37 @@ export const projectsRouter = router({
     return rows[0];
   }),
 
-  delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
+  delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: projectId }) => {
+    // Collect S3 keys before DB delete so we can clean up storage afterwards
+    const [photoKeys, pdfKeys] = await Promise.all([
+      ctx.withRLS((db) =>
+        db.select({ key: projectPhoto.key })
+          .from(projectPhoto)
+          .where(eq(projectPhoto.projectId, projectId))
+      ),
+      ctx.withRLS((db) =>
+        db.select({ key: projectReference.pdfKey })
+          .from(projectReference)
+          .where(and(eq(projectReference.projectId, projectId), isNotNull(projectReference.pdfKey)))
+      )
+    ]);
+
     const rows = await ctx.withRLS((db) =>
-      db.delete(project).where(eq(project.id, input)).returning({ id: project.id })
+      db.delete(project).where(eq(project.id, projectId)).returning({ id: project.id })
     );
 
     if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+
+    // Clean up S3 assets — best-effort, never blocks the response
+    const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS).catch(() => null);
+    if (s3) {
+      const keys = [
+        ...photoKeys.map((r) => r.key),
+        ...pdfKeys.map((r) => r.key as string)
+      ];
+      await Promise.allSettled(keys.map((key) => deleteFileWithConfig(s3, key)));
+    }
+
     return rows[0];
   }),
 
