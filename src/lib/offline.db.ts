@@ -23,9 +23,18 @@ export interface PendingCreate {
 	failureReason?: string;
 }
 
+export interface OfflineIndexEntry {
+	url: string;           // primary key, e.g. /projects/abc or /projects/abc/documents/xyz
+	title: string;
+	type: 'project' | 'document';
+	projectId?: string;    // set for documents
+	visitedAt: Date;
+}
+
 class OfflineDB extends Dexie {
 	pendingEdits!: Table<PendingEdit, string>;
 	pendingCreates!: Table<PendingCreate, string>;
+	offlineIndex!: Table<OfflineIndexEntry, string>;
 
 	constructor() {
 		super('scholio-offline');
@@ -35,6 +44,11 @@ class OfflineDB extends Dexie {
 		this.version(2).stores({
 			pendingEdits: 'id, documentId, status, savedAt',
 			pendingCreates: 'id, projectId, status, createdAt'
+		});
+		this.version(3).stores({
+			pendingEdits: 'id, documentId, status, savedAt',
+			pendingCreates: 'id, projectId, status, createdAt',
+			offlineIndex: 'url, type, projectId, visitedAt'
 		});
 	}
 }

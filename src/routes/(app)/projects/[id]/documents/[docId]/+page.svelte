@@ -1338,6 +1338,14 @@
 	});
 
 	onMount(() => {
+		offlineDb.offlineIndex.put({
+			url: `/projects/${data.document.projectId}/documents/${data.document.id}`,
+			title: data.document.title,
+			type: 'document',
+			projectId: data.document.projectId,
+			visitedAt: new Date()
+		});
+
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
 		currentCommentId = targetId;
