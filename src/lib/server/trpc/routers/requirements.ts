@@ -8,6 +8,7 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
 import { parseTaskConfig, DEFAULT_MODEL } from './aiConfig';
+import { coerceTemplate, canManageRequirements, type TemplateType } from '$lib/domain/requirements';
 import type { Db } from '$lib/server/db';
 
 type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
@@ -16,7 +17,7 @@ type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
 // AI: generate a structured list of requirements for a given document type.
 // Uses the user's configured BYOK provider (OpenRouter / Perplexity).
 // ---------------------------------------------------------------------------
-export type TemplateType = 'generic' | 'paper' | 'thesis' | 'medical' | 'report' | 'book';
+export type { TemplateType };
 
 interface AIGenerateResult {
 	template: TemplateType;
@@ -139,10 +140,7 @@ async function generateRequirementsFromAI(
 		parsed = {};
 	}
 
-	const validTemplates: TemplateType[] = ['generic', 'paper', 'thesis', 'medical', 'report', 'book'];
-	const template: TemplateType = validTemplates.includes(parsed.template as TemplateType)
-		? (parsed.template as TemplateType)
-		: 'generic';
+	const template = coerceTemplate(parsed.template);
 
 	const requirements = (parsed.requirements ?? [])
 		.filter((r) => typeof r.name === 'string' && r.name.length > 0)
@@ -190,7 +188,7 @@ export const requirementsRouter = router({
 			)) as { id: string; ownerId: string }[];
 
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			if (rows[0].ownerId !== ctx.user.id) {
+			if (!canManageRequirements(ctx.user.id, rows[0].ownerId)) {
 				throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario puede generar requisitos.' });
 			}
 

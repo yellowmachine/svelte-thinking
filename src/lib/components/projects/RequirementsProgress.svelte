@@ -1,4 +1,10 @@
 <script lang="ts">
+	import {
+		getRequirementState,
+		getProgressLabel,
+		type RequirementState
+	} from '$lib/domain/requirements';
+
 	let {
 		fulfilled,
 		total,
@@ -11,27 +17,11 @@
 		requiredTotal: number;
 	} = $props();
 
-	type State = 'empty' | 'pending' | 'required-done' | 'complete';
+	const counts = $derived({ fulfilled, total, requiredFulfilled, requiredTotal });
+	const state = $derived(getRequirementState(counts));
+	const label = $derived(getProgressLabel(state, counts));
 
-	const state = $derived<State>(
-		total === 0
-			? 'empty'
-			: fulfilled === total
-				? 'complete'
-				: requiredFulfilled === requiredTotal && requiredTotal > 0
-					? 'required-done'
-					: 'pending'
-	);
-
-	const label = $derived(
-		state === 'empty'
-			? null
-			: state === 'complete'
-				? `${total}/${total}`
-				: `${requiredFulfilled}/${requiredTotal}`
-	);
-
-	const styles: Record<State, string> = {
+	const styles: Record<RequirementState, string> = {
 		empty: '',
 		pending:
 			'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
