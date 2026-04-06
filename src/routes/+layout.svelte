@@ -9,6 +9,15 @@
 	$effect(() => {
 		einkStore.init();
 		onlineStore.init();
+
+		const handler = (e: PageTransitionEvent) => {
+			if (e.persisted) {
+				console.log('[offline] bfcache: page restored — re-checking network state');
+				onlineStore.refresh();
+			}
+		};
+		window.addEventListener('pageshow', handler);
+		return () => window.removeEventListener('pageshow', handler);
 	});
 </script>
 

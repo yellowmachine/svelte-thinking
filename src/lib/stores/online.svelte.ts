@@ -21,6 +21,17 @@ class OnlineStore {
 		}
 	}
 
+	/** Re-evaluates network state immediately. Safe to call multiple times (e.g. after BFCache restore). */
+	refresh() {
+		if (typeof window === 'undefined') return;
+		const current = navigator.onLine;
+		if (current !== this.online) {
+			console.log(`[offline] network: refresh — state changed to ${current ? 'online' : 'offline'}`);
+			this.online = current;
+		}
+		if (current) this._probe();
+	}
+
 	init() {
 		if (typeof window === 'undefined') return;
 		if (this._initialized) return;
