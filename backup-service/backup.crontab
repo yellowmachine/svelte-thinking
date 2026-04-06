@@ -1,5 +1,0 @@
-SHELL=/bin/sh
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-# Min Hora DíaMes Mes DíaSemana  Comando
-0 3 * * * /scripts/backup.sh >> /var/log/backup.log 2>&1

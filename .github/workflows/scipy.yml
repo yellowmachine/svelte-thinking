@@ -5,8 +5,8 @@ on:
   push:
     branches:
       - staging
-    #paths:
-    #  - "scipy-service/**"
+    paths:
+      - "scipy-service/**"
 
 env:
   REGISTRY: ghcr.io

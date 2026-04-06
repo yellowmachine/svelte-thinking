@@ -42,7 +42,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: ./backup-service # <--- EN SU CARPETA (donde están tus archivos)
+          context: . # <--- EN SU CARPETA (donde están tus archivos)
           file: ./backup-service/Dockerfile # <--- SU DOCKERFILE
           push: true
           platforms: linux/amd64
