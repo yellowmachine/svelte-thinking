@@ -52,6 +52,20 @@ export default defineConfig({
 							cacheableResponse: { statuses: [200] }
 						}
 					},
+					// SvelteKit client-side navigation data — same routes as html-cache
+					// __data.json requests are fetch (not navigate) so need a separate rule
+					{
+						urlPattern: ({ url }) =>
+							url.pathname.endsWith('/__data.json') &&
+							(url.pathname.startsWith('/projects') || url.pathname === '/__data.json'),
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'sveltekit-data-cache',
+							networkTimeoutSeconds: 3,
+							cacheableResponse: { statuses: [200] },
+							expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 }
+						}
+					},
 					// tRPC document and project queries — NetworkFirst with offline fallback
 					{
 						urlPattern: ({ url }) =>
