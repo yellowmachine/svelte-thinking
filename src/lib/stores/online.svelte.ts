@@ -13,8 +13,10 @@ class OnlineStore {
 				cache: 'no-store',
 				signal: AbortSignal.timeout(PROBE_TIMEOUT_MS)
 			});
+			if (!this.online) console.log('[offline] network: probe succeeded — back online');
 			this.online = true;
 		} catch {
+			if (this.online) console.warn('[offline] network: probe failed — going offline');
 			this.online = false;
 		}
 	}
@@ -25,8 +27,16 @@ class OnlineStore {
 		this._initialized = true;
 
 		this.online = navigator.onLine;
-		window.addEventListener('online', () => this._probe());
-		window.addEventListener('offline', () => { this.online = false; });
+		console.log(`[offline] network: initialized — ${navigator.onLine ? 'online' : 'offline'}`);
+
+		window.addEventListener('online', () => {
+			console.log('[offline] network: browser event → online, probing…');
+			this._probe();
+		});
+		window.addEventListener('offline', () => {
+			console.warn('[offline] network: browser event → offline');
+			this.online = false;
+		});
 
 		setInterval(() => this._probe(), PROBE_INTERVAL_MS);
 	}

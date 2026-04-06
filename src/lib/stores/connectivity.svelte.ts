@@ -23,10 +23,12 @@ class ConnectivityStore {
 			.sortBy('savedAt');
 
 		if (pending.length === 0) {
+			console.log('[offline] syncAll: no pending edits, already up to date');
 			flash.set('Connected', 'success');
 			return;
 		}
 
+		console.log(`[offline] syncAll: starting — ${pending.length} pending edit(s)`);
 		this.syncState = 'syncing';
 
 		// Latest snapshot per document
@@ -35,6 +37,7 @@ class ConnectivityStore {
 			latestByDoc.set(edit.documentId, edit);
 		}
 
+		console.log(`[offline] syncAll: syncing ${latestByDoc.size} document(s)`);
 		const errors: SyncError[] = [];
 
 		for (const [documentId, edit] of latestByDoc) {
@@ -43,16 +46,15 @@ class ConnectivityStore {
 				await offlineDb.pendingEdits
 					.where({ documentId, status: 'pending' })
 					.modify({ status: 'synced' });
+				console.log(`[offline] syncAll: ✓ synced document ${documentId}`);
 			} catch (e) {
 				const isForbidden =
 					e instanceof Error &&
 					('code' in e ? (e as { code?: string }).code === 'FORBIDDEN' : e.message.includes('FORBIDDEN'));
 				const finalStatus = isForbidden ? 'writer_lost' : 'failed';
-				errors.push({
-					documentId,
-					message: isForbidden ? 'Write access lost' : (e instanceof Error ? e.message : 'Unknown error'),
-					at: new Date()
-				});
+				const message = isForbidden ? 'Write access lost' : (e instanceof Error ? e.message : 'Unknown error');
+				console.warn(`[offline] syncAll: ✗ failed document ${documentId} — ${message} (status: ${finalStatus})`);
+				errors.push({ documentId, message, at: new Date() });
 				await offlineDb.pendingEdits
 					.where({ documentId, status: 'pending' })
 					.modify({ status: finalStatus });
@@ -60,9 +62,11 @@ class ConnectivityStore {
 		}
 
 		if (errors.length > 0) {
+			console.error(`[offline] syncAll: completed with ${errors.length} error(s)`, errors);
 			this.syncErrors = [...this.syncErrors, ...errors];
 			this.syncState = 'error';
 		} else {
+			console.log('[offline] syncAll: ✓ all documents synced');
 			this.syncState = 'idle';
 			flash.set('Synced', 'success');
 		}
