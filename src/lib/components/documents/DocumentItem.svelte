@@ -1,5 +1,5 @@
 <script lang="ts">
-	type DocType = 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary' | 'book' | 'chapter' | 'reading_note';
+	import type { DocumentType } from '$lib/domain/document';
 
 	let {
 		title,
@@ -9,13 +9,13 @@
 		onclick
 	}: {
 		title: string;
-		type?: DocType;
+		type?: DocumentType;
 		active?: boolean;
 		badge?: string | null;
 		onclick?: () => void;
 	} = $props();
 
-	const typeIcon: Record<DocType, string> = {
+	const typeIcon: Record<DocumentType, string> = {
 		paper: 'M3 4h8M3 7h8M3 10h5',
 		notes: 'M3 4h8M3 7h6M3 10h4',
 		outline: 'M3 4h8M5 7h6M7 10h4',

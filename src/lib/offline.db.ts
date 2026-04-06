@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
+import { type PendingEditStatus, type PendingCreateStatus } from '$lib/domain/document';
 
-export type PendingEditStatus = 'pending' | 'synced' | 'failed' | 'writer_lost';
+export type { PendingEditStatus, PendingCreateStatus };
 
 export interface PendingEdit {
 	id: string;
@@ -9,8 +10,6 @@ export interface PendingEdit {
 	savedAt: Date;
 	status: PendingEditStatus;
 }
-
-export type PendingCreateStatus = 'pending' | 'synced' | 'failed';
 
 export interface PendingCreate {
 	id: string;          // locally-generated UUID — used as server-side ID on sync

@@ -8,6 +8,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 	import { offlineDb, type PendingCreate } from '$lib/offline.db';
+	import { type DocumentType } from '$lib/domain/document';
 	import { onlineStore } from '$lib/stores/online.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -122,14 +123,7 @@
 	let showCreateDoc = $state(false);
 	let showGenerateDraft = $state(false);
 	let newDocTitle = $state('');
-	let newDocType:
-		| 'paper'
-		| 'notes'
-		| 'outline'
-		| 'bibliography'
-		| 'supplementary'
-		| 'book'
-		| 'chapter' = $state('paper');
+	let newDocType = $state<DocumentType>('paper');
 	let creatingDoc = $state(false);
 	let createDocError = $state('');
 
@@ -921,14 +915,7 @@
 							<div class="min-w-0 flex-1">
 								<DocumentItem
 									title={doc.title}
-									type={doc.type as
-										| 'paper'
-										| 'notes'
-										| 'outline'
-										| 'bibliography'
-										| 'supplementary'
-										| 'book'
-										| 'chapter' | 'reading_note'}
+									type={doc.type as DocumentType}
 									badge={getDocumentBadge(doc)}
 									onclick={() =>
 										(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
@@ -1046,14 +1033,7 @@
 								<div class="min-w-0 flex-1">
 									<DocumentItem
 										title={doc.title}
-										type={doc.type as
-											| 'paper'
-											| 'notes'
-											| 'outline'
-											| 'bibliography'
-											| 'supplementary'
-											| 'book'
-											| 'chapter' | 'reading_note'}
+										type={doc.type as DocumentType}
 										onclick={() =>
 											(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 									/>

@@ -11,6 +11,7 @@ import { extractWikilinks } from '$lib/utils/wikilinks';
 import { indexDocument } from '$lib/server/embeddings';
 import { sendCommitNotification } from '$lib/server/resend';
 import { env } from '$env/dynamic/private';
+import { DOCUMENT_TYPES } from '$lib/domain/document';
 import type { Db } from '$lib/server/db';
 
 async function notifyCollaboratorsOnCommit(
@@ -98,16 +99,7 @@ async function notifyCollaboratorsOnCommit(
 	}
 }
 
-const documentTypeValues = [
-	'paper',
-	'notes',
-	'outline',
-	'bibliography',
-	'supplementary',
-	'book',
-	'chapter',
-	'reading_note'
-] as const;
+const documentTypeValues = DOCUMENT_TYPES;
 
 const BOOK_TEMPLATE = `---
 layout: academic

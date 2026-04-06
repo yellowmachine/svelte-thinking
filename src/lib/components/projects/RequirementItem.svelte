@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { DOCUMENT_TYPE_LABELS } from '$lib/domain/document';
+
 	let {
 		requirement,
 		documents,
@@ -38,13 +40,6 @@
 			: ''
 	);
 
-	const docTypeLabel: Record<string, string> = {
-		paper: 'Paper',
-		notes: 'Notes',
-		outline: 'Outline',
-		bibliography: 'Bibliography',
-		supplementary: 'Supplementary'
-	};
 </script>
 
 <li
@@ -151,7 +146,7 @@
 											<span
 												class="rounded bg-paper-border px-1.5 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-border dark:text-dark-ink-faint"
 											>
-												{docTypeLabel[doc.type] ?? doc.type}
+												{DOCUMENT_TYPE_LABELS[doc.type as keyof typeof DOCUMENT_TYPE_LABELS] ?? doc.type}
 											</span>
 											<span class="min-w-0 truncate text-ink dark:text-dark-ink">{doc.title}</span>
 										</button>
