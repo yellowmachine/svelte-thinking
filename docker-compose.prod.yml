@@ -22,11 +22,12 @@ services:
       - scholio-network
 
   scholio:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
+    image: ghcr.io/tu-usuario/scholio:latest
+    #build:
+    #  context: .
+    #  dockerfile: Dockerfile
+    #  args:
+    #    PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
     restart: unless-stopped
     depends_on:
       postgres:
@@ -149,6 +150,46 @@ services:
     networks:
       - scholio-network
 
+  rustfs:
+    security_opt:
+      - "no-new-privileges:true"
+    image: rustfs/rustfs:latest
+    container_name: rustfs-server
+    ports:
+      #- "9000:9000" # S3 API port
+      - "9001:9001" # Console port
+    environment:
+      - RUSTFS_VOLUMES=/data/rustfs{0..3} # Define 4 storage volumes
+      - RUSTFS_ADDRESS=0.0.0.0:9000
+      - RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
+      - RUSTFS_CONSOLE_ENABLE=true
+      - RUSTFS_CORS_ALLOWED_ORIGINS=*
+      - RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS=*
+      - RUSTFS_ACCESS_KEY=rustfsadmin
+      - RUSTFS_SECRET_KEY=rustfsadmin
+      - RUSTFS_OBS_LOGGER_LEVEL=info
+      #- RUSTFS_TLS_PATH=/opt/tls
+      #- RUSTFS_OBS_ENDPOINT=http://otel-collector:4318
+    volumes:
+      - rustfs-data:/data
+      - rustfs-logs:/app/logs
+      #- ./deploy/data/certs/:/opt/tls # TLS configuration, you should create tls directory and put your tls files in it and then specify the path here
+    networks:
+      - scholio-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "curl -f http://127.0.0.1:9000/health && curl -f http://127.0.0.1:9001/rustfs/console/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   postgres_prod_data:
     name: scholio_postgres_prod
@@ -156,6 +197,8 @@ volumes:
     name: scholio_redis_prod
   backup_logs:
     name: scholio_backup_logs
+  rustfs-data:
+  rustfs-logs:
 
 networks:
   scholio-network:
