@@ -36,8 +36,11 @@ export default defineConfig({
 				]
 			},
 			workbox: {
-				// html excluded — no hash in filename, must always revalidate from network
+				// html excluded — no hash in filename, must always revalidate from network.
+				// /offline is the exception: must be precached explicitly so the SW can
+				// serve it as navigateFallback when the network is unavailable.
 				globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
+				additionalManifestEntries: [{ url: '/offline', revision: null }],
 				navigateFallback: '/offline',
 				runtimeCaching: [
 					{
