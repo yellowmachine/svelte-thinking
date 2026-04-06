@@ -19,6 +19,11 @@ export default defineConfig({
 		VitePWA({
 			registerType: 'autoUpdate',
 			devOptions: { enabled: false },
+			// injectManifest: use our custom SW (src/sw.ts) so we can use setCatchHandler
+			// for the offline fallback — navigateFallback (SPA mode) is wrong for SSR apps
+			strategies: 'injectManifest',
+			srcDir: 'src',
+			filename: 'sw.ts',
 			manifest: {
 				name: 'Scholio',
 				short_name: 'Scholio',
@@ -35,63 +40,11 @@ export default defineConfig({
 					{ src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
 				]
 			},
-			workbox: {
+			injectManifest: {
 				// html excluded — no hash in filename, must always revalidate from network.
-				// /offline is the exception: must be precached explicitly so the SW can
-				// serve it as navigateFallback when the network is unavailable.
+				// /offline is the exception: precached so setCatchHandler can serve it when offline.
 				globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
-				additionalManifestEntries: [{ url: '/offline', revision: null }],
-				navigateFallback: '/offline',
-				runtimeCaching: [
-					{
-						urlPattern: ({ request }) => request.mode === 'navigate',
-						handler: 'NetworkFirst',
-						options: {
-							cacheName: 'html-cache',
-							networkTimeoutSeconds: 3,
-							cacheableResponse: { statuses: [200] }
-						}
-					},
-					// SvelteKit client-side navigation data — same routes as html-cache
-					// __data.json requests are fetch (not navigate) so need a separate rule
-					{
-						urlPattern: ({ url }) =>
-							url.pathname.endsWith('/__data.json') &&
-							(url.pathname.startsWith('/projects') || url.pathname === '/__data.json'),
-						handler: 'NetworkFirst',
-						options: {
-							cacheName: 'sveltekit-data-cache',
-							networkTimeoutSeconds: 3,
-							cacheableResponse: { statuses: [200] },
-							expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 }
-						}
-					},
-					// tRPC document and project queries — NetworkFirst with offline fallback
-					{
-						urlPattern: ({ url }) =>
-							url.pathname.startsWith('/api/trpc/documents.') ||
-							url.pathname.startsWith('/api/trpc/projects.'),
-						handler: 'NetworkFirst',
-						options: {
-							cacheName: 'trpc-data-cache',
-							networkTimeoutSeconds: 5,
-							cacheableResponse: { statuses: [200] },
-							expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 }
-						}
-					},
-					// Auth session — cached manually for offline use
-					{
-						urlPattern: ({ url }) => url.pathname === '/api/auth/session',
-						handler: 'NetworkFirst',
-						options: {
-							cacheName: 'auth-session-cache',
-							networkTimeoutSeconds: 5,
-							cacheableResponse: { statuses: [200] },
-							expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 }
-						}
-					}
-				],
-				navigateFallbackDenylist: [/^\/api/, /^\/trpc/]
+				additionalManifestEntries: [{ url: '/offline', revision: null }]
 			}
 		}),
 		devtoolsJson()
