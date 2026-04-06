@@ -1,4 +1,4 @@
-name: Build Typst Service
+name: Build Backup Service
 
 on:
   workflow_dispatch: # Permite ejecutarlo manualmente desde la web de GitHub
@@ -6,7 +6,7 @@ on:
     branches:
       - staging
     paths:
-      - "typst-service/**" # Solo se dispara si tocas ALGO dentro de esa carpeta
+      - "backup-service/**" # Solo se dispara si tocas ALGO dentro de esa carpeta
 
 jobs:
   build:
@@ -24,7 +24,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./typst-service
+          context: ./backup-service
           push: true
           platforms: linux/amd64 # Asegura compatibilidad con tu Hetzner
           tags: ghcr.io/${{ github.repository_owner }}/scholio-typst:latest
