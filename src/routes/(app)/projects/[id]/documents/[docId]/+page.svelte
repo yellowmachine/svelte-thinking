@@ -27,6 +27,14 @@
 	} from '$lib/utils/citations';
 	import { MODEL_SHORT_LABEL } from '$lib/ai-config';
 	import { SPELL_LANGUAGES } from '$lib/spell-languages';
+	import {
+		getSaveDraftCapability,
+		getCommitCapability,
+		getReclaimWritingCapability,
+		canTriggerSave,
+		canTriggerCommit
+	} from '$lib/domain/document-capabilities';
+	import { isProjectOwner } from '$lib/domain/permissions';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -79,7 +87,7 @@
 	let writerLostContent = $state<string | null>(null);
 
 	// ── 1 writer / N readers ─────────────────────────────────────────────────────
-	const isOwner = $derived(data.currentUserId === data.projectOwnerId);
+	const isOwner = $derived(isProjectOwner(data.currentUserId, data.projectOwnerId));
 	// writerUserId null → owner writes; set → only that user writes
 	let currentWriterUserId = $state(untrack(() => data.document?.writerUserId ?? null));
 	let currentWriterName = $state(untrack(() => data.writerName ?? null));
@@ -87,6 +95,7 @@
 	const canWrite = $derived(
 		currentWriterUserId === null ? isOwner : data.currentUserId === currentWriterUserId
 	);
+
 
 	let delegating = $state(false);
 
@@ -450,6 +459,25 @@
 
 	let committing = $state(false);
 	let commitError = $state('');
+
+	// ── Action capabilities ───────────────────────────────────────────────────
+	const saveCap = $derived.by(() => getSaveDraftCapability({
+		canWrite,
+		online: onlineStore.online,
+		saving: saveStatus === 'saving'
+	}));
+
+	const commitCap = $derived.by(() => getCommitCapability({
+		canWrite,
+		online: onlineStore.online,
+		hasContent: content.trim().length > 0,
+		committing
+	}));
+
+	const reclaimCap = $derived.by(() => getReclaimWritingCapability({
+		isOwner,
+		writerUserId: currentWriterUserId
+	}));
 
 	// Inline comments
 	type Reply = { id: string; authorName: string; content: string; createdAt: Date };
@@ -1486,7 +1514,7 @@
 			<div class="flex items-center gap-2 overflow-x-auto px-4 py-2">
 
 				<!-- Reclaim writer (Delegate moved to project doc list) -->
-				{#if isOwner && currentWriterUserId !== null}
+				{#if reclaimCap.kind === 'available'}
 					<button
 						onclick={() => handleSetWriter(null)}
 						disabled={delegating}
@@ -1499,10 +1527,11 @@
 
 				<button
 					onclick={doSaveDraft}
-					disabled={!isDirty || saveStatus === 'saving' || !canWrite}
+					disabled={!isDirty || !canTriggerSave(saveCap)}
+					title={saveCap.kind === 'queued' ? saveCap.hint : saveCap.kind === 'blocked' ? saveCap.reason : undefined}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
-					Save
+					{saveCap.kind === 'saving' ? 'Saving…' : saveCap.kind === 'queued' ? 'Save offline' : 'Save'}
 				</button>
 
 				{#if data.document.type === 'book'}
@@ -1884,7 +1913,8 @@
 
 				<button
 					onclick={() => (showCommit = true)}
-					disabled={!content.trim() || !canWrite}
+					disabled={!canTriggerCommit(commitCap)}
+					title={commitCap.kind === 'blocked' ? commitCap.reason : undefined}
 					class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 				>
 					Commit
