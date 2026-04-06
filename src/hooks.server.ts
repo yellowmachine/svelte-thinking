@@ -60,7 +60,7 @@ const handleHeaders: Handle = async ({ event, resolve }) => {
 				"img-src 'self' data: blob: https://upload.wikimedia.org",
 				"font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
 				`connect-src 'self' ws: wss: ${sentryIngest}`, // WebSocket de HMR + Sentry
-				"worker-src blob:", // Sentry Session Replay
+				"worker-src 'self' blob:", // 'self' for SW, blob: for Sentry Session Replay
 				"frame-ancestors 'none'"
 			].join('; ')
 		: [
@@ -70,7 +70,7 @@ const handleHeaders: Handle = async ({ event, resolve }) => {
 				"img-src 'self' data: blob: https://upload.wikimedia.org",
 				"font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
 				`connect-src 'self' ${sentryIngest}`,
-				"worker-src blob:", // Sentry Session Replay
+				"worker-src 'self' blob:", // 'self' for SW, blob: for Sentry Session Replay
 				"frame-ancestors 'none'"
 			].join('; ');
 
