@@ -598,6 +598,7 @@
 				savedAt: new Date(),
 				status: 'pending'
 			});
+			lastSavedContent = content;
 			saveStatus = 'offline';
 			return;
 		}
@@ -627,6 +628,7 @@
 					savedAt: new Date(),
 					status: 'pending'
 				});
+				lastSavedContent = content;
 				saveStatus = 'offline';
 				onlineStore.online = false; // align state so subsequent saves go directly to Dexie
 			} else {
