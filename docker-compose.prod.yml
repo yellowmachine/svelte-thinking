@@ -1,4 +1,26 @@
 services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./scripts/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - scholio-network
+
   scholio:
     build:
       context: .
@@ -6,6 +28,11 @@ services:
       args:
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       BODY_SIZE_LIMIT: 20M
@@ -68,8 +95,11 @@ services:
       context: .
       dockerfile: backup-service/Dockerfile
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_HOST: postgres
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -120,6 +150,8 @@ services:
       - scholio-network
 
 volumes:
+  postgres_prod_data:
+    name: scholio_postgres_prod
   redis_prod_data:
     name: scholio_redis_prod
   backup_logs:
