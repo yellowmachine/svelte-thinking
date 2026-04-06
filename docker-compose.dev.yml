@@ -55,6 +55,40 @@ services:
     ports:
       - "3400:3400"
 
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin} &&
+      mc mb --ignore-existing local/${R2_BUCKET:-scholio-backups-dev}
+      "
+    restart: on-failure
+
+  backup:
+    build:
+      context: .
+      dockerfile: backup-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-scholio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scholio_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-scholio}
+      R2_BUCKET: ${R2_BUCKET:-scholio-backups-dev}
+      R2_ENDPOINT: http://minio:9000
+      R2_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      R2_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+    volumes:
+      - backup_logs_dev:/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -77,3 +111,5 @@ volumes:
     name: scholio_redis_dev
   languagetool_ngrams:
     name: scholio_languagetool_ngrams
+  backup_logs_dev:
+    name: scholio_backup_logs_dev
