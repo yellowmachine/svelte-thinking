@@ -22,7 +22,7 @@ services:
       - scholio-network
 
   scholio:
-    image: ghcr.io/tu-usuario/scholio:latest
+    image: ghcr.io/yellowmachine/scholio:latest
     #build:
     #  context: .
     #  dockerfile: Dockerfile
@@ -92,9 +92,7 @@ services:
       - scholio-network
 
   backup:
-    build:
-      context: .
-      dockerfile: backup-service/Dockerfile
+    image: ghcr.io/yellowmachine/backup:latest
     restart: unless-stopped
     depends_on:
       postgres:
@@ -115,22 +113,19 @@ services:
       - scholio-network
 
   typst:
-    build:
-      context: ./typst-service
+    image: ghcr.io/yellowmachine/typst:latest
     restart: unless-stopped
     networks:
       - scholio-network
 
   embed:
-    build:
-      context: ./embed-service
+    image: ghcr.io/yellowmachine/embed:latest
     restart: unless-stopped
     networks:
       - scholio-network
 
   scipy:
-    build:
-      context: ./scipy-service
+    image: ghcr.io/yellowmachine/scipy:latest
     restart: unless-stopped
     environment:
       SCIPY_API_KEY: ${SCIPY_API_KEY}
