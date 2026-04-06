@@ -6,6 +6,7 @@ import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectCollaborator, project } from '$lib/server/db/schemas/projects.schema';
 import { sendProjectInvitation } from '$lib/server/services/email.service';
 import { user } from '$lib/server/db/auth.schema';
+import { canInviteToProject } from '$lib/domain/permissions';
 
 const roleValues = ['author', 'coauthor', 'reviewer', 'commenter'] as const;
 
@@ -53,7 +54,7 @@ export const invitationsRouter = router({
 					.limit(1);
 
 				if (!projects[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-				if (projects[0].ownerId !== ctx.user.id) {
+				if (!canInviteToProject(ctx.user.id, projects[0].ownerId)) {
 					throw new TRPCError({ code: 'FORBIDDEN' });
 				}
 
@@ -207,7 +208,7 @@ export const invitationsRouter = router({
 					.limit(1);
 
 				if (!projects[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-				if (projects[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+				if (!canInviteToProject(ctx.user.id, projects[0].ownerId)) throw new TRPCError({ code: 'FORBIDDEN' });
 
 				const existing = await db
 					.select({ id: projectInvitation.id })

@@ -6,6 +6,7 @@ import { aiUsageLog } from '$lib/server/db/schemas/ai.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { organization } from '$lib/server/db/schemas/organizations.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
+import { isOrgOwner } from '$lib/domain/permissions';
 
 const dateRangeInput = z.object({
 	from: z.string().datetime(),
@@ -135,7 +136,7 @@ export const usageRouter = router({
 					.where(eq(organization.id, orgId))
 					.limit(1)
 			);
-			if (!org || org.ownerId !== ctx.user.id) {
+			if (!org || !isOrgOwner(ctx.user.id, org.ownerId)) {
 				throw new TRPCError({ code: 'FORBIDDEN' });
 			}
 

@@ -12,6 +12,7 @@ import { indexDocument } from '$lib/server/embeddings';
 import { sendCommitNotification } from '$lib/server/resend';
 import { env } from '$env/dynamic/private';
 import { DOCUMENT_TYPES } from '$lib/domain/document';
+import { canDelegateWriting } from '$lib/domain/permissions';
 import type { Db } from '$lib/server/db';
 
 async function notifyCollaboratorsOnCommit(
@@ -622,7 +623,7 @@ export const documentsRouter = router({
 					.where(eq(project.id, doc.projectId))
 					.limit(1);
 
-				if (!proj || proj.ownerId !== ctx.user.id) {
+				if (!proj || !canDelegateWriting(ctx.user.id, proj.ownerId)) {
 					throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario puede delegar la escritura' });
 				}
 

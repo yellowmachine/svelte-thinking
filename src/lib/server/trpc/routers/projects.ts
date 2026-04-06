@@ -18,6 +18,7 @@ import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig } from '$lib/server/storage';
+import { isProjectOwner, canRemoveCollaborator } from '$lib/domain/permissions';
 
 const projectStatusValues = ['draft', 'active', 'review', 'published', 'archived'] as const;
 
@@ -211,8 +212,9 @@ export const projectsRouter = router({
       );
 
       if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-      if (proj[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
-      if (input.userId === proj[0].ownerId) throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot remove the project owner.' });
+      if (!canRemoveCollaborator(ctx.user.id, proj[0].ownerId, input.userId)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot remove the project owner.' });
+      }
 
       await ctx.withRLS((db) =>
         db
@@ -372,7 +374,7 @@ export const projectsRouter = router({
         .limit(1)
     );
     if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-    if (proj[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+    if (!isProjectOwner(ctx.user.id, proj[0].ownerId)) throw new TRPCError({ code: 'FORBIDDEN' });
 
     // ctx.db para poder leer todos los interesados (RLS solo expone los del owner)
     return ctx.db

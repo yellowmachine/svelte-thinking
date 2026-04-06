@@ -10,6 +10,7 @@ import {
 	orgInvitation
 } from '$lib/server/db/schemas/organizations.schema';
 import { encryptSecret } from '$lib/server/kms';
+import { isOrgOwner, canManageOrg } from '$lib/domain/permissions';
 import { parseTaskConfig } from './aiConfig';
 import { aiUsageLog } from '$lib/server/db/schemas/ai.schema';
 import { sendOrgInvitation } from '$lib/server/services/email.service';
@@ -298,7 +299,7 @@ export const orgsRouter = router({
 			) as { aiTaskConfig: string | null; ownerId: string }[];
 
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			if (rows[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+			if (!canManageOrg(ctx.user.id, rows[0].ownerId)) throw new TRPCError({ code: 'FORBIDDEN' });
 
 			const config = parseTaskConfig(rows[0].aiTaskConfig);
 			config[input.task] = { keyId: input.keyId, model: input.model };
@@ -324,7 +325,7 @@ export const orgsRouter = router({
 			) as { aiTaskConfig: string | null; ownerId: string }[];
 
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			if (rows[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+			if (!canManageOrg(ctx.user.id, rows[0].ownerId)) throw new TRPCError({ code: 'FORBIDDEN' });
 
 			const config = parseTaskConfig(rows[0].aiTaskConfig);
 			delete config[input.task];
@@ -357,7 +358,7 @@ export const orgsRouter = router({
 					.limit(1);
 
 				if (!orgs[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-				if (orgs[0].ownerId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+				if (!isOrgOwner(ctx.user.id, orgs[0].ownerId)) throw new TRPCError({ code: 'FORBIDDEN' });
 
 				const existing = await db
 					.select({ id: orgInvitation.id })
