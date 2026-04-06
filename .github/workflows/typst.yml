@@ -5,8 +5,8 @@ on:
   push:
     branches:
       - staging
-    paths:
-      - "typst-service/**"
+    #paths:
+    #  - "typst-service/**"
 
 env:
   REGISTRY: ghcr.io
@@ -14,7 +14,7 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/scholio-typst
 
 jobs:
-  build-and-push:
+  build-and-push-typst:
     runs-on: ubuntu-latest
     permissions:
       contents: read
