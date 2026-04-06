@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { invalidateAll, goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import DocumentItem from '$lib/components/documents/DocumentItem.svelte';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
@@ -12,6 +13,15 @@
 	import { onlineStore } from '$lib/stores/online.svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	onMount(() => {
+		offlineDb.offlineIndex.put({
+			url: `/projects/${data.project.id}`,
+			title: data.project.title,
+			type: 'project',
+			visitedAt: new Date()
+		});
+	});
 
 	type InvitationType = {
 		id: string;
