@@ -25,6 +25,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./backup-service
+          file: ./backup-service/Dockerfile
           push: true
           platforms: linux/amd64 # Asegura compatibilidad con tu Hetzner
-          tags: ghcr.io/${{ github.repository_owner }}/scholio-typst:latest
+          tags: ghcr.io/${{ github.repository_owner }}/scholio-backup:latest
