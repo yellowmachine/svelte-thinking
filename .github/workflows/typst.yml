@@ -5,8 +5,8 @@ on:
   push:
     branches:
       - staging
-    #paths:
-    #  - "typst-service/**"
+    paths:
+      - "typst-service/**"
 
 env:
   REGISTRY: ghcr.io
