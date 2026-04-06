@@ -19,6 +19,17 @@ for var in POSTGRES_HOST POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB R2_ENDPOINT
 done
 
 echo "[backup] All required env vars present"
+
+# Wait for postgres to be ready
+echo "[backup] Waiting for postgres at ${POSTGRES_HOST}:5432..."
+until pg_isready -h "${POSTGRES_HOST}" -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -q; do
+    sleep 3
+done
+echo "[backup] Postgres is ready"
+
+# Ensure log directory exists
+mkdir -p /logs
+
 echo "[backup] pg_dump version: $(pg_dump --version)"
 echo "[backup] aws version: $(aws --version 2>&1)"
 echo "[backup] Cron schedule: $(cat /var/spool/cron/crontabs/root)"

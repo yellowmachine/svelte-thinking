@@ -1,6 +1,6 @@
 #!/bin/sh
 # Daily PostgreSQL → Cloudflare R2 backup
-# Runs inside the backup container via supercronic.
+# Runs inside the backup container via crond (BusyBox).
 # Env vars required: POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
 #                    R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
 # Optional: BACKUP_RETENTION_DAYS (default: 30)
