@@ -5,8 +5,8 @@ on:
   push:
     branches:
       - staging
-    #paths:
-    #  - "embed-service/**"
+    paths:
+      - "embed-service/**"
 
 env:
   REGISTRY: ghcr.io

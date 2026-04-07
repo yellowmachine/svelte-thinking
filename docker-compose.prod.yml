@@ -22,7 +22,7 @@ services:
       - scholio-network
 
   scholio:
-    image: ghcr.io/yellowmachine/scholio:latest
+    image: ghcr.io/yellowmachine/svelte-thinking:latest
     #build:
     #  context: .
     #  dockerfile: Dockerfile
@@ -92,7 +92,7 @@ services:
       - scholio-network
 
   backup:
-    image: ghcr.io/yellowmachine/backup:latest
+    image: ghcr.io/yellowmachine/scholio-backup:latest
     restart: unless-stopped
     depends_on:
       postgres:
@@ -113,19 +113,19 @@ services:
       - scholio-network
 
   typst:
-    image: ghcr.io/yellowmachine/typst:latest
+    image: ghcr.io/yellowmachine/scholio-typst:latest
     restart: unless-stopped
     networks:
       - scholio-network
 
   embed:
-    image: ghcr.io/yellowmachine/embed:latest
+    image: ghcr.io/yellowmachine/scholio-embed:latest
     restart: unless-stopped
     networks:
       - scholio-network
 
   scipy:
-    image: ghcr.io/yellowmachine/scipy:latest
+    image: ghcr.io/yellowmachine/scholio-scipy:latest
     restart: unless-stopped
     environment:
       SCIPY_API_KEY: ${SCIPY_API_KEY}
