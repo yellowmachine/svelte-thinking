@@ -608,6 +608,20 @@
 		reviewer: 'Reviewer',
 		commenter: 'Commenter'
 	};
+
+	// ── Starter documents onboarding banner ──────────────────────────────────
+	const hasStarterDocs = $derived(documents.some((d) => d.generatedByAi));
+	const BANNER_KEY = `scholio:starter-banner-dismissed:${data.project.id}`;
+	let starterBannerDismissed = $state(false);
+
+	onMount(() => {
+		starterBannerDismissed = !!localStorage.getItem(BANNER_KEY);
+	});
+
+	function dismissStarterBanner() {
+		localStorage.setItem(BANNER_KEY, '1');
+		starterBannerDismissed = true;
+	}
 </script>
 
 <svelte:window onclick={() => { if (docMenuOpenId) docMenuOpenId = null; }} />
@@ -904,6 +918,30 @@
 				</div>
 			{/if}
 
+			<!-- Starter documents banner -->
+			{#if hasStarterDocs && !starterBannerDismissed}
+				<div class="mb-4 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 dark:border-accent/20 dark:bg-accent/10">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0 text-accent" aria-hidden="true">
+						<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+					</svg>
+					<div class="min-w-0 flex-1">
+						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Sample documents</p>
+						<p class="mt-0.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+							Two AI-generated example documents have been added to show you features like citations, footnotes, and epigraphs. Explore them freely — or delete them whenever you like.
+						</p>
+					</div>
+					<button
+						onclick={dismissStarterBanner}
+						class="shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						aria-label="Dismiss"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+							<path d="M18 6 6 18M6 6l12 12"/>
+						</svg>
+					</button>
+				</div>
+			{/if}
+
 			<!-- Document list -->
 			{#if normalDocs.length === 0 && templates.length === 0}
 				<div
@@ -921,12 +959,12 @@
 					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
 					{#each normalDocsVisible as doc (doc.id)}
-						<div class="group relative flex items-center">
+						<div class="group relative flex items-center {doc.generatedByAi ? 'rounded-lg border-2 border-accent/30 dark:border-accent/25' : ''}">
 							<div class="min-w-0 flex-1">
 								<DocumentItem
 									title={doc.title}
 									type={doc.type as DocumentType}
-									badge={getDocumentBadge(doc)}
+									badge={doc.generatedByAi ? 'Example · Delete anytime' : getDocumentBadge(doc)}
 									onclick={() =>
 										(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 								/>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, asc, ilike, or, sql, isNotNull } from 'drizzle-orm';
+import { eq, and, asc, ilike, or, sql, isNotNull, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import {
@@ -7,7 +7,7 @@ import {
   projectCollaborator,
   projectRoleEnum
 } from '$lib/server/db/schemas/projects.schema';
-import { document } from '$lib/server/db/schemas/documents.schema';
+import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { documentChunk } from '$lib/server/db/schemas/documentChunks.schema';
 import { projectInterest } from '$lib/server/db/schemas/discover.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
@@ -19,8 +19,64 @@ import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig } from '$lib/server/storage';
 import { isProjectOwner, canRemoveCollaborator } from '$lib/domain/permissions';
+import { STARTER_DOCUMENTS } from '$lib/server/starterContent';
+import type { Db } from '$lib/server/db';
 
 const projectStatusValues = ['draft', 'active', 'review', 'published', 'archived'] as const;
+
+async function insertStarterDocuments(db: Db, projectId: string, userId: string) {
+  for (const starter of STARTER_DOCUMENTS) {
+    // Insert references first
+    for (const ref of starter.references) {
+      await db
+        .insert(projectReference)
+        .values({
+          id: crypto.randomUUID(),
+          projectId,
+          citeKey: ref.citeKey,
+          type: ref.type,
+          title: ref.title,
+          authors: ref.authors,
+          year: ref.year,
+          journal: ref.journal,
+          volume: ref.volume,
+          pages: ref.pages,
+          doi: ref.doi,
+          publisher: ref.publisher,
+          address: ref.address,
+          isbn: ref.isbn
+        })
+        .onConflictDoNothing();
+    }
+
+    // Insert document
+    const docId = crypto.randomUUID();
+    await db.insert(document).values({
+      id: docId,
+      projectId,
+      title: starter.title,
+      type: starter.type,
+      generatedByAi: true,
+      ownerUserId: userId
+    });
+
+    // Insert initial version with content
+    const versionId = crypto.randomUUID();
+    await db.insert(documentVersion).values({
+      id: versionId,
+      documentId: docId,
+      content: starter.content,
+      versionNumber: 1,
+      changeDescription: 'AI-generated starter document',
+      createdBy: userId
+    });
+
+    await db
+      .update(document)
+      .set({ currentVersionId: versionId })
+      .where(eq(document.id, docId));
+  }
+}
 
 const createProjectSchema = z.object({
   title: z.string().min(1).max(255),
@@ -97,6 +153,13 @@ export const projectsRouter = router({
       }
     }
 
+    // Check if this is the user's first project (to seed starter documents)
+    const [{ value: existingCount }] = await ctx.withRLS((db) =>
+      db.select({ value: count() }).from(project)
+    ) as [{ value: number }];
+
+    const isFirstProject = existingCount === 0;
+
     return ctx.withRLS(async (db) => {
       const [created] = await db
         .insert(project)
@@ -117,6 +180,10 @@ export const projectsRouter = router({
         ownerUserId: userId,
         role: 'owner'
       });
+
+      if (isFirstProject) {
+        await insertStarterDocuments(db, id, userId);
+      }
 
       return created;
     });
