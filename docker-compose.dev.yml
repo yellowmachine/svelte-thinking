@@ -33,14 +33,14 @@ services:
     ports:
       - "3200:3200"
 
-  scipy:
-    build:
-      context: ./scipy-service
-    restart: unless-stopped
-    environment:
-      SCIPY_API_KEY: ${SCIPY_API_KEY:-}
-    ports:
-      - "3400:3400"
+  #scipy:
+  #  build:
+  #    context: ./scipy-service
+  #  restart: unless-stopped
+  #  environment:
+  #    SCIPY_API_KEY: ${SCIPY_API_KEY:-}
+  #  ports:
+  #    - "3400:3400"
 
   redis:
     image: redis:7-alpine

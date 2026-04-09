@@ -124,13 +124,13 @@ services:
     networks:
       - scholio-network
 
-  scipy:
-    image: ghcr.io/yellowmachine/scholio-scipy:latest
-    restart: unless-stopped
-    environment:
-      SCIPY_API_KEY: ${SCIPY_API_KEY}
-    networks:
-      - scholio-network
+  #scipy:
+  #  image: ghcr.io/yellowmachine/scholio-scipy:latest
+  #  restart: unless-stopped
+  #  environment:
+  #    SCIPY_API_KEY: ${SCIPY_API_KEY}
+  #  networks:
+  #    - scholio-network
 
   redis:
     image: redis:7-alpine
