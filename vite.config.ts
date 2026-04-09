@@ -44,7 +44,7 @@ export default defineConfig({
 				// html excluded — no hash in filename, must always revalidate from network.
 				// /offline is the exception: precached so setCatchHandler can serve it when offline.
 				globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
-				additionalManifestEntries: [{ url: '/offline', revision: null }]
+				additionalManifestEntries: [{ url: '/offline', revision: String(Date.now()) }]
 			}
 		}),
 		devtoolsJson()

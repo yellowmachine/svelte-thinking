@@ -11,6 +11,19 @@ declare let self: ServiceWorkerGlobalScope;
 self.skipWaiting();
 clientsClaim();
 
+// /offline route must be registered BEFORE precacheAndRoute so our NetworkFirst
+// handler takes precedence over the precache route (Workbox checks routes in
+// registration order). Without this, navigating to /offline while online serves
+// stale precached HTML whose chunk hashes no longer exist after a rebuild.
+registerRoute(
+	({ request, url }) => request.mode === 'navigate' && url.pathname === '/offline',
+	new NetworkFirst({
+		cacheName: 'html-cache',
+		networkTimeoutSeconds: 3,
+		plugins: [new CacheableResponsePlugin({ statuses: [200] })]
+	})
+);
+
 // Injected by vite-plugin-pwa at build time
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
