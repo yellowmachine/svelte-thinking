@@ -40,9 +40,7 @@ registerRoute(
 
 // SvelteKit __data.json (client-side navigation payload)
 registerRoute(
-	({ url }) =>
-		url.pathname.endsWith('/__data.json') &&
-		(url.pathname.startsWith('/projects') || url.pathname === '/__data.json'),
+	({ url }) => url.pathname.endsWith('/__data.json'),
 	new NetworkFirst({
 		cacheName: 'sveltekit-data-cache',
 		networkTimeoutSeconds: 3,

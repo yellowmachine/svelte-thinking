@@ -18,7 +18,7 @@ export default defineConfig({
 		sveltekit(),
 		VitePWA({
 			registerType: 'autoUpdate',
-			devOptions: { enabled: false },
+			devOptions: { enabled: true, type: 'module' },
 			// injectManifest: use our custom SW (src/sw.ts) so we can use setCatchHandler
 			// for the offline fallback — navigateFallback (SPA mode) is wrong for SSR apps
 			strategies: 'injectManifest',
