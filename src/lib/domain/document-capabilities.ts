@@ -20,13 +20,13 @@ export interface SaveDraftContext {
 
 export function getSaveDraftCapability(ctx: SaveDraftContext): SaveDraftCapability {
 	if (!ctx.canWrite) {
-		return { kind: 'blocked', reason: 'No tienes permiso de escritura en este documento.' };
+		return { kind: 'blocked', reason: 'You don\'t have write permission on this document.' };
 	}
 	if (ctx.saving) {
 		return { kind: 'saving' };
 	}
 	if (!ctx.online) {
-		return { kind: 'queued', hint: 'Sin conexión. El borrador se guardará localmente y se sincronizará al reconectar.' };
+		return { kind: 'queued', hint: 'No connection. The draft will be saved locally and synced when you reconnect.' };
 	}
 	return { kind: 'ready' };
 }
