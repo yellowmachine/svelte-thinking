@@ -22,6 +22,11 @@ export function canInviteToProject(userId: string, ownerId: string): boolean {
 	return isProjectOwner(userId, ownerId);
 }
 
+/** An owner cannot invite themselves — they are already the project owner. */
+export function isSelfInvite(inviterId: string, inviteeId: string): boolean {
+	return inviterId === inviteeId;
+}
+
 /** Requester must be owner, and the target must not be the owner themselves. */
 export function canRemoveCollaborator(
 	requesterId: string,

@@ -91,6 +91,21 @@ services:
     networks:
       - scholio-network
 
+  librarian:
+    image: ghcr.io/yellowmachine/librarian:latest
+    restart: unless-stopped
+    depends_on:
+      scholio:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      ORIGIN: ${LIBRARIAN_ORIGIN}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
+    networks:
+      - scholio-network
+
   backup:
     image: ghcr.io/yellowmachine/scholio-backup:latest
     restart: unless-stopped
@@ -124,13 +139,13 @@ services:
     networks:
       - scholio-network
 
-  scipy:
-    image: ghcr.io/yellowmachine/scholio-scipy:latest
-    restart: unless-stopped
-    environment:
-      SCIPY_API_KEY: ${SCIPY_API_KEY}
-    networks:
-      - scholio-network
+  #scipy:
+  #  image: ghcr.io/yellowmachine/scholio-scipy:latest
+  #  restart: unless-stopped
+  #  environment:
+  #    SCIPY_API_KEY: ${SCIPY_API_KEY}
+  #  networks:
+  #    - scholio-network
 
   redis:
     image: redis:7-alpine

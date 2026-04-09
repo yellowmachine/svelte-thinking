@@ -124,6 +124,10 @@ export const actions: Actions = {
 			.set({ registrationToken: null, tokenExpiresAt: null })
 			.where(eq(waitlist.id, rows[0].id));
 
+		// signUpEmail with requireEmailVerification:true does not create a session.
+		// Sign in explicitly now that emailVerified is true so the user lands on the app.
+		await auth.api.signInEmail({ body: { email, password } });
+
 		redirect(302, '/projects');
 	},
 

@@ -67,6 +67,7 @@ export const userApiKey = scholioSchema.table(
 		iv: text('iv').notNull(),
 		authTag: text('auth_tag').notNull(),
 		enabled: boolean('enabled').notNull().default(true),
+		source: text('source').notNull().default('manual'), // 'manual' | 'openrouter_oauth'
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},

@@ -19,10 +19,9 @@ import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig } from '$lib/server/storage';
 import { isProjectOwner, canRemoveCollaborator } from '$lib/domain/permissions';
+import { PROJECT_STATUSES } from '$lib/domain/project';
 import { STARTER_DOCUMENTS } from '$lib/server/starterContent';
 import type { Db } from '$lib/server/db';
-
-const projectStatusValues = ['draft', 'active', 'review', 'published', 'archived'] as const;
 
 async function insertStarterDocuments(db: Db, projectId: string, userId: string) {
   for (const starter of STARTER_DOCUMENTS) {
@@ -88,7 +87,7 @@ const updateProjectSchema = z.object({
   id: z.string(),
   title: z.string().min(1).max(255).optional(),
   description: z.string().max(2000).nullable().optional(),
-  status: z.enum(projectStatusValues).optional(),
+  status: z.enum(PROJECT_STATUSES).optional(),
   doi: z.string().max(255).nullable().optional(),
   version: z.string().max(50).nullable().optional(),
   publishedAt: z.coerce.date().nullable().optional()

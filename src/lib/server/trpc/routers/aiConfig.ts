@@ -92,13 +92,14 @@ export const aiConfigRouter = router({
           id: userApiKey.id,
           name: userApiKey.name,
           enabled: userApiKey.enabled,
+          source: userApiKey.source,
           createdAt: userApiKey.createdAt,
           updatedAt: userApiKey.updatedAt
         })
         .from(userApiKey)
         .where(eq(userApiKey.userId, ctx.user.id))
         .orderBy(asc(userApiKey.createdAt))
-    ) as { id: string; name: string; enabled: boolean; createdAt: Date; updatedAt: Date }[];
+    ) as { id: string; name: string; enabled: boolean; source: string; createdAt: Date; updatedAt: Date }[];
 
     return keys;
   }),

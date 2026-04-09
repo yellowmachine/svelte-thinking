@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { trpc } from '$lib/utils/trpc';
-
-	type Role = 'owner' | 'author' | 'coauthor' | 'reviewer' | 'commenter';
-	type Status = 'pending' | 'accepted' | 'expired' | 'cancelled';
+	import { type ProjectInvitationStatus, isInvitationExpired, isInvitationAccepted, isInvitationPending } from '$lib/domain/invitation';
+	import { type ProjectRole, PROJECT_ROLE_LABELS } from '$lib/domain/project';
 
 	let {
 		data
@@ -11,8 +10,8 @@
 		data: {
 			invitation: {
 				id: string;
-				role: Role;
-				status: Status;
+				role: ProjectRole;
+				status: ProjectInvitationStatus;
 				expiresAt: Date;
 				projectId: string;
 				invitedEmail: string;
@@ -24,21 +23,13 @@
 		};
 	} = $props();
 
-	const roleLabel: Record<Role, string> = {
-		owner: 'Owner',
-		author: 'Author',
-		coauthor: 'Co-author',
-		reviewer: 'Reviewer',
-		commenter: 'Commenter'
-	};
-
 	let reqState: 'idle' | 'accepting' | 'success' | 'error' = $state('idle');
 	let errorMsg = $state('');
 
-	let isExpired = $derived(new Date(data.invitation.expiresAt) < new Date());
-	let isAlreadyAccepted = $derived(data.invitation.status === 'accepted');
+	let isExpired = $derived(isInvitationExpired(data.invitation.expiresAt));
+	let isAlreadyAccepted = $derived(isInvitationAccepted(data.invitation.status));
 	let canAccept = $derived(
-		!isExpired && !isAlreadyAccepted && data.invitation.status === 'pending' && !!data.user
+		!isExpired && !isAlreadyAccepted && isInvitationPending(data.invitation.status) && !!data.user
 	);
 
 	function navigate(path: string) {
@@ -163,7 +154,7 @@
 							{data.invitation.invitedEmail}
 						</p>
 						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Role: <span class="font-medium text-accent">{roleLabel[data.invitation.role]}</span>
+							Role: <span class="font-medium text-accent">{PROJECT_ROLE_LABELS[data.invitation.role]}</span>
 						</p>
 					</div>
 				</div>

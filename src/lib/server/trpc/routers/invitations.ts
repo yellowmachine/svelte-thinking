@@ -6,7 +6,8 @@ import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectCollaborator, project } from '$lib/server/db/schemas/projects.schema';
 import { sendProjectInvitation } from '$lib/server/services/email.service';
 import { user } from '$lib/server/db/auth.schema';
-import { canInviteToProject } from '$lib/domain/permissions';
+import { canInviteToProject, isSelfInvite } from '$lib/domain/permissions';
+import { mapDbError } from '$lib/server/db/errors/map-db-error';
 
 const roleValues = ['author', 'coauthor', 'reviewer', 'commenter'] as const;
 
@@ -56,6 +57,9 @@ export const invitationsRouter = router({
 				if (!projects[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 				if (!canInviteToProject(ctx.user.id, projects[0].ownerId)) {
 					throw new TRPCError({ code: 'FORBIDDEN' });
+				}
+				if (input.invitedEmail.toLowerCase() === ctx.user.email.toLowerCase()) {
+					throw new TRPCError({ code: 'BAD_REQUEST', message: 'No puedes invitarte a ti mismo' });
 				}
 
 				// Evita duplicados de invitaciones pendientes
@@ -170,13 +174,23 @@ export const invitationsRouter = router({
 			throw new TRPCError({ code: 'CONFLICT', message: 'Ya eres colaborador de este proyecto' });
 		}
 
-		await ctx.db.insert(projectCollaborator).values({
-			id: crypto.randomUUID(),
-			projectId: invitation.projectId,
-			userId: ctx.user.id,
-			ownerUserId: invitation.invitedBy,
-			role: invitation.role
-		});
+		try {
+			await ctx.db.insert(projectCollaborator).values({
+				id: crypto.randomUUID(),
+				projectId: invitation.projectId,
+				userId: ctx.user.id,
+				ownerUserId: invitation.invitedBy,
+				role: invitation.role
+			});
+		} catch (err) {
+			throw mapDbError(err, {
+				entity: 'membership',
+				operation: 'accept invitation',
+				constraints: {
+					project_collaborator_unique_idx: 'Ya eres colaborador de este proyecto'
+				}
+			});
+		}
 
 		await ctx.db
 			.update(projectInvitation)
@@ -198,6 +212,9 @@ export const invitationsRouter = router({
 				.limit(1);
 
 			if (!targetUser[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+			if (isSelfInvite(ctx.user.id, input.userId)) {
+				throw new TRPCError({ code: 'BAD_REQUEST', message: 'No puedes invitarte a ti mismo' });
+			}
 
 			// Reutiliza el flujo de create con email
 			return ctx.withRLS(async (db) => {

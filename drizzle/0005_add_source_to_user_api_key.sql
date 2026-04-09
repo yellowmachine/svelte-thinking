@@ -1,0 +1,1 @@
+ALTER TABLE "scholio"."user_api_key" ADD COLUMN "source" text DEFAULT 'manual' NOT NULL;

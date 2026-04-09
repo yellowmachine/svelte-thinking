@@ -43,7 +43,14 @@
 	}
 
 	// ── AI config state ──────────────────────────────────────────────────────
-	type AiKey = { id: string; name: string; enabled: boolean; createdAt: Date; updatedAt: Date };
+	type AiKey = {
+		id: string;
+		name: string;
+		enabled: boolean;
+		source: string;
+		createdAt: Date;
+		updatedAt: Date;
+	};
 	type TaskConfig = { keyId: string; model: string };
 	type AiTaskId = 'agent' | 'draft' | 'review' | 'requirements';
 	type AiTaskDef = { id: AiTaskId; label: string; description: string };
@@ -69,6 +76,15 @@
 	let newKeyName = $state('');
 	let newKeyValue = $state('');
 	let savingNewKey = $state(false);
+	let showManualKeyForm = $state(false);
+
+	// OpenRouter OAuth feedback from redirect
+	let openrouterNotice = $state<'success' | 'error' | null>(
+		(data.openrouterStatus as 'success' | 'error' | null) ?? null
+	);
+
+	// Derived: the connected OAuth key (max one)
+	let oauthKey = $derived(aiKeys.find((k) => k.source === 'openrouter_oauth') ?? null);
 
 	// Per-key state
 	let togglingKey = $state<Record<string, boolean>>({});
@@ -891,17 +907,83 @@
 					class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
 					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-						API Keys
+						AI Connection
 					</h2>
 					<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Add one or more OpenRouter keys. Each key can be assigned to a specific task below. Get
-						your keys at <a
-							href="https://openrouter.ai/keys"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="text-accent underline underline-offset-2">openrouter.ai/keys</a
-						>.
+						Connect your OpenRouter account to enable AI features. OpenRouter gives you access to
+						dozens of AI models with a single connection.
 					</p>
+
+					<!-- OpenRouter OAuth feedback -->
+					{#if openrouterNotice === 'success'}
+						<div
+							class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+						>
+							OpenRouter connected successfully.
+						</div>
+					{:else if openrouterNotice === 'error'}
+						<div
+							class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"
+						>
+							Could not connect OpenRouter. Please try again.
+						</div>
+					{/if}
+
+					<!-- OAuth connection status -->
+					{#if oauthKey}
+						<div
+							class="mb-5 flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900/40 dark:bg-green-900/20"
+						>
+							<div class="flex items-center gap-2.5">
+								<svg
+									class="h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
+									viewBox="0 0 24 24"
+									fill="none"
+									aria-hidden="true"
+								>
+									<path
+										d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+								<div>
+									<p class="font-sans text-sm font-medium text-green-800 dark:text-green-300">
+										Connected via OpenRouter
+									</p>
+									<p class="font-sans text-xs text-green-700 dark:text-green-400">
+										Added {formatDate(oauthKey.createdAt)}
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								onclick={() => confirmDeleteKey(oauthKey!.id)}
+								class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+							>
+								Disconnect
+							</button>
+						</div>
+					{:else}
+						<!-- Connect button -->
+						<a
+							href="/api/openrouter/connect"
+							class="mb-4 flex w-full items-center justify-center gap-2.5 rounded-lg bg-accent px-4 py-3 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
+						>
+							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+							Connect with OpenRouter
+						</a>
+					{/if}
 
 					<!-- Privacy notice -->
 					<div
@@ -932,10 +1014,10 @@
 						</p>
 					</div>
 
-					<!-- Existing keys -->
-					{#if aiKeys.length > 0}
-						<div class="mb-5 flex flex-col gap-2">
-							{#each aiKeys as key}
+					<!-- Manual keys (non-OAuth) -->
+					{#if aiKeys.filter((k) => k.source === 'manual').length > 0}
+						<div class="mb-4 flex flex-col gap-2">
+							{#each aiKeys.filter((k) => k.source === 'manual') as key}
 								<div
 									class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 								>
@@ -962,12 +1044,14 @@
 											aria-label={`${key.enabled ? 'Disable' : 'Enable'} key ${key.name}`}
 											onclick={() => handleToggleKey(key.id, !key.enabled)}
 											disabled={togglingKey[key.id]}
-											class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50
-												{key.enabled ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
+											class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 {key.enabled
+												? 'bg-accent'
+												: 'bg-paper-border dark:bg-dark-paper-border'}"
 										>
 											<span
-												class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200
-												{key.enabled ? 'translate-x-4' : 'translate-x-0'}"
+												class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 {key.enabled
+													? 'translate-x-4'
+													: 'translate-x-0'}"
 											></span>
 										</button>
 										<button
@@ -983,38 +1067,46 @@
 						</div>
 					{/if}
 
-					<!-- Add new key form -->
-					<div class="flex flex-col gap-3">
-						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Add key</p>
-						<input
-							type="text"
-							bind:value={newKeyName}
-							placeholder="Name (e.g. 'My Anthropic key')"
-							class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						/>
-						<div class="flex gap-3">
-							<input
-								type="password"
-								bind:value={newKeyValue}
-								placeholder="sk-or-v1-..."
-								autocomplete="off"
-								class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							/>
-							<button
-								type="button"
-								onclick={handleAddKey}
-								disabled={!newKeyName.trim() || !newKeyValue.trim() || savingNewKey}
-								class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-							>
-								{savingNewKey ? 'Saving...' : 'Save'}
-							</button>
-						</div>
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Encrypted with AWS KMS before storage.
-						</p>
-					</div>
-				</section>
+					<!-- Enter key manually toggle -->
+					<button
+						type="button"
+						onclick={() => (showManualKeyForm = !showManualKeyForm)}
+						class="mb-3 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					>
+						{showManualKeyForm ? 'Hide manual entry ↑' : 'Enter key manually ↓'}
+					</button>
 
+					{#if showManualKeyForm}
+						<div class="flex flex-col gap-3">
+							<input
+								type="text"
+								bind:value={newKeyName}
+								placeholder="Name (e.g. 'My OpenRouter key')"
+								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<div class="flex gap-3">
+								<input
+									type="password"
+									bind:value={newKeyValue}
+									placeholder="sk-or-v1-..."
+									autocomplete="off"
+									class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								/>
+								<button
+									type="button"
+									onclick={handleAddKey}
+									disabled={!newKeyName.trim() || !newKeyValue.trim() || savingNewKey}
+									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+								>
+									{savingNewKey ? 'Saving...' : 'Save'}
+								</button>
+							</div>
+							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								Encrypted with AWS KMS before storage.
+							</p>
+						</div>
+					{/if}
+				</section>
 				<!-- ── Section 2: Task configuration ── -->
 				{#if aiKeys.length > 0}
 					<section
@@ -1537,8 +1629,8 @@
 						Almacenamiento S3
 					</h2>
 					<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Connect your own S3 bucket (AWS, Cloudflare R2, Backblaze B2, MinIO, etc.) 
-            to upload photos and datasets. Without configuration, file uploads are disabled.
+						Connect your own S3 bucket (AWS, Cloudflare R2, Backblaze B2, MinIO, etc.) to upload
+						photos and datasets. Without configuration, file uploads are disabled.
 					</p>
 
 					<!-- Privacy notice -->
@@ -1559,8 +1651,8 @@
 							/>
 						</svg>
 						<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-							Credentials are encrypted with AWS KMS before being stored. Scholio does not 
-              access your bucket except to upload or delete files that you manage yourself.
+							Credentials are encrypted with AWS KMS before being stored. Scholio does not access
+							your bucket except to upload or delete files that you manage yourself.
 						</p>
 					</div>
 

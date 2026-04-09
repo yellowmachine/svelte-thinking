@@ -23,6 +23,7 @@ export const load: PageServerLoad = async (event) => {
 		.limit(1);
 
 	const orcidStatus = event.url.searchParams.get('orcid');
+	const openrouterStatus = event.url.searchParams.get('openrouter');
 
 	return {
 		user: {
@@ -34,6 +35,7 @@ export const load: PageServerLoad = async (event) => {
 		orcid: profile?.orcid ?? null,
 		orcidVerified: profile?.orcidVerified ?? false,
 		orcidStatus: orcidStatus === 'connected' ? 'connected' : orcidStatus === 'error' ? 'error' : null,
+		openrouterStatus: openrouterStatus === 'success' ? 'success' : openrouterStatus === 'error' ? 'error' : null,
 		githubLinked: !!githubAccount,
 		isAdmin: !!env.ADMIN_EMAIL && user.email === env.ADMIN_EMAIL
 	};

@@ -161,7 +161,7 @@ for the study design.</code></pre>
 					</div>
 					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Version control for writing</h3>
 					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Create labeled snapshots at any point. Compare versions with visual diff, restore any previous state. Your research history is never lost — even when offline.
+						Create labeled snapshots at any point. Compare versions with visual diff, restore any previous state. Your research history is never lost.
 					</p>
 				</div>
 
@@ -232,19 +232,6 @@ for the study design.</code></pre>
 					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Internal knowledge network</h3>
 					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
 						Link documents with <code class="rounded bg-paper-ui px-0.5 font-mono text-xs dark:bg-dark-paper-ui">[[Title]]</code>. Backlinks update automatically.
-					</p>
-				</div>
-
-				<!-- Offline -->
-				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
-					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c5c3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="M1 6l5 5 5-5"/><path d="M22 12a10 10 0 00-20 0"/><path d="M6 17l6 5 6-5"/><path d="M12 12v10"/>
-						</svg>
-					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Works offline</h3>
-					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						Write without internet. Saves locally and syncs when you reconnect.
 					</p>
 				</div>
 

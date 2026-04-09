@@ -1,19 +1,18 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
-
-	type InvitableRole = 'author' | 'coauthor' | 'reviewer' | 'commenter';
-	type Role = 'owner' | InvitableRole;
+	import { type ProjectRole, PROJECT_ROLE_LABELS, INVITABLE_ROLES } from '$lib/domain/project';
+	import type { CollaboratorRole } from '$lib/domain/permissions';
 	type Invitation = {
 		id: string;
 		invitedEmail: string;
-		role: Role;
+		role: ProjectRole;
 		status: string;
 		expiresAt: Date;
 	};
 	type Collaborator = {
 		id: string;
 		userId: string;
-		role: Role;
+		role: ProjectRole;
 		name: string;
 		email: string;
 	};
@@ -32,23 +31,10 @@
 		onremove?: (collaborator: { userId: string; name: string }) => void;
 	} = $props();
 
-	const roleOptions: { value: Role; label: string }[] = [
-		{ value: 'author', label: 'Author' },
-		{ value: 'coauthor', label: 'Co-author' },
-		{ value: 'reviewer', label: 'Reviewer' },
-		{ value: 'commenter', label: 'Commenter' }
-	];
-
-	const roleLabel: Record<Role, string> = {
-		owner: 'Owner',
-		author: 'Author',
-		coauthor: 'Co-author',
-		reviewer: 'Reviewer',
-		commenter: 'Commenter'
-	};
+	const roleOptions = INVITABLE_ROLES.map((r) => ({ value: r, label: PROJECT_ROLE_LABELS[r] }));
 
 	let email = $state('');
-	let role: InvitableRole = $state('reviewer');
+	let role: CollaboratorRole = $state('reviewer');
 	let reqState: 'idle' | 'sending' | 'sent' | 'error' = $state('idle');
 	let errorMsg = $state('');
 
@@ -89,7 +75,7 @@
 				>
 					<div class="min-w-0">
 						<p class="truncate text-sm text-ink dark:text-dark-ink">{c.name || c.email}</p>
-						<p class="text-xs text-ink-faint dark:text-dark-ink-faint">{roleLabel[c.role]}</p>
+						<p class="text-xs text-ink-faint dark:text-dark-ink-faint">{PROJECT_ROLE_LABELS[c.role]}</p>
 					</div>
 					{#if c.role === 'owner'}
 						<span class="ml-3 shrink-0 text-xs text-ink-faint dark:text-dark-ink-faint">Owner</span>
@@ -153,7 +139,7 @@
 						<div>
 							<p class="text-sm text-ink dark:text-dark-ink">{inv.invitedEmail}</p>
 							<p class="mt-0.5 text-xs text-ink-faint dark:text-dark-ink-faint">
-								{roleLabel[inv.role]} · expires {new Intl.DateTimeFormat('en', {
+								{PROJECT_ROLE_LABELS[inv.role]} · expires {new Intl.DateTimeFormat('en', {
 									day: 'numeric',
 									month: 'short'
 								}).format(new Date(inv.expiresAt))}

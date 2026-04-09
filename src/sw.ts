@@ -11,6 +11,20 @@ declare let self: ServiceWorkerGlobalScope;
 self.skipWaiting();
 clientsClaim();
 
+
+// /offline route must be registered BEFORE precacheAndRoute so our NetworkFirst
+// handler takes precedence over the precache route (Workbox checks routes in
+// registration order). Without this, navigating to /offline while online serves
+// stale precached HTML whose chunk hashes no longer exist after a rebuild.
+registerRoute(
+	({ request, url }) => request.mode === 'navigate' && url.pathname === '/offline',
+	new NetworkFirst({
+		cacheName: 'html-cache',
+		networkTimeoutSeconds: 3,
+		plugins: [new CacheableResponsePlugin({ statuses: [200] })]
+	})
+);
+
 // Injected by vite-plugin-pwa at build time
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
@@ -26,13 +40,14 @@ registerRoute(
 );
 
 // SvelteKit __data.json (client-side navigation payload)
+// matchOptions.ignoreSearch: SvelteKit appends ?x-sveltekit-invalidated=... which changes
+// on every navigation — ignoring search params ensures offline cache hits still work.
 registerRoute(
-	({ url }) =>
-		url.pathname.endsWith('/__data.json') &&
-		(url.pathname.startsWith('/projects') || url.pathname === '/__data.json'),
+	({ url }) => url.pathname.endsWith('/__data.json'),
 	new NetworkFirst({
 		cacheName: 'sveltekit-data-cache',
 		networkTimeoutSeconds: 3,
+		matchOptions: { ignoreSearch: true },
 		plugins: [
 			new CacheableResponsePlugin({ statuses: [200] }),
 			new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 })

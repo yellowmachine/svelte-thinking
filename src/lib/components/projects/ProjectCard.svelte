@@ -1,5 +1,5 @@
 <script lang="ts">
-	type Status = 'draft' | 'active' | 'review' | 'published' | 'archived';
+	import { type ProjectStatus, PROJECT_STATUS_LABELS } from '$lib/domain/project';
 
 	let {
 		title,
@@ -14,7 +14,7 @@
 	}: {
 		title: string;
 		description?: string;
-		status?: Status;
+		status?: ProjectStatus;
 		collaboratorCount?: number;
 		openComments?: number;
 		updatedAt?: Date;
@@ -23,15 +23,7 @@
 		ondelete?: () => void;
 	} = $props();
 
-	const statusLabel: Record<Status, string> = {
-		draft: 'Draft',
-		active: 'Active',
-		review: 'In review',
-		published: 'Published',
-		archived: 'Archived'
-	};
-
-	const statusStyle: Record<Status, string> = {
+	const statusStyle: Record<ProjectStatus, string> = {
 		draft: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted',
 		active: 'bg-green-100 text-green-700',
 		review: 'bg-amber-100 text-amber-700',
@@ -80,7 +72,7 @@
 				<span
 					class="rounded-full px-2.5 py-0.5 font-sans text-xs font-medium {statusStyle[status]}"
 				>
-					{statusLabel[status]}
+					{PROJECT_STATUS_LABELS[status]}
 				</span>
 				<!-- Spacer for ⋮ button so status badge doesn't overlap it -->
 				{#if ondelete}

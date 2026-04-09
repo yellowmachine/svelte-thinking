@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { trpc } from '$lib/utils/trpc';
-
-	type Status = 'pending' | 'accepted' | 'rejected' | 'expired';
+	import { type OrgInvitationStatus, isInvitationExpired, isInvitationAccepted, isInvitationPending } from '$lib/domain/invitation';
 
 	let {
 		data
@@ -10,7 +9,7 @@
 		data: {
 			invitation: {
 				id: string;
-				status: Status;
+				status: OrgInvitationStatus;
 				expiresAt: Date;
 				orgId: string;
 				orgName: string | null;
@@ -25,10 +24,10 @@
 	let reqState: 'idle' | 'accepting' | 'success' | 'error' = $state('idle');
 	let errorMsg = $state('');
 
-	const isExpired = $derived(new Date(data.invitation.expiresAt) < new Date());
-	const isAlreadyAccepted = $derived(data.invitation.status === 'accepted');
+	const isExpired = $derived(isInvitationExpired(data.invitation.expiresAt));
+	const isAlreadyAccepted = $derived(isInvitationAccepted(data.invitation.status));
 	const canAccept = $derived(
-		!isExpired && !isAlreadyAccepted && data.invitation.status === 'pending' && !!data.user
+		!isExpired && !isAlreadyAccepted && isInvitationPending(data.invitation.status) && !!data.user
 	);
 
 	function navigate(path: string) {
