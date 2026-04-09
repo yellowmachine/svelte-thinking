@@ -140,7 +140,7 @@
 								<div class="min-w-0">
 									<p class="font-sans text-xs font-semibold text-accent">v{v.versionNumber}</p>
 									<p class="mt-0.5 truncate font-sans text-sm text-ink dark:text-dark-ink">
-										{v.changeDescription ?? 'Sin descripción'}
+										{v.changeDescription ?? 'No description'}
 									</p>
 									<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 										{fmt.format(new Date(v.createdAt))}
@@ -192,13 +192,13 @@
 				</div>
 			{:else if loading}
 				<div class="flex h-full items-center justify-center">
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Cargando...</p>
+					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Loading...</p>
 				</div>
 			{:else if panelMode === 'preview' && versionContent !== null}
 				<div class="mx-auto max-w-2xl px-6 py-10">
 					<p class="mb-6 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 						v{selectedVersion.versionNumber} · {selectedVersion.changeDescription ??
-							'Sin descripción'}
+							'No description'}
 					</p>
 					<MarkdownPreview content={versionContent} projectId={data.document.projectId} />
 				</div>
@@ -206,12 +206,12 @@
 				<div class="p-6">
 					<p class="mb-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 						v{selectedVersion.versionNumber} · {selectedVersion.changeDescription ??
-							'Sin descripción'}
+							'No description'}
 					</p>
 					<DiffViewer
 						oldText={diffData.previous?.content ?? ''}
 						newText={diffData.current.content}
-						oldLabel={diffData.previous ? `v${diffData.previous.versionNumber}` : '(vacío)'}
+						oldLabel={diffData.previous ? `v${diffData.previous.versionNumber}` : '(empty)'}
 						newLabel="v{diffData.current.versionNumber}"
 					/>
 				</div>

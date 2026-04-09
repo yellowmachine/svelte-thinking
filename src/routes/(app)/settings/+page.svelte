@@ -1703,7 +1703,7 @@
 					<!-- Form -->
 					<div class="flex flex-col gap-3">
 						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-							{s3Config ? 'Actualizar configuración' : 'Configurar bucket'}
+							{s3Config ? 'Update configuration' : 'Configure bucket'}
 						</p>
 						<div class="grid grid-cols-2 gap-3">
 							<input

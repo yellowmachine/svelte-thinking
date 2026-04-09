@@ -53,13 +53,13 @@ export interface CommitContext {
 
 export function getCommitCapability(ctx: CommitContext): CommitCapability {
 	if (!ctx.canWrite) {
-		return { kind: 'blocked', reason: 'No tienes permiso de escritura en este documento.' };
+		return { kind: 'blocked', reason: 'You don\'t have write permission on this document.' };
 	}
 	if (!ctx.online) {
-		return { kind: 'blocked', reason: 'Necesitas conexión para crear una versión.' };
+		return { kind: 'blocked', reason: 'You need a connection to create a version.' };
 	}
 	if (!ctx.hasContent) {
-		return { kind: 'blocked', reason: 'El documento está vacío.' };
+		return { kind: 'blocked', reason: 'The document is empty.' };
 	}
 	if (ctx.committing) {
 		return { kind: 'committing' };
