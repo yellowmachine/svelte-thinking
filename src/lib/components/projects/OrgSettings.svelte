@@ -2,6 +2,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import { AI_TASKS, MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
+	import { type OrgInvitationStatus, isInvitationPending } from '$lib/domain/invitation';
 
 	type Org = { id: string; name: string; slug: string; role: string };
 
@@ -18,7 +19,7 @@
 
 	// Org detail state
 	let members = $state<{ id: string; userId: string; role: string; createdAt: Date }[]>([]);
-	let invitations = $state<{ id: string; invitedEmail: string; status: string; expiresAt: Date }[]>([]);
+	let invitations = $state<{ id: string; invitedEmail: string; status: OrgInvitationStatus; expiresAt: Date }[]>([]);
 	let keys = $state<{ id: string; name: string; enabled: boolean; createdAt: Date }[]>([]);
 	let taskConfig = $state<Record<string, { keyId: string; model: string }>>({});
 	let orgData = $state<{ ownerId: string } | null>(null);
@@ -528,9 +529,9 @@
 						{/if}
 
 						<!-- Pending invitations -->
-						{#if invitations.filter((i) => i.status === 'pending').length > 0}
+						{#if invitations.filter((i) => isInvitationPending(i.status)).length > 0}
 							<div class="mt-3 space-y-1">
-								{#each invitations.filter((i) => i.status === 'pending') as inv (inv.id)}
+								{#each invitations.filter((i) => isInvitationPending(i.status)) as inv (inv.id)}
 									<div class="flex items-center justify-between rounded-lg bg-paper-ui px-3 py-2 dark:bg-dark-paper-ui">
 										<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">{inv.invitedEmail}</span>
 										<button
