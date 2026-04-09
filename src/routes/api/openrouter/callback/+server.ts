@@ -7,11 +7,12 @@ import { encryptSecret } from '$lib/server/kms';
 export const GET: RequestHandler = async ({ url, locals, cookies, fetch }) => {
   if (!locals.user) redirect(302, '/login');
 
-  // Anti-CSRF / misma sesión
+  // Anti-CSRF: comparar state cookie con el devuelto por OpenRouter
   const storedState = cookies.get('or_state');
   cookies.delete('or_state', { path: '/' });
 
-  if (!storedState) {
+  const returnedState = url.searchParams.get('state');
+  if (!storedState || !returnedState || storedState !== returnedState) {
     redirect(302, '/settings?tab=ai&openrouter=error');
   }
 
