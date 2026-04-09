@@ -8,15 +8,20 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+
 const dirname =
 	typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+
+// Set ENABLE_SW=true at build time to include the Service Worker.
+// Without it (default), the PWA plugin is omitted entirely — no SW, no offline, no interference.
+const enableSW = process.env.ENABLE_SW === 'true';
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
 		sveltekit(),
-		VitePWA({
+		...(enableSW ? [VitePWA({
 			registerType: 'autoUpdate',
 			devOptions: { enabled: process.env.NODE_ENV !== 'production', type: 'module' },
 			// injectManifest: use our custom SW (src/sw.ts) so we can use setCatchHandler
@@ -46,7 +51,7 @@ export default defineConfig({
 				globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
 				additionalManifestEntries: [{ url: '/offline', revision: String(Date.now()) }]
 			}
-		}),
+		})] : []),
 		devtoolsJson()
 	],
 	server: { port: 5174, host: true, allowedHosts: ['scholio-dev.local'] },

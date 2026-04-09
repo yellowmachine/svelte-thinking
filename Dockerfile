@@ -25,9 +25,11 @@ RUN bun install --frozen-lockfile --production
 FROM oven/bun:1 AS build
 WORKDIR /app
 
-# PUBLIC_* vars from $env/static/public are baked in at build time.
-# Pass the real value via --build-arg in Coolify (Build Variables section).
+# Build flags (baked in at build time via --build-arg)
 ARG PUBLIC_SENTRY_DSN=""
+# Set ENABLE_SW=true to include the Service Worker / offline support.
+# Default is false — no SW, no offline, no interference with online UX.
+ARG ENABLE_SW=false
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -41,6 +43,7 @@ ENV DATABASE_URL=postgres://placeholder
 ENV SCIPY_SERVICE_URL=http://placeholder
 ENV SCIPY_API_KEY=build-placeholder
 ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
+ENV ENABLE_SW=${ENABLE_SW}
 
 RUN bun run build
 
