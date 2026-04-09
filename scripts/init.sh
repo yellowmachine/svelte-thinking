@@ -61,6 +61,38 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 	ALTER DEFAULT PRIVILEGES IN SCHEMA librarian
 	    GRANT EXECUTE ON FUNCTIONS TO ${APP_DB_USER};
 
+	-- Devuelve los miembros de un grupo solo si el usuario en app.current_user_id
+	-- (seteado por withRLS) es miembro. SECURITY DEFINER bypasea RLS internamente
+	-- para evitar la recursión group_members → groups → group_members.
+	CREATE OR REPLACE FUNCTION librarian.get_group_members(p_group_id text)
+	RETURNS TABLE(
+	    user_id   text,
+	    role      text,
+	    joined_at timestamp,
+	    name      text,
+	    email     text
+	)
+	SECURITY DEFINER
+	STABLE
+	LANGUAGE sql AS \$\$
+	    SELECT
+	        gm.user_id,
+	        gm.role::text,
+	        gm.joined_at,
+	        u.name,
+	        u.email
+	    FROM librarian.group_members gm
+	    JOIN public.user u ON u.id = gm.user_id
+	    WHERE gm.group_id = p_group_id
+	      AND EXISTS (
+	          SELECT 1 FROM librarian.group_members me
+	          WHERE me.group_id = p_group_id
+	            AND me.user_id = current_setting('app.current_user_id', true)
+	      );
+	\$\$;
+
+	GRANT EXECUTE ON FUNCTION librarian.get_group_members(text) TO ${APP_DB_USER};
+
 	ALTER ROLE ${APP_DB_USER} SET search_path = librarian, scholio, public;
 
 EOSQL
