@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."comment" ADD COLUMN "paragraph_number" integer;

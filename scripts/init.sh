@@ -64,6 +64,9 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 	-- Devuelve los miembros de un grupo solo si el usuario en app.current_user_id
 	-- (seteado por withRLS) es miembro. SECURITY DEFINER bypasea RLS internamente
 	-- para evitar la recursión group_members → groups → group_members.
+	-- check_function_bodies=off: la tabla group_members la crean las migraciones de
+	-- Drizzle que corren después; diferimos la validación del cuerpo para evitar el error.
+	SET check_function_bodies = false;
 	CREATE OR REPLACE FUNCTION librarian.get_group_members(p_group_id text)
 	RETURNS TABLE(
 	    user_id   text,
@@ -92,6 +95,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 	\$\$;
 
 	GRANT EXECUTE ON FUNCTION librarian.get_group_members(text) TO ${APP_DB_USER};
+	SET check_function_bodies = true;
 
 	ALTER ROLE ${APP_DB_USER} SET search_path = librarian, scholio, public;
 

@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1775203062248,
-      "tag": "0000_large_screwball",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775291531877,
-      "tag": "0001_closed_arclight",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1775311500504,
-      "tag": "0002_add_collaborator_self_delete_policy",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1775364969257,
-      "tag": "0003_eager_rick_jones",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1775375623569,
-      "tag": "0004_damp_lifeguard",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1775716754993,
-      "tag": "0005_add_source_to_user_api_key",
+      "when": 1775774585738,
+      "tag": "0000_motionless_stone_men",
       "breakpoints": true
     }
   ]

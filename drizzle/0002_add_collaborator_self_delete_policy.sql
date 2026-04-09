@@ -1,1 +1,0 @@
-CREATE POLICY "collaborator_self_delete" ON "scholio"."project_collaborator" AS PERMISSIVE FOR DELETE TO public USING ("scholio"."project_collaborator"."user_id" = nullif(current_setting('app.current_user_id', true), ''));

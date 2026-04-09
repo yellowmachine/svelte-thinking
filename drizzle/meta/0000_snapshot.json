@@ -1,5 +1,5 @@
 {
-  "id": "ab806bb8-a560-43b7-aa52-242cbe1fbb39",
+  "id": "c48df3a0-a303-4f8f-bcf3-b7e291d65db1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -630,6 +630,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "anchor_context": {
+          "name": "anchor_context",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "line_start": {
           "name": "line_start",
           "type": "integer",
@@ -650,6 +656,12 @@
         },
         "character_end": {
           "name": "character_end",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paragraph_number": {
+          "name": "paragraph_number",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -2690,6 +2702,15 @@
           ],
           "using": "\n\t\t\t\t\"scholio\".\"project_collaborator\".\"role\" != 'owner'\n\t\t\t\tAND EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"project_collaborator\".\"project_id\"\n\t\t\t\t\tAND project.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t)\n\t\t\t"
         },
+        "collaborator_self_delete": {
+          "name": "collaborator_self_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "public"
+          ],
+          "using": "\"scholio\".\"project_collaborator\".\"user_id\" = nullif(current_setting('app.current_user_id', true), '')"
+        },
         "collaborator_insert_invite": {
           "name": "collaborator_insert_invite",
           "as": "PERMISSIVE",
@@ -2839,18 +2860,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "key": {
-          "name": "key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "url": {
-          "name": "url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "filename": {
           "name": "filename",
           "type": "text",
@@ -2866,6 +2875,12 @@
         "size": {
           "name": "size",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -3531,6 +3546,18 @@
         },
         "reading_notes_doc_id": {
           "name": "reading_notes_doc_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pdf_key": {
+          "name": "pdf_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pdf_url": {
+          "name": "pdf_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -4351,6 +4378,13 @@
           "notNull": true,
           "default": true
         },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -5073,9 +5107,7 @@
       ]
     }
   },
-  "schemas": {
-    "scholio": "scholio"
-  },
+  "schemas": {},
   "sequences": {},
   "roles": {},
   "policies": {},
