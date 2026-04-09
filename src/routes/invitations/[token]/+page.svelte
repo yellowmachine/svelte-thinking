@@ -2,8 +2,7 @@
 	import { browser } from '$app/environment';
 	import { trpc } from '$lib/utils/trpc';
 	import { type ProjectInvitationStatus, isInvitationExpired, isInvitationAccepted, isInvitationPending } from '$lib/domain/invitation';
-
-	type Role = 'owner' | 'author' | 'coauthor' | 'reviewer' | 'commenter';
+	import { type ProjectRole, PROJECT_ROLE_LABELS } from '$lib/domain/project';
 
 	let {
 		data
@@ -11,7 +10,7 @@
 		data: {
 			invitation: {
 				id: string;
-				role: Role;
+				role: ProjectRole;
 				status: ProjectInvitationStatus;
 				expiresAt: Date;
 				projectId: string;
@@ -23,14 +22,6 @@
 			user: { id: string; name: string; email: string } | null;
 		};
 	} = $props();
-
-	const roleLabel: Record<Role, string> = {
-		owner: 'Owner',
-		author: 'Author',
-		coauthor: 'Co-author',
-		reviewer: 'Reviewer',
-		commenter: 'Commenter'
-	};
 
 	let reqState: 'idle' | 'accepting' | 'success' | 'error' = $state('idle');
 	let errorMsg = $state('');
@@ -163,7 +154,7 @@
 							{data.invitation.invitedEmail}
 						</p>
 						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Role: <span class="font-medium text-accent">{roleLabel[data.invitation.role]}</span>
+							Role: <span class="font-medium text-accent">{PROJECT_ROLE_LABELS[data.invitation.role]}</span>
 						</p>
 					</div>
 				</div>

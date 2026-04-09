@@ -1,22 +1,11 @@
 <script lang="ts">
-	type RoleVariant = 'owner' | 'author' | 'coauthor' | 'reviewer' | 'commenter';
-	type StatusVariant = 'draft' | 'active' | 'review' | 'published' | 'archived';
-	type Variant = RoleVariant | StatusVariant;
+	import { type ProjectRole, type ProjectStatus, PROJECT_ROLE_LABELS, PROJECT_STATUS_LABELS } from '$lib/domain/project';
+
+	type Variant = ProjectRole | ProjectStatus;
 
 	let { variant, label }: { variant: Variant; label?: string } = $props();
 
-	const labels: Record<Variant, string> = {
-		owner: 'Owner',
-		author: 'Author',
-		coauthor: 'Coauthor',
-		reviewer: 'Reviewer',
-		commenter: 'Commenter',
-		draft: 'Draft',
-		active: 'Active',
-		review: 'In review',
-		published: 'Published',
-		archived: 'Archived'
-	};
+	const labels: Record<Variant, string> = { ...PROJECT_ROLE_LABELS, ...PROJECT_STATUS_LABELS };
 
 	const styles: Record<Variant, string> = {
 		owner: 'bg-accent text-white',
