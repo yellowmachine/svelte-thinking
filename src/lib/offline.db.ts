@@ -28,6 +28,7 @@ export interface OfflineIndexEntry {
 	type: 'project' | 'document';
 	projectId?: string;    // set for documents
 	visitedAt: Date;
+	content?: string;      // last-seen document content (saved when visiting online)
 }
 
 class OfflineDB extends Dexie {
@@ -48,6 +49,12 @@ class OfflineDB extends Dexie {
 			pendingEdits: 'id, documentId, status, savedAt',
 			pendingCreates: 'id, projectId, status, createdAt',
 			offlineIndex: 'url, type, projectId, visitedAt'
+		});
+		this.version(4).stores({
+			pendingEdits: 'id, documentId, status, savedAt',
+			pendingCreates: 'id, projectId, status, createdAt',
+			offlineIndex: 'url, type, projectId, visitedAt'
+			// content field added to OfflineIndexEntry — no index needed
 		});
 	}
 }

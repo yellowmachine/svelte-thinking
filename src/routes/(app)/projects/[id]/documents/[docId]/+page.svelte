@@ -1383,7 +1383,8 @@
 			title: data.document.title,
 			type: 'document',
 			projectId: data.document.projectId,
-			visitedAt: new Date()
+			visitedAt: new Date(),
+			content: content ?? ''
 		});
 
 		const targetId = page.url.searchParams.get('commentId');
