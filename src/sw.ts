@@ -11,16 +11,6 @@ declare let self: ServiceWorkerGlobalScope;
 self.skipWaiting();
 clientsClaim();
 
-// Cache /offline during install so NetworkFirst can always fall back to it.
-// Without this, the handler throws when offline and the page isn't yet cached,
-// because setCatchHandler only runs for unmatched routes — and /offline IS matched.
-self.addEventListener('install', (event) => {
-	event.waitUntil(
-		caches.open('html-cache').then((cache) =>
-			cache.add(new Request('/offline', { cache: 'reload' }))
-		)
-	);
-});
 
 // /offline route must be registered BEFORE precacheAndRoute so our NetworkFirst
 // handler takes precedence over the precache route (Workbox checks routes in
