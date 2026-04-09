@@ -24,12 +24,17 @@ class OnlineStore {
 	/** Re-evaluates network state immediately. Safe to call multiple times (e.g. after BFCache restore). */
 	refresh() {
 		if (typeof window === 'undefined') return;
-		const current = navigator.onLine;
-		if (current !== this.online) {
-			console.log(`[offline] network: refresh — state changed to ${current ? 'online' : 'offline'}`);
-			this.online = current;
+		// navigator.onLine is unreliable when offline via DevTools (stays true).
+		// Trust offline immediately; for online, let the probe be the source of truth.
+		if (!navigator.onLine) {
+			if (this.online) {
+				console.warn('[offline] network: refresh — navigator.onLine false, going offline');
+				this.online = false;
+			}
+		} else {
+			// Don't set online=true here — probe will do it if the request actually succeeds.
+			this._probe();
 		}
-		if (current) this._probe();
 	}
 
 	init() {

@@ -24,11 +24,15 @@
 		onlineStore.init();
 	});
 
-	// Trigger global sync whenever connection is restored
+	// Trigger global sync only on offline→online transition, not on initial mount.
+	// Using undefined as sentinel: first run (undefined→bool) never syncs.
+	let prevOnline: boolean | undefined;
 	$effect(() => {
-		if (onlineStore.online) {
+		const isOnline = onlineStore.online;
+		if (isOnline && prevOnline === false) {
 			connectivity.syncAll();
 		}
+		prevOnline = isOnline;
 	});
 </script>
 

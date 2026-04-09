@@ -24,7 +24,6 @@ class ConnectivityStore {
 
 		if (pending.length === 0) {
 			console.log('[offline] syncAll: no pending edits, already up to date');
-			flash.set('Connected', 'success');
 			return;
 		}
 
