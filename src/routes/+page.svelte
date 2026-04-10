@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { ActionData } from './$types';
-	let { form }: { form: ActionData } = $props();
+	import type { ActionData, PageData } from './$types';
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 </script>
 
 <div class="min-h-screen bg-paper-ui font-sans dark:bg-dark-paper-ui">
@@ -55,6 +55,9 @@
 		</div>
 		<p class="mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 			Closed beta · Open source · Free
+			{#if data.userCount > 0}
+				· {data.userCount} researcher{data.userCount === 1 ? '' : 's'} already writing
+			{/if}
 		</p>
 	</section>
 

@@ -1,5 +1,9 @@
-import { Resend } from 'resend';
-import { env } from '$env/dynamic/private';
+/**
+ * Transactional email functions — previously backed by Resend, now SMTP via mailer.ts.
+ * Export signatures are unchanged so callers need no modification.
+ */
+
+import { sendMail } from './mailer';
 
 export async function sendWaitlistApprovalEmail({
 	to,
@@ -10,16 +14,7 @@ export async function sendWaitlistApprovalEmail({
 	name: string;
 	registrationUrl: string;
 }) {
-	if (!env.RESEND_API_KEY) {
-		console.log(`[dev] Waitlist approval for ${to}: ${registrationUrl}`);
-		return;
-	}
-
-	const resend = new Resend(env.RESEND_API_KEY);
-	const from = env.EMAIL_FROM || 'Scholio <noreply@support.scholio.review>';
-
-	await resend.emails.send({
-		from,
+	await sendMail({
 		to,
 		subject: 'Welcome to Scholio — your access is ready',
 		html: `
@@ -108,16 +103,7 @@ export async function sendNewCommentNotification({
 	documentUrl: string;
 	unsubscribeUrl: string;
 }) {
-	if (!env.RESEND_API_KEY) {
-		console.log(`[dev] New comment notification for ${to}: ${documentUrl}`);
-		return;
-	}
-
-	const resend = new Resend(env.RESEND_API_KEY);
-	const from = env.EMAIL_FROM || 'Scholio <noreply@support.scholio.review>';
-
-	await resend.emails.send({
-		from,
+	await sendMail({
 		to,
 		subject: `New comment on "${documentTitle}"`,
 		html: `
@@ -151,16 +137,7 @@ export async function sendCommitNotification({
 	documentUrl: string;
 	unsubscribeUrl: string;
 }) {
-	if (!env.RESEND_API_KEY) {
-		console.log(`[dev] Commit notification for ${to}: ${documentUrl}`);
-		return;
-	}
-
-	const resend = new Resend(env.RESEND_API_KEY);
-	const from = env.EMAIL_FROM || 'Scholio <noreply@support.scholio.review>';
-
-	await resend.emails.send({
-		from,
+	await sendMail({
 		to,
 		subject: `New commit on "${documentTitle}"`,
 		html: `
@@ -218,16 +195,7 @@ export async function sendCommitNotification({
 }
 
 export async function sendVerificationEmail(email: string, url: string) {
-	if (!env.RESEND_API_KEY) {
-		console.log(`[dev] Verification URL for ${email}: ${url}`);
-		return;
-	}
-
-	const resend = new Resend(env.RESEND_API_KEY);
-	const from = env.EMAIL_FROM || 'Scholio <noreply@support.scholio.review>';
-
-	await resend.emails.send({
-		from,
+	await sendMail({
 		to: email,
 		subject: 'Confirm your Scholio account',
 		html: `

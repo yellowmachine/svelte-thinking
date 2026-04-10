@@ -1,5 +1,4 @@
-import { Resend } from 'resend';
-import { env } from '$env/dynamic/private';
+import { sendMail } from '$lib/server/mailer';
 
 export async function sendOrgInvitation({
 	to,
@@ -14,13 +13,9 @@ export async function sendOrgInvitation({
 	token: string;
 	origin: string;
 }) {
-	if (!env.RESEND_API_KEY) return;
-
 	const link = `${origin}/org-invitations/${token}`;
-	const resend = new Resend(env.RESEND_API_KEY);
 
-	await resend.emails.send({
-		from: env.EMAIL_FROM ?? 'Scholio <noreply@support.scholio.review>',
+	await sendMail({
 		to,
 		subject: `${inviterName} invited you to join "${orgName}" on Scholio`,
 		html: `
@@ -47,13 +42,9 @@ export async function sendProjectInvitation({
 	token: string;
 	origin: string;
 }) {
-	if (!env.RESEND_API_KEY) return;
-
 	const link = `${origin}/invitations/${token}`;
-	const resend = new Resend(env.RESEND_API_KEY);
 
-	await resend.emails.send({
-		from: env.EMAIL_FROM ?? 'Scholio <noreply@support.scholio.review>',
+	await sendMail({
 		to,
 		subject: `${inviterName} te invitó a colaborar en "${projectTitle}"`,
 		html: `
