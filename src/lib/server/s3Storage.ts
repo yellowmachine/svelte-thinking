@@ -15,11 +15,12 @@
 
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { userS3Config } from '$lib/server/db/schemas/users.schema';
+import { userS3Config, userProfile } from '$lib/server/db/schemas/users.schema';
 import { orgS3Config } from '$lib/server/db/schemas/organizations.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { decryptSecret } from '$lib/server/kms';
 import { cacheGet, cacheSet, cacheDel, CACHE_KEY, TTL } from '$lib/server/cache';
+import { buildInternalS3Config } from '$lib/server/storage';
 import type { UserS3Config } from '$lib/server/storage';
 import type { Db } from '$lib/server/db';
 
@@ -165,6 +166,18 @@ export async function resolveProjectS3Config(
 		return config;
 	}
 
-	// 3. Personal project → user S3
+	// 3. Personal project → check internal storage flag first, then BYOS3
+	const [profileRow] = (await withRLS((db: Db) =>
+		db
+			.select({ useInternalStorage: userProfile.useInternalStorage })
+			.from(userProfile)
+			.where(eq(userProfile.userId, userId))
+			.limit(1)
+	)) as { useInternalStorage: boolean }[];
+
+	if (profileRow?.useInternalStorage) {
+		return buildInternalS3Config(userId);
+	}
+
 	return getDecryptedUserS3Config(userId, withRLS);
 }

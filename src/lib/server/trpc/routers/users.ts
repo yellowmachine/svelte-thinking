@@ -228,5 +228,15 @@ export const usersRouter = router({
 					)
 			);
 			return { ok: true };
-		})
+		}),
+
+	unlinkOrcid: protectedProcedure.mutation(async ({ ctx }) => {
+		await ctx.withRLS((db) =>
+			db
+				.update(userProfile)
+				.set({ orcid: null, orcidVerified: false, updatedAt: new Date() })
+				.where(eq(userProfile.userId, ctx.user.id))
+		);
+		return { ok: true };
+	})
 });

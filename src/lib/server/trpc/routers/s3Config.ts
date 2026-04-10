@@ -2,10 +2,16 @@ import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
-import { userS3Config } from '$lib/server/db/schemas/users.schema';
+import { userS3Config, userProfile } from '$lib/server/db/schemas/users.schema';
 import { orgS3Config, organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { encryptSecret } from '$lib/server/kms';
-import { testS3Connection } from '$lib/server/storage';
+import {
+  testS3Connection,
+  buildInternalS3Config,
+  createS3Client,
+  ensureBucket,
+  INTERNAL_STORAGE_QUOTA_BYTES
+} from '$lib/server/storage';
 import {
   getDecryptedUserS3Config,
   invalidateUserS3Cache,
@@ -166,6 +172,58 @@ export const s3ConfigRouter = router({
       db.delete(userS3Config).where(eq(userS3Config.userId, ctx.user.id))
     );
     await invalidateUserS3Cache(ctx.user.id);
+    return { ok: true };
+  }),
+
+  // ── Internal storage (beta) ────────────────────────────────────────────
+
+  internalUsage: protectedProcedure.query(async ({ ctx }) => {
+    const [row] = (await ctx.withRLS((db) =>
+      db
+        .select({
+          useInternalStorage: userProfile.useInternalStorage,
+          usedBytes: userProfile.internalStorageUsedBytes
+        })
+        .from(userProfile)
+        .where(eq(userProfile.userId, ctx.user.id))
+        .limit(1)
+    )) as { useInternalStorage: boolean; usedBytes: number }[];
+
+    return {
+      enabled: row?.useInternalStorage ?? false,
+      usedBytes: row?.usedBytes ?? 0,
+      quotaBytes: INTERNAL_STORAGE_QUOTA_BYTES
+    };
+  }),
+
+  enableInternal: protectedProcedure.mutation(async ({ ctx }) => {
+    const config = buildInternalS3Config(ctx.user.id);
+    const client = createS3Client(config);
+    try {
+      await ensureBucket(client, config.bucket);
+    } catch {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Could not initialize storage bucket. Try again later.'
+      });
+    }
+
+    await ctx.withRLS((db) =>
+      db
+        .update(userProfile)
+        .set({ useInternalStorage: true, updatedAt: new Date() })
+        .where(eq(userProfile.userId, ctx.user.id))
+    );
+    return { ok: true };
+  }),
+
+  disableInternal: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.withRLS((db) =>
+      db
+        .update(userProfile)
+        .set({ useInternalStorage: false, updatedAt: new Date() })
+        .where(eq(userProfile.userId, ctx.user.id))
+    );
     return { ok: true };
   }),
 

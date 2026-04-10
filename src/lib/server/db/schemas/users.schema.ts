@@ -1,4 +1,4 @@
-import { text, timestamp, boolean, pgPolicy, unique } from 'drizzle-orm/pg-core';
+import { text, timestamp, boolean, bigint, pgPolicy, unique } from 'drizzle-orm/pg-core';
 import { customType } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
@@ -36,6 +36,9 @@ export const userProfile = scholioSchema.table(
 		aiTaskConfig: text('ai_task_config'), // JSON stored as text
 		// UI theme preference: 'warm' | 'github' | 'solarized' | 'nord' | 'catppuccin' | 'gruvbox'
 		theme: text('theme'),
+		// Internal storage (beta) — opt-in to use platform's RustFS instead of BYOS3
+		useInternalStorage: boolean('use_internal_storage').notNull().default(false),
+		internalStorageUsedBytes: bigint('internal_storage_used_bytes', { mode: 'number' }).notNull().default(0),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
@@ -50,6 +53,13 @@ export const userProfile = scholioSchema.table(
 		pgPolicy('user_profile_modify', {
 			for: 'all',
 			using: sql`${t.userId} = ${currentUserId}`
+		}),
+
+		// Admin puede leer y modificar cualquier fila cuando app.is_admin = 'true'
+		// Este flag solo lo activa withAdminRLS en rutas /admin — nunca viene de input de usuario
+		pgPolicy('user_profile_admin', {
+			for: 'all',
+			using: sql`current_setting('app.is_admin', true) = 'true'`
 		})
 	]
 ).enableRLS();

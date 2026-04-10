@@ -1,0 +1,2 @@
+ALTER TABLE "scholio"."user_profile" ADD COLUMN "use_internal_storage" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "scholio"."user_profile" ADD COLUMN "internal_storage_used_bytes" bigint DEFAULT 0 NOT NULL;

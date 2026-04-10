@@ -8,6 +8,20 @@
       "when": 1775774585738,
       "tag": "0000_motionless_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775800907821,
+      "tag": "0001_add_internal_storage_to_user_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775801567079,
+      "tag": "0002_add_admin_policy_to_user_profile",
+      "breakpoints": true
     }
   ]
 }

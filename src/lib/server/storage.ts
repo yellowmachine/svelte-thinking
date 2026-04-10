@@ -118,8 +118,7 @@ export function getPublicUrl(key: string): string {
   return `${base}/${bucket()}/${key}`;
 }
 
-async function ensureBucket(client: S3Client) {
-  const b = bucket();
+export async function ensureBucket(client: S3Client, b: string) {
   try {
     await client.send(new HeadBucketCommand({ Bucket: b }));
   } catch {
@@ -145,9 +144,39 @@ async function ensureBucket(client: S3Client) {
   }
 }
 
+// ── Internal storage helpers (per-user bucket in platform RustFS) ────────────
+
+export const INTERNAL_STORAGE_QUOTA_BYTES = 50 * 1024 * 1024; // 50 MB
+
+export function internalBucketName(userId: string): string {
+  // Bucket names must be lowercase and can't contain underscores
+  return `scholio-u-${userId.toLowerCase().replace(/_/g, '-')}`;
+}
+
+export function buildInternalS3Config(userId: string): UserS3Config {
+  if (!env.STORAGE_ENDPOINT) throw new Error('STORAGE_ENDPOINT is not set');
+  if (!env.STORAGE_ACCESS_KEY) throw new Error('STORAGE_ACCESS_KEY is not set');
+  if (!env.STORAGE_SECRET_KEY) throw new Error('STORAGE_SECRET_KEY is not set');
+
+  const bucketName = internalBucketName(userId);
+  return {
+    endpoint: env.STORAGE_ENDPOINT,
+    bucket: bucketName,
+    region: 'us-east-1',
+    accessKey: env.STORAGE_ACCESS_KEY,
+    secretKey: env.STORAGE_SECRET_KEY,
+    publicUrl: env.STORAGE_PUBLIC_URL
+      ? env.STORAGE_PUBLIC_URL.replace(/\/$/, '').replace(
+          /\/[^/]+$/,
+          `/${bucketName}`
+        )
+      : null
+  };
+}
+
 export async function uploadFile(key: string, body: Buffer, contentType: string): Promise<string> {
   const client = getClient();
-  await ensureBucket(client);
+  await ensureBucket(client, bucket());
   await client.send(
     new PutObjectCommand({
       Bucket: bucket(),
