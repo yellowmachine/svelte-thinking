@@ -38,14 +38,12 @@ COPY . .
 # Real values are injected at container startup via docker-compose env.
 ENV NODE_ENV=production
 ENV ORIGIN=https://placeholder.local
-ENV BETTER_AUTH_SECRET=build-placeholder
 ENV DATABASE_URL=postgres://placeholder
 ENV SCIPY_SERVICE_URL=http://placeholder
-ENV SCIPY_API_KEY=build-placeholder
 ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
 ENV ENABLE_SW=${ENABLE_SW}
 
-RUN bun run build
+RUN BETTER_AUTH_SECRET=build-placeholder SCIPY_API_KEY=build-placeholder bun run build
 
 # ─── Stage 4: prod ────────────────────────────────────────────────────────────
 # svelte-adapter-bun genera un servidor que corre con Bun, no con Node.
