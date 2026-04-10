@@ -165,8 +165,8 @@ export const handle: Handle = sequence(
 	Sentry.sentryHandle(),
 	handleDevTools,
 	handleSubdomain,
+	handleAuthCookieDomain,
 	handleBetterAuth,
 	handleRLS,
-	handleHeaders,
-	handleAuthCookieDomain
+	handleHeaders
 );
