@@ -23,6 +23,7 @@ services:
 
   scholio:
     image: ghcr.io/yellowmachine/svelte-thinking:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       postgres:
@@ -88,6 +89,7 @@ services:
 
   librarian:
     image: ghcr.io/yellowmachine/librarian-bun-kilo:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       scholio:
