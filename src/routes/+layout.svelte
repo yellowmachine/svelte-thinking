@@ -10,6 +10,10 @@
 		einkStore.init();
 		onlineStore.init();
 
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.register('/sw-offline.js', { scope: '/' }).catch(() => {});
+		}
+
 		const handler = (e: PageTransitionEvent) => {
 			if (e.persisted) {
 				console.log('[offline] bfcache: page restored — re-checking network state');
