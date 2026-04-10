@@ -95,28 +95,6 @@ function classifyS3Error(e: unknown, config: UserS3Config): string {
   return e.message;
 }
 
-function getClient() {
-  if (!env.STORAGE_ENDPOINT) throw new Error('STORAGE_ENDPOINT is not set');
-  if (!env.STORAGE_ACCESS_KEY) throw new Error('STORAGE_ACCESS_KEY is not set');
-  if (!env.STORAGE_SECRET_KEY) throw new Error('STORAGE_SECRET_KEY is not set');
-
-  return new S3Client({
-    endpoint: env.STORAGE_ENDPOINT,
-    region: 'us-east-1',
-    credentials: {
-      accessKeyId: env.STORAGE_ACCESS_KEY,
-      secretAccessKey: env.STORAGE_SECRET_KEY
-    },
-    forcePathStyle: true // required for MinIO
-  });
-}
-
-const bucket = () => env.STORAGE_BUCKET || 'scholio';
-
-export function getPublicUrl(key: string): string {
-  const base = (env.STORAGE_PUBLIC_URL || env.STORAGE_ENDPOINT || '').replace(/\/$/, '');
-  return `${base}/${bucket()}/${key}`;
-}
 
 export async function ensureBucket(client: S3Client, b: string) {
   try {
@@ -177,33 +155,3 @@ export function buildInternalS3Config(userId: string): UserS3Config {
   };
 }
 
-// Buckets verified during this process lifetime — avoids a HeadBucket round-trip on every upload.
-const ensuredBuckets = new Set<string>();
-
-export async function uploadFile(key: string, body: Buffer, contentType: string): Promise<string> {
-  const client = getClient();
-  const b = bucket();
-  if (!ensuredBuckets.has(b)) {
-    await ensureBucket(client, b);
-    ensuredBuckets.add(b);
-  }
-  await client.send(
-    new PutObjectCommand({
-      Bucket: b,
-      Key: key,
-      Body: body,
-      ContentType: contentType
-    })
-  );
-  return getPublicUrl(key);
-}
-
-export async function deleteFile(key: string): Promise<void> {
-  const client = getClient();
-  await client.send(
-    new DeleteObjectCommand({
-      Bucket: bucket(),
-      Key: key
-    })
-  );
-}
