@@ -95,28 +95,6 @@ function classifyS3Error(e: unknown, config: UserS3Config): string {
   return e.message;
 }
 
-function getClient() {
-  if (!env.STORAGE_ENDPOINT) throw new Error('STORAGE_ENDPOINT is not set');
-  if (!env.STORAGE_ACCESS_KEY) throw new Error('STORAGE_ACCESS_KEY is not set');
-  if (!env.STORAGE_SECRET_KEY) throw new Error('STORAGE_SECRET_KEY is not set');
-
-  return new S3Client({
-    endpoint: env.STORAGE_ENDPOINT,
-    region: 'us-east-1',
-    credentials: {
-      accessKeyId: env.STORAGE_ACCESS_KEY,
-      secretAccessKey: env.STORAGE_SECRET_KEY
-    },
-    forcePathStyle: true // required for MinIO
-  });
-}
-
-const bucket = () => env.STORAGE_BUCKET || 'scholio';
-
-export function getPublicUrl(key: string): string {
-  const base = (env.STORAGE_PUBLIC_URL || env.STORAGE_ENDPOINT || '').replace(/\/$/, '');
-  return `${base}/${bucket()}/${key}`;
-}
 
 export async function ensureBucket(client: S3Client, b: string) {
   try {
@@ -166,34 +144,14 @@ export function buildInternalS3Config(userId: string): UserS3Config {
     accessKey: env.STORAGE_ACCESS_KEY,
     secretKey: env.STORAGE_SECRET_KEY,
     publicUrl: env.STORAGE_PUBLIC_URL
-      ? env.STORAGE_PUBLIC_URL.replace(/\/$/, '').replace(
-          /\/[^/]+$/,
-          `/${bucketName}`
-        )
+      ? (() => {
+          const base = env.STORAGE_PUBLIC_URL!.replace(/\/$/, '');
+          // Replace last path segment if present (e.g. .../default-bucket → .../user-bucket),
+          // otherwise just append the bucket name (e.g. https://host → https://host/user-bucket).
+          const hasPath = new URL(base).pathname.replace(/^\//, '') !== '';
+          return hasPath ? base.replace(/\/[^/]+$/, `/${bucketName}`) : `${base}/${bucketName}`;
+        })()
       : null
   };
 }
 
-export async function uploadFile(key: string, body: Buffer, contentType: string): Promise<string> {
-  const client = getClient();
-  await ensureBucket(client, bucket());
-  await client.send(
-    new PutObjectCommand({
-      Bucket: bucket(),
-      Key: key,
-      Body: body,
-      ContentType: contentType
-    })
-  );
-  return getPublicUrl(key);
-}
-
-export async function deleteFile(key: string): Promise<void> {
-  const client = getClient();
-  await client.send(
-    new DeleteObjectCommand({
-      Bucket: bucket(),
-      Key: key
-    })
-  );
-}

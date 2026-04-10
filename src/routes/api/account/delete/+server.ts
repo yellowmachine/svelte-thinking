@@ -20,7 +20,7 @@ import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { user as authUser, session as authSession } from '$lib/server/db/auth.schema';
-import { deleteFile } from '$lib/server/storage';
+import { deleteFileWithConfig, buildInternalS3Config } from '$lib/server/storage';
 
 export const DELETE: RequestHandler = async (event) => {
 	const currentUser = event.locals.user;
@@ -29,10 +29,14 @@ export const DELETE: RequestHandler = async (event) => {
 	const userId = currentUser.id;
 
 	// ── 1. Collect MinIO keys from owned projects ────────────────────────────
-	const ownedProjects = await db
-		.select({ id: project.id })
-		.from(project)
-		.where(eq(project.ownerId, userId));
+	const [ownedProjects, profileRow] = await Promise.all([
+		db.select({ id: project.id }).from(project).where(eq(project.ownerId, userId)),
+		db
+			.select({ useInternalStorage: userProfile.useInternalStorage })
+			.from(userProfile)
+			.where(eq(userProfile.userId, userId))
+			.limit(1)
+	]);
 
 	const projectIds = ownedProjects.map((p) => p.id);
 
@@ -48,12 +52,17 @@ export const DELETE: RequestHandler = async (event) => {
 				.where(inArray(projectReference.projectId, projectIds))
 		]);
 
-		// ── 2. Delete MinIO files (best-effort, don't block on failure) ───────
-		// Datasets are stored in Postgres (no S3 files to delete)
-		await Promise.allSettled([
-			...photos.map((f) => deleteFile(f.key)),
-			...refPdfs.filter((r) => r.key).map((r) => deleteFile(r.key!))
-		]);
+		// ── 2. Delete S3 files (best-effort, don't block on failure) ──────────
+		// Files live in the user's internal bucket when useInternalStorage is set.
+		// Datasets are stored in Postgres (no S3 files to delete).
+		const s3Config = profileRow[0]?.useInternalStorage ? buildInternalS3Config(userId) : null;
+		if (s3Config) {
+			const keys = [
+				...photos.map((f) => f.key),
+				...refPdfs.filter((r) => r.key).map((r) => r.key!)
+			];
+			await Promise.allSettled(keys.map((k) => deleteFileWithConfig(s3Config, k)));
+		}
 
 		// ── 3. Delete owned projects (cascade handles everything under them) ──
 		await db.delete(project).where(inArray(project.id, projectIds));
