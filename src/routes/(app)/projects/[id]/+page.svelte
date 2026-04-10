@@ -225,7 +225,7 @@
 				title: newDocTitle.trim(),
 				type: newDocType
 			});
-			window.location.href = `/projects/${data.project.id}/documents/${doc.id}`;
+			await goto(`/projects/${data.project.id}/documents/${doc.id}`);
 		} catch (e) {
 			createDocError = e instanceof Error ? e.message : 'Error creating document';
 			creatingDoc = false;
@@ -243,7 +243,7 @@
 				type: 'notes',
 				isPrivate: true
 			});
-			window.location.href = `/projects/${data.project.id}/documents/${doc.id}`;
+			await goto(`/projects/${data.project.id}/documents/${doc.id}`);
 		} catch {
 			creatingPrivateNote = false;
 		}
