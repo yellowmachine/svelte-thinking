@@ -166,7 +166,7 @@
 		<div
 			class="mx-auto max-w-5xl px-6 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 		>
-			© 2025 Scholio · <a
+			© 2026 Scholio · <a
 				href="/conduct"
 				class="hover:text-ink-muted dark:hover:text-dark-ink-muted">Code of conduct</a
 			>
