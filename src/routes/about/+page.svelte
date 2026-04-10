@@ -79,7 +79,7 @@
 						GitHub
 					</a>
 					<a
-						href="mailto:miguel@scholio.review"
+						href="mailto:contact@scholio.review"
 						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 					>
 						<svg
@@ -97,7 +97,7 @@
 								stroke-linejoin="round"
 							/>
 						</svg>
-						miguel@scholio.review
+						contact@scholio.review
 					</a>
 				</div>
 			</div>
@@ -169,6 +169,9 @@
 			© 2026 Scholio · <a
 				href="/conduct"
 				class="hover:text-ink-muted dark:hover:text-dark-ink-muted">Code of conduct</a
+			> · <a
+				href="mailto:contact@scholio.review"
+				class="hover:text-ink-muted dark:hover:text-dark-ink-muted">contact@scholio.review</a
 			>
 		</div>
 	</footer>
