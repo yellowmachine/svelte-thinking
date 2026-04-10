@@ -9,6 +9,7 @@ import { db } from '$lib/server/db';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { eq } from 'drizzle-orm';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
+import { env } from '$env/dynamic/private';
 
 export const handleError = Sentry.handleErrorWithSentry();
 
@@ -17,6 +18,44 @@ const handleDevTools: Handle = ({ event, resolve }) => {
 		return new Response(null, { status: 204 });
 	}
 	return resolve(event);
+};
+
+// Añade Domain=<base> al Set-Cookie de las respuestas de auth para que la sesión
+// sea compartida entre scholio.review y librarian.scholio.review.
+// Opera a nivel HTTP directamente, sin depender de better-auth ni SvelteKit cookies.
+const handleAuthCookieDomain: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+
+	if (!event.url.pathname.startsWith('/api/auth')) return response;
+
+	let domain: string | undefined;
+	try {
+		const { hostname } = new URL(env.ORIGIN);
+		if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+			const parts = hostname.split('.');
+			if (parts.length >= 2) domain = parts.slice(-2).join('.');
+		}
+	} catch { /* dev o ORIGIN inválido: sin domain */ }
+
+	if (!domain) return response;
+
+	const cookies = response.headers.getSetCookie();
+	if (!cookies.length) return response;
+
+	const newHeaders = new Headers(response.headers);
+	newHeaders.delete('set-cookie');
+	for (const cookie of cookies) {
+		newHeaders.append(
+			'set-cookie',
+			cookie.toLowerCase().includes('domain=') ? cookie : `${cookie}; Domain=${domain}`
+		);
+	}
+
+	return new Response(response.body, {
+		status: response.status,
+		statusText: response.statusText,
+		headers: newHeaders
+	});
 };
 
 const handleSubdomain: Handle = ({ event, resolve }) => {
@@ -128,5 +167,6 @@ export const handle: Handle = sequence(
 	handleSubdomain,
 	handleBetterAuth,
 	handleRLS,
-	handleHeaders
+	handleHeaders,
+	handleAuthCookieDomain
 );
