@@ -30,6 +30,23 @@ export const auth = betterAuth({
       clientSecret: env.GITHUB_CLIENT_SECRET
     }
   },
+  advanced: {
+    // Cookie compartida entre subdominios (ej: .scholio.review).
+    // En dev COOKIE_DOMAIN está vacío → cookie sin domain, solo funciona en localhost.
+    ...(env.COOKIE_DOMAIN
+      ? {
+          cookies: {
+            session_token: {
+              attributes: {
+                domain: env.COOKIE_DOMAIN,
+                sameSite: 'lax' as const,
+                secure: true
+              }
+            }
+          }
+        }
+      : {})
+  },
   plugins: [
     twoFactor({ issuer: 'Scholio' }),
     sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
