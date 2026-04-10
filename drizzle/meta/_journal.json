@@ -22,6 +22,13 @@
       "when": 1775801567079,
       "tag": "0002_add_admin_policy_to_user_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775802253052,
+      "tag": "0003_add_scheduled_delete_at_to_project",
+      "breakpoints": true
     }
   ]
 }

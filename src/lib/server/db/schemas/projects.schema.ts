@@ -38,6 +38,8 @@ export const project = scholioSchema.table(
 		doi: text('doi'),
 		version: text('version'),
 		publishedAt: timestamp('published_at'),
+		// Graceful deletion: set by owner, actual cascade fires when scheduledDeleteAt <= now()
+		scheduledDeleteAt: timestamp('scheduled_delete_at'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},

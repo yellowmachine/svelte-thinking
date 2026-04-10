@@ -280,6 +280,7 @@
 					collaboratorCount={proj.collaboratorCount}
 					openComments={proj.openComments}
 					updatedAt={proj.updatedAt}
+					scheduledDeleteAt={proj.scheduledDeleteAt}
 					reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
 					onclick={() => (window.location.href = `/projects/${proj.id}`)}
 					ondelete={proj.ownerId === data.currentUserId
