@@ -20,6 +20,12 @@ declare global {
 			 * Lanza UNAUTHORIZED si no hay usuario autenticado.
 			 */
 			withRLS: <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
+			/**
+			 * Como withRLS pero activa app.is_admin = 'true' para que la policy
+			 * user_profile_admin permita operar sobre cualquier fila.
+			 * Solo disponible bajo /admin (lo inyecta el layout server de admin).
+			 */
+			withAdminRLS: <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
 		}
 
 		// interface Error {}

@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."comment" ADD COLUMN "anchor_context" text;

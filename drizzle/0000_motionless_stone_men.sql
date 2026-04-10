@@ -1,5 +1,3 @@
-CREATE SCHEMA "scholio";
---> statement-breakpoint
 CREATE TYPE "scholio"."ai_message_role" AS ENUM('user', 'assistant');--> statement-breakpoint
 CREATE TYPE "scholio"."ai_suggestion_status" AS ENUM('pending', 'applied', 'rejected');--> statement-breakpoint
 CREATE TYPE "scholio"."ai_suggestion_type" AS ENUM('grammar', 'style', 'structure', 'clarity', 'citation');--> statement-breakpoint
@@ -85,10 +83,12 @@ CREATE TABLE "scholio"."comment" (
 	"type" "scholio"."comment_type" DEFAULT 'general' NOT NULL,
 	"content" text NOT NULL,
 	"anchor_text" text,
+	"anchor_context" text,
 	"line_start" integer,
 	"line_end" integer,
 	"character_start" integer,
 	"character_end" integer,
+	"paragraph_number" integer,
 	"status" "scholio"."comment_status" DEFAULT 'open' NOT NULL,
 	"parent_comment_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -292,11 +292,10 @@ CREATE TABLE "scholio"."project_dataset" (
 	"id" text PRIMARY KEY NOT NULL,
 	"project_id" text NOT NULL,
 	"uploaded_by" text NOT NULL,
-	"key" text NOT NULL,
-	"url" text NOT NULL,
 	"filename" text NOT NULL,
 	"mime_type" text NOT NULL,
 	"size" integer NOT NULL,
+	"content" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -366,6 +365,8 @@ CREATE TABLE "scholio"."project_reference" (
 	"url" text,
 	"note" text,
 	"reading_notes_doc_id" text,
+	"pdf_key" text,
+	"pdf_url" text,
 	"journal" text,
 	"volume" text,
 	"issue" text,
@@ -460,6 +461,7 @@ CREATE TABLE "scholio"."user_api_key" (
 	"iv" text NOT NULL,
 	"auth_tag" text NOT NULL,
 	"enabled" boolean DEFAULT true NOT NULL,
+	"source" text DEFAULT 'manual' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -891,6 +893,7 @@ CREATE POLICY "collaborator_delete" ON "scholio"."project_collaborator" AS PERMI
 					AND project.owner_id = nullif(current_setting('app.current_user_id', true), '')
 				)
 			);--> statement-breakpoint
+CREATE POLICY "collaborator_self_delete" ON "scholio"."project_collaborator" AS PERMISSIVE FOR DELETE TO public USING ("scholio"."project_collaborator"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
 CREATE POLICY "collaborator_insert_invite" ON "scholio"."project_collaborator" AS PERMISSIVE FOR INSERT TO public WITH CHECK (current_setting('app.current_user_id', true) = '');--> statement-breakpoint
 CREATE POLICY "context_link_access" ON "scholio"."project_context_link" AS PERMISSIVE FOR ALL TO public USING (
 				EXISTS (

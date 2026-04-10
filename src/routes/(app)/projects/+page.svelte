@@ -280,6 +280,7 @@
 					collaboratorCount={proj.collaboratorCount}
 					openComments={proj.openComments}
 					updatedAt={proj.updatedAt}
+					scheduledDeleteAt={proj.scheduledDeleteAt}
 					reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
 					onclick={() => (window.location.href = `/projects/${proj.id}`)}
 					ondelete={proj.ownerId === data.currentUserId
@@ -293,8 +294,10 @@
 
 <SafeDeleteDialog
 	open={deleteTarget !== null}
+	title="Schedule deletion of «{deleteTarget?.title}»"
 	label="the project «{deleteTarget?.title}»"
-	warning="All documents, versions, comments and associated data will be permanently deleted."
+	warning="The project will be permanently deleted in 7 days. All members will see a warning banner and can export their documents before the deadline. You can cancel at any time from the project page."
+	confirmLabel="Schedule deletion"
 	deleting={deletingProject}
 	onconfirm={handleDeleteProject}
 	oncancel={() => (deleteTarget = null)}

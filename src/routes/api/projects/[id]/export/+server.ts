@@ -195,13 +195,17 @@ export const GET: RequestHandler = async (event) => {
 	const yaml = stringify(exportData, { lineWidth: 0 });
 	const slug = proj[0].title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-	// Download photos from S3 and add to ZIP
 	const zipFiles: Record<string, Uint8Array> = {};
 	zipFiles['project.yaml'] = new TextEncoder().encode(yaml);
 
-	if (photos.length > 0) {
-		const s3 = await resolveProjectS3Config(projectId, event.locals.user!.id, event.locals.withRLS);
+	const refsWithPdf = references.filter((r) => r.pdfKey);
+	const needsS3 = photos.length > 0 || refsWithPdf.length > 0;
+	const s3 = needsS3
+		? await resolveProjectS3Config(projectId, event.locals.user!.id, event.locals.withRLS)
+		: null;
 
+	// Download photos from S3
+	if (photos.length > 0) {
 		await Promise.all(
 			photos.map(async (photo) => {
 				try {
@@ -230,6 +234,28 @@ export const GET: RequestHandler = async (event) => {
 					zipFiles[`photos/${photo.id}.${ext}`] = bytes;
 				} catch {
 					// Skip photos that fail to download — don't abort the whole export
+				}
+			})
+		);
+	}
+
+	// Download reference PDFs from S3
+	if (refsWithPdf.length > 0 && s3) {
+		const client = createS3Client(s3);
+		await Promise.all(
+			refsWithPdf.map(async (ref) => {
+				try {
+					const response = await client.send(
+						new GetObjectCommand({ Bucket: s3.bucket, Key: ref.pdfKey! })
+					);
+					if (!response.Body) return;
+					const bytes = await (
+						response.Body as unknown as { transformToByteArray(): Promise<Uint8Array> }
+					).transformToByteArray();
+					const safe = ref.citeKey.replace(/[^\w.\-]/g, '_');
+					zipFiles[`pdfs/${safe}.pdf`] = bytes;
+				} catch {
+					// Skip PDFs that fail to download — don't abort the whole export
 				}
 			})
 		);

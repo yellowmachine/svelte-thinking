@@ -1,0 +1,1 @@
+ALTER TABLE "scholio"."project" ADD COLUMN "scheduled_delete_at" timestamp;

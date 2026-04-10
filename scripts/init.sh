@@ -33,7 +33,21 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 	ALTER DEFAULT PRIVILEGES IN SCHEMA public
 	    GRANT EXECUTE ON FUNCTIONS TO ${APP_DB_USER};
 
-	-- Librarian schema (comparte DB y rol con Scholio)
+	-- Scholio schema (app principal)
+	CREATE SCHEMA IF NOT EXISTS scholio;
+
+	GRANT USAGE ON SCHEMA scholio TO ${APP_DB_USER};
+
+	ALTER DEFAULT PRIVILEGES IN SCHEMA scholio
+	    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${APP_DB_USER};
+
+	ALTER DEFAULT PRIVILEGES IN SCHEMA scholio
+	    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO ${APP_DB_USER};
+
+	ALTER DEFAULT PRIVILEGES IN SCHEMA scholio
+	    GRANT EXECUTE ON FUNCTIONS TO ${APP_DB_USER};
+
+	-- Librarian schema (app hermana, comparte DB y rol)
 	CREATE SCHEMA IF NOT EXISTS librarian;
 
 	GRANT USAGE ON SCHEMA librarian TO ${APP_DB_USER};
@@ -46,6 +60,42 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
 	ALTER DEFAULT PRIVILEGES IN SCHEMA librarian
 	    GRANT EXECUTE ON FUNCTIONS TO ${APP_DB_USER};
+
+	-- Devuelve los miembros de un grupo solo si el usuario en app.current_user_id
+	-- (seteado por withRLS) es miembro. SECURITY DEFINER bypasea RLS internamente
+	-- para evitar la recursión group_members → groups → group_members.
+	-- check_function_bodies=off: la tabla group_members la crean las migraciones de
+	-- Drizzle que corren después; diferimos la validación del cuerpo para evitar el error.
+	SET check_function_bodies = false;
+	CREATE OR REPLACE FUNCTION librarian.get_group_members(p_group_id text)
+	RETURNS TABLE(
+	    user_id   text,
+	    role      text,
+	    joined_at timestamp,
+	    name      text,
+	    email     text
+	)
+	SECURITY DEFINER
+	STABLE
+	LANGUAGE sql AS \$\$
+	    SELECT
+	        gm.user_id,
+	        gm.role::text,
+	        gm.joined_at,
+	        u.name,
+	        u.email
+	    FROM librarian.group_members gm
+	    JOIN public.user u ON u.id = gm.user_id
+	    WHERE gm.group_id = p_group_id
+	      AND EXISTS (
+	          SELECT 1 FROM librarian.group_members me
+	          WHERE me.group_id = p_group_id
+	            AND me.user_id = current_setting('app.current_user_id', true)
+	      );
+	\$\$;
+
+	GRANT EXECUTE ON FUNCTION librarian.get_group_members(text) TO ${APP_DB_USER};
+	SET check_function_bodies = true;
 
 	ALTER ROLE ${APP_DB_USER} SET search_path = librarian, scholio, public;
 

@@ -9,6 +9,7 @@
 		openComments = 0,
 		updatedAt,
 		reviewHref,
+		scheduledDeleteAt,
 		onclick,
 		ondelete
 	}: {
@@ -19,9 +20,16 @@
 		openComments?: number;
 		updatedAt?: Date;
 		reviewHref?: string;
+		scheduledDeleteAt?: Date | null;
 		onclick?: () => void;
 		ondelete?: () => void;
 	} = $props();
+
+	const daysLeft = $derived(
+		scheduledDeleteAt
+			? Math.max(0, Math.ceil((new Date(scheduledDeleteAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+			: null
+	);
 
 	const statusStyle: Record<ProjectStatus, string> = {
 		draft: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted',
@@ -69,11 +77,17 @@
 				{title}
 			</h3>
 			<div class="flex shrink-0 items-center gap-1.5">
-				<span
-					class="rounded-full px-2.5 py-0.5 font-sans text-xs font-medium {statusStyle[status]}"
-				>
-					{PROJECT_STATUS_LABELS[status]}
-				</span>
+				{#if daysLeft !== null}
+					<span class="rounded-full bg-red-100 px-2.5 py-0.5 font-sans text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+						Deleting in {daysLeft}d
+					</span>
+				{:else}
+					<span
+						class="rounded-full px-2.5 py-0.5 font-sans text-xs font-medium {statusStyle[status]}"
+					>
+						{PROJECT_STATUS_LABELS[status]}
+					</span>
+				{/if}
 				<!-- Spacer for ⋮ button so status badge doesn't overlap it -->
 				{#if ondelete}
 					<span class="w-6"></span>

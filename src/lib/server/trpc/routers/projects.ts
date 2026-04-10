@@ -203,8 +203,38 @@ export const projectsRouter = router({
     return rows[0];
   }),
 
+  // Schedule deletion — gives collaborators 7 days to export their work
   delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: projectId }) => {
-    // Collect S3 keys before DB delete so we can clean up storage afterwards
+    const scheduledDeleteAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const rows = await ctx.withRLS((db) =>
+      db
+        .update(project)
+        .set({ scheduledDeleteAt, updatedAt: new Date() })
+        .where(and(eq(project.id, projectId), eq(project.ownerId, ctx.user.id)))
+        .returning({ id: project.id, title: project.title })
+    );
+
+    if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+    return { ...rows[0], scheduledDeleteAt };
+  }),
+
+  // Cancel a scheduled deletion
+  cancelDeletion: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: projectId }) => {
+    const rows = await ctx.withRLS((db) =>
+      db
+        .update(project)
+        .set({ scheduledDeleteAt: null, updatedAt: new Date() })
+        .where(and(eq(project.id, projectId), eq(project.ownerId, ctx.user.id)))
+        .returning({ id: project.id })
+    );
+
+    if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+    return rows[0];
+  }),
+
+  // Execute the actual cascade deletion — called lazily on load or from admin
+  executeDeletion: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: projectId }) => {
     const [photoKeys, pdfKeys] = await Promise.all([
       ctx.withRLS((db) =>
         db.select({ key: projectPhoto.key })
@@ -224,7 +254,6 @@ export const projectsRouter = router({
 
     if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 
-    // Clean up S3 assets — best-effort, never blocks the response
     const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS).catch(() => null);
     if (s3) {
       const keys = [

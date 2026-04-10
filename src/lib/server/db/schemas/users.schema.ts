@@ -1,4 +1,4 @@
-import { text, timestamp, boolean, pgPolicy, unique } from 'drizzle-orm/pg-core';
+import { text, timestamp, boolean, bigint, pgPolicy, unique } from 'drizzle-orm/pg-core';
 import { customType } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
@@ -9,8 +9,6 @@ const vector384 = customType<{ data: number[]; driverData: string }>({
 	fromDriver(v: string) { return v.slice(1, -1).split(',').map(Number); },
 	toDriver(v: number[]) { return `[${v.join(',')}]`; }
 });
-
-export const planEnum = scholioSchema.enum('plan', ['free', 'pro', 'team']);
 
 // nullif converts '' to NULL so both missing and empty-string are treated as unauthenticated
 const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
@@ -25,17 +23,15 @@ export const userProfile = scholioSchema.table(
 		institution: text('institution'),
 		orcid: text('orcid'),
 		orcidVerified: boolean('orcid_verified').notNull().default(false),
-		// Billing
-		stripeCustomerId: text('stripe_customer_id').unique(),
-		plan: planEnum('plan').notNull().default('free'),
-		planStatus: text('plan_status').default('active'), // active | canceled | past_due
-		planCurrentPeriodEnd: timestamp('plan_current_period_end'),
 		// Embedding del perfil para búsqueda semántica (null hasta primer indexado)
 		profileEmbedding: vector384('profile_embedding'),
 		// Per-task AI configuration: { agent, draft, review, requirements } → { keyId, model }
 		aiTaskConfig: text('ai_task_config'), // JSON stored as text
 		// UI theme preference: 'warm' | 'github' | 'solarized' | 'nord' | 'catppuccin' | 'gruvbox'
 		theme: text('theme'),
+		// Internal storage (beta) — opt-in to use platform's RustFS instead of BYOS3
+		useInternalStorage: boolean('use_internal_storage').notNull().default(false),
+		internalStorageUsedBytes: bigint('internal_storage_used_bytes', { mode: 'number' }).notNull().default(0),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
@@ -50,6 +46,13 @@ export const userProfile = scholioSchema.table(
 		pgPolicy('user_profile_modify', {
 			for: 'all',
 			using: sql`${t.userId} = ${currentUserId}`
+		}),
+
+		// Admin puede leer y modificar cualquier fila cuando app.is_admin = 'true'
+		// Este flag solo lo activa withAdminRLS en rutas /admin — nunca viene de input de usuario
+		pgPolicy('user_profile_admin', {
+			for: 'all',
+			using: sql`current_setting('app.is_admin', true) = 'true'`
 		})
 	]
 ).enableRLS();

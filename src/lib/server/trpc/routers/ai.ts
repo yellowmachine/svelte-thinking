@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, desc, asc, inArray, and, count, sql, sum, gte } from 'drizzle-orm';
+import { eq, desc, asc, inArray, and, count, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
@@ -705,32 +705,7 @@ async function logUsage(
   }
 }
 
-// Throws FORBIDDEN if org has exceeded its monthly budget
-async function checkOrgQuota(db: Db, orgId: string): Promise<void> {
-  const since = startOfMonth();
-  const [usageRows, orgRows] = await Promise.all([
-    db
-      .select({ total: sum(aiUsageLog.estimatedCostEur) })
-      .from(aiUsageLog)
-      .where(and(eq(aiUsageLog.orgId, orgId), gte(aiUsageLog.createdAt, since))),
-    db
-      .select({ monthlyBudgetEur: organization.monthlyBudgetEur })
-      .from(organization)
-      .where(eq(organization.id, orgId))
-      .limit(1)
-  ]);
 
-  const budget = parseFloat(orgRows[0]?.monthlyBudgetEur ?? '0');
-  if (!budget) return; // null / 0 = unlimited
-
-  const spent = parseFloat(usageRows[0]?.total ?? '0');
-  if (spent >= budget) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: `Organization monthly AI budget of €${budget.toFixed(2)} has been reached. Contact the org owner to increase the limit.`
-    });
-  }
-}
 
 async function runAgentLoop(
   systemPrompt: string,
@@ -1030,8 +1005,6 @@ export const aiRouter = router({
       // Personal project: allow user to override the model for this request
       const effectiveModel = (!resolvedOrgId && input.modelOverride) ? input.modelOverride : resolvedModel;
 
-      if (resolvedOrgId) await checkOrgQuota(ctx.db as Db, resolvedOrgId);
-
       // ── Build project index and run agent loop ────────────────────────
       const projectIndex = await buildProjectIndex(ctx.withRLS as WithRLS, input.projectId);
       const systemWithIndex = projectIndex
@@ -1179,8 +1152,6 @@ export const aiRouter = router({
       const { apiKey: userApiKey, model: resolvedModel, resolvedOrgId: draftOrgId } = await resolveTaskKey(
         ctx.withRLS as WithRLS, ctx.db as Db, userId, 'draft', input.projectId, 'anthropic/claude-sonnet-4-5'
       );
-
-      if (draftOrgId) await checkOrgQuota(ctx.db as Db, draftOrgId);
 
       const [proj, selectedDocs, ctxLinks] = await Promise.all([
         ctx.withRLS((db) =>
@@ -1346,8 +1317,6 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
         ctx.withRLS as WithRLS, ctx.db as Db, userId, 'draft', input.projectId
       );
 
-      if (sectionOrgId) await checkOrgQuota(ctx.db as Db, sectionOrgId);
-
       const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
       if (!projectContext) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
@@ -1415,8 +1384,6 @@ Reglas:
       const { apiKey: userApiKey, model: resolvedReviewModel, resolvedOrgId: reviewOrgId } = await resolveTaskKey(
         ctx.withRLS as WithRLS, ctx.db as Db, userId, 'review', input.projectId
       );
-
-      if (reviewOrgId) await checkOrgQuota(ctx.db as Db, reviewOrgId);
 
       // Load document content + project context in parallel
       const [docRows, projectContext] = await Promise.all([
