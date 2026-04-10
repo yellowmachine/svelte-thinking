@@ -166,20 +166,30 @@ export function buildInternalS3Config(userId: string): UserS3Config {
     accessKey: env.STORAGE_ACCESS_KEY,
     secretKey: env.STORAGE_SECRET_KEY,
     publicUrl: env.STORAGE_PUBLIC_URL
-      ? env.STORAGE_PUBLIC_URL.replace(/\/$/, '').replace(
-          /\/[^/]+$/,
-          `/${bucketName}`
-        )
+      ? (() => {
+          const base = env.STORAGE_PUBLIC_URL!.replace(/\/$/, '');
+          // Replace last path segment if present (e.g. .../default-bucket → .../user-bucket),
+          // otherwise just append the bucket name (e.g. https://host → https://host/user-bucket).
+          const hasPath = new URL(base).pathname.replace(/^\//, '') !== '';
+          return hasPath ? base.replace(/\/[^/]+$/, `/${bucketName}`) : `${base}/${bucketName}`;
+        })()
       : null
   };
 }
 
+// Buckets verified during this process lifetime — avoids a HeadBucket round-trip on every upload.
+const ensuredBuckets = new Set<string>();
+
 export async function uploadFile(key: string, body: Buffer, contentType: string): Promise<string> {
   const client = getClient();
-  await ensureBucket(client, bucket());
+  const b = bucket();
+  if (!ensuredBuckets.has(b)) {
+    await ensureBucket(client, b);
+    ensuredBuckets.add(b);
+  }
   await client.send(
     new PutObjectCommand({
-      Bucket: bucket(),
+      Bucket: b,
       Key: key,
       Body: body,
       ContentType: contentType
