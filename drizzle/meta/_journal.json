@@ -29,6 +29,13 @@
       "when": 1775802253052,
       "tag": "0003_add_scheduled_delete_at_to_project",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775803129505,
+      "tag": "0004_tired_purifiers",
+      "breakpoints": true
     }
   ]
 }

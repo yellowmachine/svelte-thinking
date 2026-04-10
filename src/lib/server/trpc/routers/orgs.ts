@@ -105,7 +105,6 @@ export const orgsRouter = router({
 					slug: organization.slug,
 					ownerId: organization.ownerId,
 					aiTaskConfig: organization.aiTaskConfig,
-					monthlyBudgetEur: organization.monthlyBudgetEur,
 					createdAt: organization.createdAt
 				})
 				.from(organization)
@@ -135,15 +134,13 @@ export const orgsRouter = router({
 		.input(
 			z.object({
 				orgId: z.string(),
-				name: z.string().min(2).max(80).optional(),
-				monthlyBudgetEur: z.string().nullable().optional() // numeric as string from DB
+				name: z.string().min(2).max(80).optional()
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
 			const { orgId, ...fields } = input;
 			const patch: Record<string, unknown> = { updatedAt: new Date() };
 			if (fields.name !== undefined) patch.name = fields.name;
-			if (fields.monthlyBudgetEur !== undefined) patch.monthlyBudgetEur = fields.monthlyBudgetEur;
 
 			const rows = await ctx.withRLS((db) =>
 				db
