@@ -8,7 +8,6 @@
 	import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onlineStore } from '$lib/stores/online.svelte';
-	import { connectivity } from '$lib/stores/connectivity.svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
@@ -24,16 +23,6 @@
 		onlineStore.init();
 	});
 
-	// Trigger global sync only on offline→online transition, not on initial mount.
-	// Using undefined as sentinel: first run (undefined→bool) never syncs.
-	let prevOnline: boolean | undefined;
-	$effect(() => {
-		const isOnline = onlineStore.online;
-		if (isOnline && prevOnline === false) {
-			connectivity.syncAll();
-		}
-		prevOnline = isOnline;
-	});
 </script>
 
 <div class="flex h-screen flex-col overflow-hidden bg-paper-ui dark:bg-dark-paper-ui">
