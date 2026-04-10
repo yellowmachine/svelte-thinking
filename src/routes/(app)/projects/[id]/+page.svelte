@@ -836,18 +836,18 @@
 						{/if}
 
 						<div class="flex gap-2">
-							<button
-								onclick={createDocument}
-								disabled={creatingDoc || !newDocTitle.trim()}
-								title={creatingDoc
-									? 'Creating dcoment...'
-									: !newDocTitle.trim()
-										? 'Must have a title'
-										: ''}
-								class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+							<span
+								title={creatingDoc ? 'Creating document…' : !newDocTitle.trim() ? 'Enter a title first' : ''}
+								class={creatingDoc || !newDocTitle.trim() ? 'cursor-not-allowed' : ''}
 							>
-								{creatingDoc ? 'Creating...' : 'Create and open'}
-							</button>
+								<button
+									onclick={createDocument}
+									disabled={creatingDoc || !newDocTitle.trim()}
+									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:pointer-events-none disabled:opacity-50"
+								>
+									{creatingDoc ? 'Creating…' : 'Create and open'}
+								</button>
+							</span>
 							<button
 								onclick={() => (showCreateDoc = false)}
 								class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
