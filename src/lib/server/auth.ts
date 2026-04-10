@@ -7,21 +7,18 @@ import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
 //import { sendVerificationEmail } from '$lib/server/resend';
 
-// Deriva el dominio de cookie desde ORIGIN para compartirla entre subdominios.
-// https://scholio.review → .scholio.review (cubre librarian.scholio.review)
-// localhost → undefined (cookie sin domain, solo funciona en localhost)
-function cookieDomain(origin: string): string | undefined {
+// En producción activa crossSubDomainCookies para compartir la sesión con
+// librarian.scholio.review. better-auth usa el hostname de baseURL como domain
+// automáticamente (scholio.review), lo que cubre todos sus subdominios.
+// En localhost no se activa: cookie sin domain, solo funciona en localhost.
+function isLocalhost(origin: string): boolean {
   try {
     const { hostname } = new URL(origin);
-    if (hostname === 'localhost' || hostname === '127.0.0.1') return undefined;
-    const parts = hostname.split('.');
-    return parts.length >= 2 ? '.' + parts.slice(-2).join('.') : undefined;
+    return hostname === 'localhost' || hostname === '127.0.0.1';
   } catch {
-    return undefined;
+    return true;
   }
 }
-
-const domain = cookieDomain(env.ORIGIN);
 
 export const auth = betterAuth({
   baseURL: env.ORIGIN,
@@ -46,17 +43,9 @@ export const auth = betterAuth({
       clientSecret: env.GITHUB_CLIENT_SECRET
     }
   },
-  ...(domain
-    ? {
-        advanced: {
-          cookies: {
-            session_token: {
-              attributes: { domain, sameSite: 'lax' as const, secure: true }
-            }
-          }
-        }
-      }
-    : {}),
+  advanced: {
+    ...(!isLocalhost(env.ORIGIN) ? { crossSubDomainCookies: { enabled: true } } : {})
+  },
   plugins: [
     twoFactor({ issuer: 'Scholio' }),
     sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
