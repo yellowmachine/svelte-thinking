@@ -89,7 +89,8 @@
 
 		<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 			By signing up you agree to our
-			<a href="/conduct" target="_blank" class="underline underline-offset-2 hover:text-ink-muted dark:hover:text-dark-ink-muted">code of conduct</a>.
+			<a href="/conduct" target="_blank" class="underline underline-offset-2 hover:text-ink-muted dark:hover:text-dark-ink-muted">code of conduct</a>
+			and <a href="/privacy" target="_blank" class="underline underline-offset-2 hover:text-ink-muted dark:hover:text-dark-ink-muted">privacy policy</a>.
 		</p>
 
 		<button

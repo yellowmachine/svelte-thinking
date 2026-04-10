@@ -432,6 +432,9 @@ for the study design.</code></pre>
 				<a href="/conduct" class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted">
 					Code of conduct
 				</a>
+				<a href="/privacy" class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted">
+					Privacy policy
+				</a>
 				<a href="mailto:contact@scholio.review" class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted">
 					contact@scholio.review
 				</a>
