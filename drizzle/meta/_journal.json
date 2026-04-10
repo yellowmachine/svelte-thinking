@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1775774585738,
-      "tag": "0000_motionless_stone_men",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775800907821,
-      "tag": "0001_add_internal_storage_to_user_profile",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1775801567079,
-      "tag": "0002_add_admin_policy_to_user_profile",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1775802253052,
-      "tag": "0003_add_scheduled_delete_at_to_project",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1775803129505,
-      "tag": "0004_tired_purifiers",
+      "when": 1775841031355,
+      "tag": "0000_chilly_black_crow",
       "breakpoints": true
     }
   ]

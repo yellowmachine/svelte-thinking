@@ -1,5 +1,5 @@
 {
-  "id": "c48df3a0-a303-4f8f-bcf3-b7e291d65db1",
+  "id": "9025600a-910b-43c3-b44e-f8aa2cc5376c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1852,12 +1852,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "monthly_budget_eur": {
-          "name": "monthly_budget_eur",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -2285,12 +2279,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "project_budget_eur": {
-          "name": "project_budget_eur",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "doi": {
           "name": "doi",
           "type": "text",
@@ -2305,6 +2293,12 @@
         },
         "published_at": {
           "name": "published_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scheduled_delete_at": {
+          "name": "scheduled_delete_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
@@ -4543,33 +4537,6 @@
           "notNull": true,
           "default": false
         },
-        "stripe_customer_id": {
-          "name": "stripe_customer_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "plan": {
-          "name": "plan",
-          "type": "plan",
-          "typeSchema": "scholio",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'free'"
-        },
-        "plan_status": {
-          "name": "plan_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'active'"
-        },
-        "plan_current_period_end": {
-          "name": "plan_current_period_end",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "profile_embedding": {
           "name": "profile_embedding",
           "type": "vector(384)",
@@ -4587,6 +4554,20 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "use_internal_storage": {
+          "name": "use_internal_storage",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "internal_storage_used_bytes": {
+          "name": "internal_storage_used_bytes",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -4613,13 +4594,6 @@
           "columns": [
             "user_id"
           ]
-        },
-        "user_profile_stripe_customer_id_unique": {
-          "name": "user_profile_stripe_customer_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "stripe_customer_id"
-          ]
         }
       },
       "policies": {
@@ -4640,6 +4614,15 @@
             "public"
           ],
           "using": "\"scholio\".\"user_profile\".\"user_id\" = nullif(current_setting('app.current_user_id', true), '')"
+        },
+        "user_profile_admin": {
+          "name": "user_profile_admin",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "current_setting('app.is_admin', true) = 'true'"
         }
       },
       "checkConstraints": {},
@@ -5044,15 +5027,6 @@
         "admin",
         "member",
         "guest"
-      ]
-    },
-    "scholio.plan": {
-      "name": "plan",
-      "schema": "scholio",
-      "values": [
-        "free",
-        "pro",
-        "team"
       ]
     },
     "scholio.project_role": {
