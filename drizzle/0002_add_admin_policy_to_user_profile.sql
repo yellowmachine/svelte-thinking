@@ -1,1 +1,0 @@
-CREATE POLICY "user_profile_admin" ON "scholio"."user_profile" AS PERMISSIVE FOR ALL TO public USING (current_setting('app.is_admin', true) = 'true');

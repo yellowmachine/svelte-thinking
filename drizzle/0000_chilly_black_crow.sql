@@ -9,7 +9,6 @@ CREATE TYPE "scholio"."document_type" AS ENUM('paper', 'notes', 'outline', 'bibl
 CREATE TYPE "scholio"."invitation_status" AS ENUM('pending', 'accepted', 'expired', 'cancelled');--> statement-breakpoint
 CREATE TYPE "scholio"."org_invitation_status" AS ENUM('pending', 'accepted', 'rejected', 'expired');--> statement-breakpoint
 CREATE TYPE "scholio"."org_member_role" AS ENUM('admin', 'member', 'guest');--> statement-breakpoint
-CREATE TYPE "scholio"."plan" AS ENUM('free', 'pro', 'team');--> statement-breakpoint
 CREATE TYPE "scholio"."project_role" AS ENUM('owner', 'author', 'coauthor', 'reviewer', 'commenter');--> statement-breakpoint
 CREATE TYPE "scholio"."project_status" AS ENUM('draft', 'active', 'review', 'published', 'archived');--> statement-breakpoint
 CREATE TYPE "scholio"."reference_type" AS ENUM('article', 'book', 'inproceedings', 'incollection', 'phdthesis', 'mastersthesis', 'techreport', 'misc', 'magisterial', 'patristic', 'scholastic', 'biblical', 'classical', 'earlymodern');--> statement-breakpoint
@@ -206,7 +205,6 @@ CREATE TABLE "scholio"."organization" (
 	"slug" text NOT NULL,
 	"owner_id" text NOT NULL,
 	"ai_task_config" text,
-	"monthly_budget_eur" numeric(10, 2),
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "organization_slug_unique" UNIQUE("slug")
@@ -247,10 +245,10 @@ CREATE TABLE "scholio"."project" (
 	"requirements_prompt" text,
 	"requirements_template" text,
 	"org_id" text,
-	"project_budget_eur" numeric(10, 2),
 	"doi" text,
 	"version" text,
 	"published_at" timestamp,
+	"scheduled_delete_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -488,17 +486,14 @@ CREATE TABLE "scholio"."user_profile" (
 	"institution" text,
 	"orcid" text,
 	"orcid_verified" boolean DEFAULT false NOT NULL,
-	"stripe_customer_id" text,
-	"plan" "scholio"."plan" DEFAULT 'free' NOT NULL,
-	"plan_status" text DEFAULT 'active',
-	"plan_current_period_end" timestamp,
 	"profile_embedding" vector(384),
 	"ai_task_config" text,
 	"theme" text,
+	"use_internal_storage" boolean DEFAULT false NOT NULL,
+	"internal_storage_used_bytes" bigint DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "user_profile_user_id_unique" UNIQUE("user_id"),
-	CONSTRAINT "user_profile_stripe_customer_id_unique" UNIQUE("stripe_customer_id")
+	CONSTRAINT "user_profile_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
 ALTER TABLE "scholio"."user_profile" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
@@ -1061,5 +1056,6 @@ CREATE POLICY "user_api_key_access" ON "scholio"."user_api_key" AS PERMISSIVE FO
 CREATE POLICY "user_jupyter_connection_access" ON "scholio"."user_jupyter_connection" AS PERMISSIVE FOR ALL TO public USING ("scholio"."user_jupyter_connection"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
 CREATE POLICY "user_profile_select" ON "scholio"."user_profile" AS PERMISSIVE FOR SELECT TO public USING (nullif(current_setting('app.current_user_id', true), '') IS NOT NULL);--> statement-breakpoint
 CREATE POLICY "user_profile_modify" ON "scholio"."user_profile" AS PERMISSIVE FOR ALL TO public USING ("scholio"."user_profile"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
+CREATE POLICY "user_profile_admin" ON "scholio"."user_profile" AS PERMISSIVE FOR ALL TO public USING (current_setting('app.is_admin', true) = 'true');--> statement-breakpoint
 CREATE POLICY "user_s3_config_access" ON "scholio"."user_s3_config" AS PERMISSIVE FOR ALL TO public USING ("scholio"."user_s3_config"."user_id" = nullif(current_setting('app.current_user_id', true), ''));--> statement-breakpoint
 CREATE POLICY "user_spell_allowlist_access" ON "scholio"."user_spell_allowlist" AS PERMISSIVE FOR ALL TO public USING ("scholio"."user_spell_allowlist"."user_id" = nullif(current_setting('app.current_user_id', true), ''));
