@@ -1,7 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { auth } from '$lib/server/auth';
-import { APIError } from 'better-auth/api';
+import { env } from '$env/dynamic/private';
 
 export const load: PageServerLoad = async (event) => {
 	const token = event.url.searchParams.get('token');
@@ -24,11 +23,17 @@ export const actions: Actions = {
 		}
 
 		try {
-			await auth.api.resetPassword({ body: { newPassword, token } });
-		} catch (e) {
-			if (e instanceof APIError) {
-				return fail(400, { token, message: e.message });
+			const res = await fetch(`${env.ORIGIN}/api/auth/reset-password`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ newPassword, token })
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				return fail(400, { token, message: (body as { message?: string }).message ?? 'The link may have expired.' });
 			}
+		} catch (e) {
+			console.error('[reset-password] unexpected error:', e);
 			return fail(500, { token, message: 'Something went wrong. The link may have expired.' });
 		}
 
