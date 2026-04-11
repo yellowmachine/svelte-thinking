@@ -39,12 +39,15 @@
 	let errorMsg = $state('');
 
 	let changingRoleFor = $state<string | null>(null);
+	let savedRoleFor = $state<string | null>(null);
 
 	async function changeRole(userId: string, newRole: CollaboratorRole) {
 		changingRoleFor = userId;
 		try {
 			await trpc.projects.changeRole.mutate({ projectId, userId, role: newRole });
 			oninvited?.();
+			savedRoleFor = userId;
+			setTimeout(() => (savedRoleFor = null), 1500);
 		} catch (e: unknown) {
 			alert(e instanceof Error ? e.message : 'Failed to change role');
 		} finally {
@@ -96,7 +99,10 @@
 								value={c.role}
 								disabled={changingRoleFor === c.userId}
 								onchange={(e) => changeRole(c.userId, (e.currentTarget as HTMLSelectElement).value as CollaboratorRole)}
-								class="rounded border border-paper-border bg-paper px-1.5 py-0.5 text-xs text-ink-muted focus:border-accent focus:outline-none disabled:opacity-50 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted"
+								class="rounded border px-1.5 py-0.5 text-xs transition-colors focus:outline-none disabled:opacity-50
+									{savedRoleFor === c.userId
+										? 'border-green-400 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/20 dark:text-green-400'
+										: 'border-paper-border bg-paper text-ink-muted focus:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted'}"
 							>
 								{#each roleOptions as opt (opt.value)}
 									<option value={opt.value}>{opt.label}</option>
