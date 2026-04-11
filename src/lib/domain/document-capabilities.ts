@@ -90,3 +90,29 @@ export function getReclaimWritingCapability(ctx: ReclaimWritingContext): Reclaim
 	}
 	return { kind: 'hidden' };
 }
+
+// ---------------------------------------------------------------------------
+// Release writing (downgraded writer yields their slot)
+// ---------------------------------------------------------------------------
+
+export type ReleaseWriterCapability =
+	| { kind: 'available' }
+	| { kind: 'hidden' };
+
+export interface ReleaseWriterContext {
+	/** The current user is the designated writerUserId on this document. */
+	isCurrentWriter: boolean;
+	/** Whether they currently have effective write access (role still allows it). */
+	canWrite: boolean;
+}
+
+/**
+ * A downgraded writer (set as writerUserId but role no longer allows editing)
+ * can still release their slot so the project owner regains write access.
+ */
+export function getReleaseWriterCapability(ctx: ReleaseWriterContext): ReleaseWriterCapability {
+	if (ctx.isCurrentWriter && !ctx.canWrite) {
+		return { kind: 'available' };
+	}
+	return { kind: 'hidden' };
+}

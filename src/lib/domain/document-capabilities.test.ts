@@ -4,7 +4,8 @@ import {
 	canTriggerSave,
 	getCommitCapability,
 	canTriggerCommit,
-	getReclaimWritingCapability
+	getReclaimWritingCapability,
+	getReleaseWriterCapability
 } from './document-capabilities';
 
 // ---------------------------------------------------------------------------
@@ -132,6 +133,27 @@ describe('getReclaimWritingCapability', () => {
 
 	it('returns hidden when neither owner nor delegated', () => {
 		expect(getReclaimWritingCapability({ isOwner: false, writerUserId: null }))
+			.toEqual({ kind: 'hidden' });
+	});
+});
+
+// ---------------------------------------------------------------------------
+// getReleaseWriterCapability
+// ---------------------------------------------------------------------------
+
+describe('getReleaseWriterCapability', () => {
+	it('returns available when user is writer but role was downgraded (no write access)', () => {
+		expect(getReleaseWriterCapability({ isCurrentWriter: true, canWrite: false }))
+			.toEqual({ kind: 'available' });
+	});
+
+	it('returns hidden when user is writer and still has write access', () => {
+		expect(getReleaseWriterCapability({ isCurrentWriter: true, canWrite: true }))
+			.toEqual({ kind: 'hidden' });
+	});
+
+	it('returns hidden when user is not the writer', () => {
+		expect(getReleaseWriterCapability({ isCurrentWriter: false, canWrite: false }))
 			.toEqual({ kind: 'hidden' });
 	});
 });

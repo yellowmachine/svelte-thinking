@@ -31,10 +31,11 @@
 		getSaveDraftCapability,
 		getCommitCapability,
 		getReclaimWritingCapability,
+		getReleaseWriterCapability,
 		canTriggerSave,
 		canTriggerCommit
 	} from '$lib/domain/document-capabilities';
-	import { isProjectOwner } from '$lib/domain/permissions';
+	import { isProjectOwner, canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -88,12 +89,19 @@
 
 	// ── 1 writer / N readers ─────────────────────────────────────────────────────
 	const isOwner = $derived(isProjectOwner(data.currentUserId, data.projectOwnerId));
-	// writerUserId null → owner writes; set → only that user writes
+	// writerUserId null → owner writes; set → only that user writes (if role still allows it)
 	let currentWriterUserId = $state(untrack(() => data.document?.writerUserId ?? null));
 	let currentWriterName = $state(untrack(() => data.writerName ?? null));
-	// Current user can write if: writer is null (owner writes) and I'm owner, or writer is me
+	const myCollaboratorRole = $derived(
+		(data.collaborators.find((c) => c.userId === data.currentUserId)?.role ?? null) as CollaboratorRole | null
+	);
 	const canWrite = $derived(
-		currentWriterUserId === null ? isOwner : data.currentUserId === currentWriterUserId
+		canWriteDocument({
+			isProjectOwner: isOwner,
+			writerUserId: currentWriterUserId,
+			currentUserId: data.currentUserId,
+			collaboratorRole: myCollaboratorRole
+		})
 	);
 
 
@@ -120,9 +128,13 @@
 	type ViewMode = 'editor' | 'split' | 'preview';
 	const VIEW_MODE_KEY = `view-mode-${data.document?.id ?? ''}`;
 	const initialCanWrite = (() => {
-		const wuid = data.document?.writerUserId ?? null;
-		const owner = data.currentUserId === data.projectOwnerId;
-		return wuid === null ? owner : data.currentUserId === wuid;
+		const role = (data.collaborators.find((c) => c.userId === data.currentUserId)?.role ?? null) as CollaboratorRole | null;
+		return canWriteDocument({
+			isProjectOwner: data.currentUserId === data.projectOwnerId,
+			writerUserId: data.document?.writerUserId ?? null,
+			currentUserId: data.currentUserId,
+			collaboratorRole: role
+		});
 	})();
 	let viewMode = $state<ViewMode>(
 		(!initialCanWrite || data.forcePublished)
@@ -477,6 +489,11 @@
 	const reclaimCap = $derived.by(() => getReclaimWritingCapability({
 		isOwner,
 		writerUserId: currentWriterUserId
+	}));
+
+	const releaseWriterCap = $derived.by(() => getReleaseWriterCapability({
+		isCurrentWriter: data.currentUserId === currentWriterUserId,
+		canWrite
 	}));
 
 	// Inline comments
@@ -1533,6 +1550,18 @@
 						class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
 					>
 						Reclaim
+					</button>
+				{/if}
+
+				<!-- Release writer (downgraded writer yields their slot back to project owner) -->
+				{#if releaseWriterCap.kind === 'available'}
+					<button
+						onclick={() => handleSetWriter(null)}
+						disabled={delegating}
+						title="Release write access — the project owner will regain control"
+						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						Release writer
 					</button>
 				{/if}
 

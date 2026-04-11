@@ -6,6 +6,7 @@ import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { eq, and, isNull, isNotNull, sql } from 'drizzle-orm';
+import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 
 export const load: PageServerLoad = async (event) => {
 	const { id: projectId, docId } = event.params;
@@ -20,15 +21,29 @@ export const load: PageServerLoad = async (event) => {
 			// Determine if the current user can write this document
 			const currentUserId = event.locals.user!.id;
 			const forcePublished = event.url.searchParams.has('published');
-			const projectRows = await db
-				.select({ ownerId: project.ownerId })
-				.from(project)
-				.where(eq(project.id, doc.projectId))
-				.limit(1);
+			const [projectRows, collabRows] = await Promise.all([
+				db
+					.select({ ownerId: project.ownerId })
+					.from(project)
+					.where(eq(project.id, doc.projectId))
+					.limit(1),
+				db
+					.select({ role: projectCollaborator.role })
+					.from(projectCollaborator)
+					.where(and(
+						eq(projectCollaborator.projectId, doc.projectId),
+						eq(projectCollaborator.userId, currentUserId)
+					))
+					.limit(1)
+			]);
 			const ownerId = projectRows[0]?.ownerId ?? '';
-			const canWrite = doc.writerUserId === null
-				? currentUserId === ownerId
-				: currentUserId === doc.writerUserId;
+			const collaboratorRole = (collabRows[0]?.role ?? null) as CollaboratorRole | null;
+			const canWrite = canWriteDocument({
+				isProjectOwner: currentUserId === ownerId,
+				writerUserId: doc.writerUserId,
+				currentUserId,
+				collaboratorRole
+			});
 
 			// Non-writers or ?published param always see the last committed version
 			if (!canWrite || forcePublished) {

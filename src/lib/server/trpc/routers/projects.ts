@@ -18,7 +18,7 @@ import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig } from '$lib/server/storage';
-import { isProjectOwner, canRemoveCollaborator } from '$lib/domain/permissions';
+import { isProjectOwner, canRemoveCollaborator, canChangeCollaboratorRole } from '$lib/domain/permissions';
 import { PROJECT_STATUSES } from '$lib/domain/project';
 import { STARTER_DOCUMENTS } from '$lib/server/starterContent';
 import type { Db } from '$lib/server/db';
@@ -321,6 +321,45 @@ export const projectsRouter = router({
             )
           )
       );
+    }),
+
+  // Owner cambia el rol de un colaborador.
+  // El rol del propio owner no se puede cambiar.
+  changeRole: protectedProcedure
+    .input(z.object({
+      projectId: z.string(),
+      userId: z.string(),
+      role: z.enum(['author', 'coauthor', 'reviewer', 'commenter'])
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const proj = await ctx.withRLS((db) =>
+        db
+          .select({ ownerId: project.ownerId })
+          .from(project)
+          .where(eq(project.id, input.projectId))
+          .limit(1)
+      );
+
+      if (!proj[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (!canChangeCollaboratorRole(ctx.user.id, proj[0].ownerId, input.userId)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot change the role of the project owner.' });
+      }
+
+      const [updated] = await ctx.withRLS((db) =>
+        db
+          .update(projectCollaborator)
+          .set({ role: input.role })
+          .where(
+            and(
+              eq(projectCollaborator.projectId, input.projectId),
+              eq(projectCollaborator.userId, input.userId)
+            )
+          )
+          .returning({ userId: projectCollaborator.userId, role: projectCollaborator.role })
+      );
+
+      if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
+      return updated;
     }),
 
   // Owner activa/desactiva visibilidad pública del proyecto

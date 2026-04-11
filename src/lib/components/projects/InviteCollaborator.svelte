@@ -38,6 +38,20 @@
 	let reqState: 'idle' | 'sending' | 'sent' | 'error' = $state('idle');
 	let errorMsg = $state('');
 
+	let changingRoleFor = $state<string | null>(null);
+
+	async function changeRole(userId: string, newRole: CollaboratorRole) {
+		changingRoleFor = userId;
+		try {
+			await trpc.projects.changeRole.mutate({ projectId, userId, role: newRole });
+			oninvited?.();
+		} catch (e: unknown) {
+			alert(e instanceof Error ? e.message : 'Failed to change role');
+		} finally {
+			changingRoleFor = null;
+		}
+	}
+
 	async function invite() {
 		if (!email.trim()) return;
 		reqState = 'sending';
@@ -73,19 +87,28 @@
 				<li
 					class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border"
 				>
-					<div class="min-w-0">
-						<p class="truncate text-sm text-ink dark:text-dark-ink">{c.name || c.email}</p>
-						<p class="text-xs text-ink-faint dark:text-dark-ink-faint">{PROJECT_ROLE_LABELS[c.role]}</p>
-					</div>
+					<p class="truncate text-sm text-ink dark:text-dark-ink">{c.name || c.email}</p>
 					{#if c.role === 'owner'}
 						<span class="ml-3 shrink-0 text-xs text-ink-faint dark:text-dark-ink-faint">Owner</span>
 					{:else}
-						<button
-							onclick={() => remove(c.userId, c.name || c.email)}
-							class="ml-3 shrink-0 text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint"
-						>
-							Remove…
-						</button>
+						<div class="ml-3 flex shrink-0 items-center gap-2">
+							<select
+								value={c.role}
+								disabled={changingRoleFor === c.userId}
+								onchange={(e) => changeRole(c.userId, (e.currentTarget as HTMLSelectElement).value as CollaboratorRole)}
+								class="rounded border border-paper-border bg-paper px-1.5 py-0.5 text-xs text-ink-muted focus:border-accent focus:outline-none disabled:opacity-50 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted"
+							>
+								{#each roleOptions as opt (opt.value)}
+									<option value={opt.value}>{opt.label}</option>
+								{/each}
+							</select>
+							<button
+								onclick={() => remove(c.userId, c.name || c.email)}
+								class="text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint"
+							>
+								Remove…
+							</button>
+						</div>
 					{/if}
 				</li>
 			{/each}

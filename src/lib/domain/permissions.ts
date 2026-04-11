@@ -36,8 +36,31 @@ export function canRemoveCollaborator(
 	return isProjectOwner(requesterId, ownerId) && targetUserId !== ownerId;
 }
 
-export function canDelegateWriting(userId: string, ownerId: string): boolean {
-	return isProjectOwner(userId, ownerId);
+/** Returns true if a collaborator role grants write access to documents. */
+export function roleAllowsWrite(role: CollaboratorRole | null): boolean {
+	return role === 'author' || role === 'coauthor';
+}
+
+/**
+ * Project owner can always delegate or reclaim.
+ * The current delegated writer (writerUserId) can also release or transfer their slot,
+ * even if their collaborator role no longer allows writing (downgrade case).
+ */
+export function canDelegateWriting(ctx: {
+	userId: string;
+	ownerId: string;
+	writerUserId: string | null;
+}): boolean {
+	return isProjectOwner(ctx.userId, ctx.ownerId) || ctx.userId === ctx.writerUserId;
+}
+
+/** Only the project owner can change a collaborator's role. The owner's own role is fixed. */
+export function canChangeCollaboratorRole(
+	requesterId: string,
+	ownerId: string,
+	targetUserId: string
+): boolean {
+	return isProjectOwner(requesterId, ownerId) && targetUserId !== ownerId;
 }
 
 // ---------------------------------------------------------------------------
@@ -47,6 +70,29 @@ export function canDelegateWriting(userId: string, ownerId: string): boolean {
 /** Owners, authors and coauthors can edit. Reviewers and commenters cannot. */
 export function canEditDocument(isOwner: boolean, role: CollaboratorRole | null): boolean {
 	return isOwner || role === 'author' || role === 'coauthor';
+}
+
+/**
+ * Unified document write check that respects both delegation and collaborator role.
+ *
+ * - No delegation (writerUserId null): only project owner writes.
+ * - Delegation set: only the delegated user writes, AND their role must allow it.
+ *   This means a downgraded writer (e.g. reviewer) is blocked even if still set as writerUserId.
+ */
+export function canWriteDocument(ctx: {
+	isProjectOwner: boolean;
+	writerUserId: string | null;
+	currentUserId: string;
+	collaboratorRole: CollaboratorRole | null;
+}): boolean {
+	const { isProjectOwner: isProjOwner, writerUserId, currentUserId, collaboratorRole } = ctx;
+	if (writerUserId === null) {
+		return isProjOwner;
+	}
+	if (currentUserId === writerUserId) {
+		return roleAllowsWrite(collaboratorRole);
+	}
+	return false;
 }
 
 // ---------------------------------------------------------------------------

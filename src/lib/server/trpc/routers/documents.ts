@@ -12,7 +12,7 @@ import { indexDocument } from '$lib/server/embeddings';
 import { sendCommitNotification } from '$lib/server/resend';
 import { env } from '$env/dynamic/private';
 import { DOCUMENT_TYPES } from '$lib/domain/document';
-import { canDelegateWriting } from '$lib/domain/permissions';
+import { canDelegateWriting, roleAllowsWrite, type CollaboratorRole } from '$lib/domain/permissions';
 import type { Db } from '$lib/server/db';
 
 async function notifyCollaboratorsOnCommit(
@@ -600,7 +600,8 @@ export const documentsRouter = router({
 		}),
 
 	// Transfiere o revoca el rol de escritor en el documento.
-	// Solo el propietario del proyecto puede cambiar el writer.
+	// El propietario del proyecto puede delegar, reclamar, o transferir.
+	// El writer actual puede liberar su slot (set to null) incluso si su rol fue degradado.
 	// writerUserId = null → owner recupera el acceso; SET → delega a un colaborador.
 	setWriter: protectedProcedure
 		.input(z.object({
@@ -610,7 +611,7 @@ export const documentsRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			return ctx.withRLS(async (db) => {
 				const [doc] = await db
-					.select({ projectId: document.projectId })
+					.select({ projectId: document.projectId, writerUserId: document.writerUserId })
 					.from(document)
 					.where(eq(document.id, input.documentId))
 					.limit(1);
@@ -623,13 +624,21 @@ export const documentsRouter = router({
 					.where(eq(project.id, doc.projectId))
 					.limit(1);
 
-				if (!proj || !canDelegateWriting(ctx.user.id, proj.ownerId)) {
-					throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario puede delegar la escritura' });
+				if (!proj) throw new TRPCError({ code: 'NOT_FOUND' });
+
+				if (!canDelegateWriting({ userId: ctx.user.id, ownerId: proj.ownerId, writerUserId: doc.writerUserId })) {
+					throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario o el writer actual pueden modificar la delegación' });
+				}
+
+				// A downgraded writer can only release (set to null), not transfer to another user.
+				const isProjectOwner = ctx.user.id === proj.ownerId;
+				if (!isProjectOwner && input.writerUserId !== null) {
+					throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario puede transferir la escritura a otro usuario' });
 				}
 
 				if (input.writerUserId !== null) {
 					const [collab] = await db
-						.select({ userId: projectCollaborator.userId })
+						.select({ userId: projectCollaborator.userId, role: projectCollaborator.role })
 						.from(projectCollaborator)
 						.where(and(
 							eq(projectCollaborator.projectId, doc.projectId),
@@ -639,6 +648,10 @@ export const documentsRouter = router({
 
 					if (!collab) {
 						throw new TRPCError({ code: 'BAD_REQUEST', message: 'El usuario no es colaborador de este proyecto' });
+					}
+
+					if (!roleAllowsWrite(collab.role as CollaboratorRole)) {
+						throw new TRPCError({ code: 'BAD_REQUEST', message: 'El colaborador no tiene un rol que permita escritura' });
 					}
 				}
 
