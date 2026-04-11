@@ -118,6 +118,17 @@ const handleHeaders: Handle = async ({ event, resolve }) => {
 	return new Response(response.body, { status: response.status, headers });
 };
 
+const handleAuthError: Handle = ({ event, resolve }) => {
+	if (event.url.pathname === '/api/auth/error') {
+		const error = event.url.searchParams.get('error') ?? '';
+		return new Response(null, {
+			status: 302,
+			headers: { location: `/auth/error?error=${encodeURIComponent(error)}` }
+		});
+	}
+	return resolve(event);
+};
+
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
 
@@ -165,6 +176,7 @@ export const handle: Handle = sequence(
 	Sentry.sentryHandle(),
 	handleDevTools,
 	handleSubdomain,
+	handleAuthError,
 	handleAuthCookieDomain,
 	handleBetterAuth,
 	handleRLS,
