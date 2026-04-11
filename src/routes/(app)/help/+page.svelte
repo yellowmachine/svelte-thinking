@@ -82,6 +82,25 @@
 	</section>
 
 	<!-- ═══════════════════════════════════════════════════════════════════════
+	     DOCUMENT TYPES
+	     ═══════════════════════════════════════════════════════════════════════ -->
+	<section class="mb-12" id="document-types">
+		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Document types</h2>
+		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Each type has its own help page with a full example and a one-click sample project.</p>
+		<div class="grid gap-3 sm:grid-cols-2">
+			{#each [
+				{ href: '/help/notes', label: 'Notes', tagline: 'Annotations, reading notes, and ideas in progress.' },
+				{ href: '/help/book', label: 'Book', tagline: 'Multi-chapter document with cover page, TOC, and numbered chapters.' },
+			] as item}
+				<a href={item.href} class="group flex flex-col gap-1 rounded-xl border border-paper-border bg-paper px-4 py-3 transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper">
+					<span class="font-sans text-sm font-semibold text-ink group-hover:text-accent dark:text-dark-ink">{item.label} →</span>
+					<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">{item.tagline}</span>
+				</a>
+			{/each}
+		</div>
+	</section>
+
+	<!-- ═══════════════════════════════════════════════════════════════════════
 	     TABLE OF CONTENTS
 	     ═══════════════════════════════════════════════════════════════════════ -->
 	<section class="mb-12">

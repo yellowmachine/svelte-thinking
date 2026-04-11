@@ -21,6 +21,7 @@ import { deleteFileWithConfig } from '$lib/server/storage';
 import { isProjectOwner, canRemoveCollaborator, canChangeCollaboratorRole } from '$lib/domain/permissions';
 import { PROJECT_STATUSES } from '$lib/domain/project';
 import { STARTER_DOCUMENTS } from '$lib/server/starterContent';
+import { getSampleBySlug } from '$lib/server/sampleDocs';
 import type { Db } from '$lib/server/db';
 
 async function insertStarterDocuments(db: Db, projectId: string, userId: string) {
@@ -553,5 +554,104 @@ export const projectsRouter = router({
             )
           )
       );
-    })
+    }),
+
+  // Creates a sample project from a help-page slug.
+  // Each SampleDoc is inserted in order; {{DOC_n}} placeholders in content
+  // are replaced with the UUID of the n-th created document.
+  createFromSample: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: slug }) => {
+    const sample = getSampleBySlug(slug);
+    if (!sample) throw new TRPCError({ code: 'NOT_FOUND', message: `No sample found for slug "${slug}"` });
+
+    const userId = ctx.user.id;
+    const projectId = crypto.randomUUID();
+
+    return ctx.withRLS(async (db) => {
+      // Create the project
+      const [created] = await db
+        .insert(project)
+        .values({
+          id: projectId,
+          title: sample.projectTitle,
+          description: sample.tagline,
+          ownerId: userId
+        })
+        .returning();
+
+      await db.insert(projectCollaborator).values({
+        id: crypto.randomUUID(),
+        projectId,
+        userId,
+        ownerUserId: userId,
+        role: 'owner'
+      });
+
+      // Insert references (deduplicated by citeKey within this project)
+      const seenCiteKeys = new Set<string>();
+      for (const doc of sample.docs) {
+        for (const ref of doc.references ?? []) {
+          if (seenCiteKeys.has(ref.citeKey)) continue;
+          seenCiteKeys.add(ref.citeKey);
+          await db
+            .insert(projectReference)
+            .values({
+              id: crypto.randomUUID(),
+              projectId,
+              citeKey: ref.citeKey,
+              type: ref.type,
+              title: ref.title,
+              authors: ref.authors,
+              year: ref.year,
+              journal: ref.journal,
+              volume: ref.volume,
+              pages: ref.pages,
+              doi: ref.doi,
+              publisher: ref.publisher,
+              address: ref.address,
+              isbn: ref.isbn
+            })
+            .onConflictDoNothing();
+        }
+      }
+
+      // Insert docs in order, collecting their UUIDs for placeholder substitution
+      const docIds: string[] = [];
+
+      for (const sampleDoc of sample.docs) {
+        const docId = crypto.randomUUID();
+        docIds.push(docId);
+
+        // Substitute {{DOC_n}} placeholders with real UUIDs
+        let content = sampleDoc.content;
+        for (let i = 0; i < docIds.length; i++) {
+          content = content.replaceAll(`{{DOC_${i}}}`, docIds[i]);
+        }
+
+        await db.insert(document).values({
+          id: docId,
+          projectId,
+          title: sampleDoc.title,
+          type: sampleDoc.docType,
+          ownerUserId: userId
+        });
+
+        const versionId = crypto.randomUUID();
+        await db.insert(documentVersion).values({
+          id: versionId,
+          documentId: docId,
+          content,
+          versionNumber: 1,
+          changeDescription: 'Sample document from help page',
+          createdBy: userId
+        });
+
+        await db
+          .update(document)
+          .set({ currentVersionId: versionId })
+          .where(eq(document.id, docId));
+      }
+
+      return { projectId };
+    });
+  })
 });
