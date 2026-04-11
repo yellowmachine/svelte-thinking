@@ -29,7 +29,7 @@ export const projectInvitation = scholioSchema.table(
 	(t) => [
 		index('invitation_project_idx').on(t.projectId),
 
-		// SELECT: owner, invitador, o sin contexto de usuario (acceso público por token)
+		// SELECT: owner, invitador, invitado (por email), o sin contexto de usuario (acceso público por token)
 		pgPolicy('invitation_select', {
 			for: 'select',
 			using: sql`
@@ -39,6 +39,11 @@ export const projectInvitation = scholioSchema.table(
 					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = current_setting('app.current_user_id', true)
+				)
+				OR EXISTS (
+					SELECT 1 FROM "user"
+					WHERE "user".id = current_setting('app.current_user_id', true)
+					AND "user".email = ${t.invitedEmail}
 				)
 			`
 		}),
