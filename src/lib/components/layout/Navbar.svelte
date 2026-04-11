@@ -139,9 +139,6 @@
 				<a href="/help" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 					Help
 				</a>
-				<a href="/blog" class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
-					Blog
-				</a>
 				<a
 					href={PUBLIC_LIBRARIAN_URL}
 					target="_blank"
