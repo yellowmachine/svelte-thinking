@@ -89,6 +89,7 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	);
 
 	// ── 6. Wikilinks [[Title]] / [[Title:hash]] → plain text ─────────────────
+	src = src.replace(/\[\[index:persons\]\]/g, ''); // strip onomastic index tag
 	src = src.replace(/\[\[([^\]|]+?)(?:[:|][^\]]+)?\]\]/g, '$1');
 
 	// ── 7. Block-level transforms ─────────────────────────────────────────────

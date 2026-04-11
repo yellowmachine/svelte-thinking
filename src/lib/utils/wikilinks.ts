@@ -9,8 +9,10 @@ const UUID_LINK_RE = /\[\[doc:([a-f0-9-]{36})\|([^\]]+)\]\]/g;
 const HEADING_LINK_RE = /\[\[#([^\]]+)\]\]/g;
 // Matches [[person:Name]] — named person mention
 const PERSON_LINK_RE = /\[\[person:([^\]]+)\]\]/g;
-// Matches [[Title]] — no doc: prefix, no pipe, no #, no @, no person:
-const TITLE_LINK_RE = /\[\[(?!doc:|person:|@|#)([^\]|]+)\]\]/g;
+// Matches [[index:persons]] — onomastic index placeholder
+const INDEX_PERSONS_RE = /\[\[index:persons\]\]/g;
+// Matches [[Title]] — no doc: prefix, no pipe, no #, no @, no person:, no index:
+const TITLE_LINK_RE = /\[\[(?!doc:|person:|index:|@|#)([^\]|]+)\]\]/g;
 
 function headingAnchor(text: string): string {
 	return text.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
@@ -37,22 +39,50 @@ export function extractWikilinks(markdown: string): { uuids: string[]; titles: s
 	return { uuids: [...uuids], titles: [...titles] };
 }
 
+/** Returns a stable HTML id for a person name, e.g. "John Doe" → "person-john-doe". */
+export function personAnchorId(name: string): string {
+	return 'person-' + name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+}
+
+/**
+ * Replace [[person:Name]] with styled spans (anchoring the first occurrence),
+ * and replace [[index:persons]] with a sorted onomastic index linking to those anchors.
+ */
+export function processPersonsAndIndex(markdown: string): string {
+	const seen = new Set<string>();
+
+	const withPersons = markdown.replace(PERSON_LINK_RE, (_match, name: string) => {
+		const trimmed = name.trim();
+		if (!seen.has(trimmed)) {
+			seen.add(trimmed);
+			return `<span id="${personAnchorId(trimmed)}" class="mention-person">${trimmed}</span>`;
+		}
+		return `<span class="mention-person">${trimmed}</span>`;
+	});
+
+	if (!withPersons.includes('[[index:persons]]')) return withPersons;
+
+	const sorted = [...seen].sort((a, b) => a.localeCompare(b));
+	const listItems = sorted
+		.map((name) => `<li><a href="#${personAnchorId(name)}">${name}</a></li>`)
+		.join('');
+	const indexHtml = `<nav class="persons-index"><ol>${listItems}</ol></nav>`;
+
+	return withPersons.replace(INDEX_PERSONS_RE, indexHtml);
+}
+
 /**
  * Replace [[Title]] and [[doc:uuid|Title]] with markdown links.
  * The docMap should contain entries keyed by both title AND uuid for full resolution.
  * Unknown links are left as styled unresolved spans.
+ * Note: [[person:Name]] and [[index:persons]] are handled separately by processPersonsAndIndex.
  */
 export function processWikilinks(
 	markdown: string,
 	docMap: Map<string, { id: string; projectId: string }>
 ): string {
-	// First pass: resolve [[person:Name]] → styled span
-	let result = markdown.replace(PERSON_LINK_RE, (_match, name: string) => {
-		return `<span class="mention-person">${name.trim()}</span>`;
-	});
-
-	// Second pass: resolve [[#Heading]] → markdown anchor links
-	result = result.replace(HEADING_LINK_RE, (_match, heading: string) => {
+	// First pass: resolve [[#Heading]] → markdown anchor links
+	let result = markdown.replace(HEADING_LINK_RE, (_match, heading: string) => {
 		return `[${heading.trim()}](#${headingAnchor(heading)})`;
 	});
 

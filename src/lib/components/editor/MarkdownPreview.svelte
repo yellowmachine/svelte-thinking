@@ -7,7 +7,7 @@
 	marked.use(markedFootnote());
 	import { trpc } from '$lib/utils/trpc';
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
-	import { processWikilinks } from '$lib/utils/wikilinks';
+	import { processWikilinks, processPersonsAndIndex } from '$lib/utils/wikilinks';
 	import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
 	import { einkStore } from '$lib/stores/eink.svelte';
 	import { untrack } from 'svelte';
@@ -122,9 +122,7 @@
 		const { processed: withEpigraphPlaceholders, epigraphs } = extractEpigraphsForProcessing(withPlaceholders);
 		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withEpigraphPlaceholders);
 		const withWikilinks = wikilinkMap.size > 0 ? processWikilinks(withMathPlaceholders, wikilinkMap) : withMathPlaceholders;
-		const withPersons = withWikilinks.replace(/\[\[person:([^\]]+)\]\]/g, (_, name) =>
-			`<span class="mention-person">${name}</span>`
-		);
+		const withPersons = processPersonsAndIndex(withWikilinks);
 		const withCitations = refs.size > 0 ? processCitations(withPersons, refs, style) : withPersons;
 		const rawHtml = marked.parse(withCitations) as string;
 		const restored = restoreMath(rawHtml, mathBlocks);
@@ -384,6 +382,35 @@
 
 	.prose :global(.mention-person) {
 		border-bottom: 1px dotted var(--color-ink-faint, #A89880);
+	}
+
+	.prose :global(.persons-index) {
+		margin-top: 2rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--color-paper-border, #e8e2da);
+	}
+
+	.prose :global(.persons-index ol) {
+		padding-left: 1.25rem;
+		columns: 2;
+		gap: 1rem;
+	}
+
+	.prose :global(.persons-index li) {
+		margin-bottom: 0.25rem;
+		font-size: 0.875em;
+		break-inside: avoid;
+	}
+
+	.prose :global(.persons-index a) {
+		color: var(--color-ink-muted, #57534e);
+		text-decoration: none;
+	}
+
+	.prose :global(.persons-index a:hover) {
+		color: var(--color-ink, #1c1917);
+		text-decoration: underline;
+		text-underline-offset: 2px;
 	}
 
 	/* Notas al pie */

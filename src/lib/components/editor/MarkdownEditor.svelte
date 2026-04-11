@@ -395,6 +395,15 @@
 		return { from, options: names.map(toOption) };
 	}
 
+	function indexCompletion(context: CompletionContext) {
+		const match = context.matchBefore(/\[\[i[a-z]*/);
+		if (!match) return null;
+		return {
+			from: match.from,
+			options: [{ label: '[[index:persons]]', detail: 'onomastic index', apply: '[[index:persons]]' }]
+		};
+	}
+
 	function allCompletions(context: CompletionContext) {
 		const all = completions === undefined;
 		return (
@@ -402,7 +411,7 @@
 			(all || completions.has('citation') ? citationCompletion(context) : null) ??
 			(all || completions.has('heading') ? headingCompletion(context) : null) ??
 			(all || completions.has('footnote') ? footnoteCompletion(context) : null) ??
-			(all || completions.has('wikilink') ? wikilinkCompletion(context) : null)
+			(all || completions.has('wikilink') ? (wikilinkCompletion(context) ?? indexCompletion(context)) : null)
 		);
 	}
 
