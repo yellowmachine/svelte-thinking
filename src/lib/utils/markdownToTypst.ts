@@ -88,8 +88,29 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 			.join(' ')
 	);
 
-	// ── 6. Wikilinks [[Title]] / [[Title:hash]] → plain text ─────────────────
-	src = src.replace(/\[\[index:persons\]\]/g, ''); // strip onomastic index tag
+	// ── 6. Wikilinks ─────────────────────────────────────────────────────────
+
+	// 6a. [[person:Name]] → Typst inline with label for page-index tracking.
+	//     Collected names are used in step 8 to build [[index:persons]].
+	//     Use a placeholder so inlineToTypst (step 7) doesn't touch the Typst syntax.
+	const personNames: string[] = [];
+	const personSet = new Set<string>();
+	const personPlaceholders: string[] = [];
+	src = src.replace(/\[\[person:([^\]]+)\]\]/g, (_m, name: string) => {
+		const trimmed = name.trim();
+		if (!personSet.has(trimmed)) {
+			personSet.add(trimmed);
+			personNames.push(trimmed);
+		}
+		const lbl = personNameToLabel(trimmed);
+		personPlaceholders.push(`${escapeTypstName(trimmed)}#label("${lbl}")`);
+		return `%%PP${personPlaceholders.length - 1}%%`;
+	});
+
+	// 6b. [[index:persons]] → placeholder resolved in step 8 with collected names
+	src = src.replace(/\[\[index:persons\]\]/g, '%%PERSONS_INDEX%%');
+
+	// 6c. Generic wikilinks [[Title]] / [[Title:hash]] → plain text
 	src = src.replace(/\[\[([^\]|]+?)(?:[:|][^\]]+)?\]\]/g, '$1');
 
 	// ── 7. Block-level transforms ─────────────────────────────────────────────
@@ -146,6 +167,8 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	result = result.replace(/%%DM(\d+)%%/g, (_m, i) => displayMath[parseInt(i)]);
 	result = result.replace(/%%IM(\d+)%%/g, (_m, i) => inlineMath[parseInt(i)]);
 	result = result.replace(/%%EPIGRAPH(\d+)%%/g, (_m, i) => epigraphs[parseInt(i)]);
+	result = result.replace(/%%PP(\d+)%%/g, (_m, i) => personPlaceholders[parseInt(i)]);
+	result = result.replace(/%%PERSONS_INDEX%%/g, () => generatePersonsIndex(personNames));
 
 	return result;
 }
@@ -202,6 +225,60 @@ function registerImage(url: string, registry: Map<string, string>): string {
 	const name = `img-${registry.size}${extOf(url)}`;
 	registry.set(name, url);
 	return name;
+}
+
+/** Converts a person name to a safe Typst label identifier. */
+function personNameToLabel(name: string): string {
+	return 'spp-' + name
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '') // strip diacritics
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+}
+
+/** Escapes Typst special characters that can appear in person names. */
+function escapeTypstName(name: string): string {
+	return name
+		.replace(/#/g, '\\#')
+		.replace(/\[/g, '\\[')
+		.replace(/\]/g, '\\]')
+		.replace(/@/g, '\\@');
+}
+
+/**
+ * Generates a Typst `context` block that queries all [[person:Name]] label
+ * occurrences and renders a two-column grid (name / page numbers).
+ * Requires Typst ≥ 0.11.
+ */
+function generatePersonsIndex(names: string[]): string {
+	if (names.length === 0) return '';
+
+	const sorted = [...names].sort((a, b) => a.localeCompare(b));
+
+	const entries = sorted
+		.map((n) => {
+			const lbl = personNameToLabel(n);
+			const escaped = n.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+			return `("${escaped}", "${lbl}")`;
+		})
+		.join(', ');
+
+	return `#context {
+  let _spp = (${entries},)
+  let _cells = ()
+  for (_spp_name, _spp_lbl) in _spp {
+    let _spp_hits = query(label(_spp_lbl))
+    if _spp_hits.len() > 0 {
+      let _spp_pages = _spp_hits.map(h => h.location().page()).sorted().dedup()
+      _cells.push([#_spp_name])
+      _cells.push([#_spp_pages.map(p => str(p)).join(", ")])
+    }
+  }
+  if _cells.len() > 0 {
+    grid(columns: (1fr, auto), row-gutter: 0.4em, .._cells)
+  }
+}`;
 }
 
 /** Apply inline transforms to a single text fragment. */
