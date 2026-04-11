@@ -5,6 +5,8 @@ import { twoFactor } from 'better-auth/plugins/two-factor';
 import { env } from '$env/dynamic/private';
 import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
+import { eq } from 'drizzle-orm';
+import { waitlist } from '$lib/server/db/schemas/waitlist.schema';
 //import { sendVerificationEmail } from '$lib/server/resend';
 
 // En producción activa crossSubDomainCookies para compartir la sesión con
@@ -41,6 +43,22 @@ export const auth = betterAuth({
     github: {
       clientId: env.GITHUB_CLIENT_ID,
       clientSecret: env.GITHUB_CLIENT_SECRET
+    }
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const rows = await db
+            .select({ status: waitlist.status })
+            .from(waitlist)
+            .where(eq(waitlist.email, user.email))
+            .limit(1);
+
+          if (!rows[0] || rows[0].status !== 'approved') return false;
+          return { data: user };
+        }
+      }
     }
   },
   advanced: {
