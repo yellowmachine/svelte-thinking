@@ -35,7 +35,7 @@
 
 	let email = $state('');
 	let role: CollaboratorRole = $state('reviewer');
-	let reqState: 'idle' | 'sending' | 'sent' | 'error' = $state('idle');
+	let reqState: 'idle' | 'sending' | 'sent' | 'info' | 'error' = $state('idle');
 	let errorMsg = $state('');
 
 	let changingRoleFor = $state<string | null>(null);
@@ -66,8 +66,10 @@
 			oninvited?.();
 			setTimeout(() => (reqState = 'idle'), 3000);
 		} catch (e: unknown) {
-			reqState = 'error';
-			errorMsg = e instanceof Error ? e.message : 'Failed to send the invitation';
+			const msg = e instanceof Error ? e.message : 'Failed to send the invitation';
+			const isInfo = msg.includes('already a member') || msg.includes('pendiente');
+			reqState = isInfo ? 'info' : 'error';
+			errorMsg = msg;
 		}
 	}
 
@@ -149,6 +151,8 @@
 
 	{#if reqState === 'sent'}
 		<p class="mt-2 text-sm text-green-600">Invitation sent successfully.</p>
+	{:else if reqState === 'info'}
+		<p class="mt-2 text-sm text-ink-muted dark:text-dark-ink-muted">{errorMsg}</p>
 	{:else if reqState === 'error'}
 		<p class="mt-2 text-sm text-red-600">{errorMsg}</p>
 	{/if}

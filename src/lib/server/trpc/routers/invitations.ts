@@ -62,6 +62,26 @@ export const invitationsRouter = router({
 					throw new TRPCError({ code: 'BAD_REQUEST', message: 'No puedes invitarte a ti mismo' });
 				}
 
+				// Evita reinvitar a alguien que ya es colaborador
+				const alreadyMember = await db
+					.select({ id: projectCollaborator.id })
+					.from(projectCollaborator)
+					.innerJoin(user, eq(user.id, projectCollaborator.userId))
+					.where(
+						and(
+							eq(projectCollaborator.projectId, input.projectId),
+							eq(user.email, input.invitedEmail.toLowerCase())
+						)
+					)
+					.limit(1);
+
+				if (alreadyMember[0]) {
+					throw new TRPCError({
+						code: 'CONFLICT',
+						message: 'This user is already a member of the project'
+					});
+				}
+
 				// Evita duplicados de invitaciones pendientes
 				const existing = await db
 					.select({ id: projectInvitation.id })
