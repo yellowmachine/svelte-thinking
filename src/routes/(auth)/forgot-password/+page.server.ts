@@ -15,7 +15,7 @@ export const actions: Actions = {
 		if (!email) return fail(400, { message: 'Email is required' });
 
 		try {
-			await fetch(`${env.ORIGIN}/api/auth/forget-password`, {
+			await fetch(`${env.ORIGIN}/api/auth/request-password-reset`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, redirectTo: '/reset-password' })
