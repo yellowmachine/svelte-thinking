@@ -467,23 +467,12 @@ function serializeRefs(opts: TypstDocumentOptions): string {
 
 function buildBibSection(opts: TypstDocumentOptions): string {
 	if (!opts.refs?.length) return '';
-
-	const allContent = opts.sections.map((s) => s.content).join('\n');
-	if (!/@[\w:._-]/.test(allContent)) return '';
-
 	return `\n\n#bibliography("refs.bib", format: "bibtex")\n`;
 }
 
-/** Returns the raw BibTeX content to write as refs.bib, or null if not needed. */
+/** Returns the raw BibTeX content to write as refs.bib, or null if there are no refs. */
 export function buildBibFile(opts: TypstDocumentOptions): string | null {
 	if (!opts.refs?.length) return null;
-
-	const allContent = [
-		...(opts.preamble ? [opts.preamble] : []),
-		...opts.sections.map((s) => s.content)
-	].join('\n');
-	if (!/@[\w:._-]/.test(allContent)) return null;
-
 	return serializeRefs(opts);
 }
 

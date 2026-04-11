@@ -66,7 +66,7 @@ export const GET: RequestHandler = async (event) => {
 	} else {
 		const typ = toTypst(docResult.content, docResult.title, refs);
 		const bib = serializeBib(refs);
-		const files = bib.trim() ? { 'refs.bib': bib } : undefined;
+		const files = bib ? { 'refs.bib': bib } : undefined;
 		let pdf: Uint8Array;
 		try {
 			pdf = await compileToPdf(typ, undefined, files);

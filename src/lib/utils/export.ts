@@ -236,12 +236,7 @@ function mdToTypst(md: string): string {
 export function toTypst(content: string, docTitle: string, refs: RefData[]): string {
 	const body = mdToTypst(content);
 	const bib = serializeBib(refs);
-	const hasCitations = /@\w/.test(body);
-	const hasBib = refs.length > 0 && hasCitations;
-
-	// refs.bib is passed as a virtual file to the compile service;
-	// for standalone .typ downloads the caller must include refs.bib alongside.
-	const bibSection = hasBib ? `\n#bibliography("refs.bib", format: "bibtex")\n` : '';
+	const bibSection = bib.trim() ? `\n#bibliography("refs.bib", format: "bibtex")\n` : '';
 
 	const escapedTitle = docTitle.replace(/"/g, '\\"');
 
