@@ -90,13 +90,13 @@ describe('getCommitCapability', () => {
 	it('permission blocked takes priority over offline', () => {
 		const cap = getCommitCapability({ ...ready, canWrite: false, online: false });
 		expect(cap.kind).toBe('blocked');
-		expect((cap as { kind: 'blocked'; reason: string }).reason).toMatch(/permiso/);
+		expect((cap as { kind: 'blocked'; reason: string }).reason).toMatch(/permission/);
 	});
 
 	it('offline blocked takes priority over empty content', () => {
 		const cap = getCommitCapability({ ...ready, online: false, hasContent: false });
 		expect(cap.kind).toBe('blocked');
-		expect((cap as { kind: 'blocked'; reason: string }).reason).toMatch(/conexión/);
+		expect((cap as { kind: 'blocked'; reason: string }).reason).toMatch(/connection/);
 	});
 });
 
