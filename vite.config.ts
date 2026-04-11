@@ -17,6 +17,8 @@ const dirname =
 const enableSW = process.env.ENABLE_SW === 'true';
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
+const isDev = process.env.NODE_ENV !== 'production';
+
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
@@ -52,7 +54,7 @@ export default defineConfig({
 				additionalManifestEntries: [{ url: '/offline', revision: String(Date.now()) }]
 			}
 		})] : []),
-		devtoolsJson()
+		...(isDev ? [devtoolsJson()] : [])
 	],
 	server: { port: 5174, host: true, allowedHosts: ['scholio-dev.local'] },
 	test: {
