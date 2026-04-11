@@ -98,9 +98,16 @@
 			</div>
 
 			<div class="flex flex-col gap-1.5">
-				<label for="password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>Password</label
-				>
+				<div class="flex items-center justify-between">
+					<label for="password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+						>Password</label
+					>
+					<a
+						href="/forgot-password"
+						class="font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+						>Forgot password?</a
+					>
+				</div>
 				<input
 					id="password"
 					type="password"

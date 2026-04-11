@@ -263,3 +263,17 @@ export async function sendVerificationEmail(email: string, url: string) {
 		`
 	});
 }
+
+export async function sendPasswordResetEmail(email: string, url: string) {
+	await sendMail({
+		to: email,
+		subject: 'Reset your Scholio password',
+		html: `
+			<p>Hi,</p>
+			<p>We received a request to reset the password for your Scholio account.</p>
+			<p><a href="${url}">Reset your password</a></p>
+			<p>This link expires in 1 hour. If you didn't request a password reset, you can ignore this email.</p>
+			<p>— The Scholio team</p>
+		`
+	});
+}

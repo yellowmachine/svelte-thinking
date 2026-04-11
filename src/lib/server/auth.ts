@@ -7,6 +7,7 @@ import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
 import { eq } from 'drizzle-orm';
 import { waitlist } from '$lib/server/db/schemas/waitlist.schema';
+import { sendPasswordResetEmail } from '$lib/server/resend';
 //import { sendVerificationEmail } from '$lib/server/resend';
 
 // En producción activa crossSubDomainCookies para compartir la sesión con
@@ -29,6 +30,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendPasswordResetEmail(user.email, url);
+    }
   },
   /*emailVerification: {
     sendOnSignUp: true,
