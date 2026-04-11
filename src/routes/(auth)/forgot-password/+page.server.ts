@@ -23,6 +23,7 @@ export const actions: Actions = {
 			if (e instanceof APIError) {
 				return fail(400, { message: e.message });
 			}
+			console.error('[forgot-password] unexpected error:', e);
 			// Don't leak whether the email exists — always show success
 		}
 
