@@ -38,7 +38,7 @@
 <!-- Floating button -->
 <button
 	onclick={() => (open = true)}
-	class="fixed right-6 bottom-6 z-40 flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white shadow-lg transition-all hover:bg-accent-hover hover:shadow-xl"
+	class="fixed right-6 bottom-6 z-40 hidden items-center gap-2 rounded-full bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white shadow-lg transition-all hover:bg-accent-hover hover:shadow-xl sm:flex"
 	aria-label="Send feedback"
 >
 	<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
