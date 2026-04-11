@@ -39,6 +39,9 @@
 			: data.projects.filter((p) => p.orgId === workspaceStore.current.id)
 	);
 
+	const ownedProjects = $derived(projects.filter((p) => p.ownerId === data.currentUserId));
+	const sharedProjects = $derived(projects.filter((p) => p.ownerId !== data.currentUserId));
+
 	const workspaceName = $derived(workspaceStore.current.name);
 	const isOrgWorkspace = $derived(workspaceStore.current.id !== null);
 
@@ -271,24 +274,52 @@
 			</button>
 		</div>
 	{:else}
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-			{#each projects as proj (proj.id)}
-				<ProjectCard
-					title={proj.title}
-					description={proj.description ?? undefined}
-					status={proj.status}
-					collaboratorCount={proj.collaboratorCount}
-					openComments={proj.openComments}
-					updatedAt={proj.updatedAt}
-					scheduledDeleteAt={proj.scheduledDeleteAt}
-					reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
-					onclick={() => (window.location.href = `/projects/${proj.id}`)}
-					ondelete={proj.ownerId === data.currentUserId
-						? () => { deleteTarget = { id: proj.id, title: proj.title }; }
-						: undefined}
-				/>
-			{/each}
-		</div>
+		{#if ownedProjects.length > 0}
+			{#if sharedProjects.length > 0}
+				<h2 class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+					My projects
+				</h2>
+			{/if}
+			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				{#each ownedProjects as proj (proj.id)}
+					<ProjectCard
+						title={proj.title}
+						description={proj.description ?? undefined}
+						status={proj.status}
+						collaboratorCount={proj.collaboratorCount}
+						openComments={proj.openComments}
+						updatedAt={proj.updatedAt}
+						scheduledDeleteAt={proj.scheduledDeleteAt}
+						reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
+						onclick={() => (window.location.href = `/projects/${proj.id}`)}
+						ondelete={() => { deleteTarget = { id: proj.id, title: proj.title }; }}
+					/>
+				{/each}
+			</div>
+		{/if}
+
+		{#if sharedProjects.length > 0}
+			<div class="mt-10">
+				<h2 class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+					Shared with me
+				</h2>
+				<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{#each sharedProjects as proj (proj.id)}
+						<ProjectCard
+							title={proj.title}
+							description={proj.description ?? undefined}
+							status={proj.status}
+							collaboratorCount={proj.collaboratorCount}
+							openComments={proj.openComments}
+							updatedAt={proj.updatedAt}
+							scheduledDeleteAt={proj.scheduledDeleteAt}
+							reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
+							onclick={() => (window.location.href = `/projects/${proj.id}`)}
+						/>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
