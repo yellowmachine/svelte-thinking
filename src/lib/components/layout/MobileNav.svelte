@@ -51,8 +51,13 @@
 		}
 	}
 
+	const STORAGE_KEY = 'mobilenav_pending_photo_project';
+
 	function selectPhotoProject(projectId: string) {
 		photoProjectId = projectId;
+		// Persist before opening camera — iOS unloads the page when the native
+		// camera opens, resetting all $state to defaults on return.
+		sessionStorage.setItem(STORAGE_KEY, projectId);
 		photoInputEl?.click();
 	}
 
@@ -61,11 +66,21 @@
 		const file = input.files?.[0];
 		if (!file) return;
 
+		// Recover project ID if the page was reloaded by iOS after camera capture.
+		const effectiveProjectId = photoProjectId || sessionStorage.getItem(STORAGE_KEY) || '';
+		sessionStorage.removeItem(STORAGE_KEY);
+
+		if (!effectiveProjectId) {
+			uploadError = 'No project selected. Please try again.';
+			input.value = '';
+			return;
+		}
+
 		uploadError = '';
 		const fd = new FormData();
 		fd.append('file', file);
 
-		const res = await fetch(`/api/projects/${photoProjectId}/photos`, {
+		const res = await fetch(`/api/projects/${effectiveProjectId}/photos`, {
 			method: 'POST',
 			body: fd
 		});
@@ -75,7 +90,7 @@
 			uploadError = err.message ?? 'Error uploading photo';
 		} else {
 			close();
-			window.location.href = `/projects/${photoProjectId}/photos`;
+			window.location.href = `/projects/${effectiveProjectId}/photos`;
 		}
 
 		input.value = '';
