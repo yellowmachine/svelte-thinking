@@ -11,7 +11,7 @@
 
 <main class="mx-auto max-w-2xl px-6 py-16">
 	<h1 class="text-foreground mb-2 text-3xl font-bold tracking-tight">Blog</h1>
-	<p class="text-muted-foreground mb-12 text-base">Novedades y anuncios del equipo de Scholio.</p>
+	<p class="text-muted-foreground mb-12 text-base">News and updates from the Scholio team.</p>
 
 	{#if data.posts.length === 0}
 		<p class="text-muted-foreground">No posts yet.</p>
