@@ -356,6 +356,11 @@
 					desc: 'Search a person by name using AI. Renders with a dotted underline; hover shows a brief author card (dates, field, origin).'
 				},
 				{
+					trigger: '[[index:persons]]',
+					example: '[[index:persons]] → onomastic index',
+					desc: 'Type this tag anywhere in the document to insert an auto-generated alphabetical index of all [[person:Name]] tags used in that document, with links back to their first occurrence.'
+				},
+				{
 					trigger: '[[!',
 					example: '[[!whiteboard → ![caption](/api/photos/…)',
 					desc: 'Search project photos by filename or description. Selecting one embeds the image with a permanent proxy URL.'
