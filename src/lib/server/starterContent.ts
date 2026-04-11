@@ -134,15 +134,15 @@ const PHILOSOPHY_CONTENT = `> ⚠️ *AI-generated sample document — created t
 
 # Darwin's Dangerous Idea — Chapter 2: An Idea Whose Time Has Come
 
-Daniel Dennett's *Darwin's Dangerous Idea* [[@dennett1995]] opens its first section by examining how the theory of evolution by natural selection was not merely a discovery but a conceptual revolution whose preconditions had been quietly accumulating for centuries.
+[[person:Daniel Dennett]]'s *Darwin's Dangerous Idea* [[@dennett1995]] opens its first section by examining how the theory of evolution by natural selection was not merely a discovery but a conceptual revolution whose preconditions had been quietly accumulating for centuries.
 
 ## The Pre-Darwinian Landscape
 
-Before Darwin and Wallace independently converged on natural selection in 1858, the intellectual climate had already undergone crucial transformations:
+Before [[person:Charles Darwin]] and [[person:Alfred Russel Wallace]] independently converged on natural selection in 1858, the intellectual climate had already undergone crucial transformations:
 
-- **Deep time**: Lyell's uniformitarian geology had expanded the perceived age of Earth from thousands to hundreds of millions of years — providing the temporal canvas natural selection requires
-- **Population thinking**: Malthus's essay on population introduced the idea of competitive pressure as a generative force
-- **Comparative anatomy**: Cuvier and Owen had systematized morphological comparison in ways that implicitly pointed toward common descent
+- **Deep time**: [[person:Charles Lyell]]'s uniformitarian geology had expanded the perceived age of Earth from thousands to hundreds of millions of years — providing the temporal canvas natural selection requires
+- **Population thinking**: [[person:Thomas Malthus]]'s essay on population introduced the idea of competitive pressure as a generative force
+- **Comparative anatomy**: [[person:Georges Cuvier]] and [[person:Richard Owen]] had systematized morphological comparison in ways that implicitly pointed toward common descent
 
 Dennett argues that natural selection was not waiting to be *discovered* but to be *recognized* — the conceptual tools were assembled; what remained was the act of synthesis [[@dennett1995]].
 
@@ -166,11 +166,17 @@ Wherever these three conditions obtain, natural selection will operate — on ge
 
 ## Critical Responses
 
-Dennett's universalism attracted sustained criticism from biologists like Stephen Jay Gould, who argued that natural selection is one among several evolutionary mechanisms and that Dennett systematically underweights contingency, constraint, and developmental channeling. [[footnote: The Dennett–Gould debate ran across multiple publications in the 1990s; a useful entry point is Gould's review in *The New York Review of Books* (June 1997).]]
+Dennett's universalism attracted sustained criticism from [[person:Stephen Jay Gould]], who argued that natural selection is one among several evolutionary mechanisms and that Dennett systematically underweights contingency, constraint, and developmental channeling. [[footnote: The Dennett–Gould debate ran across multiple publications in the 1990s; a useful entry point is Gould's review in *The New York Review of Books* (June 1997).]]
 
 ---
 
-*This document demonstrates epigraphs (\`> [!epigraph]\`), citations (\`[[@key]]\`), and footnotes (\`[[footnote: text]]\`) in Scholio.*
+## Persons Index
+
+[[index:persons]]
+
+---
+
+*This document demonstrates epigraphs (\`> [!epigraph]\`), citations (\`[[@key]]\`), footnotes (\`[[footnote: text]]\`), person tags (\`[[person:Name]]\`), and the onomastic index (\`[[index:persons]]\`) in Scholio.*
 `;
 
 // ── Exports ──────────────────────────────────────────────────────────────────
