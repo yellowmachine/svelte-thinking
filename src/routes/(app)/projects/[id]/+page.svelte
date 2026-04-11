@@ -11,6 +11,7 @@
 	import { offlineDb, type PendingCreate } from '$lib/offline.db';
 	import { type DocumentType } from '$lib/domain/document';
 	import { onlineStore } from '$lib/stores/online.svelte';
+	import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 
 	let { data }: { data: PageData } = $props();
 
@@ -33,6 +34,15 @@
 
 	const documents = $derived(data.documents);
 	const canEdit = $derived(data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor');
+
+	function isDocReadOnly(doc: { writerUserId: string | null }): boolean {
+		return !canWriteDocument({
+			isProjectOwner: data.isOwner,
+			writerUserId: doc.writerUserId,
+			currentUserId: data.currentUserId,
+			collaboratorRole: (data.myRole ?? null) as CollaboratorRole | null
+		});
+	}
 	// S3 is available if: personal project with user S3, or org project with org S3
 	const hasS3 = $derived(data.projectOrgId ? data.hasOrgS3Config : data.hasUserS3Config);
 	const canUploadS3 = $derived(hasS3);
@@ -969,6 +979,18 @@
 										(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 								/>
 							</div>
+							{#if isDocReadOnly(doc)}
+								<span
+									title="Read-only"
+									class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+									aria-label="Read-only"
+								>
+									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+										<rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.75"/>
+										<path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+									</svg>
+								</span>
+							{/if}
 							{#if (data.openCommentsByDoc[doc.id] ?? 0) > 0}
 								<a
 									href="/projects/{data.project.id}/review#doc-{doc.id}"

@@ -129,6 +129,7 @@ export const load: PageServerLoad = async (event) => {
 		invitations,
 		myRole,
 		isOwner: proj[0].ownerId === userId,
+		currentUserId: userId,
 		requirementCounts: reqCounts,
 		openComments: openCommentsCount[0]?.value ?? 0,
 		openCommentsByDoc
