@@ -3542,14 +3542,12 @@
 		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
-		{#if data.document?.type !== 'book'}
-			<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=latex" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
-				<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
-			</a>
-			<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=typst" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
-				<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
-			</a>
-		{/if}
+		<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=latex" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
+		</a>
+		<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=typst" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
+		</a>
 		<a
 			href={data.document?.type === 'book'
 				? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`

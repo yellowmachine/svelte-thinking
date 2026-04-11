@@ -132,7 +132,7 @@ function templatePaper(opts: TypstDocumentOptions, sections: TypstSection[], bib
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
 #set page(paper: "a4", margin: (x: 2cm, y: 2.5cm), numbering: "1", number-align: center)
-#set text(font: "Linux Libertine", size: 10pt, lang: "es")
+#set text(font: "Libertinus Serif", size: 10pt, lang: "es")
 #set heading(numbering: "1.")
 #set par(justify: true, leading: 0.6em, spacing: 1em)
 #show heading.where(level: 1): it => { v(1.2em, weak: true); it; v(0.4em, weak: true) }
@@ -171,7 +171,7 @@ function templateThesis(opts: TypstDocumentOptions, sections: TypstSection[], bi
     }
   }
 )
-#set text(font: "Linux Libertine", size: 12pt, lang: "es")
+#set text(font: "Libertinus Serif", size: 12pt, lang: "es")
 #set heading(numbering: "1.1.")
 #set par(justify: true, leading: 0.75em, spacing: 1.4em, first-line-indent: 1.5em)
 #show heading.where(level: 1): it => {
@@ -217,7 +217,7 @@ function templateMedical(opts: TypstDocumentOptions, sections: TypstSection[], b
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
 #set page(paper: "a4", margin: (x: 2.5cm, y: 3cm), numbering: "1", number-align: center)
-#set text(font: "Linux Libertine", size: 11pt, lang: "es")
+#set text(font: "Libertinus Serif", size: 11pt, lang: "es")
 #set heading(numbering: none)
 #set par(justify: true, leading: 0.7em, spacing: 1.1em)
 #show heading.where(level: 1): it => {
@@ -270,7 +270,7 @@ function templateReport(opts: TypstDocumentOptions, sections: TypstSection[], bi
     )
   }
 )
-#set text(font: "Linux Libertine", size: 11pt, lang: "es")
+#set text(font: "Libertinus Serif", size: 11pt, lang: "es")
 #set heading(numbering: "1.1.")
 #set par(justify: true, leading: 0.7em, spacing: 1.2em)
 #show heading.where(level: 1): it => {
@@ -309,7 +309,7 @@ function templateGeneric(opts: TypstDocumentOptions, sections: TypstSection[], b
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
 #set page(margin: (x: 2.5cm, y: 3cm), numbering: "1", number-align: center)
-#set text(font: "Linux Libertine", size: 11pt, lang: "es")
+#set text(font: "Libertinus Serif", size: 11pt, lang: "es")
 #set heading(numbering: "1.")
 #set par(justify: true, leading: 0.75em, spacing: 1.2em)
 #show heading.where(level: 1): it => { v(1.5em, weak: true); it; v(0.5em, weak: true) }
@@ -350,7 +350,7 @@ function templateBook(opts: TypstDocumentOptions, sections: TypstSection[], bibS
     }
   }
 )
-#set text(font: "Linux Libertine", size: 12pt, lang: "${lang}")
+#set text(font: "Libertinus Serif", size: 12pt, lang: "${lang}")
 #set heading(numbering: none)
 #set par(justify: true, leading: 0.75em, spacing: 1.4em, first-line-indent: 1.5em)
 

@@ -8,6 +8,8 @@ import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { user as authUser } from '$lib/server/db/auth.schema';
 import { buildTypstSource, compileToPdf } from '$lib/server/typst';
 import { markdownToTypst } from '$lib/utils/markdownToTypst';
+import { projectReference } from '$lib/server/db/schemas/references.schema';
+import type { RefData } from '$lib/utils/export';
 
 const UUID_LINK_RE = /\[\[doc:([a-f0-9-]{36})\|([^\]]+)\]\]/g;
 const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
@@ -131,6 +133,11 @@ export const GET: RequestHandler = async (event) => {
 		}
 	}
 
+	// Load project references for bibliography
+	const refs = (await event.locals.withRLS((db) =>
+		db.select().from(projectReference).where(eq(projectReference.projectId, projectId))
+	)) as unknown as RefData[];
+
 	// Convert content to Typst sections
 	const imageRegistry = new Map<string, string>();
 
@@ -160,6 +167,7 @@ export const GET: RequestHandler = async (event) => {
 			authors: authorNames,
 			preamble: typstPreamble,
 			sections,
+			refs,
 			template: 'book'
 		});
 		const images = imageRegistry.size > 0 ? Object.fromEntries(imageRegistry) : undefined;
