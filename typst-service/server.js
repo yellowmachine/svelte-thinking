@@ -58,11 +58,12 @@ const server = createServer(async (req, res) => {
 		const bodyBuf = await collectBody(req);
 		const contentType = req.headers['content-type'] ?? '';
 
-		let source, images = {};
+		let source, images = {}, files = {};
 		if (contentType.includes('application/json')) {
 			const data = JSON.parse(bodyBuf.toString('utf8'));
 			source = data.source;
 			images = data.images ?? {};
+			files = data.files ?? {};
 		} else {
 			source = bodyBuf.toString('utf8');
 		}
@@ -71,6 +72,15 @@ const server = createServer(async (req, res) => {
 			res.writeHead(400, { 'Content-Type': 'text/plain' });
 			res.end('Empty source');
 			return;
+		}
+
+		// Write plain-text files (e.g. refs.bib) directly to workDir
+		if (Object.keys(files).length > 0) {
+			await Promise.all(
+				Object.entries(files).map(([filename, content]) =>
+					writeFile(join(workDir, filename), content, 'utf8')
+				)
+			);
 		}
 
 		if (Object.keys(images).length > 0) {

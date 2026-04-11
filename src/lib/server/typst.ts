@@ -416,14 +416,17 @@ export function buildTypstSource(opts: TypstDocumentOptions): string {
 
 export async function compileToPdf(
 	typstSource: string,
-	images?: Record<string, string>
+	images?: Record<string, string>,
+	files?: Record<string, string>
 ): Promise<Uint8Array> {
 	const hasImages = images && Object.keys(images).length > 0;
+	const hasFiles  = files  && Object.keys(files).length  > 0;
+	const needsJson = hasImages || hasFiles;
 
 	const res = await fetch(`${TYPST_URL}/compile`, {
 		method: 'POST',
-		headers: { 'Content-Type': hasImages ? 'application/json' : 'text/plain; charset=utf-8' },
-		body: hasImages ? JSON.stringify({ source: typstSource, images }) : typstSource
+		headers: { 'Content-Type': needsJson ? 'application/json' : 'text/plain; charset=utf-8' },
+		body: needsJson ? JSON.stringify({ source: typstSource, images, files }) : typstSource
 	});
 
 	if (!res.ok) {
@@ -438,13 +441,8 @@ export async function compileToPdf(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildBibSection(opts: TypstDocumentOptions): string {
-	if (!opts.refs?.length) return '';
-
-	const allContent = opts.sections.map((s) => s.content).join('\n');
-	if (!/@[\w:._-]/.test(allContent)) return '';
-
-	const bib = opts.refs
+function serializeRefs(opts: TypstDocumentOptions): string {
+	return (opts.refs ?? [])
 		.map((ref) => {
 			const fields: string[] = [];
 			const authors = (ref.authors ?? [])
@@ -465,9 +463,28 @@ function buildBibSection(opts: TypstDocumentOptions): string {
 			return `@${ref.type}{${ref.citeKey},\n${fields.join(',\n')}\n}`;
 		})
 		.join('\n\n');
+}
 
-	const escaped = bib.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-	return `\n\n#bibliography(bytes("${escaped}"), format: "bibtex")\n`;
+function buildBibSection(opts: TypstDocumentOptions): string {
+	if (!opts.refs?.length) return '';
+
+	const allContent = opts.sections.map((s) => s.content).join('\n');
+	if (!/@[\w:._-]/.test(allContent)) return '';
+
+	return `\n\n#bibliography("refs.bib", format: "bibtex")\n`;
+}
+
+/** Returns the raw BibTeX content to write as refs.bib, or null if not needed. */
+export function buildBibFile(opts: TypstDocumentOptions): string | null {
+	if (!opts.refs?.length) return null;
+
+	const allContent = [
+		...(opts.preamble ? [opts.preamble] : []),
+		...opts.sections.map((s) => s.content)
+	].join('\n');
+	if (!/@[\w:._-]/.test(allContent)) return null;
+
+	return serializeRefs(opts);
 }
 
 function escapeTypstString(s: string): string {

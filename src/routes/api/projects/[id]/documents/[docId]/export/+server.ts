@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { eq } from 'drizzle-orm';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
-import { toLatex, toTypst, type RefData } from '$lib/utils/export';
+import { toLatex, toTypst, serializeBib, type RefData } from '$lib/utils/export';
 import { compileToPdf } from '$lib/server/typst';
 
 export const GET: RequestHandler = async (event) => {
@@ -65,9 +65,11 @@ export const GET: RequestHandler = async (event) => {
 		});
 	} else {
 		const typ = toTypst(docResult.content, docResult.title, refs);
+		const bib = serializeBib(refs);
+		const files = bib.trim() ? { 'refs.bib': bib } : undefined;
 		let pdf: Uint8Array;
 		try {
-			pdf = await compileToPdf(typ);
+			pdf = await compileToPdf(typ, undefined, files);
 		} catch (e) {
 			error(500, `Error compilando PDF: ${e instanceof Error ? e.message : e}`);
 		}

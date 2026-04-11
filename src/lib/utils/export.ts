@@ -27,7 +27,7 @@ export interface RefData {
 
 // ─── Shared: BibTeX serialization ────────────────────────────────────────────
 
-function serializeBib(refs: RefData[]): string {
+export function serializeBib(refs: RefData[]): string {
 	return refs
 		.map((ref) => {
 			const fields: string[] = [];
@@ -232,10 +232,6 @@ function mdToTypst(md: string): string {
 	return t;
 }
 
-function bibToTypstStr(bib: string): string {
-	// Escape for Typst string literal: backslashes and double quotes
-	return bib.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-}
 
 export function toTypst(content: string, docTitle: string, refs: RefData[]): string {
 	const body = mdToTypst(content);
@@ -243,10 +239,9 @@ export function toTypst(content: string, docTitle: string, refs: RefData[]): str
 	const hasCitations = /@\w/.test(body);
 	const hasBib = refs.length > 0 && hasCitations;
 
-	// bytes("...") embeds the bib inline — self-contained .typ file
-	const bibSection = hasBib
-		? `\n#bibliography(bytes("${bibToTypstStr(bib)}"), format: "bibtex")\n`
-		: '';
+	// refs.bib is passed as a virtual file to the compile service;
+	// for standalone .typ downloads the caller must include refs.bib alongside.
+	const bibSection = hasBib ? `\n#bibliography("refs.bib", format: "bibtex")\n` : '';
 
 	const escapedTitle = docTitle.replace(/"/g, '\\"');
 

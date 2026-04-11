@@ -6,7 +6,7 @@ import { document, documentVersion } from '$lib/server/db/schemas/documents.sche
 import { projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { user as authUser } from '$lib/server/db/auth.schema';
-import { buildTypstSource, compileToPdf } from '$lib/server/typst';
+import { buildTypstSource, buildBibFile, compileToPdf } from '$lib/server/typst';
 import { markdownToTypst } from '$lib/utils/markdownToTypst';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import type { RefData } from '$lib/utils/export';
@@ -159,7 +159,7 @@ export const GET: RequestHandler = async (event) => {
 	// Compile to PDF
 	let pdf: Uint8Array;
 	try {
-		const typstSource = buildTypstSource({
+		const typstOpts = {
 			title: bookDoc.title,
 			subtitle,
 			edition,
@@ -168,10 +168,13 @@ export const GET: RequestHandler = async (event) => {
 			preamble: typstPreamble,
 			sections,
 			refs,
-			template: 'book'
-		});
+			template: 'book' as const
+		};
+		const typstSource = buildTypstSource(typstOpts);
 		const images = imageRegistry.size > 0 ? Object.fromEntries(imageRegistry) : undefined;
-		pdf = await compileToPdf(typstSource, images);
+		const bibContent = buildBibFile(typstOpts);
+		const files = bibContent ? { 'refs.bib': bibContent } : undefined;
+		pdf = await compileToPdf(typstSource, images, files);
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : 'Error generating PDF';
 		error(500, msg);

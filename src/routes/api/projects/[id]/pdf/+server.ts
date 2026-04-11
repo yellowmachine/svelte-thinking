@@ -7,7 +7,7 @@ import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { user as authUser } from '$lib/server/db/auth.schema';
-import { buildTypstSource, compileToPdf } from '$lib/server/typst';
+import { buildTypstSource, buildBibFile, compileToPdf } from '$lib/server/typst';
 import { markdownToTypst } from '$lib/utils/markdownToTypst';
 import type { RefData } from '$lib/utils/export';
 import type { TemplateType } from '$lib/server/trpc/routers/requirements';
@@ -156,7 +156,7 @@ export const GET: RequestHandler = async (event) => {
 			? p.publishedAt.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
 			: undefined;
 
-		const typstSource = buildTypstSource({
+		const typstOpts = {
 			title: p.title,
 			description: p.description,
 			date,
@@ -166,9 +166,12 @@ export const GET: RequestHandler = async (event) => {
 			sections,
 			refs,
 			template: (p.requirementsTemplate as TemplateType) ?? 'generic'
-		});
+		};
+		const typstSource = buildTypstSource(typstOpts);
 		const images = imageRegistry.size > 0 ? Object.fromEntries(imageRegistry) : undefined;
-		pdf = await compileToPdf(typstSource, images);
+		const bibContent = buildBibFile(typstOpts);
+		const files = bibContent ? { 'refs.bib': bibContent } : undefined;
+		pdf = await compileToPdf(typstSource, images, files);
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : 'Error al generar el PDF';
 		error(500, msg);
