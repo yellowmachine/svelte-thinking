@@ -1,39 +1,31 @@
 ---
-title: Bienvenidos a la beta de Scholio
+title: Welcome to Scholio's Private Beta
 date: 2026-03-21
 slug: bienvenida
-summary: Scholio abre su beta cerrada. Esto es lo que puedes hacer hoy y hacia dónde vamos.
+summary: Academic writing finally gets the tool it deserves. Here's what's live on day one — and where we're taking it.
 ---
 
-Hoy abrimos la beta cerrada de **Scholio**, una plataforma de escritura académica colaborativa diseñada para investigadores que publican en serio.
+Academic writing is broken. Not the research — the *tooling*.
 
-## Qué puedes hacer hoy
+Google Docs doesn't understand citations. Word has no real version control. Overleaf has no AI and collaboration is an afterthought. We've all been duct-taping our workflows together for too long.
 
-Desde el primer día, Scholio incluye:
+Today, **Scholio opens its private beta** — and we're starting to fix that.
 
-- **Editor Markdown** con vista previa en vivo — citas bibliográficas, matemáticas con KaTeX, notas al pie y gráficos Vega-Lite renderizados al instante
-- **Control de versiones** para tus documentos — commits con mensaje, diff visual entre versiones, restauración
-- **Colaboración con roles** — invita coautores, revisores y comentaristas; los comentarios se anclan al texto exacto
-- **Asistente IA** que lee todos los documentos de tu proyecto antes de responder
-- **Wikilinks** entre documentos del mismo proyecto
-- **Exportación** a LaTeX (`.tex`) y Typst (`.typ`) con bibliografía embebida
+## What's live right now
 
-## Por qué Scholio
+- **Markdown editor** with live preview — citations, KaTeX math, footnotes, and Vega-Lite charts rendered as you type
+- **Version control** built in — commit with a message, diff any two versions, restore in one click
+- **Role-based collaboration** — invite co-authors, reviewers, and commenters; comments anchor to the exact text
+- **AI assistant** that reads your entire project before answering
+- **Wikilinks** between documents in the same project
+- **Export** to LaTeX (`.tex`) and Typst (`.typ`) with your bibliography embedded
 
-Las herramientas que usamos para escribir no han evolucionado al ritmo de cómo investigamos. Google Docs no entiende de citas. Word no tiene control de versiones real. Overleaf no tiene colaboración fluida ni asistente IA con contexto.
+## Open source, your data
 
-Scholio es el intento de construir el entorno que la escritura académica merece — sin sacrificar rigor por comodidad.
+Scholio is free software. The code is auditable, the platform is self-hosteable, and your data stays yours.
 
-## Open source
+## What's next
 
-Scholio es software libre. El código es auditable y la plataforma es self-hosteable. Tus datos son tuyos.
+We're shipping fast. On the roadmap: public document sharing, full-text search across your project, and AI improvements driven by your feedback.
 
-## Qué viene
-
-En las próximas semanas trabajaremos en:
-
-- Compartir documentos públicamente con enlace
-- Búsqueda dentro del proyecto
-- Mejoras al asistente IA basadas en vuestro feedback
-
-Si tienes sugerencias o encuentras algo que no funciona, escríbenos. Estamos escuchando.
+Found a bug? Have an idea? We want to hear from you.
