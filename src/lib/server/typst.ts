@@ -7,6 +7,8 @@ const TYPST_URL = env.TYPST_SERVICE_URL ?? 'http://localhost:3100';
 export interface TypstSection {
 	title: string;
 	content: string; // already converted to Typst markup
+	/** 'chapter' = numbered; 'unnumbered' = preface/appendix/etc. (default: 'chapter') */
+	sectionType?: 'chapter' | 'unnumbered';
 }
 
 export interface TypstDocumentOptions {
@@ -22,6 +24,30 @@ export interface TypstDocumentOptions {
 	sections: TypstSection[];
 	refs?: RefData[];
 	template?: TemplateType;
+	/** BCP-47 language code, e.g. 'es', 'en', 'fr'. Affects chapter label and Typst lang. */
+	language?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Language lookup tables
+// ---------------------------------------------------------------------------
+
+const CHAPTER_WORD: Record<string, string> = {
+	en: 'CHAPTER', es: 'CAPÍTULO', fr: 'CHAPITRE', de: 'KAPITEL',
+	pt: 'CAPÍTULO', it: 'CAPITOLO', ca: 'CAPÍTOL', nl: 'HOOFDSTUK'
+};
+
+const TOC_WORD: Record<string, string> = {
+	en: 'Contents', es: 'Contenido', fr: 'Table des matières',
+	de: 'Inhalt', pt: 'Conteúdo', it: 'Indice', ca: 'Contingut', nl: 'Inhoud'
+};
+
+function chapterWord(lang?: string): string {
+	return CHAPTER_WORD[lang?.split('-')[0] ?? ''] ?? 'CHAPTER';
+}
+
+function tocWord(lang?: string): string {
+	return TOC_WORD[lang?.split('-')[0] ?? ''] ?? 'Contents';
 }
 
 // ---------------------------------------------------------------------------
@@ -58,12 +84,22 @@ function renderSections(sections: TypstSection[]): string {
 		.join('\n\n#v(1em)\n\n');
 }
 
-function renderBookChapters(sections: TypstSection[]): string {
-	// Use = heading so #outline() picks them up for TOC.
-	// The #show heading.where(level: 1) rule in templateBook handles the
-	// "CHAPTER N / Title" visual layout using counter(heading).
+/**
+ * Renders book sections as Typst content.
+ *
+ * All sections use `= Title` (level-1 heading) so they appear in #outline().
+ * A Typst state variable (_spp_show_label) controls whether the "CHAPTER N"
+ * label is shown. A custom counter (_spp_ch) is stepped only for numbered
+ * chapters, so prefaces/appendices don't shift chapter numbers.
+ */
+function renderBookSections(sections: TypstSection[]): string {
 	return sections
-		.map((s) => `= ${escapeTypstString(s.title)}\n\n${s.content.trim()}`)
+		.map((s) => {
+			if (s.sectionType === 'unnumbered') {
+				return `#_spp_show_label.update(false)\n= ${escapeTypstString(s.title)}\n\n${s.content.trim()}`;
+			}
+			return `#_spp_ch.step()\n#_spp_show_label.update(true)\n= ${escapeTypstString(s.title)}\n\n${s.content.trim()}`;
+		})
 		.join('\n\n');
 }
 
@@ -296,6 +332,9 @@ ${bibStr}`;
 
 function templateBook(opts: TypstDocumentOptions, sections: TypstSection[], bibStr: string): string {
 	const date = opts.date ?? new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+	const lang = opts.language?.split('-')[0] ?? 'en';
+	const chWord = chapterWord(lang);
+	const toc = tocWord(lang);
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
 #set page(
@@ -311,14 +350,21 @@ function templateBook(opts: TypstDocumentOptions, sections: TypstSection[], bibS
     }
   }
 )
-#set text(font: "Linux Libertine", size: 12pt, lang: "es")
+#set text(font: "Linux Libertine", size: 12pt, lang: "${lang}")
 #set heading(numbering: none)
 #set par(justify: true, leading: 0.75em, spacing: 1.4em, first-line-indent: 1.5em)
+
+// ── Section type state (controlled by renderBookSections) ──────────────────────
+#let _spp_show_label = state("_spp_show_label", true)
+#let _spp_ch = counter("_spp_ch")
+
 #show heading.where(level: 1): it => {
   pagebreak(weak: true)
   v(2cm, weak: true)
-  text(size: 10pt, fill: luma(140), tracking: 0.08em)[CHAPTER #counter(heading).display("1")]
-  v(0.4em)
+  context if _spp_show_label.get() {
+    text(size: 10pt, fill: luma(140), tracking: 0.08em)[${chWord} #_spp_ch.display("1")]
+    v(0.4em)
+  }
   text(size: 22pt, weight: "bold")[#it.body]
   v(1.5em)
 }
@@ -344,10 +390,10 @@ function templateBook(opts: TypstDocumentOptions, sections: TypstSection[], bibS
 ]
 
 // ── Table of Contents ──────────────────────────────────────────────────────────
-#outline(title: "Contenido", depth: 1, indent: 1em)
+#outline(title: "${toc}", depth: 1, indent: 1em)
 #pagebreak()
 
-${opts.preamble ? opts.preamble.trim() + '\n\n' : ''}${renderBookChapters(sections)}
+${opts.preamble ? opts.preamble.trim() + '\n\n' : ''}${renderBookSections(sections)}
 ${bibStr}`;
 }
 

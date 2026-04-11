@@ -32,7 +32,7 @@ export const GET: RequestHandler = async (event) => {
 			.limit(1);
 
 		return { ...doc, content: versions[0]?.content ?? '' };
-	}) as { title: string; content: string } | null;
+	}) as { title: string; content: string; spellLanguage: string | null } | null;
 
 	if (!bookDoc) error(404, 'Book not found');
 
@@ -40,12 +40,15 @@ export const GET: RequestHandler = async (event) => {
 	const frontmatterMatch = bookDoc.content.match(FRONTMATTER_RE);
 	let subtitle: string | undefined;
 	let edition: string | undefined;
+	let language: string | undefined = bookDoc.spellLanguage ?? undefined;
 
 	if (frontmatterMatch) {
 		try {
 			const fm = parseYaml(frontmatterMatch[1]) as Record<string, unknown>;
 			if (typeof fm.subtitle === 'string' && fm.subtitle.trim()) subtitle = fm.subtitle.trim();
 			if (typeof fm.edition === 'string' && fm.edition.trim()) edition = fm.edition.trim();
+			// lang in frontmatter overrides document spellLanguage
+			if (typeof fm.lang === 'string' && fm.lang.trim()) language = fm.lang.trim();
 		} catch {
 			// Ignore malformed frontmatter
 		}
@@ -63,27 +66,27 @@ export const GET: RequestHandler = async (event) => {
 	const firstMatchIdx = contentWithoutFrontmatter.search(UUID_LINK_RE);
 	const preamble = firstMatchIdx > 0 ? contentWithoutFrontmatter.slice(0, firstMatchIdx).trim() : '';
 
-	// Load committed content for each referenced chapter
+	// Load committed content and type for each referenced chapter
 	const chapterIds = chapterRefs.map((r) => r.uuid);
-	const chapterContents = await event.locals.withRLS(async (db) => {
-		if (chapterIds.length === 0) return new Map<string, string>();
+	const chapterData = await event.locals.withRLS(async (db) => {
+		if (chapterIds.length === 0) return new Map<string, { content: string; type: string }>();
 
 		const docs = await db.select().from(document).where(inArray(document.id, chapterIds));
 
 		const withContent = await Promise.all(
 			docs.map(async (doc) => {
-				if (!doc.currentVersionId) return { id: doc.id, content: '' };
+				if (!doc.currentVersionId) return { id: doc.id, content: '', type: doc.type };
 				const versions = await db
 					.select({ content: documentVersion.content })
 					.from(documentVersion)
 					.where(eq(documentVersion.id, doc.currentVersionId))
 					.limit(1);
-				return { id: doc.id, content: versions[0]?.content ?? '' };
+				return { id: doc.id, content: versions[0]?.content ?? '', type: doc.type };
 			})
 		);
 
-		return new Map(withContent.map((c) => [c.id, c.content]));
-	}) as Map<string, string>;
+		return new Map(withContent.map((c) => [c.id, { content: c.content, type: c.type }]));
+	}) as Map<string, { content: string; type: string }>;
 
 	// Load project collaborators for author list
 	const collaborators = await event.locals.withRLS((db) =>
@@ -133,10 +136,14 @@ export const GET: RequestHandler = async (event) => {
 
 	const typstPreamble = preamble ? markdownToTypst(preamble, imageRegistry) : undefined;
 
-	const sections = chapterRefs.map((ref) => ({
-		title: ref.title,
-		content: markdownToTypst(chapterContents.get(ref.uuid) ?? '', imageRegistry)
-	}));
+	const sections = chapterRefs.map((ref) => {
+		const chapter = chapterData.get(ref.uuid);
+		return {
+			title: ref.title,
+			content: markdownToTypst(chapter?.content ?? '', imageRegistry),
+			sectionType: (chapter?.type === 'chapter' ? 'chapter' : 'unnumbered') as 'chapter' | 'unnumbered'
+		};
+	});
 
 	if (sections.length === 0 && !typstPreamble) {
 		error(422, 'This book has no content to export yet');
@@ -149,6 +156,7 @@ export const GET: RequestHandler = async (event) => {
 			title: bookDoc.title,
 			subtitle,
 			edition,
+			language,
 			authors: authorNames,
 			preamble: typstPreamble,
 			sections,
