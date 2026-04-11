@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 </script>
@@ -374,7 +375,7 @@ for the study design.</code></pre>
 					</p>
 				</div>
 			{:else}
-				<form method="POST" action="?/joinWaitlist" class="mt-8">
+				<form method="POST" action="?/joinWaitlist" use:enhance class="mt-8">
 					<div class="flex flex-col gap-3">
 						<input
 							type="text"
