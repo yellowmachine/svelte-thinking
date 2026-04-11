@@ -7,28 +7,33 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 ## Funcionalidades implementadas
 
 ### Proyectos y documentos
+
 - Creación de proyectos con título, descripción y visibilidad (público / privado)
 - Documentos con editor Markdown, guardado automático de borradores y historial de versiones (commits con mensaje de cambio)
 - Comparación visual entre versiones (diff)
 
 ### Colaboración
+
 - Invitación de colaboradores por email con roles (editor / viewer)
 - Comentarios inline anclados al texto: los comentarios se asocian a la selección exacta del documento
 - Respuestas a comentarios y resolución/reapertura de hilos
 
 ### Fotos y recursos visuales
+
 - Subida de imágenes por proyecto con área de previsualización antes de confirmar
 - Campo de descripción/nota por imagen
 - Galería con lightbox, copia como Markdown y eliminación
 - Almacenamiento en MinIO (S3-compatible), seguridad por oscuridad mediante UUID doble en la URL
 
 ### Asistente IA
+
 - Chat por proyecto: el asistente recibe como contexto todos los borradores activos del proyecto
 - Sugerencias inline en el editor: se activan con un toggle y proponen reemplazos de fragmentos con explicación
 - Filtros antes de llamar a la IA: mínimo 100 palabras en el documento y mínimo 30 palabras de diferencia respecto a la última consulta (sin coste innecesario)
 - Modelo: Claude Haiku 4.5 (Anthropic)
 
 ### Cuenta y facturación
+
 - Registro e inicio de sesión con email/contraseña y GitHub OAuth
 - Página de ajustes con pestañas de perfil y plan
 - Planes Free / Pro (9 €/mes) / Team (29 €/mes) con Stripe Checkout
@@ -36,6 +41,7 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 - Sincronización de plan vía webhooks de Stripe
 
 ### Observabilidad
+
 - Captura de errores en cliente y servidor con Sentry
 
 ---
@@ -163,6 +169,7 @@ Las soluciones contemporáneas al problema se discuten en
 ## Desarrollo local
 
 ### Requisitos
+
 - [Bun](https://bun.sh) >= 1.0
 - [Docker](https://www.docker.com)
 
@@ -190,6 +197,7 @@ bun run dev
 ## Despliegue en producción (Hetzner + Coolify)
 
 ### Infraestructura recomendada
+
 - **Servidor**: Hetzner CX22 (2 vCPU / 4 GB RAM / 40 GB SSD) — ~3.85 €/mes
 - **PaaS**: [Coolify](https://coolify.io) self-hosted — gestiona deploys, SSL, env vars y reverse proxy
 
@@ -219,10 +227,12 @@ Las variables `PUBLIC_*` (Sentry client DSN) van en **Build Variables** porque s
 
 > **Nota sobre `DATABASE_URL` y `MIGRATION_DATABASE_URL`**: apuntan al servicio `postgres`
 > interno del compose. Ejemplo:
+>
 > ```
 > DATABASE_URL=postgres://scholarly_app:TU_PASSWORD@postgres:5432/scholarly
 > MIGRATION_DATABASE_URL=postgres://scholarly:TU_PASSWORD@postgres:5432/scholarly
 > ```
+>
 > Nota que el host es `postgres` (nombre del servicio en el compose), no `localhost`.
 
 ---
@@ -267,16 +277,19 @@ Antes de abrir acceso a usuarios reales:
 ## Pendiente (no bloquea el beta)
 
 ### Funcionalidades de usuario
+
 - **Perfil editable** — los campos de nombre y email están en la UI pero sin backend; actualmente son de solo lectura
 - **Cambio de contraseña** — formulario presente, sin endpoint conectado
 - **Avatar de usuario** — muestra iniciales; subida de foto de perfil no implementada
 
 ### Infraestructura y operaciones
+
 - **Panel de administración** — sin métricas de uso ni gestión de usuarios desde la propia app; por ahora se gestiona desde los dashboards de Stripe y Sentry
 - **Rate limiting en IA** — sugerencias inline limitadas a 30/día por usuario; chat y borradores requieren BYOK (OpenRouter)
 - **Soft delete** para proyectos y documentos — el borrado actual es definitivo; anotado para implementar antes de escalar
 
 ### Funcionalidades académicas avanzadas
+
 - **Sugerencias de referencias externas** — el asistente podría enlazar fuentes de Semantic Scholar u OpenLibrary relevantes al contexto del documento (feature 1 del roadmap IA)
 - **Exportación PDF** — pendiente; exportación a LaTeX (`.tex`) y Typst (`.typ`) ya implementada
 - **SSO / SAML** — anunciado en el plan Team, pendiente de implementación
