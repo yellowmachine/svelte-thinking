@@ -470,7 +470,7 @@ function buildBibSection(opts: TypstDocumentOptions): string {
 	return `\n\n#bibliography("refs.bib")\n`;
 }
 
-/** Returns the raw BibTeX content to write as refs.bib, or null if there are no refs. */
+/** Returns the raw BibTeX content to write as refs.bib, or null if there are no refs. Triggers rebuild. */
 export function buildBibFile(opts: TypstDocumentOptions): string | null {
 	if (!opts.refs?.length) return null;
 	return serializeRefs(opts);
