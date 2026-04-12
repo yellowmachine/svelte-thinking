@@ -36,15 +36,6 @@
 							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{formatDate(entry.createdAt)}</p>
 						</div>
 						<div class="flex shrink-0 gap-2">
-							<form method="POST" action="?/approve">
-								<input type="hidden" name="id" value={entry.id} />
-								<button
-									type="submit"
-									class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
-								>
-									Aprobar
-								</button>
-							</form>
 							<form method="POST" action="?/reject">
 								<input type="hidden" name="id" value={entry.id} />
 								<button
@@ -56,6 +47,29 @@
 							</form>
 						</div>
 					</div>
+
+					<!-- Approve form with optional personal note -->
+					<form method="POST" action="?/approve" class="mt-4 border-t border-paper-border pt-4 dark:border-dark-paper-border">
+						<input type="hidden" name="id" value={entry.id} />
+						<label for="personalNote-{entry.id}" class="mb-1.5 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							✦ Nota personal <span class="text-ink-faint/60 dark:text-dark-ink-faint/60">(opcional — aparecerá en el correo como una tarjetita)</span>
+						</label>
+						<textarea
+							id="personalNote-{entry.id}"
+							name="personalNote"
+							rows="3"
+							placeholder="Escribe algo cálido y personal para esta persona…"
+							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-serif text-sm italic text-ink placeholder:not-italic placeholder:text-ink-faint/50 focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint/50"
+						></textarea>
+						<div class="mt-2 flex justify-end">
+							<button
+								type="submit"
+								class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
+							>
+								Aprobar y enviar
+							</button>
+						</div>
+					</form>
 				</div>
 			{/each}
 		</div>

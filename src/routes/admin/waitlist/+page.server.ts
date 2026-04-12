@@ -32,11 +32,13 @@ export const actions: Actions = {
 
 		if (!rows[0]) return fail(404, { error: 'Entry not found' });
 
+		const personalNote = data.get('personalNote')?.toString().trim() || undefined;
 		const origin = env.ORIGIN ?? 'http://localhost:3000';
 		await sendWaitlistApprovalEmail({
 			to: rows[0].email,
 			name: rows[0].name ?? 'Researcher',
-			registrationUrl: `${origin}/register?token=${token}`
+			registrationUrl: `${origin}/register?token=${token}`,
+			personalNote
 		});
 
 		notifySlack({ type: 'waitlist_approved', name: rows[0].name ?? rows[0].email, email: rows[0].email });

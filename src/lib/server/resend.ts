@@ -65,12 +65,31 @@ export async function sendWaitlistWelcomeEmail({ to, name }: { to: string; name:
 export async function sendWaitlistApprovalEmail({
 	to,
 	name,
-	registrationUrl
+	registrationUrl,
+	personalNote
 }: {
 	to: string;
 	name: string;
 	registrationUrl: string;
+	personalNote?: string;
 }) {
+	const personalNoteBlock = personalNote?.trim()
+		? `
+        <!-- Personal note -->
+        <tr>
+          <td style="padding:0 40px 28px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#fffaf6;border:1px solid #e5c9b8;border-left:3px solid #c4845a;border-radius:0 6px 6px 0;padding:18px 22px;">
+                  <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#c4845a;font-family:ui-sans-serif,system-ui,sans-serif;">✦&nbsp;&nbsp;nota personal</p>
+                  <p style="margin:0;font-size:15px;color:#3d2b1f;line-height:1.8;font-style:italic;font-family:Georgia,'Times New Roman',serif;">${personalNote.trim()}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`
+		: '';
+
 	await sendMail({
 		to,
 		subject: 'Welcome to Scholio — your access is ready',
@@ -90,12 +109,20 @@ export async function sendWaitlistApprovalEmail({
           </td>
         </tr>
 
-        <!-- Body -->
+        <!-- Greeting -->
         <tr>
-          <td style="padding:40px 40px 32px;">
-            <p style="margin:0 0 20px;font-size:16px;color:#2a2a26;line-height:1.6;">
+          <td style="padding:40px 40px 24px;">
+            <p style="margin:0;font-size:16px;color:#2a2a26;line-height:1.6;">
               Hi ${name},
             </p>
+          </td>
+        </tr>
+
+        ${personalNoteBlock}
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:0 40px 32px;">
             <p style="margin:0 0 20px;font-size:16px;color:#2a2a26;line-height:1.6;">
               Thank you for joining the Scholio beta. Your request has been accepted and we are glad to have you in this first community of users.
             </p>
