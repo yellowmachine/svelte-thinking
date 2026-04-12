@@ -130,12 +130,14 @@ services:
 
   typst:
     image: ghcr.io/yellowmachine/scholio-typst:latest
+    pull_policy: always
     restart: unless-stopped
     networks:
       - scholio-network
 
   embed:
     image: ghcr.io/yellowmachine/scholio-embed:latest
+    pull_policy: always
     restart: unless-stopped
     networks:
       - scholio-network
