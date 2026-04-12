@@ -467,7 +467,7 @@ function serializeRefs(opts: TypstDocumentOptions): string {
 
 function buildBibSection(opts: TypstDocumentOptions): string {
 	if (!opts.refs?.length) return '';
-	return `\n\n#bibliography("refs.bib", format: "bibtex")\n`;
+	return `\n\n#bibliography("refs.bib")\n`;
 }
 
 /** Returns the raw BibTeX content to write as refs.bib, or null if there are no refs. */

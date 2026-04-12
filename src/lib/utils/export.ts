@@ -236,7 +236,7 @@ function mdToTypst(md: string): string {
 export function toTypst(content: string, docTitle: string, refs: RefData[]): string {
 	const body = mdToTypst(content);
 	const bib = serializeBib(refs);
-	const bibSection = bib.trim() ? `\n#bibliography("refs.bib", format: "bibtex")\n` : '';
+	const bibSection = bib.trim() ? `\n#bibliography("refs.bib")\n` : '';
 
 	const escapedTitle = docTitle.replace(/"/g, '\\"');
 
