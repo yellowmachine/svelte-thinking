@@ -6,7 +6,7 @@ import { comment } from '$lib/server/db/schemas/comments.schema';
 import { document } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { notificationPreference } from '$lib/server/db/schemas/users.schema';
-import { sendNewCommentNotification } from '$lib/server/resend';
+import { sendNewCommentNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 
 import type { Db } from '$lib/server/db';

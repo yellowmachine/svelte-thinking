@@ -116,7 +116,6 @@
 		"nodemailer": "^8.0.5",
 		"postgres": "^3.4.8",
 		"qrcode": "^1.5.4",
-		"resend": "^6.9.4",
 		"superjson": "^2.2.6",
 		"vega-embed": "^7.1.0",
 		"vega-lite": "^6.4.2",

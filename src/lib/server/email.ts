@@ -1,6 +1,5 @@
 /**
- * Transactional email functions — previously backed by Resend, now SMTP via mailer.ts.
- * Export signatures are unchanged so callers need no modification.
+ * Transactional email functions — SMTP via mailer.ts (Proton or any SMTP provider).
  */
 
 import { sendMail } from './mailer';

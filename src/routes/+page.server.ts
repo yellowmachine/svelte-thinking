@@ -6,7 +6,7 @@ import { waitlist } from '$lib/server/db/schemas/waitlist.schema';
 import { user } from '$lib/server/db/auth.schema';
 import { notifySlack } from '$lib/server/slack';
 import { cacheGet, cacheSet } from '$lib/server/cache';
-import { sendWaitlistWelcomeEmail } from '$lib/server/resend';
+import { sendWaitlistWelcomeEmail } from '$lib/server/email';
 
 const USER_COUNT_KEY = 'scholio:stats:user_count';
 const USER_COUNT_TTL = 15 * 60; // 15 min

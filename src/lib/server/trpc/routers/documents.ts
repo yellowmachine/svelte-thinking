@@ -9,7 +9,7 @@ import { project, projectCollaborator } from '$lib/server/db/schemas/projects.sc
 import { notificationPreference } from '$lib/server/db/schemas/users.schema';
 import { extractWikilinks } from '$lib/utils/wikilinks';
 import { indexDocument } from '$lib/server/embeddings';
-import { sendCommitNotification } from '$lib/server/resend';
+import { sendCommitNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 import { DOCUMENT_TYPES } from '$lib/domain/document';
 import { canDelegateWriting, roleAllowsWrite, type CollaboratorRole } from '$lib/domain/permissions';

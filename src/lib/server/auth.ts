@@ -7,8 +7,8 @@ import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db';
 import { eq } from 'drizzle-orm';
 import { waitlist } from '$lib/server/db/schemas/waitlist.schema';
-import { sendPasswordResetEmail } from '$lib/server/resend';
-//import { sendVerificationEmail } from '$lib/server/resend';
+import { sendPasswordResetEmail } from '$lib/server/email';
+//import { sendVerificationEmail } from '$lib/server/email';
 
 // En producción activa crossSubDomainCookies para compartir la sesión con
 // librarian.scholio.review. better-auth usa el hostname de baseURL como domain

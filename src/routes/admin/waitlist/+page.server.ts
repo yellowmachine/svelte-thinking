@@ -4,7 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { waitlist } from '$lib/server/db/schemas/waitlist.schema';
 import { env } from '$env/dynamic/private';
-import { sendWaitlistApprovalEmail } from '$lib/server/resend';
+import { sendWaitlistApprovalEmail } from '$lib/server/email';
 import { notifySlack } from '$lib/server/slack';
 
 export const load: PageServerLoad = async () => {
