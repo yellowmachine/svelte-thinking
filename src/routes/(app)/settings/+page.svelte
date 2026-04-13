@@ -209,7 +209,7 @@
 	});
 
 	// ── 2FA state ─────────────────────────────────────────────────────────────
-	type TwoFaStep = 'idle' | 'enabling' | 'qr' | 'verifying' | 'done' | 'disabling';
+	type TwoFaStep = 'idle' | 'enabling' | 'qr' | 'verifying' | 'done' | 'disabling' | 'view-confirm' | 'viewing';
 	let twoFaEnabled = $state(data.user.twoFactorEnabled);
 	let twoFaStep: TwoFaStep = $state('idle');
 	let twoFaPassword = $state('');
@@ -218,6 +218,8 @@
 	let twoFaBackupCodes = $state<string[]>([]);
 	let twoFaError = $state('');
 	let twoFaLoading = $state(false);
+	let twoFaViewCode = $state('');
+	let twoFaTextSecret = $state('');
 
 	async function handleEnableTwoFa() {
 		if (!twoFaPassword.trim()) return;
@@ -288,6 +290,32 @@
 			twoFaPassword = '';
 		} catch (e) {
 			twoFaError = e instanceof Error ? e.message : 'Unexpected error';
+		} finally {
+			twoFaLoading = false;
+		}
+	}
+
+	async function handleViewTwoFa() {
+		if (twoFaViewCode.length !== 6) return;
+		twoFaLoading = true;
+		twoFaError = '';
+		try {
+			const res = await fetch('/api/totp-secret', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code: twoFaViewCode })
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.message || 'Código incorrecto');
+			}
+			const { totpURI, textSecret } = await res.json();
+			twoFaQrDataUrl = await QRCode.toDataURL(totpURI);
+			twoFaTextSecret = textSecret;
+			twoFaViewCode = '';
+			twoFaStep = 'viewing';
+		} catch (e) {
+			twoFaError = e instanceof Error ? e.message : 'Error inesperado';
 		} finally {
 			twoFaLoading = false;
 		}
@@ -1322,8 +1350,101 @@
 								</button>
 							</div>
 						</div>
+					{:else if twoFaStep === 'view-confirm'}
+						<!-- Verify current TOTP code before revealing the secret -->
+						<div class="mt-5 flex flex-col gap-3">
+							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+								Introduce el código de tu app autenticadora actual para ver el código de configuración.
+							</p>
+							<input
+								type="text"
+								inputmode="numeric"
+								maxlength="6"
+								bind:value={twoFaViewCode}
+								placeholder="000000"
+								class="w-32 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							{#if twoFaError}
+								<p class="font-sans text-sm text-red-500">{twoFaError}</p>
+							{/if}
+							<div class="flex gap-2">
+								<button
+									type="button"
+									onclick={handleViewTwoFa}
+									disabled={twoFaViewCode.length !== 6 || twoFaLoading}
+									class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+								>
+									{twoFaLoading ? 'Verificando...' : 'Verificar'}
+								</button>
+								<button
+									type="button"
+									onclick={() => {
+										twoFaStep = 'idle';
+										twoFaViewCode = '';
+										twoFaError = '';
+									}}
+									class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+								>
+									Cancelar
+								</button>
+							</div>
+						</div>
+					{:else if twoFaStep === 'viewing'}
+						<!-- Show QR and text secret for adding another device -->
+						<div class="mt-5 flex flex-col gap-4">
+							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+								Escanea el código QR con tu nueva app autenticadora, o introduce el código en texto manualmente.
+							</p>
+							{#if twoFaQrDataUrl}
+								<img
+									src={twoFaQrDataUrl}
+									alt="QR code para configurar 2FA"
+									class="h-40 w-40 rounded-md"
+								/>
+							{/if}
+							{#if twoFaTextSecret}
+								<div class="flex flex-col gap-1">
+									<p class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
+										Código en texto (para entrada manual):
+									</p>
+									<div class="flex items-center gap-2">
+										<code class="rounded bg-paper-ui px-3 py-2 font-mono text-sm tracking-widest text-ink dark:bg-dark-paper-ui dark:text-dark-ink">
+											{twoFaTextSecret}
+										</code>
+										<button
+											type="button"
+											onclick={() => navigator.clipboard.writeText(twoFaTextSecret)}
+											class="rounded border border-paper-border px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+										>
+											Copiar
+										</button>
+									</div>
+								</div>
+							{/if}
+							<button
+								type="button"
+								onclick={() => {
+									twoFaStep = 'idle';
+									twoFaQrDataUrl = '';
+									twoFaTextSecret = '';
+								}}
+								class="self-start rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							>
+								Cerrar
+							</button>
+						</div>
 					{:else}
-						<div class="mt-5">
+						<div class="mt-5 flex gap-2">
+							<button
+								type="button"
+								onclick={() => {
+									twoFaStep = 'view-confirm';
+									twoFaError = '';
+								}}
+								class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							>
+								Añadir otro dispositivo
+							</button>
 							<button
 								type="button"
 								onclick={() => {
