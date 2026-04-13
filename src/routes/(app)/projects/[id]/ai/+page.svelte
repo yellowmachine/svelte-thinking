@@ -7,6 +7,7 @@
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import { MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
 	let { data }: { data: PageData } = $props();
 
@@ -89,7 +90,8 @@
 			const result = await trpc.ai.sendMessage.mutate({
 				projectId: data.project.id,
 				conversationId: activeConvId ?? undefined,
-				message: text
+				message: text,
+				modelOverride: modelOverride ?? undefined
 			});
 
 			activeConvId = result.conversationId;
@@ -157,27 +159,28 @@
 		return new Date(date).toLocaleDateString('es', { day: 'numeric', month: 'short' });
 	}
 
-	// ── Agent model badge ────────────────────────────────────────────────────
-	const MODEL_LABELS: Record<string, string> = {
-		'anthropic/claude-haiku-4-5': 'Claude Haiku 4.5',
-		'anthropic/claude-sonnet-4-5': 'Claude Sonnet 4.5',
-		'openai/gpt-4o-mini': 'GPT-4o mini',
-		'openai/gpt-4o': 'GPT-4o',
-		'google/gemini-flash-1.5': 'Gemini Flash 1.5',
-		'meta-llama/llama-3.3-70b-instruct': 'Llama 3.3 70B',
-		'perplexity/sonar': 'Perplexity Sonar',
-		'perplexity/sonar-pro': 'Perplexity Sonar Pro'
-	};
-	let agentModel = $state<string>('anthropic/claude-sonnet-4-6');
-	const activeModelLabel = $derived(MODEL_LABELS[agentModel] ?? agentModel);
+	// ── Agent model selector ─────────────────────────────────────────────────
+	// Models available for the agent task: must support tool calling
+	const agentModels = MODELS.filter((m) => m.toolCalling && (MODEL_RECOMMENDATIONS[m.id]?.includes('agent') ?? true));
+
+	// Configured model (from user Settings) — used as default
+	let configuredModel = $state<string>('anthropic/claude-sonnet-4-6');
+	// Per-conversation override chosen in this session
+	let modelOverride = $state<string | null>(null);
+
+	const activeModel = $derived(modelOverride ?? configuredModel);
+	const activeModelLabel = $derived(MODELS.find((m) => m.id === activeModel)?.shortLabel ?? activeModel);
+	const isOverridden = $derived(modelOverride !== null && modelOverride !== configuredModel);
+
+	let showModelPicker = $state(false);
 
 	async function loadAiConfig() {
 		try {
 			const taskData = await trpc.aiConfig.getTaskConfig.query();
 			const agentCfg = (taskData.taskConfig as Record<string, { keyId: string; model: string }>)['agent'];
-			if (agentCfg?.model) agentModel = agentCfg.model;
+			if (agentCfg?.model) configuredModel = agentCfg.model;
 		} catch {
-			// non-critical — badge just won't show
+			// non-critical
 		}
 	}
 
@@ -488,10 +491,60 @@
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 						El asistente tiene acceso al contenido de todos los documentos del proyecto.
 					</p>
-					<div class="flex items-center gap-1.5 rounded-full border border-paper-border px-2.5 py-1 dark:border-dark-paper-border">
-						<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">OpenRouter</span>
-						<span class="text-ink-faint dark:text-dark-ink-faint">·</span>
-						<span class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">{activeModelLabel}</span>
+					<!-- Model picker trigger -->
+					<div class="relative">
+						<button
+							type="button"
+							onclick={() => (showModelPicker = !showModelPicker)}
+							class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {isOverridden ? 'border-accent/50 text-accent dark:border-accent/50' : 'border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+						>
+							<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">OpenRouter</span>
+							<span class="text-ink-faint dark:text-dark-ink-faint">·</span>
+							<span class="font-sans text-[11px]">{activeModelLabel}</span>
+							{#if isOverridden}
+								<span class="h-1.5 w-1.5 rounded-full bg-accent" title="Model override active"></span>
+							{/if}
+							<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="text-ink-faint dark:text-dark-ink-faint">
+								<path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							</svg>
+						</button>
+
+						{#if showModelPicker}
+							<!-- Backdrop -->
+							<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+							<div class="fixed inset-0 z-10" onclick={() => (showModelPicker = false)}></div>
+							<!-- Popover -->
+							<div class="absolute bottom-full right-0 z-20 mb-2 w-64 rounded-xl border border-paper-border bg-paper py-1.5 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+								<p class="px-3 pb-1.5 pt-0.5 font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+									Model for this session
+								</p>
+								{#each agentModels as m (m.id)}
+									<button
+										type="button"
+										onclick={() => { modelOverride = m.id === configuredModel ? null : m.id; showModelPicker = false; }}
+										class="flex w-full items-center justify-between px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {activeModel === m.id ? 'text-accent' : 'text-ink dark:text-dark-ink'}"
+									>
+										<span>{m.shortLabel}</span>
+										{#if activeModel === m.id}
+											<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+												<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+											</svg>
+										{/if}
+									</button>
+								{/each}
+								{#if isOverridden}
+									<div class="mx-3 mt-1 border-t border-paper-border pt-1 dark:border-dark-paper-border">
+										<button
+											type="button"
+											onclick={() => { modelOverride = null; showModelPicker = false; }}
+											class="w-full rounded py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+										>
+											Reset to default ({MODELS.find((m) => m.id === configuredModel)?.shortLabel ?? configuredModel})
+										</button>
+									</div>
+								{/if}
+							</div>
+						{/if}
 					</div>
 				</div>
 			</div>
