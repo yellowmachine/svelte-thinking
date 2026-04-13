@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import type { PageData } from './$types';
 
 	let { data } = $props();
 
 	function formatDate(d: Date | null) {
-		if (!d) return '—';
-		return new Date(d).toLocaleDateString('es-ES', {
+		if (!d || !browser) return '—';
+		return new Date(d).toLocaleString('es-ES', {
 			day: 'numeric',
 			month: 'short',
 			hour: '2-digit',
