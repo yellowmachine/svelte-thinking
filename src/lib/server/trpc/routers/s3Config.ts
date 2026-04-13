@@ -40,7 +40,7 @@ async function encryptCredentials(accessKey: string, secretKey: string) {
   } catch {
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Error encrypting credentials. Check the AWS KMS configuration.'
+      message: 'Error encrypting credentials. Check KMS_MASTER_KEY configuration.'
     });
   }
 }

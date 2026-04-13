@@ -57,7 +57,7 @@ export const userProfile = scholioSchema.table(
 	]
 ).enableRLS();
 
-// API keys del usuario cifradas con AWS KMS (envelope encryption)
+// API keys del usuario cifradas con AES-256-GCM (KMS_MASTER_KEY)
 // Múltiples keys por usuario, identificadas por nombre descriptivo
 export const userApiKey = scholioSchema.table(
 	'user_api_key',

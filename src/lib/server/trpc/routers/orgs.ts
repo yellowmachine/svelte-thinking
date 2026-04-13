@@ -239,7 +239,7 @@ export const orgsRouter = router({
 			} catch {
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Error encrypting API key. Check AWS KMS configuration.'
+					message: 'Error encrypting API key. Check KMS_MASTER_KEY configuration.'
 				});
 			}
 

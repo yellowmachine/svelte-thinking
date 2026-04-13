@@ -40,7 +40,7 @@ export const jupyterRouter = router({
 			} catch {
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
-					message: 'Could not encrypt token. Check AWS KMS configuration.'
+					message: 'Could not encrypt token. Check KMS_MASTER_KEY configuration.'
 				});
 			}
 

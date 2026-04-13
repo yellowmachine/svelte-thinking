@@ -131,7 +131,7 @@ export const aiConfigRouter = router({
       } catch {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Error encrypting credentials. Check the AWS KMS configuration.'
+          message: 'Error encrypting credentials. Check the KMS_MASTER_KEY configuration.'
         });
       }
 
