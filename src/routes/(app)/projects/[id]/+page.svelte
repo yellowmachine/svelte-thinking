@@ -34,6 +34,7 @@
 
 	const documents = $derived(data.documents);
 	const canEdit = $derived(data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor');
+	const activeShareDocSet = $derived(new Set(data.activeShareDocumentIds));
 
 	function isDocReadOnly(doc: { writerUserId: string | null }): boolean {
 		return !canWriteDocument({
@@ -979,6 +980,13 @@
 										(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 								/>
 							</div>
+							{#if data.isOwner && activeShareDocSet.has(doc.id)}
+								<span
+									class="mr-1 h-2 w-2 shrink-0 rounded-full bg-accent"
+									title="Has active public links"
+									aria-label="Has active public links"
+								></span>
+							{/if}
 							{#if isDocReadOnly(doc)}
 								<span
 									title="Read-only"
@@ -1108,6 +1116,13 @@
 											(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
 									/>
 								</div>
+								{#if activeShareDocSet.has(doc.id)}
+									<span
+										class="mr-1 h-2 w-2 shrink-0 rounded-full bg-accent"
+										title="Has active public links"
+										aria-label="Has active public links"
+									></span>
+								{/if}
 								<div class="relative">
 									<button
 										onclick={(e) => { e.stopPropagation(); docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id; }}

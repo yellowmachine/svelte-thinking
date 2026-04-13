@@ -3,6 +3,7 @@
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
 	import { trpc } from '$lib/utils/trpc';
+	import { untrack } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -20,6 +21,15 @@
 	let restoring = $state(false);
 	let restoredVersion = $state<number | null>(null);
 
+	// Shares: mapa versionId → share (reactivo para actualizaciones optimistas)
+	// untrack: sólo queremos el valor inicial del server load, lo gestionamos manualmente
+	let shares = $state<Record<string, { id: string; token: string; expiresAt: Date }>>(
+		untrack(() => ({ ...data.sharesByVersionId }))
+	);
+	let sharingVersionId = $state<string | null>(null);
+	let revokingShareId = $state<string | null>(null);
+	let copiedVersionId = $state<string | null>(null);
+
 	const fmt = new Intl.DateTimeFormat('es', {
 		day: 'numeric',
 		month: 'short',
@@ -27,6 +37,53 @@
 		hour: '2-digit',
 		minute: '2-digit'
 	});
+
+	const fmtExpiry = new Intl.DateTimeFormat('es', {
+		day: 'numeric',
+		month: 'short',
+		year: 'numeric'
+	});
+
+	function previewUrl(token: string): string {
+		const origin = typeof window !== 'undefined' ? window.location.origin : '';
+		return `${origin}/preview/${token}`;
+	}
+
+	async function copyOrCreateShare(v: Version) {
+		const existing = shares[v.id];
+		let token: string;
+
+		if (existing) {
+			token = existing.token;
+		} else {
+			sharingVersionId = v.id;
+			try {
+				const result = await trpc.versionShares.create.mutate({ versionId: v.id });
+				shares = { ...shares, [v.id]: { id: result.id, token: result.token, expiresAt: result.expiresAt } };
+				token = result.token;
+			} finally {
+				sharingVersionId = null;
+			}
+		}
+
+		await navigator.clipboard.writeText(previewUrl(token));
+		copiedVersionId = v.id;
+		setTimeout(() => { copiedVersionId = null; }, 2000);
+	}
+
+	async function revokeShare(v: Version) {
+		const share = shares[v.id];
+		if (!share?.id) return;
+		revokingShareId = share.id;
+		try {
+			await trpc.versionShares.revoke.mutate({ shareId: share.id });
+			const next = { ...shares };
+			delete next[v.id];
+			shares = next;
+		} finally {
+			revokingShareId = null;
+		}
+	}
 
 	async function selectVersion(v: Version, mode: PanelMode) {
 		if (selectedVersion?.id === v.id && panelMode === mode) {
@@ -170,10 +227,62 @@
 									<button
 										onclick={() => restoreVersion(v)}
 										disabled={restoring}
-										class="ml-auto rounded px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:text-accent disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-accent"
+										class="rounded px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:text-accent disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-accent"
 									>
 										Restore
 									</button>
+								{/if}
+
+								{#if data.isOwner}
+									<div class="ml-auto flex items-center gap-1">
+										<!-- Botón copiar URL (gris = sin share, azul = con share activo) -->
+										<button
+											onclick={() => copyOrCreateShare(v)}
+											disabled={sharingVersionId === v.id}
+											title={shares[v.id]
+												? `URL activa · expira ${fmtExpiry.format(new Date(shares[v.id].expiresAt))}\nClick para copiar`
+												: 'Crear URL pública para esta versión'}
+											class="flex h-6 w-6 items-center justify-center rounded transition-colors disabled:opacity-40
+												{shares[v.id]
+													? 'text-accent hover:bg-accent/10'
+													: 'text-ink-faint hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui'}"
+											aria-label={shares[v.id] ? 'Copiar URL pública' : 'Crear URL pública'}
+										>
+											{#if copiedVersionId === v.id}
+												<!-- Check de confirmación -->
+												<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+													<polyline points="20 6 9 17 4 12" />
+												</svg>
+											{:else if sharingVersionId === v.id}
+												<!-- Spinner -->
+												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" class="animate-spin">
+													<path d="M21 12a9 9 0 1 1-6.219-8.56" />
+												</svg>
+											{:else}
+												<!-- Clipboard -->
+												<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+													<rect x="9" y="2" width="6" height="4" rx="1" />
+													<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+												</svg>
+											{/if}
+										</button>
+
+										<!-- Botón revocar (solo si hay share activo) -->
+										{#if shares[v.id]}
+											<button
+												onclick={() => revokeShare(v)}
+												disabled={revokingShareId === shares[v.id]?.id}
+												title="Revocar URL pública"
+												class="flex h-6 w-6 items-center justify-center rounded text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-900/20"
+												aria-label="Revocar URL pública"
+											>
+												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+													<circle cx="12" cy="12" r="10" />
+													<line x1="8" y1="12" x2="16" y2="12" />
+												</svg>
+											</button>
+										{/if}
+									</div>
 								{/if}
 							</div>
 						</li>

@@ -41,6 +41,7 @@
 
 	const ownedProjects = $derived(projects.filter((p) => p.ownerId === data.currentUserId));
 	const sharedProjects = $derived(projects.filter((p) => p.ownerId !== data.currentUserId));
+	const activeShareSet = $derived(new Set(data.activeShareProjectIds));
 
 	const workspaceName = $derived(workspaceStore.current.name);
 	const isOrgWorkspace = $derived(workspaceStore.current.id !== null);
@@ -290,6 +291,7 @@
 						openComments={proj.openComments}
 						updatedAt={proj.updatedAt}
 						scheduledDeleteAt={proj.scheduledDeleteAt}
+						hasActiveShares={activeShareSet.has(proj.id)}
 						reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
 						onclick={() => (window.location.href = `/projects/${proj.id}`)}
 						ondelete={() => { deleteTarget = { id: proj.id, title: proj.title }; }}

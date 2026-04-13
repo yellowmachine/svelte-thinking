@@ -10,6 +10,7 @@
 		updatedAt,
 		reviewHref,
 		scheduledDeleteAt,
+		hasActiveShares = false,
 		onclick,
 		ondelete
 	}: {
@@ -21,6 +22,7 @@
 		updatedAt?: Date;
 		reviewHref?: string;
 		scheduledDeleteAt?: Date | null;
+		hasActiveShares?: boolean;
 		onclick?: () => void;
 		ondelete?: () => void;
 	} = $props();
@@ -71,11 +73,20 @@
 		class="w-full cursor-pointer rounded-xl border border-paper-border bg-paper p-5 text-left transition-all hover:border-accent/30 hover:shadow-sm dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/30"
 	>
 		<div class="flex items-start justify-between gap-3">
-			<h3
-				class="font-serif text-lg font-semibold text-ink group-hover:text-accent dark:text-dark-ink dark:group-hover:text-accent"
-			>
-				{title}
-			</h3>
+			<div class="flex min-w-0 items-center gap-2">
+				<h3
+					class="font-serif text-lg font-semibold text-ink group-hover:text-accent dark:text-dark-ink dark:group-hover:text-accent"
+				>
+					{title}
+				</h3>
+				{#if hasActiveShares}
+					<span
+						class="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-accent"
+						title="Has active public links"
+						aria-label="Has active public links"
+					></span>
+				{/if}
+			</div>
 			<div class="flex shrink-0 items-center gap-1.5">
 				{#if daysLeft !== null}
 					<span class="rounded-full bg-red-100 px-2.5 py-0.5 font-sans text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">

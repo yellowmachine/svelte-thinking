@@ -1,8 +1,11 @@
 import type { PageServerLoad } from './$types';
 import { project } from '$lib/server/db/schemas/projects.schema';
-import { desc, sql } from 'drizzle-orm';
+import { document, documentVersionShare } from '$lib/server/db/schemas/documents.schema';
+import { desc, sql, eq, and, isNull, gt } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
+	const currentUserId = event.locals.user!.id;
+
 	const projects = await event.locals.withRLS((db) =>
 		db
 			.select({
@@ -13,6 +16,7 @@ export const load: PageServerLoad = async (event) => {
 				orgId: project.orgId,
 				ownerId: project.ownerId,
 				updatedAt: project.updatedAt,
+				scheduledDeleteAt: project.scheduledDeleteAt,
 				collaboratorCount:
 					sql<number>`(SELECT COUNT(*)::int FROM project_collaborator WHERE project_collaborator.project_id = ${project.id})`.as(
 						'collaborator_count'
@@ -26,5 +30,33 @@ export const load: PageServerLoad = async (event) => {
 			.orderBy(desc(project.updatedAt))
 	);
 
-	return { projects, currentUserId: event.locals.user!.id };
+	// Proyectos owned que tienen al menos un share activo
+	const now = new Date();
+	const ownedProjectIds = projects
+		.filter((p) => p.ownerId === currentUserId)
+		.map((p) => p.id);
+
+	let activeShareProjectIds = new Set<string>();
+	if (ownedProjectIds.length > 0) {
+		const rows = await event.locals.withRLS((db) =>
+			db
+				.selectDistinct({ projectId: document.projectId })
+				.from(documentVersionShare)
+				.innerJoin(document, eq(document.id, documentVersionShare.documentId))
+				.where(
+					and(
+						eq(document.ownerUserId, currentUserId),
+						isNull(documentVersionShare.revokedAt),
+						gt(documentVersionShare.expiresAt, now)
+					)
+				)
+		);
+		activeShareProjectIds = new Set(rows.map((r) => r.projectId));
+	}
+
+	return {
+		projects,
+		currentUserId,
+		activeShareProjectIds: [...activeShareProjectIds]
+	};
 };

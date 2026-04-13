@@ -168,3 +168,43 @@ export const documentVersion = scholioSchema.table(
 		})
 	]
 ).enableRLS();
+
+export const documentVersionShare = scholioSchema.table(
+	'document_version_share',
+	{
+		id: text('id').primaryKey(),
+		versionId: text('version_id')
+			.notNull()
+			.references(() => documentVersion.id, { onDelete: 'cascade' }),
+		documentId: text('document_id')
+			.notNull()
+			.references(() => document.id, { onDelete: 'cascade' }),
+		token: text('token').notNull().unique(),
+		createdBy: text('created_by').notNull(),
+		expiresAt: timestamp('expires_at').notNull(),
+		revokedAt: timestamp('revoked_at'),
+		createdAt: timestamp('created_at').notNull().defaultNow()
+	},
+	(t) => [
+		index('dvshare_version_idx').on(t.versionId),
+		index('dvshare_document_idx').on(t.documentId),
+		uniqueIndex('dvshare_token_idx').on(t.token),
+
+		// Public read: token-based access — no RLS user required
+		pgPolicy('dvshare_public_read', {
+			for: 'select',
+			using: sql`true`
+		}),
+		// Write: only document owner
+		pgPolicy('dvshare_owner_write', {
+			for: 'all',
+			using: sql`
+				EXISTS (
+					SELECT 1 FROM scholio.document
+					WHERE document.id = ${t.documentId}
+					AND document.owner_user_id = current_setting('app.current_user_id', true)
+				)
+			`
+		})
+	]
+).enableRLS();

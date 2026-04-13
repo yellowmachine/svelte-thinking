@@ -1,11 +1,11 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
-import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
+import { document, documentVersion, documentVersionShare } from '$lib/server/db/schemas/documents.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
-import { eq, desc, and, count, sql, inArray, isNull } from 'drizzle-orm';
+import { eq, desc, and, count, sql, inArray, isNull, gt } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
@@ -115,6 +115,7 @@ export const load: PageServerLoad = async (event) => {
 	if (!proj[0]) error(404, 'Proyecto no encontrado');
 
 	const myRole = collaborators.find((c) => c.userId === userId)?.role ?? null;
+	const isOwner = proj[0].ownerId === userId;
 
 	const reqCounts = (requirementCounts as { total: number; fulfilled: number; requiredTotal: number; requiredFulfilled: number }[])[0] ?? { total: 0, fulfilled: 0, requiredTotal: 0, requiredFulfilled: 0 };
 
@@ -122,16 +123,38 @@ export const load: PageServerLoad = async (event) => {
 		docCommentCounts.map((r) => [r.documentId, r.value])
 	);
 
+	// Documentos con shares activos (solo para owners)
+	let activeShareDocumentIds = new Set<string>();
+	if (isOwner) {
+		const now = new Date();
+		const shareRows = await event.locals.withRLS((db) =>
+			db
+				.selectDistinct({ documentId: documentVersionShare.documentId })
+				.from(documentVersionShare)
+				.innerJoin(document, eq(document.id, documentVersionShare.documentId))
+				.where(
+					and(
+						eq(document.projectId, projectId),
+						eq(document.ownerUserId, userId),
+						isNull(documentVersionShare.revokedAt),
+						gt(documentVersionShare.expiresAt, now)
+					)
+				)
+		);
+		activeShareDocumentIds = new Set(shareRows.map((r) => r.documentId));
+	}
+
 	return {
 		project: proj[0],
 		documents,
 		collaborators,
 		invitations,
 		myRole,
-		isOwner: proj[0].ownerId === userId,
+		isOwner,
 		currentUserId: userId,
 		requirementCounts: reqCounts,
 		openComments: openCommentsCount[0]?.value ?? 0,
-		openCommentsByDoc
+		openCommentsByDoc,
+		activeShareDocumentIds: [...activeShareDocumentIds]
 	};
 };
