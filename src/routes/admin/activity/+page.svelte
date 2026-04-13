@@ -35,15 +35,9 @@
 						<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">{u.name}</p>
 						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</p>
 					</div>
-					<div class="flex shrink-0 items-center gap-6 text-right">
-						<div>
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Proyectos</p>
-							<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{u.projectCount}</p>
-						</div>
-						<div>
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Último acceso</p>
-							<p class="font-sans text-sm text-ink dark:text-dark-ink">{formatDate(u.lastSeen)}</p>
-						</div>
+					<div class="shrink-0 text-right">
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Último acceso</p>
+						<p class="font-sans text-sm text-ink dark:text-dark-ink">{formatDate(u.lastSeen)}</p>
 					</div>
 				</div>
 			{/each}
