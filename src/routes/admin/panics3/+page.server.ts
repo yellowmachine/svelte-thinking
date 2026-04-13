@@ -1,12 +1,21 @@
 import { fail } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { user } from '$lib/server/db/auth.schema';
 import { INTERNAL_STORAGE_QUOTA_BYTES } from '$lib/server/storage';
+import { db } from '$lib/server/db';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const rows = await locals.withAdminRLS((db) =>
+const withAdminRLS = <T>(fn: (tx: typeof db) => Promise<T>): Promise<T> =>
+	db.transaction(async (tx) => {
+		await tx.execute(sql`SELECT set_config('app.is_admin', 'true', true)`);
+		await tx.execute(sql`SET LOCAL search_path = scholio, public`);
+		return fn(tx as unknown as typeof db);
+	});
+
+export const load: PageServerLoad = async () => {
+	const rows = await withAdminRLS((db) =>
 		db
 			.select({
 				userId: userProfile.userId,
@@ -29,12 +38,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	disableUser: async ({ request, locals }) => {
+	disableUser: async ({ request }) => {
 		const data = await request.formData();
 		const userId = data.get('userId')?.toString();
 		if (!userId) return fail(400, { error: 'userId required' });
 
-		await locals.withAdminRLS((db) =>
+		await withAdminRLS((db) =>
 			db
 				.update(userProfile)
 				.set({ useInternalStorage: false, updatedAt: new Date() })
@@ -44,8 +53,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	disableAll: async ({ locals }) => {
-		await locals.withAdminRLS((db) =>
+	disableAll: async () => {
+		await withAdminRLS((db) =>
 			db
 				.update(userProfile)
 				.set({ useInternalStorage: false, updatedAt: new Date() })
