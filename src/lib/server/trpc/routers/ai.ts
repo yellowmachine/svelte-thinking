@@ -1934,6 +1934,96 @@ Rules:
   // Spell check — on-demand AI-powered correction
   // ---------------------------------------------------------------------------
 
+  grammarCheck: protectedProcedure
+    .input(z.object({
+      text: z.string().max(50000),
+      projectId: z.string().optional()
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+      const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
+        ctx.withRLS, ctx.db, userId, 'grammar', input.projectId,
+        'anthropic/claude-haiku-4-5'
+      );
+
+      const prompt = `You are an expert English academic writing assistant helping non-native English speakers improve their writing.
+Analyze the following text for grammatical errors, awkward phrasing, and issues with academic register.
+Return a JSON array of corrections. Each item must have:
+- "original": the exact substring from the text that needs correction (can be a word, phrase, or sentence fragment)
+- "suggestion": the corrected replacement
+- "explanation": a brief explanation in English (max 15 words)
+
+Rules:
+- Focus on grammar errors (wrong articles, verb tenses, subject-verb agreement, prepositions, plurals)
+- Flag awkward or unnatural phrasing that a native speaker would not use
+- Suggest more formal/academic alternatives when the register is too informal
+- Do NOT report spelling errors (those are handled separately)
+- Do NOT change the meaning or style of the text beyond fixing errors
+- Ignore proper nouns, citation keys like [[@smith2023]], and Markdown syntax
+- If the text is correct, return an empty array []
+- Return ONLY valid JSON, no markdown fences or other text
+
+Text to check:
+${input.text}`;
+
+      const res = await fetch(OPENROUTER_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+          'X-Title': 'Scholio'
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0,
+          max_tokens: 2000
+        })
+      });
+
+      if (!res.ok) await throwProviderError(res);
+
+      const data = await res.json() as {
+        choices: { message: { content: string } }[];
+        usage?: { prompt_tokens: number; completion_tokens: number };
+      };
+
+      logUsage(ctx.withRLS, {
+        userId, orgId: resolvedOrgId, projectId: input.projectId,
+        model, task: 'grammar',
+        inputTokens: data.usage?.prompt_tokens ?? 0,
+        outputTokens: data.usage?.completion_tokens ?? 0
+      });
+
+      let raw: { original: string; suggestion: string; explanation: string }[];
+      try {
+        const content = (data.choices[0]?.message?.content ?? '[]')
+          .trim()
+          .replace(/^```(?:json)?\n?/, '')
+          .replace(/\n?```$/, '');
+        raw = JSON.parse(content);
+        if (!Array.isArray(raw)) raw = [];
+      } catch {
+        return { corrections: [] };
+      }
+
+      // Find positions in text
+      const corrections = raw
+        .filter((c) => c.original && c.suggestion)
+        .flatMap((c) => {
+          const results: { original: string; suggestion: string; explanation: string; from: number; to: number }[] = [];
+          let idx = 0;
+          while ((idx = input.text.indexOf(c.original, idx)) !== -1) {
+            results.push({ original: c.original, suggestion: c.suggestion, explanation: c.explanation, from: idx, to: idx + c.original.length });
+            idx++;
+          }
+          return results;
+        });
+
+      return { corrections };
+    }),
+
   spellCheck: protectedProcedure
     .input(z.object({
       text: z.string().max(50000),

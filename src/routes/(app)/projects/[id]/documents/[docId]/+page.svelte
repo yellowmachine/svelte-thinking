@@ -462,6 +462,32 @@
 		await trpc.users.addSpellAllowlist.mutate({ word });
 	}
 
+	// ── Grammar assistant panel ──────────────────────────────────────────────────
+	let showGrammarPanel = $state(false);
+	let grammarLoading = $state(false);
+	let grammarCorrections = $state<SpellCorrection[]>([]);
+
+	async function runGrammarCheck() {
+		showGrammarPanel = true;
+		grammarLoading = true;
+		grammarCorrections = [];
+		try {
+			const result = await trpc.ai.grammarCheck.mutate({
+				text: content,
+				projectId: data.document.projectId
+			});
+			grammarCorrections = result.corrections;
+		} catch {
+			showGrammarPanel = false;
+		} finally {
+			grammarLoading = false;
+		}
+	}
+
+	function applyGrammarCorrection(correction: SpellCorrection) {
+		editorEl?.replaceRange(correction.from, correction.to, correction.suggestion);
+	}
+
 	// Markdown cheatsheet
 	let showCheatsheet = $state(false);
 
@@ -1878,6 +1904,18 @@
 					{spellLoading ? 'Checking…' : 'Spell'}
 				</button>
 
+				<!-- Grammar assistant button -->
+				<button
+					onclick={() => runGrammarCheck()}
+					disabled={grammarLoading}
+					title="Grammar and style suggestions for non-native English writers"
+					class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
+						? 'border-accent bg-accent text-white'
+						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
+				>
+					{grammarLoading ? 'Checking…' : 'Grammar'}
+				</button>
+
 				<!-- Spell language selector -->
 				<div
 					class="flex items-center gap-1 rounded-md border border-paper-border px-2 py-1.5 dark:border-dark-paper-border"
@@ -2706,6 +2744,23 @@
 						onaccept={applySpellCorrection}
 						onignore={ignoreSpellWord}
 						onclose={() => { showSpellPanel = false; spellCorrections = []; editorEl?.clearSpellHover(); }}
+						onhover={(c) => editorEl?.setSpellHover(c.from, c.to)}
+						onhoverend={() => editorEl?.clearSpellHover()}
+					/>
+				</div>
+			{/if}
+
+			<!-- Grammar assistant sidebar -->
+			{#if showGrammarPanel}
+				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border">
+					<SpellCheckPanel
+						bind:corrections={grammarCorrections}
+						loading={grammarLoading}
+						mode="grammar"
+						documentText={content}
+						onaccept={applyGrammarCorrection}
+						onignore={async () => {}}
+						onclose={() => { showGrammarPanel = false; grammarCorrections = []; editorEl?.clearSpellHover(); }}
 						onhover={(c) => editorEl?.setSpellHover(c.from, c.to)}
 						onhoverend={() => editorEl?.clearSpellHover()}
 					/>

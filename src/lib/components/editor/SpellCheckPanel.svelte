@@ -11,6 +11,7 @@ export type SpellCorrection = {
 		corrections = $bindable<SpellCorrection[]>([]),
 		loading = false,
 		documentText = '',
+		mode = 'spell',
 		onaccept,
 		onignore,
 		onclose,
@@ -20,6 +21,7 @@ export type SpellCorrection = {
 		corrections?: SpellCorrection[];
 		loading?: boolean;
 		documentText?: string;
+		mode?: 'spell' | 'grammar';
 		onaccept: (correction: SpellCorrection) => void;
 		onignore: (word: string) => Promise<void>;
 		onclose: () => void;
@@ -76,7 +78,9 @@ export type SpellCorrection = {
 	<!-- Header -->
 	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
 		<div class="flex items-center gap-2">
-			<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Spell check</h3>
+			<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
+			{mode === 'grammar' ? 'Grammar assistant' : 'Spell check'}
+		</h3>
 			{#if !loading && corrections.length > 0}
 				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 					{corrections.length} {corrections.length === 1 ? 'issue' : 'issues'}
@@ -150,6 +154,7 @@ export type SpellCorrection = {
 							>
 								Accept
 							</button>
+							{#if mode === 'spell'}
 							<button
 								onclick={() => ignoreAlways(i)}
 								disabled={ignoring === i}
@@ -157,6 +162,14 @@ export type SpellCorrection = {
 							>
 								{ignoring === i ? 'Saving…' : 'Ignore always'}
 							</button>
+						{:else}
+							<button
+								onclick={() => { corrections = corrections.filter((_, j) => j !== i); }}
+								class="rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+							>
+								Dismiss
+							</button>
+						{/if}
 						</div>
 					</li>
 				{/each}
