@@ -228,7 +228,7 @@
 </script>
 
 {#if data.project}
-<div class="flex h-[calc(100vh-4rem)] overflow-hidden">
+<div class="flex h-full overflow-hidden">
 	<!-- Sidebar: conversation list -->
 	<aside
 		class="flex w-64 shrink-0 flex-col border-r border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
