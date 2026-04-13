@@ -1,7 +1,6 @@
 import { env } from '$env/dynamic/private';
 
 const SCIPY_SERVICE_URL = env.SCIPY_SERVICE_URL ?? '';
-const SCIPY_API_KEY = env.SCIPY_API_KEY ?? '';
 
 type DatasetRef = {
 	bucket: string;
@@ -22,10 +21,7 @@ export class ScipyError extends Error {
 async function call<T>(endpoint: string, body: object): Promise<T> {
 	const res = await fetch(`${SCIPY_SERVICE_URL}${endpoint}`, {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-API-Key': SCIPY_API_KEY
-		},
+		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(body)
 	});
 

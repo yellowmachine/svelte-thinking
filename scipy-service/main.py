@@ -1,10 +1,9 @@
 import base64
 import logging
-import os
 import io
 
 import requests
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel, HttpUrl
 from weasyprint import HTML
 
@@ -15,16 +14,9 @@ logging.basicConfig(
 )
 log = logging.getLogger("scipy-service")
 
-API_KEY = os.environ.get("SCIPY_API_KEY", "")
-
 app = FastAPI()
 
-log.info("scipy-service starting (API_KEY configured: %s)", bool(API_KEY))
-
-
-def check_key(x_api_key: str = Header(default="")):
-    if API_KEY and x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+log.info("scipy-service starting")
 
 
 @app.get("/health")
@@ -37,8 +29,7 @@ class PdfFromUrlRequest(BaseModel):
 
 
 @app.post("/pdf/from-url")
-def pdf_from_url(body: PdfFromUrlRequest, x_api_key: str = Header(default="")):
-    check_key(x_api_key)
+def pdf_from_url(body: PdfFromUrlRequest):
 
     url = str(body.url)
     log.info("pdf/from-url requested: %s", url)
