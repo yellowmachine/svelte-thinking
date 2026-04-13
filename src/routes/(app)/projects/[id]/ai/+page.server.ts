@@ -7,8 +7,10 @@ import { eq, desc } from 'drizzle-orm';
 export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
 
+	const userId = event.locals.user!.id;
+
 	const proj = await event.locals.withRLS((db) =>
-		db.select({ id: project.id, title: project.title })
+		db.select({ id: project.id, title: project.title, ownerId: project.ownerId, agentSystemPrompt: project.agentSystemPrompt })
 			.from(project)
 			.where(eq(project.id, projectId))
 			.limit(1)
@@ -25,5 +27,9 @@ export const load: PageServerLoad = async (event) => {
 			.then((r) => r)
 	);
 
-	return { project: proj[0], conversations: conversations ?? [] };
+	return {
+		project: proj[0],
+		conversations: conversations ?? [],
+		isOwner: proj[0].ownerId === userId
+	};
 };

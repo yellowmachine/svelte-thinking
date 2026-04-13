@@ -1,0 +1,1 @@
+ALTER TABLE "scholio"."project" ADD COLUMN "agent_system_prompt" text;

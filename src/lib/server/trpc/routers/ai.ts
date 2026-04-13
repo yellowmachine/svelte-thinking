@@ -1005,10 +1005,24 @@ export const aiRouter = router({
       const effectiveModel = (!resolvedOrgId && input.modelOverride) ? input.modelOverride : resolvedModel;
 
       // ── Build project index and run agent loop ────────────────────────
-      const projectIndex = await buildProjectIndex(ctx.withRLS as WithRLS, input.projectId);
-      const systemWithIndex = projectIndex
-        ? `${SYSTEM_PROMPT}\n\n---\n\n${projectIndex}`
+      const [projectIndex, projectRows] = await Promise.all([
+        buildProjectIndex(ctx.withRLS as WithRLS, input.projectId),
+        ctx.withRLS((db) =>
+          (db as Db)
+            .select({ agentSystemPrompt: project.agentSystemPrompt })
+            .from(project)
+            .where(eq(project.id, input.projectId))
+            .limit(1)
+        ) as Promise<{ agentSystemPrompt: string | null }[]>
+      ]);
+
+      const customPrompt = (projectRows[0]?.agentSystemPrompt ?? '').trim();
+      const baseSystem = customPrompt
+        ? `${customPrompt}\n\n---\n\n${SYSTEM_PROMPT}`
         : SYSTEM_PROMPT;
+      const systemWithIndex = projectIndex
+        ? `${baseSystem}\n\n---\n\n${projectIndex}`
+        : baseSystem;
 
       const { content: assistantContent, pendingActions, docsUsed, inputTokens: agentIn, outputTokens: agentOut } = await runAgentLoop(
         systemWithIndex,

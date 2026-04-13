@@ -204,6 +204,24 @@ export const projectsRouter = router({
     return rows[0];
   }),
 
+  // Update the custom system prompt for the project agent (owner only)
+  updateAgentPrompt: protectedProcedure
+    .input(z.object({
+      projectId: z.string(),
+      agentSystemPrompt: z.string().max(4000).nullable()
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const rows = await ctx.withRLS((db) =>
+        db
+          .update(project)
+          .set({ agentSystemPrompt: input.agentSystemPrompt, updatedAt: new Date() })
+          .where(and(eq(project.id, input.projectId), eq(project.ownerId, ctx.user.id)))
+          .returning({ id: project.id })
+      );
+      if (!rows[0]) throw new TRPCError({ code: 'FORBIDDEN' });
+      return { ok: true };
+    }),
+
   // Schedule deletion — gives collaborators 7 days to export their work
   delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: projectId }) => {
     const scheduledDeleteAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
