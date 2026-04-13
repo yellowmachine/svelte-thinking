@@ -165,9 +165,7 @@
 		'perplexity/sonar': 'Perplexity Sonar',
 		'perplexity/sonar-pro': 'Perplexity Sonar Pro'
 	};
-	const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
-
-	let agentModel = $state<string>(DEFAULT_MODEL);
+	let agentModel = $state<string>('anthropic/claude-sonnet-4-6');
 	const activeModelLabel = $derived(MODEL_LABELS[agentModel] ?? agentModel);
 
 	async function loadAiConfig() {

@@ -12,7 +12,7 @@ import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { userApiKey, userProfile, userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember, organizationApiKey } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
-import { type AiTask, DEFAULT_MODEL as AI_DEFAULT_MODEL, parseTaskConfig, fetchOpenRouterPrices } from './aiConfig';
+import { type AiTask, getDefaultModel, parseTaskConfig, fetchOpenRouterPrices } from './aiConfig';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import type { Db } from '$lib/server/db';
 
@@ -510,7 +510,7 @@ export async function resolveTaskKey(
   userId: string,
   task: AiTask,
   projectId?: string,
-  fallbackModel: string = DEFAULT_MODEL
+  fallbackModel: string = getDefaultModel(task)
 ): Promise<{ apiKey: string; model: string; resolvedOrgId?: string }> {
   const cacheKey = CACHE_KEY.taskKey(userId, task, projectId ?? '');
   const cached = await cacheGet<{ apiKey: string; model: string; resolvedOrgId?: string }>(cacheKey);
@@ -584,7 +584,7 @@ export async function resolveTaskKey(
             message: 'Error decrypting org API key.'
           });
         }
-        const model = orgTaskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
+        const model = orgTaskEntry?.model ?? fallbackModel;
         const result = { apiKey, model, resolvedOrgId: orgId };
         await cacheSet(cacheKey, result, TTL.taskKey);
         return result;
@@ -646,12 +646,11 @@ export async function resolveTaskKey(
     });
   }
 
-  const model = taskEntry?.model ?? fallbackModel ?? AI_DEFAULT_MODEL;
+  const model = taskEntry?.model ?? fallbackModel;
   const result = { apiKey, model };
   await cacheSet(cacheKey, result, TTL.taskKey);
   return result;
 }
-const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
 // Fixed USD→EUR rate for cost estimates (good enough for beta quotas)
 const USD_TO_EUR = 0.92;
 

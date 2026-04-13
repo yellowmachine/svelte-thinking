@@ -10,7 +10,7 @@ import { encryptSecret } from '$lib/server/kms';
 // ---------------------------------------------------------------------------
 
 export type { AiTask, TaskConfig, AiTaskConfig } from '$lib/ai-config';
-export { AI_TASKS, MODELS, TOOL_CALLING_MODELS, parseTaskConfig } from '$lib/ai-config';
+export { AI_TASKS, MODELS, TOOL_CALLING_MODELS, parseTaskConfig, getDefaultModel } from '$lib/ai-config';
 import type { AiTask, AiTaskConfig } from '$lib/ai-config';
 import { AI_TASKS, MODELS, parseTaskConfig } from '$lib/ai-config';
 
@@ -65,7 +65,6 @@ function formatPrice(pricePerToken: number): string {
   return `$${perMillion.toFixed(2)}/1M`;
 }
 
-export const DEFAULT_MODEL = 'anthropic/claude-haiku-4-5';
 
 // ---------------------------------------------------------------------------
 // Router

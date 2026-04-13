@@ -7,7 +7,7 @@
 	import QRCode from 'qrcode';
 	import ThemePicker from '$lib/components/layout/ThemePicker.svelte';
 	import OrgSettings from '$lib/components/projects/OrgSettings.svelte';
-	import { MODEL_RECOMMENDATIONS } from '$lib/ai-config';
+	import { MODEL_RECOMMENDATIONS, MODEL_SHORT_LABEL } from '$lib/ai-config';
 
 	let { data }: { data: PageData } = $props();
 
@@ -66,7 +66,7 @@
 	};
 	type TaskConfig = { keyId: string; model: string };
 	type AiTaskId = 'agent' | 'draft' | 'review' | 'requirements';
-	type AiTaskDef = { id: AiTaskId; label: string; description: string };
+	type AiTaskDef = { id: AiTaskId; label: string; description: string; hint: string; defaultModel: string };
 	type AiModel = { id: string; label: string; toolCalling: boolean; pricing: string | null };
 
 	const TASK_LABELS: Record<AiTaskId, string> = {
@@ -1269,7 +1269,7 @@
 											}}
 											class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 										>
-											<option value="">— Default model —</option>
+											<option value="">— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option>
 											{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
 												{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
 													task.id as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup'

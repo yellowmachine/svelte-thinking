@@ -7,7 +7,7 @@ import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
-import { parseTaskConfig, DEFAULT_MODEL } from './aiConfig';
+import { parseTaskConfig, getDefaultModel } from './aiConfig';
 import { coerceTemplate, canManageRequirements, type TemplateType } from '$lib/domain/requirements';
 import type { Db } from '$lib/server/db';
 
@@ -104,7 +104,7 @@ async function generateRequirementsFromAI(
 		});
 	}
 
-	const model = taskEntry?.model ?? DEFAULT_MODEL;
+	const model = taskEntry?.model ?? getDefaultModel('requirements');
 
 	const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
 
