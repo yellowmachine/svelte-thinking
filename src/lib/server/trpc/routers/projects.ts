@@ -13,7 +13,7 @@ import { projectInterest } from '$lib/server/db/schemas/discover.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { user } from '$lib/server/db/auth.schema';
-import { embedQuery } from '$lib/server/embeddings';
+import { embedQuery, indexDocument } from '$lib/server/embeddings';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
@@ -667,6 +667,10 @@ export const projectsRouter = router({
           .update(document)
           .set({ currentVersionId: versionId })
           .where(eq(document.id, docId));
+
+        // Index the document for semantic search — fire-and-forget, same as commit flow
+        indexDocument(db, docId, projectId, content)
+          .catch((err) => console.error('[embeddings] indexDocument failed (sample):', err));
       }
 
       return { projectId };
