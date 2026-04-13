@@ -1903,7 +1903,7 @@
 					}}
 					class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
-					Exportar
+					Export
 					<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
 						<path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 					</svg>
