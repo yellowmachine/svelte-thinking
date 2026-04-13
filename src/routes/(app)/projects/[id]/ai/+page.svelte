@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
 	import { trpc } from '$lib/utils/trpc';
 	import ActionCard from '$lib/components/ai/ActionCard.svelte';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
@@ -204,6 +206,12 @@
 		}
 	}
 
+	// ── Markdown rendering ────────────────────────────────────────────────────
+	function renderMd(text: string): string {
+		const raw = marked.parse(text) as string;
+		return typeof DOMPurify.sanitize === 'function' ? DOMPurify.sanitize(raw) : raw;
+	}
+
 	// ── Privacy onboarding ────────────────────────────────────────────────────
 	const PRIVACY_KEY = 'scholio_ai_privacy_seen';
 	let showPrivacyNotice = $state(
@@ -374,9 +382,14 @@
 								<div
 									class="rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role === 'user'
 										? 'rounded-tr-sm bg-accent text-white'
-										: 'rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
+										: 'chat-prose rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
 								>
-									{msg.content}
+									{#if msg.role === 'assistant'}
+										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+										{@html renderMd(msg.content)}
+									{:else}
+										{msg.content}
+									{/if}
 								</div>
 								{#if msg.role === 'assistant' && msg.docsUsed?.length}
 								<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
@@ -538,3 +551,46 @@
 	onconfirm={confirmDeleteConversation}
 	oncancel={() => (convToDelete = null)}
 />
+
+<style>
+	/* Prose styles scoped to assistant chat bubbles */
+	:global(.chat-prose p) { margin: 0.4em 0; }
+	:global(.chat-prose p:first-child) { margin-top: 0; }
+	:global(.chat-prose p:last-child) { margin-bottom: 0; }
+	:global(.chat-prose ul, .chat-prose ol) { padding-left: 1.25em; margin: 0.4em 0; }
+	:global(.chat-prose li) { margin: 0.15em 0; }
+	:global(.chat-prose h1, .chat-prose h2, .chat-prose h3) {
+		font-family: var(--font-serif, serif);
+		font-weight: 600;
+		margin: 0.75em 0 0.25em;
+		line-height: 1.3;
+	}
+	:global(.chat-prose h1) { font-size: 1.1em; }
+	:global(.chat-prose h2) { font-size: 1.05em; }
+	:global(.chat-prose h3) { font-size: 1em; }
+	:global(.chat-prose code) {
+		font-family: ui-monospace, monospace;
+		font-size: 0.85em;
+		background: rgba(0,0,0,0.06);
+		border-radius: 3px;
+		padding: 0.1em 0.3em;
+	}
+	:global(.chat-prose pre) {
+		background: rgba(0,0,0,0.06);
+		border-radius: 6px;
+		padding: 0.75em 1em;
+		overflow-x: auto;
+		margin: 0.5em 0;
+	}
+	:global(.chat-prose pre code) { background: none; padding: 0; }
+	:global(.chat-prose blockquote) {
+		border-left: 3px solid currentColor;
+		opacity: 0.7;
+		margin: 0.4em 0;
+		padding-left: 0.75em;
+	}
+	:global(.chat-prose strong) { font-weight: 600; }
+	:global(.chat-prose em) { font-style: italic; }
+	:global(.chat-prose a) { text-decoration: underline; text-underline-offset: 2px; }
+	:global(.chat-prose hr) { border: none; border-top: 1px solid currentColor; opacity: 0.2; margin: 0.75em 0; }
+</style>
