@@ -599,13 +599,16 @@
 								id="email"
 								type="email"
 								bind:value={email}
-								readonly={data.isAdmin}
-								class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink
-									{data.isAdmin ? 'cursor-default opacity-60' : ''}"
+								readonly
+								class="cursor-default rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink opacity-60 focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 							/>
 							{#if data.isAdmin}
 								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 									Managed by environment config (<code class="font-mono">ADMIN_EMAIL</code>).
+								</p>
+							{:else}
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									El email no puede modificarse. Si necesitas cambiarlo, contacta con soporte.
 								</p>
 							{/if}
 						</div>
