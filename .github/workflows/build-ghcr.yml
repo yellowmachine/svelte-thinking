@@ -230,3 +230,14 @@ jobs:
             -H "x-github-event: Push Hook" \
             -H "Content-Type: application/json" \
             -d '{"ref":"refs/heads/staging"}'
+
+  notify-failure:
+    needs: [build-app, build-typst, build-scipy, build-embed, build-backup, deploy-dokploy]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on workflow failure
+        run: |
+          curl --silent --show-error -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\":\"🔴 *Build failed* · \`${{ github.repository }}\` · branch \`${{ github.ref_name }}\`\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Ver en GitHub Actions>\"}"
