@@ -1189,7 +1189,7 @@
 								</button>
 							</div>
 							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Encrypted with AWS KMS before storage.
+								Encrypted before storage.
 							</p>
 						</div>
 					{/if}
@@ -1919,7 +1919,7 @@
 							/>
 						</svg>
 						<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-							Credentials are encrypted with AWS KMS before being stored. Scholio does not access
+							Credentials are encrypted before being stored. Scholio does not access
 							your bucket except to upload or delete files that you manage yourself.
 						</p>
 					</div>
