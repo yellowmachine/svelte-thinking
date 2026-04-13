@@ -720,6 +720,15 @@
 
 			</div>
 			<div class="hidden shrink-0 items-center gap-2 sm:flex">
+				<a
+					href="/projects/{data.project.id}/ai"
+					class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent transition-colors hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+					Assistant
+				</a>
 				{#if data.openComments > 0}
 					<a
 						href="/projects/{data.project.id}/review"
