@@ -231,6 +231,12 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"ref":"refs/heads/staging"}'
 
+      - name: Notify Slack on successful deploy
+        run: |
+          curl --silent --show-error -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\":\"✅ *Deployed to staging* · \`${{ github.ref_name }}\` @ \`${{ github.sha }}\`\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Ver en GitHub Actions>\"}"
+
   notify-failure:
     needs: [build-app, build-typst, build-scipy, build-embed, build-backup, deploy-dokploy]
     if: failure()
