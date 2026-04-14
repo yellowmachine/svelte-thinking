@@ -7,13 +7,14 @@
 
 	let { data }: { data: PageData } = $props();
 
-	type PanelMode = 'preview' | 'diff';
+	type PanelMode = 'preview' | 'diff' | 'summary';
 	type Version = (typeof data.versions)[number];
 
 	let selectedVersion = $state<Version | null>(null);
 	let panelMode = $state<PanelMode>('diff');
 	let loading = $state(false);
 	let versionContent = $state<string | null>(null);
+	let summaryContent = $state<string | null>(null);
 	let diffData = $state<{
 		current: { versionNumber: number; content: string };
 		previous: { versionNumber: number; content: string } | null;
@@ -90,13 +91,19 @@
 			selectedVersion = null;
 			versionContent = null;
 			diffData = null;
+			summaryContent = null;
 			return;
 		}
 		selectedVersion = v;
 		panelMode = mode;
-		loading = true;
 		versionContent = null;
 		diffData = null;
+		summaryContent = null;
+		if (mode === 'summary') {
+			summaryContent = v.aiSummary ?? null;
+			return;
+		}
+		loading = true;
 		try {
 			if (mode === 'preview') {
 				const row = await trpc.documents.versionContent.query(v.id);
@@ -223,6 +230,17 @@
 								>
 									Diff
 								</button>
+								{#if v.aiSummary}
+									<button
+										onclick={() => selectVersion(v, 'summary')}
+										class="rounded px-2 py-1 font-sans text-xs transition-colors {selectedVersion?.id ===
+											v.id && panelMode === 'summary'
+											? 'bg-accent text-white'
+											: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+									>
+										Summary
+									</button>
+								{/if}
 								{#if data.canWrite}
 									<button
 										onclick={() => restoreVersion(v)}
@@ -323,6 +341,21 @@
 						oldLabel={diffData.previous ? `v${diffData.previous.versionNumber}` : '(empty)'}
 						newLabel="v{diffData.current.versionNumber}"
 					/>
+				</div>
+			{:else if panelMode === 'summary'}
+				<div class="mx-auto max-w-2xl px-6 py-10">
+					<p class="mb-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						v{selectedVersion.versionNumber} · AI summary
+					</p>
+					{#if summaryContent}
+						<p class="font-sans text-sm leading-relaxed text-ink dark:text-dark-ink whitespace-pre-wrap">
+							{summaryContent}
+						</p>
+					{:else}
+						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+							No summary available for this version.
+						</p>
+					{/if}
 				</div>
 			{/if}
 		</main>

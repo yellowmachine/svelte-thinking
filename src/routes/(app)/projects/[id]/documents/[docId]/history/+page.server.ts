@@ -35,6 +35,7 @@ export const load: PageServerLoad = async (event) => {
 					id: documentVersion.id,
 					versionNumber: documentVersion.versionNumber,
 					changeDescription: documentVersion.changeDescription,
+					aiSummary: documentVersion.aiSummary,
 					createdBy: documentVersion.createdBy,
 					createdAt: documentVersion.createdAt
 				})
