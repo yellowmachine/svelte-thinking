@@ -19,6 +19,7 @@ import { orgsRouter } from './routers/orgs';
 import { s3ConfigRouter } from './routers/s3Config';
 import { usageRouter } from './routers/usage';
 import { versionSharesRouter } from './routers/versionShares';
+import { notificationsRouter } from './routers/notifications';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -40,7 +41,8 @@ export const appRouter = router({
 	orgs: orgsRouter,
 	s3Config: s3ConfigRouter,
 	usage: usageRouter,
-	versionShares: versionSharesRouter
+	versionShares: versionSharesRouter,
+	notifications: notificationsRouter
 });
 
 export type AppRouter = typeof appRouter;

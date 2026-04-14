@@ -1,8 +1,10 @@
 import { redirect } from '@sveltejs/kit';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gt, lt, not, exists } from 'drizzle-orm';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { userProfile, userApiKey, userS3Config } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
+import { notification, notificationDismissal } from '$lib/server/db/schemas/notifications.schema';
+import { db } from '$lib/server/db';
 import { sql } from 'drizzle-orm';
 import { parseTaskConfig } from '$lib/ai-config';
 import type { LayoutServerLoad } from './$types';
@@ -18,8 +20,33 @@ export const load: LayoutServerLoad = async (event) => {
   }
 
   const userId = event.locals.user.id;
+  const now = new Date();
 
-  const [pending, profile, ownedOrgs, memberOrgs, aiKeys, userS3ConfigKey] = await event.locals.withRLS((tx) =>
+  const [activeNotifications, [pending, profile, ownedOrgs, memberOrgs, aiKeys, userS3ConfigKey]] = await Promise.all([
+    db
+      .select({ id: notification.id, message: notification.message, expiresAt: notification.expiresAt })
+      .from(notification)
+      .where(
+        and(
+          lt(notification.startsAt, now),
+          gt(notification.expiresAt, now),
+          not(
+            exists(
+              db
+                .select({ one: notificationDismissal.notificationId })
+                .from(notificationDismissal)
+                .where(
+                  and(
+                    eq(notificationDismissal.notificationId, notification.id),
+                    eq(notificationDismissal.userId, userId)
+                  )
+                )
+            )
+          )
+        )
+      )
+      .orderBy(notification.startsAt),
+    event.locals.withRLS((tx) =>
     Promise.all([
       tx
         .select({ id: projectInvitation.id })
@@ -53,7 +80,7 @@ export const load: LayoutServerLoad = async (event) => {
         .from(userS3Config)
         .where(eq(userS3Config.userId, userId))
     ])
-  );
+  )]);
 
   // Deduplicate
   const seen = new Set(ownedOrgs.map((o) => o.id));
@@ -71,5 +98,6 @@ export const load: LayoutServerLoad = async (event) => {
     aiTaskConfig: parseTaskConfig(profile[0]?.aiTaskConfig ?? null),
     hasAiKey: aiKeys.some((k) => k.enabled),
     hasUserS3Config: userS3ConfigKey[0] !== undefined || profile[0]?.useInternalStorage === true,
+    activeNotifications
   };
 };

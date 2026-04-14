@@ -53,12 +53,23 @@
 
 		<a
 			href="/admin/panics3"
-			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent sm:col-span-2"
+			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
 		>
 			<p class="font-sans text-xs font-medium uppercase tracking-wider text-ink-faint dark:text-dark-ink-faint">Storage</p>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Gestión de almacenamiento interno (S3).</p>
 			<p class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100">
 				Ver storage →
+			</p>
+		</a>
+
+		<a
+			href="/admin/notifications"
+			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
+		>
+			<p class="font-sans text-xs font-medium uppercase tracking-wider text-ink-faint dark:text-dark-ink-faint">Notifications</p>
+			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Banners informativos para todos los usuarios.</p>
+			<p class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100">
+				Manage →
 			</p>
 		</a>
 	</div>
