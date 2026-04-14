@@ -9,6 +9,8 @@ import { project, projectCollaborator } from '$lib/server/db/schemas/projects.sc
 import { notificationPreference } from '$lib/server/db/schemas/users.schema';
 import { extractWikilinks } from '$lib/utils/wikilinks';
 import { indexDocument } from '$lib/server/embeddings';
+import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
+import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { sendCommitNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 import { DOCUMENT_TYPES } from '$lib/domain/document';
@@ -394,13 +396,25 @@ export const documentsRouter = router({
 					}
 				}
 
-				return { document: updated, versionNumber: nextVersion, _projectId: updated.projectId, _content: contentToCommit };
+				return { document: updated, versionNumber: nextVersion, _projectId: updated.projectId, _content: contentToCommit, _versionId: versionId, _title: updated.title, _type: updated.type };
 			});
 
 			// Fire-and-forget outside the transaction so tx is already committed
 			ctx.withRLS((db) =>
 				indexDocument(db, input.documentId, result._projectId, result._content)
 			).catch((err) => console.error('[embeddings] indexDocument failed:', err));
+
+			// Fire-and-forget: generate AI summary for the project chat agent
+			void (async () => {
+				try {
+					const { apiKey } = await resolveTaskKey(ctx.withRLS as never, ctx.db as Db, ctx.user.id, 'lookup', result._projectId);
+					await ctx.withRLS((db) =>
+						generateAndSaveDocumentSummary(db as Db, result._versionId, result._content, result._title, result._type, apiKey)
+					);
+				} catch (err) {
+					console.error('[summary] generateDocumentSummary failed:', err);
+				}
+			})();
 
 			notifyCollaboratorsOnCommit(
 				ctx.db,

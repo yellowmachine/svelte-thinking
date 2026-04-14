@@ -14,6 +14,7 @@ import { organization, organizationMember, organizationApiKey } from '$lib/serve
 import { decryptSecret } from '$lib/server/kms';
 import { type AiTask, getDefaultModel, parseTaskConfig, fetchOpenRouterPrices } from './aiConfig';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
+import { SUMMARY_MIN_CHARS } from '$lib/server/documentSummary';
 import type { Db } from '$lib/server/db';
 
 export type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
@@ -73,13 +74,17 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
           id: document.id,
           title: document.title,
           type: document.type,
-          wordCount: sql<number>`coalesce(length(${document.draftContent}) / 6, 0)`,
-          updatedAt: document.updatedAt
+          updatedAt: document.updatedAt,
+          aiSummary: documentVersion.aiSummary,
+          // Content only for small documents (avoids pulling huge text for large ones)
+          content: sql<string | null>`CASE WHEN length(${documentVersion.content}) < ${SUMMARY_MIN_CHARS} THEN ${documentVersion.content} ELSE NULL END`,
+          contentLength: sql<number>`coalesce(length(${documentVersion.content}), 0)`
         })
         .from(document)
+        .leftJoin(documentVersion, eq(document.currentVersionId, documentVersion.id))
         .where(eq(document.projectId, projectId))
         .orderBy(desc(document.updatedAt))
-    ) as Promise<{ id: string; title: string; type: string; wordCount: number; updatedAt: Date }[]>,
+    ) as Promise<{ id: string; title: string; type: string; updatedAt: Date; aiSummary: string | null; content: string | null; contentLength: number }[]>,
 
     withRLS((db) =>
       db
@@ -125,11 +130,24 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
   lines.push('');
 
   if (docs.length > 0) {
-    lines.push('DOCUMENTOS (usa read_document para leer el contenido de uno):');
+    lines.push('## DOCUMENTOS DEL PROYECTO');
+    lines.push('');
     for (const doc of docs) {
       const date = doc.updatedAt.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-      const words = doc.wordCount > 0 ? `~${doc.wordCount.toLocaleString()} palabras` : 'sin contenido';
-      lines.push(`  • [${doc.id}] "${doc.title}" (${doc.type}) — ${words} — ${date}`);
+      lines.push(`### [${doc.id}] "${doc.title}" (${doc.type}) — ${date}`);
+      if (doc.aiSummary) {
+        // Large doc with AI summary
+        lines.push(doc.aiSummary);
+      } else if (doc.content) {
+        // Small doc — include full committed content
+        lines.push(doc.content);
+      } else if (doc.contentLength > 0) {
+        // Large doc, summary not yet generated — mention it and offer read_document
+        lines.push(`*(~${Math.round(doc.contentLength / 6).toLocaleString()} words — summary pending. Use read_document to read full content.)*`);
+      } else {
+        lines.push('*(no committed content yet)*');
+      }
+      lines.push('');
     }
   } else {
     lines.push('DOCUMENTOS: ninguno todavía.');

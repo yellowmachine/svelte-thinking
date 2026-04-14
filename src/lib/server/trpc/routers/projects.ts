@@ -14,6 +14,8 @@ import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { user } from '$lib/server/db/auth.schema';
 import { embedQuery, indexDocument } from '$lib/server/embeddings';
+import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
+import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
@@ -671,6 +673,18 @@ export const projectsRouter = router({
         // Index the document for semantic search — fire-and-forget, same as commit flow
         indexDocument(db, docId, projectId, content)
           .catch((err) => console.error('[embeddings] indexDocument failed (sample):', err));
+
+        // Fire-and-forget: AI summary for the project chat agent
+        const _title = sampleDoc.title;
+        const _type = sampleDoc.docType;
+        void (async () => {
+          try {
+            const { apiKey } = await resolveTaskKey(ctx.withRLS as never, ctx.db as Db, userId, 'lookup', projectId);
+            await generateAndSaveDocumentSummary(db as Db, versionId, content, _title, _type, apiKey);
+          } catch (err) {
+            console.error('[summary] generateDocumentSummary failed (sample):', err);
+          }
+        })();
       }
 
       return { projectId };

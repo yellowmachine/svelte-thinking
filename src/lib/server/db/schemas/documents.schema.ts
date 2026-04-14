@@ -150,6 +150,8 @@ export const documentVersion = scholioSchema.table(
 		content: text('content').notNull().default(''),
 		versionNumber: integer('version_number').notNull().default(1),
 		changeDescription: text('change_description'),
+		// AI-generated summary for use by the project chat agent
+		aiSummary: text('ai_summary'),
 		createdBy: text('created_by').notNull(),
 		createdAt: timestamp('created_at').notNull().defaultNow()
 	},
