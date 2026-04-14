@@ -124,25 +124,22 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
   const p = proj[0];
   const lines: string[] = [];
 
-  lines.push(`Proyecto: "${p.title}"`);
-  if (p.description) lines.push(`Descripción: ${p.description}`);
-  if (p.requirementsTemplate) lines.push(`Tipo de documento: ${p.requirementsTemplate}`);
+  lines.push(`Project: "${p.title}"`);
+  if (p.description) lines.push(`Description: ${p.description}`);
+  if (p.requirementsTemplate) lines.push(`Document type: ${p.requirementsTemplate}`);
   lines.push('');
 
   if (docs.length > 0) {
-    lines.push('## DOCUMENTOS DEL PROYECTO');
+    lines.push('## PROJECT DOCUMENTS');
     lines.push('');
     for (const doc of docs) {
-      const date = doc.updatedAt.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+      const date = doc.updatedAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
       lines.push(`### [${doc.id}] "${doc.title}" (${doc.type}) — ${date}`);
       if (doc.aiSummary) {
-        // Large doc with AI summary
         lines.push(doc.aiSummary);
       } else if (doc.content) {
-        // Small doc — include full committed content
         lines.push(doc.content);
       } else if (doc.contentLength > 0) {
-        // Large doc, summary not yet generated — mention it and offer read_document
         lines.push(`*(~${Math.round(doc.contentLength / 6).toLocaleString()} words — summary pending. Use read_document to read full content.)*`);
       } else {
         lines.push('*(no committed content yet)*');
@@ -150,17 +147,17 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
       lines.push('');
     }
   } else {
-    lines.push('DOCUMENTOS: ninguno todavía.');
+    lines.push('DOCUMENTS: none yet.');
   }
   lines.push('');
 
   if (reqs.length > 0) {
     const fulfilled = reqs.filter((r) => r.fulfilledDocumentId !== null).length;
-    lines.push(`REQUISITOS (${fulfilled}/${reqs.length} completados, usa get_requirement_details para ver descripciones):`);
+    lines.push(`REQUIREMENTS (${fulfilled}/${reqs.length} completed, use get_requirement_details for descriptions):`);
     for (const req of reqs) {
       const icon = req.fulfilledDocumentId ? '✓' : req.required ? '✗' : '○';
       const docRef = req.fulfilledDocumentId ? ` → [${req.fulfilledDocumentId}]` : '';
-      const opt = req.required ? '' : ' (opcional)';
+      const opt = req.required ? '' : ' (optional)';
       lines.push(`  ${icon} "${req.name}"${opt}${docRef}`);
     }
     lines.push('');
@@ -168,7 +165,7 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
 
   const refTotal = refCount[0]?.total ?? 0;
   if (refTotal > 0) {
-    lines.push(`REFERENCIAS: ${refTotal} entradas (usa list_references para verlas).`);
+    lines.push(`REFERENCES: ${refTotal} entries (use list_references to view them).`);
   }
 
   const hasTheology = (theologyCount[0]?.total ?? 0) > 0;
@@ -237,16 +234,16 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
   ]);
 
   if (!proj[0]) return '';
-  const lines: string[] = [`Proyecto: "${proj[0].title}"`];
-  if (proj[0].description) lines.push(`Descripción: ${proj[0].description}`);
+  const lines: string[] = [`Project: "${proj[0].title}"`];
+  if (proj[0].description) lines.push(`Description: ${proj[0].description}`);
   lines.push('');
 
   // Requirements — all, with descriptions and status
   if (reqs.length > 0) {
-    lines.push('## Requisitos del proyecto');
+    lines.push('## Project requirements');
     for (const r of reqs) {
       const icon = r.fulfilledDocumentId ? '✓' : r.required ? '✗' : '○';
-      const opt = r.required ? '' : ' (opcional)';
+      const opt = r.required ? '' : ' (optional)';
       lines.push(`${icon} "${r.name}"${opt}`);
       if (r.description) lines.push(`   ${r.description}`);
     }
@@ -255,8 +252,8 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 
   // References — with abstract preview (≤200 chars)
   if (refs.length > 0) {
-    lines.push('## Bibliografía disponible');
-    lines.push('Usa las citekeys entre corchetes al citar: [@citeKey]');
+    lines.push('## Available bibliography');
+    lines.push('Use citekeys in brackets when citing: [@citeKey]');
     for (const r of refs) {
       const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
         .map((a) => [a.last, a.first].filter(Boolean).join(', '))
@@ -271,9 +268,9 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
   // Existing documents — first 400 chars as preview
   const filledDocs = docs.filter((d) => d.draftContent && d.draftContent.trim().length > 0);
   if (filledDocs.length > 0) {
-    lines.push('## Documentos existentes');
+    lines.push('## Existing documents');
     for (const d of filledDocs) {
-      const words = d.wordCount > 0 ? `~${d.wordCount.toLocaleString()} palabras` : '';
+      const words = d.wordCount > 0 ? `~${d.wordCount.toLocaleString()} words` : '';
       lines.push(`### ${d.title} (${d.type})${words ? ` — ${words}` : ''}`);
       const preview = d.draftContent!.slice(0, 400).trim();
       lines.push(preview + (d.draftContent!.length > 400 ? '\n[…]' : ''));
@@ -294,14 +291,14 @@ const TOOLS = [
     function: {
       name: 'read_document',
       description:
-        'Lee el contenido completo de un documento del proyecto. ' +
-        'Úsala cuando necesites analizar, revisar o citar el contenido de un documento concreto.',
+        'Read the full content of a project document. ' +
+        'Use this when you need to analyse, review, or quote the content of a specific document in detail.',
       parameters: {
         type: 'object',
         properties: {
           id: {
             type: 'string',
-            description: 'ID del documento (aparece entre corchetes en el índice)'
+            description: 'Document ID (shown in brackets in the index)'
           }
         },
         required: ['id']
@@ -313,15 +310,15 @@ const TOOLS = [
     function: {
       name: 'search_documents_semantic',
       description:
-        'Busca párrafos relevantes en los documentos del proyecto usando similitud semántica. ' +
-        'Devuelve los fragmentos más cercanos al significado de la consulta, aunque no coincidan palabra por palabra. ' +
-        'Úsala siempre que necesites encontrar contenido sobre un tema, concepto o idea.',
+        'Search for relevant passages across project documents using semantic similarity. ' +
+        'Returns the chunks closest in meaning to the query, even without exact word matches. ' +
+        'Use when you need to find content about a specific topic, concept, or idea.',
       parameters: {
         type: 'object',
         properties: {
           query: {
             type: 'string',
-            description: 'Descripción del contenido que buscas (en lenguaje natural)'
+            description: 'Description of the content you are looking for (natural language)'
           }
         },
         required: ['query']
@@ -332,7 +329,7 @@ const TOOLS = [
     type: 'function' as const,
     function: {
       name: 'list_references',
-      description: 'Devuelve la bibliografía completa del proyecto con citekeys.',
+      description: 'Returns the full project bibliography with citekeys.',
       parameters: { type: 'object', properties: {}, required: [] }
     }
   },
@@ -341,8 +338,8 @@ const TOOLS = [
     function: {
       name: 'get_requirement_details',
       description:
-        'Devuelve los requisitos del proyecto con sus descripciones completas y estado actual. ' +
-        'Útil para entender qué secciones faltan o qué debe contener cada una.',
+        'Returns project requirements with their full descriptions and current status. ' +
+        'Useful for understanding which sections are missing or what each one should contain.',
       parameters: { type: 'object', properties: {}, required: [] }
     }
   },
@@ -351,23 +348,23 @@ const TOOLS = [
     function: {
       name: 'create_document',
       description:
-        'Propone crear un nuevo documento en el proyecto con contenido generado. ' +
-        'El usuario verá una tarjeta de confirmación antes de que el documento se cree. ' +
-        'IMPORTANTE: describe siempre en texto lo que vas a proponer ANTES de llamar a esta herramienta. ' +
-        'Usa requirementId si hay un requisito pendiente que este documento cumpliría.',
+        'Proposes creating a new document in the project with generated content. ' +
+        'The user will see a confirmation card before the document is created. ' +
+        'IMPORTANT: always describe in text what you are about to propose BEFORE calling this tool. ' +
+        'Use requirementId if there is a pending requirement this document would fulfil.',
       parameters: {
         type: 'object',
         properties: {
-          title: { type: 'string', description: 'Título del documento' },
+          title: { type: 'string', description: 'Document title' },
           type: {
             type: 'string',
             enum: ['paper', 'notes', 'outline', 'bibliography', 'supplementary'],
-            description: 'Tipo de documento'
+            description: 'Document type'
           },
-          content: { type: 'string', description: 'Contenido completo en Markdown' },
+          content: { type: 'string', description: 'Full content in Markdown' },
           requirementId: {
             type: 'string',
-            description: 'ID del requisito a vincular al documento tras su creación (opcional)'
+            description: 'ID of the requirement to link to this document after creation (optional)'
           }
         },
         required: ['title', 'type', 'content']
@@ -1266,12 +1263,12 @@ Usa formato Markdown: encabezados, listas, párrafos bien estructurados. \
 Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-comentarios.`;
 
       const userMessage = [
-        `Proyecto: **${proj[0].title}**`,
-        proj[0].description ? `Descripción: ${proj[0].description}` : '',
+        `Project: **${proj[0].title}**`,
+        proj[0].description ? `Description: ${proj[0].description}` : '',
         '',
-        '## Documentos de contexto',
+        '## Context documents',
         contextBlock + externalBlock,
-        input.extraInstructions ? `\n## Instrucciones adicionales\n${input.extraInstructions}` : ''
+        input.extraInstructions ? `\n## Additional instructions\n${input.extraInstructions}` : ''
       ]
         .filter(Boolean)
         .join('\n');
