@@ -1,6 +1,6 @@
 // Shared AI configuration constants — safe to import in both client and server code.
 
-export type AiTask = 'agent' | 'draft' | 'review' | 'requirements' | 'lookup' | 'bibliography' | 'spell' | 'grammar';
+export type AiTask = 'agent' | 'draft' | 'review' | 'requirements' | 'lookup' | 'bibliography' | 'spell' | 'grammar' | 'summary';
 
 export interface TaskConfig {
 	keyId: string;
@@ -17,7 +17,8 @@ export const AI_TASKS: { id: AiTask; label: string; description: string; hint: s
 	{ id: 'lookup', label: 'Lookup', description: 'Quick in-editor lookups (name suggestions, @@ trigger)', hint: 'Runs on every @@ trigger so speed and low cost matter most. Haiku or Gemini Flash are ideal.', defaultModel: 'anthropic/claude-haiku-4-5' },
 	{ id: 'bibliography', label: 'Bibliography', description: 'Extract bibliographic metadata from a URL', hint: 'Simple extraction task — a fast, cheap model like Haiku is more than enough.', defaultModel: 'anthropic/claude-haiku-4-5' },
 	{ id: 'spell', label: 'Spell check', description: 'On-demand spelling and grammar correction', hint: 'Lightweight task. Any fast model works well; no need for a large or expensive one.', defaultModel: 'anthropic/claude-haiku-4-5' },
-	{ id: 'grammar', label: 'Grammar assistant', description: 'Grammar and style suggestions for non-native English writers', hint: 'Lightweight task. Haiku or Gemini Flash are ideal — fast and accurate enough for grammar corrections.', defaultModel: 'anthropic/claude-haiku-4-5' }
+	{ id: 'grammar', label: 'Grammar assistant', description: 'Grammar and style suggestions for non-native English writers', hint: 'Lightweight task. Haiku or Gemini Flash are ideal — fast and accurate enough for grammar corrections.', defaultModel: 'anthropic/claude-haiku-4-5' },
+	{ id: 'summary', label: 'Document summary', description: 'AI summary generated on each commit for the project chat agent', hint: 'Runs once per commit in the background. A fast, cheap model like Haiku is ideal — the summary is short and factual.', defaultModel: 'anthropic/claude-haiku-4-5' }
 ];
 
 export function getDefaultModel(task: AiTask): string {
@@ -29,9 +30,9 @@ export function getDefaultModel(task: AiTask): string {
 export const MODEL_RECOMMENDATIONS: Record<string, AiTask[]> = {
 	'anthropic/claude-opus-4-5': ['agent', 'draft'],
 	'anthropic/claude-sonnet-4-6': ['agent', 'draft', 'review'],
-	'anthropic/claude-haiku-4-5': ['lookup', 'bibliography', 'spell', 'grammar'],
+	'anthropic/claude-haiku-4-5': ['lookup', 'bibliography', 'spell', 'grammar', 'summary'],
 	'google/gemini-2.5-pro-preview': ['draft', 'review'],
-	'google/gemini-2.5-flash-preview': ['requirements', 'lookup'],
+	'google/gemini-2.5-flash-preview': ['requirements', 'lookup', 'summary'],
 	'openai/gpt-4o': ['agent', 'draft'],
 	'openai/o3-mini': ['review'],
 	'deepseek/deepseek-r1': ['review', 'requirements'],

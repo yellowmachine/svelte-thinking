@@ -407,9 +407,9 @@ export const documentsRouter = router({
 			// Fire-and-forget: generate AI summary for the project chat agent
 			void (async () => {
 				try {
-					const { apiKey } = await resolveTaskKey(ctx.withRLS as never, ctx.db as Db, ctx.user.id, 'lookup', result._projectId);
+					const { apiKey, model } = await resolveTaskKey(ctx.withRLS as never, ctx.db as Db, ctx.user.id, 'summary', result._projectId);
 					await ctx.withRLS((db) =>
-						generateAndSaveDocumentSummary(db as Db, result._versionId, result._content, result._title, result._type, apiKey)
+						generateAndSaveDocumentSummary(db as Db, result._versionId, result._content, result._title, result._type, apiKey, model)
 					);
 				} catch (err) {
 					console.error('[summary] generateDocumentSummary failed:', err);

@@ -679,8 +679,8 @@ export const projectsRouter = router({
         const _type = sampleDoc.docType;
         void (async () => {
           try {
-            const { apiKey } = await resolveTaskKey(ctx.withRLS as never, ctx.db as Db, userId, 'lookup', projectId);
-            await generateAndSaveDocumentSummary(db as Db, versionId, content, _title, _type, apiKey);
+            const { apiKey, model } = await resolveTaskKey(ctx.withRLS as never, ctx.db as Db, userId, 'summary', projectId);
+            await generateAndSaveDocumentSummary(db as Db, versionId, content, _title, _type, apiKey, model);
           } catch (err) {
             console.error('[summary] generateDocumentSummary failed (sample):', err);
           }

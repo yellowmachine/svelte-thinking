@@ -9,15 +9,13 @@ import type { Db } from '$lib/server/db';
  */
 export const SUMMARY_MIN_CHARS = 3000;
 
-const SUMMARY_MODEL = 'anthropic/claude-haiku-4-5';
-
 const SUMMARY_SYSTEM_PROMPT =
 	'Generate a concise but comprehensive summary of the following academic document for use by an AI research assistant. ' +
 	'Capture: main thesis or argument, key concepts, structure, and notable conclusions. ' +
 	'Be factual and direct. Maximum 200 words. Write in English regardless of the document language.';
 
 /**
- * Calls OpenRouter (Haiku) to summarise a document version and saves the result to
+ * Calls OpenRouter to summarise a document version and saves the result to
  * documentVersion.aiSummary. Returns early (silently) for short documents — callers
  * should include the full content directly in those cases.
  *
@@ -29,7 +27,8 @@ export async function generateAndSaveDocumentSummary(
 	content: string,
 	title: string,
 	docType: string,
-	apiKey: string
+	apiKey: string,
+	model: string
 ): Promise<void> {
 	if (content.trim().length < SUMMARY_MIN_CHARS) return;
 
@@ -43,7 +42,7 @@ export async function generateAndSaveDocumentSummary(
 				'X-Title': 'Scholio'
 			},
 			body: JSON.stringify({
-				model: SUMMARY_MODEL,
+				model,
 				max_tokens: 400,
 				messages: [
 					{ role: 'system', content: SUMMARY_SYSTEM_PROMPT },
