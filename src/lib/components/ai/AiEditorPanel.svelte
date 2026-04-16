@@ -4,6 +4,7 @@
 	import { MODELS } from '$lib/ai-config';
 	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
 	import type { PendingEditorAction } from '$lib/server/trpc/routers/ai';
+	import { classifyAiError } from '$lib/utils/ai-errors';
 
 	type Props = {
 		projectId: string;
@@ -33,7 +34,7 @@
 	let selectedModel = $state(defaultModel);
 
 	type Message = {
-		role: 'user' | 'assistant';
+		role: 'user' | 'assistant' | 'system';
 		content: string;
 		docsUsed?: { id: string; title: string }[];
 	};
@@ -130,9 +131,14 @@
 
 			await scrollToBottom();
 		} catch (e: unknown) {
-			const isNoKey = e && typeof e === 'object' && 'data' in e && (e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED';
-			error = isNoKey ? 'NO_KEY' : (e instanceof Error ? e.message : 'Error sending message.');
 			messages = messages.slice(0, -1);
+			const { kind, message: errMsg } = classifyAiError(e);
+			if (kind === 'system') {
+				messages = [...messages, { role: 'system', content: errMsg }];
+				await scrollToBottom();
+			} else {
+				error = errMsg;
+			}
 		} finally {
 			loading = false;
 		}
@@ -237,7 +243,13 @@
 		{:else}
 			<div class="flex flex-col gap-5">
 				{#each messages as msg, i}
-					{#if msg.role === 'user'}
+					{#if msg.role === 'system'}
+						<div class="flex items-center gap-2">
+							<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+							<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">{msg.content}</span>
+							<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+						</div>
+					{:else if msg.role === 'user'}
 						<div class="flex justify-end">
 							<div class="max-w-[85%] rounded-2xl rounded-tr-sm bg-accent px-4 py-2.5 font-sans text-sm leading-relaxed text-white">
 								{msg.content}

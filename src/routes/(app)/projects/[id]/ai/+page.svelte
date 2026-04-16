@@ -5,6 +5,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import ActionCard from '$lib/components/ai/ActionCard.svelte';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
+	import { classifyAiError } from '$lib/utils/ai-errors';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
@@ -115,7 +116,13 @@
 			scrollToBottom();
 		} catch (e) {
 			messages = messages.filter((m) => m.id !== tempId);
-			sendError = e instanceof Error ? e.message : 'Error al enviar';
+			const { kind, message: errMsg } = classifyAiError(e);
+			if (kind === 'system') {
+				messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: errMsg }];
+				scrollToBottom();
+			} else {
+				sendError = errMsg;
+			}
 		} finally {
 			stopThinking();
 			sending = false;
