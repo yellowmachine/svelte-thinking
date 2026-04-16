@@ -32,6 +32,7 @@ export const load: PageServerLoad = async (event) => {
 		projectTitle: p.title,
 		projectId,
 		isOwner: p.ownerId === userId,
+		canEdit: p.ownerId === userId || iss.ownerUserId === userId,
 		currentUserId: userId
 	};
 };

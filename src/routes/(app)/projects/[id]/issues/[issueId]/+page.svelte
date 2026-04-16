@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, beforeNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
+	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
@@ -12,59 +13,74 @@
 	type IssueStatus = typeof data.issue.status;
 	type IssuePriority = typeof data.issue.priority;
 
-	// ── Local state ───────────────────────────────────────────────────────────
-	let title = $state(untrack(() => data.issue.title));
+	// ── Persisted state (last saved values) ──────────────────────────────────
+	let savedTitle = $state(untrack(() => data.issue.title));
+	let savedContent = $state(untrack(() => data.issue.content ?? ''));
+
+	// ── Edit-mode state ───────────────────────────────────────────────────────
+	let editing = $state(false);
+	let editTitle = $state('');
+	let editContent = $state('');
+
 	let status = $state<IssueStatus>(untrack(() => data.issue.status));
 	let priority = $state<IssuePriority>(untrack(() => data.issue.priority));
-	let content = $state(untrack(() => data.issue.content ?? ''));
-
-	let editingTitle = $state(false);
-	let titleError = $state('');
-	let titleInputEl = $state<HTMLInputElement | null>(null);
-
-	$effect(() => {
-		if (editingTitle) titleInputEl?.select();
-	});
 
 	let saving = $state(false);
-	let saveTimer: ReturnType<typeof setTimeout> | null = null;
+	let saveError = $state('');
 	let showDeleteDialog = $state(false);
 	let deleting = $state(false);
 
-	// Can delete: owner always; creator can delete their own private issue
+	const isDirty = $derived(
+		editing && (editTitle.trim() !== savedTitle || editContent !== savedContent)
+	);
+
 	const canDelete = $derived(
 		data.isOwner || (data.issue.isPrivate && data.issue.ownerUserId === data.currentUserId)
 	);
 
-	// ── Title ─────────────────────────────────────────────────────────────────
-	function startEditTitle() {
-		editingTitle = true;
-		titleError = '';
+	// ── Edit mode ─────────────────────────────────────────────────────────────
+	function startEdit() {
+		editTitle = savedTitle;
+		editContent = savedContent;
+		saveError = '';
+		editing = true;
 	}
 
-	async function commitTitle() {
-		const trimmed = title.trim();
-		if (!trimmed || trimmed === data.issue.title) {
-			editingTitle = false;
-			title = data.issue.title;
-			return;
-		}
+	function cancelEdit() {
+		editing = false;
+		saveError = '';
+	}
+
+	async function save() {
+		const trimmedTitle = editTitle.trim();
+		if (!trimmedTitle) return;
+		saving = true;
+		saveError = '';
 		try {
-			await trpc.issues.update.mutate({ id: data.issue.id, title: trimmed });
-			data.issue.title = trimmed;
-			editingTitle = false;
-			titleError = '';
+			await trpc.issues.update.mutate({
+				id: data.issue.id,
+				title: trimmedTitle,
+				content: editContent || null
+			});
+			savedTitle = trimmedTitle;
+			savedContent = editContent;
+			data.issue.title = trimmedTitle;
+			editing = false;
 		} catch (e) {
-			titleError = e instanceof Error ? e.message : 'Could not rename issue.';
+			saveError = e instanceof Error ? e.message : 'Could not save.';
+		} finally {
+			saving = false;
 		}
 	}
 
-	function onTitleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') { e.preventDefault(); commitTitle(); }
-		if (e.key === 'Escape') { editingTitle = false; title = data.issue.title; }
+	function onSaveKeydown(e: KeyboardEvent) {
+		if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+			e.preventDefault();
+			save();
+		}
 	}
 
-	// ── Status / Priority ─────────────────────────────────────────────────────
+	// ── Status / Priority (any member) ────────────────────────────────────────
 	async function updateStatus(val: IssueStatus) {
 		status = val;
 		await trpc.issues.update.mutate({ id: data.issue.id, status: val });
@@ -73,20 +89,6 @@
 	async function updatePriority(val: IssuePriority) {
 		priority = val;
 		await trpc.issues.update.mutate({ id: data.issue.id, priority: val });
-	}
-
-	// ── Content (debounced auto-save) ─────────────────────────────────────────
-	function onContentChange(val: string) {
-		content = val;
-		if (saveTimer) clearTimeout(saveTimer);
-		saveTimer = setTimeout(async () => {
-			saving = true;
-			try {
-				await trpc.issues.update.mutate({ id: data.issue.id, content: val });
-			} finally {
-				saving = false;
-			}
-		}, 1500);
 	}
 
 	// ── Delete ────────────────────────────────────────────────────────────────
@@ -99,6 +101,14 @@
 			deleting = false;
 		}
 	}
+
+	// ── Navigation guard ──────────────────────────────────────────────────────
+	beforeNavigate(({ cancel }) => {
+		if (isDirty) {
+			const ok = confirm('You have unsaved changes. Leave anyway?');
+			if (!ok) cancel();
+		}
+	});
 
 	// ── Helpers ───────────────────────────────────────────────────────────────
 	const STATUS_OPTIONS: { value: IssueStatus; label: string }[] = [
@@ -129,10 +139,11 @@
 </script>
 
 <svelte:head>
-	<title>{data.issue.title} · {data.projectTitle}</title>
+	<title>{savedTitle} · {data.projectTitle}</title>
 </svelte:head>
 
-<div class="mx-auto max-w-3xl px-4 py-8">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="mx-auto max-w-3xl px-4 py-8" onkeydown={editing ? onSaveKeydown : undefined}>
 	<!-- Breadcrumb -->
 	<div class="mb-6 flex items-center gap-2 font-sans text-sm text-zinc-500 dark:text-zinc-400">
 		<a href={resolve(`/projects/${data.projectId}`)} class="hover:text-zinc-700 dark:hover:text-zinc-200">
@@ -146,31 +157,37 @@
 
 	<!-- Title -->
 	<div class="mb-4">
-		{#if editingTitle}
+		{#if editing}
 			<input
-				bind:this={titleInputEl}
-				bind:value={title}
-				onkeydown={onTitleKeydown}
-				onblur={commitTitle}
+				bind:value={editTitle}
+				onkeydown={(e) => { if (e.key === 'Escape') cancelEdit(); }}
 				class="w-full rounded border border-zinc-300 bg-transparent px-2 py-1 font-sans text-2xl font-semibold text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-600 dark:text-zinc-100"
 			/>
-			{#if titleError}
-				<p class="mt-1 font-sans text-xs text-red-500">{titleError}</p>
-			{/if}
 		{:else}
-			<button
-				type="button"
-				onclick={startEditTitle}
-				class="text-left font-sans text-2xl font-semibold text-zinc-900 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300"
-			>
-				{title}
-			</button>
+			<div class="flex items-start gap-2">
+				<h1 class="flex-1 font-sans text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+					{savedTitle}
+				</h1>
+				{#if data.canEdit}
+					<button
+						type="button"
+						onclick={startEdit}
+						title="Edit issue"
+						class="mt-1 shrink-0 rounded p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+					</button>
+				{/if}
+			</div>
 		{/if}
 	</div>
 
-	<!-- Meta bar: status · priority · save indicator -->
+	<!-- Meta bar -->
 	<div class="mb-6 flex flex-wrap items-center gap-3">
-		<!-- Status selector -->
+		<!-- Status selector (any member) -->
 		<div class="flex items-center gap-1.5">
 			<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500">Status</span>
 			<select
@@ -186,7 +203,7 @@
 
 		<span class="text-zinc-200 dark:text-zinc-700">|</span>
 
-		<!-- Priority selector -->
+		<!-- Priority selector (any member) -->
 		<div class="flex items-center gap-1.5">
 			<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500">Priority</span>
 			<select
@@ -206,28 +223,66 @@
 			</span>
 		{/if}
 
-		<span class="ml-auto font-sans text-xs text-zinc-400 dark:text-zinc-500">
-			{saving ? 'Saving…' : 'Saved'}
-		</span>
-
-		{#if canDelete}
-			<button
-				type="button"
-				onclick={() => { showDeleteDialog = true; }}
-				class="font-sans text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-			>
-				Delete
-			</button>
-		{/if}
+		<div class="ml-auto flex items-center gap-2">
+			{#if editing}
+				<button
+					type="button"
+					onclick={cancelEdit}
+					disabled={saving}
+					class="rounded-md px-3 py-1.5 font-sans text-sm text-zinc-500 transition-colors hover:bg-zinc-100 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-800"
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					onclick={save}
+					disabled={saving || !isDirty || !editTitle.trim()}
+					class="rounded-md bg-zinc-900 px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+				>
+					{saving ? 'Saving…' : 'Save'}
+				</button>
+			{:else if canDelete}
+				<button
+					type="button"
+					onclick={() => { showDeleteDialog = true; }}
+					class="font-sans text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+				>
+					Delete
+				</button>
+			{/if}
+		</div>
 	</div>
 
-	<!-- Content editor -->
-	<div class="rounded-lg border border-zinc-200 dark:border-zinc-700">
-		<MarkdownEditor
-			value={content}
-			ondocchange={onContentChange}
-		/>
-	</div>
+	{#if saveError}
+		<p class="mb-4 font-sans text-sm text-red-500">{saveError}</p>
+	{/if}
+
+	<!-- Content -->
+	{#if editing}
+		<div class="rounded-lg border border-zinc-200 dark:border-zinc-700">
+			<MarkdownEditor
+				value={editContent}
+				ondocchange={(val) => { editContent = val; }}
+			/>
+		</div>
+		<p class="mt-2 font-sans text-xs text-zinc-400 dark:text-zinc-500">
+			⌘S / Ctrl+S to save
+		</p>
+	{:else if savedContent}
+		<div class="prose prose-zinc max-w-none dark:prose-invert">
+			<MarkdownPreview content={savedContent} />
+		</div>
+	{:else if data.canEdit}
+		<button
+			type="button"
+			onclick={startEdit}
+			class="w-full rounded-lg border border-dashed border-zinc-300 px-4 py-8 font-sans text-sm text-zinc-400 transition-colors hover:border-zinc-400 hover:text-zinc-600 dark:border-zinc-700 dark:text-zinc-500 dark:hover:border-zinc-500 dark:hover:text-zinc-400"
+		>
+			Add a description…
+		</button>
+	{:else}
+		<p class="font-sans text-sm text-zinc-400 dark:text-zinc-500">No description.</p>
+	{/if}
 </div>
 
 <SafeDeleteDialog
