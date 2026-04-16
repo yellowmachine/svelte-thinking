@@ -9,6 +9,7 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { issue } from '$lib/server/db/schemas/issues.schema';
 import { userApiKey, userProfile, userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember, organizationApiKey } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
@@ -20,14 +21,21 @@ import type { Db } from '$lib/server/db';
 export type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
 
 // Pending actions are proposed by the agent and must be confirmed by the user before executing.
-export type PendingAction = {
-  type: 'create_document';
-  title: string;
-  docType: 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary';
-  content: string;
-  /** If set, this requirement will be fulfilled with the new document after creation. */
-  requirementId?: string;
-};
+export type PendingAction =
+  | {
+      type: 'create_document';
+      title: string;
+      docType: 'paper' | 'notes' | 'outline' | 'bibliography' | 'supplementary';
+      content: string;
+      /** If set, this requirement will be fulfilled with the new document after creation. */
+      requirementId?: string;
+    }
+  | {
+      type: 'create_issue';
+      title: string;
+      content?: string;
+      priority?: 'low' | 'medium' | 'high' | 'critical';
+    };
 
 // ---------------------------------------------------------------------------
 // Error helper
@@ -55,7 +63,7 @@ async function throwProviderError(res: Response): Promise<never> {
 // ---------------------------------------------------------------------------
 
 async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<string> {
-  const [proj, docs, reqs, refCount, theologyCount] = await Promise.all([
+  const [proj, docs, reqs, refCount, theologyCount, projectIssues] = await Promise.all([
     withRLS((db) =>
       db
         .select({
@@ -117,7 +125,15 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
             inArray(projectReference.type, ['magisterial', 'patristic'])
           )
         )
-    ) as Promise<{ total: number }[]>
+    ) as Promise<{ total: number }[]>,
+
+    withRLS((db) =>
+      db
+        .select({ id: issue.id, title: issue.title, status: issue.status, priority: issue.priority })
+        .from(issue)
+        .where(and(eq(issue.projectId, projectId), eq(issue.isPrivate, false)))
+        .orderBy(asc(issue.createdAt))
+    ) as Promise<{ id: string; title: string; status: string; priority: string }[]>
   ]);
 
   if (!proj[0]) return '';
@@ -166,6 +182,17 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
   const refTotal = refCount[0]?.total ?? 0;
   if (refTotal > 0) {
     lines.push(`REFERENCES: ${refTotal} entries (use list_references to view them).`);
+  }
+
+  if (projectIssues.length > 0) {
+    const STATUS_ICON: Record<string, string> = { open: '○', in_progress: '◑', closed: '✓' };
+    const open = projectIssues.filter((i) => i.status !== 'closed');
+    lines.push(`ISSUES (${open.length} open / ${projectIssues.length} total, use list_issues for full details):`);
+    for (const iss of projectIssues) {
+      const icon = STATUS_ICON[iss.status] ?? '○';
+      lines.push(`  ${icon} [${iss.id}] "${iss.title}" (${iss.priority})`);
+    }
+    lines.push('');
   }
 
   const hasTheology = (theologyCount[0]?.total ?? 0) > 0;
@@ -346,6 +373,40 @@ const TOOLS = [
   {
     type: 'function' as const,
     function: {
+      name: 'list_issues',
+      description:
+        'Returns the list of project issues with their status and priority. ' +
+        'Use this to understand what aspects or problems have been flagged in the project.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'create_issue',
+      description:
+        'Proposes creating a new issue in the project. ' +
+        'Issues track aspects, problems or tasks related to the project that need attention. ' +
+        'The user will see a confirmation card before the issue is created. ' +
+        'IMPORTANT: always describe in text what you are about to propose BEFORE calling this tool.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Short, descriptive issue title' },
+          content: { type: 'string', description: 'Issue description or body in Markdown (optional)' },
+          priority: {
+            type: 'string',
+            enum: ['low', 'medium', 'high', 'critical'],
+            description: 'Issue priority (default: medium)'
+          }
+        },
+        required: ['title']
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
       name: 'create_document',
       description:
         'Proposes creating a new document in the project with generated content. ' +
@@ -488,6 +549,37 @@ async function executeTool(
                 : '○ pendiente (opcional)';
             const desc = r.description ? `\n    ${r.description}` : '';
             return `• "${r.name}" — ${status}${desc}`;
+          })
+          .join('\n'),
+        docsUsed: []
+      };
+    }
+
+    case 'list_issues': {
+      const issues = (await withRLS((db) =>
+        db
+          .select({
+            id: issue.id,
+            title: issue.title,
+            status: issue.status,
+            priority: issue.priority,
+            content: issue.content,
+            createdAt: issue.createdAt
+          })
+          .from(issue)
+          .where(eq(issue.projectId, projectId))
+          .orderBy(asc(issue.createdAt))
+      )) as { id: string; title: string; status: string; priority: string; content: string | null; createdAt: Date }[];
+
+      if (issues.length === 0) return { output: 'This project has no issues yet.', docsUsed: [] };
+
+      const STATUS_ICON: Record<string, string> = { open: '○', in_progress: '◑', closed: '✓' };
+      return {
+        output: issues
+          .map((iss) => {
+            const icon = STATUS_ICON[iss.status] ?? '○';
+            const preview = iss.content ? ` — ${iss.content.slice(0, 120).replace(/\n/g, ' ')}${iss.content.length > 120 ? '…' : ''}` : '';
+            return `${icon} [${iss.id}] "${iss.title}" (${iss.status}, ${iss.priority})${preview}`;
           })
           .join('\n'),
         docsUsed: []
@@ -785,7 +877,7 @@ async function runAgentLoop(
             pendingActions.push({
               type: 'create_document',
               title: (args.title as string) || 'Nuevo documento',
-              docType: (args.type as PendingAction['docType']) || 'paper',
+              docType: (args.type as Extract<PendingAction, { type: 'create_document' }>['docType']) || 'paper',
               content: (args.content as string) || '',
               requirementId: (args.requirementId as string) || undefined
             });
@@ -793,6 +885,20 @@ async function runAgentLoop(
               role: 'tool' as const,
               tool_call_id: tc.id,
               content: 'Propuesta registrada. El usuario verá la tarjeta de confirmación.'
+            };
+          }
+
+          if (tc.function.name === 'create_issue') {
+            pendingActions.push({
+              type: 'create_issue',
+              title: (args.title as string) || 'Nuevo issue',
+              content: (args.content as string) || undefined,
+              priority: (args.priority as Extract<PendingAction, { type: 'create_issue' }>['priority']) || 'medium'
+            });
+            return {
+              role: 'tool' as const,
+              tool_call_id: tc.id,
+              content: 'Issue propuesto. El usuario verá la tarjeta de confirmación.'
             };
           }
 
@@ -888,6 +994,11 @@ Empieza siempre con una respuesta breve y directa (2–3 frases) y luego desarro
 - El usuario pide explícitamente crear un documento nuevo, O
 - El usuario acepta explícitamente un borrador que tú has propuesto en la misma conversación.
 Nunca llames a create_document sin confirmación previa en la conversación actual.
+
+**Usa create_issue** únicamente cuando:
+- El usuario pide explícitamente crear un issue, O
+- El usuario acepta explícitamente un issue que tú has propuesto en la misma conversación.
+Antes de llamar a create_issue describe siempre en texto el issue que vas a proponer.
 
 ## Estructura de respuesta para tareas complejas
 
@@ -1083,60 +1194,86 @@ export const aiRouter = router({
     .input(
       z.object({
         projectId: z.string(),
-        action: z.object({
-          type: z.literal('create_document'),
-          title: z.string().min(1).max(255),
-          docType: z.enum(['paper', 'notes', 'outline', 'bibliography', 'supplementary']),
-          content: z.string(),
-          requirementId: z.string().optional()
-        })
+        action: z.discriminatedUnion('type', [
+          z.object({
+            type: z.literal('create_document'),
+            title: z.string().min(1).max(255),
+            docType: z.enum(['paper', 'notes', 'outline', 'bibliography', 'supplementary']),
+            content: z.string(),
+            requirementId: z.string().optional()
+          }),
+          z.object({
+            type: z.literal('create_issue'),
+            title: z.string().min(1).max(255),
+            content: z.string().optional(),
+            priority: z.enum(['low', 'medium', 'high', 'critical']).optional().default('medium')
+          })
+        ])
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const docId = crypto.randomUUID();
-      const versionId = crypto.randomUUID();
+      if (input.action.type === 'create_document') {
+        const action = input.action;
+        const docId = crypto.randomUUID();
+        const versionId = crypto.randomUUID();
 
-      await ctx.withRLS(async (db) => {
-        await db.insert(document).values({
-          id: docId,
-          projectId: input.projectId,
-          title: input.action.title,
-          type: input.action.docType,
-          draftContent: input.action.content,
-          generatedByAi: true
-        });
-        await db.insert(documentVersion).values({
-          id: versionId,
-          documentId: docId,
-          content: '',
-          versionNumber: 1,
-          changeDescription: 'Creado por el agente',
-          createdBy: ctx.user.id
-        });
-        await db
-          .update(document)
-          .set({ currentVersionId: versionId })
-          .where(eq(document.id, docId));
-
-        if (input.action.requirementId) {
+        await ctx.withRLS(async (db) => {
+          await db.insert(document).values({
+            id: docId,
+            projectId: input.projectId,
+            title: action.title,
+            type: action.docType,
+            draftContent: action.content,
+            generatedByAi: true
+          });
+          await db.insert(documentVersion).values({
+            id: versionId,
+            documentId: docId,
+            content: '',
+            versionNumber: 1,
+            changeDescription: 'Creado por el agente',
+            createdBy: ctx.user.id
+          });
           await db
-            .update(projectRequirement)
-            .set({ fulfilledDocumentId: docId })
-            .where(
-              and(
-                eq(projectRequirement.id, input.action.requirementId),
-                eq(projectRequirement.projectId, input.projectId)
-              )
-            );
-        }
-      });
+            .update(document)
+            .set({ currentVersionId: versionId })
+            .where(eq(document.id, docId));
 
-      // Fire-and-forget indexing after transaction commits
-      ctx.withRLS((db) =>
-        indexDocument(db, docId, input.projectId, input.action.content)
-      ).catch((err) => console.error('[embeddings] indexDocument failed:', err));
+          if (action.requirementId) {
+            await db
+              .update(projectRequirement)
+              .set({ fulfilledDocumentId: docId })
+              .where(
+                and(
+                  eq(projectRequirement.id, action.requirementId),
+                  eq(projectRequirement.projectId, input.projectId)
+                )
+              );
+          }
+        });
 
-      return { documentId: docId, title: input.action.title };
+        ctx.withRLS((db) =>
+          indexDocument(db, docId, input.projectId, action.content)
+        ).catch((err) => console.error('[embeddings] indexDocument failed:', err));
+
+        return { type: 'document' as const, id: docId, title: action.title };
+      }
+
+      // create_issue
+      const action = input.action;
+      const issueId = crypto.randomUUID();
+      await ctx.withRLS((db) =>
+        db.insert(issue).values({
+          id: issueId,
+          projectId: input.projectId,
+          title: action.title,
+          content: action.content ?? null,
+          priority: action.priority,
+          ownerUserId: ctx.user.id
+        })
+      );
+
+      return { type: 'issue' as const, id: issueId, title: action.title };
     }),
 
   deleteConversation: protectedProcedure
