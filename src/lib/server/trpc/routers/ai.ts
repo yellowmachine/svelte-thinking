@@ -449,7 +449,7 @@ async function executeTool(
   switch (name) {
     case 'read_document': {
       const id = args.id as string;
-      if (!id) return { output: 'Error: se requiere el parámetro id.', docsUsed: [] };
+      if (!id) return { output: 'Error: missing required parameter id.', docsUsed: [] };
       const rows = (await withRLS((db) =>
         db
           .select({
@@ -462,7 +462,7 @@ async function executeTool(
           .limit(1)
       )) as { title: string; type: string; content: string | null }[];
 
-      if (!rows[0]) return { output: `Error: documento "${id}" no encontrado en este proyecto.`, docsUsed: [] };
+      if (!rows[0]) return { output: `Error: document "${id}" not found in this project.`, docsUsed: [] };
       const content = rows[0].content?.trim() || '*(sin contenido todavía)*';
       return {
         output: `# ${rows[0].title} (${rows[0].type})\n\n${content}`,
@@ -472,7 +472,7 @@ async function executeTool(
 
     case 'search_documents_semantic': {
       const query = ((args.query as string) ?? '').trim();
-      if (!query) return { output: 'Error: se requiere el parámetro query.', docsUsed: [] };
+      if (!query) return { output: 'Error: missing required parameter query.', docsUsed: [] };
 
       const queryVec = await embedQuery(query);
       const vecLiteral = `[${queryVec.join(',')}]`;
@@ -489,7 +489,7 @@ async function executeTool(
       );
 
       const rows = result as unknown as { title: string; doc_id: string; text: string }[];
-      if (!rows.length) return { output: `Sin resultados para "${query}". Puede que los documentos aún no estén indexados.`, docsUsed: [] };
+      if (!rows.length) return { output: `No results for "${query}". Documents may not be indexed yet.`, docsUsed: [] };
 
       const seen = new Map<string, string>();
       const output: string[] = [];
@@ -511,7 +511,7 @@ async function executeTool(
           .where(eq(projectReference.projectId, projectId))
       )) as (typeof projectReference.$inferSelect)[];
 
-      if (refs.length === 0) return { output: 'Este proyecto no tiene referencias bibliográficas todavía.', docsUsed: [] };
+      if (refs.length === 0) return { output: 'This project has no bibliography entries yet.', docsUsed: [] };
 
       return {
         output: refs
@@ -537,7 +537,7 @@ async function executeTool(
           .orderBy(asc(projectRequirement.order))
       )) as (typeof projectRequirement.$inferSelect)[];
 
-      if (reqs.length === 0) return { output: 'Este proyecto no tiene requisitos definidos todavía.', docsUsed: [] };
+      if (reqs.length === 0) return { output: 'This project has no requirements defined yet.', docsUsed: [] };
 
       return {
         output: reqs
@@ -587,7 +587,7 @@ async function executeTool(
     }
 
     default:
-      return { output: `Herramienta desconocida: "${name}".`, docsUsed: [] };
+      return { output: `Unknown tool: "${name}".`, docsUsed: [] };
   }
 }
 
@@ -861,7 +861,7 @@ async function runAgentLoop(
     totalOutputTokens += data.usage?.completion_tokens ?? 0;
 
     const choice = data.choices[0];
-    if (!choice) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo.' });
+    if (!choice) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'No response from model.' });
 
     // ── Tool calls → execute and loop ────────────────────────────────────
     if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls?.length) {
@@ -884,7 +884,7 @@ async function runAgentLoop(
             return {
               role: 'tool' as const,
               tool_call_id: tc.id,
-              content: 'Propuesta registrada. El usuario verá la tarjeta de confirmación.'
+              content: 'Proposal registered. The user will see a confirmation card.'
             };
           }
 
@@ -898,7 +898,7 @@ async function runAgentLoop(
             return {
               role: 'tool' as const,
               tool_call_id: tc.id,
-              content: 'Issue propuesto. El usuario verá la tarjeta de confirmación.'
+              content: 'Issue proposed. The user will see a confirmation card.'
             };
           }
 
@@ -924,7 +924,7 @@ async function runAgentLoop(
 
   throw new TRPCError({
     code: 'INTERNAL_SERVER_ERROR',
-    message: 'El agente no pudo completar la respuesta en el número máximo de pasos.'
+    message: 'The agent could not complete the response within the maximum number of steps.'
   });
 }
 
@@ -1231,7 +1231,7 @@ export const aiRouter = router({
             documentId: docId,
             content: '',
             versionNumber: 1,
-            changeDescription: 'Creado por el agente',
+            changeDescription: 'Created by agent',
             createdBy: ctx.user.id
           });
           await db
