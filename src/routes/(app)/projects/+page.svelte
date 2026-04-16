@@ -289,6 +289,7 @@
 						status={proj.status}
 						collaboratorCount={proj.collaboratorCount}
 						openComments={proj.openComments}
+						openIssues={proj.openIssues}
 						updatedAt={proj.updatedAt}
 						scheduledDeleteAt={proj.scheduledDeleteAt}
 						hasActiveShares={activeShareSet.has(proj.id)}
@@ -313,6 +314,7 @@
 							status={proj.status}
 							collaboratorCount={proj.collaboratorCount}
 							openComments={proj.openComments}
+							openIssues={proj.openIssues}
 							updatedAt={proj.updatedAt}
 							scheduledDeleteAt={proj.scheduledDeleteAt}
 							reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}

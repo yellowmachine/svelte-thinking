@@ -991,10 +991,16 @@
 							</div>
 							{#if data.isOwner && activeShareDocSet.has(doc.id)}
 								<span
-									class="mr-1 h-2 w-2 shrink-0 rounded-full bg-accent"
+									class="mr-1 shrink-0 text-accent"
 									title="Has active public links"
 									aria-label="Has active public links"
-								></span>
+								>
+									<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+										<circle cx="2" cy="10" r="1.5" fill="currentColor"/>
+										<path d="M2 7a3 3 0 0 1 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+										<path d="M2 3.5A6.5 6.5 0 0 1 8.5 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+									</svg>
+								</span>
 							{/if}
 							{#if isDocReadOnly(doc)}
 								<span

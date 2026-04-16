@@ -24,6 +24,10 @@ export const load: PageServerLoad = async (event) => {
 				openComments:
 					sql<number>`(SELECT COUNT(*)::int FROM comment JOIN document ON comment.document_id = document.id WHERE document.project_id = project.id AND comment.status = 'open' AND comment.parent_comment_id IS NULL)`.as(
 						'open_comments'
+					),
+				openIssues:
+					sql<number>`(SELECT COUNT(*)::int FROM issue WHERE issue.project_id = project.id AND issue.status = 'open')`.as(
+						'open_issues'
 					)
 			})
 			.from(project)

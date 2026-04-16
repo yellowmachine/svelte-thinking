@@ -7,6 +7,7 @@
 		status = 'draft',
 		collaboratorCount = 1,
 		openComments = 0,
+		openIssues = 0,
 		updatedAt,
 		reviewHref,
 		scheduledDeleteAt,
@@ -19,6 +20,7 @@
 		status?: ProjectStatus;
 		collaboratorCount?: number;
 		openComments?: number;
+		openIssues?: number;
 		updatedAt?: Date;
 		reviewHref?: string;
 		scheduledDeleteAt?: Date | null;
@@ -81,10 +83,16 @@
 				</h3>
 				{#if hasActiveShares}
 					<span
-						class="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-accent"
+						class="mt-0.5 shrink-0 text-accent"
 						title="Has active public links"
 						aria-label="Has active public links"
-					></span>
+					>
+						<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+							<circle cx="2" cy="10" r="1.5" fill="currentColor"/>
+							<path d="M2 7a3 3 0 0 1 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+							<path d="M2 3.5A6.5 6.5 0 0 1 8.5 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+						</svg>
+					</span>
 				{/if}
 			</div>
 			<div class="flex shrink-0 items-center gap-1.5">
@@ -137,27 +145,41 @@
 				</span>
 			{/if}
 
-			{#if openComments > 0}
-				{#if reviewHref}
-					<a
-						href={reviewHref}
-						onclick={(e) => e.stopPropagation()}
-						class="ml-auto flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-						title="View open comments"
-					>
-						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-						{openComments}
-					</a>
-				{:else}
-					<span class="ml-auto flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-						<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-						{openComments}
-					</span>
-				{/if}
+			{#if openComments > 0 || openIssues > 0}
+				<div class="ml-auto flex items-center gap-1.5">
+					{#if openComments > 0}
+						{#if reviewHref}
+							<a
+								href={reviewHref}
+								onclick={(e) => e.stopPropagation()}
+								class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+								title="View open comments"
+							>
+								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+								{openComments}
+							</a>
+						{:else}
+							<span class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+								{openComments}
+							</span>
+						{/if}
+					{/if}
+					{#if openIssues > 0}
+						<span class="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 font-sans text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" title="Open issues">
+							<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+								<line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+								<circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+							</svg>
+							{openIssues}
+						</span>
+					{/if}
+				</div>
 			{/if}
 		</div>
 	</div>
