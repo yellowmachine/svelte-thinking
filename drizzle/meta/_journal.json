@@ -57,6 +57,13 @@
       "when": 1776322600494,
       "tag": "0007_slim_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776357830080,
+      "tag": "0008_nebulous_kang",
+      "breakpoints": true
     }
   ]
 }

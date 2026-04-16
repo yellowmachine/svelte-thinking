@@ -102,6 +102,89 @@
 		}
 	}
 
+	// ── Comments ─────────────────────────────────────────────────────────────
+	type Reply = { id: string; parentCommentId: string | null; authorId: string; authorName: string; content: string; createdAt: Date };
+	type CommentThread = { id: string; issueId: string; authorId: string; authorName: string; content: string; createdAt: Date; updatedAt: Date; replies: Reply[] };
+
+	let comments = $state<CommentThread[]>([]);
+	let commentsLoading = $state(true);
+
+	let newCommentText = $state('');
+	let submittingComment = $state(false);
+
+	// Per-comment reply state: commentId → draft text
+	let replyDrafts = $state<Record<string, string>>({});
+	let replyOpen = $state<Record<string, boolean>>({});
+	let submittingReply = $state<Record<string, boolean>>({});
+
+	async function loadComments() {
+		commentsLoading = true;
+		try {
+			comments = await trpc.issues.listComments.query(data.issue.id) as CommentThread[];
+		} finally {
+			commentsLoading = false;
+		}
+	}
+
+	async function submitComment() {
+		const text = newCommentText.trim();
+		if (!text || submittingComment) return;
+		submittingComment = true;
+		try {
+			const created = await trpc.issues.addComment.mutate({
+				issueId: data.issue.id,
+				projectId: data.projectId,
+				content: text
+			}) as CommentThread;
+			comments = [...comments, created];
+			newCommentText = '';
+		} finally {
+			submittingComment = false;
+		}
+	}
+
+	async function submitReply(parentId: string) {
+		const text = (replyDrafts[parentId] ?? '').trim();
+		if (!text || submittingReply[parentId]) return;
+		submittingReply = { ...submittingReply, [parentId]: true };
+		try {
+			const reply = await trpc.issues.addComment.mutate({
+				issueId: data.issue.id,
+				projectId: data.projectId,
+				content: text,
+				parentCommentId: parentId
+			});
+			comments = comments.map((c) =>
+				c.id === parentId
+					? { ...c, replies: [...c.replies, { ...reply, parentCommentId: parentId } as Reply] }
+					: c
+			);
+			replyDrafts = { ...replyDrafts, [parentId]: '' };
+			replyOpen = { ...replyOpen, [parentId]: false };
+		} finally {
+			submittingReply = { ...submittingReply, [parentId]: false };
+		}
+	}
+
+	async function deleteComment(id: string, parentId?: string) {
+		await trpc.issues.deleteComment.mutate(id);
+		if (parentId) {
+			comments = comments.map((c) =>
+				c.id === parentId ? { ...c, replies: c.replies.filter((r) => r.id !== id) } : c
+			);
+		} else {
+			comments = comments.filter((c) => c.id !== id);
+		}
+	}
+
+	function formatCommentDate(date: Date | string) {
+		return new Date(date).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
+	}
+
+	$effect(() => {
+		loadComments();
+	});
+
 	// ── Navigation guard ──────────────────────────────────────────────────────
 	beforeNavigate(({ cancel }) => {
 		if (isDirty) {
@@ -283,6 +366,145 @@
 	{:else}
 		<p class="font-sans text-sm text-zinc-400 dark:text-zinc-500">No description.</p>
 	{/if}
+
+	<!-- Comments -->
+	<div class="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+		<h2 class="mb-6 font-sans text-sm font-semibold text-zinc-600 dark:text-zinc-400">
+			Comments {#if comments.length > 0}<span class="font-normal text-zinc-400 dark:text-zinc-500">({comments.length})</span>{/if}
+		</h2>
+
+		{#if commentsLoading}
+			<p class="font-sans text-sm text-zinc-400 dark:text-zinc-500">Loading…</p>
+		{:else if comments.length === 0}
+			<p class="font-sans text-sm text-zinc-400 dark:text-zinc-500">No comments yet.</p>
+		{:else}
+			<div class="flex flex-col gap-6">
+				{#each comments as c (c.id)}
+					<div class="flex gap-3">
+						<!-- Avatar -->
+						<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 font-sans text-xs font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+							{(c.authorName ?? '?')[0].toUpperCase()}
+						</div>
+						<div class="min-w-0 flex-1">
+							<!-- Header -->
+							<div class="flex items-baseline gap-2">
+								<span class="font-sans text-sm font-medium text-zinc-800 dark:text-zinc-200">{c.authorName}</span>
+								<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500">{formatCommentDate(c.createdAt)}</span>
+							</div>
+							<!-- Body -->
+							<div class="prose prose-zinc prose-sm mt-1 max-w-none dark:prose-invert">
+								<MarkdownPreview content={c.content} />
+							</div>
+							<!-- Actions -->
+							<div class="mt-1.5 flex items-center gap-3">
+								<button
+									type="button"
+									onclick={() => { replyOpen = { ...replyOpen, [c.id]: !replyOpen[c.id] }; }}
+									class="font-sans text-xs text-zinc-400 transition-colors hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+								>
+									Reply
+								</button>
+								{#if c.authorId === data.currentUserId}
+									<button
+										type="button"
+										onclick={() => deleteComment(c.id)}
+										class="font-sans text-xs text-zinc-400 transition-colors hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
+									>
+										Delete
+									</button>
+								{/if}
+							</div>
+
+							<!-- Replies -->
+							{#if c.replies.length > 0}
+								<div class="mt-4 flex flex-col gap-4 border-l-2 border-zinc-100 pl-4 dark:border-zinc-800">
+									{#each c.replies as r (r.id)}
+										<div class="flex gap-2.5">
+											<div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 font-sans text-[11px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+												{(r.authorName ?? '?')[0].toUpperCase()}
+											</div>
+											<div class="min-w-0 flex-1">
+												<div class="flex items-baseline gap-2">
+													<span class="font-sans text-sm font-medium text-zinc-800 dark:text-zinc-200">{r.authorName}</span>
+													<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500">{formatCommentDate(r.createdAt)}</span>
+												</div>
+												<div class="prose prose-zinc prose-sm mt-0.5 max-w-none dark:prose-invert">
+													<MarkdownPreview content={r.content} />
+												</div>
+												{#if r.authorId === data.currentUserId}
+													<button
+														type="button"
+														onclick={() => deleteComment(r.id, c.id)}
+														class="mt-1 font-sans text-xs text-zinc-400 transition-colors hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
+													>
+														Delete
+													</button>
+												{/if}
+											</div>
+										</div>
+									{/each}
+								</div>
+							{/if}
+
+							<!-- Reply box -->
+							{#if replyOpen[c.id]}
+								<div class="mt-3 flex gap-2">
+									<textarea
+										bind:value={replyDrafts[c.id]}
+										placeholder="Write a reply…"
+										rows="2"
+										class="flex-1 resize-none rounded-lg border border-zinc-200 bg-transparent px-3 py-2 font-sans text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+									></textarea>
+									<div class="flex flex-col gap-1.5">
+										<button
+											type="button"
+											onclick={() => submitReply(c.id)}
+											disabled={submittingReply[c.id] || !(replyDrafts[c.id] ?? '').trim()}
+											class="rounded-md bg-zinc-900 px-3 py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+										>
+											{submittingReply[c.id] ? '…' : 'Reply'}
+										</button>
+										<button
+											type="button"
+											onclick={() => { replyOpen = { ...replyOpen, [c.id]: false }; }}
+											class="rounded-md px-3 py-1.5 font-sans text-xs text-zinc-500 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+										>
+											Cancel
+										</button>
+									</div>
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		<!-- New comment -->
+		<div class="mt-8 flex gap-3">
+			<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 font-sans text-xs font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+				You
+			</div>
+			<div class="flex-1">
+				<textarea
+					bind:value={newCommentText}
+					placeholder="Leave a comment…"
+					rows="3"
+					class="w-full resize-none rounded-lg border border-zinc-200 bg-transparent px-3 py-2 font-sans text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+				></textarea>
+				<div class="mt-2 flex justify-end">
+					<button
+						type="button"
+						onclick={submitComment}
+						disabled={submittingComment || !newCommentText.trim()}
+						class="rounded-md bg-zinc-900 px-4 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+					>
+						{submittingComment ? 'Sending…' : 'Comment'}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 <SafeDeleteDialog

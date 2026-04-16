@@ -20,3 +20,4 @@ export * from './schemas/discover.schema';
 export * from './schemas/notebooks.schema';
 export * from './schemas/organizations.schema';
 export * from './schemas/issues.schema';
+export * from './schemas/issueComments.schema';
