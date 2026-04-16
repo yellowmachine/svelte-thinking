@@ -2776,6 +2776,16 @@
 						projectId={data.document.projectId}
 						documentId={data.document.id}
 						documentTitle={data.document.title}
+						getDocumentContent={() => content}
+						onApplyEdit={(action) => {
+							if (action.type === 'replace_text') {
+								const idx = content.indexOf(action.anchorText);
+								if (idx !== -1) content = content.slice(0, idx) + action.replacement + content.slice(idx + action.anchorText.length);
+							} else if (action.type === 'insert_after') {
+								const idx = content.indexOf(action.anchorText);
+								if (idx !== -1) content = content.slice(0, idx + action.anchorText.length) + '\n\n' + action.content + content.slice(idx + action.anchorText.length);
+							}
+						}}
 						onClose={toggleChat}
 						orgId={data.projectOrgId}
 					/>

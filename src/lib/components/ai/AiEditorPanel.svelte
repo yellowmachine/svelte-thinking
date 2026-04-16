@@ -2,11 +2,15 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { tick } from 'svelte';
 	import { MODELS } from '$lib/ai-config';
+	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
+	import type { PendingEditorAction } from '$lib/server/trpc/routers/ai';
 
 	type Props = {
 		projectId: string;
 		documentId: string;
 		documentTitle: string;
+		getDocumentContent: () => string;
+		onApplyEdit: (action: PendingEditorAction) => void;
 		onClose: () => void;
 		orgId?: string | null;
 		defaultModel?: string;
@@ -16,6 +20,8 @@
 		projectId,
 		documentId,
 		documentTitle,
+		getDocumentContent,
+		onApplyEdit,
 		onClose,
 		orgId = null,
 		defaultModel = ''
@@ -30,13 +36,13 @@
 		docsUsed?: { id: string; title: string }[];
 	};
 
-	const CONV_KEY = `ai-conv-${documentId}`;
+	const CONV_KEY = `ai-editor-conv-${documentId}`;
 
 	const SHORTCUTS = [
-		{ label: 'Requirements gap', prompt: "Which project requirements haven't I covered yet in this document?" },
-		{ label: 'Missing citations', prompt: 'Which references in my bibliography am I not citing but should be?' },
-		{ label: 'Argument flow', prompt: 'Does the argument flow logically? Where are the weak points?' },
-		{ label: 'Summary so far', prompt: 'Give me a brief summary of what I have written so far.' }
+		{ label: 'Improve clarity', prompt: 'Review this document and suggest what could be made clearer or more concise.' },
+		{ label: 'Check argument flow', prompt: 'Does the argument flow logically from section to section? Where are the weak points?' },
+		{ label: 'Strengthen conclusion', prompt: 'Make the conclusion more direct and impactful.' },
+		{ label: 'Academic tone', prompt: 'Identify any passages where the tone is too informal or imprecise.' }
 	];
 
 	let messages = $state<Message[]>([]);
@@ -46,6 +52,9 @@
 	let error = $state('');
 	let historyLoaded = $state(false);
 	let messagesEl = $state<HTMLDivElement | null>(null);
+
+	// Pending editor actions from the last assistant message
+	let pendingEditorActions = $state<PendingEditorAction[]>([]);
 
 	async function scrollToBottom() {
 		await tick();
@@ -74,7 +83,6 @@
 				}));
 			await scrollToBottom();
 		} catch {
-			// conversation may have been deleted — start fresh
 			localStorage.removeItem(CONV_KEY);
 			conversationId = undefined;
 		} finally {
@@ -90,34 +98,33 @@
 		const text = input.trim();
 		if (!text || loading) return;
 
-		// Prefix with document context so the agent knows what's being edited
-		const withContext = `[Currently editing: "${documentTitle}"]\n${text}`;
-
 		messages = [...messages, { role: 'user', content: text }];
 		input = '';
 		loading = true;
 		error = '';
+		pendingEditorActions = [];
 		await scrollToBottom();
 
 		try {
-			const result = await trpc.ai.sendMessage.mutate({
+			const result = await trpc.ai.sendEditorMessage.mutate({
 				projectId,
+				documentId,
+				documentTitle,
+				documentContent: getDocumentContent(),
 				conversationId,
-				message: withContext,
+				message: text,
 				...((!orgId && selectedModel) ? { modelOverride: selectedModel } : {})
 			});
 
 			conversationId = result.conversationId;
 			localStorage.setItem(CONV_KEY, result.conversationId);
 
-			messages = [
-				...messages,
-				{
-					role: 'assistant',
-					content: result.message.content,
-					docsUsed: result.message.docsUsed as { id: string; title: string }[] | undefined
-				}
-			];
+			messages = [...messages, { role: 'assistant', content: result.message.content }];
+
+			if (result.pendingEditorActions?.length) {
+				pendingEditorActions = result.pendingEditorActions;
+			}
+
 			await scrollToBottom();
 		} catch (e: unknown) {
 			const isNoKey = e && typeof e === 'object' && 'data' in e && (e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED';
@@ -136,9 +143,11 @@
 	}
 
 	function clearConversation() {
+		if (!confirm('Clear this conversation? This cannot be undone.')) return;
 		localStorage.removeItem(CONV_KEY);
 		conversationId = undefined;
 		messages = [];
+		pendingEditorActions = [];
 		error = '';
 	}
 </script>
@@ -224,7 +233,7 @@
 			</div>
 		{:else}
 			<div class="flex flex-col gap-5">
-				{#each messages as msg}
+				{#each messages as msg, i}
 					{#if msg.role === 'user'}
 						<div class="flex justify-end">
 							<div class="max-w-[85%] rounded-2xl rounded-tr-sm bg-accent px-4 py-2.5 font-sans text-sm leading-relaxed text-white">
@@ -244,6 +253,21 @@
 										</span>
 									{/each}
 								</div>
+							{/if}
+							<!-- Editor action cards — shown only after the last assistant message -->
+							{#if i === messages.length - 1 && pendingEditorActions.length > 0}
+								{#each pendingEditorActions as action, j (j)}
+									<EditorActionCard
+										{action}
+										onconfirm={(a) => {
+											onApplyEdit(a);
+											pendingEditorActions = pendingEditorActions.filter((_, idx) => idx !== j);
+										}}
+										ondiscard={() => {
+											pendingEditorActions = pendingEditorActions.filter((_, idx) => idx !== j);
+										}}
+									/>
+								{/each}
 							{/if}
 						</div>
 					{/if}

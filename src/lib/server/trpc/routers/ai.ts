@@ -37,6 +37,11 @@ export type PendingAction =
       priority?: 'low' | 'medium' | 'high' | 'critical';
     };
 
+// Editor agent actions — proposed edits on the currently open document.
+export type PendingEditorAction =
+  | { type: 'replace_text'; anchorText: string; replacement: string; explanation: string }
+  | { type: 'insert_after'; anchorText: string; content: string; explanation: string };
+
 // ---------------------------------------------------------------------------
 // Error helper
 // ---------------------------------------------------------------------------
@@ -929,6 +934,168 @@ async function runAgentLoop(
 }
 
 // ---------------------------------------------------------------------------
+// Editor agent tools + loop
+// ---------------------------------------------------------------------------
+
+const EDITOR_TOOLS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'replace_text',
+      description:
+        'Propose replacing a specific passage in the document. ' +
+        'The user will see the original and the replacement side by side, and can accept or reject the change. ' +
+        'IMPORTANT: anchorText must be a verbatim copy of the exact text to replace (including spacing and punctuation). ' +
+        'Always describe what you are about to change in text BEFORE calling this tool.',
+      parameters: {
+        type: 'object',
+        properties: {
+          anchorText: { type: 'string', description: 'Exact substring to replace (verbatim copy from document)' },
+          replacement: { type: 'string', description: 'New text that will substitute the anchor' },
+          explanation: { type: 'string', description: 'One-sentence description of the change' }
+        },
+        required: ['anchorText', 'replacement', 'explanation']
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'insert_after',
+      description:
+        'Propose inserting new text immediately after a specific passage. ' +
+        'The user will see a preview and can accept or reject it. ' +
+        'IMPORTANT: anchorText must be a verbatim copy of the passage to insert after. ' +
+        'Always describe what you are about to add in text BEFORE calling this tool.',
+      parameters: {
+        type: 'object',
+        properties: {
+          anchorText: { type: 'string', description: 'Exact substring after which to insert (verbatim copy)' },
+          content: { type: 'string', description: 'Text to insert' },
+          explanation: { type: 'string', description: 'One-sentence description of the addition' }
+        },
+        required: ['anchorText', 'content', 'explanation']
+      }
+    }
+  }
+] as const;
+
+const EDITOR_SYSTEM_PROMPT = `You are Scholio's document editor assistant. Your role is to help the user edit and improve the document they are currently working on.
+
+The full current content of the document is provided below. When the user asks you to make a change, use the replace_text or insert_after tools to propose it. The user will see a before/after preview and can accept or reject each change.
+
+## Rules for editing tools
+
+- anchorText must be a VERBATIM copy of the exact text in the document — do not paraphrase or alter it
+- Prefer replacing the smallest possible passage that achieves the goal (a sentence or paragraph, not the whole document)
+- You may propose multiple changes in one response, but only if the user asked for several distinct edits
+- If asked a question (not an edit), respond in plain text without using tools
+- Always explain your change in text BEFORE calling the tool
+- If the anchorText you need is ambiguous (same phrase appears multiple times), include enough surrounding context to disambiguate
+
+## Language and style
+
+Match the language and register of the document. Use the same language as the user's message. Maintain academic style.`;
+
+async function runEditorAgentLoop(
+  documentTitle: string,
+  documentContent: string,
+  history: { role: 'user' | 'assistant'; content: string }[],
+  userMessage: string,
+  apiKey: string,
+  model: string
+): Promise<{ content: string; pendingEditorActions: PendingEditorAction[]; inputTokens: number; outputTokens: number }> {
+  const systemPrompt = `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
+
+  const messages: OAMessage[] = [
+    ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+    { role: 'user', content: userMessage }
+  ];
+
+  const pendingEditorActions: PendingEditorAction[] = [];
+  const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
+  // Editor agent loop is simpler: max 3 iterations, no read tools
+  for (let i = 0; i < 3; i++) {
+    const res = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        ...extraHeaders
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 2048,
+        messages: [{ role: 'system', content: systemPrompt }, ...messages],
+        tools: EDITOR_TOOLS,
+        tool_choice: 'auto'
+      })
+    });
+
+    if (!res.ok) await throwProviderError(res);
+
+    const data = (await res.json()) as {
+      choices: { message: OAMessage; finish_reason: string }[];
+      usage?: { prompt_tokens: number; completion_tokens: number };
+    };
+    totalInputTokens += data.usage?.prompt_tokens ?? 0;
+    totalOutputTokens += data.usage?.completion_tokens ?? 0;
+
+    const choice = data.choices[0];
+    if (!choice) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'No response from model.' });
+
+    if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls?.length) {
+      messages.push(choice.message);
+
+      const results = choice.message.tool_calls.map((tc) => {
+        let args: Record<string, unknown> = {};
+        try { args = JSON.parse(tc.function.arguments); } catch { /* empty */ }
+
+        if (tc.function.name === 'replace_text') {
+          pendingEditorActions.push({
+            type: 'replace_text',
+            anchorText: (args.anchorText as string) ?? '',
+            replacement: (args.replacement as string) ?? '',
+            explanation: (args.explanation as string) ?? ''
+          });
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Replacement proposed. The user will see a preview.' };
+        }
+
+        if (tc.function.name === 'insert_after') {
+          pendingEditorActions.push({
+            type: 'insert_after',
+            anchorText: (args.anchorText as string) ?? '',
+            content: (args.content as string) ?? '',
+            explanation: (args.explanation as string) ?? ''
+          });
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Insertion proposed. The user will see a preview.' };
+        }
+
+        return { role: 'tool' as const, tool_call_id: tc.id, content: `Unknown tool: "${tc.function.name}".` };
+      });
+
+      messages.push(...results);
+      continue;
+    }
+
+    return {
+      content: choice.message.content ?? '',
+      pendingEditorActions,
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens
+    };
+  }
+
+  throw new TRPCError({
+    code: 'INTERNAL_SERVER_ERROR',
+    message: 'The editor agent could not complete the response.'
+  });
+}
+
+// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // Theology context block — injected only when project has magisterial/patristic refs
 // ---------------------------------------------------------------------------
@@ -1274,6 +1441,84 @@ export const aiRouter = router({
       );
 
       return { type: 'issue' as const, id: issueId, title: action.title };
+    }),
+
+  sendEditorMessage: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        documentId: z.string(),
+        documentTitle: z.string(),
+        documentContent: z.string().max(200000),
+        conversationId: z.string().optional(),
+        message: z.string().min(1).max(4000),
+        modelOverride: z.string().optional()
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      // ── Get or create conversation ────────────────────────────────────
+      let convId = input.conversationId;
+      if (!convId) {
+        convId = crypto.randomUUID();
+        const title = input.message.slice(0, 60) + (input.message.length > 60 ? '…' : '');
+        await ctx.withRLS((db) =>
+          db.insert(aiConversation).values({ id: convId!, projectId: input.projectId, userId, title })
+        );
+      } else {
+        const rows = (await ctx.withRLS((db) =>
+          db.select({ id: aiConversation.id }).from(aiConversation).where(eq(aiConversation.id, convId!)).limit(1)
+        )) as { id: string }[];
+        if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+      }
+
+      // ── Load prior history ────────────────────────────────────────────
+      const history = (await ctx.withRLS((db) =>
+        db
+          .select({ role: aiMessage.role, content: aiMessage.content })
+          .from(aiMessage)
+          .where(eq(aiMessage.conversationId, convId!))
+          .orderBy(asc(aiMessage.createdAt))
+      )) as { role: 'user' | 'assistant'; content: string }[];
+
+      // ── Persist user message ──────────────────────────────────────────
+      await ctx.withRLS((db) =>
+        db.insert(aiMessage).values({ id: crypto.randomUUID(), conversationId: convId!, role: 'user', content: input.message })
+      );
+
+      // ── Resolve key + model ───────────────────────────────────────────
+      const { apiKey: editorApiKey, model: resolvedModel, resolvedOrgId } = await resolveTaskKey(
+        ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId
+      );
+      const effectiveModel = (!resolvedOrgId && input.modelOverride) ? input.modelOverride : resolvedModel;
+
+      // ── Run editor agent loop ─────────────────────────────────────────
+      const { content: assistantContent, pendingEditorActions, inputTokens, outputTokens } = await runEditorAgentLoop(
+        input.documentTitle,
+        input.documentContent,
+        history,
+        input.message,
+        editorApiKey,
+        effectiveModel
+      );
+
+      logUsage(ctx.withRLS, { orgId: resolvedOrgId, projectId: input.projectId, userId, model: effectiveModel, task: 'agent', inputTokens, outputTokens });
+
+      // ── Persist assistant response ────────────────────────────────────
+      const assistantMsgId = crypto.randomUUID();
+      await ctx.withRLS((db) =>
+        db.insert(aiMessage).values({ id: assistantMsgId, conversationId: convId!, role: 'assistant', content: assistantContent })
+      );
+      await ctx.withRLS((db) =>
+        db.update(aiConversation).set({ updatedAt: new Date() }).where(eq(aiConversation.id, convId!))
+      );
+
+      return {
+        conversationId: convId,
+        message: { id: assistantMsgId, role: 'assistant' as const, content: assistantContent },
+        pendingEditorActions: pendingEditorActions.length > 0 ? pendingEditorActions : undefined
+      };
     }),
 
   deleteConversation: protectedProcedure
