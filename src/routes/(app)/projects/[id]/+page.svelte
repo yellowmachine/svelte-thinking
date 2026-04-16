@@ -1281,6 +1281,16 @@
 						/>
 					</a>
 					<a
+						href="/projects/{data.project.id}/issues"
+						class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+							<circle cx="12" cy="12" r="3" fill="currentColor"/>
+						</svg>
+						Issues
+					</a>
+					<a
 						href="/projects/{data.project.id}/bib"
 						class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 					>
