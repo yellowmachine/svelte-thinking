@@ -2777,6 +2777,7 @@
 						documentId={data.document.id}
 						documentTitle={data.document.title}
 						getDocumentContent={() => content}
+						spellLanguage={spellLanguage}
 						onApplyEdit={(action) => {
 							if (action.type === 'replace_text') {
 								const idx = content.indexOf(action.anchorText);

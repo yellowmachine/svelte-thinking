@@ -10,6 +10,7 @@
 		documentId: string;
 		documentTitle: string;
 		getDocumentContent: () => string;
+		spellLanguage?: string;
 		onApplyEdit: (action: PendingEditorAction) => void;
 		onClose: () => void;
 		orgId?: string | null;
@@ -21,6 +22,7 @@
 		documentId,
 		documentTitle,
 		getDocumentContent,
+		spellLanguage = 'auto',
 		onApplyEdit,
 		onClose,
 		orgId = null,
@@ -111,6 +113,7 @@
 				documentId,
 				documentTitle,
 				documentContent: getDocumentContent(),
+				spellLanguage,
 				conversationId,
 				message: text,
 				...((!orgId && selectedModel) ? { modelOverride: selectedModel } : {})

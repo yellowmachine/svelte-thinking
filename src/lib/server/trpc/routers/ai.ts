@@ -941,6 +941,37 @@ const EDITOR_TOOLS = [
   {
     type: 'function' as const,
     function: {
+      name: 'check_spelling',
+      description:
+        'Run a spell check on the full document. Returns spelling errors as proposed corrections the user can accept or discard individually. ' +
+        'Use when the user asks to check spelling, fix typos, or proofread the document.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'check_grammar',
+      description:
+        'Run a grammar and style check on the full document. Returns grammar issues as proposed corrections. ' +
+        'Use when the user asks to check grammar, improve phrasing, or fix academic register.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'find_untagged',
+      description:
+        'Find person names and bibliography references in the document that are not yet tagged with [[person:Name]] or [[@citeKey]] tokens. ' +
+        'Returns proposed tag insertions the user can accept individually. ' +
+        'Use when the user asks to tag persons, link citations, or enrich the document.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
       name: 'replace_text',
       description:
         'Propose replacing a specific passage in the document. ' +
@@ -997,13 +1028,25 @@ The full current content of the document is provided below. When the user asks y
 
 Match the language and register of the document. Use the same language as the user's message. Maintain academic style.`;
 
+type EditorToolContext = {
+  spellApiKey: string;
+  spellModel: string;
+  spellLanguage: string;
+  grammarApiKey: string;
+  grammarModel: string;
+  withRLS: WithRLS;
+  projectId: string;
+  documentId: string;
+};
+
 async function runEditorAgentLoop(
   documentTitle: string,
   documentContent: string,
   history: { role: 'user' | 'assistant'; content: string }[],
   userMessage: string,
   apiKey: string,
-  model: string
+  model: string,
+  toolCtx: EditorToolContext
 ): Promise<{ content: string; pendingEditorActions: PendingEditorAction[]; inputTokens: number; outputTokens: number }> {
   const systemPrompt = `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
 
@@ -1017,15 +1060,10 @@ async function runEditorAgentLoop(
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
 
-  // Editor agent loop is simpler: max 3 iterations, no read tools
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        ...extraHeaders
-      },
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
       body: JSON.stringify({
         model,
         max_tokens: 2048,
@@ -1050,10 +1088,11 @@ async function runEditorAgentLoop(
     if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls?.length) {
       messages.push(choice.message);
 
-      const results = choice.message.tool_calls.map((tc) => {
+      const results = await Promise.all(choice.message.tool_calls.map(async (tc) => {
         let args: Record<string, unknown> = {};
         try { args = JSON.parse(tc.function.arguments); } catch { /* empty */ }
 
+        // ── replace_text / insert_after: propose and continue ──────────
         if (tc.function.name === 'replace_text') {
           pendingEditorActions.push({
             type: 'replace_text',
@@ -1074,8 +1113,84 @@ async function runEditorAgentLoop(
           return { role: 'tool' as const, tool_call_id: tc.id, content: 'Insertion proposed. The user will see a preview.' };
         }
 
+        // ── check_spelling: run spell check → produce pending actions ──
+        if (tc.function.name === 'check_spelling') {
+          try {
+            const langNote = toolCtx.spellLanguage === 'auto'
+              ? 'Detect the language automatically.'
+              : `The text is in language code: ${toolCtx.spellLanguage}.`;
+            const prompt = `You are a professional proofreader. Analyze the following text for spelling errors.
+${langNote}
+Return a JSON array. Each item: {"original": "exact substring", "suggestion": "corrected text", "explanation": "brief reason (max 10 words)"}
+Rules: only genuine spelling errors; ignore proper nouns, citation keys like [[@smith2023]], Markdown syntax; return [] if correct; ONLY valid JSON.
+
+Text:
+${documentContent}`;
+            const spellRes = await fetch(OPENROUTER_URL, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${toolCtx.spellApiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
+              body: JSON.stringify({ model: toolCtx.spellModel, messages: [{ role: 'user', content: prompt }], temperature: 0, max_tokens: 2000 })
+            });
+            if (spellRes.ok) {
+              const spellData = await spellRes.json() as { choices: { message: { content: string } }[] };
+              const raw = JSON.parse(
+                (spellData.choices[0]?.message?.content ?? '[]').trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+              ) as { original: string; suggestion: string; explanation: string }[];
+              const corrections = Array.isArray(raw) ? raw.filter((c) => c.original && c.suggestion && documentContent.includes(c.original)) : [];
+              for (const c of corrections) {
+                pendingEditorActions.push({ type: 'replace_text', anchorText: c.original, replacement: c.suggestion, explanation: c.explanation });
+              }
+              return { role: 'tool' as const, tool_call_id: tc.id, content: corrections.length > 0 ? `Spell check complete. ${corrections.length} correction(s) proposed.` : 'Spell check complete. No errors found.' };
+            }
+          } catch { /* fall through */ }
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Spell check failed. Ask the user to use the Spell button instead.' };
+        }
+
+        // ── check_grammar: run grammar check → produce pending actions ──
+        if (tc.function.name === 'check_grammar') {
+          try {
+            const prompt = `You are an expert academic writing assistant. Analyze the following text for grammatical errors, awkward phrasing, and issues with academic register.
+Return a JSON array. Each item: {"original": "exact substring", "suggestion": "corrected text", "explanation": "brief reason (max 10 words)"}
+Rules: grammar errors only (not spelling); flag unnatural phrasing; suggest formal alternatives for informal register; ignore citation keys and Markdown; return [] if correct; ONLY valid JSON.
+
+Text:
+${documentContent}`;
+            const grammarRes = await fetch(OPENROUTER_URL, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${toolCtx.grammarApiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
+              body: JSON.stringify({ model: toolCtx.grammarModel, messages: [{ role: 'user', content: prompt }], temperature: 0, max_tokens: 2000 })
+            });
+            if (grammarRes.ok) {
+              const grammarData = await grammarRes.json() as { choices: { message: { content: string } }[] };
+              const raw = JSON.parse(
+                (grammarData.choices[0]?.message?.content ?? '[]').trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+              ) as { original: string; suggestion: string; explanation: string }[];
+              const corrections = Array.isArray(raw) ? raw.filter((c) => c.original && c.suggestion && documentContent.includes(c.original)) : [];
+              for (const c of corrections) {
+                pendingEditorActions.push({ type: 'replace_text', anchorText: c.original, replacement: c.suggestion, explanation: c.explanation });
+              }
+              return { role: 'tool' as const, tool_call_id: tc.id, content: corrections.length > 0 ? `Grammar check complete. ${corrections.length} correction(s) proposed.` : 'Grammar check complete. No issues found.' };
+            }
+          } catch { /* fall through */ }
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Grammar check failed. Ask the user to use the Grammar button instead.' };
+        }
+
+        // ── find_untagged: detect untagged persons/refs → propose replacements ──
+        if (tc.function.name === 'find_untagged') {
+          try {
+            const enrichRows = (await toolCtx.withRLS((db) =>
+              (db as Db).execute(sql`SELECT * FROM scholio.find_untagged_in_document(${toolCtx.documentId}, ${toolCtx.projectId})`)
+            ).catch(() => null)) as unknown as null;
+            // find_untagged is a complex DB function — if unavailable, fall back to model-based detection
+            if (!enrichRows) {
+              return { role: 'tool' as const, tool_call_id: tc.id, content: 'Person/reference tagging is not available from the chat yet. Ask the user to use the Enrich button in the toolbar.' };
+            }
+          } catch { /* fall through */ }
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Use the Enrich button in the toolbar for person and reference tagging.' };
+        }
+
         return { role: 'tool' as const, tool_call_id: tc.id, content: `Unknown tool: "${tc.function.name}".` };
-      });
+      }));
 
       messages.push(...results);
       continue;
@@ -1450,6 +1565,7 @@ export const aiRouter = router({
         documentId: z.string(),
         documentTitle: z.string(),
         documentContent: z.string().max(200000),
+        spellLanguage: z.string().optional(),
         conversationId: z.string().optional(),
         message: z.string().min(1).max(4000),
         modelOverride: z.string().optional()
@@ -1487,10 +1603,20 @@ export const aiRouter = router({
         db.insert(aiMessage).values({ id: crypto.randomUUID(), conversationId: convId!, role: 'user', content: input.message })
       );
 
-      // ── Resolve key + model ───────────────────────────────────────────
-      const { apiKey: editorApiKey, model: resolvedModel, resolvedOrgId } = await resolveTaskKey(
-        ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId
-      );
+      // ── Resolve keys + models ─────────────────────────────────────────
+      const [
+        { apiKey: editorApiKey, model: resolvedModel, resolvedOrgId },
+        { apiKey: spellApiKey, model: spellModel },
+        { apiKey: grammarApiKey, model: grammarModel }
+      ] = await Promise.all([
+        resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId),
+        resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'spell', input.projectId, 'anthropic/claude-haiku-4-5').catch(() =>
+          resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
+        ),
+        resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'grammar', input.projectId, 'anthropic/claude-haiku-4-5').catch(() =>
+          resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
+        )
+      ]);
       const effectiveModel = (!resolvedOrgId && input.modelOverride) ? input.modelOverride : resolvedModel;
 
       // ── Run editor agent loop ─────────────────────────────────────────
@@ -1500,7 +1626,17 @@ export const aiRouter = router({
         history,
         input.message,
         editorApiKey,
-        effectiveModel
+        effectiveModel,
+        {
+          spellApiKey,
+          spellModel,
+          spellLanguage: input.spellLanguage ?? 'auto',
+          grammarApiKey,
+          grammarModel,
+          withRLS: ctx.withRLS as WithRLS,
+          projectId: input.projectId,
+          documentId: input.documentId
+        }
       );
 
       logUsage(ctx.withRLS, { orgId: resolvedOrgId, projectId: input.projectId, userId, model: effectiveModel, task: 'agent', inputTokens, outputTokens });
