@@ -11,7 +11,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	type Message = { id: string; role: 'user' | 'assistant'; content: string; docsUsed?: { id: string; title: string }[] };
+	type Message = { id: string; role: 'user' | 'assistant' | 'system'; content: string; docsUsed?: { id: string; title: string }[] };
 	type Conversation = NonNullable<typeof data.conversations>[number];
 
 	let conversations = $state<Conversation[]>([]);
@@ -373,6 +373,13 @@
 			{:else}
 				<div class="mx-auto flex max-w-2xl flex-col gap-6">
 					{#each messages as msg (msg.id)}
+						{#if msg.role === 'system'}
+							<div class="flex items-center gap-3">
+								<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+								<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">{msg.content}</span>
+								<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+							</div>
+						{:else}
 						<div class="flex gap-3 {msg.role === 'user' ? 'flex-row-reverse' : ''}">
 							<!-- Avatar -->
 							<div
@@ -411,7 +418,12 @@
 											{action}
 											projectId={data.project.id}
 											onconfirm={() => {
+												const label = action.type === 'create_issue'
+													? `Issue "${action.title}" created`
+													: `Document "${action.title}" created`;
 												pendingActions = pendingActions.filter((_, idx) => idx !== i);
+												messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: label }];
+												scrollToBottom();
 											}}
 											ondiscard={() => {
 												pendingActions = pendingActions.filter((_, idx) => idx !== i);
@@ -421,6 +433,7 @@
 								{/if}
 							</div>
 						</div>
+						{/if}
 					{/each}
 
 					{#if sending}
