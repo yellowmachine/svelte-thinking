@@ -972,6 +972,17 @@ const EDITOR_TOOLS = [
   {
     type: 'function' as const,
     function: {
+      name: 'list_references',
+      description:
+        'Returns the full project bibliography with citekeys, authors, year, and title. ' +
+        'Use when the user wants to insert a citation, check which references are available, ' +
+        'or find the correct citekey for a specific work.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
       name: 'replace_text',
       description:
         'Propose replacing a specific passage in the document. ' +
@@ -1111,6 +1122,24 @@ async function runEditorAgentLoop(
             explanation: (args.explanation as string) ?? ''
           });
           return { role: 'tool' as const, tool_call_id: tc.id, content: 'Insertion proposed. The user will see a preview.' };
+        }
+
+        // ── list_references: read tool, returns bibliography ──────────
+        if (tc.function.name === 'list_references') {
+          const refs = (await toolCtx.withRLS((db) =>
+            (db as Db).select().from(projectReference).where(eq(projectReference.projectId, toolCtx.projectId))
+          )) as (typeof projectReference.$inferSelect)[];
+          if (refs.length === 0) {
+            return { role: 'tool' as const, tool_call_id: tc.id, content: 'This project has no bibliography entries yet.' };
+          }
+          const output = refs.map((r) => {
+            const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
+              .map((a) => [a.last, a.first].filter(Boolean).join(', '))
+              .join('; ');
+            const year = r.year ? ` (${r.year})` : '';
+            return `[@${r.citeKey}] ${authors}${year}. ${r.title}.`;
+          }).join('\n');
+          return { role: 'tool' as const, tool_call_id: tc.id, content: output };
         }
 
         // ── check_spelling: run spell check → produce pending actions ──
