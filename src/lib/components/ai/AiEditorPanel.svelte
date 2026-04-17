@@ -224,6 +224,11 @@
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 						The assistant can read your documents, references, and requirements.
 					</p>
+					<div class="mt-1 flex flex-wrap justify-center gap-1.5">
+						<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Propone edits inline</span>
+						<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Lee tus referencias</span>
+						<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Mejora el estilo</span>
+					</div>
 				</div>
 				<div class="flex flex-col gap-1.5 pb-2">
 					<p class="mb-1 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">

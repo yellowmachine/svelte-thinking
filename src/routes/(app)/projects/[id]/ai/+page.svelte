@@ -375,6 +375,11 @@
 						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 							E.g. "What references to Mises are in the draft?"
 						</p>
+						<div class="mt-3 flex flex-wrap justify-center gap-1.5">
+							<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Busca en tus documentos</span>
+							<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Crea documentos</span>
+							<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Abre issues</span>
+						</div>
 					</div>
 				</div>
 			{:else}
