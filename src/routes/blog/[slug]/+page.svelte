@@ -11,7 +11,7 @@
 </svelte:head>
 
 <main class="mx-auto max-w-2xl px-6 py-16">
-	<a href={resolve('/blog', {})} class="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-1 text-sm transition-colors">
+	<a href={resolve('/blog')} class="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-1 text-sm transition-colors">
 		← Blog
 	</a>
 
@@ -28,6 +28,6 @@
 			<p class="text-muted-foreground mt-2 text-base">{data.meta.summary}</p>
 		</header>
 
-		<svelte:component this={data.content} />
+		<data.content />
 	</article>
 </main>

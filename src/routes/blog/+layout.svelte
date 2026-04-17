@@ -5,7 +5,7 @@
 
 <header class="sticky top-0 z-20 border-b border-paper-border bg-paper-ui/90 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper-ui/90">
 	<div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-		<a href={resolve('/', {})} class="flex items-center gap-2">
+		<a href={resolve('/')} class="flex items-center gap-2">
 			<div class="flex h-7 w-7 items-center justify-center rounded bg-accent">
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 					<path d="M2 3h10M2 7h7M2 11h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
@@ -15,13 +15,13 @@
 			<span class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent">beta</span>
 		</a>
 		<div class="flex items-center gap-4">
-			<a href={resolve('/about', {})} class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+			<a href={resolve('/about')} class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 				About
 			</a>
-			<a href={resolve('/login', {})} class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+			<a href={resolve('/login')} class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
 				Sign in
 			</a>
-			<a href={resolve('/', {}) + '#waitlist'} class="rounded-lg bg-accent px-4 py-1.5 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90">
+			<a href={resolve('/') + '#waitlist'} class="rounded-lg bg-accent px-4 py-1.5 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90">
 				Beta access
 			</a>
 		</div>
