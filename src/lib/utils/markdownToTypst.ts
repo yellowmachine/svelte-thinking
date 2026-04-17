@@ -26,6 +26,44 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 		return `%%IMG${imagePlaceholders.length - 1}%%`;
 	});
 
+	// ── 0.4 Protect callout blocks ([!note], [!warning], [!tip], [!caution]) ──
+	const calloutBlocks: string[] = [];
+	src = src.replace(
+		/^>\s*\[!(note|warning|tip|caution)\]\n((?:>\s*.*\n?)*)/gim,
+		(_m, type: string, body: string) => {
+			const lines = body
+				.split('\n')
+				.filter((l: string) => l.trim().startsWith('>'))
+				.map((l: string) => l.replace(/^\s*>\s?/, '').trimEnd())
+				.filter(Boolean);
+			const content = lines.map(inlineToTypst).join('\n\n');
+			const labels: Record<string, string> = {
+				note: 'Nota',
+				warning: 'Atención',
+				tip: 'Consejo',
+				caution: 'Precaución'
+			};
+			const fills: Record<string, string> = {
+				note: 'rgb("#e8f0fe")',
+				warning: 'rgb("#fff8e1")',
+				tip: 'rgb("#e8f5e9")',
+				caution: 'rgb("#fce4e4")'
+			};
+			const strokes: Record<string, string> = {
+				note: 'rgb("#4a7fb5")',
+				warning: 'rgb("#c87d00")',
+				tip: 'rgb("#2e7d32")',
+				caution: 'rgb("#c0392b")'
+			};
+			const label = labels[type.toLowerCase()] ?? type;
+			const fill = fills[type.toLowerCase()] ?? 'rgb("#f5f5f5")';
+			const stroke = strokes[type.toLowerCase()] ?? 'rgb("#888")';
+			const typstBlock = `#block(fill: ${fill}, stroke: (left: 3pt + ${stroke}), inset: (left: 10pt, top: 8pt, bottom: 8pt, right: 8pt), radius: 3pt, width: 100%)[*${label}:* ${content}]`;
+			calloutBlocks.push(typstBlock);
+			return `%%CALLOUT${calloutBlocks.length - 1}%%`;
+		}
+	);
+
 	// ── 0.5 Protect epigraph blocks (multiline blockquotes with [!epigraph]) ──
 	const epigraphs: string[] = [];
 	src = src.replace(/^> \[!epigraph\]\n((?:> [^\n]*\n?)*)/gm, (_m, body: string) => {
@@ -166,6 +204,7 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	result = result.replace(/%%CB(\d+)%%/g, (_m, i) => codeBlocks[parseInt(i)]);
 	result = result.replace(/%%DM(\d+)%%/g, (_m, i) => displayMath[parseInt(i)]);
 	result = result.replace(/%%IM(\d+)%%/g, (_m, i) => inlineMath[parseInt(i)]);
+	result = result.replace(/%%CALLOUT(\d+)%%/g, (_m, i) => calloutBlocks[parseInt(i)]);
 	result = result.replace(/%%EPIGRAPH(\d+)%%/g, (_m, i) => epigraphs[parseInt(i)]);
 	result = result.replace(/%%PP(\d+)%%/g, (_m, i) => personPlaceholders[parseInt(i)]);
 	result = result.replace(/%%PERSONS_INDEX%%/g, () => generatePersonsIndex(personNames));

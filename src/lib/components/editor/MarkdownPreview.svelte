@@ -9,6 +9,7 @@
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import { processWikilinks, processPersonsAndIndex } from '$lib/utils/wikilinks';
 	import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
+	import { extractCallouts, restoreCallouts } from '$lib/utils/callouts';
 	import { einkStore } from '$lib/stores/eink.svelte';
 	import { untrack } from 'svelte';
 
@@ -119,7 +120,8 @@
 		wikilinkMap: Map<string, { id: string; projectId: string }>
 	): { html: string; plots: Map<string, object> } {
 		const { processed: withPlaceholders, plots } = extractPlots(src);
-		const { processed: withEpigraphPlaceholders, epigraphs } = extractEpigraphsForProcessing(withPlaceholders);
+		const { processed: withCalloutPlaceholders, callouts } = extractCallouts(withPlaceholders);
+		const { processed: withEpigraphPlaceholders, epigraphs } = extractEpigraphsForProcessing(withCalloutPlaceholders);
 		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withEpigraphPlaceholders);
 		const withWikilinks = wikilinkMap.size > 0 ? processWikilinks(withMathPlaceholders, wikilinkMap) : withMathPlaceholders;
 		const withPersons = processPersonsAndIndex(withWikilinks);
@@ -127,9 +129,10 @@
 		const rawHtml = marked.parse(withCitations) as string;
 		const restored = restoreMath(rawHtml, mathBlocks);
 		const withEpigraphs = restoreEpigraphs(restored, epigraphs);
+		const withCallouts = restoreCallouts(withEpigraphs, callouts);
 		const html = typeof DOMPurify.sanitize === 'function'
-			? DOMPurify.sanitize(withEpigraphs, { ADD_TAGS: ['math', 'figure', 'figcaption'], ADD_ATTR: ['data-vega-id'] })
-			: withEpigraphs;
+			? DOMPurify.sanitize(withCallouts, { ADD_TAGS: ['math', 'figure', 'figcaption'], ADD_ATTR: ['data-vega-id', 'role'] })
+			: withCallouts;
 		return { html, plots };
 	}
 
@@ -546,4 +549,67 @@
 		animation: comment-highlight-fade 1.8s ease-out forwards;
 		border-radius: 3px;
 	}
+
+	/* Callout blocks */
+	.prose :global(.callout) {
+		margin: 1.5rem 0;
+		padding: 0.875rem 1rem;
+		border-radius: 0.375rem;
+		border-left-width: 3px;
+		border-left-style: solid;
+		font-family: var(--font-sans, sans-serif);
+		font-size: 0.9em;
+	}
+
+	.prose :global(.callout-header) {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-weight: 600;
+		margin-bottom: 0.35rem;
+	}
+
+	.prose :global(.callout-body) {
+		color: var(--color-ink-muted, #57534e);
+		line-height: 1.6;
+		white-space: pre-wrap;
+	}
+
+	/* note — blue/neutral */
+	.prose :global(.callout-note) {
+		background: oklch(0.96 0.02 240 / 0.6);
+		border-left-color: oklch(0.6 0.1 240);
+		color: oklch(0.35 0.08 240);
+	}
+	.prose :global(.callout-note .callout-header) { color: oklch(0.45 0.1 240); }
+
+	/* warning — amber */
+	.prose :global(.callout-warning) {
+		background: oklch(0.97 0.05 80 / 0.6);
+		border-left-color: oklch(0.72 0.14 70);
+		color: oklch(0.4 0.08 70);
+	}
+	.prose :global(.callout-warning .callout-header) { color: oklch(0.5 0.14 70); }
+
+	/* tip — green */
+	.prose :global(.callout-tip) {
+		background: oklch(0.96 0.04 150 / 0.6);
+		border-left-color: oklch(0.58 0.12 150);
+		color: oklch(0.35 0.08 150);
+	}
+	.prose :global(.callout-tip .callout-header) { color: oklch(0.45 0.12 150); }
+
+	/* caution — red/orange */
+	.prose :global(.callout-caution) {
+		background: oklch(0.97 0.04 25 / 0.6);
+		border-left-color: oklch(0.6 0.15 25);
+		color: oklch(0.38 0.08 25);
+	}
+	.prose :global(.callout-caution .callout-header) { color: oklch(0.48 0.15 25); }
+
+	/* Dark mode adjustments */
+	:global(.dark) .prose :global(.callout-note) { background: oklch(0.25 0.04 240 / 0.5); }
+	:global(.dark) .prose :global(.callout-warning) { background: oklch(0.25 0.05 70 / 0.5); }
+	:global(.dark) .prose :global(.callout-tip) { background: oklch(0.25 0.04 150 / 0.5); }
+	:global(.dark) .prose :global(.callout-caution) { background: oklch(0.25 0.05 25 / 0.5); }
 </style>

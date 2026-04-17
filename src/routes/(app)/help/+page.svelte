@@ -116,6 +116,7 @@
 				{ href: '#wikilinks', label: '↳ Wikilinks' },
 				{ href: '#autocomplete', label: '↳ [[ autocomplete' },
 				{ href: '#footnotes', label: '↳ Footnotes' },
+				{ href: '#callouts', label: '↳ Callout blocks' },
 				{ href: '#photos', label: '↳ Photos' },
 				{ href: '#charts', label: '↳ Vega-Lite charts' },
 				{ href: '#export', label: '↳ Export' },
@@ -416,6 +417,42 @@
 			</div>
 		</div>
 		<Callout>Use citations <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">[[@key]]</code> for formal references that appear in the bibliography. Use footnotes for clarifications, comments or informal references.</Callout>
+	</section>
+
+	<!-- Callout blocks -->
+	<section class="mb-10" id="callouts">
+		<h3 class="mb-1 font-serif text-base font-semibold text-ink dark:text-dark-ink">Callout blocks</h3>
+		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			Highlight important passages with a typed callout. Use them to flag warnings, tips or precautions — the same way technical books mark margin notes.
+		</p>
+		<div class="space-y-3">
+			{#each [
+				{ type: 'note', label: 'Nota', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40', border: 'border-blue-200 dark:border-blue-800' },
+				{ type: 'warning', label: 'Atención', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40', border: 'border-amber-200 dark:border-amber-800' },
+				{ type: 'tip', label: 'Consejo', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/40', border: 'border-green-200 dark:border-green-800' },
+				{ type: 'caution', label: 'Precaución', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/40', border: 'border-red-200 dark:border-red-800' },
+			] as item}
+				<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+					<div class="flex items-start gap-4">
+						<div class="min-w-0 flex-1">
+							<p class="font-mono text-sm text-ink dark:text-dark-ink">
+								<span class="text-accent">&gt; [!{item.type}]</span><br />
+								<span class="text-ink-muted dark:text-dark-ink-muted">&gt; Text of the callout.</span>
+							</p>
+							<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+								Type <code class="rounded bg-paper-ui px-1 font-mono dark:bg-dark-paper-ui">/{item.type}</code> in the editor to open autocomplete and insert the template — no need to write the syntax by hand.
+							</p>
+						</div>
+						<div class="shrink-0">
+							<div class="rounded border-l-[3px] {item.border} {item.bg} px-3 py-1.5 font-sans text-xs {item.color}">
+								<span class="font-semibold">{item.label}:</span> Text of the callout.
+							</div>
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
+		<Callout>Callouts are also exported correctly to PDF — each type renders as a shaded block with a coloured left border.</Callout>
 	</section>
 
 	<!-- Photos -->

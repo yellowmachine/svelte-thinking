@@ -14,6 +14,7 @@
 	} from './commentsExtension';
 	import { codeBlockExtension, codeLanguages } from './codeBlockExtension';
 	import { epigraphCompletion } from './epigraphExtension';
+	import { calloutCompletion } from './calloutExtension';
 	import type { CiteRef } from '$lib/utils/citations';
 	import { trpc } from '$lib/utils/trpc';
 	let {
@@ -71,7 +72,7 @@
 		commentRanges?: CommentRange[];
 		scrollToRange?: { from: number; to: number } | null;
 		/** Which [[ completions to enable. undefined = all active. */
-		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph' | 'image'>;
+		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph' | 'image' | 'callout'>;
 		/** Show a footer hint that [[p lookup is unavailable (no AI key configured). */
 		showLookupHint?: boolean;
 		/** BCP-47 language tag for spell check (e.g. 'es-ES', 'en-US'). */
@@ -407,6 +408,7 @@
 	function allCompletions(context: CompletionContext) {
 		const all = completions === undefined;
 		return (
+			(all || completions.has('callout') ? calloutCompletion(context) : null) ??
 			(all || completions.has('epigraph') ? epigraphCompletion(context) : null) ??
 			(all || completions.has('citation') ? citationCompletion(context) : null) ??
 			(all || completions.has('heading') ? headingCompletion(context) : null) ??
