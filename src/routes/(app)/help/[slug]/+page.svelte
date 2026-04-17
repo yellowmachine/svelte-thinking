@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -98,9 +99,7 @@
 			class="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:pointer-events-none disabled:opacity-50"
 		>
 			{#if creating}
-				<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M21 12a9 9 0 1 1-6.219-8.56" />
-				</svg>
+				<Spinner />
 				Creating…
 			{:else}
 				Create sample project

@@ -3,6 +3,7 @@
 	import { tick } from 'svelte';
 	import { MODELS } from '$lib/ai-config';
 	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PendingEditorAction } from '$lib/server/trpc/routers/ai';
 	import { classifyAiError } from '$lib/utils/ai-errors';
 
@@ -212,7 +213,7 @@
 	<div bind:this={messagesEl} class="flex-1 overflow-y-auto px-4 py-4">
 		{#if !historyLoaded}
 			<div class="flex h-full items-center justify-center">
-				<div class="h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+				<Spinner class="text-accent" />
 			</div>
 		{:else if messages.length === 0}
 			<!-- Empty state + shortcuts -->
@@ -294,7 +295,7 @@
 				{/each}
 				{#if loading}
 					<div class="flex items-center gap-2 pl-1">
-						<div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+						<Spinner size="sm" class="text-accent" />
 						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Thinking…</span>
 					</div>
 				{/if}

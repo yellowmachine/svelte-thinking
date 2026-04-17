@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import RequirementItem from '$lib/components/projects/RequirementItem.svelte';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -182,9 +183,7 @@
 				class="mt-3 flex items-center gap-2 rounded-lg bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
 			>
 				{#if generating}
-					<svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
-						<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="12" />
-					</svg>
+					<Spinner size="sm" />
 					Generating…
 				{:else}
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -236,9 +235,7 @@
 						class="flex shrink-0 items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-70"
 					>
 						{#if exportingPdf}
-							<svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
-								<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="12" />
-							</svg>
+							<Spinner size="sm" />
 							Generating…
 						{:else}
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

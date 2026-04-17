@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from 'svelte';
 	import { goto, beforeNavigate } from '$app/navigation';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
@@ -2349,9 +2350,7 @@
 							<div class="border-t border-paper-border px-3 py-2.5 dark:border-dark-paper-border">
 								{#if citationExplain.loading}
 									<div class="flex items-center gap-2">
-										<div
-											class="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent"
-										></div>
+										<Spinner size="sm" class="text-accent" />
 										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 											>Explaining in context…</span
 										>
@@ -2403,9 +2402,7 @@
 						<div class="space-y-2 px-3 py-2.5">
 							{#if selectionReview.loading}
 								<div class="flex items-center gap-2">
-									<div
-										class="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent"
-									></div>
+									<Spinner size="sm" class="text-accent" />
 									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 										>Reviewing…</span
 									>
@@ -2481,9 +2478,7 @@
 						<!-- body -->
 						{#if authorPopover.loading}
 							<div class="flex items-center gap-2 px-3 py-2.5">
-								<div
-									class="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent"
-								></div>
+								<Spinner size="sm" class="text-accent" />
 								<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 									>Loading…</span
 								>
@@ -2806,9 +2801,7 @@
 						</h3>
 						<div class="flex items-center gap-2">
 							{#if loadingReview}
-								<div
-									class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent border-t-transparent"
-								></div>
+								<Spinner size="sm" class="text-accent" />
 							{/if}
 							<button
 								type="button"
@@ -3268,9 +3261,7 @@
 							class="flex items-center justify-center gap-2 rounded-lg bg-accent py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 						>
 							{#if loadingDraft}
-								<span
-									class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"
-								></span>
+								<Spinner size="sm" class="text-white" />
 								Generating…
 							{:else}
 								Generate

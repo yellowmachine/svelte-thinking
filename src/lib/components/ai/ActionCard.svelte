@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 
 	type Props = {
 		action: PendingAction;
@@ -161,9 +162,7 @@
 					class="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
 				>
 					{#if status === 'loading'}
-						<svg class="animate-spin" width="11" height="11" viewBox="0 0 24 24" fill="none">
-							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="12" />
-						</svg>
+						<Spinner size="sm" />
 						Creating…
 					{:else}
 						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">

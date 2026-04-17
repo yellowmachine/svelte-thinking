@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -253,7 +254,7 @@
 					class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 				>
 					{#if uploading}
-						<div class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+						<Spinner class="text-white" />
 						Uploading...
 					{:else}
 						Upload {staged.length === 1 ? 'photo' : `${staged.length} photos`}

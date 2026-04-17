@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { AI_TASKS, MODEL_SHORT_LABEL } from '$lib/ai-config';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 
 	type Props = {
 		mode: 'personal';
@@ -212,7 +213,7 @@
 
 	{#if loading && !data}
 		<div class="flex items-center justify-center py-24">
-			<div class="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+			<Spinner size="lg" class="text-accent" />
 		</div>
 	{:else if data}
 		<!-- KPI Cards -->

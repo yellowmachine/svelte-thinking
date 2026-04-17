@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import {
 		generateCiteKey,
 		parseBibtexFile,
@@ -975,9 +976,7 @@
 									title="Reading notes"
 								>
 									{#if openingNotes === ref.id}
-										<svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="animate-spin">
-											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="32" stroke-dashoffset="12"/>
-										</svg>
+										<Spinner size="sm" />
 									{:else}
 										<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
 											<path
@@ -1006,9 +1005,7 @@
 										title="Generating PDF…"
 										class="flex items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
 									>
-										<svg width="9" height="9" viewBox="0 0 24 24" fill="none" class="animate-spin">
-											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" stroke-dasharray="32" stroke-dashoffset="12"/>
-										</svg>
+										<Spinner size="sm" />
 										PDF
 									</span>
 								{:else if ref.pdfKey}
@@ -1050,9 +1047,7 @@
 											}}
 										/>
 										{#if uploadingPdfId === ref.id}
-											<svg width="9" height="9" viewBox="0 0 24 24" fill="none" class="animate-spin">
-												<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" stroke-dasharray="32" stroke-dashoffset="12"/>
-											</svg>
+											<Spinner size="sm" />
 										{/if}
 										PDF
 									</label>
