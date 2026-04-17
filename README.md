@@ -194,36 +194,27 @@ bun run dev
 
 ---
 
-## Despliegue en producción (Hetzner + Coolify)
+## Despliegue en producción (Hetzner + Dokploy)
 
-### Infraestructura recomendada
+### Infraestructura actual
 
-- **Servidor**: Hetzner CX22 (2 vCPU / 4 GB RAM / 40 GB SSD) — ~3.85 €/mes
-- **PaaS**: [Coolify](https://coolify.io) self-hosted — gestiona deploys, SSL, env vars y reverse proxy
+- **Servidor**: Hetzner — 75 GB disco, 2 GB RAM
+- **PaaS**: [Dokploy](https://dokploy.com) self-hosted — gestiona deploys, SSL (Traefik), env vars y reverse proxy
+- **Dashboard Dokploy**: `dokploy.scholio.review`
 
-### Preparación del servidor
+### Configurar la aplicación en Dokploy
 
-```sh
-# Instalar Coolify en el servidor Hetzner (una sola vez)
-curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
-```
+1. **New Application → Docker Compose**
+2. Apunta al repositorio Git
+3. En **Environment Variables**, añade todas las variables del checklist de abajo
+4. Activa **"Pull always"** en las opciones de deploy (ver nota abajo)
+5. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
+6. Deploy
 
-Accede a Coolify en `http://TU_IP:8000` y completa el onboarding.
+### Variables de entorno en Dokploy
 
-### Configurar la aplicación en Coolify
-
-1. **New Resource → Docker Compose**
-2. Apunta al repositorio Git (GitHub/GitLab)
-3. Coolify detecta el `docker-compose.yml` automáticamente
-4. En **Environment Variables**, añade todas las variables del checklist de abajo
-5. En **Build Variables**, añade `PUBLIC_SENTRY_DSN` con tu DSN real (se bake en el build)
-6. Configura el dominio y activa SSL (Let's Encrypt automático)
-7. Deploy
-
-### Variables de entorno en Coolify
-
-Copia todas las variables del `.env.example` en la sección **Environment Variables** de Coolify.
-Las variables `PUBLIC_*` (Sentry client DSN) van en **Build Variables** porque se incrustan en el bundle.
+Copia todas las variables del `.env.example` en la sección **Environment Variables** de Dokploy.
+Las variables `PUBLIC_*` (Sentry client DSN) van también aquí — Dokploy las inyecta en build time.
 
 > **Nota sobre `DATABASE_URL` y `MIGRATION_DATABASE_URL`**: apuntan al servicio `postgres`
 > interno del compose. Ejemplo:
@@ -233,7 +224,58 @@ Las variables `PUBLIC_*` (Sentry client DSN) van en **Build Variables** porque s
 > MIGRATION_DATABASE_URL=postgres://scholarly:TU_PASSWORD@postgres:5432/scholarly
 > ```
 >
-> Nota que el host es `postgres` (nombre del servicio en el compose), no `localhost`.
+> El host es `postgres` (nombre del servicio en el compose), no `localhost`.
+
+### ⚠️ "Pull always" — por qué está activado
+
+Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen cacheada en lugar de descargar la nueva. Para garantizar que cada deploy recoge la imagen actualizada, la opción **"Pull always"** debe estar activada.
+
+**Consecuencia**: cada deploy descarga la imagen completa, lo que acumula capas antiguas en `/var/lib/docker/overlay2`. Sin limpieza periódica, el disco se llena (incidente real: 75 GB llenos en producción). Ver sección de mantenimiento abajo.
+
+---
+
+## Mantenimiento del servidor
+
+### Limpieza de imágenes Docker (cron semanal)
+
+Con "Pull always" activo las imágenes antiguas se acumulan. Hay un cron configurado en el servidor que limpia automáticamente cada domingo a las 3:00:
+
+```
+0 3 * * 0 docker image prune -af >> /var/log/docker-prune.log 2>&1
+```
+
+Para aplicarlo manualmente en cualquier momento (no afecta a contenedores en ejecución):
+
+```bash
+docker image prune -af
+```
+
+### Log rotation de contenedores
+
+`/etc/docker/daemon.json` en el servidor tiene configurada rotación de logs para evitar que los logs de los contenedores crezcan sin límite:
+
+```json
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "50m",
+    "max-file": "3"
+  }
+}
+```
+
+### Monitorizar disco
+
+```bash
+df -h /
+du -sh /var/lib/docker/*  | sort -rh | head -10
+```
+
+Si el disco supera el 80%, ejecutar:
+
+```bash
+docker system prune -af
+```
 
 ---
 
