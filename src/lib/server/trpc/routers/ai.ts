@@ -1062,7 +1062,19 @@ Match the language and register of the document. Use the same language as the us
 - Propose inline text replacements (replace_text)
 - Insert new content after a specific passage (insert_after)
 - Review clarity, argument flow, style, or academic tone
-- Suggest improvements — always as proposals the user can accept or reject`;
+- Suggest improvements — always as proposals the user can accept or reject
+
+## Diagrams
+
+The document renderer supports Mermaid diagrams. When the user asks for a diagram (flowchart, state machine, sequence diagram, ER diagram, Gantt chart, etc.) use insert_after to add a fenced Mermaid code block. The diagram will render visually in the preview.
+
+Example:
+\`\`\`mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Running : start
+  Running --> Idle : stop
+\`\`\``;
 
 type EditorToolContext = {
   spellApiKey: string;

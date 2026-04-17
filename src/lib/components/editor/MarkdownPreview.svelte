@@ -92,6 +92,39 @@
 		});
 	}
 
+	// ── Mermaid extractor ────────────────────────────────────────────────────
+
+	function extractDiagrams(src: string): { processed: string; diagrams: Map<string, string> } {
+		const diagrams = new Map<string, string>();
+		let idx = 0;
+
+		const processed = src.replace(/^```mermaid\n([\s\S]*?)^```/gm, (_match, code) => {
+			const id = `mermaid-diagram-${idx++}`;
+			diagrams.set(id, code.trim());
+			return `<div data-mermaid-id="${id}"></div>`;
+		});
+
+		return { processed, diagrams };
+	}
+
+	async function renderDiagrams(diagrams: Map<string, string>) {
+		if (!container || diagrams.size === 0) return;
+
+		const { default: mermaid } = await import('mermaid');
+		mermaid.initialize({ startOnLoad: false, theme: 'neutral', fontFamily: '"Source Serif 4", Georgia, serif' });
+
+		for (const [id, code] of diagrams) {
+			const el = container.querySelector(`[data-mermaid-id="${id}"]`);
+			if (!el) continue;
+			try {
+				const { svg } = await mermaid.render(`mermaid-svg-${id}`, code);
+				el.innerHTML = svg;
+			} catch (e) {
+				el.textContent = `Mermaid error: ${e}`;
+			}
+		}
+	}
+
 	// ── Vega-lite extractor ───────────────────────────────────────────────────
 
 	function extractPlots(src: string): { processed: string; plots: Map<string, object> } {
@@ -118,8 +151,9 @@
 		refs: Map<string, CiteRef>,
 		style: CitationStyle,
 		wikilinkMap: Map<string, { id: string; projectId: string }>
-	): { html: string; plots: Map<string, object> } {
-		const { processed: withPlaceholders, plots } = extractPlots(src);
+	): { html: string; plots: Map<string, object>; diagrams: Map<string, string> } {
+		const { processed: withDiagramPlaceholders, diagrams } = extractDiagrams(src);
+		const { processed: withPlaceholders, plots } = extractPlots(withDiagramPlaceholders);
 		const { processed: withCalloutPlaceholders, callouts } = extractCallouts(withPlaceholders);
 		const { processed: withEpigraphPlaceholders, epigraphs } = extractEpigraphsForProcessing(withCalloutPlaceholders);
 		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withEpigraphPlaceholders);
@@ -131,9 +165,9 @@
 		const withEpigraphs = restoreEpigraphs(restored, epigraphs);
 		const withCallouts = restoreCallouts(withEpigraphs, callouts);
 		const html = typeof DOMPurify.sanitize === 'function'
-			? DOMPurify.sanitize(withCallouts, { ADD_TAGS: ['math', 'figure', 'figcaption'], ADD_ATTR: ['data-vega-id', 'role'] })
+			? DOMPurify.sanitize(withCallouts, { ADD_TAGS: ['math', 'figure', 'figcaption'], ADD_ATTR: ['data-vega-id', 'data-mermaid-id', 'role'] })
 			: withCallouts;
-		return { html, plots };
+		return { html, plots, diagrams };
 	}
 
 	// ── Dataset $ref resolution ───────────────────────────────────────────────
@@ -190,6 +224,11 @@
 	$effect(() => {
 		const { plots } = parsed;
 		Promise.resolve().then(() => renderPlots(plots));
+	});
+
+	$effect(() => {
+		const { diagrams } = parsed;
+		Promise.resolve().then(() => renderDiagrams(diagrams));
 	});
 
 	// ── Comment anchor highlighting ───────────────────────────────────────────

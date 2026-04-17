@@ -29,7 +29,8 @@ export const SUPPORTED_LANGUAGES = [
 	{ label: 'JSON', value: 'json' },
 	{ label: 'YAML', value: 'yaml' },
 	{ label: 'HTML', value: 'html' },
-	{ label: 'CSS', value: 'css' }
+	{ label: 'CSS', value: 'css' },
+	{ label: 'Mermaid', value: 'mermaid' }
 ] as const;
 
 // ── "Open in…" links ──────────────────────────────────────────────────────────
