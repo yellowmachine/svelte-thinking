@@ -189,7 +189,7 @@
 
 	// ── Side panel (create / edit) ───────────────────────────────────────────
 
-	type Panel = 'closed' | 'new' | 'edit' | 'import' | 'import-project' | 'link-library' | 'doi' | 'url' | null;
+	type Panel = 'closed' | 'new' | 'edit' | 'import' | 'link-library' | 'doi' | 'url' | null;
 	let panel = $state<Panel>('closed');
 	let editingRef = $state<Ref | null>(null);
 
@@ -382,11 +382,13 @@
 
 	// ── Link from library ────────────────────────────────────────────────────
 
-	type LibraryRef = { id: string; citeKey: string; type: string; title: string; authors: unknown; year: string | null };
+	type LibraryRef = { id: string; citeKey: string; type: string; title: string; authors: unknown; year: string | null; projectIds: string[] };
 
 	let llRefs = $state<LibraryRef[]>([]);
 	let llSelectedIds = $state<Set<string>>(new Set());
 	let llSearch = $state('');
+	let llFilterProjectId = $state('');
+	let llProjects = $state<{ id: string; title: string }[]>([]);
 	let llLoading = $state(false);
 	let llLinking = $state(false);
 	let llError = $state('');
@@ -394,34 +396,51 @@
 
 	const llFiltered = $derived(() => {
 		const q = llSearch.toLowerCase().trim();
-		if (!q) return llRefs;
-		return llRefs.filter(
-			(r) =>
+		return llRefs.filter((r) => {
+			if (llFilterProjectId && !r.projectIds.includes(llFilterProjectId)) return false;
+			if (!q) return true;
+			return (
 				r.citeKey.toLowerCase().includes(q) ||
 				r.title.toLowerCase().includes(q) ||
 				r.year?.includes(q) ||
 				(r.authors as Author[]).some(
 					(a) => a.last.toLowerCase().includes(q) || a.first.toLowerCase().includes(q)
 				)
-		);
+			);
+		});
 	});
 
 	async function openLinkLibrary() {
 		panel = 'link-library';
 		llSelectedIds = new Set();
 		llSearch = '';
+		llFilterProjectId = '';
 		llError = '';
 		llShowLinked = false;
 		llLoading = true;
 		try {
-			const all = await trpc.references.listAll.query();
+			type RawRef = { id: string; projectId: string | null; citeKey: string; type: string; title: string; authors: unknown; year: string | null };
+			const [allRaw, allProjects] = await Promise.all([
+				trpc.references.listAll.query(),
+				trpc.projects.list.query()
+			]);
+			const all = allRaw as unknown as RawRef[];
+			llProjects = (allProjects as { id: string; title: string }[]).filter(p => p.id !== data.project.id);
 			const projectRefIds = new Set(references.map((r) => r.id));
+			// Build refId → projectIds map (listAll returns one row per project link)
+			const projectIdsMap = new Map<string, string[]>();
+			for (const r of all) {
+				if (!projectIdsMap.has(r.id)) projectIdsMap.set(r.id, []);
+				if (r.projectId) projectIdsMap.get(r.id)!.push(r.projectId);
+			}
 			const seen = new Set<string>();
-			llRefs = (all as LibraryRef[]).filter((r) => {
-				if (projectRefIds.has(r.id) || seen.has(r.id)) return false;
-				seen.add(r.id);
-				return true;
-			});
+			llRefs = all
+				.filter((r) => {
+					if (projectRefIds.has(r.id) || seen.has(r.id)) return false;
+					seen.add(r.id);
+					return true;
+				})
+				.map((r) => ({ ...r, projectIds: projectIdsMap.get(r.id) ?? [] }));
 		} catch {
 			llError = 'Could not load your library.';
 		} finally {
@@ -457,86 +476,6 @@
 		}
 	}
 
-	// ── Import from project ──────────────────────────────────────────────────
-
-	type ProjectOption = { id: string; title: string };
-	type SourceRef = { id: string; citeKey: string; title: string; authors: { first: string; last: string }[]; year: string | null };
-
-	let ipProjects = $state<ProjectOption[]>([]);
-	let ipSelectedProjectId = $state('');
-	let ipSourceRefs = $state<SourceRef[]>([]);
-	let ipSelectedIds = $state<Set<string>>(new Set());
-	let ipLoadingProjects = $state(false);
-	let ipLoadingRefs = $state(false);
-	let ipImporting = $state(false);
-	let ipResult = $state<{ inserted: number; skipped: number } | null>(null);
-	let ipError = $state('');
-
-	async function openImportFromProject() {
-		panel = 'import-project';
-		ipSelectedProjectId = '';
-		ipSourceRefs = [];
-		ipSelectedIds = new Set();
-		ipResult = null;
-		ipError = '';
-		ipLoadingProjects = true;
-		try {
-			const all = await trpc.projects.list.query();
-			ipProjects = (all as ProjectOption[]).filter((p) => p.id !== data.project.id);
-		} catch {
-			ipError = 'Could not load projects.';
-		} finally {
-			ipLoadingProjects = false;
-		}
-	}
-
-	async function loadSourceRefs() {
-		if (!ipSelectedProjectId) return;
-		ipSourceRefs = [];
-		ipSelectedIds = new Set();
-		ipResult = null;
-		ipError = '';
-		ipLoadingRefs = true;
-		try {
-			const refs = await trpc.references.list.query(ipSelectedProjectId);
-			ipSourceRefs = refs as SourceRef[];
-			// Select all by default
-			ipSelectedIds = new Set(refs.map((r) => r.id));
-		} catch {
-			ipError = 'Could not load references.';
-		} finally {
-			ipLoadingRefs = false;
-		}
-	}
-
-	function ipToggleAll() {
-		if (ipSelectedIds.size === ipSourceRefs.length) {
-			ipSelectedIds = new Set();
-		} else {
-			ipSelectedIds = new Set(ipSourceRefs.map((r) => r.id));
-		}
-	}
-
-	async function runImportFromProject() {
-		if (!ipSelectedProjectId || ipSelectedIds.size === 0) return;
-		ipImporting = true;
-		ipResult = null;
-		ipError = '';
-		try {
-			const result = await trpc.references.importFromProject.mutate({
-				sourceProjectId: ipSelectedProjectId,
-				targetProjectId: data.project.id,
-				referenceIds: [...ipSelectedIds]
-			});
-			ipResult = result;
-			const fresh = await trpc.references.list.query(data.project.id);
-			references = fresh as Ref[];
-		} catch (e) {
-			ipError = e instanceof Error ? e.message : 'Import failed.';
-		} finally {
-			ipImporting = false;
-		}
-	}
 
 	// ── DOI lookup ──────────────────────────────────────────────────────────
 	type DoiResult = {
@@ -917,12 +856,7 @@
 				>
 					Import .bib
 				</button>
-				<button
-					onclick={openImportFromProject}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-				>
-					Import from project
-				</button>
+
 				<button
 					onclick={openLinkLibrary}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
@@ -2452,139 +2386,6 @@
 					</div>
 				</div>
 			</div>
-		{:else if panel === 'import-project'}
-			<!-- ── Import from project panel ────────────────────────────────── -->
-			<div class="w-full max-w-sm shrink-0">
-				<div
-					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-					>
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							Import from project
-						</h2>
-						<button
-							onclick={closePanel}
-							aria-label="Close"
-							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-						>
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-								<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-							</svg>
-						</button>
-					</div>
-
-					<div class="space-y-4 px-5 py-4">
-						<!-- Project selector -->
-						<div class="flex flex-col gap-1.5">
-							<label for="ip-project-select" class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
-								Source project
-							</label>
-							{#if ipLoadingProjects}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Loading projects…</p>
-							{:else}
-								<select
-									id="ip-project-select"
-									bind:value={ipSelectedProjectId}
-									onchange={loadSourceRefs}
-									class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-								>
-									<option value="">— select a project —</option>
-									{#each ipProjects as p (p.id)}
-										<option value={p.id}>{p.title}</option>
-									{/each}
-								</select>
-							{/if}
-						</div>
-
-						<!-- Reference list -->
-						{#if ipSelectedProjectId}
-							{#if ipLoadingRefs}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Loading references…</p>
-							{:else if ipSourceRefs.length === 0}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">This project has no references.</p>
-							{:else}
-								<div class="flex flex-col gap-2">
-									<div class="flex items-center justify-between">
-										<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-											{ipSelectedIds.size} / {ipSourceRefs.length} selected
-										</span>
-										<button
-											type="button"
-											onclick={ipToggleAll}
-											class="font-sans text-xs text-accent hover:underline"
-										>
-											{ipSelectedIds.size === ipSourceRefs.length ? 'Deselect all' : 'Select all'}
-										</button>
-									</div>
-									<div class="max-h-72 overflow-y-auto rounded-md border border-paper-border dark:border-dark-paper-border">
-										{#each ipSourceRefs as ref (ref.id)}
-											{@const author = ref.authors[0] ? ref.authors[0].last : ''}
-											<label
-												class="flex cursor-pointer items-start gap-2.5 border-b border-paper-border px-3 py-2.5 last:border-b-0 hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
-											>
-												<input
-													type="checkbox"
-													checked={ipSelectedIds.has(ref.id)}
-													onchange={() => {
-														const next = new Set(ipSelectedIds);
-														if (next.has(ref.id)) next.delete(ref.id);
-														else next.add(ref.id);
-														ipSelectedIds = next;
-													}}
-													class="mt-0.5 shrink-0 accent-accent"
-												/>
-												<div class="min-w-0">
-													<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
-														{ref.title}
-													</p>
-													<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-														{[author, ref.year].filter(Boolean).join(', ')}
-														<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
-													</p>
-												</div>
-											</label>
-										{/each}
-									</div>
-								</div>
-							{/if}
-						{/if}
-
-						{#if ipResult}
-							<div class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30">
-								<p class="font-sans text-sm text-green-700 dark:text-green-400">
-									✓ {ipResult.inserted} {ipResult.inserted === 1 ? 'reference imported' : 'references imported'}
-									{#if ipResult.skipped > 0}· {ipResult.skipped} skipped{/if}
-								</p>
-							</div>
-						{/if}
-
-						{#if ipError}
-							<p class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
-								{ipError}
-							</p>
-						{/if}
-					</div>
-
-					<div class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border">
-						<button
-							onclick={closePanel}
-							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-						>
-							Close
-						</button>
-						<button
-							onclick={runImportFromProject}
-							disabled={ipImporting || ipSelectedIds.size === 0 || !ipSelectedProjectId}
-							class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-						>
-							{ipImporting ? 'Importing…' : `Import ${ipSelectedIds.size > 0 ? ipSelectedIds.size : ''}`}
-						</button>
-					</div>
-				</div>
-			</div>
-
 		{:else if panel === 'link-library'}
 		<!-- ── Link from library panel ───────────────────────────────────── -->
 		<div class="w-full max-w-sm shrink-0">
@@ -2616,6 +2417,17 @@
 							No other references in your library to link.
 						</p>
 					{:else}
+						{#if llProjects.length > 0}
+							<select
+								bind:value={llFilterProjectId}
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							>
+								<option value="">All library</option>
+								{#each llProjects as p (p.id)}
+									<option value={p.id}>{p.title}</option>
+								{/each}
+							</select>
+						{/if}
 						<input
 							type="search"
 							bind:value={llSearch}
