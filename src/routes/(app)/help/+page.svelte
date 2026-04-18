@@ -125,7 +125,7 @@
 				{ href: '#collaboration', label: 'Collaboration' },
 				{ href: '#explore', label: 'Explore' },
 				{ href: '#settings', label: 'Settings' },
-				{ href: '#offline', label: 'Offline & sync' },
+
 				{ href: '#tips', label: 'Tips' },
 			] as item}
 				<a href={item.href} class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline">{item.label}</a>
@@ -533,7 +533,7 @@
 		<div class="space-y-3">
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Save (draft)</p>
-				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Runs automatically every 30 seconds or when you click <strong>Save</strong>. Drafts are not versioned — they overwrite the previous draft. Offline edits are saved locally and synced when you reconnect.</p>
+				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Runs automatically every 30 seconds or when you click <strong>Save</strong>. Drafts are not versioned — they overwrite the previous draft.</p>
 			</div>
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Commit</p>
@@ -634,30 +634,6 @@
 			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
 				<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Appearance</p>
 				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Choose a colour theme and toggle dark mode from the palette icon in the navbar. The preference is saved locally and persists across sessions.</p>
-			</div>
-		</div>
-	</section>
-
-	<!-- ═══════════════════════════════════════════════════════════════════════
-	     OFFLINE & SYNC
-	     ═══════════════════════════════════════════════════════════════════════ -->
-	<section class="mb-10" id="offline">
-		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Offline & sync</h2>
-		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			You can keep writing without an internet connection. Scholio stores pending edits locally and syncs them automatically when you reconnect.
-		</p>
-		<div class="space-y-3">
-			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Offline editing</p>
-				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Drafts are saved to the browser's IndexedDB. A banner at the top indicates you are working offline. All saves go to local storage until connectivity is restored.</p>
-			</div>
-			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Automatic sync</p>
-				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">When you come back online, pending edits are pushed to the server automatically. A "Syncing…" badge appears during the process; a "Synced" confirmation follows on success.</p>
-			</div>
-			<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
-				<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Sync log</p>
-				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">If a sync fails (e.g. you lost write access to a project), the error is recorded in <a href="/sync-log" class="text-accent underline decoration-dotted">/sync-log</a>. Review it to decide whether to retry or discard the pending edit.</p>
 			</div>
 		</div>
 	</section>
