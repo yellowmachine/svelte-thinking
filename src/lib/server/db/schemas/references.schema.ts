@@ -18,7 +18,10 @@ export const referenceTypeEnum = scholioSchema.enum('reference_type', [
 	'scholastic',
 	'biblical',
 	'classical',
-	'earlymodern'
+	'earlymodern',
+	'film',
+	'interview',
+	'newspaper'
 ]);
 
 const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;

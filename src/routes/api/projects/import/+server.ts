@@ -30,7 +30,8 @@ const VALID_PROJECT_STATUSES = new Set([
 const VALID_REF_TYPES = new Set([
 	'article', 'book', 'inproceedings', 'incollection', 'phdthesis',
 	'mastersthesis', 'techreport', 'misc', 'magisterial', 'patristic',
-	'scholastic', 'biblical', 'classical', 'earlymodern'
+	'scholastic', 'biblical', 'classical', 'earlymodern',
+	'film', 'interview', 'newspaper'
 ]);
 
 export const POST: RequestHandler = async (event) => {

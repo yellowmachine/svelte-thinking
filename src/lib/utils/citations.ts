@@ -435,6 +435,22 @@ function chicagoNote(ref: CiteRef): string {
 			const section = ref.extra?.section ? ` ${ref.extra.section}` : '';
 			return `${authors}, *${ref.title}*${trans}${pub},${sigla}${section}.`;
 		}
+		case 'film': {
+			const dir = ref.extra?.director ? `, dir. ${ref.extra.director}` : '';
+			const prod = ref.publisher ? ` (${ref.publisher}, ${year})` : ` (${year})`;
+			return `*${ref.title}*${dir}${prod}.`;
+		}
+		case 'interview': {
+			const interviewee = authors ? `${authors}` : ref.title;
+			const interviewer = ref.extra?.interviewer ? `, interviewed by ${ref.extra.interviewer}` : '';
+			const pub = ref.publisher ? `, ${ref.publisher}` : '';
+			return `${interviewee}${interviewer}${pub}, ${year}.`;
+		}
+		case 'newspaper': {
+			const paper = ref.journal ? ` *${ref.journal}*` : '';
+			const date = ref.extra?.date ?? year;
+			return `${authors}, "${ref.title},"${paper}, ${date}.`;
+		}
 		default: {
 			const url = ref.url ? `, ${ref.url}` : '';
 			return `${authors}, *${ref.title}* (${year})${url}.`;
@@ -533,6 +549,22 @@ function chicagoBib(ref: CiteRef): string {
 			const place = ref.address ? `${ref.address}: ` : '';
 			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
 			return `${authors}. *${ref.title}*.${trans}${pub} ${year}.${origYear}`;
+		}
+		case 'film': {
+			const dir = ref.extra?.director ? ` Directed by ${ref.extra.director}.` : '';
+			const prod = ref.publisher ? ` ${ref.publisher},` : '';
+			return `*${ref.title}*.${dir}${prod} ${year}.`;
+		}
+		case 'interview': {
+			const interviewee = authors ? `${authors}.` : `*${ref.title}*.`;
+			const interviewer = ref.extra?.interviewer ? ` Interview by ${ref.extra.interviewer}.` : '';
+			const pub = ref.publisher ? ` ${ref.publisher}.` : '';
+			return `${interviewee}${interviewer}${pub} ${year}.`;
+		}
+		case 'newspaper': {
+			const paper = ref.journal ? ` *${ref.journal}*.` : '.';
+			const date = ref.extra?.date ?? year;
+			return `${authors}. "${ref.title}."${paper} ${date}.`;
 		}
 		default: {
 			const url = ref.url ? ` ${ref.url}.` : '';

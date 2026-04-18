@@ -28,7 +28,10 @@ const referenceTypeValues = [
 	'scholastic',
 	'biblical',
 	'classical',
-	'earlymodern'
+	'earlymodern',
+	'film',
+	'interview',
+	'newspaper'
 ] as const;
 
 const referenceInputSchema = z.object({

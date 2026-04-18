@@ -715,7 +715,10 @@
 		scholastic: 'Scholastic work',
 		biblical: 'Biblical text',
 		classical: 'Classical text',
-		earlymodern: 'Early modern work'
+		earlymodern: 'Early modern work',
+		film: 'Film / TV',
+		interview: 'Interview',
+		newspaper: 'Newspaper article'
 	};
 
 	const ALL_TYPES: ReferenceType[] = [
@@ -732,7 +735,10 @@
 		'scholastic',
 		'biblical',
 		'classical',
-		'earlymodern'
+		'earlymodern',
+		'film',
+		'interview',
+		'newspaper'
 	];
 
 	function formatAuthors(ref: Ref): string {
