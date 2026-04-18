@@ -390,6 +390,7 @@
 	let llLoading = $state(false);
 	let llLinking = $state(false);
 	let llError = $state('');
+	let llShowLinked = $state(false);
 
 	const llFiltered = $derived(() => {
 		const q = llSearch.toLowerCase().trim();
@@ -410,6 +411,7 @@
 		llSelectedIds = new Set();
 		llSearch = '';
 		llError = '';
+		llShowLinked = false;
 		llLoading = true;
 		try {
 			const all = await trpc.references.listAll.query();
@@ -2666,6 +2668,40 @@
 								</p>
 							{/if}
 							</div>
+						{/if}
+
+						{#if references.length > 0}
+							<button
+								type="button"
+								onclick={() => (llShowLinked = !llShowLinked)}
+								class="flex w-full items-center gap-1.5 font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+							>
+								<svg
+									width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"
+									class="shrink-0 transition-transform {llShowLinked ? 'rotate-90' : ''}"
+								>
+									<path d="M3 1.5l4 3.5-4 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+								Already in this project ({references.length})
+							</button>
+							{#if llShowLinked}
+								<div class="rounded-md border border-paper-border dark:border-dark-paper-border">
+									{#each references as ref (ref.id)}
+										{@const author = (ref.authors as Author[])[0]?.last ?? ''}
+										<div class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2 last:border-b-0 opacity-50 dark:border-dark-paper-border">
+											<div class="min-w-0">
+												<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+													{ref.title}
+												</p>
+												<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+													{[author, ref.year].filter(Boolean).join(', ')}
+													<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
+												</p>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{/if}
 						{/if}
 
 						{#if llError}
