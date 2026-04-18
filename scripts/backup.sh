@@ -3,9 +3,22 @@
 # Runs inside the backup container via crond (BusyBox).
 # Env vars required: POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB,
 #                    R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
-# Optional: BACKUP_RETENTION_DAYS (default: 30)
+# Optional: BACKUP_RETENTION_DAYS (default: 30), SLACK_WEBHOOK_URL
 
 set -e
+
+notify_slack() {
+  [ -z "${SLACK_WEBHOOK_URL}" ] && return 0
+  curl -s -X POST "${SLACK_WEBHOOK_URL}" \
+    -H 'Content-Type: application/json' \
+    -d "{\"text\":\"$1\"}" || true
+}
+
+on_error() {
+  notify_slack "🚨 *Backup failed*\n*File:* ${FILENAME:-unknown}\n*Step:* exited with error at line $1"
+}
+
+trap 'on_error $LINENO' EXIT
 
 RETENTION=${BACKUP_RETENTION_DAYS:-30}
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
@@ -59,3 +72,6 @@ aws s3 ls "s3://${R2_BUCKET}/" \
     done
 
 echo "[backup] Done"
+
+trap - EXIT
+notify_slack "✅ *Backup completed*\n*File:* ${FILENAME}\n*Retention:* ${RETENTION} days"
