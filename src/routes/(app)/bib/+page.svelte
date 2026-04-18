@@ -22,7 +22,7 @@
 				r.title.toLowerCase().includes(q) ||
 				r.citeKey.toLowerCase().includes(q) ||
 				authorString(r.authors).toLowerCase().includes(q) ||
-				r.projectTitle.toLowerCase().includes(q) ||
+				(r.projectTitle ?? '').toLowerCase().includes(q) ||
 				(r.year ?? '').includes(q) ||
 				(r.journal ?? '').toLowerCase().includes(q) ||
 				(r.booktitle ?? '').toLowerCase().includes(q)
@@ -30,20 +30,21 @@
 		});
 	});
 
-	// Group by project
+	// Group by project (references without a project go under a fallback group)
 	const byProject = $derived.by(() => {
-		const map = new SvelteMap<string, { projectId: string; projectTitle: string; bibHref: string; refs: (Ref & { externalHref: string | null })[]}>();
+		const map = new SvelteMap<string, { projectId: string | null; projectTitle: string; bibHref: string | null; refs: (Ref & { externalHref: string | null })[]}>();
 		for (const r of filtered) {
-			if (!map.has(r.projectId)) {
-				map.set(r.projectId, {
+			const key = r.projectId ?? '__none__';
+			if (!map.has(key)) {
+				map.set(key, {
 					projectId: r.projectId,
-					projectTitle: r.projectTitle,
-					bibHref: resolve(`/projects/${r.projectId}/bib`),
+					projectTitle: r.projectTitle ?? 'Sin proyecto',
+					bibHref: r.projectId ? resolve(`/projects/${r.projectId}/bib`) : null,
 					refs: []
 				});
 			}
 			const externalHref = r.doi ? `https://doi.org/${r.doi}` : (r.url ?? null);
-			map.get(r.projectId)!.refs.push({ ...r, externalHref });
+			map.get(key)!.refs.push({ ...r, externalHref });
 		}
 		return [...map.values()].sort((a, b) => a.projectTitle.localeCompare(b.projectTitle));
 	});
@@ -108,12 +109,14 @@
 						<h2 class="font-sans text-xs font-semibold uppercase tracking-wider text-ink-muted dark:text-dark-ink-muted">
 							{group.projectTitle}
 						</h2>
+						{#if group.bibHref}
 						<a
 							href={resolve(group.bibHref)}
 							class="font-sans text-xs text-accent hover:underline"
 						>
 							Ver en proyecto →
 						</a>
+					{/if}
 					</div>
 
 					<div class="divide-y divide-paper-border rounded-lg border border-paper-border dark:divide-dark-paper-border dark:border-dark-paper-border">

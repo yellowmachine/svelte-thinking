@@ -63,7 +63,7 @@
 	async function openReadingNotes(ref: Ref) {
 		openingNotes = ref.id;
 		try {
-			const { docId } = await trpc.references.openReadingNotes.mutate(ref.id);
+			const { docId } = await trpc.references.openReadingNotes.mutate({ refId: ref.id, projectId: data.project.id });
 			await goto(`/projects/${data.project.id}/documents/${docId}`);
 		} finally {
 			openingNotes = null;
@@ -626,7 +626,7 @@
 			// Best-effort: generate PDF in background — show spinner, flash on failure
 			const refId = newRef.id;
 			generatingPdfIds.add(refId);
-			trpc.references.generatePdfFromUrl.mutate(refId)
+			trpc.references.generatePdfFromUrl.mutate({ refId, projectId: data.project.id })
 				.then((res) => {
 					if (res?.pdfKey) {
 						references = references.map((r) =>

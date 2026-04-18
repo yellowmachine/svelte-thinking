@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { eq } from 'drizzle-orm';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { toLatex, toTypst, serializeBib, type RefData } from '$lib/utils/export';
 import { compileToPdf } from '$lib/server/typst';
 
@@ -42,8 +42,12 @@ export const GET: RequestHandler = async (event) => {
 
 	// Load project references for bibliography
 	const refs = (await event.locals.withRLS((db) =>
-		db.select().from(projectReference).where(eq(projectReference.projectId, projectId))
-	)) as unknown as RefData[];
+		db
+			.select({ ref: reference })
+			.from(reference)
+			.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+			.where(eq(projectReference.projectId, projectId))
+	).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref))) as unknown as RefData[];
 
 	const slug = docResult.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 

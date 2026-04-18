@@ -6,7 +6,7 @@ import { eq, asc } from 'drizzle-orm';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { projectDataset } from '$lib/server/db/schemas/datasets.schema';
 import { user } from '$lib/server/db/auth.schema';
@@ -40,8 +40,13 @@ export const GET: RequestHandler = async (event) => {
 				.where(eq(projectCollaborator.projectId, projectId))
 		),
 		event.locals.withRLS((db) =>
-			db.select().from(projectReference).where(eq(projectReference.projectId, projectId)).orderBy(asc(projectReference.citeKey))
-		),
+			db
+				.select({ ref: reference })
+				.from(reference)
+				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+				.where(eq(projectReference.projectId, projectId))
+				.orderBy(asc(reference.citeKey))
+		).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref)),
 		event.locals.withRLS((db) =>
 			db.select().from(projectPhoto).where(eq(projectPhoto.projectId, projectId))
 		),

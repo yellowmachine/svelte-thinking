@@ -4,7 +4,7 @@ import { eq, asc, inArray } from 'drizzle-orm';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { document } from '$lib/server/db/schemas/documents.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { user as authUser } from '$lib/server/db/auth.schema';
 import { buildTypstSource, buildBibFile, compileToPdf } from '$lib/server/typst';
@@ -46,8 +46,12 @@ export const GET: RequestHandler = async (event) => {
     ) as Promise<{ name: string; order: number; fulfilledDocumentId: string | null }[]>,
 
     event.locals.withRLS((db) =>
-      db.select().from(projectReference).where(eq(projectReference.projectId, projectId))
-    ) as Promise<(typeof projectReference.$inferSelect)[]>,
+      db
+        .select({ ref: reference })
+        .from(reference)
+        .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+        .where(eq(projectReference.projectId, projectId))
+    ).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref)) as Promise<(typeof reference.$inferSelect)[]>,
 
     event.locals.withRLS((db) =>
       db

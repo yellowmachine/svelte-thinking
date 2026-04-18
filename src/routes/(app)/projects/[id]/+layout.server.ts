@@ -3,7 +3,7 @@ import type { LayoutServerLoad } from './$types';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { orgS3Config } from '$lib/server/db/schemas/organizations.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { eq, and, isNotNull } from 'drizzle-orm';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig } from '$lib/server/storage';
@@ -31,8 +31,11 @@ export const load: LayoutServerLoad = async (event) => {
         db.select({ key: projectPhoto.key }).from(projectPhoto).where(eq(projectPhoto.projectId, projectId))
       ),
       event.locals.withRLS((db) =>
-        db.select({ key: projectReference.pdfKey }).from(projectReference)
-          .where(and(eq(projectReference.projectId, projectId), isNotNull(projectReference.pdfKey)))
+        db
+          .select({ key: reference.pdfKey })
+          .from(reference)
+          .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+          .where(and(eq(projectReference.projectId, projectId), isNotNull(reference.pdfKey)))
       )
     ]);
 

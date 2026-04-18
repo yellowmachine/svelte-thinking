@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { eq, and, asc, sql } from 'drizzle-orm';
+import { eq, and, asc, sql, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
 import { router, protectedProcedure } from '../init';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { parseBibtexFile, formatBibtexFile, generateCiteKey } from '$lib/utils/bibtex';
 import type { Author } from '$lib/utils/bibtex';
@@ -63,7 +63,7 @@ const referenceInputSchema = z.object({
 
 async function ensureUniqueCiteKey(
 	withRLS: (fn: (db: Db) => Promise<unknown>) => Promise<unknown>,
-	projectId: string,
+	userId: string,
 	base: string,
 	excludeId?: string
 ): Promise<string> {
@@ -74,9 +74,9 @@ async function ensureUniqueCiteKey(
 	while (true) {
 		const conflicts = (await withRLS((db) =>
 			db
-				.select({ id: projectReference.id })
-				.from(projectReference)
-				.where(and(eq(projectReference.projectId, projectId), eq(projectReference.citeKey, key)))
+				.select({ id: reference.id })
+				.from(reference)
+				.where(and(eq(reference.userId, userId), eq(reference.citeKey, key)))
 				.limit(1)
 		)) as { id: string }[];
 
@@ -132,29 +132,31 @@ export const referencesRouter = router({
 		return ctx.withRLS((db) =>
 			db
 				.select({
-					id: projectReference.id,
+					id: reference.id,
 					projectId: projectReference.projectId,
 					projectTitle: project.title,
-					citeKey: projectReference.citeKey,
-					type: projectReference.type,
-					title: projectReference.title,
-					authors: projectReference.authors,
-					editors: projectReference.editors,
-					year: projectReference.year,
-					journal: projectReference.journal,
-					booktitle: projectReference.booktitle,
-					publisher: projectReference.publisher,
-					doi: projectReference.doi,
-					url: projectReference.url
+					citeKey: reference.citeKey,
+					type: reference.type,
+					title: reference.title,
+					authors: reference.authors,
+					editors: reference.editors,
+					year: reference.year,
+					journal: reference.journal,
+					booktitle: reference.booktitle,
+					publisher: reference.publisher,
+					doi: reference.doi,
+					url: reference.url
 				})
-				.from(projectReference)
-				.innerJoin(project, eq(projectReference.projectId, project.id))
-				.orderBy(asc(projectReference.citeKey))
+				.from(reference)
+				.leftJoin(projectReference, eq(projectReference.referenceId, reference.id))
+				.leftJoin(project, eq(project.id, projectReference.projectId))
+				.where(eq(reference.userId, ctx.user.id))
+				.orderBy(asc(reference.citeKey))
 		) as Promise<
 			{
 				id: string;
-				projectId: string;
-				projectTitle: string;
+				projectId: string | null;
+				projectTitle: string | null;
 				citeKey: string;
 				type: string;
 				title: string;
@@ -173,29 +175,38 @@ export const referencesRouter = router({
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
 		return ctx.withRLS((db) =>
 			db
-				.select()
-				.from(projectReference)
+				.select({ ref: reference })
+				.from(reference)
+				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
 				.where(eq(projectReference.projectId, projectId))
-				.orderBy(asc(projectReference.citeKey))
-		) as Promise<(typeof projectReference.$inferSelect)[]>;
+				.orderBy(asc(reference.citeKey))
+		).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref));
 	}),
 
 	create: protectedProcedure
 		.input(z.object({ projectId: z.string(), reference: referenceInputSchema }))
 		.mutation(async ({ ctx, input }) => {
-			const { projectId, reference } = input;
+			const { projectId, reference: refInput } = input;
 			const uniqueKey = await ensureUniqueCiteKey(
 				ctx.withRLS as Parameters<typeof ensureUniqueCiteKey>[0],
-				projectId,
-				reference.citeKey
+				ctx.user.id,
+				refInput.citeKey
 			);
 
-			const rows = (await ctx.withRLS((db) =>
-				db
+			const refId = crypto.randomUUID();
+
+			await ctx.withRLS(async (db) => {
+				await db
+					.insert(reference)
+					.values({ id: refId, userId: ctx.user.id, ...toDbValues(refInput, uniqueKey) });
+				await db
 					.insert(projectReference)
-					.values({ id: crypto.randomUUID(), projectId, ...toDbValues(reference, uniqueKey) })
-					.returning()
-			)) as (typeof projectReference.$inferSelect)[];
+					.values({ referenceId: refId, projectId });
+			});
+
+			const rows = (await ctx.withRLS((db) =>
+				db.select().from(reference).where(eq(reference.id, refId)).limit(1)
+			)) as (typeof reference.$inferSelect)[];
 
 			return rows[0];
 		}),
@@ -203,69 +214,105 @@ export const referencesRouter = router({
 	update: protectedProcedure
 		.input(z.object({ id: z.string(), projectId: z.string(), reference: referenceInputSchema }))
 		.mutation(async ({ ctx, input }) => {
-			const { id, projectId, reference } = input;
+			const { id, reference: refInput } = input;
 			const uniqueKey = await ensureUniqueCiteKey(
 				ctx.withRLS as Parameters<typeof ensureUniqueCiteKey>[0],
-				projectId,
-				reference.citeKey,
+				ctx.user.id,
+				refInput.citeKey,
 				id
 			);
 
 			const rows = (await ctx.withRLS((db) =>
 				db
-					.update(projectReference)
-					.set({ ...toDbValues(reference, uniqueKey), updatedAt: new Date() })
-					.where(eq(projectReference.id, id))
+					.update(reference)
+					.set({ ...toDbValues(refInput, uniqueKey), updatedAt: new Date() })
+					.where(eq(reference.id, id))
 					.returning()
-			)) as (typeof projectReference.$inferSelect)[];
+			)) as (typeof reference.$inferSelect)[];
 
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 			return rows[0];
 		}),
 
 	delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: id }) => {
-		const rows = (await ctx.withRLS((db) =>
+		// Fetch pdfKey and a projectId (for S3 resolution) before deleting
+		const [row] = (await ctx.withRLS((db) =>
 			db
-				.delete(projectReference)
-				.where(eq(projectReference.id, id))
-				.returning({ id: projectReference.id, pdfKey: projectReference.pdfKey, projectId: projectReference.projectId })
-		)) as { id: string; pdfKey: string | null; projectId: string }[];
+				.select({
+					pdfKey: reference.pdfKey,
+					projectId: projectReference.projectId
+				})
+				.from(reference)
+				.leftJoin(projectReference, eq(projectReference.referenceId, reference.id))
+				.where(eq(reference.id, id))
+				.limit(1)
+		)) as { pdfKey: string | null; projectId: string | null }[];
 
-		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+		if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
 
-		// Best-effort S3 cleanup for attached PDF
-		if (rows[0].pdfKey) {
+		await ctx.withRLS((db) =>
+			db.delete(reference).where(eq(reference.id, id))
+		);
+
+		if (row.pdfKey && row.projectId) {
 			const { resolveProjectS3Config } = await import('$lib/server/s3Storage');
 			const { deleteFileWithConfig } = await import('$lib/server/storage');
-			const s3 = await resolveProjectS3Config(rows[0].projectId, ctx.user.id, ctx.withRLS).catch(() => null);
-			if (s3) await deleteFileWithConfig(s3, rows[0].pdfKey).catch(() => {});
+			const s3 = await resolveProjectS3Config(row.projectId, ctx.user.id, ctx.withRLS).catch(() => null);
+			if (s3) await deleteFileWithConfig(s3, row.pdfKey).catch(() => {});
 		}
 
-		return { id: rows[0].id };
+		return { id };
 	}),
 
+	// ── Attach/detach a reference from a project ─────────────────────────────
+
+	attachToProject: protectedProcedure
+		.input(z.object({ referenceId: z.string(), projectId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.withRLS((db) =>
+				db
+					.insert(projectReference)
+					.values({ referenceId: input.referenceId, projectId: input.projectId })
+					.onConflictDoNothing()
+			);
+			return { ok: true };
+		}),
+
+	detachFromProject: protectedProcedure
+		.input(z.object({ referenceId: z.string(), projectId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.withRLS((db) =>
+				db
+					.delete(projectReference)
+					.where(
+						and(
+							eq(projectReference.referenceId, input.referenceId),
+							eq(projectReference.projectId, input.projectId)
+						)
+					)
+			);
+			return { ok: true };
+		}),
+
 	// ── Reading notes document ───────────────────────────────────────────────
-	// Returns the linked reading_note document id, creating it if needed.
 
 	openReadingNotes: protectedProcedure
-		.input(z.string()) // refId
-		.mutation(async ({ ctx, input: refId }) => {
+		.input(z.object({ refId: z.string(), projectId: z.string() }))
+		.mutation(async ({ ctx, input: { refId, projectId } }) => {
 			const [ref] = (await ctx.withRLS((db) =>
 				db
 					.select({
-						id: projectReference.id,
-						projectId: projectReference.projectId,
-						title: projectReference.title,
-						authors: projectReference.authors,
-						year: projectReference.year,
-						readingNotesDocId: projectReference.readingNotesDocId
+						id: reference.id,
+						title: reference.title,
+						authors: reference.authors,
+						year: reference.year,
+						readingNotesDocId: reference.readingNotesDocId
 					})
-					.from(projectReference)
-					.where(eq(projectReference.id, refId))
+					.from(reference)
+					.where(eq(reference.id, refId))
 					.limit(1)
 			)) as {
 				id: string;
-				projectId: string;
 				title: string;
 				authors: { first: string; last: string }[];
 				year: string | null;
@@ -275,7 +322,6 @@ export const referencesRouter = router({
 			if (!ref) throw new TRPCError({ code: 'NOT_FOUND' });
 			if (ref.readingNotesDocId) return { docId: ref.readingNotesDocId };
 
-			// Build frontmatter from reference metadata
 			const authorStr = ref.authors[0]
 				? `${ref.authors[0].first} ${ref.authors[0].last}`.trim()
 				: '';
@@ -289,7 +335,7 @@ export const referencesRouter = router({
 			await ctx.withRLS(async (db) => {
 				await db.execute(
 					sql`INSERT INTO scholio.document (id, project_id, title, type, draft_content, owner_user_id, created_at, updated_at)
-					    VALUES (${docId}, ${ref.projectId}, ${docTitle}, 'reading_note', ${content}, ${ctx.user.id}, ${now}::timestamptz, ${now}::timestamptz)`
+					    VALUES (${docId}, ${projectId}, ${docTitle}, 'reading_note', ${content}, ${ctx.user.id}, ${now}::timestamptz, ${now}::timestamptz)`
 				);
 				await db.execute(
 					sql`INSERT INTO scholio.document_version (id, document_id, content, version_number, change_description, created_by, created_at)
@@ -299,7 +345,7 @@ export const referencesRouter = router({
 					sql`UPDATE scholio.document SET current_version_id = ${versionId} WHERE id = ${docId}`
 				);
 				await db.execute(
-					sql`UPDATE scholio.project_reference SET reading_notes_doc_id = ${docId}, updated_at = ${now}::timestamptz WHERE id = ${refId}`
+					sql`UPDATE scholio.reference SET reading_notes_doc_id = ${docId}, updated_at = ${now}::timestamptz WHERE id = ${refId}`
 				);
 			});
 
@@ -326,18 +372,25 @@ export const referencesRouter = router({
 
 			for (const entry of parsed) {
 				try {
-					// Skip entries whose DOI already exists in this project
+					// Skip entries whose DOI already exists for this user
 					if (entry.doi) {
 						const existing = await ctx.withRLS((db) =>
-							db.query.projectReference.findFirst({
+							db.query.reference.findFirst({
 								where: and(
-									eq(projectReference.projectId, projectId),
-									eq(projectReference.doi, entry.doi!)
+									eq(reference.userId, ctx.user.id),
+									eq(reference.doi, entry.doi!)
 								),
 								columns: { id: true }
 							})
 						);
 						if (existing) {
+							// Already in library — just ensure pivot link exists
+							await ctx.withRLS((db) =>
+								db
+									.insert(projectReference)
+									.values({ referenceId: (existing as { id: string }).id, projectId })
+									.onConflictDoNothing()
+							);
 							skipped++;
 							continue;
 						}
@@ -346,14 +399,15 @@ export const referencesRouter = router({
 					const baseKey = entry.citeKey || generateCiteKey(entry.authors, entry.year);
 					const uniqueKey = await ensureUniqueCiteKey(
 						ctx.withRLS as Parameters<typeof ensureUniqueCiteKey>[0],
-						projectId,
+						ctx.user.id,
 						baseKey
 					);
 
-					await ctx.withRLS((db) =>
-						db.insert(projectReference).values({
-							id: crypto.randomUUID(),
-							projectId,
+					const refId = crypto.randomUUID();
+					await ctx.withRLS(async (db) => {
+						await db.insert(reference).values({
+							id: refId,
+							userId: ctx.user.id,
 							citeKey: uniqueKey,
 							type: entry.type,
 							title: entry.title || '(sin título)',
@@ -379,8 +433,9 @@ export const referencesRouter = router({
 							institution: entry.institution || null,
 							reportNumber: entry.reportNumber || null,
 							extra: entry.extra
-						})
-					);
+						});
+						await db.insert(projectReference).values({ referenceId: refId, projectId });
+					});
 					inserted++;
 				} catch {
 					skipped++;
@@ -390,110 +445,70 @@ export const referencesRouter = router({
 			return { inserted, skipped };
 		}),
 
-	// ── Import references from another project ───────────────────────────
+	// ── Link references from another project (no-copy) ───────────────────
 
 	importFromProject: protectedProcedure
 		.input(z.object({
 			sourceProjectId: z.string(),
 			targetProjectId: z.string(),
-			referenceIds: z.array(z.string()).optional() // undefined = all
+			referenceIds: z.array(z.string()).optional()
 		}))
 		.mutation(async ({ ctx, input }) => {
 			const { sourceProjectId, targetProjectId, referenceIds } = input;
 
-			// Load source refs — withRLS ensures the user has read access to the source project
-			const sourceRefs = (await ctx.withRLS((db) =>
+			// Load source refs — withRLS ensures access to the source project
+			const sourceRows = (await ctx.withRLS((db) =>
 				db
-					.select()
+					.select({ referenceId: projectReference.referenceId })
 					.from(projectReference)
 					.where(eq(projectReference.projectId, sourceProjectId))
-					.orderBy(asc(projectReference.citeKey))
-			)) as (typeof projectReference.$inferSelect)[];
+			)) as { referenceId: string }[];
 
-			const toImport = referenceIds
-				? sourceRefs.filter((r) => referenceIds.includes(r.id))
-				: sourceRefs;
+			const toLink = referenceIds
+				? sourceRows.filter((r) => referenceIds.includes(r.referenceId))
+				: sourceRows;
 
-			if (toImport.length === 0) {
-				return { inserted: 0, skipped: 0 };
-			}
+			if (toLink.length === 0) return { inserted: 0, skipped: 0 };
 
-			let inserted = 0;
-			let skipped = 0;
+			// Filter out refs already linked to targetProject
+			const existingRows = (await ctx.withRLS((db) =>
+				db
+					.select({ referenceId: projectReference.referenceId })
+					.from(projectReference)
+					.where(
+						and(
+							eq(projectReference.projectId, targetProjectId),
+							inArray(projectReference.referenceId, toLink.map((r) => r.referenceId))
+						)
+					)
+			)) as { referenceId: string }[];
 
-			for (const ref of toImport) {
-				try {
-					// Skip if DOI already exists in target project
-					if (ref.doi) {
-						const existing = await ctx.withRLS((db) =>
-							db.query.projectReference.findFirst({
-								where: and(
-									eq(projectReference.projectId, targetProjectId),
-									eq(projectReference.doi, ref.doi!)
-								),
-								columns: { id: true }
-							})
-						);
-						if (existing) { skipped++; continue; }
-					}
+			const existingSet = new Set(existingRows.map((r) => r.referenceId));
+			const newLinks = toLink.filter((r) => !existingSet.has(r.referenceId));
 
-					const uniqueKey = await ensureUniqueCiteKey(
-						ctx.withRLS as Parameters<typeof ensureUniqueCiteKey>[0],
-						targetProjectId,
-						ref.citeKey
-					);
+			if (newLinks.length === 0) return { inserted: 0, skipped: toLink.length };
 
-					await ctx.withRLS((db) =>
-						db.insert(projectReference).values({
-							id: crypto.randomUUID(),
-							projectId: targetProjectId,
-							citeKey: uniqueKey,
-							type: ref.type,
-							title: ref.title,
-							authors: ref.authors,
-							year: ref.year,
-							abstract: ref.abstract,
-							doi: ref.doi,
-							url: ref.url,
-							note: ref.note,
-							journal: ref.journal,
-							volume: ref.volume,
-							issue: ref.issue,
-							pages: ref.pages,
-							publisher: ref.publisher,
-							edition: ref.edition,
-							address: ref.address,
-							isbn: ref.isbn,
-							editors: ref.editors,
-							booktitle: ref.booktitle,
-							organization: ref.organization,
-							series: ref.series,
-							school: ref.school,
-							institution: ref.institution,
-							reportNumber: ref.reportNumber,
-							extra: ref.extra
-						})
-					);
-					inserted++;
-				} catch {
-					skipped++;
-				}
-			}
+			await ctx.withRLS((db) =>
+				db
+					.insert(projectReference)
+					.values(newLinks.map((r) => ({ referenceId: r.referenceId, projectId: targetProjectId })))
+					.onConflictDoNothing()
+			);
 
-			return { inserted, skipped };
+			return { inserted: newLinks.length, skipped: toLink.length - newLinks.length };
 		}),
 
 	// ── Generate PDF from the reference's URL via scipy ─────────────────────
 	generatePdfFromUrl: protectedProcedure
-		.input(z.string()) // refId
-		.mutation(async ({ ctx, input: refId }) => {
+		.input(z.object({ refId: z.string(), projectId: z.string() }))
+		.mutation(async ({ ctx, input: { refId, projectId } }) => {
 			const [ref] = (await ctx.withRLS((db) =>
 				db
-					.select({ projectId: projectReference.projectId, url: projectReference.url })
-					.from(projectReference)
-					.where(eq(projectReference.id, refId))
+					.select({ url: reference.url })
+					.from(reference)
+					.where(eq(reference.id, refId))
 					.limit(1)
-			)) as { projectId: string; url: string | null }[];
+			)) as { url: string | null }[];
 
 			if (!ref?.url) return { pdfKey: null };
 
@@ -508,22 +523,22 @@ export const referencesRouter = router({
 
 				const { resolveProjectS3Config } = await import('$lib/server/s3Storage');
 				const { uploadFileWithConfig } = await import('$lib/server/storage');
-				const s3 = await resolveProjectS3Config(ref.projectId, ctx.user.id, ctx.withRLS);
+				const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS);
 				if (!s3) {
-					console.warn(`[generatePdfFromUrl] no S3 config for project=${ref.projectId}`);
+					console.warn(`[generatePdfFromUrl] no S3 config for project=${projectId}`);
 					return { pdfKey: null };
 				}
 
 				const pdfBytes = Buffer.from(result.pdf, 'base64');
-				const key = `projects/${ref.projectId}/references/${refId}.pdf`;
+				const key = `projects/${projectId}/references/${refId}.pdf`;
 				await uploadFileWithConfig(s3, key, pdfBytes, 'application/pdf');
 				console.info(`[generatePdfFromUrl] PDF uploaded: ${key} (${Math.round(pdfBytes.length / 1024)} KB)`);
 
 				await ctx.withRLS((db) =>
 					db
-						.update(projectReference)
+						.update(reference)
 						.set({ pdfKey: key, updatedAt: new Date() })
-						.where(eq(projectReference.id, refId))
+						.where(eq(reference.id, refId))
 				);
 
 				return { pdfKey: key };
@@ -538,14 +553,15 @@ export const referencesRouter = router({
 	exportBibtex: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
 		const refs = (await ctx.withRLS((db) =>
 			db
-				.select()
-				.from(projectReference)
+				.select({ ref: reference })
+				.from(reference)
+				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
 				.where(eq(projectReference.projectId, projectId))
-				.orderBy(asc(projectReference.citeKey))
-		)) as (typeof projectReference.$inferSelect)[];
+				.orderBy(asc(reference.citeKey))
+		)) as { ref: typeof reference.$inferSelect }[];
 
 		return formatBibtexFile(
-			refs.map((r) => ({
+			refs.map(({ ref: r }) => ({
 				...r,
 				authors: (r.authors as Author[]) ?? [],
 				editors: (r.editors as Author[]) ?? [],
@@ -560,7 +576,6 @@ export const referencesRouter = router({
 		.query(async ({ ctx, input }) => {
 			const { url, projectId } = input;
 
-			// 1. Fetch page and extract main text with Readability
 			let text: string;
 			let pageTitle: string | null = null;
 			try {
@@ -590,10 +605,8 @@ export const referencesRouter = router({
 				});
 			}
 
-			// Limit to ~8 000 chars to keep token cost reasonable
 			const truncated = text.slice(0, 8_000);
 
-			// 2. Resolve API key and model for the bibliography task
 			const { apiKey, model } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
 				ctx.db as Db,
@@ -602,7 +615,6 @@ export const referencesRouter = router({
 				projectId
 			);
 
-			// 3. Ask the model to extract bibliographic metadata
 			const prompt = `Extract bibliographic metadata from the text below (source URL: ${url}).
 Return ONLY a valid JSON object — no explanation, no markdown — with these fields (omit any you cannot determine):
 {
@@ -661,7 +673,6 @@ ${truncated}`;
 				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Invalid JSON from model.' });
 			}
 
-			// 4. Map to reference shape
 			const authorsRaw = (extracted.authors ?? []) as { first?: string; last?: string }[];
 			const authors: Author[] = authorsRaw
 				.map((a) => ({ first: a.first ?? '', last: a.last ?? '' }))
@@ -695,7 +706,6 @@ ${truncated}`;
 	fetchDoi: protectedProcedure
 		.input(z.string().min(1).max(300))
 		.query(async ({ input: doi }) => {
-			// Normalize: strip URL prefix if present
 			const normalized = doi
 				.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
 				.trim();
@@ -714,7 +724,6 @@ ${truncated}`;
 				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not reach CrossRef.' });
 			}
 
-			// Map CrossRef fields → reference shape
 			const titleArr = data['title'] as string[] | undefined;
 			const title = titleArr?.[0] ?? '(no title)';
 
@@ -744,7 +753,6 @@ ${truncated}`;
 			const pages = data['page'] as string | null ?? null;
 			const publisher = data['publisher'] as string | null ?? null;
 			const abstractRaw = data['abstract'] as string | null ?? null;
-			// Strip JATS XML tags from abstract if present
 			const abstract = abstractRaw ? abstractRaw.replace(/<[^>]+>/g, '').trim() : null;
 			const url = `https://doi.org/${normalized}`;
 
@@ -767,5 +775,4 @@ ${truncated}`;
 				url
 			};
 		}),
-
 });
