@@ -363,7 +363,10 @@
 		if (!refToDelete) return;
 		deletingRef = true;
 		try {
-			await trpc.references.delete.mutate(refToDelete.id);
+			await trpc.references.detachFromProject.mutate({
+				referenceId: refToDelete.id,
+				projectId: data.project.id
+			});
 			references = references.filter((r) => r.id !== refToDelete!.id);
 		} catch {
 			/* non-critical */
