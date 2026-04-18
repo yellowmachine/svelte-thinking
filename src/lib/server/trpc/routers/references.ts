@@ -358,7 +358,7 @@ export const referencesRouter = router({
 	// ── Bulk import from raw BibTeX text ─────────────────────────────────
 
 	importBibtex: protectedProcedure
-		.input(z.object({ projectId: z.string(), raw: z.string().max(500_000) }))
+		.input(z.object({ projectId: z.string().optional(), raw: z.string().max(500_000) }))
 		.mutation(async ({ ctx, input }) => {
 			const { projectId, raw } = input;
 			const parsed = parseBibtexFile(raw);
@@ -387,13 +387,15 @@ export const referencesRouter = router({
 							})
 						);
 						if (existing) {
-							// Already in library — just ensure pivot link exists
-							await ctx.withRLS((db) =>
-								db
-									.insert(projectReference)
-									.values({ referenceId: (existing as { id: string }).id, projectId })
-									.onConflictDoNothing()
-							);
+							// Already in library — just ensure pivot link exists (if project given)
+							if (projectId) {
+								await ctx.withRLS((db) =>
+									db
+										.insert(projectReference)
+										.values({ referenceId: (existing as { id: string }).id, projectId })
+										.onConflictDoNothing()
+								);
+							}
 							skipped++;
 							continue;
 						}
@@ -437,7 +439,9 @@ export const referencesRouter = router({
 							reportNumber: entry.reportNumber || null,
 							extra: entry.extra
 						});
-						await db.insert(projectReference).values({ referenceId: refId, projectId });
+						if (projectId) {
+							await db.insert(projectReference).values({ referenceId: refId, projectId });
+						}
 					});
 					inserted++;
 				} catch {
