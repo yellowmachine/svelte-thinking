@@ -4,6 +4,7 @@
 // ────────────────────────────────────────────────────────────────────────────
 
 import type { Author } from './bibtex';
+import { withCodeProtection } from './wikilinks';
 
 export type CitationStyle = 'apa' | 'ieee' | 'vancouver' | 'chicago';
 
@@ -582,6 +583,15 @@ function chicagoBib(ref: CiteRef): string {
 // Returns the modified markdown string (still needs to go through marked).
 
 export function processCitations(
+	markdown: string,
+	refs: Map<string, CiteRef>,
+	style: CitationStyle
+): string {
+	if (!refs.size) return markdown;
+	return withCodeProtection(markdown, (md) => _processCitations(md, refs, style));
+}
+
+function _processCitations(
 	markdown: string,
 	refs: Map<string, CiteRef>,
 	style: CitationStyle

@@ -1,4 +1,26 @@
 // ── Wikilink utilities ────────────────────────────────────────────────────
+
+// Matches fenced code blocks (``` or ~~~) and inline code spans (`...`)
+const CODE_FENCE_RE = /^(```|~~~)[^\n]*\n[\s\S]*?\n\1\s*$/gm;
+const CODE_SPAN_RE = /`+[^`]*`+/g;
+
+/**
+ * Replace all code spans and fenced blocks with unique placeholders,
+ * run `fn` on the result, then restore the originals.
+ * This prevents wikilink/person regexes from firing inside code.
+ */
+export function withCodeProtection(text: string, fn: (s: string) => string): string {
+	const slots: string[] = [];
+	const placeholder = (i: number) => `\x00CODE${i}\x00`;
+
+	let protected_ = text
+		.replace(CODE_FENCE_RE, (m) => { slots.push(m); return placeholder(slots.length - 1); })
+		.replace(CODE_SPAN_RE, (m) => { slots.push(m); return placeholder(slots.length - 1); });
+
+	protected_ = fn(protected_);
+
+	return protected_.replace(/\x00CODE(\d+)\x00/g, (_, i) => slots[Number(i)]);
+}
 // Two supported syntaxes:
 //   [[Title]]            — resolves by title (original, same-project)
 //   [[doc:uuid|Title]]   — resolves by UUID (book→chapter links, stable)
@@ -49,6 +71,10 @@ export function personAnchorId(name: string): string {
  * and replace [[index:persons]] with a sorted onomastic index linking to those anchors.
  */
 export function processPersonsAndIndex(markdown: string): string {
+	return withCodeProtection(markdown, (md) => _processPersonsAndIndex(md));
+}
+
+function _processPersonsAndIndex(markdown: string): string {
 	const seen = new Set<string>();
 
 	const withPersons = markdown.replace(PERSON_LINK_RE, (_match, name: string) => {
@@ -78,6 +104,13 @@ export function processPersonsAndIndex(markdown: string): string {
  * Note: [[person:Name]] and [[index:persons]] are handled separately by processPersonsAndIndex.
  */
 export function processWikilinks(
+	markdown: string,
+	docMap: Map<string, { id: string; projectId: string }>
+): string {
+	return withCodeProtection(markdown, (md) => _processWikilinks(md, docMap));
+}
+
+function _processWikilinks(
 	markdown: string,
 	docMap: Map<string, { id: string; projectId: string }>
 ): string {
