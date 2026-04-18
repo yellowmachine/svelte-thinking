@@ -92,6 +92,8 @@ UPDATE "scholio"."project_reference" SET "reference_id" = "id";
 --> statement-breakpoint
 ALTER TABLE "scholio"."project_reference" ALTER COLUMN "reference_id" SET NOT NULL;
 --> statement-breakpoint
+ALTER TABLE "scholio"."project_reference" DROP CONSTRAINT "project_reference_pkey";
+--> statement-breakpoint
 
 ALTER TABLE "scholio"."reference" ADD CONSTRAINT "reference_reading_notes_doc_id_document_id_fk" FOREIGN KEY ("reading_notes_doc_id") REFERENCES "scholio"."document"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "ref_user_key_idx" ON "scholio"."reference" USING btree ("user_id","cite_key");--> statement-breakpoint
