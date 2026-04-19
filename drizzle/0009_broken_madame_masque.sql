@@ -96,6 +96,33 @@ ALTER TABLE "scholio"."project_reference" DROP CONSTRAINT "project_reference_pke
 --> statement-breakpoint
 
 ALTER TABLE "scholio"."reference" ADD CONSTRAINT "reference_reading_notes_doc_id_document_id_fk" FOREIGN KEY ("reading_notes_doc_id") REFERENCES "scholio"."document"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+
+-- Deduplicate reference rows: same user may have used the same cite_key across
+-- multiple projects, producing duplicate (user_id, cite_key) pairs after the
+-- INSERT above. Keep the earliest entry and remap project_reference accordingly.
+WITH keepers AS (
+    SELECT DISTINCT ON (user_id, cite_key) id AS keep_id, user_id, cite_key
+    FROM "scholio"."reference"
+    ORDER BY user_id, cite_key, created_at, id
+),
+duplicates AS (
+    SELECT r.id AS dup_id, k.keep_id
+    FROM "scholio"."reference" r
+    JOIN keepers k ON k.user_id = r.user_id AND k.cite_key = r.cite_key
+    WHERE r.id <> k.keep_id
+)
+UPDATE "scholio"."project_reference" pr
+SET "reference_id" = d.keep_id
+FROM duplicates d
+WHERE pr."reference_id" = d.dup_id;
+--> statement-breakpoint
+DELETE FROM "scholio"."reference" r
+USING (
+    SELECT id, ROW_NUMBER() OVER (PARTITION BY user_id, cite_key ORDER BY created_at, id) AS rn
+    FROM "scholio"."reference"
+) ranked
+WHERE ranked.id = r.id AND ranked.rn > 1;
+--> statement-breakpoint
 CREATE UNIQUE INDEX "ref_user_key_idx" ON "scholio"."reference" USING btree ("user_id","cite_key");--> statement-breakpoint
 CREATE INDEX "ref_user_idx" ON "scholio"."reference" USING btree ("user_id");--> statement-breakpoint
 ALTER TABLE "scholio"."project_reference" ADD CONSTRAINT "project_reference_reference_id_reference_id_fk" FOREIGN KEY ("reference_id") REFERENCES "scholio"."reference"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
