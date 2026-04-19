@@ -8,7 +8,7 @@ import { document, documentVersion } from '$lib/server/db/schemas/documents.sche
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { issue } from '$lib/server/db/schemas/issues.schema';
 import { userApiKey, userProfile, userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember, organizationApiKey } from '$lib/server/db/schemas/organizations.schema';
@@ -123,11 +123,12 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
     withRLS((db) =>
       db
         .select({ total: count() })
-        .from(projectReference)
+        .from(reference)
+        .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
         .where(
           and(
             eq(projectReference.projectId, projectId),
-            inArray(projectReference.type, ['magisterial', 'patristic'])
+            inArray(reference.type, ['magisterial', 'patristic'])
           )
         )
     ) as Promise<{ total: number }[]>,
@@ -241,13 +242,14 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
     withRLS((db) =>
       db
         .select({
-          citeKey: projectReference.citeKey,
-          title: projectReference.title,
-          authors: projectReference.authors,
-          year: projectReference.year,
-          abstract: projectReference.abstract
+          citeKey: reference.citeKey,
+          title: reference.title,
+          authors: reference.authors,
+          year: reference.year,
+          abstract: reference.abstract
         })
-        .from(projectReference)
+        .from(reference)
+        .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
         .where(eq(projectReference.projectId, projectId))
     ) as Promise<{ citeKey: string; title: string; authors: unknown; year: number | null; abstract: string | null }[]>,
 
@@ -511,16 +513,17 @@ async function executeTool(
     case 'list_references': {
       const refs = (await withRLS((db) =>
         db
-          .select()
-          .from(projectReference)
+          .select({ ref: reference })
+          .from(reference)
+          .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
           .where(eq(projectReference.projectId, projectId))
-      )) as (typeof projectReference.$inferSelect)[];
+      )) as { ref: typeof reference.$inferSelect }[];
 
       if (refs.length === 0) return { output: 'This project has no bibliography entries yet.', docsUsed: [] };
 
       return {
         output: refs
-          .map((r) => {
+          .map(({ ref: r }) => {
             const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
               .map((a) => [a.last, a.first].filter(Boolean).join(', '))
               .join('; ');
@@ -1062,7 +1065,19 @@ Match the language and register of the document. Use the same language as the us
 - Propose inline text replacements (replace_text)
 - Insert new content after a specific passage (insert_after)
 - Review clarity, argument flow, style, or academic tone
-- Suggest improvements — always as proposals the user can accept or reject`;
+- Suggest improvements — always as proposals the user can accept or reject
+
+## Diagrams
+
+The document renderer supports Mermaid diagrams. When the user asks for a diagram (flowchart, state machine, sequence diagram, ER diagram, Gantt chart, etc.) use insert_after to add a fenced Mermaid code block. The diagram will render visually in the preview.
+
+Example:
+\`\`\`mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Running : start
+  Running --> Idle : stop
+\`\`\``;
 
 type EditorToolContext = {
   spellApiKey: string;
@@ -1151,13 +1166,17 @@ async function runEditorAgentLoop(
 
         // ── list_references: read tool, returns bibliography ──────────
         if (tc.function.name === 'list_references') {
-          const refs = (await toolCtx.withRLS((db) =>
-            (db as Db).select().from(projectReference).where(eq(projectReference.projectId, toolCtx.projectId))
-          )) as (typeof projectReference.$inferSelect)[];
-          if (refs.length === 0) {
+          const rows = (await toolCtx.withRLS((db) =>
+            (db as Db)
+              .select({ ref: reference })
+              .from(reference)
+              .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+              .where(eq(projectReference.projectId, toolCtx.projectId))
+          )) as { ref: typeof reference.$inferSelect }[];
+          if (rows.length === 0) {
             return { role: 'tool' as const, tool_call_id: tc.id, content: 'This project has no bibliography entries yet.' };
           }
-          const output = refs.map((r) => {
+          const output = rows.map(({ ref: r }) => {
             const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
               .map((a) => [a.last, a.first].filter(Boolean).join(', '))
               .join('; ');
@@ -2248,8 +2267,9 @@ Rules:
             .limit(1)
         ) as Promise<{ draftContent: string | null; title: string }[]>,
         ctx.withRLS((db) =>
-          db.select({ citeKey: projectReference.citeKey, title: projectReference.title, authors: projectReference.authors })
-            .from(projectReference)
+          db.select({ citeKey: reference.citeKey, title: reference.title, authors: reference.authors })
+            .from(reference)
+            .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
             .where(eq(projectReference.projectId, input.projectId))
         ) as Promise<{ citeKey: string; title: string | null; authors: unknown }[]>
       ]);

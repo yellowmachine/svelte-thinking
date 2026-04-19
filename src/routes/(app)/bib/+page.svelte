@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { SvelteMap } from 'svelte/reactivity';
 	import { resolve } from '$app/paths';
+	import { invalidateAll } from '$app/navigation';
+	import { trpc } from '$lib/utils/trpc';
+	import { parseBibtexFile } from '$lib/utils/bibtex';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -22,7 +25,7 @@
 				r.title.toLowerCase().includes(q) ||
 				r.citeKey.toLowerCase().includes(q) ||
 				authorString(r.authors).toLowerCase().includes(q) ||
-				r.projectTitle.toLowerCase().includes(q) ||
+				(r.projectTitle ?? '').toLowerCase().includes(q) ||
 				(r.year ?? '').includes(q) ||
 				(r.journal ?? '').toLowerCase().includes(q) ||
 				(r.booktitle ?? '').toLowerCase().includes(q)
@@ -30,23 +33,52 @@
 		});
 	});
 
-	// Group by project
+	// Group by project (references without a project go under a fallback group)
 	const byProject = $derived.by(() => {
-		const map = new SvelteMap<string, { projectId: string; projectTitle: string; bibHref: string; refs: (Ref & { externalHref: string | null })[]}>();
+		const map = new SvelteMap<string, { projectId: string | null; projectTitle: string; bibHref: string | null; refs: (Ref & { externalHref: string | null })[]}>();
 		for (const r of filtered) {
-			if (!map.has(r.projectId)) {
-				map.set(r.projectId, {
+			const key = r.projectId ?? '__none__';
+			if (!map.has(key)) {
+				map.set(key, {
 					projectId: r.projectId,
-					projectTitle: r.projectTitle,
-					bibHref: resolve(`/projects/${r.projectId}/bib`),
+					projectTitle: r.projectTitle ?? 'Sin proyecto',
+					bibHref: r.projectId ? resolve(`/projects/${r.projectId}/bib`) : null,
 					refs: []
 				});
 			}
 			const externalHref = r.doi ? `https://doi.org/${r.doi}` : (r.url ?? null);
-			map.get(r.projectId)!.refs.push({ ...r, externalHref });
+			map.get(key)!.refs.push({ ...r, externalHref });
 		}
 		return [...map.values()].sort((a, b) => a.projectTitle.localeCompare(b.projectTitle));
 	});
+
+	// ── Import .bib modal ───────────────────────────────────────────────────
+
+	let showImport = $state(false);
+	let importRaw = $state('');
+	let importing = $state(false);
+	let importResult = $state<{ inserted: number; skipped: number } | null>(null);
+	let importError = $state('');
+
+	function importPreview(): number {
+		try { return parseBibtexFile(importRaw).length; } catch { return 0; }
+	}
+
+	async function runImport() {
+		if (!importRaw.trim()) return;
+		importing = true;
+		importResult = null;
+		importError = '';
+		try {
+			const result = await trpc.references.importBibtex.mutate({ raw: importRaw });
+			importResult = result;
+			await invalidateAll();
+		} catch (e) {
+			importError = e instanceof Error ? e.message : 'Import failed.';
+		} finally {
+			importing = false;
+		}
+	}
 
 	function typeLabel(type: string): string {
 		const labels: Record<string, string> = {
@@ -77,6 +109,12 @@
 				{data.references.length} referencia{data.references.length !== 1 ? 's' : ''} en todos tus proyectos
 			</p>
 		</div>
+		<button
+			onclick={() => { showImport = true; importRaw = ''; importResult = null; importError = ''; }}
+			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+		>
+			Import .bib
+		</button>
 	</div>
 
 	<!-- Search -->
@@ -108,12 +146,14 @@
 						<h2 class="font-sans text-xs font-semibold uppercase tracking-wider text-ink-muted dark:text-dark-ink-muted">
 							{group.projectTitle}
 						</h2>
+						{#if group.bibHref}
 						<a
 							href={resolve(group.bibHref)}
 							class="font-sans text-xs text-accent hover:underline"
 						>
 							Ver en proyecto →
 						</a>
+					{/if}
 					</div>
 
 					<div class="divide-y divide-paper-border rounded-lg border border-paper-border dark:divide-dark-paper-border dark:border-dark-paper-border">
@@ -160,3 +200,73 @@
 		</div>
 	{/if}
 </div>
+
+{#if showImport}
+	<div
+		class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-20 backdrop-blur-sm"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="import-bib-title"
+	>
+		<div class="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+			<div class="flex items-center justify-between">
+				<h2 id="import-bib-title" class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+					Import .bib
+				</h2>
+				<button
+					onclick={() => (showImport = false)}
+					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					aria-label="Close"
+				>
+					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+						<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</button>
+			</div>
+
+			<textarea
+				bind:value={importRaw}
+				placeholder="Paste BibTeX content here…"
+				rows="12"
+				class="w-full resize-y rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+			></textarea>
+
+			{#if importRaw.trim()}
+				<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+					{importPreview()} entr{importPreview() === 1 ? 'y' : 'ies'} detected
+				</p>
+			{/if}
+
+			{#if importResult}
+				<div class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30">
+					<p class="font-sans text-sm text-green-700 dark:text-green-400">
+						✓ {importResult.inserted} {importResult.inserted === 1 ? 'reference imported' : 'references imported'}
+						{#if importResult.skipped > 0}· {importResult.skipped} skipped (already in library){/if}
+					</p>
+				</div>
+			{/if}
+
+			{#if importError}
+				<p class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
+					{importError}
+				</p>
+			{/if}
+
+			<div class="flex justify-end gap-2">
+				<button
+					onclick={() => (showImport = false)}
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+				>
+					Close
+				</button>
+				<button
+					onclick={runImport}
+					disabled={importing || !importRaw.trim()}
+					class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
+				>
+					{importing ? 'Importing…' : `Import${importPreview() > 0 ? ` ${importPreview()}` : ''}`}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

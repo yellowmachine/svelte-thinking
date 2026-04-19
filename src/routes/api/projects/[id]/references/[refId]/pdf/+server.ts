@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { eq, and } from 'drizzle-orm';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { uploadFileWithConfig, deleteFileWithConfig } from '$lib/server/storage';
 
@@ -15,9 +15,10 @@ export const POST: RequestHandler = async (event) => {
 
 	const [ref] = await event.locals.withRLS((db) =>
 		db
-			.select({ id: projectReference.id, pdfKey: projectReference.pdfKey })
-			.from(projectReference)
-			.where(and(eq(projectReference.id, refId), eq(projectReference.projectId, projectId)))
+			.select({ id: reference.id, pdfKey: reference.pdfKey })
+			.from(reference)
+			.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+			.where(and(eq(reference.id, refId), eq(projectReference.projectId, projectId)))
 			.limit(1)
 	);
 	if (!ref) error(404);
@@ -31,7 +32,6 @@ export const POST: RequestHandler = async (event) => {
 	const s3 = await resolveProjectS3Config(projectId, user.id, event.locals.withRLS);
 	if (!s3) error(422, 'S3 storage not configured. Configure it in Settings → Storage.');
 
-	// Delete previous PDF if one exists
 	if (ref.pdfKey) {
 		await deleteFileWithConfig(s3, ref.pdfKey).catch(() => {});
 	}
@@ -41,9 +41,9 @@ export const POST: RequestHandler = async (event) => {
 
 	await event.locals.withRLS((db) =>
 		db
-			.update(projectReference)
+			.update(reference)
 			.set({ pdfKey: key, pdfUrl: url })
-			.where(eq(projectReference.id, refId))
+			.where(eq(reference.id, refId))
 	);
 
 	return json({ ok: true, url: `/api/references/${refId}/pdf` });
@@ -57,9 +57,10 @@ export const DELETE: RequestHandler = async (event) => {
 
 	const [ref] = await event.locals.withRLS((db) =>
 		db
-			.select({ id: projectReference.id, pdfKey: projectReference.pdfKey })
-			.from(projectReference)
-			.where(and(eq(projectReference.id, refId), eq(projectReference.projectId, projectId)))
+			.select({ id: reference.id, pdfKey: reference.pdfKey })
+			.from(reference)
+			.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+			.where(and(eq(reference.id, refId), eq(projectReference.projectId, projectId)))
 			.limit(1)
 	);
 	if (!ref) error(404);
@@ -72,9 +73,9 @@ export const DELETE: RequestHandler = async (event) => {
 
 	await event.locals.withRLS((db) =>
 		db
-			.update(projectReference)
+			.update(reference)
 			.set({ pdfKey: null, pdfUrl: null })
-			.where(eq(projectReference.id, refId))
+			.where(eq(reference.id, refId))
 	);
 
 	return json({ ok: true });

@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { eq } from 'drizzle-orm';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { createS3Client } from '$lib/server/storage';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -13,15 +13,18 @@ export const GET: RequestHandler = async (event) => {
 		db
 			.select({
 				projectId: projectReference.projectId,
-				pdfKey: projectReference.pdfKey
+				pdfKey: reference.pdfKey
 			})
-			.from(projectReference)
-			.where(eq(projectReference.id, event.params.refId))
+			.from(reference)
+			.leftJoin(projectReference, eq(projectReference.referenceId, reference.id))
+			.where(eq(reference.id, event.params.refId))
 			.limit(1)
 	);
 	if (!ref || !ref.pdfKey) error(404);
 
-	const s3 = await resolveProjectS3Config(ref.projectId, event.locals.user.id, event.locals.withRLS);
+	const s3 = ref.projectId
+		? await resolveProjectS3Config(ref.projectId, event.locals.user.id, event.locals.withRLS)
+		: null;
 	if (!s3) error(422);
 
 	const client = createS3Client(s3);

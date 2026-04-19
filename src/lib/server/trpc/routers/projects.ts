@@ -17,7 +17,7 @@ import { embedQuery, indexDocument } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
 import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig } from '$lib/server/storage';
 import { isProjectOwner, canRemoveCollaborator, canChangeCollaboratorRole } from '$lib/domain/permissions';
@@ -30,11 +30,12 @@ async function insertStarterDocuments(db: Db, projectId: string, userId: string)
   for (const starter of STARTER_DOCUMENTS) {
     // Insert references first
     for (const ref of starter.references) {
+      const refId = crypto.randomUUID();
       await db
-        .insert(projectReference)
+        .insert(reference)
         .values({
-          id: crypto.randomUUID(),
-          projectId,
+          id: refId,
+          userId,
           citeKey: ref.citeKey,
           type: ref.type,
           title: ref.title,
@@ -48,6 +49,10 @@ async function insertStarterDocuments(db: Db, projectId: string, userId: string)
           address: ref.address,
           isbn: ref.isbn
         })
+        .onConflictDoNothing();
+      await db
+        .insert(projectReference)
+        .values({ referenceId: refId, projectId })
         .onConflictDoNothing();
     }
 
@@ -263,9 +268,11 @@ export const projectsRouter = router({
           .where(eq(projectPhoto.projectId, projectId))
       ),
       ctx.withRLS((db) =>
-        db.select({ key: projectReference.pdfKey })
-          .from(projectReference)
-          .where(and(eq(projectReference.projectId, projectId), isNotNull(projectReference.pdfKey)))
+        db
+          .select({ key: reference.pdfKey })
+          .from(reference)
+          .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+          .where(and(eq(projectReference.projectId, projectId), isNotNull(reference.pdfKey)))
       )
     ]);
 
@@ -612,11 +619,12 @@ export const projectsRouter = router({
         for (const ref of doc.references ?? []) {
           if (seenCiteKeys.has(ref.citeKey)) continue;
           seenCiteKeys.add(ref.citeKey);
+          const refId = crypto.randomUUID();
           await db
-            .insert(projectReference)
+            .insert(reference)
             .values({
-              id: crypto.randomUUID(),
-              projectId,
+              id: refId,
+              userId,
               citeKey: ref.citeKey,
               type: ref.type,
               title: ref.title,
@@ -630,6 +638,10 @@ export const projectsRouter = router({
               address: ref.address,
               isbn: ref.isbn
             })
+            .onConflictDoNothing();
+          await db
+            .insert(projectReference)
+            .values({ referenceId: refId, projectId })
             .onConflictDoNothing();
         }
       }

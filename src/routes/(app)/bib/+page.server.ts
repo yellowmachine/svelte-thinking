@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { eq, asc } from 'drizzle-orm';
 
@@ -7,28 +7,30 @@ export const load: PageServerLoad = async (event) => {
 	const references = await event.locals.withRLS((db) =>
 		db
 			.select({
-				id: projectReference.id,
+				id: reference.id,
 				projectId: projectReference.projectId,
 				projectTitle: project.title,
-				citeKey: projectReference.citeKey,
-				type: projectReference.type,
-				title: projectReference.title,
-				authors: projectReference.authors,
-				editors: projectReference.editors,
-				year: projectReference.year,
-				journal: projectReference.journal,
-				booktitle: projectReference.booktitle,
-				publisher: projectReference.publisher,
-				doi: projectReference.doi,
-				url: projectReference.url
+				citeKey: reference.citeKey,
+				type: reference.type,
+				title: reference.title,
+				authors: reference.authors,
+				editors: reference.editors,
+				year: reference.year,
+				journal: reference.journal,
+				booktitle: reference.booktitle,
+				publisher: reference.publisher,
+				doi: reference.doi,
+				url: reference.url
 			})
-			.from(projectReference)
-			.innerJoin(project, eq(projectReference.projectId, project.id))
-			.orderBy(asc(projectReference.citeKey))
+			.from(reference)
+			.leftJoin(projectReference, eq(projectReference.referenceId, reference.id))
+			.leftJoin(project, eq(project.id, projectReference.projectId))
+			.where(eq(reference.userId, event.locals.user!.id))
+			.orderBy(asc(reference.citeKey))
 	) as {
 		id: string;
-		projectId: string;
-		projectTitle: string;
+		projectId: string | null;
+		projectTitle: string | null;
 		citeKey: string;
 		type: string;
 		title: string;

@@ -8,7 +8,7 @@ import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { user as authUser } from '$lib/server/db/auth.schema';
 import { buildTypstSource, buildBibFile, compileToPdf } from '$lib/server/typst';
 import { markdownToTypst } from '$lib/utils/markdownToTypst';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import type { RefData } from '$lib/utils/export';
 
 const UUID_LINK_RE = /\[\[doc:([a-f0-9-]{36})\|([^\]]+)\]\]/g;
@@ -135,8 +135,12 @@ export const GET: RequestHandler = async (event) => {
 
 	// Load project references for bibliography
 	const refs = (await event.locals.withRLS((db) =>
-		db.select().from(projectReference).where(eq(projectReference.projectId, projectId))
-	)) as unknown as RefData[];
+		db
+			.select({ ref: reference })
+			.from(reference)
+			.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+			.where(eq(projectReference.projectId, projectId))
+	).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref))) as unknown as RefData[];
 
 	// Convert content to Typst sections
 	const imageRegistry = new Map<string, string>();

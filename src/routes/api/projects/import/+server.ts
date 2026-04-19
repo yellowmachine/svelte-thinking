@@ -5,7 +5,7 @@ import { parse } from 'yaml';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { projectDataset } from '$lib/server/db/schemas/datasets.schema';
 
 const MAX_SIZE = 200 * 1024 * 1024; // 200 MB
@@ -30,7 +30,8 @@ const VALID_PROJECT_STATUSES = new Set([
 const VALID_REF_TYPES = new Set([
 	'article', 'book', 'inproceedings', 'incollection', 'phdthesis',
 	'mastersthesis', 'techreport', 'misc', 'magisterial', 'patristic',
-	'scholastic', 'biblical', 'classical', 'earlymodern'
+	'scholastic', 'biblical', 'classical', 'earlymodern',
+	'film', 'interview', 'newspaper'
 ]);
 
 export const POST: RequestHandler = async (event) => {
@@ -112,33 +113,35 @@ export const POST: RequestHandler = async (event) => {
 
 		// 2. References
 		if (rawRefs.length > 0) {
+			const refRows = rawRefs
+				.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
+				.map((r) => ({
+					id: crypto.randomUUID(),
+					userId: user.id,
+					citeKey: String(r.cite_key ?? crypto.randomUUID()),
+					type: VALID_REF_TYPES.has(r.type as string)
+						? (r.type as typeof reference.$inferInsert['type'])
+						: 'misc',
+					title: String(r.title ?? 'Sin título'),
+					authors: Array.isArray(r.authors) ? r.authors : [],
+					editors: Array.isArray(r.editors) ? r.editors : [],
+					year: typeof r.year === 'string' ? r.year : null,
+					abstract: typeof r.abstract === 'string' ? r.abstract : null,
+					doi: typeof r.doi === 'string' ? r.doi : null,
+					url: typeof r.url === 'string' ? r.url : null,
+					journal: typeof r.journal === 'string' ? r.journal : null,
+					volume: typeof r.volume === 'string' ? r.volume : null,
+					issue: typeof r.issue === 'string' ? r.issue : null,
+					pages: typeof r.pages === 'string' ? r.pages : null,
+					publisher: typeof r.publisher === 'string' ? r.publisher : null,
+					booktitle: typeof r.booktitle === 'string' ? r.booktitle : null,
+					school: typeof r.school === 'string' ? r.school : null,
+					institution: typeof r.institution === 'string' ? r.institution : null,
+					note: typeof r.note === 'string' ? r.note : null
+				}));
+			await tx.insert(reference).values(refRows);
 			await tx.insert(projectReference).values(
-				rawRefs
-					.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
-					.map((r) => ({
-						id: crypto.randomUUID(),
-						projectId,
-						citeKey: String(r.cite_key ?? crypto.randomUUID()),
-						type: VALID_REF_TYPES.has(r.type as string)
-							? (r.type as typeof projectReference.$inferInsert['type'])
-							: 'misc',
-						title: String(r.title ?? 'Sin título'),
-						authors: Array.isArray(r.authors) ? r.authors : [],
-						editors: Array.isArray(r.editors) ? r.editors : [],
-						year: typeof r.year === 'string' ? r.year : null,
-						abstract: typeof r.abstract === 'string' ? r.abstract : null,
-						doi: typeof r.doi === 'string' ? r.doi : null,
-						url: typeof r.url === 'string' ? r.url : null,
-						journal: typeof r.journal === 'string' ? r.journal : null,
-						volume: typeof r.volume === 'string' ? r.volume : null,
-						issue: typeof r.issue === 'string' ? r.issue : null,
-						pages: typeof r.pages === 'string' ? r.pages : null,
-						publisher: typeof r.publisher === 'string' ? r.publisher : null,
-						booktitle: typeof r.booktitle === 'string' ? r.booktitle : null,
-						school: typeof r.school === 'string' ? r.school : null,
-						institution: typeof r.institution === 'string' ? r.institution : null,
-						note: typeof r.note === 'string' ? r.note : null
-					}))
+				refRows.map((r) => ({ referenceId: r.id, projectId }))
 			);
 		}
 

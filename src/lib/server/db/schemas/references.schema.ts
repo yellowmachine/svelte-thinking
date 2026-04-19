@@ -1,4 +1,4 @@
-import { text, timestamp, jsonb, index, uniqueIndex, pgPolicy } from 'drizzle-orm/pg-core';
+import { text, timestamp, jsonb, index, uniqueIndex, pgPolicy, primaryKey } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';
@@ -18,30 +18,29 @@ export const referenceTypeEnum = scholioSchema.enum('reference_type', [
 	'scholastic',
 	'biblical',
 	'classical',
-	'earlymodern'
+	'earlymodern',
+	'film',
+	'interview',
+	'newspaper'
 ]);
 
-// RLS helper — reused from other schemas
 const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
 
-// project_reference: one row per bibliographic entry.
+// reference: one row per bibliographic entry, owned by a user (not a project).
 // Authors are stored as [{first, last}] JSON array to avoid re-parsing.
 // Type-specific fields use nullable columns for the most common ones;
 // anything unusual goes in `extra` JSONB.
-export const projectReference = scholioSchema.table(
-	'project_reference',
+export const reference = scholioSchema.table(
+	'reference',
 	{
 		id: text('id').primaryKey(),
-		projectId: text('project_id')
-			.notNull()
-			.references(() => project.id, { onDelete: 'cascade' }),
+		userId: text('user_id').notNull(),
 
-		// The BibTeX cite key, unique within a project (e.g. "smith2023")
+		// The BibTeX cite key, unique per user (e.g. "smith2023")
 		citeKey: text('cite_key').notNull(),
 
 		type: referenceTypeEnum('type').notNull().default('article'),
 
-		// Core fields — required for every entry type
 		title: text('title').notNull(),
 		authors: jsonb('authors').notNull().default([]), // {first: string, last: string}[]
 
@@ -52,7 +51,6 @@ export const projectReference = scholioSchema.table(
 		note: text('note'),
 
 		// FK to a reading_note document — created on demand from /bib.
-		// SET NULL automatically when the document is deleted.
 		readingNotesDocId: text('reading_notes_doc_id')
 			.references(() => document.id, { onDelete: 'set null' }),
 
@@ -85,18 +83,55 @@ export const projectReference = scholioSchema.table(
 		institution: text('institution'),
 		reportNumber: text('report_number'),
 
-		// Misc / catch-all for non-standard fields
 		extra: jsonb('extra').default({}),
 
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
 	(t) => [
-		uniqueIndex('ref_project_key_idx').on(t.projectId, t.citeKey),
-		index('ref_project_idx').on(t.projectId),
+		uniqueIndex('ref_user_key_idx').on(t.userId, t.citeKey),
+		index('ref_user_idx').on(t.userId),
 
-		// Access: owner or any collaborator of the project
+		// Owner can always access. Collaborators on any linked project can also access.
 		pgPolicy('reference_access', {
+			for: 'all',
+			using: sql`
+				${t.userId} = ${currentUserId}
+				OR EXISTS (
+					SELECT 1 FROM scholio.project_reference pr
+					INNER JOIN scholio.project p ON p.id = pr.project_id
+					WHERE pr.reference_id = ${t.id}
+					AND (
+						p.owner_id = ${currentUserId}
+						OR EXISTS (
+							SELECT 1 FROM scholio.project_collaborator
+							WHERE project_collaborator.project_id = p.id
+							AND project_collaborator.user_id = ${currentUserId}
+						)
+					)
+				)
+			`
+		})
+	]
+).enableRLS();
+
+// project_reference: pivot linking references to projects (many-to-many).
+export const projectReference = scholioSchema.table(
+	'project_reference',
+	{
+		referenceId: text('reference_id')
+			.notNull()
+			.references(() => reference.id, { onDelete: 'cascade' }),
+		projectId: text('project_id')
+			.notNull()
+			.references(() => project.id, { onDelete: 'cascade' })
+	},
+	(t) => [
+		primaryKey({ columns: [t.referenceId, t.projectId] }),
+		index('proj_ref_project_idx').on(t.projectId),
+
+		// Access: owner or collaborator of the project
+		pgPolicy('project_reference_access', {
 			for: 'all',
 			using: sql`
 				EXISTS (

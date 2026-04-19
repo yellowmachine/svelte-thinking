@@ -18,7 +18,7 @@ import { db } from '$lib/server/db';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
-import { projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference } from '$lib/server/db/schemas/references.schema';
 import { user as authUser, session as authSession } from '$lib/server/db/auth.schema';
 import { deleteFileWithConfig, buildInternalS3Config } from '$lib/server/storage';
 
@@ -40,16 +40,17 @@ export const DELETE: RequestHandler = async (event) => {
 
 	const projectIds = ownedProjects.map((p) => p.id);
 
+	const refPdfs = await db
+		.select({ key: reference.pdfKey })
+		.from(reference)
+		.where(eq(reference.userId, userId));
+
 	if (projectIds.length > 0) {
-		const [photos, refPdfs] = await Promise.all([
+		const [photos] = await Promise.all([
 			db
 				.select({ key: projectPhoto.key })
 				.from(projectPhoto)
-				.where(inArray(projectPhoto.projectId, projectIds)),
-			db
-				.select({ key: projectReference.pdfKey })
-				.from(projectReference)
-				.where(inArray(projectReference.projectId, projectIds))
+				.where(inArray(projectPhoto.projectId, projectIds))
 		]);
 
 		// ── 2. Delete S3 files (best-effort, don't block on failure) ──────────

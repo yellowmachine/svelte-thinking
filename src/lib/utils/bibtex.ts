@@ -19,7 +19,10 @@ export type ReferenceType =
 	| 'scholastic'
 	| 'biblical'
 	| 'classical'
-	| 'earlymodern';
+	| 'earlymodern'
+	| 'film'
+	| 'interview'
+	| 'newspaper';
 
 export interface ParsedBibtex {
 	citeKey: string;
