@@ -3,12 +3,16 @@
 # Runs directly on the host (not inside Docker).
 #
 # Setup:
-#   1. chmod +x /path/to/host-metrics.sh
-#   2. Add to crontab (crontab -e):
-#        0 7 * * * SLACK_WEBHOOK_URL="https://hooks.slack.com/..." /path/to/host-metrics.sh
+#   1. chmod +x /opt/scholio/scripts/host-metrics.sh
+#   2. crontab -e and add:
 #
-# Or if SLACK_WEBHOOK_URL is already in the environment via /etc/environment:
-#        0 7 * * * /path/to/host-metrics.sh
+#        SLACK_WEBHOOK_URL=https://hooks.slack.com/...
+#
+#        # Daily host metrics at 07:00
+#        0 7 * * * /opt/scholio/scripts/host-metrics.sh
+#
+#        # Weekly Docker image prune (Sunday 02:00) — prevents disk bloat
+#        0 2 * * 0 docker image prune -f >> /var/log/docker-prune.log 2>&1
 
 SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
 
