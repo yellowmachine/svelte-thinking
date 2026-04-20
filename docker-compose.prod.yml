@@ -85,6 +85,8 @@ services:
   librarian:
     image: librarian-staging:latest
     restart: unless-stopped
+    profiles:
+      - librarian
     depends_on:
       scholio:
         condition: service_healthy
