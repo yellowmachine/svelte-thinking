@@ -195,6 +195,22 @@ CREATE TABLE "scholio"."issue_comment" (
 );
 --> statement-breakpoint
 ALTER TABLE "scholio"."issue_comment" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "scholio"."notification" (
+	"id" text PRIMARY KEY NOT NULL,
+	"message" text NOT NULL,
+	"starts_at" timestamp NOT NULL,
+	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_by" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "scholio"."notification_dismissal" (
+	"notification_id" text NOT NULL,
+	"user_id" text NOT NULL,
+	"dismissed_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "notification_dismissal_notification_id_user_id_pk" PRIMARY KEY("notification_id","user_id")
+);
+--> statement-breakpoint
 CREATE TABLE "scholio"."notification_preference" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
@@ -607,6 +623,7 @@ ALTER TABLE "scholio"."document_version_share" ADD CONSTRAINT "document_version_
 ALTER TABLE "scholio"."document_version_share" ADD CONSTRAINT "document_version_share_document_id_document_id_fk" FOREIGN KEY ("document_id") REFERENCES "scholio"."document"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."issue" ADD CONSTRAINT "issue_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "scholio"."project"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."issue_comment" ADD CONSTRAINT "issue_comment_issue_id_issue_id_fk" FOREIGN KEY ("issue_id") REFERENCES "scholio"."issue"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scholio"."notification_dismissal" ADD CONSTRAINT "notification_dismissal_notification_id_notification_id_fk" FOREIGN KEY ("notification_id") REFERENCES "scholio"."notification"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."org_invitation" ADD CONSTRAINT "org_invitation_org_id_organization_id_fk" FOREIGN KEY ("org_id") REFERENCES "scholio"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."org_s3_config" ADD CONSTRAINT "org_s3_config_org_id_organization_id_fk" FOREIGN KEY ("org_id") REFERENCES "scholio"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scholio"."organization_api_key" ADD CONSTRAINT "organization_api_key_org_id_organization_id_fk" FOREIGN KEY ("org_id") REFERENCES "scholio"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
