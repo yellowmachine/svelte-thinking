@@ -1,5 +1,5 @@
 {
-  "id": "9025600a-910b-43c3-b44e-f8aa2cc5376c",
+  "id": "69891e80-b35a-4e9f-8b9d-172e937c60ad",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1272,6 +1272,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "ai_summary": {
+          "name": "ai_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_by": {
           "name": "created_by",
           "type": "text",
@@ -1341,6 +1347,170 @@
       "checkConstraints": {},
       "isRLSEnabled": true
     },
+    "scholio.document_version_share": {
+      "name": "document_version_share",
+      "schema": "scholio",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version_id": {
+          "name": "version_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "document_id": {
+          "name": "document_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "dvshare_version_idx": {
+          "name": "dvshare_version_idx",
+          "columns": [
+            {
+              "expression": "version_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "dvshare_document_idx": {
+          "name": "dvshare_document_idx",
+          "columns": [
+            {
+              "expression": "document_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "dvshare_token_idx": {
+          "name": "dvshare_token_idx",
+          "columns": [
+            {
+              "expression": "token",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "document_version_share_version_id_document_version_id_fk": {
+          "name": "document_version_share_version_id_document_version_id_fk",
+          "tableFrom": "document_version_share",
+          "tableTo": "document_version",
+          "schemaTo": "scholio",
+          "columnsFrom": [
+            "version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "document_version_share_document_id_document_id_fk": {
+          "name": "document_version_share_document_id_document_id_fk",
+          "tableFrom": "document_version_share",
+          "tableTo": "document",
+          "schemaTo": "scholio",
+          "columnsFrom": [
+            "document_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "document_version_share_token_unique": {
+          "name": "document_version_share_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {
+        "dvshare_public_read": {
+          "name": "dvshare_public_read",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "true"
+        },
+        "dvshare_owner_write": {
+          "name": "dvshare_owner_write",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\n\t\t\t\tEXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.document\n\t\t\t\t\tWHERE document.id = \"scholio\".\"document_version_share\".\"document_id\"\n\t\t\t\t\tAND document.owner_user_id = current_setting('app.current_user_id', true)\n\t\t\t\t)\n\t\t\t"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
     "scholio.feedback": {
       "name": "feedback",
       "schema": "scholio",
@@ -1391,6 +1561,306 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "scholio.issue": {
+      "name": "issue",
+      "schema": "scholio",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "issue_status",
+          "typeSchema": "scholio",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "issue_priority",
+          "typeSchema": "scholio",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'medium'"
+        },
+        "is_private": {
+          "name": "is_private",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "issue_project_idx": {
+          "name": "issue_project_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "issue_status_idx": {
+          "name": "issue_status_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "issue_project_id_project_id_fk": {
+          "name": "issue_project_id_project_id_fk",
+          "tableFrom": "issue",
+          "tableTo": "project",
+          "schemaTo": "scholio",
+          "columnsFrom": [
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "issue_select": {
+          "name": "issue_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "\n\t\t\t\t(\"scholio\".\"issue\".\"is_private\" = true AND \"scholio\".\"issue\".\"owner_user_id\" = nullif(current_setting('app.current_user_id', true), ''))\n\t\t\t\tOR\n\t\t\t\t(\"scholio\".\"issue\".\"is_private\" = false AND EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"issue\".\"project_id\"\n\t\t\t\t\tAND (\n\t\t\t\t\t\tproject.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\tOR EXISTS (\n\t\t\t\t\t\t\tSELECT 1 FROM scholio.project_collaborator\n\t\t\t\t\t\t\tWHERE project_collaborator.project_id = project.id\n\t\t\t\t\t\t\tAND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t))\n\t\t\t"
+        },
+        "issue_insert": {
+          "name": "issue_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "public"
+          ],
+          "withCheck": "\n\t\t\t\t\"scholio\".\"issue\".\"owner_user_id\" = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\tAND EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"issue\".\"project_id\"\n\t\t\t\t\tAND (\n\t\t\t\t\t\tproject.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\tOR EXISTS (\n\t\t\t\t\t\t\tSELECT 1 FROM scholio.project_collaborator\n\t\t\t\t\t\t\tWHERE project_collaborator.project_id = project.id\n\t\t\t\t\t\t\tAND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t)\n\t\t\t"
+        },
+        "issue_update": {
+          "name": "issue_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "public"
+          ],
+          "using": "\n\t\t\t\t(\"scholio\".\"issue\".\"is_private\" = true AND \"scholio\".\"issue\".\"owner_user_id\" = nullif(current_setting('app.current_user_id', true), ''))\n\t\t\t\tOR\n\t\t\t\t(\"scholio\".\"issue\".\"is_private\" = false AND EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"issue\".\"project_id\"\n\t\t\t\t\tAND (\n\t\t\t\t\t\tproject.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\tOR EXISTS (\n\t\t\t\t\t\t\tSELECT 1 FROM scholio.project_collaborator\n\t\t\t\t\t\t\tWHERE project_collaborator.project_id = project.id\n\t\t\t\t\t\t\tAND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t))\n\t\t\t"
+        },
+        "issue_delete": {
+          "name": "issue_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "public"
+          ],
+          "using": "\n\t\t\t\t(\"scholio\".\"issue\".\"is_private\" = true AND \"scholio\".\"issue\".\"owner_user_id\" = nullif(current_setting('app.current_user_id', true), ''))\n\t\t\t\tOR\n\t\t\t\t(\"scholio\".\"issue\".\"is_private\" = false AND EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"issue\".\"project_id\"\n\t\t\t\t\tAND project.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t))\n\t\t\t"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "scholio.issue_comment": {
+      "name": "issue_comment",
+      "schema": "scholio",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "issue_id": {
+          "name": "issue_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_comment_id": {
+          "name": "parent_comment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "issue_comment_issue_idx": {
+          "name": "issue_comment_issue_idx",
+          "columns": [
+            {
+              "expression": "issue_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "issue_comment_issue_id_issue_id_fk": {
+          "name": "issue_comment_issue_id_issue_id_fk",
+          "tableFrom": "issue_comment",
+          "tableTo": "issue",
+          "schemaTo": "scholio",
+          "columnsFrom": [
+            "issue_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "issue_comment_select": {
+          "name": "issue_comment_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "public"
+          ],
+          "using": "\n\t\t\t\tEXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"issue_comment\".\"project_id\"\n\t\t\t\t\tAND (\n\t\t\t\t\t\tproject.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\tOR EXISTS (\n\t\t\t\t\t\t\tSELECT 1 FROM scholio.project_collaborator\n\t\t\t\t\t\t\tWHERE project_collaborator.project_id = project.id\n\t\t\t\t\t\t\tAND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t)\n\t\t\t"
+        },
+        "issue_comment_insert": {
+          "name": "issue_comment_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "public"
+          ],
+          "withCheck": "\n\t\t\t\t\"scholio\".\"issue_comment\".\"author_id\" = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\tAND EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"issue_comment\".\"project_id\"\n\t\t\t\t\tAND (\n\t\t\t\t\t\tproject.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\tOR EXISTS (\n\t\t\t\t\t\t\tSELECT 1 FROM scholio.project_collaborator\n\t\t\t\t\t\t\tWHERE project_collaborator.project_id = project.id\n\t\t\t\t\t\t\tAND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t)\n\t\t\t"
+        },
+        "issue_comment_update": {
+          "name": "issue_comment_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "public"
+          ],
+          "using": "\"scholio\".\"issue_comment\".\"author_id\" = nullif(current_setting('app.current_user_id', true), '')"
+        },
+        "issue_comment_delete": {
+          "name": "issue_comment_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "public"
+          ],
+          "using": "\"scholio\".\"issue_comment\".\"author_id\" = nullif(current_setting('app.current_user_id', true), '')"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
     },
     "scholio.notification_preference": {
       "name": "notification_preference",
@@ -2269,6 +2739,12 @@
         },
         "requirements_template": {
           "name": "requirements_template",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent_system_prompt": {
+          "name": "agent_system_prompt",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -3188,7 +3664,7 @@
           "to": [
             "public"
           ],
-          "using": "\n\t\t\t\tcurrent_setting('app.current_user_id', true) = ''\n\t\t\t\tOR \"scholio\".\"project_invitation\".\"invited_by\" = current_setting('app.current_user_id', true)\n\t\t\t\tOR EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"project_invitation\".\"project_id\"\n\t\t\t\t\tAND project.owner_id = current_setting('app.current_user_id', true)\n\t\t\t\t)\n\t\t\t"
+          "using": "\n\t\t\t\tcurrent_setting('app.current_user_id', true) = ''\n\t\t\t\tOR \"scholio\".\"project_invitation\".\"invited_by\" = current_setting('app.current_user_id', true)\n\t\t\t\tOR EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"project_invitation\".\"project_id\"\n\t\t\t\t\tAND project.owner_id = current_setting('app.current_user_id', true)\n\t\t\t\t)\n\t\t\t\tOR EXISTS (\n\t\t\t\t\tSELECT 1 FROM \"user\"\n\t\t\t\t\tWHERE \"user\".id = current_setting('app.current_user_id', true)\n\t\t\t\t\tAND \"user\".email = \"scholio\".\"project_invitation\".\"invited_email\"\n\t\t\t\t)\n\t\t\t"
         },
         "invitation_modify": {
           "name": "invitation_modify",
@@ -3469,10 +3945,10 @@
       "name": "project_reference",
       "schema": "scholio",
       "columns": {
-        "id": {
-          "name": "id",
+        "reference_id": {
+          "name": "reference_id",
           "type": "text",
-          "primaryKey": true,
+          "primaryKey": false,
           "notNull": true
         },
         "project_id": {
@@ -3480,219 +3956,11 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "cite_key": {
-          "name": "cite_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "type": {
-          "name": "type",
-          "type": "reference_type",
-          "typeSchema": "scholio",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'article'"
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "authors": {
-          "name": "authors",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        },
-        "year": {
-          "name": "year",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "abstract": {
-          "name": "abstract",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "doi": {
-          "name": "doi",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "url": {
-          "name": "url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "note": {
-          "name": "note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reading_notes_doc_id": {
-          "name": "reading_notes_doc_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "pdf_key": {
-          "name": "pdf_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "pdf_url": {
-          "name": "pdf_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "journal": {
-          "name": "journal",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "volume": {
-          "name": "volume",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "issue": {
-          "name": "issue",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "pages": {
-          "name": "pages",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "publisher": {
-          "name": "publisher",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "edition": {
-          "name": "edition",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "address": {
-          "name": "address",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "isbn": {
-          "name": "isbn",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "editors": {
-          "name": "editors",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'[]'::jsonb"
-        },
-        "booktitle": {
-          "name": "booktitle",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "organization": {
-          "name": "organization",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "series": {
-          "name": "series",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "school": {
-          "name": "school",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "institution": {
-          "name": "institution",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "report_number": {
-          "name": "report_number",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "extra": {
-          "name": "extra",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'::jsonb"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {
-        "ref_project_key_idx": {
-          "name": "ref_project_key_idx",
-          "columns": [
-            {
-              "expression": "project_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "cite_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ref_project_idx": {
-          "name": "ref_project_idx",
+        "proj_ref_project_idx": {
+          "name": "proj_ref_project_idx",
           "columns": [
             {
               "expression": "project_id",
@@ -3708,6 +3976,20 @@
         }
       },
       "foreignKeys": {
+        "project_reference_reference_id_reference_id_fk": {
+          "name": "project_reference_reference_id_reference_id_fk",
+          "tableFrom": "project_reference",
+          "tableTo": "reference",
+          "schemaTo": "scholio",
+          "columnsFrom": [
+            "reference_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "project_reference_project_id_project_id_fk": {
           "name": "project_reference_project_id_project_id_fk",
           "tableFrom": "project_reference",
@@ -3721,27 +4003,21 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
-        },
-        "project_reference_reading_notes_doc_id_document_id_fk": {
-          "name": "project_reference_reading_notes_doc_id_document_id_fk",
-          "tableFrom": "project_reference",
-          "tableTo": "document",
-          "schemaTo": "scholio",
-          "columnsFrom": [
-            "reading_notes_doc_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "project_reference_reference_id_project_id_pk": {
+          "name": "project_reference_reference_id_project_id_pk",
+          "columns": [
+            "reference_id",
+            "project_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {
-        "reference_access": {
-          "name": "reference_access",
+        "project_reference_access": {
+          "name": "project_reference_access",
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": [
@@ -4020,6 +4296,280 @@
             "public"
           ],
           "using": "\n\t\t\t\t\"scholio\".\"project_template\".\"is_public\" = true\n\t\t\t\tOR EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project\n\t\t\t\t\tWHERE project.id = \"scholio\".\"project_template\".\"project_id\"\n\t\t\t\t\tAND (\n\t\t\t\t\t\tproject.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\tOR EXISTS (\n\t\t\t\t\t\t\tSELECT 1 FROM scholio.project_collaborator\n\t\t\t\t\t\t\tWHERE project_collaborator.project_id = project.id\n\t\t\t\t\t\t\tAND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t)\n\t\t\t"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "scholio.reference": {
+      "name": "reference",
+      "schema": "scholio",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cite_key": {
+          "name": "cite_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "reference_type",
+          "typeSchema": "scholio",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'article'"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authors": {
+          "name": "authors",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "year": {
+          "name": "year",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abstract": {
+          "name": "abstract",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "doi": {
+          "name": "doi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reading_notes_doc_id": {
+          "name": "reading_notes_doc_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pdf_key": {
+          "name": "pdf_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pdf_url": {
+          "name": "pdf_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "journal": {
+          "name": "journal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volume": {
+          "name": "volume",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issue": {
+          "name": "issue",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pages": {
+          "name": "pages",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "publisher": {
+          "name": "publisher",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "edition": {
+          "name": "edition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isbn": {
+          "name": "isbn",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "editors": {
+          "name": "editors",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
+        },
+        "booktitle": {
+          "name": "booktitle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "organization": {
+          "name": "organization",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "series": {
+          "name": "series",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "school": {
+          "name": "school",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "institution": {
+          "name": "institution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "report_number": {
+          "name": "report_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extra": {
+          "name": "extra",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ref_user_key_idx": {
+          "name": "ref_user_key_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "cite_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ref_user_idx": {
+          "name": "ref_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "reference_reading_notes_doc_id_document_id_fk": {
+          "name": "reference_reading_notes_doc_id_document_id_fk",
+          "tableFrom": "reference",
+          "tableTo": "document",
+          "schemaTo": "scholio",
+          "columnsFrom": [
+            "reading_notes_doc_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "reference_access": {
+          "name": "reference_access",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\n\t\t\t\t\"scholio\".\"reference\".\"user_id\" = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\tOR EXISTS (\n\t\t\t\t\tSELECT 1 FROM scholio.project_reference pr\n\t\t\t\t\tINNER JOIN scholio.project p ON p.id = pr.project_id\n\t\t\t\t\tWHERE pr.reference_id = \"scholio\".\"reference\".\"id\"\n\t\t\t\t\tAND (\n\t\t\t\t\t\tp.owner_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\tOR EXISTS (\n\t\t\t\t\t\t\tSELECT 1 FROM scholio.project_collaborator\n\t\t\t\t\t\t\tWHERE project_collaborator.project_id = p.id\n\t\t\t\t\t\t\tAND project_collaborator.user_id = nullif(current_setting('app.current_user_id', true), '')\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t)\n\t\t\t"
         }
       },
       "checkConstraints": {},
@@ -5010,6 +5560,25 @@
         "cancelled"
       ]
     },
+    "scholio.issue_priority": {
+      "name": "issue_priority",
+      "schema": "scholio",
+      "values": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "scholio.issue_status": {
+      "name": "issue_status",
+      "schema": "scholio",
+      "values": [
+        "open",
+        "in_progress",
+        "closed"
+      ]
+    },
     "scholio.org_invitation_status": {
       "name": "org_invitation_status",
       "schema": "scholio",
@@ -5068,7 +5637,10 @@
         "scholastic",
         "biblical",
         "classical",
-        "earlymodern"
+        "earlymodern",
+        "film",
+        "interview",
+        "newspaper"
       ]
     },
     "scholio.waitlist_status": {

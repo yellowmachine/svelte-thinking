@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."document_version" ADD COLUMN "ai_summary" text;
