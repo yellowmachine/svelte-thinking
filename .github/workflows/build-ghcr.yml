@@ -2,9 +2,11 @@ name: Build, Push and Deploy
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - staging
+    inputs:
+      enabled:
+        description: 'Set to "true" to run'
+        required: true
+        default: 'false'
 
 env:
   REGISTRY: ghcr.io
