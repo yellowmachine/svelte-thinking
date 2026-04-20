@@ -26,7 +26,7 @@ if [ -f "$ENV_FILE" ]; then
 fi
 SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
 
-REPO_NAME=$(basename "$(git -C "$REPO_DIR" remote get-url origin)" .git)
+REPO_NAME="scholio-staging"
 
 LOCK_FILE="/tmp/scholio-watcher.lock"
 
