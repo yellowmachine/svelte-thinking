@@ -23,7 +23,6 @@ services:
 
   scholio:
     image: scholio-staging:latest
-    pull_policy: always
     restart: unless-stopped
     depends_on:
       postgres:
@@ -85,7 +84,6 @@ services:
 
   librarian:
     image: librarian-staging:latest
-    pull_policy: always
     restart: unless-stopped
     depends_on:
       scholio:
@@ -133,21 +131,18 @@ services:
 
   typst:
     image: scholio-typst:latest
-    pull_policy: always
     restart: unless-stopped
     networks:
       - scholio-network
 
   embed:
     image: scholio-embed:latest
-    pull_policy: always
     restart: unless-stopped
     networks:
       - scholio-network
 
   scipy:
     image: scholio-scipy:latest
-    pull_policy: always
     restart: unless-stopped
     networks:
       - scholio-network
