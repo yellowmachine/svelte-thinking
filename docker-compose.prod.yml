@@ -83,7 +83,7 @@ services:
       - scholio-network
 
   librarian:
-    image: librarian-staging:latest
+    image: librarian:latest
     restart: unless-stopped
     profiles:
       - librarian
