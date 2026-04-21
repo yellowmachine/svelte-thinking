@@ -173,12 +173,11 @@ fi
 notify_slack "✅ *Build OK* · \`${REPO_NAME}\` · branch \`staging\` @ \`${REMOTE_SHA:0:8}\`"
 
 # ── Restart prod stack ────────────────────────────────────────────────────────
-log "Restarting docker compose stack in ${REPO_DIR} ..."
-if docker compose -f "${REPO_DIR}/docker-compose.prod.yml" up -d; then
+if "${REPO_DIR}/scripts/restart-stack.sh"; then
   log "Stack restarted OK."
   notify_slack "🚀 *Restarted* · \`${REPO_NAME}\` · branch \`staging\` @ \`${REMOTE_SHA:0:8}\`"
 else
-  log "ERROR: docker compose up failed."
+  log "ERROR: restart-stack.sh failed."
   notify_slack "🔴 *Restart failed* · \`${REPO_NAME}\` · branch \`staging\` @ \`${REMOTE_SHA:0:8}\`"
   exit 1
 fi
