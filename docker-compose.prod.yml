@@ -22,7 +22,7 @@ services:
       - scholio-network
 
   scholio:
-    image: scholio-staging:latest
+    image: scholio:latest
     restart: unless-stopped
     depends_on:
       postgres:

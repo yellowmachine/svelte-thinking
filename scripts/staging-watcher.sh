@@ -26,7 +26,7 @@ if [ -f "$ENV_FILE" ]; then
 fi
 SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
 
-REPO_NAME="scholio-staging"
+REPO_NAME="scholio"
 
 LOCK_FILE="/tmp/scholio-watcher.lock"
 
