@@ -64,6 +64,7 @@ docker_build() {
 
 # ── Check for new commits ─────────────────────────────────────────────────────
 cd "$REPO_DIR"
+git checkout staging --quiet
 git fetch origin staging --quiet
 
 LOCAL_SHA=$(git rev-parse HEAD)
