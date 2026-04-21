@@ -72,4 +72,38 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
+	changePassword: async (event) => {
+		if (!event.locals.user) return fail(401, { message: 'Not authenticated' });
+
+		const formData = await event.request.formData();
+		const currentPassword = formData.get('currentPassword') as string;
+		const newPassword = formData.get('newPassword') as string;
+		const confirmPassword = formData.get('confirmPassword') as string;
+
+		if (!currentPassword || !newPassword || !confirmPassword) {
+			return fail(400, { passwordError: 'All fields are required.' });
+		}
+
+		if (newPassword !== confirmPassword) {
+			return fail(400, { passwordError: 'New passwords do not match.' });
+		}
+
+		if (newPassword.length < 8) {
+			return fail(400, { passwordError: 'New password must be at least 8 characters.' });
+		}
+
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			await (auth.api as any).changePassword({
+				body: { currentPassword, newPassword, revokeOtherSessions: false },
+				headers: event.request.headers
+			});
+		} catch (e: unknown) {
+			const msg = e instanceof Error ? e.message : 'Error changing password.';
+			return fail(400, { passwordError: msg });
+		}
+
+		return { passwordSuccess: true };
+	},
+
 };

@@ -34,6 +34,9 @@
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let confirmPassword = $state('');
+	let changingPassword = $state(false);
+	let passwordError = $state('');
+	let passwordSuccess = $state(false);
 
 	// Active section — initialise from ?tab= query param if present
 	const VALID_TABS = [
@@ -871,7 +874,28 @@
 					Change password
 				</h2>
 
-				<div class="flex flex-col gap-4">
+				<form
+					method="POST"
+					action="?/changePassword"
+					use:enhance={() => {
+						changingPassword = true;
+						passwordError = '';
+						passwordSuccess = false;
+						return async ({ result, update }) => {
+							changingPassword = false;
+							if (result.type === 'failure') {
+								passwordError = String(result.data?.passwordError ?? 'Error changing password.');
+							} else if (result.type === 'success') {
+								passwordSuccess = true;
+								currentPassword = '';
+								newPassword = '';
+								confirmPassword = '';
+							}
+							await update({ reset: false });
+						};
+					}}
+					class="flex flex-col gap-4"
+				>
 					<div class="flex flex-col gap-1.5">
 						<label
 							for="current-password"
@@ -881,6 +905,7 @@
 						</label>
 						<input
 							id="current-password"
+							name="currentPassword"
 							type="password"
 							bind:value={currentPassword}
 							placeholder="••••••••"
@@ -898,6 +923,7 @@
 							</label>
 							<input
 								id="new-password"
+								name="newPassword"
 								type="password"
 								bind:value={newPassword}
 								placeholder="••••••••"
@@ -913,6 +939,7 @@
 							</label>
 							<input
 								id="confirm-password"
+								name="confirmPassword"
 								type="password"
 								bind:value={confirmPassword}
 								placeholder="••••••••"
@@ -921,16 +948,23 @@
 						</div>
 					</div>
 
+					{#if passwordError}
+						<p class="font-sans text-sm text-red-600 dark:text-red-400">{passwordError}</p>
+					{/if}
+					{#if passwordSuccess}
+						<p class="font-sans text-sm text-green-600 dark:text-green-400">Password updated successfully.</p>
+					{/if}
+
 					<div class="flex justify-end">
 						<button
-							type="button"
-							disabled
-							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white opacity-50"
+							type="submit"
+							disabled={changingPassword}
+							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity disabled:opacity-50"
 						>
-							Update password
+							{changingPassword ? 'Updating…' : 'Update password'}
 						</button>
 					</div>
-				</div>
+				</form>
 			</section>
 
 			<!-- Danger zone -->
