@@ -4,6 +4,7 @@
 	import DOMPurify from 'dompurify';
 	import { trpc } from '$lib/utils/trpc';
 	import ActionCard from '$lib/components/ai/ActionCard.svelte';
+	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import { classifyAiError } from '$lib/utils/ai-errors';
 	import type { PageData } from './$types';
@@ -426,21 +427,36 @@
 							{/if}
 							{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
 									{#each pendingActions as action, i (i)}
-										<ActionCard
-											{action}
-											projectId={data.project.id}
-											onconfirm={() => {
-												const label = action.type === 'create_issue'
-													? `Issue "${action.title}" created`
-													: `Document "${action.title}" created`;
-												pendingActions = pendingActions.filter((_, idx) => idx !== i);
-												messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: label }];
-												scrollToBottom();
-											}}
-											ondiscard={() => {
-												pendingActions = pendingActions.filter((_, idx) => idx !== i);
-											}}
-										/>
+										{#if action.type === 'propose_references'}
+											<ReferenceSelectCard
+												references={action.references}
+												projectId={data.project.id}
+												onconfirm={(count) => {
+													pendingActions = pendingActions.filter((_, idx) => idx !== i);
+													messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: `${count} ${count === 1 ? 'reference' : 'references'} added to bibliography` }];
+													scrollToBottom();
+												}}
+												ondiscard={() => {
+													pendingActions = pendingActions.filter((_, idx) => idx !== i);
+												}}
+											/>
+										{:else}
+											<ActionCard
+												{action}
+												projectId={data.project.id}
+												onconfirm={() => {
+													const label = action.type === 'create_issue'
+														? `Issue "${action.title}" created`
+														: `Document "${action.title}" created`;
+													pendingActions = pendingActions.filter((_, idx) => idx !== i);
+													messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: label }];
+													scrollToBottom();
+												}}
+												ondiscard={() => {
+													pendingActions = pendingActions.filter((_, idx) => idx !== i);
+												}}
+											/>
+										{/if}
 									{/each}
 								{/if}
 							</div>

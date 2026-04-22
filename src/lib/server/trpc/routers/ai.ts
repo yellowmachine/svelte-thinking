@@ -20,6 +20,22 @@ import type { Db } from '$lib/server/db';
 
 export type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
 
+export type ProposedReference = {
+  citeKey?: string;
+  type: 'article' | 'book' | 'inproceedings' | 'incollection' | 'phdthesis' | 'mastersthesis' | 'techreport' | 'misc';
+  title: string;
+  authors: { first: string; last: string }[];
+  year?: string;
+  journal?: string;
+  publisher?: string;
+  doi?: string;
+  url?: string;
+  volume?: string;
+  issue?: string;
+  pages?: string;
+  abstract?: string;
+};
+
 // Pending actions are proposed by the agent and must be confirmed by the user before executing.
 export type PendingAction =
   | {
@@ -35,6 +51,10 @@ export type PendingAction =
       title: string;
       content?: string;
       priority?: 'low' | 'medium' | 'high' | 'critical';
+    }
+  | {
+      type: 'propose_references';
+      references: ProposedReference[];
     };
 
 // Editor agent actions — proposed edits on the currently open document.
@@ -436,6 +456,61 @@ const TOOLS = [
           }
         },
         required: ['title', 'type', 'content']
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'propose_references',
+      description:
+        'Propose a list of bibliography references for the user to review and selectively add to the project. ' +
+        'Use this when the user asks for references, the bibliography of an author or topic, or requests sources. ' +
+        'The user will see a card with checkboxes to pick which entries to add to the project bibliography. ' +
+        'IMPORTANT: always describe in text what you are about to propose BEFORE calling this tool.',
+      parameters: {
+        type: 'object',
+        properties: {
+          references: {
+            type: 'array',
+            description: 'List of proposed bibliography entries',
+            items: {
+              type: 'object',
+              properties: {
+                citeKey: { type: 'string', description: 'BibTeX cite key (e.g. bueno1985religion). Auto-generated if omitted.' },
+                type: {
+                  type: 'string',
+                  enum: ['article', 'book', 'inproceedings', 'incollection', 'phdthesis', 'mastersthesis', 'techreport', 'misc'],
+                  description: 'Reference type'
+                },
+                title: { type: 'string', description: 'Full title of the work' },
+                authors: {
+                  type: 'array',
+                  description: 'List of authors',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      first: { type: 'string', description: 'First name' },
+                      last: { type: 'string', description: 'Last name' }
+                    },
+                    required: ['last']
+                  }
+                },
+                year: { type: 'string', description: 'Publication year' },
+                journal: { type: 'string', description: 'Journal or periodical name (for articles)' },
+                publisher: { type: 'string', description: 'Publisher name (for books)' },
+                doi: { type: 'string', description: 'DOI identifier' },
+                url: { type: 'string', description: 'URL if available online' },
+                volume: { type: 'string', description: 'Volume number' },
+                issue: { type: 'string', description: 'Issue number' },
+                pages: { type: 'string', description: 'Page range (e.g. 123–145)' },
+                abstract: { type: 'string', description: 'Brief description or abstract (optional)' }
+              },
+              required: ['type', 'title', 'authors']
+            }
+          }
+        },
+        required: ['references']
       }
     }
   }
@@ -910,6 +985,30 @@ async function runAgentLoop(
             };
           }
 
+          if (tc.function.name === 'propose_references') {
+            const refs = ((args.references as ProposedReference[]) || []).map((r) => ({
+              citeKey: r.citeKey,
+              type: r.type || 'misc',
+              title: r.title || '',
+              authors: r.authors || [],
+              year: r.year,
+              journal: r.journal,
+              publisher: r.publisher,
+              doi: r.doi,
+              url: r.url,
+              volume: r.volume,
+              issue: r.issue,
+              pages: r.pages,
+              abstract: r.abstract
+            } as ProposedReference));
+            pendingActions.push({ type: 'propose_references', references: refs });
+            return {
+              role: 'tool' as const,
+              tool_call_id: tc.id,
+              content: `Proposed ${refs.length} reference(s). The user will see a selection card to choose which ones to add.`
+            };
+          }
+
           // ── Read tools: execute normally ──────────────────────────
           const { output, docsUsed } = await executeTool(tc.function.name, args, withRLS, projectId);
           for (const d of docsUsed) seenDocs.set(d.id, d.title);
@@ -1022,6 +1121,61 @@ const EDITOR_TOOLS = [
         required: ['anchorText', 'content', 'explanation']
       }
     }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'propose_references',
+      description:
+        'Propose a list of bibliography references for the user to review and selectively add to the project. ' +
+        'Use this when the user asks for references, the bibliography of an author or topic, or requests sources. ' +
+        'The user will see a card with checkboxes to pick which entries to add to the project bibliography. ' +
+        'IMPORTANT: always describe in text what you are about to propose BEFORE calling this tool.',
+      parameters: {
+        type: 'object',
+        properties: {
+          references: {
+            type: 'array',
+            description: 'List of proposed bibliography entries',
+            items: {
+              type: 'object',
+              properties: {
+                citeKey: { type: 'string', description: 'BibTeX cite key (e.g. bueno1985religion). Auto-generated if omitted.' },
+                type: {
+                  type: 'string',
+                  enum: ['article', 'book', 'inproceedings', 'incollection', 'phdthesis', 'mastersthesis', 'techreport', 'misc'],
+                  description: 'Reference type'
+                },
+                title: { type: 'string', description: 'Full title of the work' },
+                authors: {
+                  type: 'array',
+                  description: 'List of authors',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      first: { type: 'string', description: 'First name' },
+                      last: { type: 'string', description: 'Last name' }
+                    },
+                    required: ['last']
+                  }
+                },
+                year: { type: 'string', description: 'Publication year' },
+                journal: { type: 'string', description: 'Journal or periodical name (for articles)' },
+                publisher: { type: 'string', description: 'Publisher name (for books)' },
+                doi: { type: 'string', description: 'DOI identifier' },
+                url: { type: 'string', description: 'URL if available online' },
+                volume: { type: 'string', description: 'Volume number' },
+                issue: { type: 'string', description: 'Issue number' },
+                pages: { type: 'string', description: 'Page range (e.g. 123–145)' },
+                abstract: { type: 'string', description: 'Brief description or abstract (optional)' }
+              },
+              required: ['type', 'title', 'authors']
+            }
+          }
+        },
+        required: ['references']
+      }
+    }
   }
 ] as const;
 
@@ -1098,7 +1252,7 @@ async function runEditorAgentLoop(
   apiKey: string,
   model: string,
   toolCtx: EditorToolContext
-): Promise<{ content: string; pendingEditorActions: PendingEditorAction[]; inputTokens: number; outputTokens: number }> {
+): Promise<{ content: string; pendingEditorActions: PendingEditorAction[]; pendingActions: PendingAction[]; inputTokens: number; outputTokens: number }> {
   const systemPrompt = `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
 
   const messages: OAMessage[] = [
@@ -1107,6 +1261,7 @@ async function runEditorAgentLoop(
   ];
 
   const pendingEditorActions: PendingEditorAction[] = [];
+  const pendingActions: PendingAction[] = [];
   const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
@@ -1162,6 +1317,30 @@ async function runEditorAgentLoop(
             explanation: (args.explanation as string) ?? ''
           });
           return { role: 'tool' as const, tool_call_id: tc.id, content: 'Insertion proposed. The user will see a preview.' };
+        }
+
+        if (tc.function.name === 'propose_references') {
+          const refs = ((args.references as ProposedReference[]) || []).map((r) => ({
+            citeKey: r.citeKey,
+            type: r.type || 'misc',
+            title: r.title || '',
+            authors: r.authors || [],
+            year: r.year,
+            journal: r.journal,
+            publisher: r.publisher,
+            doi: r.doi,
+            url: r.url,
+            volume: r.volume,
+            issue: r.issue,
+            pages: r.pages,
+            abstract: r.abstract
+          } as ProposedReference));
+          pendingActions.push({ type: 'propose_references', references: refs });
+          return {
+            role: 'tool' as const,
+            tool_call_id: tc.id,
+            content: `Proposed ${refs.length} reference(s). The user will see a selection card to choose which ones to add.`
+          };
         }
 
         // ── list_references: read tool, returns bibliography ──────────
@@ -1272,6 +1451,7 @@ ${documentContent}`;
     return {
       content: choice.message.content ?? '',
       pendingEditorActions,
+      pendingActions,
       inputTokens: totalInputTokens,
       outputTokens: totalOutputTokens
     };
@@ -1562,6 +1742,24 @@ export const aiRouter = router({
             title: z.string().min(1).max(255),
             content: z.string().optional(),
             priority: z.enum(['low', 'medium', 'high', 'critical']).optional().default('medium')
+          }),
+          z.object({
+            type: z.literal('add_references'),
+            references: z.array(z.object({
+              citeKey: z.string().optional(),
+              type: z.enum(['article', 'book', 'inproceedings', 'incollection', 'phdthesis', 'mastersthesis', 'techreport', 'misc']),
+              title: z.string().min(1),
+              authors: z.array(z.object({ first: z.string().default(''), last: z.string() })),
+              year: z.string().optional(),
+              journal: z.string().optional(),
+              publisher: z.string().optional(),
+              doi: z.string().optional(),
+              url: z.string().optional(),
+              volume: z.string().optional(),
+              issue: z.string().optional(),
+              pages: z.string().optional(),
+              abstract: z.string().optional()
+            })).min(1)
           })
         ])
       })
@@ -1614,21 +1812,72 @@ export const aiRouter = router({
         return { type: 'document' as const, id: docId, title: action.title };
       }
 
-      // create_issue
-      const action = input.action;
-      const issueId = crypto.randomUUID();
-      await ctx.withRLS((db) =>
-        db.insert(issue).values({
-          id: issueId,
-          projectId: input.projectId,
-          title: action.title,
-          content: action.content ?? null,
-          priority: action.priority,
-          ownerUserId: ctx.user.id
-        })
-      );
+      if (input.action.type === 'create_issue') {
+        const action = input.action;
+        const issueId = crypto.randomUUID();
+        await ctx.withRLS((db) =>
+          db.insert(issue).values({
+            id: issueId,
+            projectId: input.projectId,
+            title: action.title,
+            content: action.content ?? null,
+            priority: action.priority,
+            ownerUserId: ctx.user.id
+          })
+        );
+        return { type: 'issue' as const, id: issueId, title: action.title };
+      }
 
-      return { type: 'issue' as const, id: issueId, title: action.title };
+      // add_references
+      const action = input.action;
+      const existingKeys = (await ctx.withRLS((db) =>
+        (db as Db).select({ citeKey: reference.citeKey }).from(reference).where(eq(reference.userId, ctx.user.id))
+      )) as { citeKey: string }[];
+      const keySet = new Set(existingKeys.map((r) => r.citeKey));
+
+      let addedCount = 0;
+      for (const refData of action.references) {
+        let baseCiteKey = refData.citeKey;
+        if (!baseCiteKey) {
+          const firstAuthorLast = refData.authors[0]?.last?.toLowerCase().replace(/[^a-z]/g, '') || 'anon';
+          baseCiteKey = `${firstAuthorLast}${refData.year ?? 'nd'}`;
+        }
+        let citeKey = baseCiteKey;
+        if (keySet.has(citeKey)) {
+          let suffix = 98; // 'b'
+          while (keySet.has(citeKey + String.fromCharCode(suffix))) suffix++;
+          citeKey = citeKey + String.fromCharCode(suffix);
+        }
+        keySet.add(citeKey);
+
+        const refId = crypto.randomUUID();
+        await ctx.withRLS(async (db) => {
+          await (db as Db).insert(reference).values({
+            id: refId,
+            userId: ctx.user.id,
+            citeKey,
+            type: refData.type,
+            title: refData.title,
+            authors: refData.authors,
+            year: refData.year ?? null,
+            journal: refData.journal ?? null,
+            publisher: refData.publisher ?? null,
+            doi: refData.doi ?? null,
+            url: refData.url ?? null,
+            volume: refData.volume ?? null,
+            issue: refData.issue ?? null,
+            pages: refData.pages ?? null,
+            abstract: refData.abstract ?? null
+          });
+          await (db as Db).insert(projectReference).values({
+            referenceId: refId,
+            projectId: input.projectId
+          });
+        });
+        addedCount++;
+      }
+
+      return { type: 'references' as const, count: addedCount };
     }),
 
   sendEditorMessage: protectedProcedure
@@ -1693,7 +1942,7 @@ export const aiRouter = router({
       const effectiveModel = (!resolvedOrgId && input.modelOverride) ? input.modelOverride : resolvedModel;
 
       // ── Run editor agent loop ─────────────────────────────────────────
-      const { content: assistantContent, pendingEditorActions, inputTokens, outputTokens } = await runEditorAgentLoop(
+      const { content: assistantContent, pendingEditorActions, pendingActions, inputTokens, outputTokens } = await runEditorAgentLoop(
         input.documentTitle,
         input.documentContent,
         history,
@@ -1726,7 +1975,8 @@ export const aiRouter = router({
       return {
         conversationId: convId,
         message: { id: assistantMsgId, role: 'assistant' as const, content: assistantContent },
-        pendingEditorActions: pendingEditorActions.length > 0 ? pendingEditorActions : undefined
+        pendingEditorActions: pendingEditorActions.length > 0 ? pendingEditorActions : undefined,
+        pendingActions: pendingActions.length > 0 ? pendingActions : undefined
       };
     }),
 
