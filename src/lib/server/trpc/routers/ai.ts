@@ -509,13 +509,7 @@ const TOOLS = [
                 },
                 year: { type: 'string', description: 'Publication year' },
                 journal: { type: 'string', description: 'Journal or periodical name (for articles)' },
-                publisher: { type: 'string', description: 'Publisher name (for books)' },
-                doi: { type: 'string', description: 'DOI identifier' },
-                url: { type: 'string', description: 'URL if available online' },
-                volume: { type: 'string', description: 'Volume number' },
-                issue: { type: 'string', description: 'Issue number' },
-                pages: { type: 'string', description: 'Page range (e.g. 123–145)' },
-                abstract: { type: 'string', description: 'Brief description or abstract (optional)' }
+                publisher: { type: 'string', description: 'Publisher name (for books)' }
               },
               required: ['type', 'title', 'authors']
             }
@@ -1178,13 +1172,7 @@ const EDITOR_TOOLS = [
                 },
                 year: { type: 'string', description: 'Publication year' },
                 journal: { type: 'string', description: 'Journal or periodical name (for articles)' },
-                publisher: { type: 'string', description: 'Publisher name (for books)' },
-                doi: { type: 'string', description: 'DOI identifier' },
-                url: { type: 'string', description: 'URL if available online' },
-                volume: { type: 'string', description: 'Volume number' },
-                issue: { type: 'string', description: 'Issue number' },
-                pages: { type: 'string', description: 'Page range (e.g. 123–145)' },
-                abstract: { type: 'string', description: 'Brief description or abstract (optional)' }
+                publisher: { type: 'string', description: 'Publisher name (for books)' }
               },
               required: ['type', 'title', 'authors']
             }
