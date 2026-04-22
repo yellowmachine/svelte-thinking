@@ -87,11 +87,11 @@
 					content: m.content,
 					docsUsed: (m.docsUsed as { id: string; title: string }[] | null) ?? undefined
 				}));
+			historyLoaded = true;
 			await scrollToBottom();
 		} catch {
 			localStorage.removeItem(CONV_KEY);
 			conversationId = undefined;
-		} finally {
 			historyLoaded = true;
 		}
 	}
