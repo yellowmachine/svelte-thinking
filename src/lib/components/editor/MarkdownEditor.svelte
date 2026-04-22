@@ -637,6 +637,7 @@
 		// Trigger completion immediately for non-word chars that CM6 won't auto-trigger on:
 		//   # after [[  → heading completion
 		//   : after [[doc → wikilink completion
+		//   @ after [[  → citation completion
 		exts.push(keymap.of([
 			{
 				key: '#',
@@ -656,6 +657,17 @@
 					const before = view.state.doc.sliceString(Math.max(0, cursor - 5), cursor);
 					if (before !== '[[doc') return false;
 					view.dispatch({ changes: { from: cursor, insert: ':' }, selection: { anchor: cursor + 1 } });
+					startCompletion(view);
+					return true;
+				}
+			},
+			{
+				key: '@',
+				run(view) {
+					const cursor = view.state.selection.main.head;
+					const before = view.state.doc.sliceString(Math.max(0, cursor - 2), cursor);
+					if (before !== '[[') return false;
+					view.dispatch({ changes: { from: cursor, insert: '@' }, selection: { anchor: cursor + 1 } });
 					startCompletion(view);
 					return true;
 				}
