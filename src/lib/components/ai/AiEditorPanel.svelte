@@ -7,7 +7,6 @@
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PendingEditorAction, PendingAction } from '$lib/server/trpc/routers/ai';
-	import { classifyAiError } from '$lib/utils/ai-errors';
 
 	type Props = {
 		projectId: string;
@@ -51,10 +50,26 @@
 		{ label: 'Academic tone', prompt: 'Identify any passages where the tone is too informal or imprecise.' }
 	];
 
+	const TOOL_LABELS: Record<string, string> = {
+		get_project_context: 'Reading project context…',
+		read_document: 'Reading document…',
+		search_documents_semantic: 'Searching documents…',
+		list_references: 'Loading bibliography…',
+		get_requirement_details: 'Reading requirements…',
+		list_issues: 'Loading issues…',
+		check_spelling: 'Running spell check…',
+		check_grammar: 'Running grammar check…',
+		find_untagged: 'Scanning for untagged items…',
+		replace_text: 'Preparing edit…',
+		insert_after: 'Preparing insertion…',
+		propose_references: 'Searching bibliography…'
+	};
+
 	let messages = $state<Message[]>([]);
 	let conversationId = $state<string | undefined>(undefined);
 	let input = $state('');
 	let loading = $state(false);
+	let loadingHint = $state('Thinking…');
 	let error = $state('');
 	let historyLoaded = $state(false);
 	let messagesEl = $state<HTMLDivElement | null>(null);
@@ -114,45 +129,109 @@
 		messages = [...messages, { role: 'user', content: text }];
 		input = '';
 		loading = true;
+		loadingHint = 'Thinking…';
 		error = '';
 		pendingEditorActions = [];
 		pendingActions = [];
 		await scrollToBottom();
 
+		// Streaming assistant message placeholder
+		let assistantIdx = -1;
+
 		try {
-			const result = await trpc.ai.sendEditorMessage.mutate({
-				projectId,
-				documentId,
-				documentTitle,
-				documentContent: getDocumentContent(),
-				spellLanguage,
-				conversationId,
-				message: text,
-				...((!orgId && selectedModel) ? { modelOverride: selectedModel } : {})
-			});
+			const res = await fetch(
+				`/api/projects/${projectId}/documents/${documentId}/chat`,
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						projectId,
+						documentTitle,
+						documentContent: getDocumentContent(),
+						spellLanguage,
+						conversationId,
+						message: text,
+						...(!orgId && selectedModel ? { modelOverride: selectedModel } : {})
+					})
+				}
+			);
 
-			conversationId = result.conversationId;
-			localStorage.setItem(CONV_KEY, result.conversationId);
-
-			messages = [...messages, { role: 'assistant', content: result.message.content }];
-
-			if (result.pendingEditorActions?.length) {
-				pendingEditorActions = result.pendingEditorActions;
+			if (!res.ok || !res.body) {
+				const errText = await res.text().catch(() => 'Request failed');
+				throw new Error(errText);
 			}
-			if (result.pendingActions?.length) {
-				pendingActions = result.pendingActions;
+
+			const reader = res.body.getReader();
+			const decoder = new TextDecoder();
+			let buf = '';
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				buf += decoder.decode(value, { stream: true });
+				const lines = buf.split('\n');
+				buf = lines.pop() ?? '';
+
+				for (const line of lines) {
+					if (!line.startsWith('data: ')) continue;
+					const raw = line.slice(6).trim();
+					let evt: Record<string, unknown>;
+					try { evt = JSON.parse(raw); } catch { continue; }
+
+					if (evt.type === 'tool_start') {
+						loadingHint = TOOL_LABELS[evt.name as string] ?? `Calling ${evt.name}…`;
+					} else if (evt.type === 'text_delta') {
+						if (assistantIdx === -1) {
+							messages = [...messages, { role: 'assistant', content: evt.content as string }];
+							assistantIdx = messages.length - 1;
+							await scrollToBottom();
+						} else {
+							messages = messages.map((m, i) =>
+								i === assistantIdx ? { ...m, content: m.content + (evt.content as string) } : m
+							);
+						}
+					} else if (evt.type === 'done') {
+						conversationId = evt.conversationId as string;
+						localStorage.setItem(CONV_KEY, conversationId);
+						if (Array.isArray(evt.pendingEditorActions) && evt.pendingEditorActions.length) {
+							pendingEditorActions = evt.pendingEditorActions as PendingEditorAction[];
+						}
+						if (Array.isArray(evt.pendingActions) && evt.pendingActions.length) {
+							pendingActions = evt.pendingActions as PendingAction[];
+						}
+						await scrollToBottom();
+					} else if (evt.type === 'error') {
+						const kind = evt.kind as string;
+						const msg = evt.message as string;
+						if (kind === 'system') {
+							if (assistantIdx === -1) {
+								messages = messages.slice(0, -1);
+							} else {
+								messages = messages.filter((_, i) => i !== assistantIdx);
+							}
+							messages = [...messages, { role: 'system', content: msg }];
+							assistantIdx = -1;
+							await scrollToBottom();
+						} else {
+							error = msg;
+						}
+					}
+				}
 			}
 
-			await scrollToBottom();
+			// If model returned nothing (e.g. only tool calls, no text) — ensure message exists
+			if (assistantIdx === -1) {
+				// no-op: done event handled it
+			}
 		} catch (e: unknown) {
-			messages = messages.slice(0, -1);
-			const { kind, message: errMsg } = classifyAiError(e);
-			if (kind === 'system') {
-				messages = [...messages, { role: 'system', content: errMsg }];
-				await scrollToBottom();
+			// Remove user message on hard failure
+			if (assistantIdx === -1) {
+				messages = messages.slice(0, -1);
 			} else {
-				error = errMsg;
+				messages = messages.filter((_, i) => i !== assistantIdx);
+				messages = messages.slice(0, -1);
 			}
+			error = e instanceof Error ? e.message : 'Request failed';
 		} finally {
 			loading = false;
 		}
@@ -327,7 +406,7 @@
 				{#if loading}
 					<div class="flex items-center gap-2 pl-1">
 						<Spinner size="sm" class="text-accent" />
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Thinking…</span>
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{loadingHint}</span>
 					</div>
 				{/if}
 			</div>

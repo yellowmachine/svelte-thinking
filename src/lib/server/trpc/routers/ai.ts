@@ -866,7 +866,7 @@ function startOfMonth(): Date {
 }
 
 // Fire-and-forget: inserts a usage record after each AI call
-async function logUsage(
+export async function logUsage(
   withRLS: WithRLS,
   {
     orgId,
@@ -1475,6 +1475,330 @@ ${documentContent}`;
 }
 
 // ---------------------------------------------------------------------------
+// SSE streaming helpers
+// ---------------------------------------------------------------------------
+
+type StreamedToolCall = {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+};
+
+async function parseStreamingResponse(
+  res: Response,
+  onTextDelta: (chunk: string) => void,
+  onToolStart?: (name: string) => void
+): Promise<{
+  content: string;
+  toolCalls: StreamedToolCall[];
+  inputTokens: number;
+  outputTokens: number;
+  finishReason: string;
+}> {
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let content = '';
+  const tcMap = new Map<number, StreamedToolCall>();
+  const notifiedStarts = new Set<number>();
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let finishReason = 'stop';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') continue;
+        let chunk: {
+          choices?: {
+            delta?: {
+              content?: string | null;
+              tool_calls?: { index?: number; id?: string; type?: string; function?: { name?: string; arguments?: string } }[];
+            };
+            finish_reason?: string | null;
+          }[];
+          usage?: { prompt_tokens?: number; completion_tokens?: number };
+        };
+        try { chunk = JSON.parse(raw); } catch { continue; }
+
+        if (chunk.usage) {
+          inputTokens = chunk.usage.prompt_tokens ?? 0;
+          outputTokens = chunk.usage.completion_tokens ?? 0;
+        }
+
+        const choice = chunk.choices?.[0];
+        if (!choice) continue;
+        if (choice.finish_reason) finishReason = choice.finish_reason;
+
+        const delta = choice.delta ?? {};
+        if (delta.content) {
+          content += delta.content;
+          onTextDelta(delta.content);
+        }
+
+        for (const tc of delta.tool_calls ?? []) {
+          const idx = tc.index ?? 0;
+          if (!tcMap.has(idx)) {
+            tcMap.set(idx, { id: tc.id ?? '', type: 'function', function: { name: tc.function?.name ?? '', arguments: '' } });
+          }
+          const entry = tcMap.get(idx)!;
+          if (tc.id) entry.id = tc.id;
+          if (tc.function?.name) {
+            entry.function.name = tc.function.name;
+            if (!notifiedStarts.has(idx)) {
+              notifiedStarts.add(idx);
+              onToolStart?.(entry.function.name);
+            }
+          }
+          if (tc.function?.arguments) entry.function.arguments += tc.function.arguments;
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return { content, toolCalls: [...tcMap.values()], inputTokens, outputTokens, finishReason };
+}
+
+export async function runAgentLoopSSE(
+  systemPrompt: string,
+  history: { role: 'user' | 'assistant'; content: string }[],
+  userMessage: string,
+  withRLS: WithRLS,
+  projectId: string,
+  apiKey: string,
+  model: string,
+  write: (event: object) => void
+): Promise<{ content: string; pendingActions: PendingAction[]; docsUsed: { id: string; title: string }[]; inputTokens: number; outputTokens: number }> {
+  const messages: OAMessage[] = [
+    ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+    { role: 'user', content: userMessage }
+  ];
+  const pendingActions: PendingAction[] = [];
+  const seenDocs = new Map<string, string>();
+  const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
+  for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
+    const res = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
+      body: JSON.stringify({
+        model,
+        max_tokens: 2048,
+        messages: [{ role: 'system', content: systemPrompt }, ...messages],
+        tools: TOOLS,
+        tool_choice: 'auto',
+        stream: true,
+        stream_options: { include_usage: true }
+      })
+    });
+    if (!res.ok) await throwProviderError(res);
+
+    const { content, toolCalls, inputTokens, outputTokens, finishReason } = await parseStreamingResponse(
+      res,
+      (chunk) => write({ type: 'text_delta', content: chunk }),
+      (name) => write({ type: 'tool_start', name })
+    );
+    totalInputTokens += inputTokens;
+    totalOutputTokens += outputTokens;
+
+    if (finishReason === 'tool_calls' && toolCalls.length > 0) {
+      messages.push({ role: 'assistant', content: content || null, tool_calls: toolCalls });
+      console.log(`[agent-sse] iter=${i} tools=${toolCalls.map((t) => t.function.name).join(', ')} in=${inputTokens} out=${outputTokens}`);
+
+      const results = await Promise.all(toolCalls.map(async (tc) => {
+        let args: Record<string, unknown> = {};
+        try { args = JSON.parse(tc.function.arguments); } catch { /* empty */ }
+
+        if (tc.function.name === 'create_document') {
+          pendingActions.push({
+            type: 'create_document',
+            title: (args.title as string) || 'Nuevo documento',
+            docType: ((args.type as string) as Extract<PendingAction, { type: 'create_document' }>['docType']) || 'paper',
+            content: (args.content as string) || '',
+            requirementId: (args.requirementId as string) || undefined
+          });
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Proposal registered. The user will see a confirmation card.' };
+        }
+        if (tc.function.name === 'create_issue') {
+          pendingActions.push({
+            type: 'create_issue',
+            title: (args.title as string) || 'Nuevo issue',
+            content: (args.content as string) || undefined,
+            priority: ((args.priority as string) as Extract<PendingAction, { type: 'create_issue' }>['priority']) || 'medium'
+          });
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Issue proposed. The user will see a confirmation card.' };
+        }
+        if (tc.function.name === 'propose_references') {
+          const refs = ((args.references as ProposedReference[]) || []).map((r) => ({
+            citeKey: r.citeKey, type: r.type || 'misc', title: r.title || '',
+            authors: r.authors || [], year: r.year, journal: r.journal, publisher: r.publisher,
+            doi: r.doi, url: r.url, volume: r.volume, issue: r.issue, pages: r.pages, abstract: r.abstract
+          } as ProposedReference));
+          pendingActions.push({ type: 'propose_references', references: refs });
+          return { role: 'tool' as const, tool_call_id: tc.id, content: `Proposed ${refs.length} reference(s). The user will see a selection card to choose which ones to add.` };
+        }
+
+        const { output, docsUsed } = await executeTool(tc.function.name, args, withRLS, projectId);
+        for (const d of docsUsed) seenDocs.set(d.id, d.title);
+        return { role: 'tool' as const, tool_call_id: tc.id, content: output };
+      }));
+
+      messages.push(...results);
+      continue;
+    }
+
+    return {
+      content,
+      pendingActions,
+      docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title })),
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens
+    };
+  }
+
+  throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'The agent could not complete the response within the maximum number of steps.' });
+}
+
+export async function runEditorAgentLoopSSE(
+  documentTitle: string,
+  documentContent: string,
+  history: { role: 'user' | 'assistant'; content: string }[],
+  userMessage: string,
+  apiKey: string,
+  model: string,
+  toolCtx: EditorToolContext,
+  write: (event: object) => void
+): Promise<{ content: string; pendingEditorActions: PendingEditorAction[]; pendingActions: PendingAction[]; inputTokens: number; outputTokens: number }> {
+  const systemPrompt = `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
+  const messages: OAMessage[] = [
+    ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+    { role: 'user', content: userMessage }
+  ];
+  const pendingEditorActions: PendingEditorAction[] = [];
+  const pendingActions: PendingAction[] = [];
+  const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
+  for (let i = 0; i < 4; i++) {
+    const res = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
+      body: JSON.stringify({
+        model,
+        max_tokens: 2048,
+        messages: [{ role: 'system', content: systemPrompt }, ...messages],
+        tools: EDITOR_TOOLS,
+        tool_choice: 'auto',
+        stream: true,
+        stream_options: { include_usage: true }
+      })
+    });
+    if (!res.ok) await throwProviderError(res);
+
+    const { content, toolCalls, inputTokens, outputTokens, finishReason } = await parseStreamingResponse(
+      res,
+      (chunk) => write({ type: 'text_delta', content: chunk }),
+      (name) => write({ type: 'tool_start', name })
+    );
+    totalInputTokens += inputTokens;
+    totalOutputTokens += outputTokens;
+
+    if (finishReason === 'tool_calls' && toolCalls.length > 0) {
+      messages.push({ role: 'assistant', content: content || null, tool_calls: toolCalls });
+
+      const results = await Promise.all(toolCalls.map(async (tc) => {
+        let args: Record<string, unknown> = {};
+        try { args = JSON.parse(tc.function.arguments); } catch { /* empty */ }
+
+        if (tc.function.name === 'replace_text') {
+          pendingEditorActions.push({ type: 'replace_text', anchorText: (args.anchorText as string) ?? '', replacement: (args.replacement as string) ?? '', explanation: (args.explanation as string) ?? '' });
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Replacement proposed. The user will see a preview.' };
+        }
+        if (tc.function.name === 'insert_after') {
+          pendingEditorActions.push({ type: 'insert_after', anchorText: (args.anchorText as string) ?? '', content: (args.content as string) ?? '', explanation: (args.explanation as string) ?? '' });
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Insertion proposed. The user will see a preview.' };
+        }
+        if (tc.function.name === 'propose_references') {
+          const refs = ((args.references as ProposedReference[]) || []).map((r) => ({
+            citeKey: r.citeKey, type: r.type || 'misc', title: r.title || '',
+            authors: r.authors || [], year: r.year, journal: r.journal, publisher: r.publisher,
+            doi: r.doi, url: r.url, volume: r.volume, issue: r.issue, pages: r.pages, abstract: r.abstract
+          } as ProposedReference));
+          pendingActions.push({ type: 'propose_references', references: refs });
+          return { role: 'tool' as const, tool_call_id: tc.id, content: `Proposed ${refs.length} reference(s). The user will see a selection card to choose which ones to add.` };
+        }
+        if (tc.function.name === 'list_references') {
+          const rows = (await toolCtx.withRLS((db) =>
+            (db as Db).select({ ref: reference }).from(reference).innerJoin(projectReference, eq(projectReference.referenceId, reference.id)).where(eq(projectReference.projectId, toolCtx.projectId))
+          )) as { ref: typeof reference.$inferSelect }[];
+          if (rows.length === 0) return { role: 'tool' as const, tool_call_id: tc.id, content: 'This project has no bibliography entries yet.' };
+          const output = rows.map(({ ref: r }) => {
+            const authors = ((r.authors ?? []) as { first?: string; last?: string }[]).map((a) => [a.last, a.first].filter(Boolean).join(', ')).join('; ');
+            const year = r.year ? ` (${r.year})` : '';
+            return `[@${r.citeKey}] ${authors}${year}. ${r.title}.`;
+          }).join('\n');
+          return { role: 'tool' as const, tool_call_id: tc.id, content: output };
+        }
+        if (tc.function.name === 'check_spelling') {
+          try {
+            const langNote = toolCtx.spellLanguage === 'auto' ? 'Detect the language automatically.' : `The text is in language code: ${toolCtx.spellLanguage}.`;
+            const prompt = `You are a professional proofreader. Analyze the following text for spelling errors.\n${langNote}\nReturn a JSON array. Each item: {"original": "exact substring", "suggestion": "corrected text", "explanation": "brief reason (max 10 words)"}\nRules: only genuine spelling errors; ignore proper nouns, citation keys like [[@smith2023]], Markdown syntax; return [] if correct; ONLY valid JSON.\n\nText:\n${documentContent}`;
+            const spellRes = await fetch(OPENROUTER_URL, { method: 'POST', headers: { Authorization: `Bearer ${toolCtx.spellApiKey}`, 'Content-Type': 'application/json', ...extraHeaders }, body: JSON.stringify({ model: toolCtx.spellModel, messages: [{ role: 'user', content: prompt }], temperature: 0, max_tokens: 2000 }) });
+            if (spellRes.ok) {
+              const spellData = await spellRes.json() as { choices: { message: { content: string } }[] };
+              const raw = JSON.parse((spellData.choices[0]?.message?.content ?? '[]').trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')) as { original: string; suggestion: string; explanation: string }[];
+              const corrections = Array.isArray(raw) ? raw.filter((c) => c.original && c.suggestion && documentContent.includes(c.original)) : [];
+              for (const c of corrections) pendingEditorActions.push({ type: 'replace_text', anchorText: c.original, replacement: c.suggestion, explanation: c.explanation });
+              return { role: 'tool' as const, tool_call_id: tc.id, content: corrections.length > 0 ? `Spell check complete. ${corrections.length} correction(s) proposed.` : 'Spell check complete. No errors found.' };
+            }
+          } catch { /* fall through */ }
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Spell check failed. Ask the user to use the Spell button instead.' };
+        }
+        if (tc.function.name === 'check_grammar') {
+          try {
+            const prompt = `You are an expert academic writing assistant. Analyze the following text for grammatical errors, awkward phrasing, and issues with academic register.\nReturn a JSON array. Each item: {"original": "exact substring", "suggestion": "corrected text", "explanation": "brief reason (max 10 words)"}\nRules: grammar errors only (not spelling); flag unnatural phrasing; suggest formal alternatives for informal register; ignore citation keys and Markdown; return [] if correct; ONLY valid JSON.\n\nText:\n${documentContent}`;
+            const grammarRes = await fetch(OPENROUTER_URL, { method: 'POST', headers: { Authorization: `Bearer ${toolCtx.grammarApiKey}`, 'Content-Type': 'application/json', ...extraHeaders }, body: JSON.stringify({ model: toolCtx.grammarModel, messages: [{ role: 'user', content: prompt }], temperature: 0, max_tokens: 2000 }) });
+            if (grammarRes.ok) {
+              const grammarData = await grammarRes.json() as { choices: { message: { content: string } }[] };
+              const raw = JSON.parse((grammarData.choices[0]?.message?.content ?? '[]').trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')) as { original: string; suggestion: string; explanation: string }[];
+              const corrections = Array.isArray(raw) ? raw.filter((c) => c.original && c.suggestion && documentContent.includes(c.original)) : [];
+              for (const c of corrections) pendingEditorActions.push({ type: 'replace_text', anchorText: c.original, replacement: c.suggestion, explanation: c.explanation });
+              return { role: 'tool' as const, tool_call_id: tc.id, content: corrections.length > 0 ? `Grammar check complete. ${corrections.length} correction(s) proposed.` : 'Grammar check complete. No issues found.' };
+            }
+          } catch { /* fall through */ }
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Grammar check failed. Ask the user to use the Grammar button instead.' };
+        }
+        if (tc.function.name === 'find_untagged') {
+          return { role: 'tool' as const, tool_call_id: tc.id, content: 'Use the Enrich button in the toolbar for person and reference tagging.' };
+        }
+
+        return { role: 'tool' as const, tool_call_id: tc.id, content: `Unknown tool: "${tc.function.name}".` };
+      }));
+
+      messages.push(...results);
+      continue;
+    }
+
+    return { content, pendingEditorActions, pendingActions, inputTokens: totalInputTokens, outputTokens: totalOutputTokens };
+  }
+
+  throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'The editor agent could not complete the response.' });
+}
+
+// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // Theology context block — injected only when project has magisterial/patristic refs
 // ---------------------------------------------------------------------------
@@ -1516,7 +1840,7 @@ Si no tienes certeza del siglum correcto o la abreviatura de revista, dilo expl�
 // System prompt
 // ---------------------------------------------------------------------------
 
-const SYSTEM_PROMPT = `Eres Scholio, un asistente de escritura académica especializado en filosofía, teología, ciencias sociales y ciencias formales, integrado en una plataforma de investigación.
+export const SYSTEM_PROMPT = `Eres Scholio, un asistente de escritura académica especializado en filosofía, teología, ciencias sociales y ciencias formales, integrado en una plataforma de investigación.
 El usuario trabaja en proyectos académicos (grado, máster, doctorado o investigación) y tu objetivo es ayudarle a estructurar, revisar y desarrollar documentos de alta calidad usando en lo posible los documentos de su proyecto.
 
 ## Idioma y estilo
