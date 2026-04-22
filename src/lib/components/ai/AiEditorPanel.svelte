@@ -4,6 +4,7 @@
 	import { MODELS } from '$lib/ai-config';
 	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
 	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PendingEditorAction, PendingAction } from '$lib/server/trpc/routers/ai';
 	import { classifyAiError } from '$lib/utils/ai-errors';
@@ -57,6 +58,8 @@
 	let error = $state('');
 	let historyLoaded = $state(false);
 	let messagesEl = $state<HTMLDivElement | null>(null);
+
+	let showClearDialog = $state(false);
 
 	// Pending editor actions from the last assistant message
 	let pendingEditorActions = $state<PendingEditorAction[]>([]);
@@ -159,13 +162,13 @@
 	}
 
 	function clearConversation() {
-		if (!confirm('Clear this conversation? This cannot be undone.')) return;
 		localStorage.removeItem(CONV_KEY);
 		conversationId = undefined;
 		messages = [];
 		pendingEditorActions = [];
 		pendingActions = [];
 		error = '';
+		showClearDialog = false;
 	}
 </script>
 
@@ -184,7 +187,7 @@
 			{#if messages.length > 0}
 				<button
 					type="button"
-					onclick={clearConversation}
+					onclick={() => (showClearDialog = true)}
 					title="Clear conversation"
 					class="font-sans text-[11px] text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
 				>
@@ -362,3 +365,14 @@
 		</div>
 	</div>
 </div>
+
+<SafeDeleteDialog
+	open={showClearDialog}
+	title="Clear conversation"
+	label="this conversation"
+	warning="All messages in this conversation will be deleted. This cannot be undone."
+	confirmLabel="Clear"
+	requireCode={false}
+	onconfirm={clearConversation}
+	oncancel={() => (showClearDialog = false)}
+/>
