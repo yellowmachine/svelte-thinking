@@ -155,7 +155,7 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
 			send();
 		}
@@ -227,8 +227,8 @@
 			</div>
 		{:else if messages.length === 0}
 			<!-- Empty state + shortcuts -->
-			<div class="flex h-full flex-col justify-between">
-				<div class="flex flex-col items-center gap-2 pt-6 text-center">
+			<div class="flex flex-col gap-4 pt-4">
+				<div class="flex flex-col items-center gap-2 text-center">
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 						Ask anything about your project.
 					</p>
@@ -241,7 +241,7 @@
 						<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Mejora el estilo</span>
 					</div>
 				</div>
-				<div class="flex flex-col gap-1.5 pb-2">
+				<div class="flex flex-col gap-1.5">
 					<p class="mb-1 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
 						Quick questions
 					</p>
@@ -346,7 +346,7 @@
 			<textarea
 				bind:value={input}
 				onkeydown={handleKeydown}
-				placeholder="Ask a question… (⌘↵ to send)"
+				placeholder="Ask a question… (↵ to send, ⇧↵ for new line)"
 				rows="2"
 				class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
 				style="max-height: 120px;"
