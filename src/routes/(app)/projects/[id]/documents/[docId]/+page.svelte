@@ -314,7 +314,7 @@
 	async function loadRefs() {
 		if (refsLoaded) return;
 		try {
-			const rows = await trpc.references.list.query(data.document.projectId);
+			const rows = await trpc.references.listWithSubnotes.query(data.document.projectId);
 			projectRefs = rows as CiteRef[];
 			refsLoaded = true;
 		} catch {

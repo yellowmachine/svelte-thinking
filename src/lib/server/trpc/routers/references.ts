@@ -186,6 +186,26 @@ export const referencesRouter = router({
 		).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref));
 	}),
 
+	// Like `list` but includes subnotes — used by the document editor for citation autocomplete.
+	listWithSubnotes: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
+		const rows = await ctx.withRLS((db) =>
+			db
+				.select({ ref: reference, subnote: referenceSubnote })
+				.from(reference)
+				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+				.leftJoin(referenceSubnote, eq(referenceSubnote.referenceId, reference.id))
+				.where(eq(projectReference.projectId, projectId))
+				.orderBy(asc(reference.citeKey), asc(referenceSubnote.createdAt))
+		) as { ref: typeof reference.$inferSelect; subnote: typeof referenceSubnote.$inferSelect | null }[];
+
+		const refMap = new Map<string, typeof reference.$inferSelect & { subnotes: { slug: string; notes: string }[] }>();
+		for (const row of rows) {
+			if (!refMap.has(row.ref.id)) refMap.set(row.ref.id, { ...row.ref, subnotes: [] });
+			if (row.subnote) refMap.get(row.ref.id)!.subnotes.push({ slug: row.subnote.slug, notes: row.subnote.notes });
+		}
+		return [...refMap.values()];
+	}),
+
 	create: protectedProcedure
 		.input(z.object({ projectId: z.string(), reference: referenceInputSchema }))
 		.mutation(async ({ ctx, input }) => {
