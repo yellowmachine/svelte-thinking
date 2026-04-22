@@ -5,7 +5,7 @@ import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
 import { router, protectedProcedure } from '../init';
-import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference, referenceSubnote } from '$lib/server/db/schemas/references.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { parseBibtexFile, formatBibtexFile, generateCiteKey } from '$lib/utils/bibtex';
 import type { Author } from '$lib/utils/bibtex';
@@ -781,5 +781,62 @@ ${truncated}`;
 				doi: normalized,
 				url
 			};
+		}),
+
+	// ── Subnotes ──────────────────────────────────────────────────────────────
+
+	listSubnotes: protectedProcedure
+		.input(z.object({ referenceId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			return (await ctx.withRLS((db) =>
+				db
+					.select()
+					.from(referenceSubnote)
+					.where(eq(referenceSubnote.referenceId, input.referenceId))
+					.orderBy(asc(referenceSubnote.createdAt))
+			)) as (typeof referenceSubnote.$inferSelect)[];
+		}),
+
+	addSubnote: protectedProcedure
+		.input(z.object({
+			referenceId: z.string(),
+			slug: z.string().min(1).max(50).transform((s) =>
+				s.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'note'
+			),
+			notes: z.string().max(10000).default('')
+		}))
+		.mutation(async ({ ctx, input }) => {
+			const [row] = (await ctx.withRLS((db) =>
+				db
+					.insert(referenceSubnote)
+					.values({ referenceId: input.referenceId, slug: input.slug, notes: input.notes })
+					.onConflictDoNothing()
+					.returning()
+			)) as (typeof referenceSubnote.$inferSelect)[];
+			if (!row) throw new TRPCError({ code: 'CONFLICT', message: `Slug "${input.slug}" already exists for this reference.` });
+			return row;
+		}),
+
+	updateSubnote: protectedProcedure
+		.input(z.object({ id: z.number(), notes: z.string().max(10000) }))
+		.mutation(async ({ ctx, input }) => {
+			const [row] = (await ctx.withRLS((db) =>
+				db
+					.update(referenceSubnote)
+					.set({ notes: input.notes, updatedAt: new Date() })
+					.where(eq(referenceSubnote.id, input.id))
+					.returning()
+			)) as (typeof referenceSubnote.$inferSelect)[];
+			if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+			return row;
+		}),
+
+	deleteSubnote: protectedProcedure
+		.input(z.object({ id: z.number() }))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.withRLS((db) =>
+				db.delete(referenceSubnote).where(eq(referenceSubnote.id, input.id))
+			);
+			return { id: input.id };
 		}),
 });

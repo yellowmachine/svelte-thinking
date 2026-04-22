@@ -24,7 +24,8 @@ export const TTL = {
   taskKey: 5 * 60,        // 5 min — decrypted AI key + model
   authorInfo: 24 * 60 * 60, // 24 h  — author bio lookup
   s3Config: 10 * 60,       // 10 min — decrypted S3 credentials
-  photoPresign: 55 * 60    // 55 min — presigned URL (valid for 60 min)
+  photoPresign: 55 * 60,   // 55 min — presigned URL (valid for 60 min)
+  projectIndex: 60          // 60 s  — project index for AI agent
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -41,7 +42,9 @@ export const CACHE_KEY = {
   orgS3: (orgId: string) =>
     `scholio:s3:org:${orgId}`,
   photoPresign: (photoId: string) =>
-    `scholio:photo:presign:${photoId}`
+    `scholio:photo:presign:${photoId}`,
+  projectIndex: (projectId: string) =>
+    `scholio:project-index:${projectId}`
 } as const;
 
 // ---------------------------------------------------------------------------

@@ -1,17 +1,20 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { trpc } from '$lib/utils/trpc';
 	import ActionCard from '$lib/components/ai/ActionCard.svelte';
 	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
-	import { classifyAiError } from '$lib/utils/ai-errors';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
 	let { data }: { data: PageData } = $props();
+
+	onMount(() => {
+		fetch(`/api/projects/${data.project.id}/warm-index`, { method: 'POST' }).catch(() => {});
+	});
 
 	type Message = { id: string; role: 'user' | 'assistant' | 'system'; content: string; docsUsed?: { id: string; title: string }[] };
 	type Conversation = NonNullable<typeof data.conversations>[number];
@@ -25,31 +28,24 @@
 	let input = $state('');
 	let sending = $state(false);
 	let sendError = $state<string | null>(null);
+	let thinkingHint = $state('Thinking…');
+	let streamingMsgId = $state<string | null>(null);
 
 	// Pending actions from the latest agent response (in-memory, cleared on next send)
 	let pendingActions = $state<PendingAction[]>([]);
 	let lastAssistantMsgId = $state<string | null>(null);
 
-	// Cycle through status hints while the agent loop runs
-	const thinkingHints = [
-		'Consultando el proyecto…',
-		'Leyendo documentos…',
-		'Analizando el contenido…',
-		'Preparando la respuesta…'
-	];
-	let thinkingIndex = $state(0);
-	let thinkingInterval: ReturnType<typeof setInterval> | undefined;
-
-	function startThinking() {
-		thinkingIndex = 0;
-		thinkingInterval = setInterval(() => {
-			thinkingIndex = (thinkingIndex + 1) % thinkingHints.length;
-		}, 1800);
-	}
-	function stopThinking() {
-		clearInterval(thinkingInterval);
-		thinkingInterval = undefined;
-	}
+	const TOOL_LABELS: Record<string, string> = {
+		get_project_context: 'Reading project context…',
+		read_document: 'Reading document…',
+		search_documents_semantic: 'Searching documents…',
+		list_references: 'Loading bibliography…',
+		get_requirement_details: 'Reading requirements…',
+		list_issues: 'Loading issues…',
+		create_document: 'Preparing document…',
+		create_issue: 'Preparing issue…',
+		propose_references: 'Searching bibliography…'
+	};
 
 	let messagesEnd = $state<HTMLDivElement | undefined>(undefined);
 
@@ -81,51 +77,112 @@
 		sendError = null;
 		pendingActions = [];
 		lastAssistantMsgId = null;
-		startThinking();
+		thinkingHint = 'Thinking…';
+		streamingMsgId = null;
 
-		// Optimistic user message
-		const tempId = crypto.randomUUID();
-		messages = [...messages, { id: tempId, role: 'user', content: text }];
+		const tempUserId = crypto.randomUUID();
+		messages = [...messages, { id: tempUserId, role: 'user', content: text }];
 		scrollToBottom();
 
+		let localStreamId: string | null = null;
+
 		try {
-			const result = await trpc.ai.sendMessage.mutate({
-				projectId: data.project.id,
-				conversationId: activeConvId ?? undefined,
-				message: text,
-				modelOverride: modelOverride ?? undefined
+			const res = await fetch(`/api/projects/${data.project.id}/chat`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					message: text,
+					conversationId: activeConvId ?? undefined,
+					modelOverride: modelOverride ?? undefined
+				})
 			});
 
-			activeConvId = result.conversationId;
-			messages = [...messages, result.message];
-			if (result.pendingActions?.length) {
-				pendingActions = result.pendingActions;
-				lastAssistantMsgId = result.message.id;
+			if (!res.ok || !res.body) {
+				const errText = await res.text().catch(() => 'Request failed');
+				throw new Error(errText);
 			}
 
-			// Update sidebar conversation list
-			const existing = conversations.find((c) => c.id === result.conversationId);
-			if (!existing) {
-				const conv = await trpc.ai.listConversations.query(data.project.id);
-				conversations = conv ?? [];
-			} else {
-				conversations = conversations.map((c) =>
-					c.id === result.conversationId ? { ...c, updatedAt: new Date() } : c
-				);
-			}
+			const reader = res.body.getReader();
+			const decoder = new TextDecoder();
+			let buf = '';
 
-			scrollToBottom();
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				buf += decoder.decode(value, { stream: true });
+				const lines = buf.split('\n');
+				buf = lines.pop() ?? '';
+
+				for (const line of lines) {
+					if (!line.startsWith('data: ')) continue;
+					const raw = line.slice(6).trim();
+					let evt: Record<string, unknown>;
+					try { evt = JSON.parse(raw); } catch { continue; }
+
+					if (evt.type === 'tool_start') {
+						thinkingHint = TOOL_LABELS[evt.name as string] ?? `Calling ${evt.name as string}…`;
+					} else if (evt.type === 'text_delta') {
+						if (!localStreamId) {
+							localStreamId = crypto.randomUUID();
+							streamingMsgId = localStreamId;
+							messages = [...messages, { id: localStreamId, role: 'assistant', content: evt.content as string }];
+							scrollToBottom();
+						} else {
+							messages = messages.map((m) =>
+								m.id === localStreamId ? { ...m, content: m.content + (evt.content as string) } : m
+							);
+						}
+					} else if (evt.type === 'done') {
+						activeConvId = evt.conversationId as string;
+						const msgId = evt.messageId as string;
+						const docsUsed = (evt.docsUsed as { id: string; title: string }[]) ?? [];
+
+						if (localStreamId) {
+							messages = messages.map((m) =>
+								m.id === localStreamId
+									? { ...m, id: msgId, docsUsed: docsUsed.length > 0 ? docsUsed : undefined }
+									: m
+							);
+						} else {
+							messages = [...messages, { id: msgId, role: 'assistant', content: '' }];
+						}
+						streamingMsgId = null;
+						lastAssistantMsgId = msgId;
+
+						if (Array.isArray(evt.pendingActions) && (evt.pendingActions as unknown[]).length) {
+							pendingActions = evt.pendingActions as PendingAction[];
+						}
+
+						const existing = conversations.find((c) => c.id === activeConvId);
+						if (!existing) {
+							const conv = await trpc.ai.listConversations.query(data.project.id);
+							conversations = conv ?? [];
+						} else {
+							conversations = conversations.map((c) =>
+								c.id === activeConvId ? { ...c, updatedAt: new Date() } : c
+							);
+						}
+
+						scrollToBottom();
+					} else if (evt.type === 'error') {
+						const kind = evt.kind as string;
+						const msg = evt.message as string;
+						messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
+						streamingMsgId = null;
+						if (kind === 'system') {
+							messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: msg }];
+							scrollToBottom();
+						} else {
+							sendError = msg;
+						}
+					}
+				}
+			}
 		} catch (e) {
-			messages = messages.filter((m) => m.id !== tempId);
-			const { kind, message: errMsg } = classifyAiError(e);
-			if (kind === 'system') {
-				messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: errMsg }];
-				scrollToBottom();
-			} else {
-				sendError = errMsg;
-			}
+			messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
+			streamingMsgId = null;
+			sendError = e instanceof Error ? e.message : 'Request failed';
 		} finally {
-			stopThinking();
 			sending = false;
 		}
 	}
@@ -464,7 +521,7 @@
 						{/if}
 					{/each}
 
-					{#if sending}
+					{#if sending && !streamingMsgId}
 						<div class="flex gap-3">
 							<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper-border text-xs font-semibold text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted">
 								AI
@@ -477,7 +534,7 @@
 										<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms] dark:bg-dark-ink-faint"></span>
 									</div>
 									<span class="font-sans text-xs text-ink-faint transition-all dark:text-dark-ink-faint">
-										{thinkingHints[thinkingIndex]}
+										{thinkingHint}
 									</span>
 								</div>
 							</div>
