@@ -88,6 +88,10 @@ async function throwProviderError(res: Response): Promise<never> {
 // ---------------------------------------------------------------------------
 
 async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<string> {
+  const cacheKey = CACHE_KEY.projectIndex(projectId);
+  const cached = await cacheGet<string>(cacheKey);
+  if (cached) return cached;
+
   const [proj, docs, reqs, refCount, theologyCount, projectIssues] = await Promise.all([
     withRLS((db) =>
       db
@@ -227,7 +231,9 @@ async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<s
     lines.push(THEOLOGY_CONTEXT);
   }
 
-  return lines.filter((l) => l !== undefined).join('\n');
+  const result = lines.filter((l) => l !== undefined).join('\n');
+  cacheSet(CACHE_KEY.projectIndex(projectId), result, TTL.projectIndex).catch(() => {});
+  return result;
 }
 
 // ---------------------------------------------------------------------------
