@@ -1,4 +1,4 @@
-import { text, timestamp, jsonb, index, uniqueIndex, pgPolicy, primaryKey } from 'drizzle-orm/pg-core';
+import { text, timestamp, jsonb, index, uniqueIndex, pgPolicy, primaryKey, serial } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';
@@ -107,6 +107,55 @@ export const reference = scholioSchema.table(
 							SELECT 1 FROM scholio.project_collaborator
 							WHERE project_collaborator.project_id = p.id
 							AND project_collaborator.user_id = ${currentUserId}
+						)
+					)
+				)
+			`
+		})
+	]
+).enableRLS();
+
+// reference_subnote: page/section-level annotations within a reference.
+// Cited as [@citeKey:slug] in document text; renders as root reference
+// but hover popup shows the subnote notes.
+export const referenceSubnote = scholioSchema.table(
+	'reference_subnote',
+	{
+		id: serial('id').primaryKey(),
+		referenceId: text('reference_id')
+			.notNull()
+			.references(() => reference.id, { onDelete: 'cascade' }),
+		// Slug identifies the subnote within a reference: p103, ch2, intro, etc.
+		// Normalised to lowercase alphanumeric + hyphens at write time.
+		slug: text('slug').notNull(),
+		notes: text('notes').notNull().default(''),
+		createdAt: timestamp('created_at').notNull().defaultNow(),
+		updatedAt: timestamp('updated_at').notNull().defaultNow()
+	},
+	(t) => [
+		uniqueIndex('subnote_ref_slug_idx').on(t.referenceId, t.slug),
+		index('subnote_ref_idx').on(t.referenceId),
+		// Same access policy as reference: owner or project collaborator
+		pgPolicy('reference_subnote_access', {
+			for: 'all',
+			using: sql`
+				EXISTS (
+					SELECT 1 FROM scholio.reference r
+					WHERE r.id = ${t.referenceId}
+					AND (
+						r.user_id = ${currentUserId}
+						OR EXISTS (
+							SELECT 1 FROM scholio.project_reference pr
+							INNER JOIN scholio.project p ON p.id = pr.project_id
+							WHERE pr.reference_id = r.id
+							AND (
+								p.owner_id = ${currentUserId}
+								OR EXISTS (
+									SELECT 1 FROM scholio.project_collaborator
+									WHERE project_collaborator.project_id = p.id
+									AND project_collaborator.user_id = ${currentUserId}
+								)
+							)
 						)
 					)
 				)

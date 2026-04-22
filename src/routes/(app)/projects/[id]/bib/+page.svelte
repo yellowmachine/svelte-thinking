@@ -70,6 +70,71 @@
 		}
 	}
 
+	// ── Subnotes ─────────────────────────────────────────────────────────────
+
+	type Subnote = { id: number; referenceId: string; slug: string; notes: string };
+
+	let expandedSubnotes = new SvelteSet<string>();
+	let subnotesByRef = $state<Record<string, Subnote[]>>({});
+	let loadingSubnotes = new SvelteSet<string>();
+
+	let addingSubnoteRef = $state<string | null>(null);
+	let newSubnoteSlug = $state('');
+	let newSubnoteNotes = $state('');
+	let savingSubnote = $state(false);
+	let deletingSubnoteId = $state<number | null>(null);
+
+	async function toggleSubnotes(refId: string) {
+		if (expandedSubnotes.has(refId)) {
+			expandedSubnotes.delete(refId);
+			return;
+		}
+		expandedSubnotes.add(refId);
+		if (!(refId in subnotesByRef)) {
+			loadingSubnotes.add(refId);
+			try {
+				const rows = await trpc.references.listSubnotes.query({ referenceId: refId });
+				subnotesByRef[refId] = rows as Subnote[];
+			} finally {
+				loadingSubnotes.delete(refId);
+			}
+		}
+	}
+
+	function openAddSubnote(refId: string) {
+		addingSubnoteRef = refId;
+		newSubnoteSlug = '';
+		newSubnoteNotes = '';
+	}
+
+	async function saveSubnote(refId: string) {
+		if (!newSubnoteSlug.trim()) return;
+		savingSubnote = true;
+		try {
+			const row = await trpc.references.addSubnote.mutate({
+				referenceId: refId,
+				slug: newSubnoteSlug.trim(),
+				notes: newSubnoteNotes
+			});
+			subnotesByRef[refId] = [...(subnotesByRef[refId] ?? []), row as Subnote];
+			addingSubnoteRef = null;
+		} catch (e) {
+			flash.set(e instanceof Error ? e.message : 'Error saving subnote', 'error');
+		} finally {
+			savingSubnote = false;
+		}
+	}
+
+	async function deleteSubnote(refId: string, id: number) {
+		deletingSubnoteId = id;
+		try {
+			await trpc.references.deleteSubnote.mutate({ id });
+			subnotesByRef[refId] = (subnotesByRef[refId] ?? []).filter((s) => s.id !== id);
+		} finally {
+			deletingSubnoteId = null;
+		}
+	}
+
 	// ── PDF attachment ───────────────────────────────────────────────────────
 
 	let uploadingPdfId = $state<string | null>(null);
@@ -980,6 +1045,116 @@
 										)
 									)}
 								</p>
+
+								<!-- Subnotes -->
+								<div class="mt-2">
+									<button
+										onclick={() => toggleSubnotes(ref.id)}
+										class="flex items-center gap-1.5 font-sans text-[11px] text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+									>
+										<svg
+											width="10"
+											height="10"
+											viewBox="0 0 24 24"
+											fill="none"
+											class="transition-transform {expandedSubnotes.has(ref.id) ? 'rotate-90' : ''}"
+										>
+											<polyline points="9 18 15 12 9 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+										</svg>
+										<span>Subnotes</span>
+										{#if (subnotesByRef[ref.id]?.length ?? 0) > 0}
+											<span class="rounded-full bg-accent/10 px-1.5 py-px text-[10px] font-semibold text-accent">
+												{subnotesByRef[ref.id].length}
+											</span>
+										{/if}
+										{#if loadingSubnotes.has(ref.id)}
+											<Spinner size="sm" />
+										{/if}
+									</button>
+
+									{#if expandedSubnotes.has(ref.id)}
+										<div class="mt-1.5 border-l-2 border-paper-border pl-3 dark:border-dark-paper-border">
+											{#if subnotesByRef[ref.id]?.length > 0}
+												<ul class="flex flex-col gap-1">
+													{#each subnotesByRef[ref.id] as sn (sn.id)}
+														<li class="flex items-start gap-2">
+															<span class="mt-px shrink-0 rounded bg-paper-ui px-1.5 py-px font-mono text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+																{sn.slug}
+															</span>
+															{#if sn.notes}
+																<span class="flex-1 font-sans text-[11px] leading-snug text-ink dark:text-dark-ink">{sn.notes}</span>
+															{:else}
+																<span class="flex-1 font-sans text-[11px] italic text-ink-faint dark:text-dark-ink-faint">no notes</span>
+															{/if}
+															<button
+																onclick={() => deleteSubnote(ref.id, sn.id)}
+																disabled={deletingSubnoteId === sn.id}
+																title="Delete subnote"
+																class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-red-400"
+															>
+																{#if deletingSubnoteId === sn.id}
+																	<Spinner size="sm" />
+																{:else}
+																	<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+																		<line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+																		<line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+																	</svg>
+																{/if}
+															</button>
+														</li>
+													{/each}
+												</ul>
+											{:else if !loadingSubnotes.has(ref.id)}
+												<p class="font-sans text-[11px] italic text-ink-faint dark:text-dark-ink-faint">No subnotes yet.</p>
+											{/if}
+
+											{#if addingSubnoteRef === ref.id}
+												<div class="mt-2 flex flex-col gap-1.5">
+													<div class="flex gap-1.5">
+														<input
+															type="text"
+															placeholder="slug (e.g. p103, ch2)"
+															bind:value={newSubnoteSlug}
+															class="w-28 rounded border border-paper-border bg-paper px-2 py-1 font-mono text-[11px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder:text-dark-ink-faint dark:focus:border-accent"
+														/>
+														<input
+															type="text"
+															placeholder="notes (optional)"
+															bind:value={newSubnoteNotes}
+															class="min-w-0 flex-1 rounded border border-paper-border bg-paper px-2 py-1 font-sans text-[11px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder:text-dark-ink-faint dark:focus:border-accent"
+														/>
+													</div>
+													<div class="flex gap-1.5">
+														<button
+															onclick={() => saveSubnote(ref.id)}
+															disabled={savingSubnote || !newSubnoteSlug.trim()}
+															class="rounded bg-accent px-2.5 py-1 font-sans text-[11px] font-medium text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
+														>
+															{#if savingSubnote}<Spinner size="sm" />{:else}Save{/if}
+														</button>
+														<button
+															onclick={() => (addingSubnoteRef = null)}
+															class="rounded px-2.5 py-1 font-sans text-[11px] text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+														>
+															Cancel
+														</button>
+													</div>
+												</div>
+											{:else}
+												<button
+													onclick={() => openAddSubnote(ref.id)}
+													class="mt-1.5 flex items-center gap-1 font-sans text-[11px] text-ink-faint transition-colors hover:text-accent dark:text-dark-ink-faint dark:hover:text-accent"
+												>
+													<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+														<line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+														<line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+													</svg>
+													Add subnote
+												</button>
+											{/if}
+										</div>
+									{/if}
+								</div>
 							</div>
 
 							<!-- Type badge -->
