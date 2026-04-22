@@ -87,7 +87,7 @@ async function throwProviderError(res: Response): Promise<never> {
 // Project index  (~400 tokens, metadata only — no document content)
 // ---------------------------------------------------------------------------
 
-async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<string> {
+export async function buildProjectIndex(withRLS: WithRLS, projectId: string): Promise<string> {
   const cacheKey = CACHE_KEY.projectIndex(projectId);
   const cached = await cacheGet<string>(cacheKey);
   if (cached) return cached;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
-	import { tick } from 'svelte';
+	import { tick, onMount } from 'svelte';
 	import { MODELS } from '$lib/ai-config';
 	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
 	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
@@ -58,6 +58,10 @@
 	let error = $state('');
 	let historyLoaded = $state(false);
 	let messagesEl = $state<HTMLDivElement | null>(null);
+
+	onMount(() => {
+		fetch(`/api/projects/${projectId}/warm-index`, { method: 'POST' }).catch(() => {});
+	});
 
 	let showClearDialog = $state(false);
 

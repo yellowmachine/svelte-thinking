@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { trpc } from '$lib/utils/trpc';
@@ -12,6 +12,10 @@
 	import { MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
 	let { data }: { data: PageData } = $props();
+
+	onMount(() => {
+		fetch(`/api/projects/${data.project.id}/warm-index`, { method: 'POST' }).catch(() => {});
+	});
 
 	type Message = { id: string; role: 'user' | 'assistant' | 'system'; content: string; docsUsed?: { id: string; title: string }[] };
 	type Conversation = NonNullable<typeof data.conversations>[number];
