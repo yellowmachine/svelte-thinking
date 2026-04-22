@@ -702,7 +702,7 @@ function _processCitations(
 	if (!bibKeys.length) return result + bibLines.join('\n');
 
 	bibLines.push('', '', '---', '');
-	bibLines.push(style === 'chicago' ? '## Bibliografía' : '## Referencias');
+	bibLines.push(style === 'chicago' ? '## Bibliography' : '## References');
 	bibLines.push('');
 
 	for (const key of bibKeys) {
