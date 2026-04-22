@@ -241,39 +241,76 @@
 	}
 
 	function citationCompletion(context: CompletionContext) {
-		// Matches [[@key…  — user typed [[ then @
-		const match = context.matchBefore(/\[\[@[\w.-]*/);
+		// Matches [[@citeKey  or  [[@citeKey:slugPartial
+		const match = context.matchBefore(/\[\[@[\w.-]*(?::[\w-]*)?/);
 		if (!match) return null;
 
 		const typed = match.text.slice(3); // strip [[@
-		const filtered = references.filter(
-			(r) => !typed || r.citeKey.toLowerCase().includes(typed.toLowerCase())
-		);
-		const showAbstract = filtered.length <= 5;
-		const options: Completion[] = filtered.map((r) => {
-			const author = r.authors[0] ? `${r.authors[0].last}` : '';
-			const year = r.year ?? '';
-			const abstract = r.abstract?.trim() ?? null;
-			return {
-				label: r.citeKey,
-				detail: [author, year].filter(Boolean).join(', '),
-				info: showAbstract && abstract
-					? () => {
-						const wrap = document.createElement('div');
-						const titleEl = document.createElement('div');
-						titleEl.style.cssText = 'font-weight:600;margin-bottom:4px;font-size:0.85em;';
-						titleEl.textContent = r.title;
-						wrap.appendChild(titleEl);
-						const absEl = document.createElement('div');
-						absEl.style.cssText = 'font-size:0.8em;opacity:0.75;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;';
-						absEl.textContent = abstract;
-						wrap.appendChild(absEl);
-						return wrap;
-					}
-					: r.title,
-				apply: `@${r.citeKey}]]` // keeps leading [[ from match.from+2
-			};
-		});
+		const colonIdx = typed.indexOf(':');
+		const options: Completion[] = [];
+
+		if (colonIdx === -1) {
+			// Typing citeKey — show matching root refs and their subnotes
+			const filtered = references.filter(
+				(r) => !typed || r.citeKey.toLowerCase().includes(typed.toLowerCase())
+			);
+			const showAbstract = filtered.length <= 5;
+
+			for (const r of filtered) {
+				const author = r.authors[0] ? `${r.authors[0].last}` : '';
+				const year = r.year ?? '';
+				const abstract = r.abstract?.trim() ?? null;
+
+				options.push({
+					label: r.citeKey,
+					detail: [author, year].filter(Boolean).join(', '),
+					info: showAbstract && abstract
+						? () => {
+							const wrap = document.createElement('div');
+							const titleEl = document.createElement('div');
+							titleEl.style.cssText = 'font-weight:600;margin-bottom:4px;font-size:0.85em;';
+							titleEl.textContent = r.title;
+							wrap.appendChild(titleEl);
+							const absEl = document.createElement('div');
+							absEl.style.cssText = 'font-size:0.8em;opacity:0.75;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;';
+							absEl.textContent = abstract;
+							wrap.appendChild(absEl);
+							return wrap;
+						}
+						: r.title,
+					apply: `@${r.citeKey}]]`
+				});
+
+				for (const sn of r.subnotes ?? []) {
+					options.push({
+						label: `${r.citeKey}:${sn.slug}`,
+						detail: [author, year].filter(Boolean).join(', '),
+						info: sn.notes || r.title,
+						apply: `@${r.citeKey}:${sn.slug}]]`
+					});
+				}
+			}
+		} else {
+			// Typing subnote slug — citeKey is fixed, filter by slug
+			const citeKey = typed.slice(0, colonIdx);
+			const slugPartial = typed.slice(colonIdx + 1).toLowerCase();
+			const ref = references.find((r) => r.citeKey.toLowerCase() === citeKey.toLowerCase());
+
+			if (ref) {
+				const author = ref.authors[0] ? `${ref.authors[0].last}` : '';
+				const year = ref.year ?? '';
+				for (const sn of (ref.subnotes ?? []).filter(
+					(s) => !slugPartial || s.slug.includes(slugPartial)
+				)) {
+					options.push({
+						label: `${ref.citeKey}:${sn.slug}`,
+						detail: [author, year].filter(Boolean).join(', '),
+						info: sn.notes || ref.title,
+						apply: `@${ref.citeKey}:${sn.slug}]]`
+					});
+				}
+			}
+		}
 
 		if (options.length === 0) return null;
 		return { from: match.from + 2, options }; // +2: skip [[, replace @key…
@@ -654,8 +691,9 @@
 				key: ':',
 				run(view) {
 					const cursor = view.state.selection.main.head;
-					const before = view.state.doc.sliceString(Math.max(0, cursor - 5), cursor);
-					if (before !== '[[doc') return false;
+					const before = view.state.doc.sliceString(Math.max(0, cursor - 50), cursor);
+					// [[doc: → wikilink  or  [[@citeKey: → subnote
+					if (!before.endsWith('[[doc') && !/\[\[@[\w.-]+$/.test(before)) return false;
 					view.dispatch({ changes: { from: cursor, insert: ':' }, selection: { anchor: cursor + 1 } });
 					startCompletion(view);
 					return true;

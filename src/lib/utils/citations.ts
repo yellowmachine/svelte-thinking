@@ -35,6 +35,7 @@ export interface CiteRef {
 	reportNumber?: string | null;
 	// Theological source metadata (stored in `extra` JSONB)
 	extra?: Record<string, string> | null;
+	subnotes?: { slug: string; notes: string }[];
 }
 
 // ── Name helpers ──────────────────────────────────────────────────────────
