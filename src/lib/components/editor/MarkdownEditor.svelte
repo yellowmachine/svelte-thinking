@@ -313,7 +313,10 @@
 		}
 
 		if (options.length === 0) return null;
-		return { from: match.from + 2, options }; // +2: skip [[, replace @key…
+		// filter:false — CM6 would match labels against the text from `from` to cursor
+		// which starts with '@', causing all options to be filtered out. We already
+		// filter manually above so we suppress CM6's internal filtering.
+		return { from: match.from + 2, options, filter: false };
 	}
 
 	function headingCompletion(context: CompletionContext) {
