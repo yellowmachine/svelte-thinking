@@ -30,6 +30,11 @@
 	let sendError = $state<string | null>(null);
 	let thinkingHint = $state('Thinking…');
 	let streamingMsgId = $state<string | null>(null);
+	let abortController = $state<AbortController | null>(null);
+
+	function stopStream() {
+		abortController?.abort();
+	}
 
 	// Pending actions from the latest agent response (in-memory, cleared on next send)
 	let pendingActions = $state<PendingAction[]>([]);
@@ -85,6 +90,8 @@
 		scrollToBottom();
 
 		let localStreamId: string | null = null;
+		const controller = new AbortController();
+		abortController = controller;
 
 		try {
 			const res = await fetch(`/api/projects/${data.project.id}/chat`, {
@@ -94,7 +101,8 @@
 					message: text,
 					conversationId: activeConvId ?? undefined,
 					modelOverride: modelOverride ?? undefined
-				})
+				}),
+				signal: controller.signal
 			});
 
 			if (!res.ok || !res.body) {
@@ -179,10 +187,15 @@
 				}
 			}
 		} catch (e) {
-			messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
-			streamingMsgId = null;
-			sendError = e instanceof Error ? e.message : 'Request failed';
+			if (e instanceof Error && e.name === 'AbortError') {
+				// User stopped — keep whatever was streamed, just stop loading
+			} else {
+				messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
+				streamingMsgId = null;
+				sendError = e instanceof Error ? e.message : 'Request failed';
+			}
 		} finally {
+			abortController = null;
 			sending = false;
 		}
 	}
@@ -573,17 +586,30 @@
 						class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
 						style="max-height: 160px; overflow-y: auto;"
 					></textarea>
-					<button
-						type="button"
-						onclick={send}
-						disabled={sending || !input.trim()}
-						aria-label="Enviar"
-						class="shrink-0 rounded-lg bg-accent p-2 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
-					>
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-						</svg>
-					</button>
+					{#if sending}
+						<button
+							type="button"
+							onclick={stopStream}
+							aria-label="Detener"
+							class="shrink-0 rounded-lg border border-paper-border bg-paper p-2 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+						>
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+								<rect x="5" y="5" width="14" height="14" rx="2"/>
+							</svg>
+						</button>
+					{:else}
+						<button
+							type="button"
+							onclick={send}
+							disabled={!input.trim()}
+							aria-label="Enviar"
+							class="shrink-0 rounded-lg bg-accent p-2 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+						>
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</button>
+					{/if}
 				</div>
 				<div class="mt-2 flex items-center justify-between">
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">

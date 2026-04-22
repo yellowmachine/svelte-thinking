@@ -104,7 +104,8 @@ export const POST: RequestHandler = async (event) => {
         projectId,
         apiKey,
         effectiveModel,
-        send
+        send,
+        event.request.signal
       );
 
       const msgId = crypto.randomUUID();
@@ -142,9 +143,10 @@ export const POST: RequestHandler = async (event) => {
         pendingActions: result.pendingActions.length > 0 ? result.pendingActions : undefined
       });
     } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       const msg = e instanceof Error ? e.message : 'Unknown error';
       const isPreCondition = e && typeof e === 'object' && 'code' in e && (e as { code: string }).code === 'PRECONDITION_FAILED';
-      send({ type: 'error', message: isPreCondition ? msg : msg, kind: isPreCondition ? 'system' : 'banner' });
+      send({ type: 'error', message: msg, kind: isPreCondition ? 'system' : 'banner' });
     } finally {
       await writer.close().catch(() => {});
     }
