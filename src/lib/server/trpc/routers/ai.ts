@@ -1487,7 +1487,8 @@ type StreamedToolCall = {
 async function parseStreamingResponse(
   res: Response,
   onTextDelta: (chunk: string) => void,
-  onToolStart?: (name: string) => void
+  onToolStart?: (name: string) => void,
+  signal?: AbortSignal
 ): Promise<{
   content: string;
   toolCalls: StreamedToolCall[];
@@ -1507,6 +1508,7 @@ async function parseStreamingResponse(
 
   try {
     while (true) {
+      if (signal?.aborted) break;
       const { done, value } = await reader.read();
       if (done) break;
       buf += decoder.decode(value, { stream: true });
@@ -1577,7 +1579,8 @@ export async function runAgentLoopSSE(
   projectId: string,
   apiKey: string,
   model: string,
-  write: (event: object) => void
+  write: (event: object) => void,
+  signal?: AbortSignal
 ): Promise<{ content: string; pendingActions: PendingAction[]; docsUsed: { id: string; title: string }[]; inputTokens: number; outputTokens: number }> {
   const messages: OAMessage[] = [
     ...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
@@ -1590,6 +1593,7 @@ export async function runAgentLoopSSE(
   let totalOutputTokens = 0;
 
   for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
+    if (signal?.aborted) break;
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
@@ -1601,14 +1605,16 @@ export async function runAgentLoopSSE(
         tool_choice: 'auto',
         stream: true,
         stream_options: { include_usage: true }
-      })
+      }),
+      signal
     });
     if (!res.ok) await throwProviderError(res);
 
     const { content, toolCalls, inputTokens, outputTokens, finishReason } = await parseStreamingResponse(
       res,
       (chunk) => write({ type: 'text_delta', content: chunk }),
-      (name) => write({ type: 'tool_start', name })
+      (name) => write({ type: 'tool_start', name }),
+      signal
     );
     totalInputTokens += inputTokens;
     totalOutputTokens += outputTokens;
@@ -1679,7 +1685,8 @@ export async function runEditorAgentLoopSSE(
   apiKey: string,
   model: string,
   toolCtx: EditorToolContext,
-  write: (event: object) => void
+  write: (event: object) => void,
+  signal?: AbortSignal
 ): Promise<{ content: string; pendingEditorActions: PendingEditorAction[]; pendingActions: PendingAction[]; inputTokens: number; outputTokens: number }> {
   const systemPrompt = `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
   const messages: OAMessage[] = [
@@ -1693,6 +1700,7 @@ export async function runEditorAgentLoopSSE(
   let totalOutputTokens = 0;
 
   for (let i = 0; i < 4; i++) {
+    if (signal?.aborted) break;
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
@@ -1704,14 +1712,16 @@ export async function runEditorAgentLoopSSE(
         tool_choice: 'auto',
         stream: true,
         stream_options: { include_usage: true }
-      })
+      }),
+      signal
     });
     if (!res.ok) await throwProviderError(res);
 
     const { content, toolCalls, inputTokens, outputTokens, finishReason } = await parseStreamingResponse(
       res,
       (chunk) => write({ type: 'text_delta', content: chunk }),
-      (name) => write({ type: 'tool_start', name })
+      (name) => write({ type: 'tool_start', name }),
+      signal
     );
     totalInputTokens += inputTokens;
     totalOutputTokens += outputTokens;

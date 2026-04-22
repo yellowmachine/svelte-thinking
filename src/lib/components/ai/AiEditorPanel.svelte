@@ -71,6 +71,11 @@
 	let loading = $state(false);
 	let loadingHint = $state('Thinking…');
 	let error = $state('');
+	let abortController = $state<AbortController | null>(null);
+
+	function stopStream() {
+		abortController?.abort();
+	}
 	let historyLoaded = $state(false);
 	let messagesEl = $state<HTMLDivElement | null>(null);
 
@@ -137,6 +142,8 @@
 
 		// Streaming assistant message placeholder
 		let assistantIdx = -1;
+		const controller = new AbortController();
+		abortController = controller;
 
 		try {
 			const res = await fetch(
@@ -152,7 +159,8 @@
 						conversationId,
 						message: text,
 						...(!orgId && selectedModel ? { modelOverride: selectedModel } : {})
-					})
+					}),
+					signal: controller.signal
 				}
 			);
 
@@ -224,15 +232,19 @@
 				// no-op: done event handled it
 			}
 		} catch (e: unknown) {
-			// Remove user message on hard failure
-			if (assistantIdx === -1) {
-				messages = messages.slice(0, -1);
+			if (e instanceof Error && e.name === 'AbortError') {
+				// User stopped — keep whatever was streamed
 			} else {
-				messages = messages.filter((_, i) => i !== assistantIdx);
-				messages = messages.slice(0, -1);
+				if (assistantIdx === -1) {
+					messages = messages.slice(0, -1);
+				} else {
+					messages = messages.filter((_, i) => i !== assistantIdx);
+					messages = messages.slice(0, -1);
+				}
+				error = e instanceof Error ? e.message : 'Request failed';
 			}
-			error = e instanceof Error ? e.message : 'Request failed';
 		} finally {
+			abortController = null;
 			loading = false;
 		}
 	}
@@ -434,17 +446,30 @@
 				class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
 				style="max-height: 120px;"
 			></textarea>
-			<button
-				type="button"
-				onclick={send}
-				disabled={!input.trim() || loading}
-				class="shrink-0 rounded-lg bg-accent p-1.5 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
-				aria-label="Send"
-			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-			</button>
+			{#if loading}
+				<button
+					type="button"
+					onclick={stopStream}
+					aria-label="Stop"
+					class="shrink-0 rounded-lg border border-paper-border bg-paper p-1.5 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+						<rect x="5" y="5" width="14" height="14" rx="2"/>
+					</svg>
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={send}
+					disabled={!input.trim()}
+					class="shrink-0 rounded-lg bg-accent p-1.5 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+					aria-label="Send"
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</button>
+			{/if}
 		</div>
 	</div>
 </div>
