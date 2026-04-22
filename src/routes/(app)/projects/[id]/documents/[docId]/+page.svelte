@@ -2046,7 +2046,7 @@
 		{/snippet}
 
 		<!-- Main layout -->
-		<div class="flex overflow-hidden" style="height: calc(100vh - 57px)">
+		<div class="flex h-full overflow-hidden">
 			{#if viewMode === 'split'}
 				<!-- Split: editor left, preview right -->
 				<div class="relative flex flex-1 flex-col overflow-hidden">
