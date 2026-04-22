@@ -343,6 +343,17 @@ const TOOLS = [
   {
     type: 'function' as const,
     function: {
+      name: 'get_project_context',
+      description:
+        'Returns an overview of the project: title, description, document list with summaries, requirements, reference count, and open issues. ' +
+        'Call this FIRST whenever the user asks about their project, documents, requirements, or anything project-specific. ' +
+        'Skip it for general knowledge questions (e.g. bibliography of an author, writing advice, citations formats).',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
       name: 'read_document',
       description:
         'Read the full content of a project document. ' +
@@ -667,6 +678,11 @@ async function executeTool(
           .join('\n'),
         docsUsed: []
       };
+    }
+
+    case 'get_project_context': {
+      const index = await buildProjectIndex(withRLS, projectId);
+      return { output: index || 'No project context available.', docsUsed: [] };
     }
 
     default:
@@ -1516,14 +1532,13 @@ Empieza siempre con una respuesta breve y directa (2–3 frases) y luego desarro
 
 ## Uso de herramientas
 
-**Usa search_documents_semantic** cuando la pregunta requiera información específica del proyecto:
-- El usuario pregunta por algo que ya ha escrito (marco teórico, resultados, bibliografía, notas, requisitos, secciones concretas).
-- El usuario pide que redactes o generes algo "basándote en mis documentos" o menciona un documento concreto.
-- Regla práctica: si la respuesta correcta depende de lo que hay en el proyecto → busca primero.
+**Usa get_project_context** como primer paso cuando el usuario pregunte por su proyecto: documentos, requisitos, estado del trabajo, issues, o pida algo "basándote en mis documentos". Devuelve el índice completo del proyecto.
 
-**No uses search_documents_semantic** para:
-- Conocimiento general de escritura académica (qué es un marco teórico, cómo citar en APA, estructura IMRyD, etc.).
-- Transformaciones del texto que el usuario ha pegado completo en el mensaje (reescritura, corrección, traducción): trabaja solo con el fragmento recibido.
+**No uses get_project_context** para:
+- Conocimiento general (escritura académica, formatos de cita, bibliografía de un autor, etc.).
+- Transformaciones del texto que el usuario ha pegado completo en el mensaje.
+
+**Usa search_documents_semantic** después de get_project_context cuando necesites el contenido concreto de un documento para responder.
 
 **Usa create_document** únicamente cuando:
 - El usuario pide explícitamente crear un documento nuevo, O
@@ -1665,25 +1680,19 @@ export const aiRouter = router({
       // Personal project: allow user to override the model for this request
       const effectiveModel = (!resolvedOrgId && input.modelOverride) ? input.modelOverride : resolvedModel;
 
-      // ── Build project index and run agent loop ────────────────────────
-      const [projectIndex, projectRows] = await Promise.all([
-        buildProjectIndex(ctx.withRLS as WithRLS, input.projectId),
-        ctx.withRLS((db) =>
-          (db as Db)
-            .select({ agentSystemPrompt: project.agentSystemPrompt })
-            .from(project)
-            .where(eq(project.id, input.projectId))
-            .limit(1)
-        ) as Promise<{ agentSystemPrompt: string | null }[]>
-      ]);
+      // ── Resolve custom system prompt (if any) and run agent loop ─────
+      const projectRows = (await ctx.withRLS((db) =>
+        (db as Db)
+          .select({ agentSystemPrompt: project.agentSystemPrompt })
+          .from(project)
+          .where(eq(project.id, input.projectId))
+          .limit(1)
+      )) as { agentSystemPrompt: string | null }[];
 
       const customPrompt = (projectRows[0]?.agentSystemPrompt ?? '').trim();
-      const baseSystem = customPrompt
+      const systemWithIndex = customPrompt
         ? `${customPrompt}\n\n---\n\n${SYSTEM_PROMPT}`
         : SYSTEM_PROMPT;
-      const systemWithIndex = projectIndex
-        ? `${baseSystem}\n\n---\n\n${projectIndex}`
-        : baseSystem;
 
       const { content: assistantContent, pendingActions, docsUsed, inputTokens: agentIn, outputTokens: agentOut } = await runAgentLoop(
         systemWithIndex,
