@@ -2765,7 +2765,7 @@
 			<!-- Chat assistant sidebar -->
 			{#if showChat}
 				<div
-					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
+					class="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
 				>
 					<AiEditorPanel
 						projectId={data.document.projectId}

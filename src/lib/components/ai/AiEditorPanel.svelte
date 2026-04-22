@@ -3,8 +3,9 @@
 	import { tick } from 'svelte';
 	import { MODELS } from '$lib/ai-config';
 	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
+	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
-	import type { PendingEditorAction } from '$lib/server/trpc/routers/ai';
+	import type { PendingEditorAction, PendingAction } from '$lib/server/trpc/routers/ai';
 	import { classifyAiError } from '$lib/utils/ai-errors';
 
 	type Props = {
@@ -59,6 +60,7 @@
 
 	// Pending editor actions from the last assistant message
 	let pendingEditorActions = $state<PendingEditorAction[]>([]);
+	let pendingActions = $state<PendingAction[]>([]);
 
 	async function scrollToBottom() {
 		await tick();
@@ -107,6 +109,7 @@
 		loading = true;
 		error = '';
 		pendingEditorActions = [];
+		pendingActions = [];
 		await scrollToBottom();
 
 		try {
@@ -128,6 +131,9 @@
 
 			if (result.pendingEditorActions?.length) {
 				pendingEditorActions = result.pendingEditorActions;
+			}
+			if (result.pendingActions?.length) {
+				pendingActions = result.pendingActions;
 			}
 
 			await scrollToBottom();
@@ -158,6 +164,7 @@
 		conversationId = undefined;
 		messages = [];
 		pendingEditorActions = [];
+		pendingActions = [];
 		error = '';
 	}
 </script>
@@ -288,6 +295,23 @@
 											pendingEditorActions = pendingEditorActions.filter((_, idx) => idx !== j);
 										}}
 									/>
+								{/each}
+							{/if}
+							{#if i === messages.length - 1 && pendingActions.length > 0}
+								{#each pendingActions as action, j (j)}
+									{#if action.type === 'propose_references'}
+										<ReferenceSelectCard
+											references={action.references}
+											{projectId}
+											onconfirm={(count) => {
+												pendingActions = pendingActions.filter((_, idx) => idx !== j);
+												messages = [...messages, { role: 'system', content: `${count} ${count === 1 ? 'reference' : 'references'} added to bibliography` }];
+											}}
+											ondiscard={() => {
+												pendingActions = pendingActions.filter((_, idx) => idx !== j);
+											}}
+										/>
+									{/if}
 								{/each}
 							{/if}
 						</div>

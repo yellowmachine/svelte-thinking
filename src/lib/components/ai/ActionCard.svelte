@@ -3,8 +3,10 @@
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 
+	type ConfirmableAction = Extract<PendingAction, { type: 'create_document' | 'create_issue' }>;
+
 	type Props = {
-		action: PendingAction;
+		action: ConfirmableAction;
 		projectId: string;
 		onconfirm: (id: string) => void;
 		ondiscard: () => void;
@@ -52,7 +54,7 @@
 						requirementId: action.requirementId
 					}
 				});
-				createdId = result.id;
+				if (result.type === 'document') createdId = result.id;
 			} else {
 				const result = await trpc.ai.applyAction.mutate({
 					projectId,
@@ -63,7 +65,7 @@
 						priority: action.priority ?? 'medium'
 					}
 				});
-				createdId = result.id;
+				if (result.type === 'issue') createdId = result.id;
 			}
 			status = 'done';
 			onconfirm(createdId);
