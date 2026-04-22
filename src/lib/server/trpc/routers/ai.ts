@@ -965,6 +965,7 @@ async function runAgentLoop(
     // ── Tool calls → execute and loop ────────────────────────────────────
     if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls?.length) {
       messages.push(choice.message);
+      console.log(`[agent] iter=${i} tools=${choice.message.tool_calls.map((t) => t.function.name).join(', ')} in=${data.usage?.prompt_tokens} out=${data.usage?.completion_tokens}`);
 
       const results = await Promise.all(
         choice.message.tool_calls.map(async (tc) => {
