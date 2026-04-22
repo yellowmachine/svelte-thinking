@@ -314,8 +314,14 @@
 	async function loadRefs() {
 		if (refsLoaded) return;
 		try {
-			const rows = await trpc.references.listWithSubnotes.query(data.document.projectId);
-			projectRefs = rows as CiteRef[];
+			let rows: CiteRef[];
+			try {
+				rows = (await trpc.references.listWithSubnotes.query(data.document.projectId)) as CiteRef[];
+			} catch {
+				// Fallback if reference_subnote table not yet migrated
+				rows = (await trpc.references.list.query(data.document.projectId)) as CiteRef[];
+			}
+			projectRefs = rows;
 			refsLoaded = true;
 		} catch {
 			/* non-critical */

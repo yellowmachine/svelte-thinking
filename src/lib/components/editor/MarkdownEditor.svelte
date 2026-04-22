@@ -671,46 +671,26 @@
 			dragAutoScroll()
 		];
 
-		// Trigger completion immediately for non-word chars that CM6 won't auto-trigger on:
-		//   # after [[  → heading completion
-		//   : after [[doc → wikilink completion
-		//   @ after [[  → citation completion
-		exts.push(keymap.of([
-			{
-				key: '#',
-				run(view) {
-					const cursor = view.state.selection.main.head;
-					const before = view.state.doc.sliceString(Math.max(0, cursor - 2), cursor);
-					if (before !== '[[') return false;
-					view.dispatch({ changes: { from: cursor, insert: '#' }, selection: { anchor: cursor + 1 } });
-					startCompletion(view);
-					return true;
-				}
-			},
-			{
-				key: ':',
-				run(view) {
-					const cursor = view.state.selection.main.head;
-					const before = view.state.doc.sliceString(Math.max(0, cursor - 50), cursor);
-					// [[doc: → wikilink  or  [[@citeKey: → subnote
-					if (!before.endsWith('[[doc') && !/\[\[@[\w.-]+$/.test(before)) return false;
-					view.dispatch({ changes: { from: cursor, insert: ':' }, selection: { anchor: cursor + 1 } });
-					startCompletion(view);
-					return true;
-				}
-			},
-			{
-				key: '@',
-				run(view) {
-					const cursor = view.state.selection.main.head;
-					const before = view.state.doc.sliceString(Math.max(0, cursor - 2), cursor);
-					if (before !== '[[') return false;
-					view.dispatch({ changes: { from: cursor, insert: '@' }, selection: { anchor: cursor + 1 } });
-					startCompletion(view);
-					return true;
-				}
+		// Trigger completion for non-word chars that CM6 activateOnTyping won't handle.
+		// We use inputHandler (not keymap) so it fires regardless of keyboard layout —
+		// keymap key names like '@' don't match on AltGr keyboards (Spanish, German…).
+		exts.push(EditorView.inputHandler.of((view, from, to, insert) => {
+			if (insert === '@' || insert === '#') {
+				const before = view.state.doc.sliceString(Math.max(0, from - 2), from);
+				if (before !== '[[') return false;
+				view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + 1 } });
+				startCompletion(view);
+				return true;
 			}
-		]));
+			if (insert === ':') {
+				const before = view.state.doc.sliceString(Math.max(0, from - 50), from);
+				if (!before.endsWith('[[doc') && !/\[\[@[\w.-]+$/.test(before)) return false;
+				view.dispatch({ changes: { from, to, insert: ':' }, selection: { anchor: from + 1 } });
+				startCompletion(view);
+				return true;
+			}
+			return false;
+		}));
 
 		if (isDarkMode()) exts.push(oneDark);
 		return exts;
