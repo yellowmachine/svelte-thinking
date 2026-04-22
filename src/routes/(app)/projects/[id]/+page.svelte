@@ -397,6 +397,8 @@
 			deleteDocTarget = null;
 			await invalidateAll();
 		} catch {
+			// intentionally empty
+		} finally {
 			deletingDocInList = false;
 		}
 	}
