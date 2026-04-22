@@ -509,13 +509,7 @@ const TOOLS = [
                 },
                 year: { type: 'string', description: 'Publication year' },
                 journal: { type: 'string', description: 'Journal or periodical name (for articles)' },
-                publisher: { type: 'string', description: 'Publisher name (for books)' },
-                doi: { type: 'string', description: 'DOI identifier' },
-                url: { type: 'string', description: 'URL if available online' },
-                volume: { type: 'string', description: 'Volume number' },
-                issue: { type: 'string', description: 'Issue number' },
-                pages: { type: 'string', description: 'Page range (e.g. 123–145)' },
-                abstract: { type: 'string', description: 'Brief description or abstract (optional)' }
+                publisher: { type: 'string', description: 'Publisher name (for books)' }
               },
               required: ['type', 'title', 'authors']
             }
@@ -965,6 +959,7 @@ async function runAgentLoop(
     // ── Tool calls → execute and loop ────────────────────────────────────
     if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls?.length) {
       messages.push(choice.message);
+      console.log(`[agent] iter=${i} tools=${choice.message.tool_calls.map((t) => t.function.name).join(', ')} in=${data.usage?.prompt_tokens} out=${data.usage?.completion_tokens}`);
 
       const results = await Promise.all(
         choice.message.tool_calls.map(async (tc) => {
@@ -1177,13 +1172,7 @@ const EDITOR_TOOLS = [
                 },
                 year: { type: 'string', description: 'Publication year' },
                 journal: { type: 'string', description: 'Journal or periodical name (for articles)' },
-                publisher: { type: 'string', description: 'Publisher name (for books)' },
-                doi: { type: 'string', description: 'DOI identifier' },
-                url: { type: 'string', description: 'URL if available online' },
-                volume: { type: 'string', description: 'Volume number' },
-                issue: { type: 'string', description: 'Issue number' },
-                pages: { type: 'string', description: 'Page range (e.g. 123–145)' },
-                abstract: { type: 'string', description: 'Brief description or abstract (optional)' }
+                publisher: { type: 'string', description: 'Publisher name (for books)' }
               },
               required: ['type', 'title', 'authors']
             }
