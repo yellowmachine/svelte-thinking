@@ -1630,27 +1630,21 @@
 				<button
 					type="button"
 					onclick={toggleChat}
-					disabled={false}
 					title="Chat with the assistant about this document"
-					class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showChat
-						? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+					class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-sans text-sm font-medium transition-colors {showChat
+						? 'bg-accent/20 text-accent hover:bg-accent/30 dark:bg-accent/30 dark:hover:bg-accent/40'
+						: 'bg-accent/10 text-accent hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'}"
 				>
-					<span class="flex items-center gap-1.5">
-						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
-						Chat
-					</span>
-					{#if taskModel('agent')}
-						<span class="text-[10px] opacity-50">{taskModel('agent')}</span>
-					{/if}
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path
+							d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
+					Assistant
 				</button>
 
 				<!-- Review button -->
