@@ -843,10 +843,10 @@ export const projectsRouter = router({
             gif: 'image/gif', svg: 'image/svg+xml', webp: 'image/webp'
           };
 
-          await ctx.withRLS(async (db) => {
-            // Upsert reference
-            const refId = crypto.randomUUID();
-            await db.insert(reference).values({
+          // Insert reference in its own transaction
+          const refId = crypto.randomUUID();
+          await ctx.withRLS((db) =>
+            db.insert(reference).values({
               id: refId,
               userId: ctx.user.id,
               citeKey,
@@ -865,83 +865,88 @@ export const projectsRouter = router({
               issue: '',
               pages: '',
               extra: {}
-            }).onConflictDoNothing();
+            }).onConflictDoNothing()
+          );
 
-            // Link reference to project
-            const refs = await db.select({ id: reference.id })
+          // Resolve actual ref id (may have been skipped due to conflict)
+          const refs = await ctx.withRLS((db) =>
+            db.select({ id: reference.id })
               .from(reference)
               .where(and(eq(reference.userId, ctx.user.id), eq(reference.citeKey, citeKey)))
-              .limit(1);
-            const resolvedRefId = refs[0]?.id ?? refId;
-            await db.insert(projectReference).values({ projectId, referenceId: resolvedRefId }).onConflictDoNothing();
+              .limit(1)
+          );
+          const resolvedRefId = refs[0]?.id ?? refId;
 
-            // Import each chapter
-            for (let i = 0; i < spineItems.length; i++) {
-              const idref = spineItems[i];
-              const href = manifestItems.get(idref)!;
-              const filePath = opfBase + href;
-              const fileData = files[filePath] ?? files[href];
-              if (!fileData) continue;
+          await ctx.withRLS((db) =>
+            db.insert(projectReference).values({ projectId, referenceId: resolvedRefId }).onConflictDoNothing()
+          );
 
-              const chapterHtml = decode(fileData);
-              const chapterDir = href.includes('/') ? href.slice(0, href.lastIndexOf('/') + 1) : '';
+          // Import each chapter in its own transaction so one failure doesn't block the rest
+          for (let i = 0; i < spineItems.length; i++) {
+            const idref = spineItems[i];
+            const href = manifestItems.get(idref)!;
+            const filePath = opfBase + href;
+            const fileData = files[filePath] ?? files[href];
+            if (!fileData) continue;
 
-              // Parse chapter DOM for title + image rewriting
-              const { document: chDoc, window: chWindow } = parseHTML(chapterHtml);
+            const chapterHtml = decode(fileData);
+            const chapterDir = href.includes('/') ? href.slice(0, href.lastIndexOf('/') + 1) : '';
 
-              // Rewrite image srcs to S3 URLs
-              if (s3) {
-                const imgEls = Array.from(chDoc.querySelectorAll('img'));
-                for (const img of imgEls) {
-                  const src = img.getAttribute('src');
-                  if (!src || src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) continue;
-                  const imgPath = normalizePath(opfBase + chapterDir + src);
-                  const imgData = files[imgPath] ?? files[normalizePath(opfBase + src)] ?? files[src];
-                  if (!imgData) { img.removeAttribute('src'); continue; }
-                  const ext = src.split('.').pop()?.toLowerCase() ?? 'jpg';
-                  const mimeType = imageExtMime[ext] ?? 'image/jpeg';
-                  const s3Key = `projects/${projectId}/epub-images/${crypto.randomUUID()}.${ext}`;
-                  try {
-                    const s3Url = await uploadFileWithConfig(s3, s3Key, Buffer.from(imgData), mimeType);
-                    img.setAttribute('src', s3Url);
-                  } catch {
-                    img.removeAttribute('src');
-                  }
+            // Parse chapter DOM for title + image rewriting
+            const { document: chDoc, window: chWindow } = parseHTML(chapterHtml);
+
+            // Rewrite image srcs to S3 URLs
+            if (s3) {
+              const imgEls = Array.from(chDoc.querySelectorAll('img'));
+              for (const img of imgEls) {
+                const src = img.getAttribute('src');
+                if (!src || src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) continue;
+                const imgPath = normalizePath(opfBase + chapterDir + src);
+                const imgData = files[imgPath] ?? files[normalizePath(opfBase + src)] ?? files[src];
+                if (!imgData) { img.removeAttribute('src'); continue; }
+                const ext = src.split('.').pop()?.toLowerCase() ?? 'jpg';
+                const mimeType = imageExtMime[ext] ?? 'image/jpeg';
+                const s3Key = `projects/${projectId}/epub-images/${crypto.randomUUID()}.${ext}`;
+                try {
+                  const s3Url = await uploadFileWithConfig(s3, s3Key, Buffer.from(imgData), mimeType);
+                  img.setAttribute('src', s3Url);
+                } catch {
+                  img.removeAttribute('src');
                 }
-              }
-
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const purify = createDOMPurify(chWindow as any);
-              const htmlToSanitize = chDoc.documentElement?.outerHTML ?? chapterHtml;
-              const clean = purify.sanitize(htmlToSanitize, { ADD_TAGS: ['figure', 'figcaption'], ADD_ATTR: ['role'] });
-              const chapterTitle =
-                chDoc.querySelector('h1, h2')?.textContent?.trim() ||
-                chDoc.querySelector('title')?.textContent?.trim() ||
-                `${title} — Chapter ${i + 1}`;
-
-              const docTitle = chapterTitle.slice(0, 255);
-              const docId = crypto.randomUUID();
-
-              try {
-                await db.insert(document).values({
-                  id: docId,
-                  projectId,
-                  title: docTitle,
-                  type: 'chapter',
-                  ownerUserId: ctx.user.id,
-                  generatedByAi: false,
-                  isReadonly: true,
-                  renderedHtml: clean,
-                  sourceReferenceId: resolvedRefId
-                });
-              } catch {
-                // Skip duplicate titles silently
               }
             }
 
-            // Done
-            await db.update(project).set({ isImporting: false }).where(eq(project.id, projectId));
-          });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const purify = createDOMPurify(chWindow as any);
+            const htmlToSanitize = chDoc.documentElement?.outerHTML ?? chapterHtml;
+            const clean = purify.sanitize(htmlToSanitize, { ADD_TAGS: ['figure', 'figcaption'], ADD_ATTR: ['role'] });
+            const chapterTitle =
+              chDoc.querySelector('h1, h2')?.textContent?.trim() ||
+              chDoc.querySelector('title')?.textContent?.trim() ||
+              `${title} — Chapter ${i + 1}`;
+
+            const docTitle = chapterTitle.slice(0, 255);
+            const docId = crypto.randomUUID();
+
+            await ctx.withRLS((db) =>
+              db.insert(document).values({
+                id: docId,
+                projectId,
+                title: docTitle,
+                type: 'chapter',
+                ownerUserId: ctx.user.id,
+                generatedByAi: false,
+                isReadonly: true,
+                renderedHtml: clean,
+                sourceReferenceId: resolvedRefId
+              })
+            ).catch((e) => console.warn(`[importEpub] skipped chapter "${docTitle}":`, e.message));
+          }
+
+          // Done — own transaction so it always succeeds
+          await ctx.withRLS((db) =>
+            db.update(project).set({ isImporting: false }).where(eq(project.id, projectId))
+          );
         } catch (err) {
           console.error('[importEpub] failed:', err);
           // Clear flag even on error so UI doesn't hang
