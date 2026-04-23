@@ -576,10 +576,17 @@
 						const textBefore = doc.slice(lineStart, pos);
 						const hm = textBefore.match(/\[\[#([^\]]*)$/);
 						if (hm) {
-							const partial = hm[1];
-							const from = pos - partial.length; // position right after [[#
-							headingGhostActive = true;
-							onheadingprefix?.(partial, from, pos);
+							const lineEnd = doc.indexOf('\n', pos);
+							const textAfter = doc.slice(pos, lineEnd === -1 ? doc.length : lineEnd);
+							if (/^[^\]]*\]\]/.test(textAfter)) {
+								headingGhostActive = false;
+								onheadingprefixclear?.();
+							} else {
+								const partial = hm[1];
+								const from = pos - partial.length;
+								headingGhostActive = true;
+								onheadingprefix?.(partial, from, pos);
+							}
 						} else {
 							headingGhostActive = false;
 							onheadingprefixclear?.();
