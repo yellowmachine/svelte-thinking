@@ -187,6 +187,8 @@
 						type="text"
 						bind:value={newTitle}
 						placeholder="E.g.: Analysis of academic discourse on social media"
+						autofocus
+						onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); createProject(); } }}
 						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					/>
 				</div>
