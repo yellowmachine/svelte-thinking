@@ -32,6 +32,7 @@
 		onheadingprefixclear,
 		onheadingghosttab,
 		oncitehover,
+		oncitehoverclear,
 		onauthorhover,
 		onheadinghover,
 		commentRanges = [],
@@ -65,6 +66,8 @@
 		onheadingghosttab?: () => boolean;
 		/** Called when cursor dwells on a [[@citeKey]] token (debounced 700ms). */
 		oncitehover?: (citeKey: string, coords: { bottom: number; left: number }) => void;
+		/** Called when cursor leaves a [[@citeKey]] token. */
+		oncitehoverclear?: () => void;
 		/** Called when cursor dwells on a [[person:Name]] token (debounced 700ms). */
 		onauthorhover?: (name: string, coords: { bottom: number; left: number }) => void;
 		/** Called when cursor dwells on a heading line (debounced 700ms). */
@@ -651,7 +654,7 @@
 					}
 				}
 				// Token hover — cursor dwell on [[@key]], [[person:Name]], or ## heading
-				if (update.selectionSet && (oncitehover || onauthorhover || onheadinghover)) {
+				if (update.selectionSet && (oncitehover || oncitehoverclear || onauthorhover || onheadinghover)) {
 					const sel = update.state.selection.main;
 					if (citeHoverTimer) { clearTimeout(citeHoverTimer); citeHoverTimer = null; }
 					if (sel.empty) {
@@ -675,7 +678,11 @@
 								const coords = update.view.coordsAtPos(pos);
 								if (coords) onheadinghover!(heading, { bottom: coords.bottom, left: coords.left });
 							}, 700);
+						} else {
+							oncitehoverclear?.();
 						}
+					} else {
+						oncitehoverclear?.();
 					}
 				}
 			}),
