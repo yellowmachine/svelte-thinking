@@ -351,7 +351,7 @@ export const referencesRouter = router({
 				const cleared = await ctx.withRLS(async (db) => {
 					const [existing] = await db.select({ id: document.id }).from(document).where(eq(document.id, staleId)).limit(1);
 					if (existing) return false;
-					await db.execute(sql`UPDATE scholio.reference SET reading_notes_doc_id = NULL WHERE id = ${refId}`);
+					await db.update(reference).set({ readingNotesDocId: null }).where(eq(reference.id, refId));
 					return true;
 				});
 				if (!cleared) return { docId: staleId };
