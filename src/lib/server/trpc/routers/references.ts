@@ -347,14 +347,14 @@ export const referencesRouter = router({
 			if (!ref) throw new TRPCError({ code: 'NOT_FOUND' });
 
 			if (ref.readingNotesDocId) {
-				const [existing] = await ctx.withRLS((db) =>
-					db.select({ id: document.id }).from(document).where(eq(document.id, ref.readingNotesDocId!)).limit(1)
-				);
-				if (existing) return { docId: ref.readingNotesDocId };
-				// Document was deleted — clear the stale pointer and fall through to create a new one
-				await ctx.withRLS((db) =>
-					db.execute(sql`UPDATE scholio.reference SET reading_notes_doc_id = NULL WHERE id = ${refId}`)
-				);
+				const staleId = ref.readingNotesDocId;
+				const cleared = await ctx.withRLS(async (db) => {
+					const [existing] = await db.select({ id: document.id }).from(document).where(eq(document.id, staleId)).limit(1);
+					if (existing) return false;
+					await db.execute(sql`UPDATE scholio.reference SET reading_notes_doc_id = NULL WHERE id = ${refId}`);
+					return true;
+				});
+				if (!cleared) return { docId: staleId };
 				ref.readingNotesDocId = null;
 			}
 
