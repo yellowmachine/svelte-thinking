@@ -97,6 +97,7 @@
 		(data.collaborators.find((c) => c.userId === data.currentUserId)?.role ?? null) as CollaboratorRole | null
 	);
 	const canWrite = $derived(
+		!data.document.isReadonly &&
 		canWriteDocument({
 			isProjectOwner: isOwner,
 			writerUserId: currentWriterUserId,
@@ -138,7 +139,7 @@
 		});
 	})();
 	let viewMode = $state<ViewMode>(
-		(!initialCanWrite || data.forcePublished)
+		(!initialCanWrite || data.forcePublished || data.document?.isReadonly)
 			? 'preview'
 			: (typeof localStorage !== 'undefined'
 					? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
@@ -1554,6 +1555,18 @@
 					>
 						Read-only
 					</span>
+				{/if}
+				{#if data.document.isReadonly && isOwner}
+					<button
+						type="button"
+						onclick={async () => {
+							await trpc.documents.update.mutate({ id: data.document.id, isReadonly: false });
+							data.document = { ...data.document, isReadonly: false };
+						}}
+						class="shrink-0 font-sans text-[10px] text-accent hover:underline"
+					>
+						Unlock editing
+					</button>
 				{/if}
 
 				<!-- Save status (right-aligned) -->

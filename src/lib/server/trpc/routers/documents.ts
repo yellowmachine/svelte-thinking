@@ -243,6 +243,7 @@ export const documentsRouter = router({
 			id: z.string(),
 			title: z.string().min(1).max(255).optional(),
 			isPublic: z.boolean().optional(),
+			isReadonly: z.boolean().optional(),
 			spellLanguage: z.string().nullable().optional()
 		}))
 		.mutation(async ({ ctx, input }) => {

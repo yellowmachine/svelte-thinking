@@ -41,6 +41,8 @@ export const document = scholioSchema.table(
 		// NULL  → only the project owner can write.
 		// SET   → only this user can write; owner loses write access until they reclaim it.
 		writerUserId: text('writer_user_id'),
+		// Imported/external content that should not be accidentally edited
+		isReadonly: boolean('is_readonly').notNull().default(false),
 		// BCP-47 language code for spell checking. null = auto-detect
 		spellLanguage: text('spell_language'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
