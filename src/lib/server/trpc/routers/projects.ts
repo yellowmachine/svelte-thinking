@@ -96,6 +96,7 @@ const updateProjectSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   description: z.string().max(2000).nullable().optional(),
   status: z.enum(PROJECT_STATUSES).optional(),
+  citationStyle: z.enum(['apa', 'ieee', 'vancouver', 'chicago']).nullable().optional(),
   doi: z.string().max(255).nullable().optional(),
   version: z.string().max(50).nullable().optional(),
   publishedAt: z.coerce.date().nullable().optional()
