@@ -5,7 +5,7 @@
 set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-/opt/scholio}"
-HEALTH_URL="${HEALTH_URL:-https://scholio.app/api/health}"
+HEALTH_URL="${HEALTH_URL:-https://scholio.review/api/health}"
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-120}"  # seconds to wait for app to be healthy
 HEALTH_INTERVAL=5                        # seconds between retries
 
