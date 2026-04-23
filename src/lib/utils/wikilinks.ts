@@ -2,10 +2,7 @@
 
 /** Strip YAML frontmatter (--- ... ---) from the start of a markdown string. */
 export function stripFrontmatter(markdown: string): string {
-	if (!markdown.startsWith('---')) return markdown;
-	const end = markdown.indexOf('\n---', 3);
-	if (end === -1) return markdown;
-	return markdown.slice(end + 4).replace(/^\n/, '');
+	return markdown.replace(/^---\r?\n[\s\S]*?\n---[ \t]*(\r?\n|$)/, '');
 }
 
 // Matches fenced code blocks (``` or ~~~) and inline code spans (`...`)

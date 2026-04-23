@@ -82,8 +82,7 @@ function convertListsLatex(text: string): string {
 }
 
 function mdToLatex(md: string): string {
-	let t = md;
-	if (t.startsWith('---')) { const e = t.indexOf('\n---', 3); if (e !== -1) t = t.slice(e + 4).replace(/^\n/, ''); }
+	let t = md.replace(/^---\r?\n[\s\S]*?\n---[ \t]*(\r?\n|$)/, '');
 
 	// Protect display math $$...$$ (before any other substitutions)
 	const displayMath: string[] = [];
@@ -184,8 +183,7 @@ ${bibCmd}
 // ─── Typst ────────────────────────────────────────────────────────────────────
 
 function mdToTypst(md: string): string {
-	let t = md;
-	if (t.startsWith('---')) { const e = t.indexOf('\n---', 3); if (e !== -1) t = t.slice(e + 4).replace(/^\n/, ''); }
+	let t = md.replace(/^---\r?\n[\s\S]*?\n---[ \t]*(\r?\n|$)/, '');
 
 	// Protect display math $$...$$ → Typst display: $ ... $
 	const displayMath: string[] = [];

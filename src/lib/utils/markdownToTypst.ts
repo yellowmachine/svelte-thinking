@@ -13,10 +13,7 @@
  */
 export function markdownToTypst(md: string, imageRegistry?: Map<string, string>): string {
 	let src = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-	if (src.startsWith('---')) {
-		const end = src.indexOf('\n---', 3);
-		if (end !== -1) src = src.slice(end + 4).replace(/^\n/, '');
-	}
+	src = src.replace(/^---\r?\n[\s\S]*?\n---[ \t]*(\r?\n|$)/, '');
 
 	// ── 0. Protect images ![alt](url) ────────────────────────────────────────
 	// Must run before the link regex in inlineToTypst would match [alt](url)
