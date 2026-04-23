@@ -776,7 +776,8 @@ ${truncated}`;
 						title,
 						type: 'paper',
 						ownerUserId: ctx.user.id,
-						generatedByAi: false
+						generatedByAi: false,
+						isReadonly: true
 					});
 				} catch (e: unknown) {
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
