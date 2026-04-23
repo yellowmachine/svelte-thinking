@@ -621,7 +621,7 @@ export const projectsRouter = router({
           if (seenCiteKeys.has(ref.citeKey)) continue;
           seenCiteKeys.add(ref.citeKey);
           const refId = crypto.randomUUID();
-          await db
+          const inserted = await db
             .insert(reference)
             .values({
               id: refId,
@@ -639,11 +639,24 @@ export const projectsRouter = router({
               address: ref.address,
               isbn: ref.isbn
             })
-            .onConflictDoNothing();
-          await db
-            .insert(projectReference)
-            .values({ referenceId: refId, projectId })
-            .onConflictDoNothing();
+            .onConflictDoNothing()
+            .returning({ id: reference.id });
+
+          // If the reference already existed (conflict), fetch its real id
+          const actualRefId = inserted[0]?.id ?? (
+            await db
+              .select({ id: reference.id })
+              .from(reference)
+              .where(and(eq(reference.userId, userId), eq(reference.citeKey, ref.citeKey)))
+              .limit(1)
+          )[0]?.id;
+
+          if (actualRefId) {
+            await db
+              .insert(projectReference)
+              .values({ referenceId: actualRefId, projectId })
+              .onConflictDoNothing();
+          }
         }
       }
 
