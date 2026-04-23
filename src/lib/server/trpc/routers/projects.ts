@@ -767,11 +767,15 @@ export const projectsRouter = router({
           const opfXml = decode(files[rootfilePath]);
           const { document: opfDoc } = parseHTML(`<?xml version="1.0"?>${opfXml}`);
 
-          // Metadata
-          const title = opfDoc.querySelector('metadata > *|title, metadata > title')?.textContent?.trim() ?? 'Untitled';
-          const creatorEl = opfDoc.querySelector('metadata > *|creator, metadata > creator');
+          // Metadata — use getElementsByTagName to avoid namespace selector issues
+          const metaEl = (localName: string) =>
+            opfDoc.getElementsByTagName(`dc:${localName}`)[0] ??
+            opfDoc.getElementsByTagName(localName)[0] ??
+            null;
+          const title = metaEl('title')?.textContent?.trim() ?? 'Untitled';
+          const creatorEl = metaEl('creator');
           const creatorText = creatorEl?.textContent?.trim() ?? '';
-          const dateText = opfDoc.querySelector('metadata > *|date, metadata > date')?.textContent?.trim()?.slice(0, 4) ?? '';
+          const dateText = metaEl('date')?.textContent?.trim()?.slice(0, 4) ?? '';
 
           // Parse author name: "Last, First" or "First Last"
           let authorFirst = '', authorLast = creatorText;
