@@ -9,6 +9,7 @@ import { withCodeProtection } from './wikilinks';
 export type CitationStyle = 'apa' | 'ieee' | 'vancouver' | 'chicago';
 
 export interface CiteRef {
+	id?: string;
 	citeKey: string;
 	type: string;
 	title: string;

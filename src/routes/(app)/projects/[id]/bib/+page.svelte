@@ -730,7 +730,7 @@
 			// Import document from URL (best-effort, non-blocking)
 			if (shouldImportDoc) {
 				urlImportingDoc = true;
-				trpc.references.importDocumentFromUrl.mutate({ url: importUrl, projectId: data.project.id, title: docTitle })
+				trpc.references.importDocumentFromUrl.mutate({ url: importUrl, projectId: data.project.id, title: docTitle, referenceId: newRef.id })
 					.then(({ docId }) => {
 						goto(`/projects/${data.project.id}/documents/${docId}`);
 					})

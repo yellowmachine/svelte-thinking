@@ -743,9 +743,9 @@ ${truncated}`;
 
 	// ── Import an HTML page as a readonly document ────────────────────────
 	importDocumentFromUrl: protectedProcedure
-		.input(z.object({ url: z.string().url().max(2000), projectId: z.string(), title: z.string().min(1).max(255) }))
+		.input(z.object({ url: z.string().url().max(2000), projectId: z.string(), title: z.string().min(1).max(255), referenceId: z.string().optional() }))
 		.mutation(async ({ ctx, input }) => {
-			const { url, projectId, title } = input;
+			const { url, projectId, title, referenceId } = input;
 
 			// Fetch, extract main content and sanitize — store HTML directly (no markdown round-trip)
 			let renderedHtml: string;
@@ -787,7 +787,8 @@ ${truncated}`;
 						ownerUserId: ctx.user.id,
 						generatedByAi: false,
 						isReadonly: true,
-						renderedHtml
+						renderedHtml,
+						sourceReferenceId: referenceId ?? null
 					});
 				} catch (e: unknown) {
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {

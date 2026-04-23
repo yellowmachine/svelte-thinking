@@ -874,7 +874,8 @@ export const projectsRouter = router({
                   ownerUserId: ctx.user.id,
                   generatedByAi: false,
                   isReadonly: true,
-                  renderedHtml: clean
+                  renderedHtml: clean,
+                  sourceReferenceId: resolvedRefId
                 });
               } catch {
                 // Skip duplicate titles silently
