@@ -727,5 +727,172 @@ export const projectsRouter = router({
 
       return { projectId };
     });
-  })
+  }),
+
+  importEpub: protectedProcedure
+    .input(z.object({ projectId: z.string(), url: z.string().url().max(2000) }))
+    .mutation(async ({ ctx, input }) => {
+      const { projectId, url } = input;
+
+      // Mark project as importing
+      await ctx.withRLS((db) =>
+        db.update(project).set({ isImporting: true }).where(eq(project.id, projectId))
+      );
+
+      // Run in background — response returns immediately
+      (async () => {
+        try {
+          // Download EPUB
+          const res = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
+            signal: AbortSignal.timeout(60_000)
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const buffer = new Uint8Array(await res.arrayBuffer());
+
+          // Unzip
+          const { unzipSync } = await import('fflate');
+          const files = unzipSync(buffer);
+          const decode = (b: Uint8Array) => new TextDecoder().decode(b);
+
+          // Find OPF via META-INF/container.xml
+          const containerXml = decode(files['META-INF/container.xml']);
+          const { parseHTML } = await import('linkedom');
+          const { document: containerDoc } = parseHTML(`<?xml version="1.0"?>${containerXml}`);
+          const rootfilePath = containerDoc.querySelector('rootfile')?.getAttribute('full-path') ?? '';
+          if (!rootfilePath) throw new Error('No rootfile in container.xml');
+
+          // Parse OPF
+          const opfBase = rootfilePath.includes('/') ? rootfilePath.slice(0, rootfilePath.lastIndexOf('/') + 1) : '';
+          const opfXml = decode(files[rootfilePath]);
+          const { document: opfDoc } = parseHTML(`<?xml version="1.0"?>${opfXml}`);
+
+          // Metadata
+          const title = opfDoc.querySelector('metadata > *|title, metadata > title')?.textContent?.trim() ?? 'Untitled';
+          const creatorEl = opfDoc.querySelector('metadata > *|creator, metadata > creator');
+          const creatorText = creatorEl?.textContent?.trim() ?? '';
+          const dateText = opfDoc.querySelector('metadata > *|date, metadata > date')?.textContent?.trim()?.slice(0, 4) ?? '';
+
+          // Parse author name: "Last, First" or "First Last"
+          let authorFirst = '', authorLast = creatorText;
+          if (creatorText.includes(',')) {
+            const [last, first] = creatorText.split(',').map((s: string) => s.trim());
+            authorLast = last; authorFirst = first ?? '';
+          } else if (creatorText.includes(' ')) {
+            const parts = creatorText.split(' ');
+            authorFirst = parts.slice(0, -1).join(' ');
+            authorLast = parts[parts.length - 1];
+          }
+          const authors = creatorText ? [{ first: authorFirst, last: authorLast }] : [];
+
+          // Manifest: id → href map
+          const manifestItems = new Map<string, string>();
+          opfDoc.querySelectorAll('manifest > item').forEach((item) => {
+            const id = item.getAttribute('id');
+            const href = item.getAttribute('href');
+            const type = item.getAttribute('media-type') ?? '';
+            if (id && href && (type.includes('html') || type.includes('xhtml'))) {
+              manifestItems.set(id, href);
+            }
+          });
+
+          // Spine: ordered chapter idrefs
+          const spineItems: string[] = [];
+          opfDoc.querySelectorAll('spine > itemref').forEach((ref) => {
+            const idref = ref.getAttribute('idref');
+            if (idref && manifestItems.has(idref)) spineItems.push(idref);
+          });
+
+          // Create bibliography reference
+          const { generateCiteKey } = await import('$lib/utils/bibtex');
+          const citeKey = generateCiteKey(authors.length ? authors : [{ first: '', last: 'unknown' }], dateText);
+
+          const { default: createDOMPurify } = await import('dompurify');
+
+          await ctx.withRLS(async (db) => {
+            // Upsert reference
+            const refId = crypto.randomUUID();
+            await db.insert(reference).values({
+              id: refId,
+              userId: ctx.user.id,
+              citeKey,
+              type: 'book',
+              title,
+              authors,
+              editors: [],
+              year: dateText,
+              url,
+              abstract: '',
+              journal: '',
+              booktitle: '',
+              publisher: '',
+              doi: '',
+              volume: '',
+              issue: '',
+              pages: '',
+              extra: {}
+            }).onConflictDoNothing();
+
+            // Link reference to project
+            const refs = await db.select({ id: reference.id })
+              .from(reference)
+              .where(and(eq(reference.userId, ctx.user.id), eq(reference.citeKey, citeKey)))
+              .limit(1);
+            const resolvedRefId = refs[0]?.id ?? refId;
+            await db.insert(projectReference).values({ projectId, referenceId: resolvedRefId }).onConflictDoNothing();
+
+            // Import each chapter
+            for (let i = 0; i < spineItems.length; i++) {
+              const idref = spineItems[i];
+              const href = manifestItems.get(idref)!;
+              const filePath = opfBase + href;
+              const fileData = files[filePath] ?? files[href];
+              if (!fileData) continue;
+
+              const chapterHtml = decode(fileData);
+              const { window } = parseHTML(chapterHtml);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const purify = createDOMPurify(window as any);
+              const clean = purify.sanitize(chapterHtml, { ADD_TAGS: ['figure', 'figcaption'], ADD_ATTR: ['role'] });
+
+              // Derive chapter title from <title> or <h1>/<h2>
+              const { document: chDoc } = parseHTML(chapterHtml);
+              const chapterTitle =
+                chDoc.querySelector('h1, h2')?.textContent?.trim() ||
+                chDoc.querySelector('title')?.textContent?.trim() ||
+                `${title} — Chapter ${i + 1}`;
+
+              const docTitle = chapterTitle.slice(0, 255);
+              const docId = crypto.randomUUID();
+
+              try {
+                await db.insert(document).values({
+                  id: docId,
+                  projectId,
+                  title: docTitle,
+                  type: 'chapter',
+                  ownerUserId: ctx.user.id,
+                  generatedByAi: false,
+                  isReadonly: true,
+                  renderedHtml: clean
+                });
+              } catch {
+                // Skip duplicate titles silently
+              }
+            }
+
+            // Done
+            await db.update(project).set({ isImporting: false }).where(eq(project.id, projectId));
+          });
+        } catch (err) {
+          console.error('[importEpub] failed:', err);
+          // Clear flag even on error so UI doesn't hang
+          await ctx.withRLS((db) =>
+            db.update(project).set({ isImporting: false }).where(eq(project.id, projectId))
+          ).catch(console.error);
+        }
+      })();
+
+      return { started: true };
+    })
 });

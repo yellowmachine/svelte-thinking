@@ -151,6 +151,32 @@
 
 	let showCreateDoc = $state(false);
 	let showGenerateDraft = $state(false);
+
+	// EPUB import
+	let showEpubModal = $state(false);
+	let epubUrl = $state('');
+	let epubImporting = $state(false);
+	let epubError = $state('');
+
+	async function startEpubImport() {
+		if (!epubUrl.trim()) return;
+		epubImporting = true;
+		epubError = '';
+		try {
+			await trpc.projects.importEpub.mutate({ projectId: data.project.id, url: epubUrl.trim() });
+			showEpubModal = false;
+			epubUrl = '';
+			// Poll until isImporting clears
+			const poll = setInterval(async () => {
+				await invalidateAll();
+				if (!data.project.isImporting) clearInterval(poll);
+			}, 3000);
+		} catch (e) {
+			epubError = e instanceof Error ? e.message : 'Import failed.';
+		} finally {
+			epubImporting = false;
+		}
+	}
 	let newDocTitle = $state('');
 	let newDocType = $state<DocumentType>('paper');
 	let creatingDoc = $state(false);
@@ -755,6 +781,18 @@
 						{data.openComments}
 					</a>
 				{/if}
+				{#if data.isOwner}
+					<button
+						onclick={() => { showEpubModal = true; epubError = ''; }}
+						title="Import EPUB book"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+						</svg>
+						EPUB
+					</button>
+				{/if}
 				<a
 					href="/api/projects/{data.project.id}/export"
 					download
@@ -796,6 +834,52 @@
 			</p>
 		{/if}
 	</div>
+
+	{#if data.project.isImporting}
+		<div class="mb-4 flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-ink dark:text-dark-ink">
+			<Spinner size="sm" />
+			<span>Importando capítulos del EPUB… Los documentos aparecerán en breve.</span>
+		</div>
+	{/if}
+
+	<!-- EPUB import modal -->
+	{#if showEpubModal}
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+			<div class="absolute inset-0" onclick={() => { showEpubModal = false; }}></div>
+			<div class="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper">
+				<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import EPUB</h2>
+				<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Introduce la URL de un EPUB de acceso libre. Se importará cada capítulo como documento readonly.
+				</p>
+				<input
+					type="url"
+					bind:value={epubUrl}
+					placeholder="https://example.org/book.epub"
+					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				/>
+				{#if epubError}
+					<p class="mt-2 font-sans text-xs text-red-500">{epubError}</p>
+				{/if}
+				<div class="mt-4 flex justify-end gap-2">
+					<button
+						onclick={() => { showEpubModal = false; epubUrl = ''; epubError = ''; }}
+						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					>
+						Cancel
+					</button>
+					<button
+						onclick={startEpubImport}
+						disabled={epubImporting || !epubUrl.trim()}
+						class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
+					>
+						{#if epubImporting}<Spinner size="sm" />{/if}
+						{epubImporting ? 'Iniciando…' : 'Import'}
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<div class="grid gap-8 lg:grid-cols-3">
 		<!-- Documents section -->
