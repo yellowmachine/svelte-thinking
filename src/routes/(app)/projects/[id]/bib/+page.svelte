@@ -661,6 +661,8 @@
 	let urlResult = $state<UrlResult | null>(null);
 	let urlError = $state('');
 	let urlSavePdf = $state(false);
+	let urlImportDocument = $state(false);
+	let urlImportingDoc = $state(false);
 
 	async function runUrlLookup() {
 		if (!urlInput.trim()) return;
@@ -716,10 +718,28 @@
 			const fresh = await trpc.references.list.query(data.project.id);
 			references = fresh as typeof references;
 			const shouldGeneratePdf = urlSavePdf;
+			const shouldImportDoc = urlImportDocument;
+			const docTitle = urlResult.title;
+			const importUrl = sourceUrl;
 			urlInput = '';
 			urlResult = null;
 			urlSavePdf = false;
+			urlImportDocument = false;
 			panel = null;
+
+			// Import document from URL (best-effort, non-blocking)
+			if (shouldImportDoc) {
+				urlImportingDoc = true;
+				trpc.references.importDocumentFromUrl.mutate({ url: importUrl, projectId: data.project.id, title: docTitle })
+					.then(({ docId }) => {
+						goto(`/projects/${data.project.id}/documents/${docId}`);
+					})
+					.catch((e) => {
+						flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error');
+					})
+					.finally(() => { urlImportingDoc = false; });
+			}
+
 			if (!shouldGeneratePdf) return;
 			// Best-effort: generate PDF in background — show spinner, flash on failure
 			const refId = newRef.id;
@@ -2442,11 +2462,22 @@
 									Save a PDF snapshot
 								</span>
 							</label>
+							<label class="flex cursor-pointer items-center gap-2">
+								<input
+									type="checkbox"
+									bind:checked={urlImportDocument}
+									class="h-3.5 w-3.5 rounded accent-accent"
+								/>
+								<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+									Import page as document
+								</span>
+							</label>
 							<button
 								onclick={acceptUrlResult}
-								class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover"
+								disabled={urlImportingDoc}
+								class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
 							>
-								Add to bibliography
+								{urlImportingDoc ? 'Importing document…' : 'Add to bibliography'}
 							</button>
 						{/if}
 						{/if}

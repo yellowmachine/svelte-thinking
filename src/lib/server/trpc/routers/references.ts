@@ -4,9 +4,11 @@ import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
+import TurndownService from 'turndown';
 import { router, protectedProcedure } from '../init';
 import { reference, projectReference, referenceSubnote } from '$lib/server/db/schemas/references.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
+import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { parseBibtexFile, formatBibtexFile, generateCiteKey } from '$lib/utils/bibtex';
 import type { Author } from '$lib/utils/bibtex';
 import type { Db } from '$lib/server/db';
@@ -727,6 +729,75 @@ ${truncated}`;
 				institution: (extracted.institution as string | null) ?? null,
 				url
 			};
+		}),
+
+	// ── Import an HTML page as a readonly document ────────────────────────
+	importDocumentFromUrl: protectedProcedure
+		.input(z.object({ url: z.string().url().max(2000), projectId: z.string(), title: z.string().min(1).max(255) }))
+		.mutation(async ({ ctx, input }) => {
+			const { url, projectId, title } = input;
+
+			// Fetch and extract main content
+			let markdown: string;
+			try {
+				const res = await fetch(url, {
+					headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
+					signal: AbortSignal.timeout(15_000)
+				});
+				if (!res.ok)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: `Could not fetch URL (HTTP ${res.status}).` });
+				const html = await res.text();
+				const { document: dom } = parseHTML(html);
+				const article = new Readability(dom as unknown as Document).parse();
+				if (!article?.content)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: 'No readable content found at that URL.' });
+
+				const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', bulletListMarker: '-' });
+				// Preserve footnote-style links rather than inlining them
+				td.addRule('footnoteLinks', {
+					filter: (node) => node.nodeName === 'A' && !!(node as HTMLAnchorElement).href,
+					replacement: (content) => content || ''
+				});
+				markdown = td.turndown(article.content);
+			} catch (e) {
+				if (e instanceof TRPCError) throw e;
+				throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch or parse the URL.' });
+			}
+
+			// Create document + initial version
+			return ctx.withRLS(async (db) => {
+				const docId = crypto.randomUUID();
+				const versionId = crypto.randomUUID();
+
+				try {
+					await db.insert(document).values({
+						id: docId,
+						projectId,
+						title,
+						type: 'paper',
+						ownerUserId: ctx.user.id,
+						generatedByAi: false
+					});
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({ code: 'CONFLICT', message: `Ya existe un documento con el título "${title}" en este proyecto.` });
+					}
+					throw e;
+				}
+
+				await db.insert(documentVersion).values({
+					id: versionId,
+					documentId: docId,
+					content: markdown,
+					versionNumber: 1,
+					changeDescription: `Imported from ${url}`,
+					createdBy: ctx.user.id
+				});
+
+				await db.update(document).set({ currentVersionId: versionId }).where(eq(document.id, docId));
+
+				return { docId };
+			});
 		}),
 
 	// ── Fetch metadata from a DOI via CrossRef ────────────────────────────
