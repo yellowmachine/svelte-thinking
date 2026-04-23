@@ -566,10 +566,14 @@
 			commentRangesField,
 			commentTheme,
 			EditorView.updateListener.of((update) => {
+				// toString() is O(n) on CM6's rope — compute once, share across all blocks.
+				const doc = (update.docChanged || update.selectionSet)
+					? update.state.doc.toString()
+					: '';
+
 				if (update.docChanged) {
-					const content = update.state.doc.toString();
-					value = content;
-					ondocchange?.(content);
+					value = doc;
+					ondocchange?.(doc);
 				}
 				if (update.selectionSet && onselectionchange) {
 					const sel = update.state.selection.main;
@@ -585,7 +589,6 @@
 				if ((update.docChanged || update.selectionSet) && (onheadingprefix || onheadingprefixclear)) {
 					const sel = update.state.selection.main;
 					if (sel.empty) {
-						const doc = update.state.doc.toString();
 						const pos = sel.head;
 						const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
 						const textBefore = doc.slice(lineStart, pos);
@@ -616,7 +619,6 @@
 				if ((update.docChanged || update.selectionSet) && (onwordprefix || onwordprefixclear)) {
 					const sel = update.state.selection.main;
 					if (sel.empty) {
-						const doc = update.state.doc.toString();
 						const pos = sel.head;
 						const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
 						const textBefore = doc.slice(lineStart, pos);
@@ -645,7 +647,6 @@
 				if (update.docChanged || update.selectionSet) {
 					const sel = update.state.selection.main;
 					if (sel.empty && references.length > 0) {
-						const doc = update.state.doc.toString();
 						const pos = sel.head;
 						const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
 						const textBefore = doc.slice(lineStart, pos);
@@ -685,7 +686,6 @@
 					const sel = update.state.selection.main;
 					if (citeHoverTimer) { clearTimeout(citeHoverTimer); citeHoverTimer = null; }
 					if (sel.empty) {
-						const doc = update.state.doc.toString();
 						const pos = sel.from;
 						const cite = oncitehover ? citationAtPos(doc, pos) : null;
 						const person = onauthorhover ? personAtPos(doc, pos) : null;
