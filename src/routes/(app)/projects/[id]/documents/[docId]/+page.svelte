@@ -139,7 +139,7 @@
 		});
 	})();
 	let viewMode = $state<ViewMode>(
-		(!initialCanWrite || data.forcePublished)
+		(!initialCanWrite || data.forcePublished || data.document?.isReadonly)
 			? 'preview'
 			: (typeof localStorage !== 'undefined'
 					? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
