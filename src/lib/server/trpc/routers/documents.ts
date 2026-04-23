@@ -248,25 +248,39 @@ export const documentsRouter = router({
 		}))
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
-			try {
-				const rows = await ctx.withRLS((db) =>
-					db
-						.update(document)
-						.set({ ...data, updatedAt: new Date() })
+			return ctx.withRLS(async (db) => {
+				// Unlock: convert stored HTML → markdown so the editor has something to work with
+				let extra: { draftContent?: string; renderedHtml?: null } = {};
+				if (data.isReadonly === false) {
+					const [current] = await db
+						.select({ renderedHtml: document.renderedHtml })
+						.from(document)
 						.where(eq(document.id, id))
-						.returning()
-				);
-				if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-				return rows[0];
-			} catch (e: unknown) {
-				if (e instanceof Error && e.message.includes('document_project_title_idx')) {
-					throw new TRPCError({
-						code: 'CONFLICT',
-						message: `Ya existe un documento con ese título en este proyecto.`
-					});
+						.limit(1);
+					if (current?.renderedHtml) {
+						const { default: TurndownService } = await import('turndown');
+						const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', bulletListMarker: '-' });
+						extra = { draftContent: td.turndown(current.renderedHtml), renderedHtml: null };
+					}
 				}
-				throw e;
-			}
+				try {
+					const rows = await db
+						.update(document)
+						.set({ ...data, ...extra, updatedAt: new Date() })
+						.where(eq(document.id, id))
+						.returning();
+					if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+					return rows[0];
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un documento con ese título en este proyecto.`
+						});
+					}
+					throw e;
+				}
+			});
 		}),
 
 	delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {

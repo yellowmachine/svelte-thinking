@@ -4,12 +4,9 @@ import { document, documentVersion } from '$lib/server/db/schemas/documents.sche
 import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
-import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { eq, and, isNull, isNotNull, sql } from 'drizzle-orm';
 import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
-import { renderMarkdownToHtml } from '$lib/server/markdownRenderer';
-import type { CiteRef } from '$lib/utils/citations';
 
 export const load: PageServerLoad = async (event) => {
 	const { id: projectId, docId } = event.params;
@@ -220,51 +217,6 @@ export const load: PageServerLoad = async (event) => {
 		writerName = writerRow[0]?.name ?? null;
 	}
 
-	// SSR markdown rendering for readonly documents (avoids heavy client-side parsing)
-	let renderedHtml: string | null = null;
-	if (docResult.isReadonly && docResult.content) {
-		const refs = await event.locals.withRLS((db) =>
-			db
-				.select({
-					id: reference.id,
-					citeKey: reference.citeKey,
-					type: reference.type,
-					title: reference.title,
-					authors: reference.authors,
-					editors: reference.editors,
-					year: reference.year,
-					journal: reference.journal,
-					booktitle: reference.booktitle,
-					publisher: reference.publisher,
-					doi: reference.doi,
-					url: reference.url,
-					abstract: reference.abstract,
-					volume: reference.volume,
-					issue: reference.issue,
-					pages: reference.pages
-				})
-				.from(reference)
-				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-				.where(eq(projectReference.projectId, projectId))
-		) as CiteRef[];
-
-		const refsMap = new Map(refs.map((r) => [r.citeKey, r]));
-
-		const docMap = new Map<string, { id: string; projectId: string }>();
-		for (const d of projectDocs) docMap.set(d.id, { id: d.id, projectId: d.projectId });
-		for (const d of projectDocs) docMap.set(d.title, { id: d.id, projectId: d.projectId });
-		for (const d of externalDocs) docMap.set(d.id, { id: d.id, projectId: d.projectId });
-		for (const d of externalDocs) docMap.set(d.title, { id: d.id, projectId: d.projectId });
-
-		const citationStyle = (proj?.citationStyle ?? 'apa') as 'apa' | 'ieee' | 'vancouver' | 'chicago';
-
-		renderedHtml = await renderMarkdownToHtml(docResult.content, {
-			docMap,
-			references: refsMap,
-			citationStyle
-		});
-	}
-
 	return {
 		document: docResult,
 		projectTitle: proj?.title ?? '',
@@ -278,8 +230,8 @@ export const load: PageServerLoad = async (event) => {
 		projectDocs,
 		backlinks,
 		externalDocs,
-		unpublished: docResult.content === null,
+		unpublished: docResult.content === null && !docResult.renderedHtml,
 		forcePublished: event.url.searchParams.has('published'),
-		renderedHtml
+		renderedHtml: docResult.renderedHtml ?? null
 	};
 };

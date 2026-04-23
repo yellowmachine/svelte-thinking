@@ -43,6 +43,8 @@ export const document = scholioSchema.table(
 		writerUserId: text('writer_user_id'),
 		// Imported/external content that should not be accidentally edited
 		isReadonly: boolean('is_readonly').notNull().default(false),
+		// Pre-rendered HTML for readonly imported documents (avoids re-rendering on every request)
+		renderedHtml: text('rendered_html'),
 		// BCP-47 language code for spell checking. null = auto-detect
 		spellLanguage: text('spell_language'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),

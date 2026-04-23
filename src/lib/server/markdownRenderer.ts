@@ -56,7 +56,8 @@ export async function renderMarkdownToHtml(
 	try {
 		const { window } = parseHTML('<!DOCTYPE html><html><body></body></html>');
 		const { default: createDOMPurify } = await import('dompurify');
-		const purify = createDOMPurify(window as unknown as Window);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const purify = createDOMPurify(window as any);
 		html = purify.sanitize(html, {
 			ADD_TAGS: ['math', 'figure', 'figcaption'],
 			ADD_ATTR: ['role']
