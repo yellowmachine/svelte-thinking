@@ -89,6 +89,7 @@
 	let wordGhostActive = false;
 	let headingGhostActive = false;
 	let citeGhostActive = false;
+	let citeGhostInsert: string | null = null;
 
 	// Debounce timer for citation hover
 	let citeHoverTimer: ReturnType<typeof setTimeout> | null = null;
@@ -512,6 +513,18 @@
 		});
 	}
 
+	function insertCiteGhost(v: EditorView): boolean {
+		if (!citeGhostInsert) return false;
+		const { head } = v.state.selection.main;
+		v.dispatch({
+			changes: { from: head, insert: citeGhostInsert },
+			selection: { anchor: head + citeGhostInsert.length }
+		});
+		citeGhostActive = false;
+		citeGhostInsert = null;
+		return true;
+	}
+
 	function buildExtensions() {
 		const exts = [
 			history(),
@@ -523,6 +536,7 @@
 					run(view) {
 						if (headingGhostActive) return onheadingghosttab?.() ?? false;
 						if (wordGhostActive) return onwordghosttab?.() ?? false;
+						if (citeGhostActive && citeGhostInsert) return insertCiteGhost(view);
 						return acceptCompletion(view);
 					}
 				},
@@ -531,6 +545,7 @@
 					run(view) {
 						if (headingGhostActive) return onheadingghosttab?.() ?? false;
 						if (wordGhostActive) return onwordghosttab?.() ?? false;
+						if (citeGhostActive && citeGhostInsert) return insertCiteGhost(view);
 						return acceptCompletion(view);
 					}
 				},
@@ -643,20 +658,25 @@
 							if (matched) {
 								const suffix = matched.citeKey.slice(partial.length);
 								const hasSubnotes = (matched.subnotes?.length ?? 0) > 0;
+								const ghostText = suffix + (hasSubnotes ? ':' : ']]');
+								const wasActive = citeGhostActive;
 								citeGhostActive = true;
-								update.view.dispatch({
-									effects: setGhostTextEffect.of(suffix + (hasSubnotes ? ':' : ']]'))
-								});
+								citeGhostInsert = ghostText;
+								update.view.dispatch({ effects: setGhostTextEffect.of(ghostText) });
+								if (!wasActive) startCompletion(update.view);
 							} else if (citeGhostActive) {
 								citeGhostActive = false;
+								citeGhostInsert = null;
 								update.view.dispatch({ effects: setGhostTextEffect.of(null) });
 							}
 						} else if (citeGhostActive) {
 							citeGhostActive = false;
+							citeGhostInsert = null;
 							update.view.dispatch({ effects: setGhostTextEffect.of(null) });
 						}
 					} else if (citeGhostActive) {
 						citeGhostActive = false;
+						citeGhostInsert = null;
 						update.view.dispatch({ effects: setGhostTextEffect.of(null) });
 					}
 				}
@@ -816,7 +836,7 @@
 		// Prevent browser focus cycling on Tab when mention dropdown is open.
 		// Must be capture phase so it fires before the browser shifts focus.
 		function onTabCapture(e: KeyboardEvent) {
-			if (e.key === 'Tab' && wordGhostActive) e.preventDefault();
+			if (e.key === 'Tab' && (wordGhostActive || citeGhostActive)) e.preventDefault();
 		}
 		container.addEventListener('keydown', onTabCapture, { capture: true });
 
