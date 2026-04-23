@@ -635,31 +635,21 @@
 						const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
 						const textBefore = doc.slice(lineStart, pos);
 						const cm = textBefore.match(/\[\[@([\w.-]*)$/);
-						if (cm) {
-							const lineEnd = doc.indexOf('\n', pos);
-							const textAfter = doc.slice(pos, lineEnd === -1 ? doc.length : lineEnd);
-							const insideClosedToken = /^[\w.:=-]*\]\]/.test(textAfter);
-							if (insideClosedToken) {
-								if (citeGhostActive) {
-									citeGhostActive = false;
-									update.view.dispatch({ effects: setGhostTextEffect.of(null) });
-								}
-							} else {
-								const partial = cm[1].toLowerCase();
-								const matched = references.find((r) =>
-									r.citeKey.toLowerCase().startsWith(partial)
-								);
-								if (matched) {
-									const suffix = matched.citeKey.slice(partial.length);
-									const hasSubnotes = (matched.subnotes?.length ?? 0) > 0;
-									citeGhostActive = true;
-									update.view.dispatch({
-										effects: setGhostTextEffect.of(suffix + (hasSubnotes ? ':' : ']]'))
-									});
-								} else if (citeGhostActive) {
-									citeGhostActive = false;
-									update.view.dispatch({ effects: setGhostTextEffect.of(null) });
-								}
+						if (cm && !/[\w.\-\]]/.test(doc[pos] ?? '')) {
+							const partial = cm[1].toLowerCase();
+							const matched = references.find((r) =>
+								r.citeKey.toLowerCase().startsWith(partial)
+							);
+							if (matched) {
+								const suffix = matched.citeKey.slice(partial.length);
+								const hasSubnotes = (matched.subnotes?.length ?? 0) > 0;
+								citeGhostActive = true;
+								update.view.dispatch({
+									effects: setGhostTextEffect.of(suffix + (hasSubnotes ? ':' : ']]'))
+								});
+							} else if (citeGhostActive) {
+								citeGhostActive = false;
+								update.view.dispatch({ effects: setGhostTextEffect.of(null) });
 							}
 						} else if (citeGhostActive) {
 							citeGhostActive = false;
