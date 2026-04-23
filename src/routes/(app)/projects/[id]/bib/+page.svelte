@@ -459,13 +459,15 @@
 	let llProjects = $state<{ id: string; title: string }[]>([]);
 	let llLoading = $state(false);
 	let llLinking = $state(false);
+	let llDeleting = $state(new SvelteSet<string>());
 	let llError = $state('');
 	let llShowLinked = $state(false);
 
 	const llFiltered = $derived(() => {
 		const q = llSearch.toLowerCase().trim();
 		return llRefs.filter((r) => {
-			if (llFilterProjectId && !r.projectIds.includes(llFilterProjectId)) return false;
+			if (llFilterProjectId === '__unlinked__' && r.projectIds.length > 0) return false;
+			if (llFilterProjectId && llFilterProjectId !== '__unlinked__' && !r.projectIds.includes(llFilterProjectId)) return false;
 			if (!q) return true;
 			return (
 				r.citeKey.toLowerCase().includes(q) ||
@@ -521,6 +523,18 @@
 			llSelectedIds = new Set();
 		} else {
 			llSelectedIds = new Set(llFiltered().map((r) => r.id));
+		}
+	}
+
+	async function llDeleteRef(id: string) {
+		llDeleting.add(id);
+		try {
+			await trpc.references.delete.mutate(id);
+			llRefs = llRefs.filter((r) => r.id !== id);
+		} catch {
+			llError = 'Failed to delete reference.';
+		} finally {
+			llDeleting.delete(id);
 		}
 	}
 
@@ -2595,7 +2609,7 @@
 							No other references in your library to link.
 						</p>
 					{:else}
-						{#if llProjects.length > 0}
+						{#if llProjects.length > 0 || llRefs.some(r => r.projectIds.length === 0)}
 							<select
 								bind:value={llFilterProjectId}
 								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -2604,6 +2618,7 @@
 								{#each llProjects as p (p.id)}
 									<option value={p.id}>{p.title}</option>
 								{/each}
+								<option value="__unlinked__">Sin proyecto</option>
 							</select>
 						{/if}
 						<input
@@ -2627,30 +2642,47 @@
 						<div class="max-h-72 overflow-y-auto rounded-md border border-paper-border dark:border-dark-paper-border">
 							{#each llFiltered() as ref (ref.id)}
 								{@const author = (ref.authors as Author[])[0]?.last ?? ''}
-								<label
-									class="flex cursor-pointer items-start gap-2.5 border-b border-paper-border px-3 py-2.5 last:border-b-0 hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
-								>
-									<input
-										type="checkbox"
-										checked={llSelectedIds.has(ref.id)}
-										onchange={() => {
-											const next = new Set(llSelectedIds);
-											if (next.has(ref.id)) next.delete(ref.id);
-											else next.add(ref.id);
-											llSelectedIds = next;
-										}}
-										class="mt-0.5 shrink-0 accent-accent"
-									/>
-									<div class="min-w-0">
-										<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
-											{ref.title}
-										</p>
-										<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-											{[author, ref.year].filter(Boolean).join(', ')}
-											<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
-										</p>
-									</div>
-								</label>
+								{@const isOrphan = ref.projectIds.length === 0}
+								<div class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2.5 last:border-b-0 hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui">
+									<label class="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5">
+										<input
+											type="checkbox"
+											checked={llSelectedIds.has(ref.id)}
+											onchange={() => {
+												const next = new Set(llSelectedIds);
+												if (next.has(ref.id)) next.delete(ref.id);
+												else next.add(ref.id);
+												llSelectedIds = next;
+											}}
+											class="mt-0.5 shrink-0 accent-accent"
+										/>
+										<div class="min-w-0">
+											<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+												{ref.title}
+											</p>
+											<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+												{[author, ref.year].filter(Boolean).join(', ')}
+												<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
+												{#if isOrphan}
+													<span class="ml-1 italic opacity-60">sin proyecto</span>
+												{/if}
+											</p>
+										</div>
+									</label>
+									{#if isOrphan}
+										<button
+											type="button"
+											onclick={() => llDeleteRef(ref.id)}
+											disabled={llDeleting.has(ref.id)}
+											aria-label="Borrar referencia"
+											class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
+										>
+											<svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+												<path d="M2 4h10M5 4V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V4M6 7v3M8 7v3M3 4l.8 7.2A1 1 0 0 0 4.8 12h4.4a1 1 0 0 0 1-.8L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+											</svg>
+										</button>
+									{/if}
+								</div>
 							{/each}
 							{#if llFiltered().length === 0}
 								<p class="px-3 py-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
