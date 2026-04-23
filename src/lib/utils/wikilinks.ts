@@ -1,5 +1,13 @@
 // ── Wikilink utilities ────────────────────────────────────────────────────
 
+/** Strip YAML frontmatter (--- ... ---) from the start of a markdown string. */
+export function stripFrontmatter(markdown: string): string {
+	if (!markdown.startsWith('---')) return markdown;
+	const end = markdown.indexOf('\n---', 3);
+	if (end === -1) return markdown;
+	return markdown.slice(end + 4).replace(/^\n/, '');
+}
+
 // Matches fenced code blocks (``` or ~~~) and inline code spans (`...`)
 const CODE_FENCE_RE = /^(```|~~~)[^\n]*\n[\s\S]*?\n\1\s*$/gm;
 const CODE_SPAN_RE = /`+[^`]*`+/g;

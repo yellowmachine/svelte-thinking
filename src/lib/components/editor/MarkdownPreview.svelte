@@ -7,7 +7,7 @@
 	marked.use(markedFootnote());
 	import { trpc } from '$lib/utils/trpc';
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
-	import { processWikilinks, processPersonsAndIndex } from '$lib/utils/wikilinks';
+	import { processWikilinks, processPersonsAndIndex, stripFrontmatter } from '$lib/utils/wikilinks';
 	import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
 	import { extractCallouts, restoreCallouts } from '$lib/utils/callouts';
 	import { einkStore } from '$lib/stores/eink.svelte';
@@ -152,6 +152,7 @@
 		style: CitationStyle,
 		wikilinkMap: Map<string, { id: string; projectId: string }>
 	): { html: string; plots: Map<string, object>; diagrams: Map<string, string> } {
+		src = stripFrontmatter(src);
 		const { processed: withDiagramPlaceholders, diagrams } = extractDiagrams(src);
 		const { processed: withPlaceholders, plots } = extractPlots(withDiagramPlaceholders);
 		const { processed: withCalloutPlaceholders, callouts } = extractCallouts(withPlaceholders);
