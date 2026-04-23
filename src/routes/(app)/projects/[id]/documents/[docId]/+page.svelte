@@ -169,7 +169,7 @@
 		clearSpellHover: () => void;
 	} | null = $state(null);
 
-	type PreviewRef = { scrollToComment: (id: string, paragraphNumber: number | null) => void } | null;
+	type PreviewRef = { scrollToComment: (id: string, paragraphNumber: number | null) => void; getParagraphText: (n: number) => string } | null;
 	let previewRef = $state<PreviewRef>(null);
 	let splitPreviewRef = $state<PreviewRef>(null);
 
@@ -563,6 +563,7 @@
 
 	// New comment form (triggered from floating button)
 	let showNewComment = $state(false);
+	let savedCommentSelection = $state<Selection | null>(null); // preserved when selectionchange fires on button click
 	let newCommentText = $state('');
 	let submittingComment = $state(false);
 
@@ -839,21 +840,22 @@
 	}
 
 	async function submitComment() {
-		if (!currentSelection || !newCommentText.trim()) return;
+		const sel = savedCommentSelection ?? currentSelection;
+		if (!sel || !newCommentText.trim()) return;
 		submittingComment = true;
 		try {
-			const lineStart = posToLine(content, currentSelection.from);
-			const lineEnd = posToLine(content, currentSelection.to);
-			const anchorContext = extractParagraph(content, currentSelection.from);
+			const lineStart = posToLine(content, sel.from);
+			const lineEnd = posToLine(content, sel.to);
+			const anchorContext = extractParagraph(content, sel.from);
 			const created = await trpc.comments.createInline.mutate({
 				documentId: data.document.id,
 				content: newCommentText.trim(),
-				anchorText: currentSelection.text,
+				anchorText: sel.text,
 				anchorContext: anchorContext || undefined,
 				lineStart,
 				lineEnd,
-				characterStart: currentSelection.from,
-				characterEnd: currentSelection.to,
+				characterStart: sel.from,
+				characterEnd: sel.to,
 				paragraphNumber: undefined
 			});
 
@@ -878,6 +880,7 @@
 
 			newCommentText = '';
 			showNewComment = false;
+			savedCommentSelection = null;
 			currentSelection = null;
 			showComments = true;
 		} finally {
@@ -1004,6 +1007,8 @@
 			showNewParagraphComment = false;
 			pendingParagraphNumber = null;
 			showComments = true;
+		} catch (e) {
+			console.error('Failed to submit paragraph comment', e);
 		} finally {
 			submittingParagraphComment = false;
 		}
@@ -1361,6 +1366,10 @@
 	let showFloating = $state(false);
 	let floatingDebounce: ReturnType<typeof setTimeout> | null = null;
 
+	function focusOnMount(node: HTMLElement) {
+		node.focus();
+	}
+
 	function updateSelection(sel: typeof currentSelection) {
 		currentSelection = sel;
 		if (!sel) {
@@ -1402,12 +1411,16 @@
 		}
 	}
 
-	// Dismiss selection bubble when the browser clears the selection (e.g. click elsewhere in preview)
+	// Dismiss selection bubble when the browser clears the selection (e.g. click elsewhere in preview).
+	// Deferred to rAF so onclick handlers (e.g. "+Comment") run first and can set showNewComment = true.
 	function onNativeSelectionChange() {
-		const sel = window.getSelection();
-		if (!sel || sel.isCollapsed || !sel.toString().trim()) {
-			if (showFloating) updateSelection(null as never);
-		}
+		requestAnimationFrame(() => {
+			if (showNewComment) return;
+			const sel = window.getSelection();
+			if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+				if (showFloating) updateSelection(null as never);
+			}
+		});
 	}
 
 	// Dismiss paragraph comment on click outside
@@ -2238,6 +2251,7 @@
 					<button
 						class="pointer-events-auto rounded-md bg-amber-400 px-3 py-1.5 font-sans text-xs font-semibold text-white shadow-md transition-colors hover:bg-amber-500"
 						onclick={() => {
+							savedCommentSelection = currentSelection;
 							showNewComment = true;
 							showComments = true;
 							showHistory = false;
@@ -2609,10 +2623,10 @@
 			{/if}
 
 			<!-- New comment popover (anchored near selection) -->
-			{#if showNewComment && currentSelection && currentSelection.coords}
+			{#if showNewComment && savedCommentSelection && savedCommentSelection.coords}
 				<div
 					class="pointer-events-none fixed z-20"
-					style="top: {currentSelection.coords.bottom + 8}px; left: {currentSelection.coords
+					style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection.coords
 						.left}px;"
 				>
 					<div
@@ -2621,9 +2635,10 @@
 						<p
 							class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
 						>
-							«{currentSelection.text.slice(0, 60)}{currentSelection.text.length > 60 ? '…' : ''}»
+							«{savedCommentSelection.text.slice(0, 60)}{savedCommentSelection.text.length > 60 ? '…' : ''}»
 						</p>
 						<textarea
+							use:focusOnMount
 							bind:value={newCommentText}
 							rows={3}
 							placeholder="Write your comment…"
@@ -2640,6 +2655,7 @@
 							<button
 								onclick={() => {
 									showNewComment = false;
+									savedCommentSelection = null;
 									newCommentText = '';
 								}}
 								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
@@ -2665,6 +2681,7 @@
 							Comentario en ¶{pendingParagraphNumber}
 						</p>
 						<textarea
+							use:focusOnMount
 							bind:value={paragraphCommentText}
 							rows={3}
 							placeholder="Write your comment…"
