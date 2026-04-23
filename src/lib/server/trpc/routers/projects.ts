@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, asc, ilike, or, sql, isNotNull, count } from 'drizzle-orm';
+import { eq, and, asc, ilike, or, sql, isNotNull, count, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import {
@@ -242,10 +242,56 @@ export const projectsRouter = router({
       return { ok: true };
     }),
 
-  // Schedule deletion — gives collaborators 7 days to export their work
+  // Delete project — immediate if no collaborators, scheduled 7 days if collaborators exist
   delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: projectId }) => {
-    const scheduledDeleteAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    // Count non-owner collaborators
+    const collabRows = await ctx.withRLS((db) =>
+      db
+        .select({ userId: projectCollaborator.userId })
+        .from(projectCollaborator)
+        .where(and(eq(projectCollaborator.projectId, projectId), ne(projectCollaborator.role, 'owner')))
+    );
+    const hasCollaborators = collabRows.length > 0;
 
+    if (!hasCollaborators) {
+      // No collaborators — delete immediately via executeDeletion logic
+      const [photoKeys, pdfKeys] = await Promise.all([
+        ctx.withRLS((db) =>
+          db.select({ key: projectPhoto.key })
+            .from(projectPhoto)
+            .where(eq(projectPhoto.projectId, projectId))
+        ),
+        ctx.withRLS((db) =>
+          db
+            .select({ key: reference.pdfKey })
+            .from(reference)
+            .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+            .where(and(eq(projectReference.projectId, projectId), isNotNull(reference.pdfKey)))
+        )
+      ]);
+
+      const rows = await ctx.withRLS((db) =>
+        db
+          .delete(project)
+          .where(and(eq(project.id, projectId), eq(project.ownerId, ctx.user.id)))
+          .returning({ id: project.id, title: project.title })
+      );
+      if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+
+      const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS).catch(() => null);
+      if (s3) {
+        const keys = [
+          ...photoKeys.map((r) => r.key),
+          ...pdfKeys.flatMap((r) => (r.key ? [r.key] : []))
+        ];
+        await Promise.allSettled(keys.map((key) => deleteFileWithConfig(s3, key)));
+      }
+
+      return { ...rows[0], scheduledDeleteAt: null, immediate: true };
+    }
+
+    // Has collaborators — schedule deletion in 7 days
+    const scheduledDeleteAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const rows = await ctx.withRLS((db) =>
       db
         .update(project)
@@ -255,7 +301,7 @@ export const projectsRouter = router({
     );
 
     if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-    return { ...rows[0], scheduledDeleteAt };
+    return { ...rows[0], scheduledDeleteAt, immediate: false };
   }),
 
   // Cancel a scheduled deletion
