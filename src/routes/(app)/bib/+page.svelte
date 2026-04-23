@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SvelteMap } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { resolve } from '$app/paths';
 	import { invalidateAll } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
@@ -77,6 +77,18 @@
 			importError = e instanceof Error ? e.message : 'Import failed.';
 		} finally {
 			importing = false;
+		}
+	}
+
+	let deleting = $state(new SvelteSet<string>());
+
+	async function deleteRef(id: string) {
+		deleting.add(id);
+		try {
+			await trpc.references.delete.mutate(id);
+			await invalidateAll();
+		} finally {
+			deleting.delete(id);
 		}
 	}
 
@@ -189,6 +201,19 @@
 											>
 												{ref.doi ? 'DOI' : 'URL'}
 											</a>
+										{/if}
+										{#if ref.projectId === null}
+											<button
+												type="button"
+												onclick={() => deleteRef(ref.id)}
+												disabled={deleting.has(ref.id)}
+												aria-label="Borrar referencia"
+												class="rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
+											>
+												<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+													<path d="M2 4h10M5 4V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V4M6 7v3M8 7v3M3 4l.8 7.2A1 1 0 0 0 4.8 12h4.4a1 1 0 0 0 1-.8L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+												</svg>
+											</button>
 										{/if}
 									</div>
 								</div>
