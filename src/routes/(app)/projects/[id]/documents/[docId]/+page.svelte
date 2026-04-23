@@ -1564,7 +1564,7 @@
 	</div>
 
 	<!-- Desktop editor -->
-	<div class="hidden sm:block">
+	<div class="hidden sm:flex sm:h-screen sm:flex-col">
 		<!-- Sticky toolbar -->
 		<div
 			class="sticky top-0 z-10 flex flex-col border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
@@ -2103,7 +2103,7 @@
 		{/snippet}
 
 		<!-- Main layout -->
-		<div class="flex h-full overflow-hidden">
+		<div class="flex flex-1 min-h-0 overflow-hidden">
 			{#if viewMode === 'split'}
 				<!-- Split: editor left, preview right -->
 				<div class="relative flex flex-1 flex-col overflow-hidden">
