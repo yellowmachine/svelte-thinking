@@ -965,7 +965,6 @@ async function runAgentLoop(
     // ── Tool calls → execute and loop ────────────────────────────────────
     if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls?.length) {
       messages.push(choice.message);
-      console.log(`[agent] iter=${i} tools=${choice.message.tool_calls.map((t) => t.function.name).join(', ')} in=${data.usage?.prompt_tokens} out=${data.usage?.completion_tokens}`);
 
       const results = await Promise.all(
         choice.message.tool_calls.map(async (tc) => {
@@ -1621,7 +1620,6 @@ export async function runAgentLoopSSE(
 
     if (finishReason === 'tool_calls' && toolCalls.length > 0) {
       messages.push({ role: 'assistant', content: content || null, tool_calls: toolCalls });
-      console.log(`[agent-sse] iter=${i} tools=${toolCalls.map((t) => t.function.name).join(', ')} in=${inputTokens} out=${outputTokens}`);
 
       const results = await Promise.all(toolCalls.map(async (tc) => {
         let args: Record<string, unknown> = {};
@@ -2565,15 +2563,11 @@ Reglas:
         })
       });
 
-      console.log('[draftSection] request →', { model, projectId: input.projectId });
-
       if (!res.ok) await throwProviderError(res);
 
       const data = await res.json();
       const text = data.choices?.[0]?.message?.content?.trim() ?? '';
       logUsage(ctx.withRLS, { orgId: sectionOrgId, projectId: input.projectId, userId, model, task: 'draft', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
-
-      console.log('[draftSection] response ←', { chars: text.length });
 
       return { text };
     }),
@@ -2658,16 +2652,12 @@ Rules:
         })
       });
 
-      console.log('[reviewDocument] request →', { model, documentId: input.documentId });
-
       if (!res.ok) await throwProviderError(res);
 
       const data = await res.json();
       const rawContent = data.choices?.[0]?.message?.content?.trim() ?? '{}';
       const raw = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
       logUsage(ctx.withRLS, { orgId: reviewOrgId, projectId: input.projectId, userId, model: resolvedReviewModel, task: 'review', inputTokens: data.usage?.prompt_tokens ?? 0, outputTokens: data.usage?.completion_tokens ?? 0 });
-
-      console.log('[reviewDocument] response ←', raw.slice(0, 200));
 
       type ReviewResult = {
         requirements: { name: string; covered: boolean; note: string }[];
