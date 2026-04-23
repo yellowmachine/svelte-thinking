@@ -15,6 +15,7 @@
 
 	let {
 		content = '',
+		preRenderedHtml = undefined as string | undefined,
 		projectId = null,
 		references = [],
 		citationStyle = 'apa',
@@ -26,6 +27,7 @@
 		onparagraphcomment = undefined as ((paragraphNumber: number, coords: { top: number; right: number }) => void) | undefined
 	}: {
 		content: string;
+		preRenderedHtml?: string;
 		projectId?: string | null;
 		references?: CiteRef[];
 		citationStyle?: CitationStyle;
@@ -44,7 +46,10 @@
 	let snapshot = $state(untrack(() => content));
 
 	$effect(() => {
-		if (!einkStore.enabled) snapshot = content;
+		if (einkStore.enabled) return;
+		const next = content;
+		const timer = setTimeout(() => { snapshot = next; }, 400);
+		return () => clearTimeout(timer);
 	});
 
 	function refresh() {
@@ -220,7 +225,11 @@
 		}
 	}
 
-	let parsed = $derived(parseMarkdown(snapshot, refsMap, citationStyle, docMap));
+	let parsed = $derived(
+		preRenderedHtml !== undefined
+			? { html: preRenderedHtml, plots: new Map<string, object>(), diagrams: new Map<string, string>() }
+			: parseMarkdown(snapshot, refsMap, citationStyle, docMap)
+	);
 
 	$effect(() => {
 		const { plots } = parsed;
