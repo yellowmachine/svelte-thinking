@@ -36,6 +36,7 @@
 	};
 
 	let docSortMode = $state<'date' | 'alpha'>('date');
+	let docViewMode = $state<'list' | 'grid'>('list');
 	const documents = $derived(
 		docSortMode === 'alpha'
 			? [...data.documents].sort((a, b) => a.title.localeCompare(b.title))
@@ -936,7 +937,7 @@
 
 	<div class="grid gap-8 lg:grid-cols-3">
 		<!-- Documents section -->
-		<div class="lg:col-span-2">
+		<div class="{docViewMode === 'grid' ? 'lg:col-span-3' : 'lg:col-span-2'}">
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
 				<div class="hidden items-center gap-2 sm:flex">
@@ -950,6 +951,28 @@
 							onclick={() => (docSortMode = 'alpha')}
 							class="px-2.5 py-1 transition-colors {docSortMode === 'alpha' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 						>A–Z</button>
+					</div>
+					<!-- List / Grid view toggle -->
+					<div class="flex rounded-md border border-paper-border overflow-hidden dark:border-dark-paper-border">
+						<button
+							onclick={() => (docViewMode = 'list')}
+							aria-label="List view"
+							class="px-2 py-1 transition-colors {docViewMode === 'list' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+								<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+							</svg>
+						</button>
+						<button
+							onclick={() => (docViewMode = 'grid')}
+							aria-label="Grid view"
+							class="px-2 py-1 transition-colors {docViewMode === 'grid' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
+								<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+								<rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+							</svg>
+						</button>
 					</div>
 					{#if canEdit}
 						<button
@@ -1136,6 +1159,35 @@
 			{:else if normalDocs.length > 0}
 				{#if normalDocsFiltered.length === 0}
 					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">No documents match your filter.</p>
+				{:else if docViewMode === 'grid'}
+					<!-- Grid view: all documents, 4 columns -->
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+						{#each normalDocsFiltered as doc (doc.id)}
+							<button
+								onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
+								class="group relative flex flex-col gap-2 rounded-xl border border-paper-border bg-paper p-4 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/30 dark:hover:bg-dark-paper-ui"
+							>
+								<!-- Type icon / badge -->
+								<div class="flex items-center justify-between">
+									<span class="font-sans text-[10px] font-medium uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">{doc.type}</span>
+									{#if navigatingToDocId === doc.id}
+										<Spinner size="sm" />
+									{:else if isDocReadOnly(doc)}
+										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" class="text-ink-faint dark:text-dark-ink-faint" aria-hidden="true">
+											<rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.75"/>
+											<path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+										</svg>
+									{/if}
+								</div>
+								<p class="line-clamp-3 font-serif text-sm font-medium leading-snug text-ink dark:text-dark-ink">{doc.title}</p>
+								{#if doc.updatedAt}
+									<p class="mt-auto font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+										{new Date(doc.updatedAt).toLocaleDateString()}
+									</p>
+								{/if}
+							</button>
+						{/each}
+					</div>
 				{:else}
 				<div
 					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
