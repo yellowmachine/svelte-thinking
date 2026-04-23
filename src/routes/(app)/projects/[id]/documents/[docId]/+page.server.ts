@@ -95,10 +95,10 @@ export const load: PageServerLoad = async (event) => {
 			};
 		}),
 
-		// Project info (title + owner)
+		// Project info (title + owner + citationStyle)
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: project.id, title: project.title, ownerId: project.ownerId, orgId: project.orgId })
+				.select({ id: project.id, title: project.title, ownerId: project.ownerId, orgId: project.orgId, citationStyle: project.citationStyle })
 				.from(project)
 				.where(eq(project.id, projectId))
 				.limit(1)
@@ -222,6 +222,7 @@ export const load: PageServerLoad = async (event) => {
 		projectTitle: proj?.title ?? '',
 		projectOwnerId: proj?.ownerId ?? '',
 		projectOrgId: proj?.orgId ?? null,
+		projectCitationStyle: (proj?.citationStyle ?? null) as 'apa' | 'ieee' | 'vancouver' | 'chicago' | null,
 		writerName,
 		collaborators,
 		inlineComments,

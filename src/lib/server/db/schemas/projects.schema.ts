@@ -35,6 +35,7 @@ export const project = scholioSchema.table(
 		agentSystemPrompt: text('agent_system_prompt'),
 		// Optional org link — when set, AI key is resolved from the org (not the user)
 		orgId: text('org_id'),
+		citationStyle: text('citation_style'),
 		doi: text('doi'),
 		version: text('version'),
 		publishedAt: timestamp('published_at'),

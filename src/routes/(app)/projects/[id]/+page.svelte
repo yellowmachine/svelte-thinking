@@ -12,6 +12,7 @@
 	import { type DocumentType } from '$lib/domain/document';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
+	import { type CitationStyle, CITATION_STYLE_LABELS } from '$lib/utils/citations';
 
 	let { data }: { data: PageData } = $props();
 
@@ -139,6 +140,11 @@
 			savingField = false;
 			editingField = null;
 		}
+	}
+
+	async function setProjectCitationStyle(style: CitationStyle | null) {
+		await trpc.projects.update.mutate({ id: data.project.id, citationStyle: style });
+		await invalidateAll();
 	}
 
 	let showCreateDoc = $state(false);
@@ -1538,6 +1544,25 @@
 								</button>
 							{/if}
 						</div>
+						<!-- Citation style -->
+						{#if data.isOwner}
+							{@const proj = data.project as typeof data.project & { citationStyle?: string | null }}
+							<div>
+								<span class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">Citation style</span>
+								<div class="mt-1 flex flex-wrap gap-1.5">
+									{#each Object.entries(CITATION_STYLE_LABELS) as [s, label]}
+										<button
+											type="button"
+											onclick={() => setProjectCitationStyle(proj.citationStyle === s ? null : s as CitationStyle)}
+											class="rounded px-2 py-0.5 font-sans text-xs transition-colors {proj.citationStyle === s ? 'bg-accent text-white' : 'border border-paper-border text-ink-muted hover:border-accent/50 dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+										>{label}</button>
+									{/each}
+								</div>
+								{#if proj.citationStyle}
+									<p class="mt-1 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">Documents inherit this style unless overridden.</p>
+								{/if}
+							</div>
+						{/if}
 					</div>
 				</div>
 			{/if}

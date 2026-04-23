@@ -339,15 +339,14 @@
 		showCitePicker = false;
 	}
 
-	// Persist citation style per document in localStorage
+	// Citation style: localStorage per-document overrides project default, which overrides 'apa'
 	$effect(() => {
 		if (!data.document) return;
 		const stored = localStorage.getItem(`cite-style-${data.document.id}`);
-		if (
-			stored &&
-			(stored === 'apa' || stored === 'ieee' || stored === 'vancouver' || stored === 'chicago')
-		) {
+		if (stored && (stored === 'apa' || stored === 'ieee' || stored === 'vancouver' || stored === 'chicago')) {
 			citationStyle = stored as CitationStyle;
+		} else if (data.projectCitationStyle) {
+			citationStyle = data.projectCitationStyle;
 		}
 	});
 
