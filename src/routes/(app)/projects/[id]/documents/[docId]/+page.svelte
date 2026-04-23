@@ -1380,15 +1380,54 @@
 	}
 
 	function onDocKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape' && authorPopover) {
-			authorPopover = null;
-			e.stopPropagation();
+		if (e.key === 'Escape') {
+			if (showFloating || showNewComment || showReviewTypeMenu) {
+				showFloating = false;
+				showNewComment = false;
+				showReviewTypeMenu = false;
+				currentSelection = null;
+				e.stopPropagation();
+				return;
+			}
+			if (showNewParagraphComment) {
+				showNewParagraphComment = false;
+				paragraphCommentText = '';
+				e.stopPropagation();
+				return;
+			}
+			if (authorPopover) {
+				authorPopover = null;
+				e.stopPropagation();
+			}
+		}
+	}
+
+	// Dismiss selection bubble when the browser clears the selection (e.g. click elsewhere in preview)
+	function onNativeSelectionChange() {
+		const sel = window.getSelection();
+		if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+			if (showFloating) updateSelection(null as never);
+		}
+	}
+
+	// Dismiss paragraph comment on click outside
+	let paragraphCommentEl = $state<HTMLElement | null>(null);
+	function onPointerDownOutside(e: PointerEvent) {
+		if (showNewParagraphComment && paragraphCommentEl && !paragraphCommentEl.contains(e.target as Node)) {
+			showNewParagraphComment = false;
+			paragraphCommentText = '';
 		}
 	}
 
 	$effect(() => {
 		document.addEventListener('keydown', onDocKeydown);
-		return () => document.removeEventListener('keydown', onDocKeydown);
+		document.addEventListener('selectionchange', onNativeSelectionChange);
+		document.addEventListener('pointerdown', onPointerDownOutside);
+		return () => {
+			document.removeEventListener('keydown', onDocKeydown);
+			document.removeEventListener('selectionchange', onNativeSelectionChange);
+			document.removeEventListener('pointerdown', onPointerDownOutside);
+		};
 	});
 
 	// Guard: unsaved changes — SvelteKit client-side navigation
@@ -2618,6 +2657,7 @@
 					style="top: {paragraphCommentPos.top}px; right: {window.innerWidth - paragraphCommentPos.right + 8}px;"
 				>
 					<div
+						bind:this={paragraphCommentEl}
 						class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
 					>
 						<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
