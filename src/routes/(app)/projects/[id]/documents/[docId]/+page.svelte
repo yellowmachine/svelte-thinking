@@ -2076,6 +2076,7 @@
 									ondocchange={handleDocChange}
 									onselectionchange={updateSelection}
 									oncitehover={(key, coords) => explainCitation(key, coords)}
+									oncitehoverclear={() => (citationExplain = null)}
 									onauthorhover={hasAiKey
 										? (name, coords) => showAuthorInfo(name, coords)
 										: undefined}
@@ -3628,7 +3629,7 @@
 			e.preventDefault();
 			doSaveDraft();
 		}
-		if (e.key === 'Escape') { showCheatsheet = false; showCiteStyleMenu = false; }
+		if (e.key === 'Escape') { showCheatsheet = false; showCiteStyleMenu = false; citationExplain = null; }
 	}}
 	onclick={() => { showCiteStyleMenu = false; }}
 />
