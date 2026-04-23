@@ -29,6 +29,13 @@
       "when": 1776950950203,
       "tag": "0003_omniscient_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776954800310,
+      "tag": "0004_tan_triton",
+      "breakpoints": true
     }
   ]
 }

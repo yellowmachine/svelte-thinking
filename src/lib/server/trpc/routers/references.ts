@@ -4,7 +4,6 @@ import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
-import TurndownService from 'turndown';
 import { router, protectedProcedure } from '../init';
 import { reference, projectReference, referenceSubnote } from '$lib/server/db/schemas/references.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
@@ -748,8 +747,8 @@ ${truncated}`;
 		.mutation(async ({ ctx, input }) => {
 			const { url, projectId, title } = input;
 
-			// Fetch and extract main content
-			let markdown: string;
+			// Fetch, extract main content and sanitize — store HTML directly (no markdown round-trip)
+			let renderedHtml: string;
 			try {
 				const res = await fetch(url, {
 					headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
@@ -758,27 +757,26 @@ ${truncated}`;
 				if (!res.ok)
 					throw new TRPCError({ code: 'BAD_REQUEST', message: `Could not fetch URL (HTTP ${res.status}).` });
 				const html = await res.text();
-				const { document: dom } = parseHTML(html);
+				const { document: dom, window } = parseHTML(html);
 				const article = new Readability(dom as unknown as Document).parse();
 				if (!article?.content)
 					throw new TRPCError({ code: 'BAD_REQUEST', message: 'No readable content found at that URL.' });
 
-				const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', bulletListMarker: '-' });
-				// Preserve footnote-style links rather than inlining them
-				td.addRule('footnoteLinks', {
-					filter: (node) => node.nodeName === 'A' && !!(node as HTMLAnchorElement).href,
-					replacement: (content) => content || ''
+				const { default: createDOMPurify } = await import('dompurify');
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const purify = createDOMPurify(window as any);
+				renderedHtml = purify.sanitize(article.content, {
+					ADD_TAGS: ['figure', 'figcaption'],
+					ADD_ATTR: ['role']
 				});
-				markdown = td.turndown(article.content);
 			} catch (e) {
 				if (e instanceof TRPCError) throw e;
 				throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch or parse the URL.' });
 			}
 
-			// Create document + initial version
+			// Create document — no version needed; renderedHtml is the canonical content
 			return ctx.withRLS(async (db) => {
 				const docId = crypto.randomUUID();
-				const versionId = crypto.randomUUID();
 
 				try {
 					await db.insert(document).values({
@@ -788,7 +786,8 @@ ${truncated}`;
 						type: 'paper',
 						ownerUserId: ctx.user.id,
 						generatedByAi: false,
-						isReadonly: true
+						isReadonly: true,
+						renderedHtml
 					});
 				} catch (e: unknown) {
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
@@ -796,17 +795,6 @@ ${truncated}`;
 					}
 					throw e;
 				}
-
-				await db.insert(documentVersion).values({
-					id: versionId,
-					documentId: docId,
-					content: markdown,
-					versionNumber: 1,
-					changeDescription: `Imported from ${url}`,
-					createdBy: ctx.user.id
-				});
-
-				await db.update(document).set({ currentVersionId: versionId }).where(eq(document.id, docId));
 
 				return { docId };
 			});
