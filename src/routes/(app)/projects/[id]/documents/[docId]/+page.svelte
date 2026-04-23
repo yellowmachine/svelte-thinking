@@ -561,6 +561,36 @@
 	};
 	let currentSelection: Selection | null = $state(null);
 
+	// Subnote form (triggered from floating button)
+	let showSubnote = $state(false);
+	let subnoteSlug = $state('');
+	let subnoteNotes = $state('');
+	let subnoteRefId = $state('');
+	let submittingSubnote = $state(false);
+	let subnoteError = $state('');
+
+	function slugify(text: string): string {
+		return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'note';
+	}
+
+	async function submitSubnote() {
+		if (!subnoteRefId || !subnoteSlug.trim() || !subnoteNotes.trim()) return;
+		submittingSubnote = true;
+		subnoteError = '';
+		try {
+			await trpc.references.addSubnote.mutate({ referenceId: subnoteRefId, slug: subnoteSlug.trim(), notes: subnoteNotes.trim() });
+			showSubnote = false;
+			savedCommentSelection = null;
+			subnoteSlug = '';
+			subnoteNotes = '';
+			subnoteRefId = '';
+		} catch (e) {
+			subnoteError = e instanceof Error ? e.message : 'Error saving subnote.';
+		} finally {
+			submittingSubnote = false;
+		}
+	}
+
 	// New comment form (triggered from floating button)
 	let showNewComment = $state(false);
 	let savedCommentSelection = $state<Selection | null>(null); // preserved when selectionchange fires on button click
@@ -1415,7 +1445,7 @@
 	// Deferred to rAF so onclick handlers (e.g. "+Comment") run first and can set showNewComment = true.
 	function onNativeSelectionChange() {
 		requestAnimationFrame(() => {
-			if (showNewComment) return;
+			if (showNewComment || showSubnote) return;
 			const sel = window.getSelection();
 			if (!sel || sel.isCollapsed || !sel.toString().trim()) {
 				if (showFloating) updateSelection(null as never);
@@ -2259,6 +2289,21 @@
 					>
 						+ Comment
 					</button>
+					{#if projectRefs.length > 0}
+						<button
+							class="pointer-events-auto rounded-md bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:bg-paper-ui border border-paper-border dark:bg-dark-paper dark:text-dark-ink dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
+							onclick={() => {
+								savedCommentSelection = currentSelection;
+								subnoteNotes = currentSelection?.text ?? '';
+								subnoteSlug = slugify(currentSelection?.text?.slice(0, 40) ?? '');
+								subnoteRefId = data.sourceReference?.id ?? (projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
+								subnoteError = '';
+								showSubnote = true;
+							}}
+						>
+							+ Subnote
+						</button>
+					{/if}
 					{#if selectedCiteKey() && hasAiKey}
 						<button
 							class="pointer-events-auto rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-semibold text-white shadow-md transition-colors hover:bg-accent-hover"
@@ -2659,6 +2704,69 @@
 									newCommentText = '';
 								}}
 								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+							>
+								Cancel
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Subnote popover (anchored near selection) -->
+			{#if showSubnote && savedCommentSelection?.coords}
+				<div
+					class="pointer-events-none fixed z-20"
+					style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection.coords.left}px;"
+				>
+					<div class="pointer-events-auto w-80 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+						<p class="mb-2 font-sans text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">Nueva subnota bibliográfica</p>
+						<p class="mb-3 truncate border-l-2 border-paper-border pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted">
+							«{savedCommentSelection.text.slice(0, 80)}{savedCommentSelection.text.length > 80 ? '…' : ''}»
+						</p>
+						{#if !data.sourceReference}
+							<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Referencia</label>
+							<select
+								bind:value={subnoteRefId}
+								class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							>
+								<option value="">— elige referencia —</option>
+								{#each projectRefs as ref}
+									<option value={ref.id ?? ''}>{ref.citeKey}</option>
+								{/each}
+							</select>
+						{:else}
+							<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								Referencia: <span class="font-mono text-accent">@{data.sourceReference.citeKey}</span>
+							</p>
+						{/if}
+						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Slug <span class="text-ink-faint">(identificador único)</span></label>
+						<input
+							use:focusOnMount
+							bind:value={subnoteSlug}
+							type="text"
+							placeholder="p247-exchange"
+							class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						/>
+						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Nota</label>
+						<textarea
+							bind:value={subnoteNotes}
+							rows={3}
+							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						></textarea>
+						{#if subnoteError}
+							<p class="mt-1 font-sans text-xs text-red-500">{subnoteError}</p>
+						{/if}
+						<div class="mt-2 flex gap-2">
+							<button
+								onclick={submitSubnote}
+								disabled={submittingSubnote || !subnoteSlug.trim() || !subnoteNotes.trim() || !subnoteRefId}
+								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+							>
+								{submittingSubnote ? 'Saving…' : 'Guardar subnota'}
+							</button>
+							<button
+								onclick={() => { showSubnote = false; savedCommentSelection = null; }}
+								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 							>
 								Cancel
 							</button>

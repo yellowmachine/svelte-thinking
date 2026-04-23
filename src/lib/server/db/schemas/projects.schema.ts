@@ -41,6 +41,8 @@ export const project = scholioSchema.table(
 		publishedAt: timestamp('published_at'),
 		// Graceful deletion: set by owner, actual cascade fires when scheduledDeleteAt <= now()
 		scheduledDeleteAt: timestamp('scheduled_delete_at'),
+		// Set while an EPUB import is running in the background
+		isImporting: boolean('is_importing').notNull().default(false),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},

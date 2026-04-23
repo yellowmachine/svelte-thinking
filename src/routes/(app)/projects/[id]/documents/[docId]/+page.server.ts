@@ -4,6 +4,7 @@ import { document, documentVersion } from '$lib/server/db/schemas/documents.sche
 import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
+import { reference } from '$lib/server/db/schemas/references.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { eq, and, isNull, isNotNull, sql } from 'drizzle-orm';
 import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
@@ -203,6 +204,18 @@ export const load: PageServerLoad = async (event) => {
 
 	const proj = projectResult[0];
 
+	// Resolve source reference (for subnote creation from selected text)
+	let sourceReference: { id: string; citeKey: string } | null = null;
+	if (docResult.sourceReferenceId) {
+		const rows = await event.locals.withRLS((db) =>
+			db.select({ id: reference.id, citeKey: reference.citeKey })
+				.from(reference)
+				.where(eq(reference.id, docResult.sourceReferenceId!))
+				.limit(1)
+		);
+		sourceReference = rows[0] ?? null;
+	}
+
 	// Resolve writer name if set
 	let writerName: string | null = null;
 	if (docResult.writerUserId) {
@@ -232,6 +245,7 @@ export const load: PageServerLoad = async (event) => {
 		externalDocs,
 		unpublished: docResult.content === null && !docResult.renderedHtml,
 		forcePublished: event.url.searchParams.has('published'),
-		renderedHtml: docResult.renderedHtml ?? null
+		renderedHtml: docResult.renderedHtml ?? null,
+		sourceReference
 	};
 };
