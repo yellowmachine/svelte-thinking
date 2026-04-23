@@ -155,17 +155,33 @@
 	// EPUB import
 	let showEpubModal = $state(false);
 	let epubUrl = $state('');
+	let epubFile = $state<File | null>(null);
 	let epubImporting = $state(false);
 	let epubError = $state('');
 
 	async function startEpubImport() {
-		if (!epubUrl.trim()) return;
+		const hasUrl = epubUrl.trim().length > 0;
+		const hasFile = epubFile !== null;
+		if (!hasUrl && !hasFile) return;
 		epubImporting = true;
 		epubError = '';
 		try {
-			await trpc.projects.importEpub.mutate({ projectId: data.project.id, url: epubUrl.trim() });
+			let url = epubUrl.trim();
+			if (hasFile) {
+				const fd = new FormData();
+				fd.append('file', epubFile!);
+				const res = await fetch(`/api/projects/${data.project.id}/epub`, { method: 'POST', body: fd });
+				if (!res.ok) {
+					const body = await res.json().catch(() => ({}));
+					throw new Error(body.message ?? `Upload failed (${res.status})`);
+				}
+				const data2 = await res.json();
+				url = data2.url;
+			}
+			await trpc.projects.importEpub.mutate({ projectId: data.project.id, url });
 			showEpubModal = false;
 			epubUrl = '';
+			epubFile = null;
 			// Poll until isImporting clears
 			const poll = setInterval(async () => {
 				await invalidateAll();
@@ -849,13 +865,44 @@
 			<div class="absolute inset-0" onclick={() => { showEpubModal = false; }}></div>
 			<div class="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper">
 				<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import EPUB</h2>
-				<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Introduce la URL de un EPUB de acceso libre. Se importará cada capítulo como documento readonly.
+				<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Sube un fichero .epub o introduce una URL. Cada capítulo se importará como documento readonly.
 				</p>
+				<!-- File upload -->
+				<label class="mb-3 flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink-muted hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-muted dark:hover:border-accent">
+					<input
+						type="file"
+						accept=".epub,application/epub+zip"
+						class="hidden"
+						onchange={(e) => {
+							const f = (e.currentTarget as HTMLInputElement).files?.[0] ?? null;
+							epubFile = f;
+							if (f) epubUrl = '';
+						}}
+					/>
+					{#if epubFile}
+						<span class="truncate text-ink dark:text-dark-ink">{epubFile.name}</span>
+						<button
+							type="button"
+							class="ml-auto shrink-0 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+							onclick={(e) => { e.preventDefault(); epubFile = null; }}
+						>✕</button>
+					{:else}
+						<span>Seleccionar fichero .epub…</span>
+					{/if}
+				</label>
+				<!-- Divider -->
+				<div class="my-3 flex items-center gap-2">
+					<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">o URL</span>
+					<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+				</div>
+				<!-- URL input -->
 				<input
 					type="url"
 					bind:value={epubUrl}
 					placeholder="https://example.org/book.epub"
+					oninput={() => { if (epubUrl) epubFile = null; }}
 					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				/>
 				{#if epubError}
@@ -863,14 +910,14 @@
 				{/if}
 				<div class="mt-4 flex justify-end gap-2">
 					<button
-						onclick={() => { showEpubModal = false; epubUrl = ''; epubError = ''; }}
+						onclick={() => { showEpubModal = false; epubUrl = ''; epubFile = null; epubError = ''; }}
 						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 					>
 						Cancel
 					</button>
 					<button
 						onclick={startEpubImport}
-						disabled={epubImporting || !epubUrl.trim()}
+						disabled={epubImporting || (!epubUrl.trim() && !epubFile)}
 						class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 					>
 						{#if epubImporting}<Spinner size="sm" />{/if}
