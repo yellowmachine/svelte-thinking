@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { invalidateAll, goto } from '$app/navigation';
+	import { navigating } from '$app/state';
 	import { onMount } from 'svelte';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import DocumentItem from '$lib/components/documents/DocumentItem.svelte';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
@@ -324,6 +326,10 @@
 	$effect(() => {
 		if (onlineStore.online) syncPendingCreates();
 	});
+
+	let navigatingToDocId = $derived(
+		navigating?.to?.url.pathname.match(/\/documents\/([^/]+)$/)?.[1] ?? null
+	);
 
 	// ── Templates ─────────────────────────────────────────────────────────────
 	let showUseTemplate = $state<string | null>(null); // templateDoc.id being used
@@ -993,8 +999,7 @@
 									title={doc.title}
 									type={doc.type as DocumentType}
 									badge={doc.generatedByAi ? 'Example · Delete anytime' : getDocumentBadge(doc)}
-									onclick={() =>
-										(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
+									onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
 								/>
 							</div>
 							{#if data.isOwner && activeShareDocSet.has(doc.id)}
@@ -1021,6 +1026,9 @@
 										<path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
 									</svg>
 								</span>
+							{/if}
+							{#if navigatingToDocId === doc.id}
+								<span class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"><Spinner size="sm" /></span>
 							{/if}
 							{#if (data.openCommentsByDoc[doc.id] ?? 0) > 0}
 								<a
@@ -1135,10 +1143,12 @@
 									<DocumentItem
 										title={doc.title}
 										type={doc.type as DocumentType}
-										onclick={() =>
-											(window.location.href = `/projects/${data.project.id}/documents/${doc.id}`)}
+										onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
 									/>
 								</div>
+								{#if navigatingToDocId === doc.id}
+									<span class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"><Spinner size="sm" /></span>
+								{/if}
 								{#if activeShareDocSet.has(doc.id)}
 									<span
 										class="mr-1 h-2 w-2 shrink-0 rounded-full bg-accent"
