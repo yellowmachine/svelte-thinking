@@ -114,8 +114,15 @@ function _processWikilinks(
 	markdown: string,
 	docMap: Map<string, { id: string; projectId: string }>
 ): string {
+	// Pre-pass: [[doc:...]] tokens alone on a line must be wrapped in blank lines
+	// so marked treats each as its own paragraph instead of collapsing them into one.
+	let result = markdown.replace(
+		/^[ \t]*(\[\[doc:[a-f0-9-]{36}\|[^\]]+\]\])[ \t]*$/gm,
+		'\n$1\n'
+	);
+
 	// First pass: resolve [[#Heading]] → markdown anchor links
-	let result = markdown.replace(HEADING_LINK_RE, (_match, heading: string) => {
+	result = result.replace(HEADING_LINK_RE, (_match, heading: string) => {
 		return `[${heading.trim()}](#${headingAnchor(heading)})`;
 	});
 
