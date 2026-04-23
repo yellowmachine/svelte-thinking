@@ -31,7 +31,7 @@ async function insertStarterDocuments(db: Db, projectId: string, userId: string)
     // Insert references first
     for (const ref of starter.references) {
       const refId = crypto.randomUUID();
-      await db
+      const inserted = await db
         .insert(reference)
         .values({
           id: refId,
@@ -49,11 +49,23 @@ async function insertStarterDocuments(db: Db, projectId: string, userId: string)
           address: ref.address,
           isbn: ref.isbn
         })
-        .onConflictDoNothing();
-      await db
-        .insert(projectReference)
-        .values({ referenceId: refId, projectId })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ id: reference.id });
+
+      const actualRefId = inserted[0]?.id ?? (
+        await db
+          .select({ id: reference.id })
+          .from(reference)
+          .where(and(eq(reference.userId, userId), eq(reference.citeKey, ref.citeKey)))
+          .limit(1)
+      )[0]?.id;
+
+      if (actualRefId) {
+        await db
+          .insert(projectReference)
+          .values({ referenceId: actualRefId, projectId })
+          .onConflictDoNothing();
+      }
     }
 
     // Insert document
