@@ -19,7 +19,7 @@ import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
-import { deleteFileWithConfig } from '$lib/server/storage';
+import { deleteFileWithConfig, uploadFileWithConfig } from '$lib/server/storage';
 import { isProjectOwner, canRemoveCollaborator, canChangeCollaboratorRole } from '$lib/domain/permissions';
 import { PROJECT_STATUSES } from '$lib/domain/project';
 import { STARTER_DOCUMENTS } from '$lib/server/starterContent';
@@ -789,9 +789,9 @@ export const projectsRouter = router({
           }
           const authors = creatorText ? [{ first: authorFirst, last: authorLast }] : [];
 
-          // Manifest: id → href map
+          // Manifest: id → href map (getElementsByTagName avoids namespace issues)
           const manifestItems = new Map<string, string>();
-          opfDoc.querySelectorAll('manifest > item').forEach((item) => {
+          Array.from(opfDoc.getElementsByTagName('item')).forEach((item) => {
             const id = item.getAttribute('id');
             const href = item.getAttribute('href');
             const type = item.getAttribute('media-type') ?? '';
@@ -800,9 +800,20 @@ export const projectsRouter = router({
             }
           });
 
+          // Image manifest: id → href (for src rewriting)
+          const imageItems = new Map<string, string>();
+          Array.from(opfDoc.getElementsByTagName('item')).forEach((item) => {
+            const id = item.getAttribute('id');
+            const href = item.getAttribute('href');
+            const type = item.getAttribute('media-type') ?? '';
+            if (id && href && type.startsWith('image/')) {
+              imageItems.set(id, href);
+            }
+          });
+
           // Spine: ordered chapter idrefs
           const spineItems: string[] = [];
-          opfDoc.querySelectorAll('spine > itemref').forEach((ref) => {
+          Array.from(opfDoc.getElementsByTagName('itemref')).forEach((ref) => {
             const idref = ref.getAttribute('idref');
             if (idref && manifestItems.has(idref)) spineItems.push(idref);
           });
@@ -812,6 +823,25 @@ export const projectsRouter = router({
           const citeKey = generateCiteKey(authors.length ? authors : [{ first: '', last: 'unknown' }], dateText);
 
           const { default: createDOMPurify } = await import('dompurify');
+
+          // Resolve S3 once for image uploads
+          const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS).catch(() => null);
+
+          // Normalize a relative path (resolve ".." segments)
+          const normalizePath = (p: string) => {
+            const parts = p.split('/');
+            const out: string[] = [];
+            for (const part of parts) {
+              if (part === '..') out.pop();
+              else if (part && part !== '.') out.push(part);
+            }
+            return out.join('/');
+          };
+
+          const imageExtMime: Record<string, string> = {
+            jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+            gif: 'image/gif', svg: 'image/svg+xml', webp: 'image/webp'
+          };
 
           await ctx.withRLS(async (db) => {
             // Upsert reference
@@ -854,13 +884,36 @@ export const projectsRouter = router({
               if (!fileData) continue;
 
               const chapterHtml = decode(fileData);
-              const { window } = parseHTML(chapterHtml);
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const purify = createDOMPurify(window as any);
-              const clean = purify.sanitize(chapterHtml, { ADD_TAGS: ['figure', 'figcaption'], ADD_ATTR: ['role'] });
+              const chapterDir = href.includes('/') ? href.slice(0, href.lastIndexOf('/') + 1) : '';
 
-              // Derive chapter title from <title> or <h1>/<h2>
-              const { document: chDoc } = parseHTML(chapterHtml);
+              // Parse chapter DOM for title + image rewriting
+              const { document: chDoc, window: chWindow } = parseHTML(chapterHtml);
+
+              // Rewrite image srcs to S3 URLs
+              if (s3) {
+                const imgEls = Array.from(chDoc.querySelectorAll('img'));
+                for (const img of imgEls) {
+                  const src = img.getAttribute('src');
+                  if (!src || src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) continue;
+                  const imgPath = normalizePath(opfBase + chapterDir + src);
+                  const imgData = files[imgPath] ?? files[normalizePath(opfBase + src)] ?? files[src];
+                  if (!imgData) { img.removeAttribute('src'); continue; }
+                  const ext = src.split('.').pop()?.toLowerCase() ?? 'jpg';
+                  const mimeType = imageExtMime[ext] ?? 'image/jpeg';
+                  const s3Key = `projects/${projectId}/epub-images/${crypto.randomUUID()}.${ext}`;
+                  try {
+                    const s3Url = await uploadFileWithConfig(s3, s3Key, Buffer.from(imgData), mimeType);
+                    img.setAttribute('src', s3Url);
+                  } catch {
+                    img.removeAttribute('src');
+                  }
+                }
+              }
+
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const purify = createDOMPurify(chWindow as any);
+              const htmlToSanitize = chDoc.documentElement?.outerHTML ?? chapterHtml;
+              const clean = purify.sanitize(htmlToSanitize, { ADD_TAGS: ['figure', 'figcaption'], ADD_ATTR: ['role'] });
               const chapterTitle =
                 chDoc.querySelector('h1, h2')?.textContent?.trim() ||
                 chDoc.querySelector('title')?.textContent?.trim() ||
