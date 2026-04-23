@@ -2189,6 +2189,7 @@
 								<MarkdownPreview
 									bind:this={previewRef}
 									{content}
+									preRenderedHtml={data.renderedHtml ?? undefined}
 									projectId={data.document.projectId}
 									references={projectRefs}
 									{citationStyle}
