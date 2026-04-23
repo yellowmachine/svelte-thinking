@@ -46,7 +46,10 @@
 	let snapshot = $state(untrack(() => content));
 
 	$effect(() => {
-		if (!einkStore.enabled) snapshot = content;
+		if (einkStore.enabled) return;
+		const next = content;
+		const timer = setTimeout(() => { snapshot = next; }, 400);
+		return () => clearTimeout(timer);
 	});
 
 	function refresh() {
