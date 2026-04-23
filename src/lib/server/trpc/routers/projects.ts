@@ -741,7 +741,10 @@ export const projectsRouter = router({
 
       // Run in background — response returns immediately
       (async () => {
+        const log = (...args: unknown[]) => console.log('[importEpub]', ...args);
         try {
+          log('start', { projectId, url });
+
           // Download EPUB
           const res = await fetch(url, {
             headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
@@ -749,11 +752,13 @@ export const projectsRouter = router({
           });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const buffer = new Uint8Array(await res.arrayBuffer());
+          log('downloaded', buffer.byteLength, 'bytes');
 
           // Unzip
           const { unzipSync } = await import('fflate');
           const files = unzipSync(buffer);
           const decode = (b: Uint8Array) => new TextDecoder().decode(b);
+          log('unzipped, files:', Object.keys(files).length);
 
           // Find OPF via META-INF/container.xml
           const containerXml = decode(files['META-INF/container.xml']);
@@ -761,6 +766,7 @@ export const projectsRouter = router({
           const { document: containerDoc } = parseHTML(`<?xml version="1.0"?>${containerXml}`);
           const rootfilePath = containerDoc.querySelector('rootfile')?.getAttribute('full-path') ?? '';
           if (!rootfilePath) throw new Error('No rootfile in container.xml');
+          log('rootfile:', rootfilePath);
 
           // Parse OPF
           const opfBase = rootfilePath.includes('/') ? rootfilePath.slice(0, rootfilePath.lastIndexOf('/') + 1) : '';
@@ -776,6 +782,7 @@ export const projectsRouter = router({
           const creatorEl = metaEl('creator');
           const creatorText = creatorEl?.textContent?.trim() ?? '';
           const dateText = metaEl('date')?.textContent?.trim()?.slice(0, 4) ?? '';
+          log('metadata:', { title, creatorText, dateText });
 
           // Parse author name: "Last, First" or "First Last"
           let authorFirst = '', authorLast = creatorText;
@@ -799,6 +806,7 @@ export const projectsRouter = router({
               manifestItems.set(id, href);
             }
           });
+          log('manifest html items:', manifestItems.size);
 
           // Image manifest: id → href (for src rewriting)
           const imageItems = new Map<string, string>();
@@ -817,6 +825,7 @@ export const projectsRouter = router({
             const idref = ref.getAttribute('idref');
             if (idref && manifestItems.has(idref)) spineItems.push(idref);
           });
+          log('spine chapters:', spineItems.length);
 
           // Create bibliography reference
           const { generateCiteKey } = await import('$lib/utils/bibtex');
@@ -881,12 +890,15 @@ export const projectsRouter = router({
             db.insert(projectReference).values({ projectId, referenceId: resolvedRefId }).onConflictDoNothing()
           );
 
+          log('inserting reference, citeKey:', citeKey);
+
           // Import each chapter in its own transaction so one failure doesn't block the rest
           for (let i = 0; i < spineItems.length; i++) {
             const idref = spineItems[i];
             const href = manifestItems.get(idref)!;
             const filePath = opfBase + href;
             const fileData = files[filePath] ?? files[href];
+            log(`chapter ${i + 1}/${spineItems.length}: idref=${idref} href=${href} filePath=${filePath} found=${!!fileData}`);
             if (!fileData) continue;
 
             const chapterHtml = decode(fileData);
@@ -898,19 +910,21 @@ export const projectsRouter = router({
             // Rewrite image srcs to S3 URLs
             if (s3) {
               const imgEls = Array.from(chDoc.querySelectorAll('img'));
+              log(`  chapter ${i + 1}: ${imgEls.length} images to rewrite`);
               for (const img of imgEls) {
                 const src = img.getAttribute('src');
                 if (!src || src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) continue;
                 const imgPath = normalizePath(opfBase + chapterDir + src);
                 const imgData = files[imgPath] ?? files[normalizePath(opfBase + src)] ?? files[src];
-                if (!imgData) { img.removeAttribute('src'); continue; }
+                if (!imgData) { log(`  image not found in zip: ${imgPath}`); img.removeAttribute('src'); continue; }
                 const ext = src.split('.').pop()?.toLowerCase() ?? 'jpg';
                 const mimeType = imageExtMime[ext] ?? 'image/jpeg';
                 const s3Key = `projects/${projectId}/epub-images/${crypto.randomUUID()}.${ext}`;
                 try {
                   const s3Url = await uploadFileWithConfig(s3, s3Key, Buffer.from(imgData), mimeType);
                   img.setAttribute('src', s3Url);
-                } catch {
+                } catch (e) {
+                  log(`  image upload failed: ${e}`);
                   img.removeAttribute('src');
                 }
               }
@@ -927,6 +941,7 @@ export const projectsRouter = router({
 
             const docTitle = chapterTitle.slice(0, 255);
             const docId = crypto.randomUUID();
+            log(`  inserting chapter "${docTitle}"`);
 
             await ctx.withRLS((db) =>
               db.insert(document).values({
@@ -940,13 +955,14 @@ export const projectsRouter = router({
                 renderedHtml: clean,
                 sourceReferenceId: resolvedRefId
               })
-            ).catch((e) => console.warn(`[importEpub] skipped chapter "${docTitle}":`, e.message));
+            ).catch((e) => log(`  skipped chapter "${docTitle}": ${e.message}`));
           }
 
           // Done — own transaction so it always succeeds
           await ctx.withRLS((db) =>
             db.update(project).set({ isImporting: false }).where(eq(project.id, projectId))
           );
+          log('done', spineItems.length, 'chapters processed');
         } catch (err) {
           console.error('[importEpub] failed:', err);
           // Clear flag even on error so UI doesn't hang
