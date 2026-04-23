@@ -57,15 +57,12 @@
 		creating = true;
 		createError = '';
 		try {
-			await trpc.projects.create.mutate({
+			const created = await trpc.projects.create.mutate({
 				title: newTitle.trim(),
 				description: newDescription.trim() || undefined,
 				orgId: workspaceStore.current.id ?? undefined
 			});
-			await invalidateAll();
-			newTitle = '';
-			newDescription = '';
-			showCreate = false;
+			await goto(`/projects/${created.id}`);
 		} catch (e) {
 			createError = e instanceof Error ? e.message : 'Error creating project';
 		} finally {

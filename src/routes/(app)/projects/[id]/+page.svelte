@@ -35,7 +35,12 @@
 		expiresAt: Date;
 	};
 
-	const documents = $derived(data.documents);
+	let docSortMode = $state<'date' | 'alpha'>('date');
+	const documents = $derived(
+		docSortMode === 'alpha'
+			? [...data.documents].sort((a, b) => a.title.localeCompare(b.title))
+			: data.documents // already ordered by updatedAt desc from the server
+	);
 	const canEdit = $derived(data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor');
 	const activeShareDocSet = $derived(new Set(data.activeShareDocumentIds));
 
@@ -73,8 +78,9 @@
 	}
 
 	// Get badge text for a document if it's an unassigned chapter
-	function getDocumentBadge(doc: { type: string; id: string }): string | null {
+	function getDocumentBadge(doc: { type: string; id: string; isReadonly?: boolean }): string | null {
 		if (doc.type !== 'chapter') return null;
+		if (doc.isReadonly) return null; // imported chapters (EPUB) are standalone by design
 		if (isChapterReferenced(doc.id)) return null;
 		return 'Unassigned';
 	}
@@ -934,6 +940,17 @@
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
 				<div class="hidden items-center gap-2 sm:flex">
+					<!-- Sort toggle -->
+					<div class="flex rounded-md border border-paper-border text-xs font-sans overflow-hidden dark:border-dark-paper-border">
+						<button
+							onclick={() => (docSortMode = 'date')}
+							class="px-2.5 py-1 transition-colors {docSortMode === 'date' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+						>Date</button>
+						<button
+							onclick={() => (docSortMode = 'alpha')}
+							class="px-2.5 py-1 transition-colors {docSortMode === 'alpha' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+						>A–Z</button>
+					</div>
 					{#if canEdit}
 						<button
 							onclick={() => (showGenerateDraft = true)}

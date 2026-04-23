@@ -892,6 +892,21 @@ export const projectsRouter = router({
 
           log('inserting reference, citeKey:', citeKey);
 
+          // Pre-load existing titles to disambiguate duplicates without retries
+          const existingTitleRows = await ctx.withRLS((db) =>
+            db.select({ title: document.title }).from(document).where(eq(document.projectId, projectId))
+          );
+          const takenTitles = new Set(existingTitleRows.map((r) => r.title));
+
+          function uniqueTitle(base: string): string {
+            if (!takenTitles.has(base)) { takenTitles.add(base); return base; }
+            let n = 2;
+            while (takenTitles.has(`${base} (${n})`)) n++;
+            const t = `${base} (${n})`;
+            takenTitles.add(t);
+            return t;
+          }
+
           // Import each chapter in its own transaction so one failure doesn't block the rest
           for (let i = 0; i < spineItems.length; i++) {
             const idref = spineItems[i];
@@ -939,7 +954,7 @@ export const projectsRouter = router({
               chDoc.querySelector('title')?.textContent?.trim() ||
               `${title} — Chapter ${i + 1}`;
 
-            const docTitle = chapterTitle.slice(0, 255);
+            const docTitle = uniqueTitle(chapterTitle.slice(0, 250));
             const docId = crypto.randomUUID();
             log(`  inserting chapter "${docTitle}"`);
 
@@ -955,7 +970,7 @@ export const projectsRouter = router({
                 renderedHtml: clean,
                 sourceReferenceId: resolvedRefId
               })
-            ).catch((e) => log(`  skipped chapter "${docTitle}": ${e.message}`));
+            ).catch((e) => log(`  failed chapter "${docTitle}": ${e.message}`));
           }
 
           // Done — own transaction so it always succeeds
