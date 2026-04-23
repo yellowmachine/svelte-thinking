@@ -85,6 +85,7 @@
 	let view: EditorView | null = null;
 	let wordGhostActive = false;
 	let headingGhostActive = false;
+	let citeGhostActive = false;
 
 	// Debounce timer for citation hover
 	let citeHoverTimer: ReturnType<typeof setTimeout> | null = null;
@@ -613,6 +614,40 @@
 					} else {
 						wordGhostActive = false;
 						onwordprefixclear?.();
+					}
+				}
+				// Citation ghost text — cursor inside [[@partial
+				if (update.docChanged || update.selectionSet) {
+					const sel = update.state.selection.main;
+					if (sel.empty && references.length > 0) {
+						const doc = update.state.doc.toString();
+						const pos = sel.head;
+						const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
+						const textBefore = doc.slice(lineStart, pos);
+						const cm = textBefore.match(/\[\[@([\w.-]*)$/);
+						if (cm) {
+							const partial = cm[1].toLowerCase();
+							const matched = references.find((r) =>
+								r.citeKey.toLowerCase().startsWith(partial)
+							);
+							if (matched) {
+								const suffix = matched.citeKey.slice(partial.length);
+								const hasSubnotes = (matched.subnotes?.length ?? 0) > 0;
+								citeGhostActive = true;
+								update.view.dispatch({
+									effects: setGhostTextEffect.of(suffix + (hasSubnotes ? ':' : ']]'))
+								});
+							} else if (citeGhostActive) {
+								citeGhostActive = false;
+								update.view.dispatch({ effects: setGhostTextEffect.of(null) });
+							}
+						} else if (citeGhostActive) {
+							citeGhostActive = false;
+							update.view.dispatch({ effects: setGhostTextEffect.of(null) });
+						}
+					} else if (citeGhostActive) {
+						citeGhostActive = false;
+						update.view.dispatch({ effects: setGhostTextEffect.of(null) });
 					}
 				}
 				// Token hover — cursor dwell on [[@key]], [[person:Name]], or ## heading
