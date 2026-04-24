@@ -16,14 +16,14 @@ export type SyncStatus = 'initializing' | 'synced' | 'syncing' | 'error' | 'offl
 class PouchStore {
 	status = $state<SyncStatus>('initializing');
 	private db: PouchDB.Database<OfflineDoc> | null = null;
-	private syncHandler: PouchDB.Replication.Sync<OfflineDoc> | null = null;
+	private pullHandler: PouchDB.Replication.Replication<OfflineDoc> | null = null;
+	// Doc _ids that were saved offline and need to be pushed to CouchDB
+	private pendingPush = new Set<string>();
 
 	async init() {
 		if (!browser) return;
-		// Guard against double-init (HMR re-evaluation, or called twice)
 		if (this.db) return;
 		try {
-			// PouchDB loaded via script tag in app.html (avoids Vite/esbuild UMD issues)
 			const PouchDB = (window as unknown as { PouchDB: PouchDB.Static }).PouchDB;
 			if (!PouchDB) {
 				console.error('[pouch] window.PouchDB not found — script tag may not have loaded');
@@ -31,27 +31,49 @@ class PouchStore {
 			}
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			this.db = new (PouchDB as any)<OfflineDoc>('scholio-docs', { auto_compaction: true });
-			this._startSync();
-			window.addEventListener('online', () => this._startSync());
+			this._startPull();
+			window.addEventListener('online', () => this._onOnline());
 		} catch (e) {
 			console.error('[pouch] init failed:', e);
 		}
 	}
 
-	private _startSync() {
+	// Pull-only live replication: keeps local DB in sync with CouchDB without
+	// echoing pulled documents back — only explicit pushPending() writes to remote.
+	private _startPull() {
 		if (!this.db) return;
-		this.syncHandler?.cancel();
-		// PouchDB only uses its HTTP adapter when the URL has a scheme (http:// or https://).
-		// A root-relative path like '/api/couch/documents' is treated as a local DB name.
+		this.pullHandler?.cancel();
 		const remoteUrl = `${window.location.origin}/api/couch/documents`;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const handler = (this.db as any).sync(remoteUrl, { live: true, retry: true });
+		const handler = (this.db as any).replicate.from(remoteUrl, { live: true, retry: true });
 		handler
 			.on('active', () => { this.status = 'syncing'; })
 			.on('paused', (e: unknown) => { this.status = e instanceof Error ? 'error' : 'synced'; })
-			.on('error', (e: unknown) => { console.error('[pouch] sync error', e); this.status = 'error'; })
-			.on('denied', (e: unknown) => { console.error('[pouch] sync denied', e); this.status = 'error'; });
-		this.syncHandler = handler as PouchDB.Replication.Sync<OfflineDoc>;
+			.on('error', (e: unknown) => { console.error('[pouch] pull error', e); this.status = 'error'; })
+			.on('denied', (e: unknown) => { console.error('[pouch] pull denied', e); this.status = 'error'; });
+		this.pullHandler = handler as PouchDB.Replication.Replication<OfflineDoc>;
+	}
+
+	private async _onOnline() {
+		this._startPull();
+		await this._pushPending();
+	}
+
+	private async _pushPending() {
+		if (!this.db || this.pendingPush.size === 0) return;
+		const docIds = Array.from(this.pendingPush);
+		const remoteUrl = `${window.location.origin}/api/couch/documents`;
+		this.status = 'syncing';
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			await (this.db as any).replicate.to(remoteUrl, { doc_ids: docIds });
+			this.pendingPush.clear();
+			this.status = 'synced';
+			console.log(`[pouch] pushed offline docs: ${docIds.join(', ')}`);
+		} catch (e) {
+			console.error('[pouch] push failed:', e);
+			this.status = 'error';
+		}
 	}
 
 	async getDocument(documentId: string): Promise<OfflineDoc | null> {
@@ -63,7 +85,7 @@ class PouchStore {
 		}
 	}
 
-	async putDocument(doc: Omit<OfflineDoc, '_id' | '_rev'>): Promise<void> {
+	async putDocument(doc: Omit<OfflineDoc, '_id' | '_rev'>, { offline = false } = {}): Promise<void> {
 		if (!this.db) return;
 		const id = `doc_${doc.documentId}`;
 		try {
@@ -76,6 +98,9 @@ class PouchStore {
 				throw e;
 			}
 		}
+		if (offline) {
+			this.pendingPush.add(id);
+		}
 	}
 
 	async listDocuments(): Promise<OfflineDoc[]> {
@@ -85,11 +110,11 @@ class PouchStore {
 	}
 
 	destroy() {
-		this.syncHandler?.cancel();
+		this.pullHandler?.cancel();
 	}
 
 	async logout() {
-		this.syncHandler?.cancel();
+		this.pullHandler?.cancel();
 		if (this.db) {
 			try { await this.db.destroy(); } catch { /* ignore */ }
 			this.db = null;
@@ -100,9 +125,6 @@ class PouchStore {
 
 export const pouchStore = new PouchStore();
 
-// Initialize immediately when the module is first loaded in the browser.
-// This runs before any component's onMount, avoiding the race where the
-// page's onMount (putDocument) fires before the layout's onMount (init).
 if (browser) {
 	pouchStore.init();
 }

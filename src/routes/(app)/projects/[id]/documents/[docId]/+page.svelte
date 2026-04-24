@@ -711,7 +711,7 @@
 			type: data.document.type,
 			content,
 			updatedAt: new Date().toISOString()
-		});
+		}, { offline: !onlineStore.online });
 		lastSavedContent = content;
 
 		if (!onlineStore.online) {
@@ -1479,7 +1479,7 @@
 					type: data.document.type,
 					content,
 					updatedAt: new Date().toISOString()
-				});
+				}, { offline: !onlineStore.online });
 			}
 		}
 	});
