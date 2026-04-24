@@ -776,9 +776,9 @@ export const projectsRouter = router({
   }),
 
   importEpub: protectedProcedure
-    .input(z.object({ projectId: z.string(), url: z.string().url().max(2000) }))
+    .input(z.object({ projectId: z.string(), url: z.string().url().max(2000), referenceId: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      const { projectId, url } = input;
+      const { projectId, url, referenceId: providedReferenceId } = input;
 
       // Mark project as importing
       await ctx.withRLS((db) =>
@@ -898,45 +898,55 @@ export const projectsRouter = router({
             gif: 'image/gif', svg: 'image/svg+xml', webp: 'image/webp'
           };
 
-          // Insert reference in its own transaction
-          const refId = crypto.randomUUID();
-          await ctx.withRLS((db) =>
-            db.insert(reference).values({
-              id: refId,
-              userId: ctx.user.id,
-              citeKey,
-              type: 'book',
-              title,
-              authors,
-              editors: [],
-              year: dateText,
-              url,
-              abstract: '',
-              journal: '',
-              booktitle: '',
-              publisher: '',
-              doi: '',
-              volume: '',
-              issue: '',
-              pages: '',
-              extra: {}
-            }).onConflictDoNothing()
-          );
+          let resolvedRefId: string;
 
-          // Resolve actual ref id (may have been skipped due to conflict)
-          const refs = await ctx.withRLS((db) =>
-            db.select({ id: reference.id })
-              .from(reference)
-              .where(and(eq(reference.userId, ctx.user.id), eq(reference.citeKey, citeKey)))
-              .limit(1)
-          );
-          const resolvedRefId = refs[0]?.id ?? refId;
+          if (providedReferenceId) {
+            // User selected an existing reference — link it to the project and skip creation
+            resolvedRefId = providedReferenceId;
+            await ctx.withRLS((db) =>
+              db.insert(projectReference).values({ projectId, referenceId: resolvedRefId }).onConflictDoNothing()
+            );
+            log('using provided referenceId:', resolvedRefId);
+          } else {
+            // Auto-create reference from EPUB metadata
+            const refId = crypto.randomUUID();
+            await ctx.withRLS((db) =>
+              db.insert(reference).values({
+                id: refId,
+                userId: ctx.user.id,
+                citeKey,
+                type: 'book',
+                title,
+                authors,
+                editors: [],
+                year: dateText,
+                url,
+                abstract: '',
+                journal: '',
+                booktitle: '',
+                publisher: '',
+                doi: '',
+                volume: '',
+                issue: '',
+                pages: '',
+                extra: {}
+              }).onConflictDoNothing()
+            );
 
-          await ctx.withRLS((db) =>
-            db.insert(projectReference).values({ projectId, referenceId: resolvedRefId }).onConflictDoNothing()
-          );
+            // Resolve actual ref id (may have been skipped due to conflict on citeKey)
+            const refs = await ctx.withRLS((db) =>
+              db.select({ id: reference.id })
+                .from(reference)
+                .where(and(eq(reference.userId, ctx.user.id), eq(reference.citeKey, citeKey)))
+                .limit(1)
+            );
+            resolvedRefId = refs[0]?.id ?? refId;
 
-          log('inserting reference, citeKey:', citeKey);
+            await ctx.withRLS((db) =>
+              db.insert(projectReference).values({ projectId, referenceId: resolvedRefId }).onConflictDoNothing()
+            );
+            log('auto-created reference, citeKey:', citeKey, 'id:', resolvedRefId);
+          }
 
           // Pre-load existing titles to disambiguate duplicates without retries
           const existingTitleRows = await ctx.withRLS((db) =>

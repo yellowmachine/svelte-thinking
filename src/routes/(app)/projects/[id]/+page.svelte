@@ -176,6 +176,25 @@
 	let epubFile = $state<File | null>(null);
 	let epubImporting = $state(false);
 	let epubError = $state('');
+	let epubRefSearch = $state('');
+	let epubRefResults = $state<{ id: string; citeKey: string; title: string; year: string }[]>([]);
+	let epubRefLoading = $state(false);
+	let epubSelectedRef = $state<{ id: string; citeKey: string; title: string } | null>(null);
+
+	async function searchEpubRefs(q: string) {
+		if (!q.trim()) { epubRefResults = []; return; }
+		epubRefLoading = true;
+		try {
+			const all = await trpc.references.listAll.query();
+			const lower = q.toLowerCase();
+			epubRefResults = all
+				.filter((r) => r.title.toLowerCase().includes(lower) || r.citeKey.toLowerCase().includes(lower) || (r.authors as {first:string;last:string}[]).some((a) => a.last.toLowerCase().includes(lower)))
+				.slice(0, 8)
+				.map((r) => ({ id: r.id, citeKey: r.citeKey, title: r.title, year: r.year ?? '' }));
+		} finally {
+			epubRefLoading = false;
+		}
+	}
 
 	async function startEpubImport() {
 		const hasUrl = epubUrl.trim().length > 0;
@@ -196,10 +215,13 @@
 				const data2 = await res.json();
 				url = data2.url;
 			}
-			await trpc.projects.importEpub.mutate({ projectId: data.project.id, url });
+			await trpc.projects.importEpub.mutate({ projectId: data.project.id, url, referenceId: epubSelectedRef?.id });
 			showEpubModal = false;
 			epubUrl = '';
 			epubFile = null;
+			epubSelectedRef = null;
+			epubRefSearch = '';
+			epubRefResults = [];
 			// Poll until isImporting clears
 			const poll = setInterval(async () => {
 				await invalidateAll();
@@ -886,6 +908,54 @@
 				<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 					Sube un fichero .epub o introduce una URL. Cada capítulo se importará como documento readonly.
 				</p>
+
+				<!-- Reference picker -->
+				<div class="mb-4">
+					<p class="mb-1.5 font-sans text-xs font-medium text-ink dark:text-dark-ink">
+						Referencia bibliográfica <span class="font-normal text-ink-faint">(opcional — se creará automáticamente si no seleccionas)</span>
+					</p>
+					{#if epubSelectedRef}
+						<div class="flex items-center justify-between rounded-md border border-accent/40 bg-accent/5 px-3 py-2 dark:border-accent/30 dark:bg-accent/10">
+							<div class="min-w-0">
+								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{epubSelectedRef.title}</p>
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{epubSelectedRef.citeKey}</p>
+							</div>
+							<button
+								type="button"
+								onclick={() => { epubSelectedRef = null; epubRefSearch = ''; epubRefResults = []; }}
+								class="ml-2 shrink-0 rounded p-0.5 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+							>✕</button>
+						</div>
+					{:else}
+						<div class="relative">
+							<input
+								type="text"
+								bind:value={epubRefSearch}
+								oninput={() => searchEpubRefs(epubRefSearch)}
+								placeholder="Buscar por título, autor o citeKey…"
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							{#if epubRefLoading}
+								<div class="absolute right-2 top-2"><Spinner size="sm" /></div>
+							{/if}
+							{#if epubRefResults.length > 0}
+								<div class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+									{#each epubRefResults as ref (ref.id)}
+										<button
+											type="button"
+											onclick={() => { epubSelectedRef = ref; epubRefSearch = ''; epubRefResults = []; }}
+											class="flex w-full flex-col px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+										>
+											<span class="truncate font-sans text-sm text-ink dark:text-dark-ink">{ref.title}</span>
+											<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{ref.citeKey}{ref.year ? ` · ${ref.year}` : ''}</span>
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
+
 				<!-- File upload -->
 				<label class="mb-3 flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink-muted hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-muted dark:hover:border-accent">
 					<input
@@ -928,7 +998,7 @@
 				{/if}
 				<div class="mt-4 flex justify-end gap-2">
 					<button
-						onclick={() => { showEpubModal = false; epubUrl = ''; epubFile = null; epubError = ''; }}
+						onclick={() => { showEpubModal = false; epubUrl = ''; epubFile = null; epubError = ''; epubSelectedRef = null; epubRefSearch = ''; epubRefResults = []; }}
 						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 					>
 						Cancel
