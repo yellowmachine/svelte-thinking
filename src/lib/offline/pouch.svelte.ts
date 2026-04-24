@@ -20,21 +20,33 @@ class PouchStore {
 
 	async init() {
 		if (!browser) return;
-		const PouchDB = (await import('pouchdb-browser')).default;
-		this.db = new PouchDB<OfflineDoc>('scholio-docs');
-		this._startSync();
+		try {
+			// PouchDB loaded via script tag in app.html (avoids Vite/esbuild UMD issues)
+			const PouchDB = (window as unknown as { PouchDB: PouchDB.Static }).PouchDB;
+			if (!PouchDB) {
+				console.error('[pouch] window.PouchDB not found — script tag may not have loaded');
+				return;
+			}
+			console.log('[pouch] initializing…');
+			this.db = new PouchDB<OfflineDoc>('scholio-docs');
+			console.log('[pouch] db created, starting sync');
+			this._startSync();
+		} catch (e) {
+			console.error('[pouch] init failed:', e);
+		}
 	}
 
 	private _startSync() {
 		if (!this.db) return;
 		this.syncHandler?.cancel();
+		console.log('[pouch] starting sync to /api/couch/documents');
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const handler = (this.db as any).sync('/api/couch/documents', { live: true, retry: true });
 		handler
-			.on('active', () => { this.status = 'syncing'; })
-			.on('paused', () => { this.status = 'synced'; })
-			.on('error', () => { this.status = 'error'; })
-			.on('denied', () => { this.status = 'error'; });
+			.on('active', () => { console.log('[pouch] sync active'); this.status = 'syncing'; })
+			.on('paused', (e: unknown) => { console.log('[pouch] sync paused', e); this.status = 'synced'; })
+			.on('error', (e: unknown) => { console.error('[pouch] sync error', e); this.status = 'error'; })
+			.on('denied', (e: unknown) => { console.error('[pouch] sync denied', e); this.status = 'error'; });
 		this.syncHandler = handler as PouchDB.Replication.Sync<OfflineDoc>;
 	}
 

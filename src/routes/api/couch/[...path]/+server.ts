@@ -6,6 +6,21 @@ import { env } from '$env/dynamic/private';
 // Maps to the per-user CouchDB database: docs-<userId>
 const LOGICAL_DB = 'documents';
 
+// Parse credentials from COUCHDB_URL once at module load so all fetches use
+// an explicit Authorization header — URL-embedded credentials aren't reliable
+// with Node.js/undici fetch.
+const _parsed = new URL(env.COUCHDB_URL);
+const COUCH_AUTH = _parsed.username
+	? `Basic ${btoa(`${_parsed.username}:${_parsed.password}`)}`
+	: undefined;
+const COUCH_BASE = `${_parsed.protocol}//${_parsed.host}`;
+
+function couchFetch(url: string, init?: RequestInit) {
+	const headers = new Headers((init?.headers as HeadersInit | undefined) ?? {});
+	if (COUCH_AUTH) headers.set('Authorization', COUCH_AUTH);
+	return fetch(url, { ...init, headers });
+}
+
 export const fallback: RequestHandler = async (event) => {
 	const user = event.locals.user;
 	if (!user) error(401, 'No autenticado');
@@ -14,26 +29,25 @@ export const fallback: RequestHandler = async (event) => {
 	if (requestedDb !== LOGICAL_DB) error(403, 'Forbidden');
 
 	const couchDb = `docs-${user.id}`;
-	const couchBase = env.COUCHDB_URL.replace(/\/$/, '');
 	const subPath = rest.length ? `/${rest.join('/')}` : '';
-	const target = `${couchBase}/${couchDb}${subPath}${event.url.search}`;
+	const target = `${COUCH_BASE}/${couchDb}${subPath}${event.url.search}`;
 
 	const isBodyless = event.request.method === 'GET' || event.request.method === 'HEAD';
 	const body = isBodyless ? undefined : await event.request.arrayBuffer();
 
-	const headers = new Headers();
+	const fwdHeaders: Record<string, string> = {};
 	for (const h of ['content-type', 'accept', 'if-none-match']) {
 		const v = event.request.headers.get(h);
-		if (v) headers.set(h, v);
+		if (v) fwdHeaders[h] = v;
 	}
 
-	let upstream = await fetch(target, { method: event.request.method, headers, body });
+	let upstream = await couchFetch(target, { method: event.request.method, headers: fwdHeaders, body });
 
 	// Auto-create the per-user database on first access
 	if (upstream.status === 404 && !subPath) {
-		const created = await fetch(`${couchBase}/${couchDb}`, { method: 'PUT' });
+		const created = await couchFetch(`${COUCH_BASE}/${couchDb}`, { method: 'PUT' });
 		if (created.ok || created.status === 412) {
-			upstream = await fetch(target, { method: event.request.method, headers, body });
+			upstream = await couchFetch(target, { method: event.request.method, headers: fwdHeaders, body });
 		}
 	}
 

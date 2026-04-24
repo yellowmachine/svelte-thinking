@@ -22,6 +22,13 @@ const COUCHDB_URL = process.env.COUCHDB_URL?.replace(/\/$/, '');
 if (!DATABASE_URL) throw new Error('DATABASE_URL required');
 if (!COUCHDB_URL) throw new Error('COUCHDB_URL required');
 
+// Extract Basic Auth from COUCHDB_URL and strip credentials from base URL
+const _couchParsed = new URL(COUCHDB_URL);
+const COUCH_AUTH = _couchParsed.username
+	? `Basic ${btoa(`${_couchParsed.username}:${_couchParsed.password}`)}`
+	: undefined;
+const COUCH_BASE = `${_couchParsed.protocol}//${_couchParsed.host}`;
+
 // ── PostgreSQL ────────────────────────────────────────────────────────────────
 
 const sql = postgres(DATABASE_URL, { max: 3, idle_timeout: 30 });
@@ -45,7 +52,10 @@ function saveSeq(dbName: string, seq: string) {
 // ── CouchDB fetch helper ──────────────────────────────────────────────────────
 
 async function couchGet<T = unknown>(path: string, timeout = 70_000): Promise<T> {
-	const res = await fetch(`${COUCHDB_URL}${path}`, {
+	const headers: Record<string, string> = {};
+	if (COUCH_AUTH) headers['Authorization'] = COUCH_AUTH;
+	const res = await fetch(`${COUCH_BASE}${path}`, {
+		headers,
 		signal: AbortSignal.timeout(timeout)
 	});
 	if (!res.ok) throw new Error(`CouchDB ${path}: ${res.status} ${res.statusText}`);
