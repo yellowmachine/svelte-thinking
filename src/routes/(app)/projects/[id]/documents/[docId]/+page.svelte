@@ -14,7 +14,7 @@
 	import SpellCheckPanel, { type SpellCorrection } from '$lib/components/editor/SpellCheckPanel.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
-	import { offlineDb } from '$lib/offline.db';
+	import { pouchStore } from '$lib/offline/pouch.svelte';
 	import {
 		findAnchor,
 		posToLine,
@@ -699,32 +699,29 @@
 	async function doSaveDraft() {
 		if (!isDirty) return;
 
+		// Always persist locally first (works offline and online)
+		await pouchStore.putDocument({
+			documentId: data.document.id,
+			projectId: data.document.projectId,
+			title: data.document.title,
+			type: data.document.type,
+			content,
+			updatedAt: new Date().toISOString()
+		});
+		lastSavedContent = content;
+
 		if (!onlineStore.online) {
-			await offlineDb.pendingEdits.add({
-				id: crypto.randomUUID(),
-				documentId: data.document.id,
-				content,
-				savedAt: new Date(),
-				status: 'pending'
-			});
-			lastSavedContent = content;
 			saveStatus = 'offline';
-			console.log(`[offline] save: queued to Dexie (doc ${data.document.id})`);
+			console.log(`[offline] save: stored in PouchDB (doc ${data.document.id})`);
 			return;
 		}
 
 		saveStatus = 'saving';
-		console.log(`[offline] save: saving online (doc ${data.document.id})`);
 		try {
 			await trpc.documents.saveDraft.mutate({ documentId: data.document.id, content });
-			lastSavedContent = content;
 			saveStatus = 'saved';
-			console.log(`[offline] save: ✓ saved online (doc ${data.document.id})`);
-			setTimeout(() => {
-				if (saveStatus === 'saved') saveStatus = 'idle';
-			}, 2000);
+			setTimeout(() => { if (saveStatus === 'saved') saveStatus = 'idle'; }, 2000);
 		} catch (e) {
-			// Network error (fetch failed, no response) → save to Dexie as offline
 			const isNetworkError = e instanceof Error && (
 				e.message.includes('fetch') ||
 				e.message.includes('network') ||
@@ -733,48 +730,25 @@
 				('cause' in e && e.cause instanceof TypeError)
 			);
 			if (isNetworkError) {
-				await offlineDb.pendingEdits.add({
-					id: crypto.randomUUID(),
-					documentId: data.document.id,
-					content,
-					savedAt: new Date(),
-					status: 'pending'
-				});
-				lastSavedContent = content;
+				onlineStore.online = false;
 				saveStatus = 'offline';
-				onlineStore.online = false; // align state so subsequent saves go directly to Dexie
-				console.warn(`[offline] save: network error detected — queued to Dexie (doc ${data.document.id})`);
+				console.warn(`[offline] save: network error — PouchDB has the content (doc ${data.document.id})`);
 			} else {
+				const isForbidden = e instanceof Error && ('code' in e ? (e as { code?: string }).code === 'FORBIDDEN' : e.message.includes('FORBIDDEN'));
+				if (isForbidden) {
+					writerLostContent = content;
+				}
 				saveStatus = 'error';
 				console.error(`[offline] save: ✗ server error (doc ${data.document.id})`, e);
 			}
 		}
 	}
 
-	// When reconnecting, update local save status once the global sync has pushed our edits.
-	// The actual push is handled by connectivity.syncAll() in the layout.
+	// When PouchDB finishes syncing after reconnect, clear the offline save status
 	$effect(() => {
-		if (onlineStore.online && saveStatus === 'offline') {
-			const documentId = data.document?.id;
-			if (!documentId) return;
-			console.log(`[offline] reconnect: checking pending edits for doc ${documentId}`);
-			offlineDb.pendingEdits
-				.where({ documentId })
-				.toArray()
-				.then((edits) => {
-					const hasPending = edits.some((e) => e.status === 'pending');
-					const writerLost = edits.find((e) => e.status === 'writer_lost');
-					if (writerLost) {
-						console.warn(`[offline] reconnect: writer_lost detected for doc ${documentId}`);
-						writerLostContent = writerLost.content;
-						saveStatus = 'error';
-					} else if (!hasPending) {
-						console.log(`[offline] reconnect: ✓ all edits synced for doc ${documentId}`);
-						saveStatus = 'idle';
-					} else {
-						console.log(`[offline] reconnect: still ${edits.filter(e => e.status === 'pending').length} pending edit(s) for doc ${documentId}`);
-					}
-				});
+		if (saveStatus === 'offline' && pouchStore.status === 'synced') {
+			saveStatus = 'idle';
+			console.log(`[offline] reconnect: PouchDB synced — doc ${data.document?.id}`);
 		}
 	});
 
@@ -1483,13 +1457,14 @@
 				cancel();
 				workspaceStore.set(entryWorkspace);
 			} else {
-				// Save to Dexie before leaving so content survives navigation
-				offlineDb.pendingEdits.add({
-					id: crypto.randomUUID(),
+				// Save to PouchDB before leaving so content survives navigation
+				pouchStore.putDocument({
 					documentId: data.document.id,
+					projectId: data.document.projectId,
+					title: data.document.title,
+					type: data.document.type,
 					content,
-					savedAt: new Date(),
-					status: 'pending'
+					updatedAt: new Date().toISOString()
 				});
 			}
 		}
@@ -1510,13 +1485,14 @@
 	});
 
 	onMount(() => {
-		offlineDb.offlineIndex.put({
-			url: `/projects/${data.document.projectId}/documents/${data.document.id}`,
-			title: data.document.title,
-			type: 'document',
+		// Keep PouchDB in sync with the server content so it's available offline
+		pouchStore.putDocument({
+			documentId: data.document.id,
 			projectId: data.document.projectId,
-			visitedAt: new Date(),
-			content: content ?? ''
+			title: data.document.title,
+			type: data.document.type,
+			content: content ?? '',
+			updatedAt: data.document.updatedAt?.toISOString() ?? new Date().toISOString()
 		});
 
 		const targetId = page.url.searchParams.get('commentId');
@@ -3980,12 +3956,7 @@
 			<div class="flex justify-end">
 				<button
 					type="button"
-					onclick={async () => {
-						await offlineDb.pendingEdits
-							.where({ documentId: data.document.id, status: 'writer_lost' })
-							.modify({ status: 'synced' });
-						writerLostContent = null;
-					}}
+					onclick={() => { writerLostContent = null; }}
 					class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 				>
 					Descartar

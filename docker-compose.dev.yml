@@ -42,6 +42,22 @@ services:
   #  ports:
   #    - "3400:3400"
 
+  couchdb:
+    image: couchdb:3
+    restart: unless-stopped
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER:-scholio}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-scholio_dev}
+    ports:
+      - "${COUCHDB_PORT:-5984}:5984"
+    volumes:
+      - couchdb_dev_data:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5984/_up"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -94,6 +110,8 @@ services:
       start_period: 40s
 
 volumes:
+  couchdb_dev_data:
+    name: scholio_couchdb_dev
   postgres_dev_data:
     name: scholio_postgres_dev
   rustfs-data:

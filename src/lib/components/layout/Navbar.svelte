@@ -2,7 +2,7 @@
 	import QuickNoteButton from './QuickNoteButton.svelte';
 	import ThemePicker from './ThemePicker.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
-	import { offlineDb } from '$lib/offline.db';
+	import { pouchStore } from '$lib/offline/pouch.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { env } from '$env/dynamic/public';
@@ -10,7 +10,7 @@
 
 	async function handleLogout(e: SubmitEvent) {
 		e.preventDefault();
-		try { await offlineDb.delete(); } catch {}
+		await pouchStore.logout();
 		(e.target as HTMLFormElement).submit();
 	}
 

@@ -1,71 +1,38 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { offlineDb, type OfflineIndexEntry } from '$lib/offline.db';
+	import { pouchStore, type OfflineDoc } from '$lib/offline/pouch.svelte';
 
 	interface ProjectGroup {
-		url: string;
-		title: string;
-		documents: OfflineIndexEntry[];
+		projectId: string;
+		documents: OfflineDoc[];
 	}
 
 	let groups = $state<ProjectGroup[]>([]);
 	let loaded = $state(false);
-	let selected = $state<OfflineIndexEntry | null>(null);
+	let selected = $state<OfflineDoc | null>(null);
 
 	onMount(async () => {
-		const all = await offlineDb.offlineIndex.toArray();
+		const docs = await pouchStore.listDocuments();
 
-		const projectMap = new Map<string, OfflineIndexEntry>();
-		for (const entry of all) {
-			if (entry.type === 'project') projectMap.set(entry.url, entry);
-		}
-
-		const documents = all.filter((e) => e.type === 'document');
-
-		const byProject = new Map<string, OfflineIndexEntry[]>();
-		for (const doc of documents) {
-			const projectUrl = doc.projectId ? `/projects/${doc.projectId}` : null;
-			const key = projectUrl ?? '__unknown__';
-			const list = byProject.get(key) ?? [];
+		const byProject = new Map<string, OfflineDoc[]>();
+		for (const doc of docs) {
+			const list = byProject.get(doc.projectId) ?? [];
 			list.push(doc);
-			byProject.set(key, list);
+			byProject.set(doc.projectId, list);
 		}
 
-		const result: ProjectGroup[] = [];
-		for (const [projectUrl, docs] of byProject) {
-			const project = projectMap.get(projectUrl);
-			result.push({
-				url: projectUrl === '__unknown__' ? '#' : projectUrl,
-				title: project?.title ?? 'Project',
-				documents: docs.sort((a, b) => b.visitedAt.getTime() - a.visitedAt.getTime())
-			});
-		}
+		groups = [...byProject.entries()]
+			.map(([projectId, documents]) => ({
+				projectId,
+				documents: documents.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+			}))
+			.sort((a, b) => (b.documents[0]?.updatedAt ?? '').localeCompare(a.documents[0]?.updatedAt ?? ''));
 
-		result.sort((a, b) => {
-			const aTime = a.documents[0]?.visitedAt.getTime() ?? 0;
-			const bTime = b.documents[0]?.visitedAt.getTime() ?? 0;
-			return bTime - aTime;
-		});
-
-		groups = result;
 		loaded = true;
 	});
-
-	async function openDocument(doc: OfflineIndexEntry) {
-		// Check pendingEdits first — they have the most recent offline content
-		const pending = await offlineDb.pendingEdits
-			.where('documentId')
-			.equals(doc.url.split('/documents/')[1] ?? '')
-			.reverse()
-			.sortBy('savedAt');
-
-		const content = pending[0]?.content ?? doc.content ?? null;
-		selected = { ...doc, content: content ?? undefined };
-	}
 </script>
 
 {#if selected}
-	<!-- Offline document reader -->
 	<div class="flex min-h-screen flex-col bg-paper dark:bg-dark-paper">
 		<div class="sticky top-0 z-10 flex items-center gap-3 border-b border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper">
 			<button
@@ -117,14 +84,14 @@
 				{#each groups as group}
 					<div class="mb-4">
 						<span class="mb-1 block font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">
-							{group.title}
+							{group.projectId}
 						</span>
 						<ul class="flex flex-col gap-1">
 							{#each group.documents as doc}
 								<li>
 									<button
 										type="button"
-										onclick={() => openDocument(doc)}
+										onclick={() => (selected = doc)}
 										class="block w-full rounded-md px-3 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui hover:text-accent dark:text-dark-ink dark:hover:bg-dark-paper-ui dark:hover:text-accent"
 									>
 										{doc.title}

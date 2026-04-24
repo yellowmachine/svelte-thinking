@@ -6,22 +6,10 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { page } from '$app/state';
-	import { offlineDb } from '$lib/offline.db';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	onMount(() => {
-		const now = new Date();
-		offlineDb.offlineIndex.bulkPut(
-			data.projects.map((p) => ({
-				url: `/projects/${p.id}`,
-				title: p.title,
-				type: 'project' as const,
-				visitedAt: now
-			}))
-		);
-	});
 
 	$effect(() => {
 		const orgParam = page.url.searchParams.get('org');

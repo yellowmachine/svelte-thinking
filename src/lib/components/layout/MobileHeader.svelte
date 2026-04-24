@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { offlineDb } from '$lib/offline.db';
+	import { pouchStore } from '$lib/offline/pouch.svelte';
 
 	let {
 		user
@@ -9,7 +9,7 @@
 
 	async function handleLogout(e: SubmitEvent) {
 		e.preventDefault();
-		try { await offlineDb.delete(); } catch {}
+		await pouchStore.logout();
 		(e.target as HTMLFormElement).submit();
 	}
 

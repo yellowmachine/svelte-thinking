@@ -11,7 +11,7 @@
 	import TagManager from '$lib/components/projects/TagManager.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
-	import { offlineDb, type PendingCreate } from '$lib/offline.db';
+	import { pendingCreates, type PendingCreate } from '$lib/offline/pending-creates.svelte';
 	import { type DocumentType } from '$lib/domain/document';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
@@ -20,12 +20,7 @@
 	let { data }: { data: PageData } = $props();
 
 	onMount(() => {
-		offlineDb.offlineIndex.put({
-			url: `/projects/${data.project.id}`,
-			title: data.project.title,
-			type: 'project',
-			visitedAt: new Date()
-		});
+		pendingCreates.init();
 	});
 
 	type InvitationType = {
@@ -362,18 +357,15 @@
 		createDocError = '';
 
 		if (!onlineStore.online) {
-			await offlineDb.pendingCreates.add({
+			pendingCreates.add({
 				id: crypto.randomUUID(),
 				projectId: data.project.id,
 				title: newDocTitle.trim(),
 				type: newDocType,
-				isPrivate: false,
-				createdAt: new Date(),
-				status: 'pending'
+				isPrivate: false
 			});
 			newDocTitle = '';
 			creatingDoc = false;
-			await loadPendingCreates();
 			return;
 		}
 
@@ -409,58 +401,44 @@
 
 	// ── Offline pending creates ───────────────────────────────────────────────
 
-	let pendingCreates = $state<PendingCreate[]>([]);
 
-	async function loadPendingCreates() {
-		pendingCreates = await offlineDb.pendingCreates
-			.where({ projectId: data.project.id, status: 'pending' })
-			.sortBy('createdAt');
-	}
+	const projectPendingCreates = $derived(pendingCreates.forProject(data.project.id));
 
 	async function syncPendingCreates() {
-		const pending = await offlineDb.pendingCreates
-			.where({ projectId: data.project.id, status: 'pending' })
-			.sortBy('createdAt');
+		const pending = pendingCreates.forProject(data.project.id);
 		if (pending.length === 0) return;
 
 		for (const pc of pending) {
 			try {
-				// Use the locally-generated id so the URL stays consistent
 				await trpc.documents.create.mutate({
 					projectId: pc.projectId,
 					title: pc.title,
 					type: pc.type as Parameters<typeof trpc.documents.create.mutate>[0]['type'],
 					isPrivate: pc.isPrivate
 				});
-				await offlineDb.pendingCreates.update(pc.id, { status: 'synced' });
+				pendingCreates.update(pc.id, { status: 'synced' });
 			} catch (e) {
 				const msg = e instanceof Error ? e.message : 'Unknown error';
-				// Title conflict: append suffix and retry once
 				if (msg.includes('título') || msg.includes('CONFLICT')) {
-					const fallbackTitle = `${pc.title} (offline)`;
 					try {
 						await trpc.documents.create.mutate({
 							projectId: pc.projectId,
-							title: fallbackTitle,
+							title: `${pc.title} (offline)`,
 							type: pc.type as Parameters<typeof trpc.documents.create.mutate>[0]['type'],
 							isPrivate: pc.isPrivate
 						});
-						await offlineDb.pendingCreates.update(pc.id, { status: 'synced' });
+						pendingCreates.update(pc.id, { status: 'synced' });
 					} catch {
-						await offlineDb.pendingCreates.update(pc.id, { status: 'failed', failureReason: msg });
+						pendingCreates.update(pc.id, { status: 'failed', failureReason: msg });
 					}
 				} else {
-					await offlineDb.pendingCreates.update(pc.id, { status: 'failed', failureReason: msg });
+					pendingCreates.update(pc.id, { status: 'failed', failureReason: msg });
 				}
 			}
 		}
-		await loadPendingCreates();
+		pendingCreates.clearSynced();
 		await invalidateAll();
 	}
-
-	$effect(() => {
-		loadPendingCreates();
-	});
 
 	$effect(() => {
 		if (onlineStore.online) syncPendingCreates();
@@ -1337,12 +1315,12 @@
 			</form>
 
 			<!-- Pending offline documents -->
-			{#if pendingCreates.length > 0}
+			{#if projectPendingCreates.length > 0}
 				<div class="mb-3 flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/40 dark:bg-amber-900/10">
 					<p class="px-1 font-sans text-[11px] font-medium text-amber-700 dark:text-amber-400">
 						{onlineStore.online ? 'Syncing…' : 'Pending sync when online'}
 					</p>
-					{#each pendingCreates as pc (pc.id)}
+					{#each projectPendingCreates as pc (pc.id)}
 						<div class="flex items-center gap-2 rounded-lg px-2 py-1.5">
 							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="shrink-0 text-amber-500" aria-hidden="true">
 								<path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 5v5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
