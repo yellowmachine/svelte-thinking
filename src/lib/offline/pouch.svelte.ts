@@ -41,9 +41,13 @@ class PouchStore {
 	private _startSync() {
 		if (!this.db) return;
 		this.syncHandler?.cancel();
-		console.log('[pouch] starting sync to /api/couch/documents');
+		// PouchDB only uses its HTTP adapter when the URL has a scheme (http:// or https://).
+		// A root-relative path like '/api/couch/documents' is treated as a local DB name,
+		// so we must use the full origin.
+		const remoteUrl = `${window.location.origin}/api/couch/documents`;
+		console.log('[pouch] starting sync to', remoteUrl);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const handler = (this.db as any).sync('/api/couch/documents', { live: true, retry: true });
+		const handler = (this.db as any).sync(remoteUrl, { live: true, retry: true });
 		handler
 			.on('active', () => { console.log('[pouch] sync active'); this.status = 'syncing'; })
 			.on('paused', (e: unknown) => { console.log('[pouch] sync paused', e); this.status = 'synced'; })
