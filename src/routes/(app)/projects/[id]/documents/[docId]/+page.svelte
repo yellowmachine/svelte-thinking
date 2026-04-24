@@ -1495,16 +1495,25 @@
 		if (floatingDebounce) clearTimeout(floatingDebounce);
 	});
 
-	onMount(() => {
-		// Keep PouchDB in sync with the server content so it's available offline
-		pouchStore.putDocument({
-			documentId: data.document.id,
-			projectId: data.document.projectId,
-			title: data.document.title,
-			type: data.document.type,
-			content: content ?? '',
-			updatedAt: data.document.updatedAt?.toISOString() ?? new Date().toISOString()
-		});
+	onMount(async () => {
+		// If offline, prefer PouchDB content (may have unsaved edits) over cached server data
+		const offlineDoc = await pouchStore.getDocument(data.document.id);
+		if (offlineDoc && !onlineStore.online) {
+			content = offlineDoc.content;
+		}
+
+		// Keep PouchDB in sync with the server content so it's available offline.
+		// Only write server content when online — offline we just loaded from PouchDB.
+		if (onlineStore.online) {
+			pouchStore.putDocument({
+				documentId: data.document.id,
+				projectId: data.document.projectId,
+				title: data.document.title,
+				type: data.document.type,
+				content: content ?? '',
+				updatedAt: data.document.updatedAt?.toISOString() ?? new Date().toISOString()
+			});
+		}
 
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
