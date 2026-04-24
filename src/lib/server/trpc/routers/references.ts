@@ -762,10 +762,26 @@ ${truncated}`;
 				if (!article?.content)
 					throw new TRPCError({ code: 'BAD_REQUEST', message: 'No readable content found at that URL.' });
 
+				// Rewrite relative image/link URLs to absolute using the base URL
+				const base = new URL(url);
+				const { document: articleDoc } = parseHTML(article.content);
+				for (const img of Array.from(articleDoc.querySelectorAll('img'))) {
+					const src = img.getAttribute('src');
+					if (src && !src.startsWith('data:') && !src.startsWith('http://') && !src.startsWith('https://')) {
+						try { img.setAttribute('src', new URL(src, base).href); } catch { img.removeAttribute('src'); }
+					}
+				}
+				for (const a of Array.from(articleDoc.querySelectorAll('a[href]'))) {
+					const href = a.getAttribute('href');
+					if (href && !href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('#') && !href.startsWith('mailto:')) {
+						try { a.setAttribute('href', new URL(href, base).href); } catch {}
+					}
+				}
+
 				const { default: createDOMPurify } = await import('dompurify');
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const purify = createDOMPurify(window as any);
-				renderedHtml = purify.sanitize(article.content, {
+				renderedHtml = purify.sanitize(articleDoc.documentElement?.outerHTML ?? article.content, {
 					ADD_TAGS: ['figure', 'figcaption'],
 					ADD_ATTR: ['role']
 				});
