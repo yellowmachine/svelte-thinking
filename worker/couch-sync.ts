@@ -10,7 +10,7 @@
 
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { z } from 'zod';
 import { document } from '../src/lib/server/db/schemas/documents.schema';
@@ -74,13 +74,11 @@ const CouchDocSchema = z.object({
 type CouchDoc = z.infer<typeof CouchDocSchema>;
 
 async function applyChange(doc: CouchDoc) {
+	const updatedAt = new Date(doc.updatedAt ?? new Date().toISOString());
 	const rows = await db
 		.update(document)
-		.set({
-			draftContent: doc.content,
-			updatedAt: new Date(doc.updatedAt ?? new Date().toISOString())
-		})
-		.where(eq(document.id, doc.documentId))
+		.set({ draftContent: doc.content, updatedAt })
+		.where(and(eq(document.id, doc.documentId), ne(document.updatedAt, updatedAt)))
 		.returning({ id: document.id });
 
 	return rows.length;
@@ -113,8 +111,7 @@ async function watchDatabase(dbName: string): Promise<never> {
 					if (rows > 0) {
 						console.log(`[worker] ✓ ${dbName} → document ${parsed.data.documentId} | updatedAt=${parsed.data.updatedAt ?? 'now'} | content(200)=${parsed.data.content.slice(0, 200)}`);
 					} else {
-						// Document not in PG yet (created offline, not synced via tRPC)
-						console.warn(`[worker] ⚠ ${dbName} → document ${parsed.data.documentId} not found in PG — skipping`);
+						console.log(`[worker] ~ ${dbName} → document ${parsed.data.documentId} already up-to-date or not found — skipping`);
 					}
 				} catch (e) {
 					console.error(`[worker] ✗ failed to apply doc ${parsed.data.documentId}:`, e);
