@@ -37,10 +37,21 @@
 
 	let docSortMode = $state<'date' | 'alpha'>('date');
 	let docViewMode = $state<'list' | 'grid'>('list');
+
+	onMount(() => {
+		const savedSort = localStorage.getItem('doc-sort') as 'date' | 'alpha' | null;
+		const savedView = localStorage.getItem('doc-view') as 'list' | 'grid' | null;
+		if (savedSort === 'date' || savedSort === 'alpha') docSortMode = savedSort;
+		if (savedView === 'list' || savedView === 'grid') docViewMode = savedView;
+	});
+
+	$effect(() => { localStorage.setItem('doc-sort', docSortMode); });
+	$effect(() => { localStorage.setItem('doc-view', docViewMode); });
+
 	const documents = $derived(
 		docSortMode === 'alpha'
 			? [...data.documents].sort((a, b) => a.title.localeCompare(b.title))
-			: data.documents // already ordered by updatedAt desc from the server
+			: [...data.documents].sort((a, b) => new Date(a.updatedAt ?? 0).getTime() - new Date(b.updatedAt ?? 0).getTime())
 	);
 	const canEdit = $derived(data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor');
 	const activeShareDocSet = $derived(new Set(data.activeShareDocumentIds));
