@@ -12,6 +12,7 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq } from 'drizzle-orm';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { z } from 'zod';
 import { document } from '../src/lib/server/db/schemas/documents.schema';
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -62,13 +63,15 @@ async function couchGet<T = unknown>(path: string, timeout = 70_000): Promise<T>
 	return res.json() as Promise<T>;
 }
 
-// ── PostgreSQL write ──────────────────────────────────────────────────────────
+// ── Validation ────────────────────────────────────────────────────────────────
 
-interface CouchDoc {
-	documentId: string;
-	content: string;
-	updatedAt?: string;
-}
+const CouchDocSchema = z.object({
+	documentId: z.string().uuid(),
+	content: z.string(),
+	updatedAt: z.string().datetime().optional()
+});
+
+type CouchDoc = z.infer<typeof CouchDocSchema>;
 
 async function applyChange(doc: CouchDoc) {
 	const rows = await db
@@ -99,23 +102,22 @@ async function watchDatabase(dbName: string): Promise<never> {
 
 			for (const change of data.results ?? []) {
 				if (change.deleted || !change.doc) continue;
-				const doc = change.doc as Record<string, unknown>;
-				if (typeof doc.documentId !== 'string' || typeof doc.content !== 'string') continue;
+				const parsed = CouchDocSchema.safeParse(change.doc);
+				if (!parsed.success) {
+					console.warn(`[worker] ⚠ ${dbName} skipping malformed doc ${change.id}:`, parsed.error.flatten().fieldErrors);
+					continue;
+				}
 
 				try {
-					const rows = await applyChange({
-						documentId: doc.documentId,
-						content: doc.content,
-						updatedAt: typeof doc.updatedAt === 'string' ? doc.updatedAt : undefined
-					});
+					const rows = await applyChange(parsed.data);
 					if (rows > 0) {
-						console.log(`[worker] ✓ ${dbName} → document ${doc.documentId}`);
+						console.log(`[worker] ✓ ${dbName} → document ${parsed.data.documentId}`);
 					} else {
 						// Document not in PG yet (created offline, not synced via tRPC)
-						console.warn(`[worker] ⚠ ${dbName} → document ${doc.documentId} not found in PG — skipping`);
+						console.warn(`[worker] ⚠ ${dbName} → document ${parsed.data.documentId} not found in PG — skipping`);
 					}
 				} catch (e) {
-					console.error(`[worker] ✗ failed to apply doc ${doc.documentId}:`, e);
+					console.error(`[worker] ✗ failed to apply doc ${parsed.data.documentId}:`, e);
 				}
 			}
 
