@@ -71,16 +71,16 @@ interface CouchDoc {
 }
 
 async function applyChange(doc: CouchDoc) {
-	const result = await db
+	const rows = await db
 		.update(document)
 		.set({
 			draftContent: doc.content,
 			updatedAt: new Date(doc.updatedAt ?? new Date().toISOString())
 		})
-		.where(eq(document.id, doc.documentId));
+		.where(eq(document.id, doc.documentId))
+		.returning({ id: document.id });
 
-	// result is an array of updated rows in drizzle/postgres-js
-	return (result as unknown[]).length;
+	return rows.length;
 }
 
 // ── Per-database watcher ──────────────────────────────────────────────────────

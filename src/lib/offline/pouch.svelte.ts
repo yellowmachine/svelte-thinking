@@ -29,7 +29,8 @@ class PouchStore {
 				console.error('[pouch] window.PouchDB not found — script tag may not have loaded');
 				return;
 			}
-			this.db = new PouchDB<OfflineDoc>('scholio-docs');
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			this.db = new (PouchDB as any)<OfflineDoc>('scholio-docs', { auto_compaction: true });
 			this._startSync();
 		} catch (e) {
 			console.error('[pouch] init failed:', e);
@@ -46,7 +47,7 @@ class PouchStore {
 		const handler = (this.db as any).sync(remoteUrl, { live: true, retry: true });
 		handler
 			.on('active', () => { this.status = 'syncing'; })
-			.on('paused', () => { this.status = 'synced'; })
+			.on('paused', (e: unknown) => { this.status = e ? 'error' : 'synced'; })
 			.on('error', (e: unknown) => { console.error('[pouch] sync error', e); this.status = 'error'; })
 			.on('denied', (e: unknown) => { console.error('[pouch] sync denied', e); this.status = 'error'; });
 		this.syncHandler = handler as PouchDB.Replication.Sync<OfflineDoc>;
