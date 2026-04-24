@@ -21,14 +21,20 @@ function couchFetch(url: string, init?: RequestInit) {
 	return fetch(url, { ...init, headers });
 }
 
-console.log('[couch-proxy] module loaded — COUCH_BASE:', COUCH_BASE, 'AUTH:', COUCH_AUTH ? 'yes' : 'no');
-
 export const fallback: RequestHandler = async (event) => {
-	console.log(`[couch-proxy] → ${event.request.method} /api/couch/${event.params.path}`);
 	const user = event.locals.user;
 	if (!user) error(401, 'No autenticado');
 
-	const [requestedDb, ...rest] = event.params.path.split('/');
+	const parts = event.params.path.split('/').filter(Boolean);
+	const [requestedDb, ...rest] = parts;
+
+	// PouchDB queries the CouchDB server root for capability detection.
+	// Proxy it directly so PouchDB gets valid server info.
+	if (!requestedDb) {
+		const upstream = await couchFetch(`${COUCH_BASE}/`);
+		return forwardResponse(upstream);
+	}
+
 	if (requestedDb !== LOGICAL_DB) error(403, 'Forbidden');
 
 	const couchDb = `docs-${user.id}`;
@@ -45,16 +51,12 @@ export const fallback: RequestHandler = async (event) => {
 	}
 
 	let upstream = await couchFetch(target, { method: event.request.method, headers: fwdHeaders, body });
-	console.log(`[couch-proxy] ${event.request.method} ${subPath || '/'} → ${upstream.status}`);
 
 	// Auto-create the per-user database on first access
 	if (upstream.status === 404 && !subPath) {
-		console.log(`[couch-proxy] creating database ${couchDb}`);
 		const created = await couchFetch(`${COUCH_BASE}/${couchDb}`, { method: 'PUT' });
-		console.log(`[couch-proxy] create ${couchDb} → ${created.status}`);
 		if (created.ok || created.status === 412) {
 			upstream = await couchFetch(target, { method: event.request.method, headers: fwdHeaders, body });
-			console.log(`[couch-proxy] retry → ${upstream.status}`);
 		}
 	}
 

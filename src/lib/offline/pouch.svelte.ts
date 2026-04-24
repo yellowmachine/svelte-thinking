@@ -29,9 +29,7 @@ class PouchStore {
 				console.error('[pouch] window.PouchDB not found — script tag may not have loaded');
 				return;
 			}
-			console.log('[pouch] initializing…');
 			this.db = new PouchDB<OfflineDoc>('scholio-docs');
-			console.log('[pouch] db created, starting sync');
 			this._startSync();
 		} catch (e) {
 			console.error('[pouch] init failed:', e);
@@ -42,15 +40,13 @@ class PouchStore {
 		if (!this.db) return;
 		this.syncHandler?.cancel();
 		// PouchDB only uses its HTTP adapter when the URL has a scheme (http:// or https://).
-		// A root-relative path like '/api/couch/documents' is treated as a local DB name,
-		// so we must use the full origin.
+		// A root-relative path like '/api/couch/documents' is treated as a local DB name.
 		const remoteUrl = `${window.location.origin}/api/couch/documents`;
-		console.log('[pouch] starting sync to', remoteUrl);
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const handler = (this.db as any).sync(remoteUrl, { live: true, retry: true });
 		handler
-			.on('active', () => { console.log('[pouch] sync active'); this.status = 'syncing'; })
-			.on('paused', (e: unknown) => { console.log('[pouch] sync paused', e); this.status = 'synced'; })
+			.on('active', () => { this.status = 'syncing'; })
+			.on('paused', () => { this.status = 'synced'; })
 			.on('error', (e: unknown) => { console.error('[pouch] sync error', e); this.status = 'error'; })
 			.on('denied', (e: unknown) => { console.error('[pouch] sync denied', e); this.status = 'error'; });
 		this.syncHandler = handler as PouchDB.Replication.Sync<OfflineDoc>;
