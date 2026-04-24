@@ -196,6 +196,62 @@
 		}
 	}
 
+	// URL import
+	let showUrlModal = $state(false);
+	let urlImportUrl = $state('');
+	let urlImportTitle = $state('');
+	let urlImporting = $state(false);
+	let urlImportError = $state('');
+	let urlRefSearch = $state('');
+	let urlRefResults = $state<{ id: string; citeKey: string; title: string; year: string }[]>([]);
+	let urlRefLoading = $state(false);
+	let urlSelectedRef = $state<{ id: string; citeKey: string; title: string } | null>(null);
+
+	async function searchUrlRefs(q: string) {
+		if (!q.trim()) { urlRefResults = []; return; }
+		urlRefLoading = true;
+		try {
+			const all = await trpc.references.listAll.query();
+			const lower = q.toLowerCase();
+			urlRefResults = all
+				.filter((r) => r.title.toLowerCase().includes(lower) || r.citeKey.toLowerCase().includes(lower) || (r.authors as {first:string;last:string}[]).some((a) => a.last.toLowerCase().includes(lower)))
+				.slice(0, 8)
+				.map((r) => ({ id: r.id, citeKey: r.citeKey, title: r.title, year: r.year ?? '' }));
+		} finally {
+			urlRefLoading = false;
+		}
+	}
+
+	function resetUrlModal() {
+		showUrlModal = false;
+		urlImportUrl = '';
+		urlImportTitle = '';
+		urlImportError = '';
+		urlSelectedRef = null;
+		urlRefSearch = '';
+		urlRefResults = [];
+	}
+
+	async function startUrlImport() {
+		if (!urlImportUrl.trim() || !urlImportTitle.trim()) return;
+		urlImporting = true;
+		urlImportError = '';
+		try {
+			const { docId } = await trpc.references.importDocumentFromUrl.mutate({
+				url: urlImportUrl.trim(),
+				projectId: data.project.id,
+				title: urlImportTitle.trim(),
+				referenceId: urlSelectedRef?.id
+			});
+			resetUrlModal();
+			await goto(`/projects/${data.project.id}/documents/${docId}`);
+		} catch (e) {
+			urlImportError = e instanceof Error ? e.message : 'Import failed.';
+		} finally {
+			urlImporting = false;
+		}
+	}
+
 	async function startEpubImport() {
 		const hasUrl = epubUrl.trim().length > 0;
 		const hasFile = epubFile !== null;
@@ -839,6 +895,16 @@
 				{/if}
 				{#if data.isOwner}
 					<button
+						onclick={() => { showUrlModal = true; urlImportError = ''; }}
+						title="Import URL"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+						</svg>
+						URL
+					</button>
+					<button
 						onclick={() => { showEpubModal = true; epubError = ''; }}
 						title="Import EPUB book"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
@@ -895,6 +961,93 @@
 		<div class="mb-4 flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-ink dark:text-dark-ink">
 			<Spinner size="sm" />
 			<span>Importando capítulos del EPUB… Los documentos aparecerán en breve.</span>
+		</div>
+	{/if}
+
+	<!-- URL import modal -->
+	{#if showUrlModal}
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
+			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+			<div class="absolute inset-0" onclick={resetUrlModal}></div>
+			<div class="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper">
+				<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import URL</h2>
+				<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Pega la URL de un artículo o página web. Se extraerá el contenido principal como documento readonly.
+				</p>
+
+				<!-- Reference picker -->
+				<div class="mb-4">
+					<p class="mb-1.5 font-sans text-xs font-medium text-ink dark:text-dark-ink">
+						Referencia bibliográfica <span class="font-normal text-ink-faint">(opcional)</span>
+					</p>
+					{#if urlSelectedRef}
+						<div class="flex items-center justify-between rounded-md border border-accent/40 bg-accent/5 px-3 py-2 dark:border-accent/30 dark:bg-accent/10">
+							<div class="min-w-0">
+								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{urlSelectedRef.title}</p>
+								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{urlSelectedRef.citeKey}</p>
+							</div>
+							<button type="button" onclick={() => { urlSelectedRef = null; urlRefSearch = ''; urlRefResults = []; }} class="ml-2 shrink-0 rounded p-0.5 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink">✕</button>
+						</div>
+					{:else}
+						<div class="relative">
+							<input
+								type="text"
+								bind:value={urlRefSearch}
+								oninput={() => searchUrlRefs(urlRefSearch)}
+								placeholder="Buscar por título, autor o citeKey…"
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							{#if urlRefLoading}<div class="absolute right-2 top-2"><Spinner size="sm" /></div>{/if}
+							{#if urlRefResults.length > 0}
+								<div class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
+									{#each urlRefResults as ref (ref.id)}
+										<button type="button" onclick={() => { urlSelectedRef = ref; urlRefSearch = ''; urlRefResults = []; }} class="flex w-full flex-col px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
+											<span class="truncate font-sans text-sm text-ink dark:text-dark-ink">{ref.title}</span>
+											<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{ref.citeKey}{ref.year ? ` · ${ref.year}` : ''}</span>
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
+
+				<!-- URL -->
+				<input
+					type="url"
+					bind:value={urlImportUrl}
+					placeholder="https://example.org/article"
+					autofocus
+					class="mb-3 w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				/>
+
+				<!-- Title -->
+				<input
+					type="text"
+					bind:value={urlImportTitle}
+					placeholder="Título del documento"
+					onkeydown={(e) => { if (e.key === 'Enter' && urlImportUrl.trim() && urlImportTitle.trim()) startUrlImport(); }}
+					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				/>
+
+				{#if urlImportError}
+					<p class="mt-2 font-sans text-xs text-red-500">{urlImportError}</p>
+				{/if}
+				<div class="mt-4 flex justify-end gap-2">
+					<button
+						onclick={resetUrlModal}
+						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					>Cancel</button>
+					<button
+						onclick={startUrlImport}
+						disabled={urlImporting || !urlImportUrl.trim() || !urlImportTitle.trim()}
+						class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
+					>
+						{#if urlImporting}<Spinner size="sm" />{/if}
+						{urlImporting ? 'Importando…' : 'Import'}
+					</button>
+				</div>
+			</div>
 		</div>
 	{/if}
 
