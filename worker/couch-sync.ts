@@ -111,7 +111,7 @@ async function watchDatabase(dbName: string): Promise<never> {
 				try {
 					const rows = await applyChange(parsed.data);
 					if (rows > 0) {
-						console.log(`[worker] ✓ ${dbName} → document ${parsed.data.documentId}`);
+						console.log(`[worker] ✓ ${dbName} → document ${parsed.data.documentId} | updatedAt=${parsed.data.updatedAt ?? 'now'} | content(200)=${parsed.data.content.slice(0, 200)}`);
 					} else {
 						// Document not in PG yet (created offline, not synced via tRPC)
 						console.warn(`[worker] ⚠ ${dbName} → document ${parsed.data.documentId} not found in PG — skipping`);
