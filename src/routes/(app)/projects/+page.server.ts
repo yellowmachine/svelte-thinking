@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersionShare } from '$lib/server/db/schemas/documents.schema';
+import { tag, projectTag } from '$lib/server/db/schemas/tags.schema';
 import { desc, sql, eq, and, isNull, gt } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -58,9 +59,19 @@ export const load: PageServerLoad = async (event) => {
 		activeShareProjectIds = new Set(rows.map((r) => r.projectId));
 	}
 
+	// All tags for the user + which projects each tag belongs to
+	const allTags = await event.locals.withRLS((db) =>
+		db.select({ id: tag.id, name: tag.name }).from(tag).where(eq(tag.userId, currentUserId))
+	);
+	const tagLinks = await event.locals.withRLS((db) =>
+		db.select({ projectId: projectTag.projectId, tagId: projectTag.tagId }).from(projectTag)
+	);
+
 	return {
 		projects,
 		currentUserId,
-		activeShareProjectIds: [...activeShareProjectIds]
+		activeShareProjectIds: [...activeShareProjectIds],
+		allTags,
+		tagLinks
 	};
 };

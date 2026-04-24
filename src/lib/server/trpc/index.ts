@@ -21,6 +21,7 @@ import { usageRouter } from './routers/usage';
 import { versionSharesRouter } from './routers/versionShares';
 import { notificationsRouter } from './routers/notifications';
 import { issuesRouter } from './routers/issues';
+import { tagsRouter } from './routers/tags';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -44,7 +45,8 @@ export const appRouter = router({
 	usage: usageRouter,
 	versionShares: versionSharesRouter,
 	notifications: notificationsRouter,
-	issues: issuesRouter
+	issues: issuesRouter,
+	tags: tagsRouter
 });
 
 export type AppRouter = typeof appRouter;

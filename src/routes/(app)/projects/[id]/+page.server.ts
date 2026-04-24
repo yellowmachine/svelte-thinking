@@ -5,6 +5,7 @@ import { document, documentVersion, documentVersionShare } from '$lib/server/db/
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
+import { tag, projectTag } from '$lib/server/db/schemas/tags.schema';
 import { eq, desc, and, count, sql, inArray, isNull, gt } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -144,6 +145,13 @@ export const load: PageServerLoad = async (event) => {
 		activeShareDocumentIds = new Set(shareRows.map((r) => r.documentId));
 	}
 
+	const projectTags = await event.locals.withRLS((db) =>
+		db.select({ id: tag.id, name: tag.name })
+			.from(projectTag)
+			.innerJoin(tag, eq(tag.id, projectTag.tagId))
+			.where(eq(projectTag.projectId, projectId))
+	);
+
 	return {
 		project: proj[0],
 		documents,
@@ -155,6 +163,7 @@ export const load: PageServerLoad = async (event) => {
 		requirementCounts: reqCounts,
 		openComments: openCommentsCount[0]?.value ?? 0,
 		openCommentsByDoc,
-		activeShareDocumentIds: [...activeShareDocumentIds]
+		activeShareDocumentIds: [...activeShareDocumentIds],
+		projectTags
 	};
 };
