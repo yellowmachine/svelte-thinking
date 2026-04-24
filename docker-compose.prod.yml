@@ -129,6 +129,20 @@ services:
     networks:
       - scholio-network
 
+  couch-sync:
+    image: scholio-couch-sync:latest
+    restart: unless-stopped
+    depends_on:
+      scholio:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${MIGRATION_DATABASE_URL}
+      COUCHDB_URL: ${COUCHDB_URL}
+    volumes:
+      - couch_sync_seqs:/app/worker
+    networks:
+      - scholio-network
+
   typst:
     image: scholio-typst:latest
     restart: unless-stopped
@@ -207,6 +221,8 @@ volumes:
   backup_logs:
     name: scholio_backup_logs
   rustfs-logs:
+  couch_sync_seqs:
+    name: scholio_couch_sync_seqs
 
 networks:
   scholio-network:
