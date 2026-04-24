@@ -32,6 +32,7 @@ class PouchStore {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			this.db = new (PouchDB as any)<OfflineDoc>('scholio-docs', { auto_compaction: true });
 			this._startSync();
+			window.addEventListener('online', () => this._startSync());
 		} catch (e) {
 			console.error('[pouch] init failed:', e);
 		}
