@@ -29,6 +29,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      couchdb:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       BODY_SIZE_LIMIT: 20M
@@ -45,6 +47,7 @@ services:
       REDIS_URL: ${REDIS_URL}
       EMBED_SERVICE_URL: ${EMBED_SERVICE_URL}
       TYPST_SERVICE_URL: ${TYPST_SERVICE_URL}
+      COUCHDB_URL: ${COUCHDB_URL}
       # External services
       SCIPY_SERVICE_URL: ${SCIPY_SERVICE_URL}
       # Storage (S3-compatible, external)
