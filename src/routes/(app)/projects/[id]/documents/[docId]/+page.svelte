@@ -122,7 +122,7 @@
 		}
 	}
 
-	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state('idle');
+	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' | 'syncing' | 'synced' = $state('idle');
 	// True once PouchDB has gone through 'syncing' after an offline save.
 	// Prevents the reconnect effect from firing prematurely (status was already
 	// 'synced' before the user went offline, so we must see a sync cycle first).
@@ -755,12 +755,16 @@
 	$effect(() => {
 		const status = pouchStore.status;
 		if (saveStatus === 'offline' && status === 'syncing') {
-			untrack(() => { seenSyncingAfterOfflineSave = true; });
+			untrack(() => {
+				seenSyncingAfterOfflineSave = true;
+				saveStatus = 'syncing';
+			});
 		}
 		if (seenSyncingAfterOfflineSave && status === 'synced') {
 			untrack(() => {
 				seenSyncingAfterOfflineSave = false;
-				saveStatus = 'idle';
+				saveStatus = 'synced';
+				setTimeout(() => { if (saveStatus === 'synced') saveStatus = 'idle'; }, 2000);
 				console.log(`[offline] reconnect: PouchDB synced — doc ${data.document?.id}`);
 			});
 		}
@@ -944,6 +948,8 @@
 			case 'saved':   return 'Saved';
 			case 'error':   return 'Error saving';
 			case 'offline': return 'Guardado offline';
+			case 'syncing': return 'Syncing...';
+			case 'synced':  return 'Synced';
 			default:        return '';
 		}
 	});
@@ -1646,7 +1652,7 @@
 					<span
 						class="ml-auto shrink-0 font-sans text-xs {saveStatus === 'error'
 							? 'text-red-500'
-							: saveStatus === 'saved'
+							: saveStatus === 'saved' || saveStatus === 'synced'
 								? 'text-green-600'
 								: 'text-ink-faint dark:text-dark-ink-faint'}"
 					>
