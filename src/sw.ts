@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
 import { NetworkFirst } from 'workbox-strategies';
@@ -88,7 +88,7 @@ registerRoute(
 setCatchHandler(async ({ event }) => {
 	const req = event.request;
 	if (req.mode === 'navigate') {
-		const cached = await caches.match('/offline');
+		const cached = await matchPrecache('/offline');
 		return cached ?? Response.error();
 	}
 	return Response.error();
