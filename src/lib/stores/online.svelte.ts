@@ -45,6 +45,10 @@ class OnlineStore {
 		this.online = navigator.onLine;
 		console.log(`[offline] network: initialized — ${navigator.onLine ? 'online' : 'offline'}`);
 
+		// Probe immediately — navigator.onLine is unreliable in DevTools offline mode (stays true),
+		// so we need a real network check right away rather than waiting for the 15s interval.
+		this.refresh();
+
 		window.addEventListener('online', () => {
 			console.log('[offline] network: browser event → online, probing…');
 			this._probe();

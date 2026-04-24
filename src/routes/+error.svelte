@@ -2,18 +2,17 @@
 	import { page } from '$app/state';
 	import ErrorPage from '$lib/components/ui/ErrorPage.svelte';
 	import OfflineView from '$lib/components/ui/OfflineView.svelte';
+	import { onlineStore } from '$lib/stores/online.svelte';
 	import { onMount } from 'svelte';
 
-	let offline = $state(false);
-
 	onMount(() => {
-		offline = !navigator.onLine;
-		window.addEventListener('online', () => (offline = false));
-		window.addEventListener('offline', () => (offline = true));
+		// Safety net: if onlineStore hasn't probed yet (just after a page reload),
+		// force an immediate check so the UI updates within the probe timeout.
+		onlineStore.refresh();
 	});
 </script>
 
-{#if offline}
+{#if !onlineStore.online}
 	<OfflineView />
 {:else}
 	<ErrorPage status={page.status} />
