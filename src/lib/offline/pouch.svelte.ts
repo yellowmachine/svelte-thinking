@@ -15,6 +15,7 @@ export type SyncStatus = 'initializing' | 'synced' | 'syncing' | 'error' | 'offl
 
 class PouchStore {
 	status = $state<SyncStatus>('initializing');
+	pushStatus = $state<'idle' | 'syncing' | 'synced' | 'error'>('idle');
 	private db: PouchDB.Database<OfflineDoc> | null = null;
 	private pullHandler: PouchDB.Replication.Replication<OfflineDoc> | null = null;
 	// Doc _ids that were saved offline and need to be pushed to CouchDB
@@ -63,16 +64,16 @@ class PouchStore {
 		if (!this.db || this.pendingPush.size === 0) return;
 		const docIds = Array.from(this.pendingPush);
 		const remoteUrl = `${window.location.origin}/api/couch/documents`;
-		this.status = 'syncing';
+		this.pushStatus = 'syncing';
 		try {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			await (this.db as any).replicate.to(remoteUrl, { doc_ids: docIds });
 			this.pendingPush.clear();
-			this.status = 'synced';
+			this.pushStatus = 'synced';
 			console.log(`[pouch] pushed offline docs: ${docIds.join(', ')}`);
 		} catch (e) {
 			console.error('[pouch] push failed:', e);
-			this.status = 'error';
+			this.pushStatus = 'error';
 		}
 	}
 
