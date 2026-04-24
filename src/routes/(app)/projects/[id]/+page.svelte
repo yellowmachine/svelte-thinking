@@ -8,6 +8,7 @@
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
 	import RequirementsProgress from '$lib/components/projects/RequirementsProgress.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import TagManager from '$lib/components/projects/TagManager.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 	import { offlineDb, type PendingCreate } from '$lib/offline.db';
@@ -956,6 +957,13 @@
 			</p>
 		{/if}
 	</div>
+
+	<!-- Tags -->
+	{#if data.isOwner}
+		<div class="mb-4">
+			<TagManager projectId={data.project.id} initialTags={data.projectTags} />
+		</div>
+	{/if}
 
 	{#if data.project.isImporting}
 		<div class="mb-4 flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-ink dark:text-dark-ink">

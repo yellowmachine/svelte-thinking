@@ -22,3 +22,4 @@ export * from './schemas/organizations.schema';
 export * from './schemas/issues.schema';
 export * from './schemas/issueComments.schema';
 export * from './schemas/notifications.schema';
+export * from './schemas/tags.schema';

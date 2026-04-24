@@ -39,8 +39,26 @@
 			: data.projects.filter((p) => p.orgId === workspaceStore.current.id)
 	);
 
-	const ownedProjects = $derived(projects.filter((p) => p.ownerId === data.currentUserId));
-	const sharedProjects = $derived(projects.filter((p) => p.ownerId !== data.currentUserId));
+	// Tag filter
+	let activeTagId = $state<string | null>(null);
+	onMount(() => {
+		activeTagId = localStorage.getItem('projects-tag-filter') ?? null;
+	});
+	$effect(() => {
+		if (activeTagId) localStorage.setItem('projects-tag-filter', activeTagId);
+		else localStorage.removeItem('projects-tag-filter');
+	});
+	const tagProjectIds = $derived(
+		activeTagId
+			? new Set(data.tagLinks.filter((l) => l.tagId === activeTagId).map((l) => l.projectId))
+			: null
+	);
+	const filteredProjects = $derived(
+		tagProjectIds ? projects.filter((p) => tagProjectIds.has(p.id)) : projects
+	);
+
+	const ownedProjects = $derived(filteredProjects.filter((p) => p.ownerId === data.currentUserId));
+	const sharedProjects = $derived(filteredProjects.filter((p) => p.ownerId !== data.currentUserId));
 	const activeShareSet = $derived(new Set(data.activeShareProjectIds));
 
 	const workspaceName = $derived(workspaceStore.current.name);
@@ -135,7 +153,7 @@
 				{/if}
 			</div>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				{projects.length === 1 ? '1 project' : `${projects.length} projects`}
+				{filteredProjects.length === 1 ? '1 project' : `${filteredProjects.length} projects`}
 			</p>
 		</div>
 		<div class="flex items-center gap-2">
@@ -166,6 +184,22 @@
 		<p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-sans text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400">
 			{importError}
 		</p>
+	{/if}
+
+	<!-- Tag filter -->
+	{#if data.allTags.length > 0}
+		<div class="mb-6 flex flex-wrap gap-2">
+			<button
+				onclick={() => (activeTagId = null)}
+				class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId === null ? 'border-accent bg-accent text-white' : 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+			>All</button>
+			{#each data.allTags as t (t.id)}
+				<button
+					onclick={() => (activeTagId = activeTagId === t.id ? null : t.id)}
+					class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId === t.id ? 'border-accent bg-accent text-white' : 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+				>{t.name}</button>
+			{/each}
+		</div>
 	{/if}
 
 	<!-- Create form -->
