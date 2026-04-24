@@ -123,6 +123,10 @@
 	}
 
 	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state('idle');
+	// True once PouchDB has gone through 'syncing' after an offline save.
+	// Prevents the reconnect effect from firing prematurely (status was already
+	// 'synced' before the user went offline, so we must see a sync cycle first).
+	let seenSyncingAfterOfflineSave = $state(false);
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -712,6 +716,7 @@
 
 		if (!onlineStore.online) {
 			saveStatus = 'offline';
+			seenSyncingAfterOfflineSave = false;
 			console.log(`[offline] save: stored in PouchDB (doc ${data.document.id})`);
 			return;
 		}
@@ -744,11 +749,20 @@
 		}
 	}
 
-	// When PouchDB finishes syncing after reconnect, clear the offline save status
+	// When PouchDB finishes syncing after reconnect, clear the offline save status.
+	// Guard: only fire after PouchDB has gone through 'syncing' since the offline save
+	// (avoids a premature trigger when status was already 'synced' before going offline).
 	$effect(() => {
-		if (saveStatus === 'offline' && pouchStore.status === 'synced') {
-			saveStatus = 'idle';
-			console.log(`[offline] reconnect: PouchDB synced — doc ${data.document?.id}`);
+		const status = pouchStore.status;
+		if (saveStatus === 'offline' && status === 'syncing') {
+			untrack(() => { seenSyncingAfterOfflineSave = true; });
+		}
+		if (seenSyncingAfterOfflineSave && status === 'synced') {
+			untrack(() => {
+				seenSyncingAfterOfflineSave = false;
+				saveStatus = 'idle';
+				console.log(`[offline] reconnect: PouchDB synced — doc ${data.document?.id}`);
+			});
 		}
 	});
 

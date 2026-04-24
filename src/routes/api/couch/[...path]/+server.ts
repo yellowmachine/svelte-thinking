@@ -42,12 +42,16 @@ export const fallback: RequestHandler = async (event) => {
 	}
 
 	let upstream = await couchFetch(target, { method: event.request.method, headers: fwdHeaders, body });
+	console.log(`[couch-proxy] ${event.request.method} ${subPath || '/'} → ${upstream.status}`);
 
 	// Auto-create the per-user database on first access
 	if (upstream.status === 404 && !subPath) {
+		console.log(`[couch-proxy] creating database ${couchDb}`);
 		const created = await couchFetch(`${COUCH_BASE}/${couchDb}`, { method: 'PUT' });
+		console.log(`[couch-proxy] create ${couchDb} → ${created.status}`);
 		if (created.ok || created.status === 412) {
 			upstream = await couchFetch(target, { method: event.request.method, headers: fwdHeaders, body });
+			console.log(`[couch-proxy] retry → ${upstream.status}`);
 		}
 	}
 
