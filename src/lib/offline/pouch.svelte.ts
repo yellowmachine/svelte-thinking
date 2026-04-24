@@ -20,6 +20,8 @@ class PouchStore {
 
 	async init() {
 		if (!browser) return;
+		// Guard against double-init (HMR re-evaluation, or called twice)
+		if (this.db) return;
 		try {
 			// PouchDB loaded via script tag in app.html (avoids Vite/esbuild UMD issues)
 			const PouchDB = (window as unknown as { PouchDB: PouchDB.Static }).PouchDB;
@@ -95,3 +97,10 @@ class PouchStore {
 }
 
 export const pouchStore = new PouchStore();
+
+// Initialize immediately when the module is first loaded in the browser.
+// This runs before any component's onMount, avoiding the race where the
+// page's onMount (putDocument) fires before the layout's onMount (init).
+if (browser) {
+	pouchStore.init();
+}

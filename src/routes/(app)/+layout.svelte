@@ -8,7 +8,6 @@
 	import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onlineStore } from '$lib/stores/online.svelte';
-	import { pouchStore } from '$lib/offline/pouch.svelte';
 	import { pendingCreates } from '$lib/offline/pending-creates.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { LayoutData } from './$types';
@@ -36,7 +35,6 @@
 		workspaceStore.init(data.orgs);
 		onlineStore.init();
 		pendingCreates.init();
-		pouchStore.init();
 	});
 
 </script>

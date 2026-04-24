@@ -21,7 +21,10 @@ function couchFetch(url: string, init?: RequestInit) {
 	return fetch(url, { ...init, headers });
 }
 
+console.log('[couch-proxy] module loaded — COUCH_BASE:', COUCH_BASE, 'AUTH:', COUCH_AUTH ? 'yes' : 'no');
+
 export const fallback: RequestHandler = async (event) => {
+	console.log(`[couch-proxy] → ${event.request.method} /api/couch/${event.params.path}`);
 	const user = event.locals.user;
 	if (!user) error(401, 'No autenticado');
 
