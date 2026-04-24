@@ -1,7 +1,7 @@
 /// <reference types="vitest/config" />
 import devtoolsJson from 'vite-plugin-devtools-json';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, type Plugin } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -19,10 +19,34 @@ const enableSW = process.env.ENABLE_SW === 'true';
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 const isDev = process.env.NODE_ENV !== 'production';
 
+const swKillswitch: Plugin = {
+	name: 'sw-killswitch',
+	apply: 'build',
+	generateBundle() {
+		if (!enableSW) {
+			this.emitFile({
+				type: 'asset',
+				fileName: 'sw.js',
+				source: [
+					'// Kill-switch: unregister any previously installed service worker.',
+					'self.addEventListener("install", () => self.skipWaiting());',
+					'self.addEventListener("activate", () => {',
+					'\tself.registration.unregister();',
+					'\tself.clients.matchAll({ type: "window" }).then((clients) => {',
+					'\t\tclients.forEach((client) => client.navigate(client.url));',
+					'\t});',
+					'});'
+				].join('\n')
+			});
+		}
+	}
+};
+
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
 		sveltekit(),
+		swKillswitch,
 		...(enableSW ? [VitePWA({
 			registerType: 'autoUpdate',
 			devOptions: { enabled: process.env.NODE_ENV !== 'production', type: 'module' },
