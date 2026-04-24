@@ -1496,6 +1496,12 @@
 	});
 
 	onMount(async () => {
+		// Proactively cache this page's HTML so it's available offline even after
+		// client-side navigation (which never sends a navigate request to the SW).
+		if ('caches' in window && onlineStore.online) {
+			caches.open('html-cache').then((cache) => cache.add(location.href)).catch(() => {});
+		}
+
 		// If offline, prefer PouchDB content (may have unsaved edits) over cached server data
 		const offlineDoc = await pouchStore.getDocument(data.document.id);
 		if (offlineDoc && !onlineStore.online) {
