@@ -41,6 +41,13 @@
 
 	// Tag filter
 	let activeTagId = $state<string | null>(null);
+	onMount(() => {
+		activeTagId = localStorage.getItem('projects-tag-filter') ?? null;
+	});
+	$effect(() => {
+		if (activeTagId) localStorage.setItem('projects-tag-filter', activeTagId);
+		else localStorage.removeItem('projects-tag-filter');
+	});
 	const tagProjectIds = $derived(
 		activeTagId
 			? new Set(data.tagLinks.filter((l) => l.tagId === activeTagId).map((l) => l.projectId))
