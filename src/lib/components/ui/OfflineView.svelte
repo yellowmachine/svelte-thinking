@@ -61,6 +61,7 @@
 								<li>
 									<a
 										href="/projects/{doc.projectId}/documents/{doc.documentId}"
+										data-sveltekit-reload
 										class="block w-full rounded-md px-3 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui hover:text-accent dark:text-dark-ink dark:hover:bg-dark-paper-ui dark:hover:text-accent"
 									>
 										{doc.title}
