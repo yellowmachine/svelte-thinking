@@ -42,6 +42,8 @@ registerRoute(
 // SvelteKit __data.json (client-side navigation payload)
 // matchOptions.ignoreSearch: SvelteKit appends ?x-sveltekit-invalidated=... which changes
 // on every navigation — ignoring search params ensures offline cache hits still work.
+// Side-effect: also caches the HTML page for the same route so that a hard refresh
+// while offline works even after client-side navigation (which never sends a navigate request).
 registerRoute(
 	({ url }) => url.pathname.endsWith('/__data.json'),
 	new NetworkFirst({
@@ -50,7 +52,16 @@ registerRoute(
 		matchOptions: { ignoreSearch: true },
 		plugins: [
 			new CacheableResponsePlugin({ statuses: [200] }),
-			new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 })
+			new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 }),
+			{
+				fetchDidSucceed: async ({ response }: { response: Response }) => {
+					const url = new URL(response.url);
+					const htmlPath = url.pathname.replace('/__data.json', '') || '/';
+					const htmlUrl = `${url.origin}${htmlPath}`;
+					caches.open('html-cache').then((cache) => cache.add(htmlUrl)).catch(() => {});
+					return response;
+				}
+			}
 		]
 	})
 );
