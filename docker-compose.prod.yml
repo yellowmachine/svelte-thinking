@@ -129,11 +129,29 @@ services:
     networks:
       - scholio-network
 
+  couchdb:
+    image: couchdb:3
+    restart: unless-stopped
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+    volumes:
+      - couchdb_prod_data:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5984/_up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scholio-network
+
   couch-sync:
     image: scholio-couch-sync:latest
     restart: unless-stopped
     depends_on:
-      scholio:
+      couchdb:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     environment:
       DATABASE_URL: ${MIGRATION_DATABASE_URL}
@@ -223,6 +241,8 @@ volumes:
   rustfs-logs:
   couch_sync_seqs:
     name: scholio_couch_sync_seqs
+  couchdb_prod_data:
+    name: scholio_couchdb_prod
 
 networks:
   scholio-network:
