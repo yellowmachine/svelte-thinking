@@ -1692,6 +1692,7 @@
 					</button>
 				{/if}
 
+				{#if !data.document.isReadonly}
 				<button
 					onclick={doSaveDraft}
 					disabled={!isDirty || !canTriggerSave(saveCap)}
@@ -1700,6 +1701,7 @@
 				>
 					{saveCap.kind === 'saving' ? 'Saving…' : saveCap.kind === 'queued' ? 'Save offline' : 'Save'}
 				</button>
+				{/if}
 
 				{#if data.document.type === 'book'}
 					<a
@@ -1781,7 +1783,7 @@
 				</button>
 
 				<!-- Draft assistant button -->
-				{#if viewMode !== 'preview'}
+				{#if !data.document.isReadonly && viewMode !== 'preview'}
 					<button
 						type="button"
 						onclick={toggleDraft}
@@ -1987,6 +1989,7 @@
 					?
 				</a>
 
+				{#if !data.document.isReadonly}
 				<!-- Spell check button -->
 				<button
 					onclick={() => runSpellCheck()}
@@ -2026,6 +2029,7 @@
 						{/each}
 					</select>
 				</div>
+				{/if}
 
 				<!-- Export dropdown trigger only — menu rendered at root level to escape backdrop-filter -->
 				<button
@@ -2084,6 +2088,7 @@
 					{/if}
 				</button>
 
+				{#if !data.document.isReadonly}
 				<button
 					onclick={() => (showCommit = true)}
 					disabled={!canTriggerCommit(commitCap)}
@@ -2092,6 +2097,7 @@
 				>
 					Commit
 				</button>
+				{/if}
 			</div>
 		</div>
 
