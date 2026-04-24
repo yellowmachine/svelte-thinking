@@ -11,7 +11,13 @@
 		onlineStore.init();
 
 		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.register('/sw-offline.js', { scope: '/' }).catch(() => {});
+			// Unregister any old SW registered at a different URL (e.g. /sw-offline.js)
+			navigator.serviceWorker.getRegistrations().then((registrations) => {
+				for (const reg of registrations) {
+					if (!reg.active?.scriptURL.endsWith('/sw.js')) reg.unregister();
+				}
+			});
+			navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
 		}
 
 		const handler = (e: PageTransitionEvent) => {
