@@ -598,10 +598,23 @@
 	let docSubnotes = $state<Subnote[]>([]);
 	let editingSubnoteId = $state<number | null>(null);
 	let editingSubnoteNotes = $state('');
+	let sourceReference = $state(data.sourceReference);
+	let assigningReference = $state(false);
+	let assignRefId = $state('');
 
 	async function loadDocSubnotes() {
-		if (!data.sourceReference) return;
-		docSubnotes = (await trpc.references.listSubnotes.query({ referenceId: data.sourceReference.id })) as Subnote[];
+		if (!sourceReference) return;
+		docSubnotes = (await trpc.references.listSubnotes.query({ referenceId: sourceReference.id })) as Subnote[];
+	}
+
+	async function assignSourceReference() {
+		if (!assignRefId) return;
+		await trpc.documents.setSourceReference.mutate({ documentId: data.document.id, referenceId: assignRefId });
+		const ref = projectRefs.find((r) => r.id === assignRefId);
+		if (ref) sourceReference = { id: ref.id!, citeKey: ref.citeKey };
+		assigningReference = false;
+		assignRefId = '';
+		await loadDocSubnotes();
 	}
 
 	async function saveSubnoteEdit(id: number) {
@@ -2334,9 +2347,9 @@
 							class="pointer-events-auto rounded-md bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:bg-paper-ui border border-paper-border dark:bg-dark-paper dark:text-dark-ink dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
 							onclick={() => {
 								savedCommentSelection = currentSelection;
-								subnoteNotes = currentSelection?.text ?? '';
+								subnoteNotes = '';
 								subnoteSlug = slugify(currentSelection?.text?.slice(0, 40) ?? '');
-								subnoteRefId = data.sourceReference?.id ?? (projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
+								subnoteRefId = sourceReference?.id ?? (projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
 								subnoteError = '';
 								showSubnote = true;
 							}}
@@ -2763,7 +2776,7 @@
 						<p class="mb-3 truncate border-l-2 border-paper-border pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted">
 							«{savedCommentSelection.text.slice(0, 80)}{savedCommentSelection.text.length > 80 ? '…' : ''}»
 						</p>
-						{#if !data.sourceReference}
+						{#if !sourceReference}
 							<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Referencia</label>
 							<select
 								bind:value={subnoteRefId}
@@ -2776,12 +2789,11 @@
 							</select>
 						{:else}
 							<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Referencia: <span class="font-mono text-accent">@{data.sourceReference.citeKey}</span>
+								Referencia: <span class="font-mono text-accent">@{sourceReference.citeKey}</span>
 							</p>
 						{/if}
 						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Slug <span class="text-ink-faint">(identificador único)</span></label>
 						<input
-							use:focusOnMount
 							bind:value={subnoteSlug}
 							type="text"
 							placeholder="p247-exchange"
@@ -2789,6 +2801,7 @@
 						/>
 						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Nota</label>
 						<textarea
+							use:focusOnMount
 							bind:value={subnoteNotes}
 							rows={3}
 							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -2903,17 +2916,54 @@
 			{/if}
 
 			<!-- Annotations panel (subnotes for source-reference docs) -->
-			{#if data.sourceReference}
+			{#if data.document.isReadonly}
 				<div
 					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
 				>
 					<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
 						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Anotaciones</h3>
-						<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">@{data.sourceReference.citeKey}</span>
+						{#if sourceReference}
+							<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">@{sourceReference.citeKey}</span>
+						{/if}
 					</div>
 
 					<div class="flex-1 space-y-2 overflow-y-auto p-3">
-						{#if docSubnotes.length === 0}
+						{#if !sourceReference}
+							<!-- No reference assigned yet -->
+							<div class="px-1 py-6 text-center">
+								<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Sin referencia bibliográfica.</p>
+								<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Asigna una referencia para poder anotar este documento.</p>
+								{#if !assigningReference}
+									<button
+										onclick={() => { loadRefs(); assigningReference = true; }}
+										class="mt-3 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-accent/90"
+									>Asignar referencia</button>
+								{:else}
+									<div class="mt-3 text-left">
+										<select
+											bind:value={assignRefId}
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										>
+											<option value="">— elige referencia —</option>
+											{#each projectRefs as ref}
+												<option value={ref.id ?? ''}>{ref.citeKey}</option>
+											{/each}
+										</select>
+										<div class="mt-2 flex gap-2">
+											<button
+												onclick={assignSourceReference}
+												disabled={!assignRefId}
+												class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white disabled:opacity-50 hover:bg-accent/90"
+											>Guardar</button>
+											<button
+												onclick={() => { assigningReference = false; assignRefId = ''; }}
+												class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+											>Cancelar</button>
+										</div>
+									</div>
+								{/if}
+							</div>
+						{:else if docSubnotes.length === 0}
 							<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 								Sin anotaciones.<br />
 								<span class="text-xs text-ink-faint dark:text-dark-ink-faint">Selecciona texto para anotar.</span>
@@ -2956,6 +3006,12 @@
 										</div>
 									</div>
 
+									{#if s.anchorText}
+										<blockquote class="mb-2 border-l-2 border-accent bg-accent/5 px-2.5 py-1.5 font-serif text-xs italic leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+											"{s.anchorText}"
+										</blockquote>
+									{/if}
+
 									{#if editingSubnoteId === s.id}
 										<textarea
 											class="w-full resize-none rounded border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink outline-none focus:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -2973,8 +3029,8 @@
 												class="rounded px-2 py-0.5 font-sans text-xs text-ink-faint hover:text-ink dark:text-dark-ink-faint"
 											>Cancelar</button>
 										</div>
-									{:else}
-										<p class="whitespace-pre-wrap font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">{s.notes}</p>
+									{:else if s.notes}
+										<p class="whitespace-pre-wrap font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{s.notes}</p>
 									{/if}
 								</div>
 							{/each}
