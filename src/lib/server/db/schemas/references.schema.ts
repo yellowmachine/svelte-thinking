@@ -129,6 +129,7 @@ export const referenceSubnote = scholioSchema.table(
 		// Normalised to lowercase alphanumeric + hyphens at write time.
 		slug: text('slug').notNull(),
 		notes: text('notes').notNull().default(''),
+		anchorText: text('anchor_text'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 		updatedAt: timestamp('updated_at').notNull().defaultNow()
 	},
