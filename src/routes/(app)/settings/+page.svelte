@@ -1306,7 +1306,7 @@
 											<option value="">— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option>
 											{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
 												{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
-													task.id as 'agent' | 'draft' | 'review' | 'requirements' | 'lookup'
+													task.id as 'agent' | 'draft' | 'review' | 'requirements'
 												)}
 												<option value={m.id}
 													>{isRec ? '★ ' : ''}{m.label}{m.pricing ? ` — ${m.pricing}` : ''}</option
