@@ -5,7 +5,6 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import {
 		generateCiteKey,
-		parseBibtexFile,
 		formatBibtexFile,
 		formatAuthorString
 	} from '$lib/utils/bibtex';
@@ -18,6 +17,10 @@
 	} from '$lib/utils/citations';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import DoiLookupPanel from '$lib/components/bib/DoiLookupPanel.svelte';
+	import UrlLookupPanel from '$lib/components/bib/UrlLookupPanel.svelte';
+	import ImportBibPanel from '$lib/components/bib/ImportBibPanel.svelte';
+	import LinkLibraryPanel from '$lib/components/bib/LinkLibraryPanel.svelte';
 	import { goto } from '$app/navigation';
 	import { flash } from '$lib/stores/flash.svelte';
 
@@ -446,393 +449,6 @@
 		}
 	}
 
-	// ── Import BibTeX ────────────────────────────────────────────────────────
-
-	let importRaw = $state('');
-	let importing = $state(false);
-	let importResult = $state<{ inserted: number; skipped: number } | null>(null);
-	let importError = $state('');
-
-	// ── Link from library ────────────────────────────────────────────────────
-
-	type LibraryRef = {
-		id: string;
-		citeKey: string;
-		type: string;
-		title: string;
-		authors: unknown;
-		year: string | null;
-		projectIds: string[];
-	};
-
-	let llRefs = $state<LibraryRef[]>([]);
-	let llSelectedIds = $state<Set<string>>(new Set());
-	let llSearch = $state('');
-	let llFilterProjectId = $state('');
-	let llProjects = $state<{ id: string; title: string }[]>([]);
-	let llLoading = $state(false);
-	let llLinking = $state(false);
-	let llDeleting = $state(new SvelteSet<string>());
-	let llError = $state('');
-	let llShowLinked = $state(false);
-
-	const llFiltered = $derived(() => {
-		const q = llSearch.toLowerCase().trim();
-		return llRefs.filter((r) => {
-			if (llFilterProjectId === '__unlinked__' && r.projectIds.length > 0) return false;
-			if (
-				llFilterProjectId &&
-				llFilterProjectId !== '__unlinked__' &&
-				!r.projectIds.includes(llFilterProjectId)
-			)
-				return false;
-			if (!q) return true;
-			return (
-				r.citeKey.toLowerCase().includes(q) ||
-				r.title.toLowerCase().includes(q) ||
-				r.year?.includes(q) ||
-				(r.authors as Author[]).some(
-					(a) => a.last.toLowerCase().includes(q) || a.first.toLowerCase().includes(q)
-				)
-			);
-		});
-	});
-
-	async function openLinkLibrary() {
-		panel = 'link-library';
-		llSelectedIds = new Set();
-		llSearch = '';
-		llFilterProjectId = '';
-		llError = '';
-		llShowLinked = false;
-		llLoading = true;
-		try {
-			type RawRef = {
-				id: string;
-				projectId: string | null;
-				citeKey: string;
-				type: string;
-				title: string;
-				authors: unknown;
-				year: string | null;
-			};
-			const [allRaw, allProjects] = await Promise.all([
-				trpc.references.listAll.query(),
-				trpc.projects.list.query()
-			]);
-			const all = allRaw as unknown as RawRef[];
-			llProjects = (allProjects as { id: string; title: string }[]).filter(
-				(p) => p.id !== data.project.id
-			);
-			const projectRefIds = new Set(references.map((r) => r.id));
-			// Build refId → projectIds map (listAll returns one row per project link)
-			const projectIdsMap = new Map<string, string[]>();
-			for (const r of all) {
-				if (!projectIdsMap.has(r.id)) projectIdsMap.set(r.id, []);
-				if (r.projectId) projectIdsMap.get(r.id)!.push(r.projectId);
-			}
-			const seen = new Set<string>();
-			llRefs = all
-				.filter((r) => {
-					if (projectRefIds.has(r.id) || seen.has(r.id)) return false;
-					seen.add(r.id);
-					return true;
-				})
-				.map((r) => ({ ...r, projectIds: projectIdsMap.get(r.id) ?? [] }));
-		} catch {
-			llError = 'Could not load your library.';
-		} finally {
-			llLoading = false;
-		}
-	}
-
-	function llToggleAll() {
-		if (llSelectedIds.size === llFiltered().length) {
-			llSelectedIds = new Set();
-		} else {
-			llSelectedIds = new Set(llFiltered().map((r) => r.id));
-		}
-	}
-
-	async function llDeleteRef(id: string) {
-		llDeleting.add(id);
-		try {
-			await trpc.references.delete.mutate(id);
-			llRefs = llRefs.filter((r) => r.id !== id);
-		} catch {
-			llError = 'Failed to delete reference.';
-		} finally {
-			llDeleting.delete(id);
-		}
-	}
-
-	async function runLinkLibrary() {
-		if (llSelectedIds.size === 0) return;
-		llLinking = true;
-		llError = '';
-		try {
-			await Promise.all(
-				[...llSelectedIds].map((referenceId) =>
-					trpc.references.attachToProject.mutate({ referenceId, projectId: data.project.id })
-				)
-			);
-			const fresh = await trpc.references.list.query(data.project.id);
-			references = fresh as Ref[];
-			panel = 'closed';
-		} catch (e) {
-			llError = e instanceof Error ? e.message : 'Failed to link references.';
-		} finally {
-			llLinking = false;
-		}
-	}
-
-	// ── DOI lookup ──────────────────────────────────────────────────────────
-	type DoiResult = {
-		citeKey: string;
-		type: string;
-		title: string;
-		authors: { first: string; last: string }[];
-		year: string | null;
-		journal: string | null;
-		doi: string;
-		abstract: string | null;
-		url: string;
-		volume: string | null;
-		issue: string | null;
-		pages: string | null;
-		publisher: string | null;
-		editors: { first: string; last: string }[];
-	};
-	let doiInput = $state('');
-	let doiLoading = $state(false);
-	let doiResult = $state<DoiResult | null>(null);
-	let doiError = $state('');
-
-	async function runDoiLookup() {
-		if (!doiInput.trim()) return;
-		doiLoading = true;
-		doiResult = null;
-		doiError = '';
-		try {
-			doiResult = (await trpc.references.fetchDoi.query(doiInput.trim())) as DoiResult;
-		} catch (e) {
-			doiError = e instanceof Error ? e.message : 'DOI not found.';
-		} finally {
-			doiLoading = false;
-		}
-	}
-
-	async function acceptDoiResult() {
-		if (!doiResult) return;
-		try {
-			await trpc.references.create.mutate({
-				projectId: data.project.id,
-				reference: {
-					citeKey: doiResult.citeKey,
-					type: doiResult.type as never,
-					title: doiResult.title,
-					authors: doiResult.authors,
-					editors: doiResult.editors,
-					year: doiResult.year ?? '',
-					journal: doiResult.journal ?? '',
-					volume: doiResult.volume ?? '',
-					issue: doiResult.issue ?? '',
-					pages: doiResult.pages ?? '',
-					publisher: doiResult.publisher ?? '',
-					abstract: doiResult.abstract ?? '',
-					doi: doiResult.doi,
-					url: doiResult.url,
-					note: '',
-					isbn: '',
-					booktitle: '',
-					organization: '',
-					series: '',
-					school: '',
-					institution: '',
-					reportNumber: '',
-					address: '',
-					edition: '',
-					extra: {}
-				}
-			});
-			const fresh = await trpc.references.list.query(data.project.id);
-			references = fresh as typeof references;
-			doiInput = '';
-			doiResult = null;
-			panel = null;
-		} catch (e) {
-			doiError = e instanceof Error ? e.message : 'Could not save reference.';
-		}
-	}
-
-	// ── URL lookup ──────────────────────────────────────────────────────────
-	type UrlResult = {
-		citeKey: string;
-		type: string;
-		title: string;
-		authors: { first: string; last: string }[];
-		year: string | null;
-		abstract: string | null;
-		journal: string | null;
-		volume: string | null;
-		issue: string | null;
-		pages: string | null;
-		publisher: string | null;
-		booktitle: string | null;
-		school: string | null;
-		institution: string | null;
-		url: string;
-	};
-	let urlInput = $state('');
-	let urlLoading = $state(false);
-	let urlResult = $state<UrlResult | null>(null);
-	let urlError = $state('');
-	let urlSavePdf = $state(false);
-	let urlImportDocument = $state(false);
-	let urlImportingDoc = $state(false);
-
-	async function runUrlLookup() {
-		if (!urlInput.trim()) return;
-		urlLoading = true;
-		urlResult = null;
-		urlError = '';
-		try {
-			urlResult = (await trpc.references.fetchUrl.query({
-				url: urlInput.trim(),
-				projectId: data.project.id
-			})) as UrlResult;
-		} catch (e) {
-			urlError = e instanceof Error ? e.message : 'Could not extract metadata from URL.';
-		} finally {
-			urlLoading = false;
-		}
-	}
-
-	async function acceptUrlResult() {
-		if (!urlResult) return;
-		const sourceUrl = urlResult.url;
-		try {
-			const newRef = await trpc.references.create.mutate({
-				projectId: data.project.id,
-				reference: {
-					citeKey: urlResult.citeKey,
-					type: urlResult.type as never,
-					title: urlResult.title,
-					authors: urlResult.authors,
-					editors: [],
-					year: urlResult.year ?? '',
-					abstract: urlResult.abstract ?? '',
-					journal: urlResult.journal ?? '',
-					volume: urlResult.volume ?? '',
-					issue: urlResult.issue ?? '',
-					pages: urlResult.pages ?? '',
-					publisher: urlResult.publisher ?? '',
-					booktitle: urlResult.booktitle ?? '',
-					school: urlResult.school ?? '',
-					institution: urlResult.institution ?? '',
-					url: sourceUrl,
-					doi: '',
-					note: '',
-					isbn: '',
-					organization: '',
-					series: '',
-					reportNumber: '',
-					address: '',
-					edition: '',
-					extra: {}
-				}
-			});
-			const fresh = await trpc.references.list.query(data.project.id);
-			references = fresh as typeof references;
-			const shouldGeneratePdf = urlSavePdf;
-			const shouldImportDoc = urlImportDocument;
-			const docTitle = urlResult.title;
-			const importUrl = sourceUrl;
-			urlInput = '';
-			urlResult = null;
-			urlSavePdf = false;
-			urlImportDocument = false;
-			panel = null;
-
-			// Import document from URL (best-effort, non-blocking)
-			if (shouldImportDoc) {
-				urlImportingDoc = true;
-				trpc.references.importDocumentFromUrl
-					.mutate({
-						url: importUrl,
-						projectId: data.project.id,
-						title: docTitle,
-						referenceId: newRef.id
-					})
-					.then(({ docId }) => {
-						goto(`/projects/${data.project.id}/documents/${docId}`);
-					})
-					.catch((e) => {
-						flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error');
-					})
-					.finally(() => {
-						urlImportingDoc = false;
-					});
-			}
-
-			if (!shouldGeneratePdf) return;
-			// Best-effort: generate PDF in background — show spinner, flash on failure
-			const refId = newRef.id;
-			generatingPdfIds.add(refId);
-			trpc.references.generatePdfFromUrl
-				.mutate({ refId, projectId: data.project.id })
-				.then((res) => {
-					if (res?.pdfKey) {
-						references = references.map((r) =>
-							r.id === refId
-								? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` }
-								: r
-						);
-					} else {
-						flash.set('PDF generation failed — you can upload one manually.', 'error');
-					}
-				})
-				.catch(() => {
-					flash.set('PDF generation failed — you can upload one manually.', 'error');
-				})
-				.finally(() => {
-					generatingPdfIds.delete(refId);
-				});
-		} catch (e) {
-			urlError = e instanceof Error ? e.message : 'Could not save reference.';
-		}
-	}
-
-	// Preview how many entries would be imported
-	const importPreview = $derived(() => {
-		if (!importRaw.trim()) return 0;
-		try {
-			return parseBibtexFile(importRaw).length;
-		} catch {
-			return 0;
-		}
-	});
-
-	async function runImport() {
-		importing = true;
-		importResult = null;
-		importError = '';
-		try {
-			const result = await trpc.references.importBibtex.mutate({
-				projectId: data.project.id,
-				raw: importRaw
-			});
-			importResult = result;
-			// Reload list
-			const fresh = await trpc.references.list.query(data.project.id);
-			references = fresh as Ref[];
-		} catch (e) {
-			importError = e instanceof Error ? e.message : 'Failed to import';
-		} finally {
-			importing = false;
-		}
-	}
-
 	// ── Export .bib ──────────────────────────────────────────────────────────
 
 	async function exportBib() {
@@ -963,42 +579,26 @@
 					Search paper
 				</button>
 				<button
-					onclick={() => {
-						panel = 'doi';
-						doiInput = '';
-						doiResult = null;
-						doiError = '';
-					}}
+					onclick={() => (panel = 'doi')}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					DOI lookup
 				</button>
 				<button
-					onclick={() => {
-						panel = 'url';
-						urlInput = '';
-						urlResult = null;
-						urlError = '';
-						urlSavePdf = false;
-					}}
+					onclick={() => (panel = 'url')}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					URL → AI
 				</button>
 				<button
-					onclick={() => {
-						panel = 'import';
-						importRaw = '';
-						importResult = null;
-						importError = '';
-					}}
+					onclick={() => (panel = 'import')}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					Import .bib
 				</button>
 
 				<button
-					onclick={openLinkLibrary}
+					onclick={() => (panel = 'link-library')}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					Link from library
@@ -2402,560 +2002,100 @@
 
 			<!-- ── DOI lookup panel ─────────────────────────────────────────────── -->
 		{:else if panel === 'doi'}
-			<div class="w-full max-w-sm shrink-0">
-				<div
-					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-					>
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							DOI lookup
-						</h2>
-						<button
-							onclick={closePanel}
-							aria-label="Close"
-							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-						>
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-								><path
-									d="M1 1l12 12M13 1L1 13"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/></svg
-							>
-						</button>
-					</div>
-					<div class="space-y-4 px-5 py-4">
-						<div class="flex gap-2">
-							<input
-								type="text"
-								bind:value={doiInput}
-								placeholder="10.1000/xyz123 or https://doi.org/..."
-								class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-								onkeydown={(e) => e.key === 'Enter' && runDoiLookup()}
-							/>
-							<button
-								onclick={runDoiLookup}
-								disabled={doiLoading || !doiInput.trim()}
-								class="rounded-md bg-accent px-3 py-2 font-sans text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
-							>
-								{doiLoading ? '…' : 'Fetch'}
-							</button>
-						</div>
-
-						{#if doiError}
-							<p
-								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-							>
-								{doiError}
-							</p>
-						{/if}
-
-						{#if doiResult}
-							<div
-								class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-							>
-								<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
-									{doiResult.title}
-								</p>
-								{#if doiResult.authors.length}
-									<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-										{doiResult.authors.map((a) => `${a.last}, ${a.first}`).join(' · ')}
-									</p>
-								{/if}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									{[doiResult.journal, doiResult.year].filter(Boolean).join(', ')}
-									{#if doiResult.doi}<span class="ml-1 font-mono">DOI: {doiResult.doi}</span>{/if}
-								</p>
-								<p class="font-mono text-[10px] text-accent">@{doiResult.citeKey}</p>
-							</div>
-							<button
-								onclick={acceptDoiResult}
-								class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover"
-							>
-								Add to bibliography
-							</button>
-						{/if}
-					</div>
-				</div>
-			</div>
-
-			<!-- ── URL lookup panel ─────────────────────────────────────────────── -->
+			<DoiLookupPanel
+				onclose={closePanel}
+				onaccept={async (result) => {
+					await trpc.references.create.mutate({
+						projectId: data.project.id,
+						reference: {
+							citeKey: result.citeKey,
+							type: result.type as never,
+							title: result.title,
+							authors: result.authors,
+							editors: result.editors,
+							year: result.year ?? '',
+							journal: result.journal ?? '',
+							volume: result.volume ?? '',
+							issue: result.issue ?? '',
+							pages: result.pages ?? '',
+							publisher: result.publisher ?? '',
+							abstract: result.abstract ?? '',
+							doi: result.doi,
+							url: result.url,
+							note: '', isbn: '', booktitle: '', organization: '',
+							series: '', school: '', institution: '',
+							reportNumber: '', address: '', edition: '', extra: {}
+						}
+					});
+					const fresh = await trpc.references.list.query(data.project.id);
+					references = fresh as Ref[];
+					panel = null;
+				}}
+			/>
 		{:else if panel === 'url'}
-			<div class="w-full max-w-sm shrink-0">
-				<div
-					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-					>
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">URL → AI</h2>
-						<button
-							onclick={closePanel}
-							aria-label="Close"
-							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-						>
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"
-								><path
-									d="M1 1l12 12M13 1L1 13"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/></svg
-							>
-						</button>
-					</div>
-					<div class="space-y-4 px-5 py-4">
-						{#if !data.hasAiKey}
-							<div class="flex flex-col gap-3 py-2">
-								<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-									This feature requires an AI model. Configure your API key to extract metadata from
-									URLs.
-								</p>
-								<a
-									href="/settings#ai"
-									class="self-start rounded-md bg-accent px-3 py-2 font-sans text-xs font-semibold text-white transition-colors hover:bg-accent-hover"
-								>
-									Go to Settings → AI Assistant
-								</a>
-							</div>
-						{:else}
-							<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-								Paste the URL of a webpage. Your AI model will extract the bibliographic metadata.
-								The page must be publicly accessible.
-							</p>
-							<div class="flex gap-2">
-								<input
-									type="url"
-									bind:value={urlInput}
-									placeholder="https://..."
-									class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-									onkeydown={(e) => e.key === 'Enter' && runUrlLookup()}
-								/>
-								<button
-									onclick={runUrlLookup}
-									disabled={urlLoading || !urlInput.trim()}
-									class="rounded-md bg-accent px-3 py-2 font-sans text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
-								>
-									{urlLoading ? '…' : 'Extract'}
-								</button>
-							</div>
-
-							{#if urlLoading}
-								<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-									Fetching page and extracting metadata…
-								</p>
-							{/if}
-
-							{#if urlError}
-								<p
-									class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-								>
-									{urlError}
-								</p>
-							{/if}
-
-							{#if urlResult}
-								<div
-									class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-								>
-									<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
-										{urlResult.title}
-									</p>
-									{#if urlResult.authors.length}
-										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-											{urlResult.authors.map((a) => `${a.last}, ${a.first}`).join(' · ')}
-										</p>
-									{/if}
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										{[urlResult.journal, urlResult.year].filter(Boolean).join(', ')}
-									</p>
-									<p class="font-mono text-[10px] text-accent">@{urlResult.citeKey}</p>
-									<p class="truncate font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
-										{urlResult.url}
-									</p>
-								</div>
-								<p class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">
-									Review and edit the fields after adding if needed.
-								</p>
-								<label class="flex cursor-pointer items-center gap-2">
-									<input
-										type="checkbox"
-										bind:checked={urlSavePdf}
-										class="h-3.5 w-3.5 rounded accent-accent"
-									/>
-									<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-										Save a PDF snapshot
-									</span>
-								</label>
-								<label class="flex cursor-pointer items-center gap-2">
-									<input
-										type="checkbox"
-										bind:checked={urlImportDocument}
-										class="h-3.5 w-3.5 rounded accent-accent"
-									/>
-									<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-										Import page as document
-									</span>
-								</label>
-								<button
-									onclick={acceptUrlResult}
-									disabled={urlImportingDoc}
-									class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
-								>
-									{urlImportingDoc ? 'Importing document…' : 'Add to bibliography'}
-								</button>
-							{/if}
-						{/if}
-					</div>
-				</div>
-			</div>
-
-			<!-- ── Import panel ──────────────────────────────────────────────── -->
+			<UrlLookupPanel
+				projectId={data.project.id}
+				hasAiKey={data.hasAiKey}
+				onclose={closePanel}
+				onaccept={async (result, savePdf, importDocument) => {
+					const sourceUrl = result.url;
+					const newRef = await trpc.references.create.mutate({
+						projectId: data.project.id,
+						reference: {
+							citeKey: result.citeKey, type: result.type as never,
+							title: result.title, authors: result.authors, editors: [],
+							year: result.year ?? '', abstract: result.abstract ?? '',
+							journal: result.journal ?? '', volume: result.volume ?? '',
+							issue: result.issue ?? '', pages: result.pages ?? '',
+							publisher: result.publisher ?? '', booktitle: result.booktitle ?? '',
+							school: result.school ?? '', institution: result.institution ?? '',
+							url: sourceUrl, doi: '', note: '', isbn: '',
+							organization: '', series: '', reportNumber: '', address: '', edition: '', extra: {}
+						}
+					});
+					const fresh = await trpc.references.list.query(data.project.id);
+					references = fresh as typeof references;
+					panel = null;
+					if (importDocument) {
+						trpc.references.importDocumentFromUrl
+							.mutate({ url: sourceUrl, projectId: data.project.id, title: result.title, referenceId: newRef.id })
+							.then(({ docId }) => goto(`/projects/${data.project.id}/documents/${docId}`))
+							.catch((e) => flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error'));
+					}
+					if (savePdf) {
+						const refId = newRef.id;
+						generatingPdfIds.add(refId);
+						trpc.references.generatePdfFromUrl
+							.mutate({ refId, projectId: data.project.id })
+							.then((res) => {
+								if (res?.pdfKey) references = references.map((r) => r.id === refId ? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` } : r);
+								else flash.set('PDF generation failed — you can upload one manually.', 'error');
+							})
+							.catch(() => flash.set('PDF generation failed — you can upload one manually.', 'error'))
+							.finally(() => { generatingPdfIds.delete(refId); });
+					}
+				}}
+			/>
 		{:else if panel === 'import'}
-			<div class="w-full max-w-sm shrink-0">
-				<div
-					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-					>
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							Import BibTeX
-						</h2>
-						<button
-							onclick={closePanel}
-							aria-label="Close"
-							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-						>
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-								<path
-									d="M1 1l12 12M13 1L1 13"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						</button>
-					</div>
-
-					<div class="space-y-4 px-5 py-4">
-						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Paste the contents of a <code
-								class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.bib</code
-							> file or several BibTeX entries.
-						</p>
-
-						<label
-							class="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-paper-border px-3 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted"
-						>
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline
-									points="17 8 12 3 7 8"
-								/><line x1="12" y1="3" x2="12" y2="15" /></svg
-							>
-							Load .bib file
-							<input
-								type="file"
-								accept=".bib,.bibtex"
-								class="sr-only"
-								onchange={async (e) => {
-									const file = (e.currentTarget as HTMLInputElement).files?.[0];
-									if (file) importRaw = await file.text();
-								}}
-							/>
-						</label>
-						<div>
-							<label
-								for="import-raw"
-								class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
-							>
-								BibTeX content
-								{#if importPreview() > 0}
-									<span class="ml-1 text-accent"
-										>· {importPreview()}
-										{importPreview() === 1 ? 'entry' : 'entries'} detected</span
-									>
-								{/if}
-							</label>
-							<textarea
-								id="import-raw"
-								bind:value={importRaw}
-								rows={12}
-								placeholder={'@article{smith2024,\n  title = {Example},\n  author = {Smith, John},\n  year = {2024},\n  journal = {Nature}\n}'}
-								class="w-full resize-y rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							></textarea>
-						</div>
-
-						{#if importResult}
-							<div
-								class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30"
-							>
-								<p class="font-sans text-sm text-green-700 dark:text-green-400">
-									✓ {importResult.inserted}
-									{importResult.inserted === 1 ? 'reference imported' : 'references imported'}
-									{#if importResult.skipped > 0}
-										· {importResult.skipped} skipped
-									{/if}
-								</p>
-							</div>
-						{/if}
-
-						{#if importError}
-							<p
-								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-							>
-								{importError}
-							</p>
-						{/if}
-					</div>
-
-					<div
-						class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border"
-					>
-						<button
-							onclick={closePanel}
-							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-						>
-							Close
-						</button>
-						<button
-							onclick={runImport}
-							disabled={importing || importPreview() === 0}
-							class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-						>
-							{importing ? 'Importing…' : `Import ${importPreview() > 0 ? importPreview() : ''}`}
-						</button>
-					</div>
-				</div>
-			</div>
+			<ImportBibPanel
+				projectId={data.project.id}
+				onclose={closePanel}
+				onimported={async () => {
+					const fresh = await trpc.references.list.query(data.project.id);
+					references = fresh as Ref[];
+				}}
+			/>
 		{:else if panel === 'link-library'}
-			<!-- ── Link from library panel ───────────────────────────────────── -->
-			<div class="w-full max-w-sm shrink-0">
-				<div
-					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-					>
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							Link from library
-						</h2>
-						<button
-							onclick={closePanel}
-							aria-label="Close"
-							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-						>
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-								<path
-									d="M1 1l12 12M13 1L1 13"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						</button>
-					</div>
-
-					<div class="space-y-3 px-5 py-4">
-						{#if llLoading}
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Loading library…
-							</p>
-						{:else if llRefs.length === 0 && !llError}
-							<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-								No other references in your library to link.
-							</p>
-						{:else}
-							{#if llProjects.length > 0 || llRefs.some((r) => r.projectIds.length === 0)}
-								<select
-									bind:value={llFilterProjectId}
-									class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-								>
-									<option value="">All library</option>
-									{#each llProjects as p (p.id)}
-										<option value={p.id}>{p.title}</option>
-									{/each}
-									<option value="__unlinked__">Sin proyecto</option>
-								</select>
-							{/if}
-							<input
-								type="search"
-								bind:value={llSearch}
-								placeholder="Search by author, title, year…"
-								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							/>
-							<div class="flex items-center justify-between">
-								<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-									{llSelectedIds.size} / {llFiltered().length} selected
-								</span>
-								<button
-									type="button"
-									onclick={llToggleAll}
-									class="font-sans text-xs text-accent hover:underline"
-								>
-									{llSelectedIds.size === llFiltered().length && llFiltered().length > 0
-										? 'Deselect all'
-										: 'Select all'}
-								</button>
-							</div>
-							<div
-								class="max-h-72 overflow-y-auto rounded-md border border-paper-border dark:border-dark-paper-border"
-							>
-								{#each llFiltered() as ref (ref.id)}
-									{@const author = (ref.authors as Author[])[0]?.last ?? ''}
-									{@const isOrphan = ref.projectIds.length === 0}
-									<div
-										class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2.5 last:border-b-0 hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
-									>
-										<label class="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5">
-											<input
-												type="checkbox"
-												checked={llSelectedIds.has(ref.id)}
-												onchange={() => {
-													const next = new Set(llSelectedIds);
-													if (next.has(ref.id)) next.delete(ref.id);
-													else next.add(ref.id);
-													llSelectedIds = next;
-												}}
-												class="mt-0.5 shrink-0 accent-accent"
-											/>
-											<div class="min-w-0">
-												<p
-													class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink"
-												>
-													{ref.title}
-												</p>
-												<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-													{[author, ref.year].filter(Boolean).join(', ')}
-													<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
-													{#if isOrphan}
-														<span class="ml-1 italic opacity-60">sin proyecto</span>
-													{/if}
-												</p>
-											</div>
-										</label>
-										{#if isOrphan}
-											<button
-												type="button"
-												onclick={() => llDeleteRef(ref.id)}
-												disabled={llDeleting.has(ref.id)}
-												aria-label="Borrar referencia"
-												class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
-											>
-												<svg
-													width="12"
-													height="12"
-													viewBox="0 0 14 14"
-													fill="none"
-													aria-hidden="true"
-												>
-													<path
-														d="M2 4h10M5 4V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V4M6 7v3M8 7v3M3 4l.8 7.2A1 1 0 0 0 4.8 12h4.4a1 1 0 0 0 1-.8L11 4"
-														stroke="currentColor"
-														stroke-width="1.3"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													/>
-												</svg>
-											</button>
-										{/if}
-									</div>
-								{/each}
-								{#if llFiltered().length === 0}
-									<p class="px-3 py-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										No results for "{llSearch}"
-									</p>
-								{/if}
-							</div>
-						{/if}
-
-						{#if references.length > 0}
-							<button
-								type="button"
-								onclick={() => (llShowLinked = !llShowLinked)}
-								class="flex w-full items-center gap-1.5 font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-							>
-								<svg
-									width="10"
-									height="10"
-									viewBox="0 0 10 10"
-									fill="none"
-									aria-hidden="true"
-									class="shrink-0 transition-transform {llShowLinked ? 'rotate-90' : ''}"
-								>
-									<path
-										d="M3 1.5l4 3.5-4 3.5"
-										stroke="currentColor"
-										stroke-width="1.5"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
-								Already in this project ({references.length})
-							</button>
-							{#if llShowLinked}
-								<div class="rounded-md border border-paper-border dark:border-dark-paper-border">
-									{#each references as ref (ref.id)}
-										{@const author = (ref.authors as Author[])[0]?.last ?? ''}
-										<div
-											class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2 opacity-50 last:border-b-0 dark:border-dark-paper-border"
-										>
-											<div class="min-w-0">
-												<p
-													class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink"
-												>
-													{ref.title}
-												</p>
-												<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-													{[author, ref.year].filter(Boolean).join(', ')}
-													<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
-												</p>
-											</div>
-										</div>
-									{/each}
-								</div>
-							{/if}
-						{/if}
-
-						{#if llError}
-							<p
-								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-							>
-								{llError}
-							</p>
-						{/if}
-					</div>
-
-					<div
-						class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border"
-					>
-						<button
-							onclick={closePanel}
-							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-						>
-							Cancel
-						</button>
-						<button
-							onclick={runLinkLibrary}
-							disabled={llLinking || llSelectedIds.size === 0}
-							class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-						>
-							{llLinking
-								? 'Linking…'
-								: `Link${llSelectedIds.size > 0 ? ` ${llSelectedIds.size}` : ''}`}
-						</button>
-					</div>
-				</div>
-			</div>
+			<LinkLibraryPanel
+				projectId={data.project.id}
+				linkedRefs={references}
+				onclose={closePanel}
+				onlinked={async () => {
+					const fresh = await trpc.references.list.query(data.project.id);
+					references = fresh as Ref[];
+					panel = 'closed';
+				}}
+			/>
 		{/if}
 	</div>
 </div>
