@@ -57,6 +57,13 @@
       "when": 1777012831852,
       "tag": "0007_fine_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777091849435,
+      "tag": "0008_far_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

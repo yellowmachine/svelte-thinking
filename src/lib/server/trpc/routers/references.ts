@@ -911,13 +911,14 @@ ${truncated}`;
 			slug: z.string().min(1).max(50).transform((s) =>
 				s.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'note'
 			),
-			notes: z.string().max(10000).default('')
+			notes: z.string().max(10000).default(''),
+			anchorText: z.string().max(2000).optional()
 		}))
 		.mutation(async ({ ctx, input }) => {
 			const [row] = (await ctx.withRLS((db) =>
 				db
 					.insert(referenceSubnote)
-					.values({ referenceId: input.referenceId, slug: input.slug, notes: input.notes })
+					.values({ referenceId: input.referenceId, slug: input.slug, notes: input.notes, anchorText: input.anchorText ?? null })
 					.onConflictDoNothing()
 					.returning()
 			)) as (typeof referenceSubnote.$inferSelect)[];
