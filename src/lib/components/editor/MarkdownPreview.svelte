@@ -245,17 +245,19 @@
 
 	function findAndWrapText(root: HTMLElement, text: string, commentId: string): boolean {
 		if (!text) return false;
+		const isAnnotation = commentId.startsWith('ann-');
+		const anchorClass = isAnnotation ? 'annotation-anchor' : 'comment-anchor';
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
 		let node: Text | null;
 		while ((node = walker.nextNode() as Text | null)) {
 			const idx = node.nodeValue?.indexOf(text) ?? -1;
 			if (idx === -1) continue;
-			// Skip if already inside a comment-anchor mark
-			if ((node.parentElement as HTMLElement)?.closest?.('.comment-anchor')) continue;
+			// Skip if already inside an anchor mark
+			if ((node.parentElement as HTMLElement)?.closest?.('.comment-anchor, .annotation-anchor')) continue;
 			const before = node.splitText(idx);
 			const after = before.splitText(text.length);
 			const mark = document.createElement('mark');
-			mark.className = 'comment-anchor';
+			mark.className = anchorClass;
 			mark.dataset.commentId = commentId;
 			mark.addEventListener('click', () => oncommentclick?.(commentId));
 			before.parentNode!.insertBefore(mark, after);
@@ -268,7 +270,7 @@
 	function applyCommentMarks(anchors: { id: string; anchorText: string }[]) {
 		if (!container) return;
 		// Remove existing marks
-		container.querySelectorAll('mark.comment-anchor').forEach((el) => {
+		container.querySelectorAll('mark.comment-anchor, mark.annotation-anchor').forEach((el) => {
 			const parent = el.parentNode!;
 			while (el.firstChild) parent.insertBefore(el.firstChild, el);
 			parent.removeChild(el);
@@ -342,13 +344,16 @@
 			const paragraphs = container.querySelectorAll('p');
 			target = paragraphs[paragraphNumber - 1] ?? null;
 		} else {
-			target = container.querySelector(`mark.comment-anchor[data-comment-id="${commentId}"]`);
+			const isAnnotation = commentId.startsWith('ann-');
+			const anchorClass = isAnnotation ? 'annotation-anchor' : 'comment-anchor';
+			target = container.querySelector(`mark.${anchorClass}[data-comment-id="${commentId}"]`);
 		}
 
 		if (!target) return;
 		target.scrollIntoView({ behavior: 'instant', block: 'center' });
-		(target as HTMLElement).classList.add('comment-highlight');
-		setTimeout(() => (target as HTMLElement).classList.remove('comment-highlight'), 1800);
+		const highlightClass = commentId.startsWith('ann-') ? 'annotation-highlight' : 'comment-highlight';
+		(target as HTMLElement).classList.add(highlightClass);
+		setTimeout(() => (target as HTMLElement).classList.remove(highlightClass), 1800);
 	}
 
 	function handleMouseUp() {
@@ -591,6 +596,28 @@
 	/* Applied to <mark> when clicked from sidebar */
 	.prose :global(mark.comment-highlight) {
 		animation: comment-highlight-fade 1.8s ease-out forwards;
+	}
+
+	/* Annotation anchors — teal, distinct from yellow comment anchors */
+	.prose :global(mark.annotation-anchor) {
+		background-color: oklch(0.92 0.06 195 / 0.45);
+		border-bottom: 2px solid oklch(0.65 0.12 195);
+		border-radius: 2px;
+		cursor: pointer;
+		padding: 0 1px;
+	}
+
+	.prose :global(mark.annotation-anchor:hover) {
+		background-color: oklch(0.88 0.09 195 / 0.6);
+	}
+
+	@keyframes annotation-highlight-fade {
+		0%   { background-color: oklch(0.85 0.12 195 / 0.6); }
+		100% { background-color: transparent; }
+	}
+
+	.prose :global(mark.annotation-highlight) {
+		animation: annotation-highlight-fade 1.8s ease-out forwards;
 	}
 
 	/* Applied to <p> for paragraph comments */
