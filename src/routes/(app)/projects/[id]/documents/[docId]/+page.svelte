@@ -198,15 +198,16 @@
 	let ghostHeading: { from: number; cursorPos: number; title: string } | null = $state(null);
 
 	function onwordprefix(prefix: string, from: number, cursorPos: number) {
-		const persons = extractDocumentPersons();
-		const matches = persons.filter((n) => n.toLowerCase().startsWith(prefix.toLowerCase()));
+		const q = prefix.toLowerCase();
+		const bibAuthors = [...new Set(projectRefs.flatMap((r) => r.authors.map((a) => a.last)))];
+		const matches = bibAuthors.filter((n) => n.toLowerCase().startsWith(q));
 		if (matches.length === 0) {
 			editorEl?.setGhostText(null);
 			ghostWord = null;
 			return;
 		}
 
-		// Find the match whose last occurrence before cursorPos is closest to cursorPos
+		// Prefer the author already used closest before the cursor; fall back to first alphabetical
 		let bestName: string | null = null;
 		let bestDist = Infinity;
 		for (const name of matches) {
@@ -219,21 +220,14 @@
 				lastBefore = found;
 				idx = found + 1;
 			}
-			if (lastBefore !== -1) {
-				const dist = cursorPos - lastBefore;
-				if (dist < bestDist) {
-					bestDist = dist;
-					bestName = name;
-				}
+			if (lastBefore !== -1 && cursorPos - lastBefore < bestDist) {
+				bestDist = cursorPos - lastBefore;
+				bestName = name;
 			}
 		}
-		if (bestName) {
-			ghostWord = { from, name: bestName };
-			editorEl?.setGhostText(bestName.slice(prefix.length));
-		} else {
-			ghostWord = null;
-			editorEl?.setGhostText(null);
-		}
+		if (!bestName) bestName = matches[0];
+		ghostWord = { from, name: bestName };
+		editorEl?.setGhostText(bestName.slice(prefix.length));
 	}
 
 	function onwordprefixclear() {
@@ -316,21 +310,17 @@
 
 	const NO_KEY_MSG = 'No AI key configured. Go to Settings → AI to add one.';
 
-	let lookupUnavailable = $state(false);
-
-	async function lookupNames(partial: string, context: string): Promise<string[]> {
-		try {
-			const result = await trpc.ai.lookupNames.query({
-				partial,
-				context,
-				projectId: data.document.projectId
-			});
-			lookupUnavailable = false;
-			return result;
-		} catch (e: unknown) {
-			if (isNoKeyError(e)) lookupUnavailable = true;
-			return [];
+	async function lookupNames(partial: string, _context: string): Promise<string[]> {
+		await loadRefs();
+		if (!partial.trim()) return [];
+		const q = partial.toLowerCase();
+		const seen = new Set<string>();
+		for (const ref of projectRefs) {
+			for (const a of ref.authors) {
+				if (a.last.toLowerCase().startsWith(q)) seen.add(a.last);
+			}
 		}
+		return [...seen].sort();
 	}
 
 	async function loadRefs() {
@@ -711,27 +701,24 @@
 	}
 
 	// Author info popover
-	type AuthorInfo = { note: string; photo?: string };
 	let authorPopover: {
 		name: string;
 		coords: { bottom: number; left: number };
-		result: AuthorInfo | null;
-		loading: boolean;
+		refs: CiteRef[];
 	} | null = $state(null);
 
-	async function showAuthorInfo(name: string, coords: { bottom: number; left: number }) {
-		if (authorPopover?.name === name) return; // already showing
-		authorPopover = { name, coords, result: null, loading: true };
-		try {
-			const res = await trpc.ai.authorInfo.query({ name, projectId: data.document.projectId });
-			authorPopover = { ...authorPopover, result: res, loading: false };
-		} catch {
-			authorPopover = {
-				...authorPopover,
-				result: { dates: '', field: '', nationality: '', note: 'Could not load info.' },
-				loading: false
-			};
-		}
+	function showAuthorInfo(name: string, coords: { bottom: number; left: number }) {
+		if (authorPopover?.name === name) return;
+		const q = name.toLowerCase();
+		const refs = projectRefs.filter((r) =>
+			r.authors.some(
+				(a) =>
+					a.last.toLowerCase() === q ||
+					`${a.first} ${a.last}`.toLowerCase() === q ||
+					`${a.last}, ${a.first}`.toLowerCase() === q
+			)
+		);
+		authorPopover = { name, coords, refs };
 	}
 
 	// Heading word count tooltip
@@ -2356,23 +2343,20 @@
 									projectId={data.document.projectId}
 									ondocchange={handleDocChange}
 									onselectionchange={updateSelection}
-									onauthorhover={hasAiKey
-										? (name, coords) => showAuthorInfo(name, coords)
-										: undefined}
-									onheadinghover={(info, coords) => {
-										headingTooltip = { title: info.title, wordCount: info.wordCount, coords };
-									}}
-									{commentRanges}
-									{scrollToRange}
-									onlookup={lookupNames}
-									{onwordprefix}
-									{onwordprefixclear}
-									{onwordghosttab}
-									{onheadingprefix}
-									{onheadingprefixclear}
-									{onheadingghosttab}
-									showLookupHint={lookupUnavailable}
-									{spellLanguage}
+									onauthorhover={(name, coords) => showAuthorInfo(name, coords)}
+								onheadinghover={(info, coords) => {
+									headingTooltip = { title: info.title, wordCount: info.wordCount, coords };
+								}}
+								{commentRanges}
+								{scrollToRange}
+								onlookup={lookupNames}
+								{onwordprefix}
+								{onwordprefixclear}
+								{onwordghosttab}
+								{onheadingprefix}
+								{onheadingprefixclear}
+								{onheadingghosttab}
+								{spellLanguage}
 								/>
 							</div>
 						</div>
@@ -2452,7 +2436,6 @@
 								{onheadingprefix}
 								{onheadingprefixclear}
 								{onheadingghosttab}
-								showLookupHint={lookupUnavailable}
 								{spellLanguage}
 							/>
 						{/if}
@@ -2602,7 +2585,7 @@
 				</div>
 			{/if}
 
-			<!-- Author info popover -->
+			<!-- Author info popover (bibliography-based) -->
 			{#if authorPopover && authorPopover.coords}
 				<div
 					class="fixed inset-0 z-20"
@@ -2616,7 +2599,6 @@
 					<div
 						class="pointer-events-auto w-72 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 					>
-						<!-- header -->
 						<div
 							class="flex items-center justify-between border-b border-paper-border px-3 py-2 dark:border-dark-paper-border"
 						>
@@ -2638,35 +2620,33 @@
 								>
 							</button>
 						</div>
-						<!-- body -->
-						{#if authorPopover.loading}
-							<div class="flex items-center gap-2 px-3 py-2.5">
-								<Spinner size="sm" class="text-accent" />
-								<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-									>Loading…</span
-								>
-							</div>
-						{:else if authorPopover.result}
-							<div class="flex gap-3 p-3">
-								{#if authorPopover.result.photo}
-									<img
-										src={authorPopover.result.photo}
-										alt={authorPopover.name}
-										class="h-28 w-20 shrink-0 rounded object-cover object-top"
-									/>
-								{/if}
-								<div class="min-w-0 flex-1">
-									{#if authorPopover.result.note}
-										<p
-											class="font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted"
+						{#if authorPopover.refs.length === 0}
+							<p class="px-3 py-2.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								Not in project bibliography.
+							</p>
+						{:else}
+							<div class="space-y-0.5 p-1.5">
+								{#each authorPopover.refs as ref}
+									<button
+										onclick={() => {
+											scrollEditorToCiteKey(ref.citeKey);
+											authorPopover = null;
+										}}
+										class="flex w-full items-baseline gap-1.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+									>
+										<span class="shrink-0 font-mono text-[10px] text-accent">@{ref.citeKey}</span>
+										<span
+											class="min-w-0 truncate font-sans text-xs text-ink dark:text-dark-ink"
+											title={ref.title}>{ref.title}</span
 										>
-											{authorPopover.result.note}
-										</p>
-									{/if}
-									<p class="mt-2 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
-										AI · may be inaccurate
-									</p>
-								</div>
+										{#if ref.year}
+											<span
+												class="shrink-0 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
+												>({ref.year})</span
+											>
+										{/if}
+									</button>
+								{/each}
 							</div>
 						{/if}
 					</div>
