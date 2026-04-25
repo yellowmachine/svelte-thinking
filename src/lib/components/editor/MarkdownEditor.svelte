@@ -38,7 +38,6 @@
 		commentRanges = [],
 		scrollToRange = null,
 		completions = undefined,
-		showLookupHint = false,
 		spellLanguage = 'en-US',
 		projectId = undefined
 	}: {
@@ -76,8 +75,6 @@
 		scrollToRange?: { from: number; to: number } | null;
 		/** Which [[ completions to enable. undefined = all active. */
 		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph' | 'image' | 'callout'>;
-		/** Show a footer hint that [[p lookup is unavailable (no AI key configured). */
-		showLookupHint?: boolean;
 		/** BCP-47 language tag for spell check (e.g. 'es-ES', 'en-US'). */
 		spellLanguage?: string;
 		/** Project ID — enables ![[ image autocomplete when provided. */
@@ -933,12 +930,6 @@
 </script>
 
 <div bind:this={container} class="codemirror-host w-full"></div>
-{#if showLookupHint}
-	<div class="mt-6 inline-flex items-center gap-1.5 rounded border border-paper-border px-2.5 py-1.5 dark:border-dark-paper-border">
-		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">[[p lookup unavailable —</span>
-		<a href="/settings?tab=ai" class="font-sans text-xs text-ink-muted underline underline-offset-2 hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">assign an AI model in Settings</a>
-	</div>
-{/if}
 
 <style>
 	.codemirror-host :global(.cm-editor) {
