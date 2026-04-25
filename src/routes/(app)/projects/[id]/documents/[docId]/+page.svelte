@@ -702,50 +702,12 @@
 	let submittingComment = $state(false);
 
 	// Citation explain popover
-	let citationExplain: {
-		citeKey: string;
-		ref: CiteRef | null;
-		coords: { bottom: number; left: number };
-		result: string;
-		loading: boolean;
-	} | null = $state(null);
-
 	const CITE_SELECTION_RE = /^\[\[@([\w:._-]+)\]\]$/;
 
 	function selectedCiteKey(): string | null {
 		if (!currentSelection) return null;
 		const m = currentSelection.text.trim().match(CITE_SELECTION_RE);
 		return m ? m[1] : null;
-	}
-
-	async function explainCitation(citeKey: string, coords: { bottom: number; left: number }) {
-		const ref = projectRefs.find((r) => r.citeKey === citeKey);
-		const needsAi = hasAiKey && !ref?.readingNotes;
-		citationExplain = { citeKey, ref: ref ?? null, coords, result: '', loading: needsAi };
-		if (!needsAi) return;
-		const surrounding = (() => {
-			const pos = currentSelection?.from ?? 0;
-			return content.slice(Math.max(0, pos - 400), pos + 400);
-		})();
-		try {
-			const res = await trpc.ai.explainCitation.query({
-				projectId: data.document.projectId,
-				citeKey,
-				refTitle: ref?.title ?? '',
-				refAuthors: (ref?.authors ?? [])
-					.map((a) => `${a.last}${a.first ? ', ' + a.first : ''}`)
-					.join('; '),
-				refYear: ref?.year ?? '',
-				surrounding
-			});
-			citationExplain = { ...citationExplain, result: res, loading: false };
-		} catch {
-			citationExplain = {
-				...citationExplain,
-				result: 'Could not explain this citation.',
-				loading: false
-			};
-		}
 	}
 
 	// Author info popover
@@ -2394,8 +2356,6 @@
 									projectId={data.document.projectId}
 									ondocchange={handleDocChange}
 									onselectionchange={updateSelection}
-									oncitehover={(key, coords) => explainCitation(key, coords)}
-									oncitehoverclear={() => (citationExplain = null)}
 									onauthorhover={hasAiKey
 										? (name, coords) => showAuthorInfo(name, coords)
 										: undefined}
@@ -2501,7 +2461,7 @@
 			{/if}
 
 			<!-- Floating action buttons on selection -->
-			{#if showFloating && currentSelection && currentSelection.coords && !showNewComment && !citationExplain}
+			{#if showFloating && currentSelection && currentSelection.coords && !showNewComment}
 				<div
 					class="pointer-events-none fixed z-20 flex gap-1.5"
 					style="top: {currentSelection.coords.bottom + 8}px; left: {currentSelection.coords
@@ -2533,18 +2493,6 @@
 							}}
 						>
 							+ Annotation
-						</button>
-					{/if}
-					{#if selectedCiteKey() && hasAiKey}
-						<button
-							class="pointer-events-auto rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-semibold text-white shadow-md transition-colors hover:bg-accent-hover"
-							onclick={() => {
-								const key = selectedCiteKey()!;
-								const coords = currentSelection!.coords!;
-								explainCitation(key, coords);
-							}}
-						>
-							Explain citation
 						</button>
 					{/if}
 					{#if hasAiKey && currentSelection && currentSelection.text.trim().length > 20}
@@ -2581,134 +2529,6 @@
 							Spell
 						</button>
 					{/if}
-				</div>
-			{/if}
-
-			<!-- Citation explain popover -->
-			{#if citationExplain && citationExplain.coords}
-				<div
-					class="pointer-events-none fixed z-20"
-					style="top: {citationExplain.coords.bottom + 8}px; left: {citationExplain.coords.left}px;"
-				>
-					<div
-						class="pointer-events-auto w-80 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						<div
-							class="flex items-center justify-between border-b border-paper-border px-3 py-2 dark:border-dark-paper-border"
-						>
-							<span class="font-mono text-xs font-semibold text-ink-muted dark:text-dark-ink-muted"
-								>@{citationExplain.citeKey}</span
-							>
-							<button
-								onclick={() => (citationExplain = null)}
-								class="text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-								aria-label="Close"
-							>
-								<svg
-									width="12"
-									height="12"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"><path d="M18 6L6 18M6 6l12 12" /></svg
-								>
-							</button>
-						</div>
-
-						<!-- Bibliographic data -->
-						{#if citationExplain.ref}
-							{@const ref = citationExplain.ref}
-							<div class="px-3 py-2.5">
-								<p class="font-sans text-sm leading-snug font-medium text-ink dark:text-dark-ink">
-									{ref.title}
-								</p>
-								{#if ref.authors?.length}
-									<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-										{ref.authors
-											.map((a) => `${a.last}${a.first ? ', ' + a.first : ''}`)
-											.join(' · ')}
-									</p>
-								{/if}
-								<div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-									{#if ref.year}
-										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-											>{ref.year}</span
-										>
-									{/if}
-									{#if ref.journal}
-										<span class="font-sans text-xs text-ink-faint italic dark:text-dark-ink-faint"
-											>{ref.journal}</span
-										>
-									{:else if ref.publisher}
-										<span class="font-sans text-xs text-ink-faint italic dark:text-dark-ink-faint"
-											>{ref.publisher}</span
-										>
-									{:else if ref.booktitle}
-										<span class="font-sans text-xs text-ink-faint italic dark:text-dark-ink-faint"
-											>{ref.booktitle}</span
-										>
-									{/if}
-								</div>
-								{#if ref.doi}
-									<a
-										href="https://doi.org/{ref.doi}"
-										target="_blank"
-										rel="noopener noreferrer"
-										class="mt-1.5 block font-sans text-[10px] text-accent underline decoration-dotted hover:opacity-80"
-									>
-										doi:{ref.doi}
-									</a>
-								{/if}
-								<button
-									onclick={() => {
-										const formatted = formatFullCitation(citationExplain!.ref!, citationStyle, 1);
-										navigator.clipboard.writeText(formatted).catch(() => {});
-									}}
-									class="mt-2 font-sans text-[10px] text-ink-faint underline decoration-dotted transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-								>
-									Copy {citationStyle.toUpperCase()} citation
-								</button>
-							</div>
-						{:else}
-							<div class="px-3 py-2.5">
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									Reference not found in project bibliography.
-								</p>
-							</div>
-						{/if}
-
-						<!-- Reading notes (own) or AI explanation (fallback) -->
-						{#if citationExplain.ref?.readingNotes}
-							<div class="border-t border-paper-border px-3 py-2.5 dark:border-dark-paper-border">
-								<p
-									class="mb-1 font-sans text-[10px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-								>
-									My notes
-								</p>
-								<p class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">
-									{citationExplain.ref.readingNotes}
-								</p>
-							</div>
-						{:else if hasAiKey && (citationExplain.loading || citationExplain.result)}
-							<div class="border-t border-paper-border px-3 py-2.5 dark:border-dark-paper-border">
-								{#if citationExplain.loading}
-									<div class="flex items-center gap-2">
-										<Spinner size="sm" class="text-accent" />
-										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-											>Explaining in context…</span
-										>
-									</div>
-								{:else}
-									<p class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">
-										{citationExplain.result}
-									</p>
-									<p class="mt-1.5 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
-										Generated by AI · may be inaccurate
-									</p>
-								{/if}
-							</div>
-						{/if}
-					</div>
 				</div>
 			{/if}
 
@@ -4403,7 +4223,6 @@
 		if (e.key === 'Escape') {
 			showCheatsheet = false;
 			showCiteStyleMenu = false;
-			citationExplain = null;
 		}
 	}}
 	onclick={() => {
