@@ -11,7 +11,9 @@
 	import CommentThread from '$lib/components/editor/CommentThread.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
-	import SpellCheckPanel, { type SpellCorrection } from '$lib/components/editor/SpellCheckPanel.svelte';
+	import SpellCheckPanel, {
+		type SpellCorrection
+	} from '$lib/components/editor/SpellCheckPanel.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { offlineDb } from '$lib/offline.db';
@@ -94,18 +96,18 @@
 	let currentWriterUserId = $state(untrack(() => data.document?.writerUserId ?? null));
 	let currentWriterName = $state(untrack(() => data.writerName ?? null));
 	const myCollaboratorRole = $derived(
-		(data.collaborators.find((c) => c.userId === data.currentUserId)?.role ?? null) as CollaboratorRole | null
+		(data.collaborators.find((c) => c.userId === data.currentUserId)?.role ??
+			null) as CollaboratorRole | null
 	);
 	const canWrite = $derived(
 		!data.document.isReadonly &&
-		canWriteDocument({
-			isProjectOwner: isOwner,
-			writerUserId: currentWriterUserId,
-			currentUserId: data.currentUserId,
-			collaboratorRole: myCollaboratorRole
-		})
+			canWriteDocument({
+				isProjectOwner: isOwner,
+				writerUserId: currentWriterUserId,
+				currentUserId: data.currentUserId,
+				collaboratorRole: myCollaboratorRole
+			})
 	);
-
 
 	let delegating = $state(false);
 
@@ -114,7 +116,10 @@
 		try {
 			await trpc.documents.setWriter.mutate({ documentId: data.document.id, writerUserId: userId });
 			currentWriterUserId = userId;
-			currentWriterName = userId === null ? null : (data.collaborators.find((c) => c.userId === userId)?.name ?? userId);
+			currentWriterName =
+				userId === null
+					? null
+					: (data.collaborators.find((c) => c.userId === userId)?.name ?? userId);
 		} catch {
 			// ignore
 		} finally {
@@ -130,7 +135,8 @@
 	type ViewMode = 'editor' | 'split' | 'preview';
 	const VIEW_MODE_KEY = `view-mode-${data.document?.id ?? ''}`;
 	const initialCanWrite = (() => {
-		const role = (data.collaborators.find((c) => c.userId === data.currentUserId)?.role ?? null) as CollaboratorRole | null;
+		const role = (data.collaborators.find((c) => c.userId === data.currentUserId)?.role ??
+			null) as CollaboratorRole | null;
 		return canWriteDocument({
 			isProjectOwner: data.currentUserId === data.projectOwnerId,
 			writerUserId: data.document?.writerUserId ?? null,
@@ -139,11 +145,11 @@
 		});
 	})();
 	let viewMode = $state<ViewMode>(
-		(!initialCanWrite || data.forcePublished || data.document?.isReadonly)
+		!initialCanWrite || data.forcePublished || data.document?.isReadonly
 			? 'preview'
-			: (typeof localStorage !== 'undefined'
+			: ((typeof localStorage !== 'undefined'
 					? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
-					: null) ?? 'editor'
+					: null) ?? 'editor')
 	);
 	function setViewMode(m: ViewMode) {
 		viewMode = m;
@@ -169,7 +175,10 @@
 		clearSpellHover: () => void;
 	} | null = $state(null);
 
-	type PreviewRef = { scrollToComment: (id: string, paragraphNumber: number | null) => void; getParagraphText: (n: number) => string } | null;
+	type PreviewRef = {
+		scrollToComment: (id: string, paragraphNumber: number | null) => void;
+		getParagraphText: (n: number) => string;
+	} | null;
 	let previewRef = $state<PreviewRef>(null);
 	let splitPreviewRef = $state<PreviewRef>(null);
 
@@ -344,7 +353,10 @@
 	$effect(() => {
 		if (!data.document) return;
 		const stored = localStorage.getItem(`cite-style-${data.document.id}`);
-		if (stored && (stored === 'apa' || stored === 'ieee' || stored === 'vancouver' || stored === 'chicago')) {
+		if (
+			stored &&
+			(stored === 'apa' || stored === 'ieee' || stored === 'vancouver' || stored === 'chicago')
+		) {
 			citationStyle = stored as CitationStyle;
 		} else if (data.projectCitationStyle) {
 			citationStyle = data.projectCitationStyle;
@@ -452,7 +464,11 @@
 			});
 			// If scoped, shift all offsets to document positions
 			spellCorrections = scoped
-				? result.corrections.map((c) => ({ ...c, from: c.from + scoped.offset, to: c.to + scoped.offset }))
+				? result.corrections.map((c) => ({
+						...c,
+						from: c.from + scoped.offset,
+						to: c.to + scoped.offset
+					}))
 				: result.corrections;
 		} catch {
 			showSpellPanel = false;
@@ -506,28 +522,36 @@
 	let commitError = $state('');
 
 	// ── Action capabilities ───────────────────────────────────────────────────
-	const saveCap = $derived.by(() => getSaveDraftCapability({
-		canWrite,
-		online: onlineStore.online,
-		saving: saveStatus === 'saving'
-	}));
+	const saveCap = $derived.by(() =>
+		getSaveDraftCapability({
+			canWrite,
+			online: onlineStore.online,
+			saving: saveStatus === 'saving'
+		})
+	);
 
-	const commitCap = $derived.by(() => getCommitCapability({
-		canWrite,
-		online: onlineStore.online,
-		hasContent: content.trim().length > 0,
-		committing
-	}));
+	const commitCap = $derived.by(() =>
+		getCommitCapability({
+			canWrite,
+			online: onlineStore.online,
+			hasContent: content.trim().length > 0,
+			committing
+		})
+	);
 
-	const reclaimCap = $derived.by(() => getReclaimWritingCapability({
-		isOwner,
-		writerUserId: currentWriterUserId
-	}));
+	const reclaimCap = $derived.by(() =>
+		getReclaimWritingCapability({
+			isOwner,
+			writerUserId: currentWriterUserId
+		})
+	);
 
-	const releaseWriterCap = $derived.by(() => getReleaseWriterCapability({
-		isCurrentWriter: data.currentUserId === currentWriterUserId,
-		canWrite
-	}));
+	const releaseWriterCap = $derived.by(() =>
+		getReleaseWriterCapability({
+			isCurrentWriter: data.currentUserId === currentWriterUserId,
+			canWrite
+		})
+	);
 
 	// Inline comments
 	type Reply = { id: string; authorName: string; content: string; createdAt: Date };
@@ -570,7 +594,13 @@
 	let subnoteError = $state('');
 
 	function slugify(text: string): string {
-		return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'note';
+		return (
+			text
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-|-$/g, '')
+				.slice(0, 50) || 'note'
+		);
 	}
 
 	async function submitSubnote() {
@@ -579,7 +609,12 @@
 		subnoteError = '';
 		const anchorText = savedCommentSelection?.text ?? currentSelection?.text ?? null;
 		try {
-			await trpc.references.addSubnote.mutate({ referenceId: subnoteRefId, slug: subnoteSlug.trim(), notes: subnoteNotes.trim(), anchorText: anchorText ?? undefined });
+			await trpc.references.addSubnote.mutate({
+				referenceId: subnoteRefId,
+				slug: subnoteSlug.trim(),
+				notes: subnoteNotes.trim(),
+				anchorText: anchorText ?? undefined
+			});
 			showSubnote = false;
 			savedCommentSelection = null;
 			subnoteSlug = '';
@@ -594,7 +629,15 @@
 	}
 
 	// Annotations panel — subnotes for this document's source reference
-	type Subnote = { id: number; referenceId: string; slug: string; notes: string; anchorText: string | null; createdAt: Date; updatedAt: Date };
+	type Subnote = {
+		id: number;
+		referenceId: string;
+		slug: string;
+		notes: string;
+		anchorText: string | null;
+		createdAt: Date;
+		updatedAt: Date;
+	};
 	let docSubnotes = $state<Subnote[]>([]);
 	let editingSubnoteId = $state<number | null>(null);
 	let editingSubnoteNotes = $state('');
@@ -604,12 +647,17 @@
 
 	async function loadDocSubnotes() {
 		if (!sourceReference) return;
-		docSubnotes = (await trpc.references.listSubnotes.query({ referenceId: sourceReference.id })) as Subnote[];
+		docSubnotes = (await trpc.references.listSubnotes.query({
+			referenceId: sourceReference.id
+		})) as Subnote[];
 	}
 
 	async function assignSourceReference() {
 		if (!assignRefId) return;
-		await trpc.documents.setSourceReference.mutate({ documentId: data.document.id, referenceId: assignRefId });
+		await trpc.documents.setSourceReference.mutate({
+			documentId: data.document.id,
+			referenceId: assignRefId
+		});
 		const ref = projectRefs.find((r) => r.id === assignRefId);
 		if (ref) sourceReference = { id: ref.id!, citeKey: ref.citeKey };
 		assigningReference = false;
@@ -619,7 +667,9 @@
 
 	async function saveSubnoteEdit(id: number) {
 		await trpc.references.updateSubnote.mutate({ id, notes: editingSubnoteNotes });
-		docSubnotes = docSubnotes.map((s) => (s.id === id ? { ...s, notes: editingSubnoteNotes, updatedAt: new Date() } : s));
+		docSubnotes = docSubnotes.map((s) =>
+			s.id === id ? { ...s, notes: editingSubnoteNotes, updatedAt: new Date() } : s
+		);
 		editingSubnoteId = null;
 	}
 
@@ -762,13 +812,13 @@
 			}, 2000);
 		} catch (e) {
 			// Network error (fetch failed, no response) → save to Dexie as offline
-			const isNetworkError = e instanceof Error && (
-				e.message.includes('fetch') ||
-				e.message.includes('network') ||
-				e.message.includes('Failed to fetch') ||
-				e.message.toLowerCase().includes('networkerror') ||
-				('cause' in e && e.cause instanceof TypeError)
-			);
+			const isNetworkError =
+				e instanceof Error &&
+				(e.message.includes('fetch') ||
+					e.message.includes('network') ||
+					e.message.includes('Failed to fetch') ||
+					e.message.toLowerCase().includes('networkerror') ||
+					('cause' in e && e.cause instanceof TypeError));
 			if (isNetworkError) {
 				await offlineDb.pendingEdits.add({
 					id: crypto.randomUUID(),
@@ -780,7 +830,9 @@
 				lastSavedContent = content;
 				saveStatus = 'offline';
 				onlineStore.online = false; // align state so subsequent saves go directly to Dexie
-				console.warn(`[offline] save: network error detected — queued to Dexie (doc ${data.document.id})`);
+				console.warn(
+					`[offline] save: network error detected — queued to Dexie (doc ${data.document.id})`
+				);
 			} else {
 				saveStatus = 'error';
 				console.error(`[offline] save: ✗ server error (doc ${data.document.id})`, e);
@@ -809,7 +861,9 @@
 						console.log(`[offline] reconnect: ✓ all edits synced for doc ${documentId}`);
 						saveStatus = 'idle';
 					} else {
-						console.log(`[offline] reconnect: still ${edits.filter(e => e.status === 'pending').length} pending edit(s) for doc ${documentId}`);
+						console.log(
+							`[offline] reconnect: still ${edits.filter((e) => e.status === 'pending').length} pending edit(s) for doc ${documentId}`
+						);
 					}
 				});
 		}
@@ -988,12 +1042,18 @@
 	// while the button is disabled (saveStatus='pending' but isDirty=false).
 	const saveStatusLabel = $derived((): string => {
 		switch (saveStatus) {
-			case 'pending': return isDirty ? 'Unsaved changes' : '';
-			case 'saving':  return 'Saving...';
-			case 'saved':   return 'Saved';
-			case 'error':   return 'Error saving';
-			case 'offline': return 'Guardado offline';
-			default:        return '';
+			case 'pending':
+				return isDirty ? 'Unsaved changes' : '';
+			case 'saving':
+				return 'Saving...';
+			case 'saved':
+				return 'Saved';
+			case 'error':
+				return 'Error saving';
+			case 'offline':
+				return 'Guardado offline';
+			default:
+				return '';
 		}
 	});
 
@@ -1026,10 +1086,18 @@
 	let paragraphCommentText = $state('');
 	let submittingParagraphComment = $state(false);
 
-	function handlePreviewSelection(sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) {
+	function handlePreviewSelection(sel: {
+		text: string;
+		coords: { top: number; bottom: number; left: number; right: number };
+	}) {
 		const from = content.indexOf(sel.text);
 		const to = from >= 0 ? from + sel.text.length : 0;
-		updateSelection({ text: sel.text, from: Math.max(from, 0), to: Math.max(to, 0), coords: sel.coords });
+		updateSelection({
+			text: sel.text,
+			from: Math.max(from, 0),
+			to: Math.max(to, 0),
+			coords: sel.coords
+		});
 	}
 
 	function handlePreviewCommentClick(id: string) {
@@ -1097,9 +1165,13 @@
 	const aiTaskConfig = $derived(data.aiTaskConfig ?? {});
 	const hasAiKey = $derived(data.hasAiKey ?? false);
 	const aiCtaType = $derived(
-		hasAiKey ? 'ok' :
-		!data.projectOrgId ? 'personal' :
-		(data.orgs ?? []).find((o) => o.id === data.projectOrgId)?.role === 'owner' ? 'org-owner' : 'org-member'
+		hasAiKey
+			? 'ok'
+			: !data.projectOrgId
+				? 'personal'
+				: (data.orgs ?? []).find((o) => o.id === data.projectOrgId)?.role === 'owner'
+					? 'org-owner'
+					: 'org-member'
 	);
 	function taskModel(task: 'agent' | 'draft' | 'review') {
 		const modelId = aiTaskConfig[task]?.model;
@@ -1304,7 +1376,6 @@
 		terminology: 'Terminology'
 	};
 
-
 	function extractHeadings(text: string): string[] {
 		return [...text.matchAll(/^#{1,6}\s+(.+)$/gm)].map((m) => m[1].trim());
 	}
@@ -1501,7 +1572,11 @@
 	// Dismiss paragraph comment on click outside
 	let paragraphCommentEl = $state<HTMLElement | null>(null);
 	function onPointerDownOutside(e: PointerEvent) {
-		if (showNewParagraphComment && paragraphCommentEl && !paragraphCommentEl.contains(e.target as Node)) {
+		if (
+			showNewParagraphComment &&
+			paragraphCommentEl &&
+			!paragraphCommentEl.contains(e.target as Node)
+		) {
 			showNewParagraphComment = false;
 			paragraphCommentText = '';
 		}
@@ -1593,7 +1668,6 @@
 				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 		});
 	});
-
 </script>
 
 {#if data.document}
@@ -1660,7 +1734,9 @@
 			class="sticky top-0 z-10 flex flex-col border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 		>
 			<!-- Row 1: breadcrumb -->
-			<div class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm dark:border-dark-paper-border/50">
+			<div
+				class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm dark:border-dark-paper-border/50"
+			>
 				<button
 					onclick={() => (window.location.href = `/projects/${data.document.projectId}`)}
 					class="shrink-0 text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
@@ -1714,7 +1790,6 @@
 
 			<!-- Row 2: toolbar -->
 			<div class="flex items-center gap-2 overflow-x-auto px-4 py-2">
-
 				<!-- Reclaim writer (Delegate moved to project doc list) -->
 				{#if reclaimCap.kind === 'available'}
 					<button
@@ -1740,14 +1815,22 @@
 				{/if}
 
 				{#if !data.document.isReadonly}
-				<button
-					onclick={doSaveDraft}
-					disabled={!isDirty || !canTriggerSave(saveCap)}
-					title={saveCap.kind === 'queued' ? saveCap.hint : saveCap.kind === 'blocked' ? saveCap.reason : undefined}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-				>
-					{saveCap.kind === 'saving' ? 'Saving…' : saveCap.kind === 'queued' ? 'Save offline' : 'Save'}
-				</button>
+					<button
+						onclick={doSaveDraft}
+						disabled={!isDirty || !canTriggerSave(saveCap)}
+						title={saveCap.kind === 'queued'
+							? saveCap.hint
+							: saveCap.kind === 'blocked'
+								? saveCap.reason
+								: undefined}
+						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						{saveCap.kind === 'saving'
+							? 'Saving…'
+							: saveCap.kind === 'queued'
+								? 'Save offline'
+								: 'Save'}
+					</button>
 				{/if}
 
 				{#if data.document.type === 'book'}
@@ -1775,144 +1858,151 @@
 
 				<!-- AI buttons or CTA -->
 				{#if aiCtaType === 'ok'}
-				<!-- Chat assistant button -->
-				<button
-					type="button"
-					onclick={toggleChat}
-					title="Chat with the assistant about this document"
-					class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-sans text-sm font-medium transition-colors {showChat
-						? 'bg-accent/20 text-accent hover:bg-accent/30 dark:bg-accent/30 dark:hover:bg-accent/40'
-						: 'bg-accent/10 text-accent hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'}"
-				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-					Assistant
-				</button>
-
-				<!-- Review button -->
-				<button
-					type="button"
-					onclick={toggleReview}
-					title="Review document against project requirements"
-					class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
-						? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-				>
-					<span class="flex items-center gap-1.5">
-						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<!-- Chat assistant button -->
+					<button
+						type="button"
+						onclick={toggleChat}
+						title="Chat with the assistant about this document"
+						class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-sans text-sm font-medium transition-colors {showChat
+							? 'bg-accent/20 text-accent hover:bg-accent/30 dark:bg-accent/30 dark:hover:bg-accent/40'
+							: 'bg-accent/10 text-accent hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'}"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
-								d="M9 11l3 3L22 4"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-							<path
-								d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+								d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
 								stroke="currentColor"
 								stroke-width="1.5"
 								stroke-linecap="round"
 								stroke-linejoin="round"
 							/>
 						</svg>
-						Review
-					</span>
-					{#if taskModel('review')}
-						<span class="text-[10px] opacity-50">{taskModel('review')}</span>
-					{/if}
-				</button>
+						Assistant
+					</button>
 
-				<!-- Draft assistant button -->
-				{#if !data.document.isReadonly && viewMode !== 'preview'}
+					<!-- Review button -->
 					<button
 						type="button"
-						onclick={toggleDraft}
-						title="Draft assistant — generate text from your project context"
-						class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showDraft
+						onclick={toggleReview}
+						title="Review document against project requirements"
+						class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
 							? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 					>
 						<span class="flex items-center gap-1.5">
 							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 								<path
-									d="M12 19l7-7 3 3-7 7-3-3z"
+									d="M9 11l3 3L22 4"
 									stroke="currentColor"
 									stroke-width="1.5"
 									stroke-linecap="round"
 									stroke-linejoin="round"
 								/>
 								<path
-									d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"
+									d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
 									stroke="currentColor"
 									stroke-width="1.5"
 									stroke-linecap="round"
 									stroke-linejoin="round"
 								/>
 							</svg>
-							Draft
+							Review
 						</span>
-						{#if taskModel('draft')}
-							<span class="text-[10px] opacity-50">{taskModel('draft')}</span>
+						{#if taskModel('review')}
+							<span class="text-[10px] opacity-50">{taskModel('review')}</span>
 						{/if}
 					</button>
-				{/if}
 
-				<!-- Enrich button -->
-				<button
-					type="button"
-					onclick={toggleEnrich}
-					title="Find untagged persons and informal citations"
-					class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
-						? 'border-accent/40 bg-accent/5 text-accent dark:border-accent/30'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-				>
-					<span class="flex items-center gap-1.5">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5" />
+					<!-- Draft assistant button -->
+					{#if !data.document.isReadonly && viewMode !== 'preview'}
+						<button
+							type="button"
+							onclick={toggleDraft}
+							title="Draft assistant — generate text from your project context"
+							class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showDraft
+								? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
+								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+						>
+							<span class="flex items-center gap-1.5">
+								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path
+										d="M12 19l7-7 3 3-7 7-3-3z"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+									<path
+										d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+								Draft
+							</span>
+							{#if taskModel('draft')}
+								<span class="text-[10px] opacity-50">{taskModel('draft')}</span>
+							{/if}
+						</button>
+					{/if}
+
+					<!-- Enrich button -->
+					<button
+						type="button"
+						onclick={toggleEnrich}
+						title="Find untagged persons and informal citations"
+						class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
+							? 'border-accent/40 bg-accent/5 text-accent dark:border-accent/30'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+					>
+						<span class="flex items-center gap-1.5">
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5" />
+								<path
+									d="M21 21l-4.35-4.35M11 8v6M8 11h6"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+							Enrich
+						</span>
+					</button>
+				{:else if aiCtaType === 'personal'}
+					<a
+						href="/settings?tab=ai"
+						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
+					>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
-								d="M21 21l-4.35-4.35M11 8v6M8 11h6"
+								d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
 								stroke="currentColor"
 								stroke-width="1.5"
-								stroke-linecap="round"
+								stroke-linejoin="round"
 							/>
 						</svg>
-						Enrich
-					</span>
-				</button>
-
-				{:else if aiCtaType === 'personal'}
-				<a
-					href="/settings?tab=ai"
-					class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
-				>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-					</svg>
-					Configure AI
-				</a>
-
+						Configure AI
+					</a>
 				{:else if aiCtaType === 'org-owner'}
-				<a
-					href="/settings?tab=organizations"
-					class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
-				>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-					</svg>
-					Configure org AI
-				</a>
-
+					<a
+						href="/settings?tab=organizations"
+						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
+					>
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						Configure org AI
+					</a>
 				{:else}
-				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					AI not configured · contact your org owner
-				</span>
+					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						AI not configured · contact your org owner
+					</span>
 				{/if}
 
 				<!-- Citation style selector (all modes) -->
@@ -1926,7 +2016,15 @@
 					class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					{CITATION_STYLE_LABELS[citationStyle]}
-					<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+					<svg
+						width="10"
+						height="10"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.5"
+						aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg
+					>
 				</button>
 
 				<button
@@ -1947,76 +2045,76 @@
 
 				<!-- View mode selector (hidden for non-writers and published view) -->
 				{#if canWrite && !data.forcePublished}
-				<div
-					class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-					role="group"
-					aria-label="Modo de vista"
-				>
-					<button
-						onclick={() => setViewMode('editor')}
-						title="Solo editor"
-						class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
-							? 'bg-accent text-white'
-							: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-						aria-pressed={viewMode === 'editor'}
+					<div
+						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
+						role="group"
+						aria-label="Modo de vista"
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M4 6h16M4 10h10M4 14h12M4 18h8"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-							/>
-						</svg>
-					</button>
-					<button
-						onclick={() => setViewMode('split')}
-						title="Editor y vista previa"
-						class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
-						'split'
-							? 'bg-accent text-white'
-							: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-						aria-pressed={viewMode === 'split'}
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<rect
-								x="2"
-								y="3"
-								width="9"
-								height="18"
-								rx="1"
-								stroke="currentColor"
-								stroke-width="1.5"
-							/>
-							<rect
-								x="13"
-								y="3"
-								width="9"
-								height="18"
-								rx="1"
-								stroke="currentColor"
-								stroke-width="1.5"
-							/>
-						</svg>
-					</button>
-					<button
-						onclick={() => setViewMode('preview')}
-						title="Solo vista previa"
-						class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
-							? 'bg-accent text-white'
-							: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-						aria-pressed={viewMode === 'preview'}
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"
-								stroke="currentColor"
-								stroke-width="1.5"
-							/>
-							<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5" />
-						</svg>
-					</button>
-				</div>
+						<button
+							onclick={() => setViewMode('editor')}
+							title="Solo editor"
+							class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'editor'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M4 6h16M4 10h10M4 14h12M4 18h8"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+						</button>
+						<button
+							onclick={() => setViewMode('split')}
+							title="Editor y vista previa"
+							class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
+							'split'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'split'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<rect
+									x="2"
+									y="3"
+									width="9"
+									height="18"
+									rx="1"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+								<rect
+									x="13"
+									y="3"
+									width="9"
+									height="18"
+									rx="1"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+							</svg>
+						</button>
+						<button
+							onclick={() => setViewMode('preview')}
+							title="Solo vista previa"
+							class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'preview'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+								<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5" />
+							</svg>
+						</button>
+					</div>
 				{/if}
 
 				<a
@@ -2037,45 +2135,45 @@
 				</a>
 
 				{#if !data.document.isReadonly}
-				<!-- Spell check button -->
-				<button
-					onclick={() => runSpellCheck()}
-					disabled={spellLoading}
-					title="Check spelling and grammar"
-					class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
-						? 'border-accent bg-accent text-white'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
-				>
-					{spellLoading ? 'Checking…' : 'Spell'}
-				</button>
-
-				<!-- Grammar assistant button -->
-				<button
-					onclick={() => runGrammarCheck()}
-					disabled={grammarLoading}
-					title="Grammar and style suggestions for non-native English writers"
-					class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
-						? 'border-accent bg-accent text-white'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
-				>
-					{grammarLoading ? 'Checking…' : 'Grammar'}
-				</button>
-
-				<!-- Spell language selector -->
-				<div
-					class="flex items-center gap-1 rounded-md border border-paper-border px-2 py-1.5 dark:border-dark-paper-border"
-				>
-					<select
-						value={spellLanguage}
-						onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
-						title="Spell check language"
-						class="cursor-pointer bg-paper font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper dark:text-dark-ink-muted"
+					<!-- Spell check button -->
+					<button
+						onclick={() => runSpellCheck()}
+						disabled={spellLoading}
+						title="Check spelling and grammar"
+						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
+							? 'border-accent bg-accent text-white'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
 					>
-						{#each SPELL_LANGUAGES as lang}
-							<option value={lang.code}>{lang.label}</option>
-						{/each}
-					</select>
-				</div>
+						{spellLoading ? 'Checking…' : 'Spell'}
+					</button>
+
+					<!-- Grammar assistant button -->
+					<button
+						onclick={() => runGrammarCheck()}
+						disabled={grammarLoading}
+						title="Grammar and style suggestions for non-native English writers"
+						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
+							? 'border-accent bg-accent text-white'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
+					>
+						{grammarLoading ? 'Checking…' : 'Grammar'}
+					</button>
+
+					<!-- Spell language selector -->
+					<div
+						class="flex items-center gap-1 rounded-md border border-paper-border px-2 py-1.5 dark:border-dark-paper-border"
+					>
+						<select
+							value={spellLanguage}
+							onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
+							title="Spell check language"
+							class="cursor-pointer bg-paper font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper dark:text-dark-ink-muted"
+						>
+							{#each SPELL_LANGUAGES as lang}
+								<option value={lang.code}>{lang.label}</option>
+							{/each}
+						</select>
+					</div>
 				{/if}
 
 				<!-- Export dropdown trigger only — menu rendered at root level to escape backdrop-filter -->
@@ -2089,7 +2187,13 @@
 				>
 					Export
 					<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-						<path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						<path
+							d="M2 3.5l3 3 3-3"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
 					</svg>
 				</button>
 
@@ -2136,14 +2240,14 @@
 				</button>
 
 				{#if !data.document.isReadonly}
-				<button
-					onclick={() => (showCommit = true)}
-					disabled={!canTriggerCommit(commitCap)}
-					title={commitCap.kind === 'blocked' ? commitCap.reason : undefined}
-					class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
-				>
-					Commit
-				</button>
+					<button
+						onclick={() => (showCommit = true)}
+						disabled={!canTriggerCommit(commitCap)}
+						title={commitCap.kind === 'blocked' ? commitCap.reason : undefined}
+						class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+					>
+						Commit
+					</button>
 				{/if}
 			</div>
 		</div>
@@ -2199,7 +2303,7 @@
 		{/snippet}
 
 		<!-- Main layout -->
-		<div class="flex flex-1 min-h-0 overflow-hidden">
+		<div class="flex min-h-0 flex-1 overflow-hidden">
 			{#if viewMode === 'split'}
 				<!-- Split: editor left, preview right -->
 				<div class="relative flex flex-1 flex-col overflow-hidden">
@@ -2270,11 +2374,15 @@
 						{@render editableTitle()}
 						{#if viewMode === 'preview'}
 							{#if data.document?.lastCommit}
-								<p class="mb-6 -mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								<p class="-mt-4 mb-6 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 									{#if data.document.lastCommit.committerName}
 										{data.document.lastCommit.committerName} ·
 									{/if}
-									{new Date(data.document.lastCommit.committedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+									{new Date(data.document.lastCommit.committedAt).toLocaleDateString(undefined, {
+										year: 'numeric',
+										month: 'short',
+										day: 'numeric'
+									})}
 								</p>
 							{/if}
 							{#if data.unpublished}
@@ -2344,17 +2452,19 @@
 					</button>
 					{#if projectRefs.length > 0}
 						<button
-							class="pointer-events-auto rounded-md bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:bg-paper-ui border border-paper-border dark:bg-dark-paper dark:text-dark-ink dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
+							class="pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 							onclick={() => {
 								savedCommentSelection = currentSelection;
 								subnoteNotes = '';
 								subnoteSlug = slugify(currentSelection?.text?.slice(0, 40) ?? '');
-								subnoteRefId = sourceReference?.id ?? (projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
+								subnoteRefId =
+									sourceReference?.id ??
+									(projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
 								subnoteError = '';
 								showSubnote = true;
 							}}
 						>
-							+ Subnote
+							+ Annotation
 						</button>
 					{/if}
 					{#if selectedCiteKey() && hasAiKey}
@@ -2393,7 +2503,7 @@
 							{/if}
 						</div>
 						<button
-							class="pointer-events-auto hover:bg-paper-muted dark:hover:bg-dark-paper-muted rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+							class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 							onclick={() => {
 								const sel = currentSelection!;
 								showFloating = false;
@@ -2724,8 +2834,8 @@
 			{#if showNewComment && savedCommentSelection && savedCommentSelection.coords}
 				<div
 					class="pointer-events-none fixed z-20"
-					style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection.coords
-						.left}px;"
+					style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection
+						.coords.left}px;"
 				>
 					<div
 						class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
@@ -2733,7 +2843,9 @@
 						<p
 							class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
 						>
-							«{savedCommentSelection.text.slice(0, 60)}{savedCommentSelection.text.length > 60 ? '…' : ''}»
+							«{savedCommentSelection.text.slice(0, 60)}{savedCommentSelection.text.length > 60
+								? '…'
+								: ''}»
 						</p>
 						<textarea
 							use:focusOnMount
@@ -2769,15 +2881,26 @@
 			{#if showSubnote && savedCommentSelection?.coords}
 				<div
 					class="pointer-events-none fixed z-20"
-					style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection.coords.left}px;"
+					style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection
+						.coords.left}px;"
 				>
-					<div class="pointer-events-auto w-80 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
-						<p class="mb-2 font-sans text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">Nueva subnota bibliográfica</p>
-						<p class="mb-3 truncate border-l-2 border-paper-border pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted">
-							«{savedCommentSelection.text.slice(0, 80)}{savedCommentSelection.text.length > 80 ? '…' : ''}»
+					<div
+						class="pointer-events-auto w-80 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+					>
+						<p class="mb-2 font-sans text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
+							Nueva subnota bibliográfica
+						</p>
+						<p
+							class="mb-3 truncate border-l-2 border-paper-border pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
+						>
+							«{savedCommentSelection.text.slice(0, 80)}{savedCommentSelection.text.length > 80
+								? '…'
+								: ''}»
 						</p>
 						{#if !sourceReference}
-							<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Referencia</label>
+							<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+								>Referencia</label
+							>
 							<select
 								bind:value={subnoteRefId}
 								class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -2792,14 +2915,18 @@
 								Referencia: <span class="font-mono text-accent">@{sourceReference.citeKey}</span>
 							</p>
 						{/if}
-						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Slug <span class="text-ink-faint">(identificador único)</span></label>
+						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+							>Slug <span class="text-ink-faint">(identificador único)</span></label
+						>
 						<input
 							bind:value={subnoteSlug}
 							type="text"
 							placeholder="p247-exchange"
 							class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
-						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Nota</label>
+						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+							>Nota</label
+						>
 						<textarea
 							use:focusOnMount
 							bind:value={subnoteNotes}
@@ -2812,13 +2939,19 @@
 						<div class="mt-2 flex gap-2">
 							<button
 								onclick={submitSubnote}
-								disabled={submittingSubnote || !subnoteSlug.trim() || !subnoteNotes.trim() || !subnoteRefId}
+								disabled={submittingSubnote ||
+									!subnoteSlug.trim() ||
+									!subnoteNotes.trim() ||
+									!subnoteRefId}
 								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 							>
-								{submittingSubnote ? 'Saving…' : 'Guardar subnota'}
+								{submittingSubnote ? 'Saving…' : 'Save annotation'}
 							</button>
 							<button
-								onclick={() => { showSubnote = false; savedCommentSelection = null; }}
+								onclick={() => {
+									showSubnote = false;
+									savedCommentSelection = null;
+								}}
 								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 							>
 								Cancel
@@ -2832,7 +2965,9 @@
 			{#if showNewParagraphComment && pendingParagraphNumber !== null}
 				<div
 					class="pointer-events-none fixed z-20"
-					style="top: {paragraphCommentPos.top}px; right: {window.innerWidth - paragraphCommentPos.right + 8}px;"
+					style="top: {paragraphCommentPos.top}px; right: {window.innerWidth -
+						paragraphCommentPos.right +
+						8}px;"
 				>
 					<div
 						bind:this={paragraphCommentEl}
@@ -2857,7 +2992,10 @@
 								{submittingParagraphComment ? 'Saving…' : 'Comment'}
 							</button>
 							<button
-								onclick={() => { showNewParagraphComment = false; paragraphCommentText = ''; }}
+								onclick={() => {
+									showNewParagraphComment = false;
+									paragraphCommentText = '';
+								}}
 								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 							>
 								Cancel
@@ -2920,10 +3058,16 @@
 				<div
 					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
 				>
-					<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Anotaciones</h3>
+					<div
+						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
+					>
+						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
+							Anotaciones
+						</h3>
 						{#if sourceReference}
-							<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">@{sourceReference.citeKey}</span>
+							<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint"
+								>@{sourceReference.citeKey}</span
+							>
 						{/if}
 					</div>
 
@@ -2931,13 +3075,21 @@
 						{#if !sourceReference}
 							<!-- No reference assigned yet -->
 							<div class="px-1 py-6 text-center">
-								<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Sin referencia bibliográfica.</p>
-								<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Asigna una referencia para poder anotar este documento.</p>
+								<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+									Sin referencia bibliográfica.
+								</p>
+								<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									Asigna una referencia para poder anotar este documento.
+								</p>
 								{#if !assigningReference}
 									<button
-										onclick={() => { loadRefs(); assigningReference = true; }}
+										onclick={() => {
+											loadRefs();
+											assigningReference = true;
+										}}
 										class="mt-3 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-accent/90"
-									>Asignar referencia</button>
+										>Asignar referencia</button
+									>
 								{:else}
 									<div class="mt-3 text-left">
 										<select
@@ -2953,30 +3105,43 @@
 											<button
 												onclick={assignSourceReference}
 												disabled={!assignRefId}
-												class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white disabled:opacity-50 hover:bg-accent/90"
-											>Guardar</button>
+												class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+												>Guardar</button
+											>
 											<button
-												onclick={() => { assigningReference = false; assignRefId = ''; }}
+												onclick={() => {
+													assigningReference = false;
+													assignRefId = '';
+												}}
 												class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-											>Cancelar</button>
+												>Cancelar</button
+											>
 										</div>
 									</div>
 								{/if}
 							</div>
 						{:else if docSubnotes.length === 0}
-							<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+							<p
+								class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+							>
 								Sin anotaciones.<br />
-								<span class="text-xs text-ink-faint dark:text-dark-ink-faint">Selecciona texto para anotar.</span>
+								<span class="text-xs text-ink-faint dark:text-dark-ink-faint"
+									>Selecciona texto para anotar.</span
+								>
 							</p>
 						{:else}
 							{#each docSubnotes as s (s.id)}
-								<div class="rounded-lg border border-paper-border bg-paper p-3 dark:border-dark-paper-border dark:bg-dark-paper">
+								<div
+									class="rounded-lg border border-paper-border bg-paper p-3 dark:border-dark-paper-border dark:bg-dark-paper"
+								>
 									<div class="mb-1.5 flex items-center justify-between gap-2">
 										<button
 											onclick={() => s.anchorText && scrollToAnnotation(s.id)}
-											class="font-mono text-xs font-semibold text-accent {s.anchorText ? 'cursor-pointer hover:underline' : 'cursor-default'}"
-											disabled={!s.anchorText}
-										>:{s.slug}</button>
+											class="font-mono text-xs font-semibold text-accent {s.anchorText
+												? 'cursor-pointer hover:underline'
+												: 'cursor-default'}"
+											disabled={!s.anchorText}>:{s.slug}</button
+										>
 										<div class="flex items-center gap-1">
 											<button
 												onclick={() => {
@@ -2986,9 +3151,18 @@
 												class="rounded p-0.5 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 												aria-label="Editar"
 											>
-												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-													<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-													<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+												<svg
+													width="12"
+													height="12"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												>
+													<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+													<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
 												</svg>
 											</button>
 											<button
@@ -2996,18 +3170,29 @@
 												class="rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint"
 												aria-label="Eliminar"
 											>
-												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-													<polyline points="3 6 5 6 21 6"/>
-													<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-													<path d="M10 11v6M14 11v6"/>
-													<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+												<svg
+													width="12"
+													height="12"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												>
+													<polyline points="3 6 5 6 21 6" />
+													<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+													<path d="M10 11v6M14 11v6" />
+													<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
 												</svg>
 											</button>
 										</div>
 									</div>
 
 									{#if s.anchorText}
-										<blockquote class="mb-2 border-l-2 border-accent bg-accent/5 px-2.5 py-1.5 font-serif text-xs italic leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+										<blockquote
+											class="mb-2 border-l-2 border-accent bg-accent/5 px-2.5 py-1.5 font-serif text-xs leading-relaxed text-ink-muted italic dark:text-dark-ink-muted"
+										>
 											"{s.anchorText}"
 										</blockquote>
 									{/if}
@@ -3017,20 +3202,28 @@
 											class="w-full resize-none rounded border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink outline-none focus:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 											rows="4"
 											bind:value={editingSubnoteNotes}
-											onkeydown={(e) => { if (e.key === 'Escape') editingSubnoteId = null; }}
+											onkeydown={(e) => {
+												if (e.key === 'Escape') editingSubnoteId = null;
+											}}
 										></textarea>
 										<div class="mt-1.5 flex gap-2">
 											<button
 												onclick={() => saveSubnoteEdit(s.id)}
 												class="rounded bg-accent px-2 py-0.5 font-sans text-xs text-white hover:bg-accent/90"
-											>Guardar</button>
+												>Guardar</button
+											>
 											<button
 												onclick={() => (editingSubnoteId = null)}
 												class="rounded px-2 py-0.5 font-sans text-xs text-ink-faint hover:text-ink dark:text-dark-ink-faint"
-											>Cancelar</button>
+												>Cancelar</button
+											>
 										</div>
 									{:else if s.notes}
-										<p class="whitespace-pre-wrap font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{s.notes}</p>
+										<p
+											class="font-sans text-xs leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink"
+										>
+											{s.notes}
+										</p>
 									{/if}
 								</div>
 							{/each}
@@ -3087,14 +3280,20 @@
 
 			<!-- Spell check sidebar -->
 			{#if showSpellPanel}
-				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border">
+				<div
+					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
+				>
 					<SpellCheckPanel
 						bind:corrections={spellCorrections}
 						loading={spellLoading}
 						documentText={content}
 						onaccept={applySpellCorrection}
 						onignore={ignoreSpellWord}
-						onclose={() => { showSpellPanel = false; spellCorrections = []; editorEl?.clearSpellHover(); }}
+						onclose={() => {
+							showSpellPanel = false;
+							spellCorrections = [];
+							editorEl?.clearSpellHover();
+						}}
 						onhover={(c) => editorEl?.setSpellHover(c.from, c.to)}
 						onhoverend={() => editorEl?.clearSpellHover()}
 					/>
@@ -3103,7 +3302,9 @@
 
 			<!-- Grammar assistant sidebar -->
 			{#if showGrammarPanel}
-				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border">
+				<div
+					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
+				>
 					<SpellCheckPanel
 						bind:corrections={grammarCorrections}
 						loading={grammarLoading}
@@ -3111,7 +3312,11 @@
 						documentText={content}
 						onaccept={applyGrammarCorrection}
 						onignore={async () => {}}
-						onclose={() => { showGrammarPanel = false; grammarCorrections = []; editorEl?.clearSpellHover(); }}
+						onclose={() => {
+							showGrammarPanel = false;
+							grammarCorrections = [];
+							editorEl?.clearSpellHover();
+						}}
 						onhover={(c) => editorEl?.setSpellHover(c.from, c.to)}
 						onhoverend={() => editorEl?.clearSpellHover()}
 					/>
@@ -3128,14 +3333,23 @@
 						documentId={data.document.id}
 						documentTitle={data.document.title}
 						getDocumentContent={() => content}
-						spellLanguage={spellLanguage}
+						{spellLanguage}
 						onApplyEdit={(action) => {
 							if (action.type === 'replace_text') {
 								const idx = content.indexOf(action.anchorText);
-								if (idx !== -1) content = content.slice(0, idx) + action.replacement + content.slice(idx + action.anchorText.length);
+								if (idx !== -1)
+									content =
+										content.slice(0, idx) +
+										action.replacement +
+										content.slice(idx + action.anchorText.length);
 							} else if (action.type === 'insert_after') {
 								const idx = content.indexOf(action.anchorText);
-								if (idx !== -1) content = content.slice(0, idx + action.anchorText.length) + '\n\n' + action.content + content.slice(idx + action.anchorText.length);
+								if (idx !== -1)
+									content =
+										content.slice(0, idx + action.anchorText.length) +
+										'\n\n' +
+										action.content +
+										content.slice(idx + action.anchorText.length);
 							}
 						}}
 						onClose={toggleChat}
@@ -3931,19 +4145,38 @@
 
 <!-- Floating dropdown menus — rendered at root level to escape backdrop-filter containing block -->
 {#if showCiteStyleMenu}
-	<button class="fixed inset-0 z-10" onclick={() => (showCiteStyleMenu = false)} aria-label="Close menu" tabindex="-1"></button>
+	<button
+		class="fixed inset-0 z-10"
+		onclick={() => (showCiteStyleMenu = false)}
+		aria-label="Close menu"
+		tabindex="-1"
+	></button>
 	<div
 		class="fixed z-20 w-28 overflow-hidden rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 		style="top: {citeStyleMenuPos.top}px; left: {citeStyleMenuPos.left}px;"
 	>
 		{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
 			<button
-				onclick={() => { setCitationStyle(s as CitationStyle); showCiteStyleMenu = false; }}
-				class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle === s ? 'font-semibold text-accent' : 'text-ink-muted dark:text-dark-ink-muted'}"
+				onclick={() => {
+					setCitationStyle(s as CitationStyle);
+					showCiteStyleMenu = false;
+				}}
+				class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle ===
+				s
+					? 'font-semibold text-accent'
+					: 'text-ink-muted dark:text-dark-ink-muted'}"
 			>
 				{label}
 				{#if citationStyle === s}
-					<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+					<svg
+						width="10"
+						height="10"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="3"
+						aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg
+					>
 				{/if}
 			</button>
 		{/each}
@@ -3951,15 +4184,30 @@
 {/if}
 
 {#if showExport}
-	<button class="fixed inset-0 z-10" onclick={() => (showExport = false)} aria-label="Close menu" tabindex="-1"></button>
+	<button
+		class="fixed inset-0 z-10"
+		onclick={() => (showExport = false)}
+		aria-label="Close menu"
+		tabindex="-1"
+	></button>
 	<div
 		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
-		<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=latex" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+		<a
+			href="/api/projects/{data.document?.projectId}/documents/{data.document
+				?.id}/export?format=latex"
+			onclick={() => (showExport = false)}
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
 		</a>
-		<a href="/api/projects/{data.document?.projectId}/documents/{data.document?.id}/export?format=typst" onclick={() => (showExport = false)} class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui">
+		<a
+			href="/api/projects/{data.document?.projectId}/documents/{data.document
+				?.id}/export?format=typst"
+			onclick={() => (showExport = false)}
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
 		</a>
 		<a
@@ -3984,9 +4232,15 @@
 			e.preventDefault();
 			doSaveDraft();
 		}
-		if (e.key === 'Escape') { showCheatsheet = false; showCiteStyleMenu = false; citationExplain = null; }
+		if (e.key === 'Escape') {
+			showCheatsheet = false;
+			showCiteStyleMenu = false;
+			citationExplain = null;
+		}
 	}}
-	onclick={() => { showCiteStyleMenu = false; }}
+	onclick={() => {
+		showCiteStyleMenu = false;
+	}}
 />
 
 {#if showCheatsheet}
@@ -4165,4 +4419,3 @@
 		</div>
 	</div>
 {/if}
-
