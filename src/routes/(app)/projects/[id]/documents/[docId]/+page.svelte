@@ -8,10 +8,10 @@
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
-	import CommentThread from '$lib/components/editor/CommentThread.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
 	import BibliographyPanel from '$lib/components/editor/BibliographyPanel.svelte';
+	import CommentsPanel from '$lib/components/editor/CommentsPanel.svelte';
 	import SpellCheckPanel, {
 		type SpellCorrection
 	} from '$lib/components/editor/SpellCheckPanel.svelte';
@@ -1642,16 +1642,6 @@
 		}, 150);
 	});
 
-	// Scroll sidebar to current comment whenever it changes
-	$effect(() => {
-		const id = currentCommentId;
-		if (!id || !showComments) return;
-		Promise.resolve().then(() => {
-			document
-				.querySelector(`[data-comment-id="${CSS.escape(id)}"]`)
-				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-		});
-	});
 
 </script>
 
@@ -2855,50 +2845,20 @@
 
 			<!-- Comments sidebar -->
 			{#if showComments}
-				<div
-					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Comments</h3>
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							{openCommentsCount} abierto{openCommentsCount !== 1 ? 's' : ''}
-						</span>
-					</div>
-
-					<div class="flex-1 space-y-2 overflow-y-auto p-3">
-						{#if inlineComments.length === 0}
-							<p
-								class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-							>
-								No comments yet.<br />
-								<span class="text-xs text-ink-faint dark:text-dark-ink-faint"
-									>Selecciona texto para comentar.</span
-								>
-							</p>
-						{:else}
-							{#each inlineComments as c (c.id)}
-								<div data-comment-id={c.id}>
-									<CommentThread
-										comment={{ ...c, resolved: c.status === 'resolved' }}
-										currentUserId={data.currentUserId}
-										isActive={c.id === currentCommentId}
-										onclick={handleCommentClick}
-										onresolved={handleCommentResolved}
-										onreopened={handleCommentReopened}
-										onreplyadded={handleReplyAdded}
-										ondeleted={(id) => {
-											inlineComments = inlineComments.filter((x) => x.id !== id);
-										}}
-										{chapters}
-										onlookup={lookupNames}
-									/>
-								</div>
-							{/each}
-						{/if}
-					</div>
-				</div>
+				<CommentsPanel
+					comments={inlineComments}
+					activeCommentId={currentCommentId}
+					currentUserId={data.currentUserId}
+					{chapters}
+					onlookup={lookupNames}
+					oncommentclick={handleCommentClick}
+					onresolved={handleCommentResolved}
+					onreopened={handleCommentReopened}
+					onreplyadded={handleReplyAdded}
+					ondeleted={(id) => {
+						inlineComments = inlineComments.filter((x) => x.id !== id);
+					}}
+				/>
 			{/if}
 
 			<!-- Annotations panel (subnotes for source-reference docs) -->
