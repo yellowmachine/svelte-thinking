@@ -2334,7 +2334,7 @@
 							class="pointer-events-auto rounded-md bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:bg-paper-ui border border-paper-border dark:bg-dark-paper dark:text-dark-ink dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
 							onclick={() => {
 								savedCommentSelection = currentSelection;
-								subnoteNotes = currentSelection?.text ?? '';
+								subnoteNotes = '';
 								subnoteSlug = slugify(currentSelection?.text?.slice(0, 40) ?? '');
 								subnoteRefId = data.sourceReference?.id ?? (projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
 								subnoteError = '';
@@ -2781,7 +2781,6 @@
 						{/if}
 						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Slug <span class="text-ink-faint">(identificador único)</span></label>
 						<input
-							use:focusOnMount
 							bind:value={subnoteSlug}
 							type="text"
 							placeholder="p247-exchange"
@@ -2789,6 +2788,7 @@
 						/>
 						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Nota</label>
 						<textarea
+							use:focusOnMount
 							bind:value={subnoteNotes}
 							rows={3}
 							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -2956,6 +2956,12 @@
 										</div>
 									</div>
 
+									{#if s.anchorText}
+										<blockquote class="mb-2 border-l-2 border-accent bg-accent/5 px-2.5 py-1.5 font-serif text-xs italic leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+											"{s.anchorText}"
+										</blockquote>
+									{/if}
+
 									{#if editingSubnoteId === s.id}
 										<textarea
 											class="w-full resize-none rounded border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink outline-none focus:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -2973,8 +2979,8 @@
 												class="rounded px-2 py-0.5 font-sans text-xs text-ink-faint hover:text-ink dark:text-dark-ink-faint"
 											>Cancelar</button>
 										</div>
-									{:else}
-										<p class="whitespace-pre-wrap font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">{s.notes}</p>
+									{:else if s.notes}
+										<p class="whitespace-pre-wrap font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{s.notes}</p>
 									{/if}
 								</div>
 							{/each}
