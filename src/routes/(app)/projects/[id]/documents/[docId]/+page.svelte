@@ -155,6 +155,7 @@
 		viewMode = m;
 		localStorage.setItem(VIEW_MODE_KEY, m);
 		if (m !== 'editor') loadRefs();
+		if (m === 'preview') showBib = false;
 	}
 
 	// Citations
@@ -284,6 +285,17 @@
 
 	const filteredRefs = $derived(() => {
 		const q = citeSearch.toLowerCase();
+		if (!q) return projectRefs;
+		return projectRefs.filter(
+			(r) =>
+				r.citeKey.toLowerCase().includes(q) ||
+				r.title.toLowerCase().includes(q) ||
+				r.authors.some((a) => a.last.toLowerCase().includes(q))
+		);
+	});
+
+	const filteredBibRefs = $derived(() => {
+		const q = bibFilter.toLowerCase();
 		if (!q) return projectRefs;
 		return projectRefs.filter(
 			(r) =>
@@ -572,6 +584,11 @@
 
 	let showComments = $state(false);
 	let currentCommentId = $state<string | null>(null);
+
+	// ── Bibliography panel ────────────────────────────────────────────────────
+	let showBib = $state(false);
+	let bibFilter = $state('');
+	let activeBibCiteKey = $state<string | null>(null);
 	let inlineComments: InlineComment[] = $state(
 		untrack(() => (data.inlineComments as InlineComment[]) ?? [])
 	);
@@ -1073,6 +1090,29 @@
 		splitPreviewRef?.scrollToComment(`ann-${id}`, null);
 	}
 
+	function getCiteKeyAtPos(pos: number): string | null {
+		const re = /\[\[@([\w:._-]+)\]\]/g;
+		let m: RegExpExecArray | null;
+		while ((m = re.exec(content)) !== null) {
+			if (m.index <= pos && pos <= m.index + m[0].length) return m[1];
+		}
+		return null;
+	}
+
+	function scrollEditorToCiteKey(citeKey: string) {
+		const token = `[[@${citeKey}]]`;
+		const pos = content.indexOf(token);
+		if (pos >= 0) scrollToRange = { from: pos, to: pos + token.length };
+	}
+
+	function toggleBib() {
+		showBib = !showBib;
+		if (showBib) {
+			loadRefs();
+			bibFilter = '';
+		}
+	}
+
 	const paragraphComments = $derived(
 		inlineComments
 			.filter((c) => c.status === 'open' && c.paragraphNumber !== null)
@@ -1188,6 +1228,7 @@
 			showDraft = false;
 			showHistory = false;
 			showComments = false;
+			showBib = false;
 		}
 	}
 
@@ -1211,6 +1252,7 @@
 			showDraft = false;
 			showHistory = false;
 			showComments = false;
+			showBib = false;
 		}
 	}
 
@@ -1274,6 +1316,7 @@
 			showDraft = false;
 			showHistory = false;
 			showComments = false;
+			showBib = false;
 		}
 	}
 
@@ -1435,6 +1478,7 @@
 			showReview = false;
 			showHistory = false;
 			showComments = false;
+			showBib = false;
 		} else {
 			capturedSelection = null;
 			draftResult = '';
@@ -1518,6 +1562,7 @@
 
 	function updateSelection(sel: typeof currentSelection) {
 		currentSelection = sel;
+		activeBibCiteKey = sel ? getCiteKeyAtPos(sel.from) : null;
 		if (!sel) {
 			showNewComment = false;
 			showReviewTypeMenu = false;
@@ -1665,6 +1710,17 @@
 		Promise.resolve().then(() => {
 			document
 				.querySelector(`[data-comment-id="${CSS.escape(id)}"]`)
+				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		});
+	});
+
+	// Scroll bibliography panel to active citeKey whenever cursor moves onto a citation
+	$effect(() => {
+		const key = activeBibCiteKey;
+		if (!key || !showBib) return;
+		Promise.resolve().then(() => {
+			document
+				.querySelector(`[data-bib-ref="${CSS.escape(key)}"]`)
 				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 		});
 	});
@@ -2042,6 +2098,18 @@
 						</span>
 					{/if}
 				</button>
+
+				{#if viewMode !== 'preview'}
+					<button
+						onclick={toggleBib}
+						title="Panel de bibliografía"
+						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
+							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+					>
+						Bib
+					</button>
+				{/if}
 
 				<!-- View mode selector (hidden for non-writers and published view) -->
 				{#if canWrite && !data.forcePublished}
@@ -3224,6 +3292,106 @@
 										>
 											{s.notes}
 										</p>
+									{/if}
+								</div>
+							{/each}
+						{/if}
+					</div>
+				</div>
+			{/if}
+
+			<!-- Bibliography panel -->
+			{#if showBib && viewMode !== 'preview'}
+				<div
+					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+				>
+					<div
+						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
+					>
+						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
+							Bibliografía
+						</h3>
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+							>{projectRefs.length} refs</span
+						>
+					</div>
+
+					<div class="border-b border-paper-border px-3 py-2 dark:border-dark-paper-border">
+						<input
+							type="text"
+							bind:value={bibFilter}
+							placeholder="Filtrar… ej. dennett"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+						/>
+					</div>
+
+					<div class="flex-1 space-y-1 overflow-y-auto p-2">
+						{#if projectRefs.length === 0}
+							<p
+								class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+							>
+								Sin referencias en este proyecto.
+							</p>
+						{:else if filteredBibRefs().length === 0}
+							<p
+								class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+							>
+								Sin coincidencias.
+							</p>
+						{:else}
+							{#each filteredBibRefs() as ref (ref.id ?? ref.citeKey)}
+								<div
+									data-bib-ref={ref.citeKey}
+									class="rounded-lg border p-2.5 transition-colors {activeBibCiteKey === ref.citeKey
+										? 'border-accent/50 bg-accent/5 dark:border-accent/40 dark:bg-accent/10'
+										: 'border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper'}"
+								>
+									<div class="flex items-center justify-between gap-1">
+										<button
+											onclick={() => scrollEditorToCiteKey(ref.citeKey)}
+											class="font-mono text-xs font-semibold text-accent hover:underline"
+										>
+											@{ref.citeKey}
+										</button>
+										<button
+											onclick={() => editorEl?.insertAtCursor(`[[@${ref.citeKey}]]`)}
+											title="Insertar cita en el cursor"
+											class="rounded px-1.5 py-0.5 font-sans text-[10px] text-ink-faint transition-colors hover:bg-accent hover:text-white dark:text-dark-ink-faint"
+										>
+											+ cita
+										</button>
+									</div>
+									<p
+										class="mt-0.5 line-clamp-2 font-sans text-xs leading-snug text-ink dark:text-dark-ink"
+									>
+										{ref.title}
+									</p>
+									{#if ref.authors.length > 0}
+										<p class="mt-0.5 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+											{ref.authors.map((a) => a.last).join(', ')}{ref.year
+												? ` (${ref.year})`
+												: ''}
+										</p>
+									{/if}
+									{#if ref.subnotes && ref.subnotes.length > 0}
+										<div
+											class="mt-2 space-y-1.5 border-t border-paper-border pt-2 dark:border-dark-paper-border"
+										>
+											{#each ref.subnotes as s}
+												<div class="border-l-2 border-accent/30 pl-2">
+													<span class="font-mono text-[10px] font-semibold text-accent"
+														>:{s.slug}</span
+													>
+													{#if s.notes}
+														<p
+															class="mt-0.5 whitespace-pre-wrap font-sans text-[10px] leading-snug text-ink-muted dark:text-dark-ink-muted"
+														>
+															{s.notes}
+														</p>
+													{/if}
+												</div>
+											{/each}
+										</div>
 									{/if}
 								</div>
 							{/each}
