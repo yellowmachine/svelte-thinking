@@ -63,7 +63,10 @@
 	async function openReadingNotes(ref: Ref) {
 		openingNotes = ref.id;
 		try {
-			const { docId } = await trpc.references.openReadingNotes.mutate({ refId: ref.id, projectId: data.project.id });
+			const { docId } = await trpc.references.openReadingNotes.mutate({
+				refId: ref.id,
+				projectId: data.project.id
+			});
 			await goto(`/projects/${data.project.id}/documents/${docId}`);
 		} finally {
 			openingNotes = null;
@@ -119,7 +122,7 @@
 			subnotesByRef[refId] = [...(subnotesByRef[refId] ?? []), row as Subnote];
 			addingSubnoteRef = null;
 		} catch (e) {
-			flash.set(e instanceof Error ? e.message : 'Error saving subnote', 'error');
+			flash.set(e instanceof Error ? e.message : 'Error saving annotation', 'error');
 		} finally {
 			savingSubnote = false;
 		}
@@ -166,7 +169,9 @@
 	async function deletePdf(ref: Ref) {
 		deletingPdfId = ref.id;
 		try {
-			await fetch(`/api/projects/${data.project.id}/references/${ref.id}/pdf`, { method: 'DELETE' });
+			await fetch(`/api/projects/${data.project.id}/references/${ref.id}/pdf`, {
+				method: 'DELETE'
+			});
 			references = references.map((r) =>
 				r.id === ref.id ? { ...r, pdfKey: null, pdfUrl: null } : r
 			);
@@ -450,7 +455,15 @@
 
 	// ── Link from library ────────────────────────────────────────────────────
 
-	type LibraryRef = { id: string; citeKey: string; type: string; title: string; authors: unknown; year: string | null; projectIds: string[] };
+	type LibraryRef = {
+		id: string;
+		citeKey: string;
+		type: string;
+		title: string;
+		authors: unknown;
+		year: string | null;
+		projectIds: string[];
+	};
 
 	let llRefs = $state<LibraryRef[]>([]);
 	let llSelectedIds = $state<Set<string>>(new Set());
@@ -467,7 +480,12 @@
 		const q = llSearch.toLowerCase().trim();
 		return llRefs.filter((r) => {
 			if (llFilterProjectId === '__unlinked__' && r.projectIds.length > 0) return false;
-			if (llFilterProjectId && llFilterProjectId !== '__unlinked__' && !r.projectIds.includes(llFilterProjectId)) return false;
+			if (
+				llFilterProjectId &&
+				llFilterProjectId !== '__unlinked__' &&
+				!r.projectIds.includes(llFilterProjectId)
+			)
+				return false;
 			if (!q) return true;
 			return (
 				r.citeKey.toLowerCase().includes(q) ||
@@ -489,13 +507,23 @@
 		llShowLinked = false;
 		llLoading = true;
 		try {
-			type RawRef = { id: string; projectId: string | null; citeKey: string; type: string; title: string; authors: unknown; year: string | null };
+			type RawRef = {
+				id: string;
+				projectId: string | null;
+				citeKey: string;
+				type: string;
+				title: string;
+				authors: unknown;
+				year: string | null;
+			};
 			const [allRaw, allProjects] = await Promise.all([
 				trpc.references.listAll.query(),
 				trpc.projects.list.query()
 			]);
 			const all = allRaw as unknown as RawRef[];
-			llProjects = (allProjects as { id: string; title: string }[]).filter(p => p.id !== data.project.id);
+			llProjects = (allProjects as { id: string; title: string }[]).filter(
+				(p) => p.id !== data.project.id
+			);
 			const projectRefIds = new Set(references.map((r) => r.id));
 			// Build refId → projectIds map (listAll returns one row per project link)
 			const projectIdsMap = new Map<string, string[]>();
@@ -557,7 +585,6 @@
 			llLinking = false;
 		}
 	}
-
 
 	// ── DOI lookup ──────────────────────────────────────────────────────────
 	type DoiResult = {
@@ -730,25 +757,36 @@
 			// Import document from URL (best-effort, non-blocking)
 			if (shouldImportDoc) {
 				urlImportingDoc = true;
-				trpc.references.importDocumentFromUrl.mutate({ url: importUrl, projectId: data.project.id, title: docTitle, referenceId: newRef.id })
+				trpc.references.importDocumentFromUrl
+					.mutate({
+						url: importUrl,
+						projectId: data.project.id,
+						title: docTitle,
+						referenceId: newRef.id
+					})
 					.then(({ docId }) => {
 						goto(`/projects/${data.project.id}/documents/${docId}`);
 					})
 					.catch((e) => {
 						flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error');
 					})
-					.finally(() => { urlImportingDoc = false; });
+					.finally(() => {
+						urlImportingDoc = false;
+					});
 			}
 
 			if (!shouldGeneratePdf) return;
 			// Best-effort: generate PDF in background — show spinner, flash on failure
 			const refId = newRef.id;
 			generatingPdfIds.add(refId);
-			trpc.references.generatePdfFromUrl.mutate({ refId, projectId: data.project.id })
+			trpc.references.generatePdfFromUrl
+				.mutate({ refId, projectId: data.project.id })
 				.then((res) => {
 					if (res?.pdfKey) {
 						references = references.map((r) =>
-							r.id === refId ? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` } : r
+							r.id === refId
+								? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` }
+								: r
 						);
 					} else {
 						flash.set('PDF generation failed — you can upload one manually.', 'error');
@@ -1002,7 +1040,9 @@
 				<div
 					class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paper-border py-20 text-center dark:border-dark-paper-border"
 				>
-					<p class="font-serif text-lg text-ink-muted dark:text-dark-ink-muted">No references yet</p>
+					<p class="font-serif text-lg text-ink-muted dark:text-dark-ink-muted">
+						No references yet
+					</p>
 					<p class="mt-1 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
 						Add references manually or import a .bib file
 					</p>
@@ -1093,11 +1133,19 @@
 											fill="none"
 											class="transition-transform {expandedSubnotes.has(ref.id) ? 'rotate-90' : ''}"
 										>
-											<polyline points="9 18 15 12 9 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+											<polyline
+												points="9 18 15 12 9 6"
+												stroke="currentColor"
+												stroke-width="2.5"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
 										</svg>
 										<span>Subnotes</span>
 										{#if (subnotesByRef[ref.id]?.length ?? 0) > 0}
-											<span class="rounded-full bg-accent/10 px-1.5 py-px text-[10px] font-semibold text-accent">
+											<span
+												class="rounded-full bg-accent/10 px-1.5 py-px text-[10px] font-semibold text-accent"
+											>
 												{subnotesByRef[ref.id].length}
 											</span>
 										{/if}
@@ -1107,31 +1155,57 @@
 									</button>
 
 									{#if expandedSubnotes.has(ref.id)}
-										<div class="mt-1.5 border-l-2 border-paper-border pl-3 dark:border-dark-paper-border">
+										<div
+											class="mt-1.5 border-l-2 border-paper-border pl-3 dark:border-dark-paper-border"
+										>
 											{#if subnotesByRef[ref.id]?.length > 0}
 												<ul class="flex flex-col gap-1">
 													{#each subnotesByRef[ref.id] as sn (sn.id)}
 														<li class="flex items-start gap-2">
-															<span class="mt-px shrink-0 rounded bg-paper-ui px-1.5 py-px font-mono text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+															<span
+																class="mt-px shrink-0 rounded bg-paper-ui px-1.5 py-px font-mono text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+															>
 																{sn.slug}
 															</span>
 															{#if sn.notes}
-																<span class="flex-1 font-sans text-[11px] leading-snug text-ink dark:text-dark-ink">{sn.notes}</span>
+																<span
+																	class="flex-1 font-sans text-[11px] leading-snug text-ink dark:text-dark-ink"
+																	>{sn.notes}</span
+																>
 															{:else}
-																<span class="flex-1 font-sans text-[11px] italic text-ink-faint dark:text-dark-ink-faint">no notes</span>
+																<span
+																	class="flex-1 font-sans text-[11px] text-ink-faint italic dark:text-dark-ink-faint"
+																	>no notes</span
+																>
 															{/if}
 															<button
 																onclick={() => deleteSubnote(ref.id, sn.id)}
 																disabled={deletingSubnoteId === sn.id}
-																title="Delete subnote"
+																title="Delete annotation"
 																class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-red-400"
 															>
 																{#if deletingSubnoteId === sn.id}
 																	<Spinner size="sm" />
 																{:else}
 																	<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-																		<line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-																		<line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+																		<line
+																			x1="18"
+																			y1="6"
+																			x2="6"
+																			y2="18"
+																			stroke="currentColor"
+																			stroke-width="2.5"
+																			stroke-linecap="round"
+																		/>
+																		<line
+																			x1="6"
+																			y1="6"
+																			x2="18"
+																			y2="18"
+																			stroke="currentColor"
+																			stroke-width="2.5"
+																			stroke-linecap="round"
+																		/>
 																	</svg>
 																{/if}
 															</button>
@@ -1139,7 +1213,11 @@
 													{/each}
 												</ul>
 											{:else if !loadingSubnotes.has(ref.id)}
-												<p class="font-sans text-[11px] italic text-ink-faint dark:text-dark-ink-faint">No subnotes yet.</p>
+												<p
+													class="font-sans text-[11px] text-ink-faint italic dark:text-dark-ink-faint"
+												>
+													No subnotes yet.
+												</p>
 											{/if}
 
 											{#if addingSubnoteRef === ref.id}
@@ -1180,8 +1258,24 @@
 													class="mt-1.5 flex items-center gap-1 font-sans text-[11px] text-ink-faint transition-colors hover:text-accent dark:text-dark-ink-faint dark:hover:text-accent"
 												>
 													<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-														<line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-														<line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+														<line
+															x1="12"
+															y1="5"
+															x2="12"
+															y2="19"
+															stroke="currentColor"
+															stroke-width="2.5"
+															stroke-linecap="round"
+														/>
+														<line
+															x1="5"
+															y1="12"
+															x2="19"
+															y2="12"
+															stroke="currentColor"
+															stroke-width="2.5"
+															stroke-linecap="round"
+														/>
 													</svg>
 													Add subnote
 												</button>
@@ -1226,11 +1320,28 @@
 												stroke-width="1.5"
 												stroke-linecap="round"
 											/>
-											<line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-											<line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+											<line
+												x1="16"
+												y1="13"
+												x2="8"
+												y2="13"
+												stroke="currentColor"
+												stroke-width="1.5"
+												stroke-linecap="round"
+											/>
+											<line
+												x1="16"
+												y1="17"
+												x2="8"
+												y2="17"
+												stroke="currentColor"
+												stroke-width="1.5"
+												stroke-linecap="round"
+											/>
 										</svg>
 										{#if ref.readingNotesDocId}
-											<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-accent"></span>
+											<span class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-accent"
+											></span>
 										{/if}
 									{/if}
 								</button>
@@ -1238,7 +1349,7 @@
 								{#if generatingPdfIds.has(ref.id)}
 									<span
 										title="Generating PDF…"
-										class="flex items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+										class="flex items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-ink-faint uppercase dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
 									>
 										<Spinner size="sm" />
 										PDF
@@ -1250,7 +1361,7 @@
 											target="_blank"
 											rel="noopener noreferrer"
 											title="Open PDF"
-											class="rounded-l rounded-r-none border border-r-0 border-green-300 bg-green-50 px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-green-700 transition-colors hover:bg-green-100 dark:border-green-700/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30"
+											class="rounded-l rounded-r-none border border-r-0 border-green-300 bg-green-50 px-1.5 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-green-700 uppercase transition-colors hover:bg-green-100 dark:border-green-700/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30"
 										>
 											PDF
 										</a>
@@ -1261,15 +1372,34 @@
 											class="rounded-l-none rounded-r border border-green-300 bg-green-50 px-1 py-0.5 text-green-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-green-700/50 dark:bg-green-900/20 dark:text-green-500 dark:hover:border-red-700/50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
 										>
 											<svg width="9" height="9" viewBox="0 0 24 24" fill="none">
-												<line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-												<line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+												<line
+													x1="18"
+													y1="6"
+													x2="6"
+													y2="18"
+													stroke="currentColor"
+													stroke-width="2.5"
+													stroke-linecap="round"
+												/>
+												<line
+													x1="6"
+													y1="6"
+													x2="18"
+													y2="18"
+													stroke="currentColor"
+													stroke-width="2.5"
+													stroke-linecap="round"
+												/>
 											</svg>
 										</button>
 									</div>
 								{:else}
 									<label
 										title={uploadingPdfId === ref.id ? 'Uploading…' : 'Attach PDF'}
-										class="flex cursor-pointer items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-ink-faint transition-colors hover:border-ink-muted hover:text-ink-muted dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint dark:hover:border-dark-ink-muted dark:hover:text-dark-ink-muted {uploadingPdfId === ref.id ? 'pointer-events-none opacity-60' : ''}"
+										class="flex cursor-pointer items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-ink-faint uppercase transition-colors hover:border-ink-muted hover:text-ink-muted dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint dark:hover:border-dark-ink-muted dark:hover:text-dark-ink-muted {uploadingPdfId ===
+										ref.id
+											? 'pointer-events-none opacity-60'
+											: ''}"
 									>
 										<input
 											type="file"
@@ -1336,7 +1466,6 @@
 								</button>
 							</div>
 						</div>
-
 					{/each}
 				</div>
 			{/if}
@@ -2362,9 +2491,7 @@
 					<div
 						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
 					>
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							URL → AI
-						</h2>
+						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">URL → AI</h2>
 						<button
 							onclick={closePanel}
 							aria-label="Close"
@@ -2384,7 +2511,8 @@
 						{#if !data.hasAiKey}
 							<div class="flex flex-col gap-3 py-2">
 								<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-									This feature requires an AI model. Configure your API key to extract metadata from URLs.
+									This feature requires an AI model. Configure your API key to extract metadata from
+									URLs.
 								</p>
 								<a
 									href="/settings#ai"
@@ -2394,92 +2522,92 @@
 								</a>
 							</div>
 						{:else}
-						<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-							Paste the URL of a webpage. Your AI model will extract the bibliographic metadata.
-							The page must be publicly accessible.
-						</p>
-						<div class="flex gap-2">
-							<input
-								type="url"
-								bind:value={urlInput}
-								placeholder="https://..."
-								class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-								onkeydown={(e) => e.key === 'Enter' && runUrlLookup()}
-							/>
-							<button
-								onclick={runUrlLookup}
-								disabled={urlLoading || !urlInput.trim()}
-								class="rounded-md bg-accent px-3 py-2 font-sans text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
-							>
-								{urlLoading ? '…' : 'Extract'}
-							</button>
-						</div>
-
-						{#if urlLoading}
 							<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-								Fetching page and extracting metadata…
+								Paste the URL of a webpage. Your AI model will extract the bibliographic metadata.
+								The page must be publicly accessible.
 							</p>
-						{/if}
-
-						{#if urlError}
-							<p
-								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-							>
-								{urlError}
-							</p>
-						{/if}
-
-						{#if urlResult}
-							<div
-								class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-							>
-								<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
-									{urlResult.title}
-								</p>
-								{#if urlResult.authors.length}
-									<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-										{urlResult.authors.map((a) => `${a.last}, ${a.first}`).join(' · ')}
-									</p>
-								{/if}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									{[urlResult.journal, urlResult.year].filter(Boolean).join(', ')}
-								</p>
-								<p class="font-mono text-[10px] text-accent">@{urlResult.citeKey}</p>
-								<p class="truncate font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
-									{urlResult.url}
-								</p>
+							<div class="flex gap-2">
+								<input
+									type="url"
+									bind:value={urlInput}
+									placeholder="https://..."
+									class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+									onkeydown={(e) => e.key === 'Enter' && runUrlLookup()}
+								/>
+								<button
+									onclick={runUrlLookup}
+									disabled={urlLoading || !urlInput.trim()}
+									class="rounded-md bg-accent px-3 py-2 font-sans text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
+								>
+									{urlLoading ? '…' : 'Extract'}
+								</button>
 							</div>
-							<p class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">
-								Review and edit the fields after adding if needed.
-							</p>
-							<label class="flex cursor-pointer items-center gap-2">
-								<input
-									type="checkbox"
-									bind:checked={urlSavePdf}
-									class="h-3.5 w-3.5 rounded accent-accent"
-								/>
-								<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-									Save a PDF snapshot
-								</span>
-							</label>
-							<label class="flex cursor-pointer items-center gap-2">
-								<input
-									type="checkbox"
-									bind:checked={urlImportDocument}
-									class="h-3.5 w-3.5 rounded accent-accent"
-								/>
-								<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-									Import page as document
-								</span>
-							</label>
-							<button
-								onclick={acceptUrlResult}
-								disabled={urlImportingDoc}
-								class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
-							>
-								{urlImportingDoc ? 'Importing document…' : 'Add to bibliography'}
-							</button>
-						{/if}
+
+							{#if urlLoading}
+								<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+									Fetching page and extracting metadata…
+								</p>
+							{/if}
+
+							{#if urlError}
+								<p
+									class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
+								>
+									{urlError}
+								</p>
+							{/if}
+
+							{#if urlResult}
+								<div
+									class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+								>
+									<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+										{urlResult.title}
+									</p>
+									{#if urlResult.authors.length}
+										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+											{urlResult.authors.map((a) => `${a.last}, ${a.first}`).join(' · ')}
+										</p>
+									{/if}
+									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+										{[urlResult.journal, urlResult.year].filter(Boolean).join(', ')}
+									</p>
+									<p class="font-mono text-[10px] text-accent">@{urlResult.citeKey}</p>
+									<p class="truncate font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+										{urlResult.url}
+									</p>
+								</div>
+								<p class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">
+									Review and edit the fields after adding if needed.
+								</p>
+								<label class="flex cursor-pointer items-center gap-2">
+									<input
+										type="checkbox"
+										bind:checked={urlSavePdf}
+										class="h-3.5 w-3.5 rounded accent-accent"
+									/>
+									<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+										Save a PDF snapshot
+									</span>
+								</label>
+								<label class="flex cursor-pointer items-center gap-2">
+									<input
+										type="checkbox"
+										bind:checked={urlImportDocument}
+										class="h-3.5 w-3.5 rounded accent-accent"
+									/>
+									<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+										Import page as document
+									</span>
+								</label>
+								<button
+									onclick={acceptUrlResult}
+									disabled={urlImportingDoc}
+									class="w-full rounded-md bg-accent px-3 py-2 font-sans text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-50"
+								>
+									{urlImportingDoc ? 'Importing document…' : 'Add to bibliography'}
+								</button>
+							{/if}
 						{/if}
 					</div>
 				</div>
@@ -2610,116 +2738,143 @@
 				</div>
 			</div>
 		{:else if panel === 'link-library'}
-		<!-- ── Link from library panel ───────────────────────────────────── -->
-		<div class="w-full max-w-sm shrink-0">
-			<div
-				class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-			>
+			<!-- ── Link from library panel ───────────────────────────────────── -->
+			<div class="w-full max-w-sm shrink-0">
 				<div
-					class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
+					class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
 				>
-					<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-						Link from library
-					</h2>
-					<button
-						onclick={closePanel}
-						aria-label="Close"
-						class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					<div
+						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
 					>
-						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-							<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-						</svg>
-					</button>
-				</div>
+						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+							Link from library
+						</h2>
+						<button
+							onclick={closePanel}
+							aria-label="Close"
+							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						>
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+								<path
+									d="M1 1l12 12M13 1L1 13"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+						</button>
+					</div>
 
-				<div class="space-y-3 px-5 py-4">
-					{#if llLoading}
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Loading library…</p>
-					{:else if llRefs.length === 0 && !llError}
-						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-							No other references in your library to link.
-						</p>
-					{:else}
-						{#if llProjects.length > 0 || llRefs.some(r => r.projectIds.length === 0)}
-							<select
-								bind:value={llFilterProjectId}
-								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							>
-								<option value="">All library</option>
-								{#each llProjects as p (p.id)}
-									<option value={p.id}>{p.title}</option>
-								{/each}
-								<option value="__unlinked__">Sin proyecto</option>
-							</select>
-						{/if}
-						<input
-							type="search"
-							bind:value={llSearch}
-							placeholder="Search by author, title, year…"
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						/>
-						<div class="flex items-center justify-between">
-							<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-								{llSelectedIds.size} / {llFiltered().length} selected
-							</span>
-							<button
-								type="button"
-								onclick={llToggleAll}
-								class="font-sans text-xs text-accent hover:underline"
-							>
-								{llSelectedIds.size === llFiltered().length && llFiltered().length > 0 ? 'Deselect all' : 'Select all'}
-							</button>
-						</div>
-						<div class="max-h-72 overflow-y-auto rounded-md border border-paper-border dark:border-dark-paper-border">
-							{#each llFiltered() as ref (ref.id)}
-								{@const author = (ref.authors as Author[])[0]?.last ?? ''}
-								{@const isOrphan = ref.projectIds.length === 0}
-								<div class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2.5 last:border-b-0 hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui">
-									<label class="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5">
-										<input
-											type="checkbox"
-											checked={llSelectedIds.has(ref.id)}
-											onchange={() => {
-												const next = new Set(llSelectedIds);
-												if (next.has(ref.id)) next.delete(ref.id);
-												else next.add(ref.id);
-												llSelectedIds = next;
-											}}
-											class="mt-0.5 shrink-0 accent-accent"
-										/>
-										<div class="min-w-0">
-											<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
-												{ref.title}
-											</p>
-											<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
-												{[author, ref.year].filter(Boolean).join(', ')}
-												<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
-												{#if isOrphan}
-													<span class="ml-1 italic opacity-60">sin proyecto</span>
-												{/if}
-											</p>
-										</div>
-									</label>
-									{#if isOrphan}
-										<button
-											type="button"
-											onclick={() => llDeleteRef(ref.id)}
-											disabled={llDeleting.has(ref.id)}
-											aria-label="Borrar referencia"
-											class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
-										>
-											<svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-												<path d="M2 4h10M5 4V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V4M6 7v3M8 7v3M3 4l.8 7.2A1 1 0 0 0 4.8 12h4.4a1 1 0 0 0 1-.8L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-											</svg>
-										</button>
-									{/if}
-								</div>
-							{/each}
-							{#if llFiltered().length === 0}
-								<p class="px-3 py-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									No results for "{llSearch}"
-								</p>
+					<div class="space-y-3 px-5 py-4">
+						{#if llLoading}
+							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								Loading library…
+							</p>
+						{:else if llRefs.length === 0 && !llError}
+							<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+								No other references in your library to link.
+							</p>
+						{:else}
+							{#if llProjects.length > 0 || llRefs.some((r) => r.projectIds.length === 0)}
+								<select
+									bind:value={llFilterProjectId}
+									class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								>
+									<option value="">All library</option>
+									{#each llProjects as p (p.id)}
+										<option value={p.id}>{p.title}</option>
+									{/each}
+									<option value="__unlinked__">Sin proyecto</option>
+								</select>
 							{/if}
+							<input
+								type="search"
+								bind:value={llSearch}
+								placeholder="Search by author, title, year…"
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							/>
+							<div class="flex items-center justify-between">
+								<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+									{llSelectedIds.size} / {llFiltered().length} selected
+								</span>
+								<button
+									type="button"
+									onclick={llToggleAll}
+									class="font-sans text-xs text-accent hover:underline"
+								>
+									{llSelectedIds.size === llFiltered().length && llFiltered().length > 0
+										? 'Deselect all'
+										: 'Select all'}
+								</button>
+							</div>
+							<div
+								class="max-h-72 overflow-y-auto rounded-md border border-paper-border dark:border-dark-paper-border"
+							>
+								{#each llFiltered() as ref (ref.id)}
+									{@const author = (ref.authors as Author[])[0]?.last ?? ''}
+									{@const isOrphan = ref.projectIds.length === 0}
+									<div
+										class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2.5 last:border-b-0 hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
+									>
+										<label class="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5">
+											<input
+												type="checkbox"
+												checked={llSelectedIds.has(ref.id)}
+												onchange={() => {
+													const next = new Set(llSelectedIds);
+													if (next.has(ref.id)) next.delete(ref.id);
+													else next.add(ref.id);
+													llSelectedIds = next;
+												}}
+												class="mt-0.5 shrink-0 accent-accent"
+											/>
+											<div class="min-w-0">
+												<p
+													class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink"
+												>
+													{ref.title}
+												</p>
+												<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+													{[author, ref.year].filter(Boolean).join(', ')}
+													<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
+													{#if isOrphan}
+														<span class="ml-1 italic opacity-60">sin proyecto</span>
+													{/if}
+												</p>
+											</div>
+										</label>
+										{#if isOrphan}
+											<button
+												type="button"
+												onclick={() => llDeleteRef(ref.id)}
+												disabled={llDeleting.has(ref.id)}
+												aria-label="Borrar referencia"
+												class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
+											>
+												<svg
+													width="12"
+													height="12"
+													viewBox="0 0 14 14"
+													fill="none"
+													aria-hidden="true"
+												>
+													<path
+														d="M2 4h10M5 4V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V4M6 7v3M8 7v3M3 4l.8 7.2A1 1 0 0 0 4.8 12h4.4a1 1 0 0 0 1-.8L11 4"
+														stroke="currentColor"
+														stroke-width="1.3"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													/>
+												</svg>
+											</button>
+										{/if}
+									</div>
+								{/each}
+								{#if llFiltered().length === 0}
+									<p class="px-3 py-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+										No results for "{llSearch}"
+									</p>
+								{/if}
 							</div>
 						{/if}
 
@@ -2730,10 +2885,20 @@
 								class="flex w-full items-center gap-1.5 font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 							>
 								<svg
-									width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"
+									width="10"
+									height="10"
+									viewBox="0 0 10 10"
+									fill="none"
+									aria-hidden="true"
 									class="shrink-0 transition-transform {llShowLinked ? 'rotate-90' : ''}"
 								>
-									<path d="M3 1.5l4 3.5-4 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+									<path
+										d="M3 1.5l4 3.5-4 3.5"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
 								</svg>
 								Already in this project ({references.length})
 							</button>
@@ -2741,9 +2906,13 @@
 								<div class="rounded-md border border-paper-border dark:border-dark-paper-border">
 									{#each references as ref (ref.id)}
 										{@const author = (ref.authors as Author[])[0]?.last ?? ''}
-										<div class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2 last:border-b-0 opacity-50 dark:border-dark-paper-border">
+										<div
+											class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2 opacity-50 last:border-b-0 dark:border-dark-paper-border"
+										>
 											<div class="min-w-0">
-												<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+												<p
+													class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink"
+												>
 													{ref.title}
 												</p>
 												<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
@@ -2758,13 +2927,17 @@
 						{/if}
 
 						{#if llError}
-							<p class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
+							<p
+								class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
+							>
 								{llError}
 							</p>
 						{/if}
 					</div>
 
-					<div class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border">
+					<div
+						class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border"
+					>
 						<button
 							onclick={closePanel}
 							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
@@ -2776,7 +2949,9 @@
 							disabled={llLinking || llSelectedIds.size === 0}
 							class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 						>
-							{llLinking ? 'Linking…' : `Link${llSelectedIds.size > 0 ? ` ${llSelectedIds.size}` : ''}`}
+							{llLinking
+								? 'Linking…'
+								: `Link${llSelectedIds.size > 0 ? ` ${llSelectedIds.size}` : ''}`}
 						</button>
 					</div>
 				</div>
