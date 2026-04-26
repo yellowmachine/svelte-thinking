@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { untrack, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { trpc } from '$lib/utils/trpc';
 	import ActionCard from '$lib/components/ai/ActionCard.svelte';
 	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
+	import AiConversationSidebar from '$lib/components/ai/AiConversationSidebar.svelte';
+	import AiPrivacyNotice from '$lib/components/ai/AiPrivacyNotice.svelte';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
@@ -54,7 +56,7 @@
 
 	let messagesEnd = $state<HTMLDivElement | undefined>(undefined);
 
-	async function selectConversation(conv: Conversation) {
+	async function selectConversation(conv: { id: string }) {
 		if (loadingConv) return;
 		loadingConv = true;
 		try {
@@ -233,10 +235,6 @@
 		}
 	}
 
-	function formatDate(date: Date | string) {
-		return new Date(date).toLocaleDateString('es', { day: 'numeric', month: 'short' });
-	}
-
 	// ── Agent model selector ─────────────────────────────────────────────────
 	// Models available for the agent task: must support tool calling
 	const agentModels = MODELS.filter((m) => m.toolCalling && (MODEL_RECOMMENDATIONS[m.id]?.includes('agent') ?? true));
@@ -266,164 +264,29 @@
 		loadAiConfig();
 	});
 
-	// ── Agent system prompt editor ────────────────────────────────────────────
-	let promptText = $state(untrack(() => data.project.agentSystemPrompt ?? ''));
-	let promptSaving = $state(false);
-	let promptSaved = $state(false);
-	let showPromptEditor = $state(false);
-
-	async function savePrompt() {
-		promptSaving = true;
-		promptSaved = false;
-		try {
-			await trpc.projects.updateAgentPrompt.mutate({
-				projectId: data.project.id,
-				agentSystemPrompt: promptText.trim() || null
-			});
-			promptSaved = true;
-			setTimeout(() => { promptSaved = false; }, 2000);
-		} finally {
-			promptSaving = false;
-		}
-	}
-
 	// ── Markdown rendering ────────────────────────────────────────────────────
 	function renderMd(text: string): string {
 		const raw = marked.parse(text) as string;
 		return typeof DOMPurify.sanitize === 'function' ? DOMPurify.sanitize(raw) : raw;
 	}
 
-	// ── Privacy onboarding ────────────────────────────────────────────────────
-	const PRIVACY_KEY = 'scholio_ai_privacy_seen';
-	let showPrivacyNotice = $state(
-		typeof localStorage !== 'undefined' && !localStorage.getItem(PRIVACY_KEY)
-	);
-
-	function dismissPrivacyNotice() {
-		localStorage.setItem(PRIVACY_KEY, '1');
-		showPrivacyNotice = false;
-	}
 </script>
 
 {#if data.project}
 <div class="flex h-full overflow-hidden">
 	<!-- Sidebar: conversation list -->
-	<aside
-		class="flex w-64 shrink-0 flex-col border-r border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
-			<a
-				href="/projects/{data.project.id}"
-				class="flex items-center gap-1.5 font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-			>
-				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-				</svg>
-				{data.project.title}
-			</a>
-			<button
-				type="button"
-				onclick={newConversation}
-				title="New conversation"
-				class="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-				</svg>
-			</button>
-		</div>
-
-		<div class="flex-1 overflow-y-auto py-2">
-			{#if conversations.length === 0}
-				<p class="px-4 py-6 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Sin conversaciones
-				</p>
-			{:else}
-				{#each conversations as conv (conv.id)}
-					<div
-						class="group relative flex items-start transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {activeConvId === conv.id ? 'bg-paper-ui dark:bg-dark-paper-ui' : ''}"
-					>
-						<button
-							type="button"
-							onclick={() => selectConversation(conv)}
-							class="flex min-w-0 flex-1 flex-col px-4 py-2.5 text-left"
-						>
-							<span class="block truncate font-sans text-sm text-ink dark:text-dark-ink">
-								{conv.title ?? 'Conversation'}
-							</span>
-							<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								{formatDate(conv.updatedAt)}
-							</span>
-						</button>
-						<button
-							type="button"
-							aria-label="Delete conversation"
-							onclick={(e) => requestDeleteConversation(conv.id, e)}
-							class="mr-2 mt-2.5 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-dark-ink-faint"
-						>
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</button>
-					</div>
-				{/each}
-			{/if}
-		</div>
-
-		{#if data.isOwner}
-			<div class="shrink-0 border-t border-paper-border dark:border-dark-paper-border">
-				<button
-					type="button"
-					onclick={() => (showPromptEditor = !showPromptEditor)}
-					class="flex w-full items-center justify-between px-4 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
-				>
-					<span class="flex items-center gap-1.5">
-						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.5"/>
-							<path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.5"/>
-						</svg>
-						System prompt
-					</span>
-					<svg
-						width="12"
-						height="12"
-						viewBox="0 0 24 24"
-						fill="none"
-						aria-hidden="true"
-						class="transition-transform {showPromptEditor ? 'rotate-180' : ''}"
-					>
-						<path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-					</svg>
-				</button>
-				{#if showPromptEditor}
-					<div class="px-4 pb-4">
-						<p class="mb-2 font-sans text-[11px] leading-relaxed text-ink-faint dark:text-dark-ink-faint">
-							Custom instructions prepended to the agent's base prompt. Only you can see or edit this.
-						</p>
-						<textarea
-							bind:value={promptText}
-							placeholder="E.g. You are an assistant specialized in economics research. Always cite sources when possible."
-							rows="6"
-							class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						></textarea>
-						<div class="mt-2 flex items-center justify-end gap-2">
-							{#if promptSaved}
-								<span class="font-sans text-xs text-green-600 dark:text-green-400">Saved</span>
-							{/if}
-							<button
-								type="button"
-								onclick={savePrompt}
-								disabled={promptSaving}
-								class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
-							>
-								{promptSaving ? 'Saving…' : 'Save'}
-							</button>
-						</div>
-					</div>
-				{/if}
-			</div>
-		{/if}
-	</aside>
+	<AiConversationSidebar
+		{conversations}
+		{activeConvId}
+		projectId={data.project.id}
+		projectTitle={data.project.title}
+		isOwner={data.isOwner}
+		{loadingConv}
+		agentSystemPrompt={data.project.agentSystemPrompt ?? null}
+		onselect={selectConversation}
+		onnew={newConversation}
+		ondeleteconversation={requestDeleteConversation}
+	/>
 
 	<!-- Main chat area -->
 	<div class="flex flex-1 flex-col overflow-hidden">
@@ -677,48 +540,7 @@
 </div>
 {/if}
 
-{#if showPrivacyNotice}
-	<!-- Privacy onboarding modal -->
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="privacy-notice-title"
-	>
-		<div class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
-			<div class="flex items-start gap-3">
-				<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950">
-					<svg class="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-					</svg>
-				</div>
-				<div>
-					<h2 id="privacy-notice-title" class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-						Tus documentos son privados
-					</h2>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						When you use the AI assistant, the content of your documents is sent to OpenRouter <strong class="font-medium text-ink dark:text-dark-ink">only to process your query</strong>.
-					</p>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						None of these providers use data sent via API to train their models. Your research stays within the query.
-					</p>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-						You can review the privacy policy at
-						<a href="https://openrouter.ai/privacy" target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2">OpenRouter</a>.
-					</p>
-				</div>
-			</div>
-			<div class="mt-5 flex justify-end">
-				<button
-					onclick={dismissPrivacyNotice}
-					class="rounded-lg bg-accent px-5 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-				>
-					Entendido
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
+<AiPrivacyNotice />
 
 <SafeDeleteDialog
 	open={!!convToDelete}
