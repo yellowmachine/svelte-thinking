@@ -98,11 +98,11 @@
 			githubLinked={data.githubLinked}
 			orcid={data.orcid}
 			orcidVerified={data.orcidVerified}
-			orcidStatus={data.orcidStatus}
+			orcidStatus={data.orcidStatus as 'connected' | 'error' | null}
 			isAdmin={data.isAdmin}
 		/>
 	{:else if activeTab === 'ai'}
-		<AiSettingsTab openrouterStatus={data.openrouterStatus} />
+		<AiSettingsTab openrouterStatus={data.openrouterStatus as 'success' | 'error' | null} />
 	{:else if activeTab === 'security'}
 		<SecurityTab twoFactorEnabled={data.user.twoFactorEnabled} />
 	{:else if activeTab === 'appearance'}

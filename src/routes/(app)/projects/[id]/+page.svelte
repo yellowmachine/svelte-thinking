@@ -7,6 +7,11 @@
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
 	import RequirementsProgress from '$lib/components/projects/RequirementsProgress.svelte';
+	import UrlImportModal from '$lib/components/projects/UrlImportModal.svelte';
+	import EpubImportModal from '$lib/components/projects/EpubImportModal.svelte';
+	import ContextPickerModal from '$lib/components/projects/ContextPickerModal.svelte';
+	import UseTemplateModal from '$lib/components/projects/UseTemplateModal.svelte';
+	import SaveAsTemplateModal from '$lib/components/projects/SaveAsTemplateModal.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import TagManager from '$lib/components/projects/TagManager.svelte';
 	import { trpc } from '$lib/utils/trpc';
@@ -171,213 +176,9 @@
 	let showCreateDoc = $state(false);
 	let showGenerateDraft = $state(false);
 
-	// EPUB import
 	let showEpubModal = $state(false);
-	let epubUrl = $state('');
-	let epubFile = $state<File | null>(null);
-	let epubImporting = $state(false);
-	let epubError = $state('');
-	let epubRefSearch = $state('');
-	let epubRefResults = $state<{ id: string; citeKey: string; title: string; year: string }[]>([]);
-	let epubRefLoading = $state(false);
-	let epubSelectedRef = $state<{ id: string; citeKey: string; title: string } | null>(null);
-
-	async function searchEpubRefs(q: string) {
-		if (!q.trim()) { epubRefResults = []; return; }
-		epubRefLoading = true;
-		try {
-			const all = await trpc.references.listAll.query();
-			const lower = q.toLowerCase();
-			epubRefResults = all
-				.filter((r) => r.title.toLowerCase().includes(lower) || r.citeKey.toLowerCase().includes(lower) || (r.authors as {first:string;last:string}[]).some((a) => a.last.toLowerCase().includes(lower)))
-				.slice(0, 8)
-				.map((r) => ({ id: r.id, citeKey: r.citeKey, title: r.title, year: r.year ?? '' }));
-		} finally {
-			epubRefLoading = false;
-		}
-	}
-
-	// URL import
-	type UrlAiResult = {
-		citeKey: string; type: string; title: string;
-		authors: { first: string; last: string }[];
-		year: string | null; abstract: string | null;
-		journal: string | null; volume: string | null; issue: string | null;
-		pages: string | null; publisher: string | null; booktitle: string | null;
-		school: string | null; institution: string | null; url: string;
-	};
-	const REF_TYPES = ['article','book','inproceedings','incollection','phdthesis','mastersthesis','techreport','misc','newspaper','film','interview'] as const;
-
 	let showUrlModal = $state(false);
-	let urlImportUrl = $state('');
-	let urlStep = $state<'input' | 'extracting' | 'review'>('input');
-	let urlAiResult = $state<UrlAiResult | null>(null);
-	let urlImportError = $state('');
-	let urlImporting = $state(false);
 
-	// Editable fields in review step
-	let urlEditTitle = $state('');
-	let urlEditCiteKey = $state('');
-	let urlEditYear = $state('');
-	let urlEditType = $state('');
-	let urlEditAuthors = $state(''); // "Last, First" one per line
-
-	// Fallback (no AI): manual title + optional ref picker
-	let urlImportTitle = $state('');
-	let urlRefSearch = $state('');
-	let urlRefResults = $state<{ id: string; citeKey: string; title: string; year: string }[]>([]);
-	let urlRefLoading = $state(false);
-	let urlSelectedRef = $state<{ id: string; citeKey: string; title: string } | null>(null);
-
-	async function searchUrlRefs(q: string) {
-		if (!q.trim()) { urlRefResults = []; return; }
-		urlRefLoading = true;
-		try {
-			const all = await trpc.references.listAll.query();
-			const lower = q.toLowerCase();
-			urlRefResults = all
-				.filter((r) => r.title.toLowerCase().includes(lower) || r.citeKey.toLowerCase().includes(lower) || (r.authors as {first:string;last:string}[]).some((a) => a.last.toLowerCase().includes(lower)))
-				.slice(0, 8)
-				.map((r) => ({ id: r.id, citeKey: r.citeKey, title: r.title, year: r.year ?? '' }));
-		} finally {
-			urlRefLoading = false;
-		}
-	}
-
-	function resetUrlModal() {
-		showUrlModal = false;
-		urlImportUrl = '';
-		urlStep = 'input';
-		urlAiResult = null;
-		urlImportError = '';
-		urlImportTitle = '';
-		urlSelectedRef = null;
-		urlRefSearch = '';
-		urlRefResults = [];
-	}
-
-	async function runUrlAiExtract() {
-		if (!urlImportUrl.trim()) return;
-		urlStep = 'extracting';
-		urlImportError = '';
-		try {
-			const result = (await trpc.references.fetchUrl.query({
-				url: urlImportUrl.trim(),
-				projectId: data.project.id
-			})) as UrlAiResult;
-			urlAiResult = result;
-			urlEditTitle = result.title;
-			urlEditCiteKey = result.citeKey;
-			urlEditYear = result.year ?? '';
-			urlEditType = result.type;
-			urlEditAuthors = result.authors.map((a) => `${a.last}, ${a.first}`.trim().replace(/,\s*$/, '')).join('\n');
-			urlStep = 'review';
-		} catch (e) {
-			urlImportError = e instanceof Error ? e.message : 'No se pudo extraer metadata de la URL.';
-			urlStep = 'input';
-		}
-	}
-
-	function parseAuthors(raw: string): { first: string; last: string }[] {
-		return raw.split('\n').map((line) => {
-			const [last = '', first = ''] = line.split(',').map((s) => s.trim());
-			return { first, last };
-		}).filter((a) => a.last);
-	}
-
-	async function startUrlImport() {
-		urlImporting = true;
-		urlImportError = '';
-		try {
-			if (urlStep === 'review' && urlAiResult) {
-				// AI path: create reference first, then import doc
-				const newRef = await trpc.references.create.mutate({
-					projectId: data.project.id,
-					reference: {
-						citeKey: urlEditCiteKey.trim(),
-						type: urlEditType as never,
-						title: urlEditTitle.trim(),
-						authors: parseAuthors(urlEditAuthors),
-						editors: [],
-						year: urlEditYear.trim(),
-						abstract: urlAiResult.abstract ?? '',
-						journal: urlAiResult.journal ?? '',
-						volume: urlAiResult.volume ?? '',
-						issue: urlAiResult.issue ?? '',
-						pages: urlAiResult.pages ?? '',
-						publisher: urlAiResult.publisher ?? '',
-						booktitle: urlAiResult.booktitle ?? '',
-						school: urlAiResult.school ?? '',
-						institution: urlAiResult.institution ?? '',
-						url: urlAiResult.url,
-						doi: '', note: '', isbn: '', address: '', edition: '',
-						series: '', reportNumber: '', organization: '', extra: {}
-					}
-				});
-				const { docId } = await trpc.references.importDocumentFromUrl.mutate({
-					url: urlImportUrl.trim(),
-					projectId: data.project.id,
-					title: urlEditTitle.trim(),
-					referenceId: newRef.id
-				});
-				resetUrlModal();
-				await goto(`/projects/${data.project.id}/documents/${docId}`);
-			} else {
-				// Fallback path: no AI
-				if (!urlImportUrl.trim() || !urlImportTitle.trim()) return;
-				const { docId } = await trpc.references.importDocumentFromUrl.mutate({
-					url: urlImportUrl.trim(),
-					projectId: data.project.id,
-					title: urlImportTitle.trim(),
-					referenceId: urlSelectedRef?.id
-				});
-				resetUrlModal();
-				await goto(`/projects/${data.project.id}/documents/${docId}`);
-			}
-		} catch (e) {
-			urlImportError = e instanceof Error ? e.message : 'Import failed.';
-		} finally {
-			urlImporting = false;
-		}
-	}
-
-	async function startEpubImport() {
-		const hasUrl = epubUrl.trim().length > 0;
-		const hasFile = epubFile !== null;
-		if (!hasUrl && !hasFile) return;
-		epubImporting = true;
-		epubError = '';
-		try {
-			let url = epubUrl.trim();
-			if (hasFile) {
-				const fd = new FormData();
-				fd.append('file', epubFile!);
-				const res = await fetch(`/api/projects/${data.project.id}/epub`, { method: 'POST', body: fd });
-				if (!res.ok) {
-					const body = await res.json().catch(() => ({}));
-					throw new Error(body.message ?? `Upload failed (${res.status})`);
-				}
-				const data2 = await res.json();
-				url = data2.url;
-			}
-			await trpc.projects.importEpub.mutate({ projectId: data.project.id, url, referenceId: epubSelectedRef?.id });
-			showEpubModal = false;
-			epubUrl = '';
-			epubFile = null;
-			epubSelectedRef = null;
-			epubRefSearch = '';
-			epubRefResults = [];
-			// Poll until isImporting clears
-			const poll = setInterval(async () => {
-				await invalidateAll();
-				if (!data.project.isImporting) clearInterval(poll);
-			}, 3000);
-		} catch (e) {
-			epubError = e instanceof Error ? e.message : 'Import failed.';
-		} finally {
-			epubImporting = false;
-		}
-	}
 	let newDocTitle = $state('');
 	let newDocType = $state<DocumentType>('paper');
 	let creatingDoc = $state(false);
@@ -559,61 +360,19 @@
 	);
 
 	// ── Templates ─────────────────────────────────────────────────────────────
-	let showUseTemplate = $state<string | null>(null); // templateDoc.id being used
+	let showUseTemplate = $state<string | null>(null);
 	let fromTemplateTitle = $state('');
-	let fromTemplateCreating = $state(false);
-	let fromTemplateError = $state('');
-
-	let saveAsTemplateDocId = $state<string | null>(null); // doc.id being saved as template
+	let saveAsTemplateDocId = $state<string | null>(null);
 	let templateTitle = $state('');
-	let savingTemplate = $state(false);
-	let saveTemplateError = $state('');
 
 	function openUseTemplate(templateId: string, templateName: string) {
 		showUseTemplate = templateId;
 		fromTemplateTitle = templateName.replace(/^Template:\s*/i, '').trim();
-		fromTemplateError = '';
 	}
 
 	function openSaveAsTemplate(docId: string, docTitle: string) {
 		saveAsTemplateDocId = docId;
 		templateTitle = `Template: ${docTitle}`;
-		saveTemplateError = '';
-	}
-
-	async function createFromTemplate() {
-		if (!fromTemplateTitle.trim() || !showUseTemplate) return;
-		fromTemplateCreating = true;
-		fromTemplateError = '';
-		try {
-			const doc = await trpc.documents.createFromTemplate.mutate({
-				templateDocId: showUseTemplate,
-				projectId: data.project.id,
-				title: fromTemplateTitle.trim()
-			});
-			window.location.href = `/projects/${data.project.id}/documents/${doc.id}`;
-		} catch (e) {
-			fromTemplateError = e instanceof Error ? e.message : 'Error creating document';
-			fromTemplateCreating = false;
-		}
-	}
-
-	async function saveAsTemplate() {
-		if (!templateTitle.trim() || !saveAsTemplateDocId) return;
-		savingTemplate = true;
-		saveTemplateError = '';
-		try {
-			await trpc.documents.saveAsTemplate.mutate({
-				documentId: saveAsTemplateDocId,
-				templateTitle: templateTitle.trim()
-			});
-			saveAsTemplateDocId = null;
-			await invalidateAll();
-		} catch (e) {
-			saveTemplateError = e instanceof Error ? e.message : 'Error saving template';
-		} finally {
-			savingTemplate = false;
-		}
 	}
 
 	async function reloadInvitations() {
@@ -714,36 +473,15 @@
 		sourceProjectId: string;
 		sourceProjectTitle: string;
 	};
-	type AvailableDoc = {
-		id: string;
-		title: string;
-		type: string;
-		projectId: string;
-		isPublic: boolean;
-		projectTitle: string | null;
-	};
 
 	let contextLinks = $state<ContextLink[]>([]);
 	let showContextPicker = $state(false);
-	let availableDocs = $state<AvailableDoc[]>([]);
-	let contextPickerSearch = $state('');
-	let loadingAvailable = $state(false);
 
 	async function loadContextLinks() {
 		try {
 			contextLinks = await trpc.contextLinks.list.query(data.project.id);
 		} catch {
 			/* non-critical */
-		}
-	}
-
-	async function openContextPicker() {
-		showContextPicker = true;
-		loadingAvailable = true;
-		try {
-			availableDocs = await trpc.contextLinks.listAvailable.query(data.project.id);
-		} finally {
-			loadingAvailable = false;
 		}
 	}
 
@@ -756,43 +494,6 @@
 		await trpc.contextLinks.remove.mutate(linkId);
 		contextLinks = contextLinks.filter((l) => l.id !== linkId);
 	}
-
-	const filteredAvailable = $derived(() => {
-		const q = contextPickerSearch.toLowerCase().trim();
-		const linkedIds = new Set(contextLinks.map((l) => l.linkedDocumentId));
-		const unlinked = availableDocs.filter((d) => !linkedIds.has(d.id));
-		if (!q) return unlinked;
-		return unlinked.filter(
-			(d) => d.title.toLowerCase().includes(q) || (d.projectTitle?.toLowerCase() ?? '').includes(q)
-		);
-	});
-
-	// Group available docs: own projects grouped by name, then public docs from others
-	const availableByProject = $derived(() => {
-		const groups = new Map<string, { title: string; docs: AvailableDoc[] }>();
-		const publicOthers: AvailableDoc[] = [];
-
-		for (const doc of filteredAvailable()) {
-			if (doc.projectTitle !== null) {
-				if (!groups.has(doc.projectId)) {
-					groups.set(doc.projectId, { title: doc.projectTitle, docs: [] });
-				}
-				groups.get(doc.projectId)!.docs.push(doc);
-			} else {
-				publicOthers.push(doc);
-			}
-		}
-
-		const result = [...groups.entries()].map(([id, g]) => ({ id, ...g }));
-		if (publicOthers.length > 0) {
-			result.push({
-				id: '__public__',
-				title: 'Public documents from other users',
-				docs: publicOthers
-			});
-		}
-		return result;
-	});
 
 	$effect(() => {
 		loadContextLinks();
@@ -984,7 +685,7 @@
 				{/if}
 				{#if data.isOwner}
 					<button
-						onclick={() => { showUrlModal = true; urlImportError = ''; }}
+						onclick={() => { showUrlModal = true; }}
 						title="Import URL"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
@@ -994,7 +695,7 @@
 						URL
 					</button>
 					<button
-						onclick={() => { showEpubModal = true; epubError = ''; }}
+						onclick={() => { showEpubModal = true; }}
 						title="Import EPUB book"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
@@ -1060,280 +761,20 @@
 		</div>
 	{/if}
 
-	<!-- URL import modal -->
 	{#if showUrlModal}
-		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
-			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="absolute inset-0" onclick={resetUrlModal}></div>
-			<div class="relative w-full max-w-lg rounded-2xl border border-paper-border bg-paper p-6 shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper">
-
-				{#if urlStep === 'input' || urlStep === 'extracting'}
-					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import URL</h2>
-					<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Pega la URL de un artículo o página web.
-					</p>
-
-					<input
-						type="url"
-						bind:value={urlImportUrl}
-						placeholder="https://example.org/article"
-						autofocus
-						onkeydown={(e) => { if (e.key === 'Enter' && data.hasAiKey) runUrlAiExtract(); }}
-						class="mb-3 w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-					/>
-
-					{#if !data.hasAiKey}
-						<!-- Fallback: manual title + optional ref picker -->
-						<div class="mb-3">
-							<p class="mb-1.5 font-sans text-xs font-medium text-ink dark:text-dark-ink">
-								Referencia bibliográfica <span class="font-normal text-ink-faint">(opcional)</span>
-							</p>
-							{#if urlSelectedRef}
-								<div class="flex items-center justify-between rounded-md border border-accent/40 bg-accent/5 px-3 py-2 dark:border-accent/30 dark:bg-accent/10">
-									<div class="min-w-0">
-										<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{urlSelectedRef.title}</p>
-										<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{urlSelectedRef.citeKey}</p>
-									</div>
-									<button type="button" onclick={() => { urlSelectedRef = null; urlRefSearch = ''; urlRefResults = []; }} class="ml-2 shrink-0 rounded p-0.5 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink">✕</button>
-								</div>
-							{:else}
-								<div class="relative">
-									<input
-										type="text"
-										bind:value={urlRefSearch}
-										oninput={() => searchUrlRefs(urlRefSearch)}
-										placeholder="Buscar por título, autor o citeKey…"
-										class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-									/>
-									{#if urlRefLoading}<div class="absolute right-2 top-2"><Spinner size="sm" /></div>{/if}
-									{#if urlRefResults.length > 0}
-										<div class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
-											{#each urlRefResults as ref (ref.id)}
-												<button type="button" onclick={() => { urlSelectedRef = ref; urlRefSearch = ''; urlRefResults = []; }} class="flex w-full flex-col px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
-													<span class="truncate font-sans text-sm text-ink dark:text-dark-ink">{ref.title}</span>
-													<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{ref.citeKey}{ref.year ? ` · ${ref.year}` : ''}</span>
-												</button>
-											{/each}
-										</div>
-									{/if}
-								</div>
-							{/if}
-						</div>
-						<input
-							type="text"
-							bind:value={urlImportTitle}
-							placeholder="Título del documento"
-							onkeydown={(e) => { if (e.key === 'Enter' && urlImportUrl.trim() && urlImportTitle.trim()) startUrlImport(); }}
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						/>
-					{/if}
-
-					{#if urlImportError}
-						<p class="mt-2 font-sans text-xs text-red-500">{urlImportError}</p>
-					{/if}
-
-					<div class="mt-4 flex justify-end gap-2">
-						<button onclick={resetUrlModal} class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted">
-							Cancelar
-						</button>
-						{#if data.hasAiKey}
-							<button
-								onclick={runUrlAiExtract}
-								disabled={urlStep === 'extracting' || !urlImportUrl.trim()}
-								class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-							>
-								{#if urlStep === 'extracting'}<Spinner size="sm" />{/if}
-								{urlStep === 'extracting' ? 'Extrayendo…' : 'Extraer con IA'}
-							</button>
-						{:else}
-							<button
-								onclick={startUrlImport}
-								disabled={urlImporting || !urlImportUrl.trim() || !urlImportTitle.trim()}
-								class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-							>
-								{#if urlImporting}<Spinner size="sm" />{/if}
-								{urlImporting ? 'Importando…' : 'Import'}
-							</button>
-						{/if}
-					</div>
-
-				{:else if urlStep === 'review'}
-					<div class="mb-4 flex items-center gap-2">
-						<button onclick={() => { urlStep = 'input'; urlAiResult = null; }} class="rounded p-1 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink" aria-label="Volver">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-						</button>
-						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Revisar metadata</h2>
-					</div>
-					<p class="mb-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint truncate">{urlImportUrl}</p>
-
-					<div class="space-y-3">
-						<div>
-							<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Título</label>
-							<input type="text" bind:value={urlEditTitle} class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
-						</div>
-						<div class="grid grid-cols-2 gap-3">
-							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">CiteKey</label>
-								<input type="text" bind:value={urlEditCiteKey} class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
-							</div>
-							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Año</label>
-								<input type="text" bind:value={urlEditYear} placeholder="2024" class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink" />
-							</div>
-						</div>
-						<div>
-							<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Tipo</label>
-							<select bind:value={urlEditType} class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink">
-								{#each REF_TYPES as t}
-									<option value={t}>{t}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Autores <span class="text-ink-faint">(uno por línea: Apellido, Nombre)</span></label>
-							<textarea bind:value={urlEditAuthors} rows={3} class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"></textarea>
-						</div>
-					</div>
-
-					{#if urlImportError}
-						<p class="mt-2 font-sans text-xs text-red-500">{urlImportError}</p>
-					{/if}
-
-					<div class="mt-4 flex justify-end gap-2">
-						<button onclick={resetUrlModal} class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted">
-							Cancelar
-						</button>
-						<button
-							onclick={startUrlImport}
-							disabled={urlImporting || !urlEditTitle.trim() || !urlEditCiteKey.trim()}
-							class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-						>
-							{#if urlImporting}<Spinner size="sm" />{/if}
-							{urlImporting ? 'Importando…' : 'Importar documento'}
-						</button>
-					</div>
-				{/if}
-
-			</div>
-		</div>
+		<UrlImportModal
+			projectId={data.project.id}
+			hasAiKey={data.hasAiKey}
+			onclose={() => (showUrlModal = false)}
+		/>
 	{/if}
 
-	<!-- EPUB import modal -->
-	{#if showEpubModal}
-		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true">
-			<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="absolute inset-0" onclick={() => { showEpubModal = false; }}></div>
-			<div class="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper">
-				<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import EPUB</h2>
-				<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Sube un fichero .epub o introduce una URL. Cada capítulo se importará como documento readonly.
-				</p>
-
-				<!-- Reference picker -->
-				<div class="mb-4">
-					<p class="mb-1.5 font-sans text-xs font-medium text-ink dark:text-dark-ink">
-						Referencia bibliográfica <span class="font-normal text-ink-faint">(opcional — se creará automáticamente si no seleccionas)</span>
-					</p>
-					{#if epubSelectedRef}
-						<div class="flex items-center justify-between rounded-md border border-accent/40 bg-accent/5 px-3 py-2 dark:border-accent/30 dark:bg-accent/10">
-							<div class="min-w-0">
-								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">{epubSelectedRef.title}</p>
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{epubSelectedRef.citeKey}</p>
-							</div>
-							<button
-								type="button"
-								onclick={() => { epubSelectedRef = null; epubRefSearch = ''; epubRefResults = []; }}
-								class="ml-2 shrink-0 rounded p-0.5 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-							>✕</button>
-						</div>
-					{:else}
-						<div class="relative">
-							<input
-								type="text"
-								bind:value={epubRefSearch}
-								oninput={() => searchEpubRefs(epubRefSearch)}
-								placeholder="Buscar por título, autor o citeKey…"
-								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							/>
-							{#if epubRefLoading}
-								<div class="absolute right-2 top-2"><Spinner size="sm" /></div>
-							{/if}
-							{#if epubRefResults.length > 0}
-								<div class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper">
-									{#each epubRefResults as ref (ref.id)}
-										<button
-											type="button"
-											onclick={() => { epubSelectedRef = ref; epubRefSearch = ''; epubRefResults = []; }}
-											class="flex w-full flex-col px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-										>
-											<span class="truncate font-sans text-sm text-ink dark:text-dark-ink">{ref.title}</span>
-											<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{ref.citeKey}{ref.year ? ` · ${ref.year}` : ''}</span>
-										</button>
-									{/each}
-								</div>
-							{/if}
-						</div>
-					{/if}
-				</div>
-
-				<!-- File upload -->
-				<label class="mb-3 flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink-muted hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-muted dark:hover:border-accent">
-					<input
-						type="file"
-						accept=".epub,application/epub+zip"
-						class="hidden"
-						onchange={(e) => {
-							const f = (e.currentTarget as HTMLInputElement).files?.[0] ?? null;
-							epubFile = f;
-							if (f) epubUrl = '';
-						}}
-					/>
-					{#if epubFile}
-						<span class="truncate text-ink dark:text-dark-ink">{epubFile.name}</span>
-						<button
-							type="button"
-							class="ml-auto shrink-0 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-							onclick={(e) => { e.preventDefault(); epubFile = null; }}
-						>✕</button>
-					{:else}
-						<span>Seleccionar fichero .epub…</span>
-					{/if}
-				</label>
-				<!-- Divider -->
-				<div class="my-3 flex items-center gap-2">
-					<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
-					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">o URL</span>
-					<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
-				</div>
-				<!-- URL input -->
-				<input
-					type="url"
-					bind:value={epubUrl}
-					placeholder="https://example.org/book.epub"
-					oninput={() => { if (epubUrl) epubFile = null; }}
-					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-				/>
-				{#if epubError}
-					<p class="mt-2 font-sans text-xs text-red-500">{epubError}</p>
-				{/if}
-				<div class="mt-4 flex justify-end gap-2">
-					<button
-						onclick={() => { showEpubModal = false; epubUrl = ''; epubFile = null; epubError = ''; epubSelectedRef = null; epubRefSearch = ''; epubRefResults = []; }}
-						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-					>
-						Cancel
-					</button>
-					<button
-						onclick={startEpubImport}
-						disabled={epubImporting || (!epubUrl.trim() && !epubFile)}
-						class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-					>
-						{#if epubImporting}<Spinner size="sm" />{/if}
-						{epubImporting ? 'Iniciando…' : 'Import'}
-					</button>
-				</div>
-			</div>
-		</div>
+		{#if showEpubModal}
+		<EpubImportModal
+			projectId={data.project.id}
+			isImporting={data.project.isImporting ?? false}
+			onclose={() => (showEpubModal = false)}
+		/>
 	{/if}
 
 	<div class="grid gap-8 lg:grid-cols-3">
@@ -2192,7 +1633,7 @@
 						</p>
 					</div>
 					<button
-						onclick={openContextPicker}
+						onclick={() => (showContextPicker = true)}
 						class="shrink-0 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						+ Add
@@ -2399,121 +1840,12 @@
 
 
 {#if showContextPicker}
-	<!-- Context doc picker modal -->
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-		<div
-			class="flex w-full max-w-md flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
-			style="max-height: 80vh"
-		>
-			<div
-				class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border"
-			>
-				<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-					Add external context
-				</h2>
-				<button
-					onclick={() => {
-						showContextPicker = false;
-						contextPickerSearch = '';
-					}}
-					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					aria-label="Close"
-				>
-					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-						<path
-							d="M1 1l12 12M13 1L1 13"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-						/>
-					</svg>
-				</button>
-			</div>
-
-			<div class="px-5 pt-3">
-				<input
-					type="search"
-					bind:value={contextPickerSearch}
-					placeholder="Search documents or projects…"
-					class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-				/>
-			</div>
-
-			<div class="flex-1 overflow-y-auto px-5 py-3">
-				{#if loadingAvailable}
-					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						Loading…
-					</p>
-				{:else if availableByProject().length === 0}
-					<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						{availableDocs.length === 0
-							? 'No documents in other projects'
-							: 'All documents already added'}
-					</p>
-				{:else}
-					{#each availableByProject() as group (group.id)}
-						<div class="mb-3">
-							<p
-								class="mb-1 font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-							>
-								{group.title}
-							</p>
-							{#each group.docs as doc (doc.id)}
-								<div
-									class="flex items-center gap-1 rounded-lg px-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-								>
-									<button
-										onclick={async () => {
-											await addContextLink(doc.id);
-										}}
-										class="flex min-w-0 flex-1 items-center gap-2 py-2 pl-2 text-left"
-									>
-										<span
-											class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink"
-											>{doc.title}</span
-										>
-										{#if doc.isPublic && doc.projectTitle === null}
-											<svg
-												width="11"
-												height="11"
-												viewBox="0 0 24 24"
-												fill="none"
-												class="shrink-0 text-green-500"
-												aria-label="Public"
-											>
-												<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
-												<path
-													d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"
-													stroke="currentColor"
-													stroke-width="1.5"
-													stroke-linecap="round"
-												/>
-											</svg>
-										{/if}
-										<span
-											class="shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint"
-											>{doc.type}</span
-										>
-									</button>
-									{#if doc.isPublic && doc.projectTitle === null}
-										<button
-											onclick={(e) => {
-												e.stopPropagation();
-												navigator.clipboard.writeText(`[[${doc.title}:${doc.id.slice(0, 8)}]]`);
-											}}
-											title="Copy wikilink syntax"
-											class="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-ink-faint transition-colors hover:bg-paper-border hover:text-accent dark:text-dark-ink-faint dark:hover:bg-dark-paper-border"
-											>[[·]]</button
-										>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					{/each}
-				{/if}
-			</div>
-		</div>
-	</div>
+	<ContextPickerModal
+		projectId={data.project.id}
+		{contextLinks}
+		onclose={() => (showContextPicker = false)}
+		onadd={addContextLink}
+	/>
 {/if}
 
 {#if showGenerateDraft}
@@ -2528,113 +1860,19 @@
 	/>
 {/if}
 
-<!-- Use template modal -->
 {#if showUseTemplate}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-		role="dialog"
-		aria-modal="true"
-	>
-		<div
-			class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				New document from template
-			</h2>
-			<div class="flex flex-col gap-3">
-				<div>
-					<label
-						for="from-tmpl-title"
-						class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
-						>Document title</label
-					>
-					<input
-						id="from-tmpl-title"
-						type="text"
-						bind:value={fromTemplateTitle}
-						placeholder="Document title"
-						onkeydown={(e) => {
-							if (e.key === 'Enter' && fromTemplateTitle.trim() && !fromTemplateCreating)
-								createFromTemplate();
-						}}
-						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-					/>
-				</div>
-				{#if fromTemplateError}
-					<p class="font-sans text-sm text-red-600 dark:text-red-400">{fromTemplateError}</p>
-				{/if}
-				<div class="flex gap-2">
-					<button
-						onclick={createFromTemplate}
-						disabled={fromTemplateCreating || !fromTemplateTitle.trim()}
-						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-					>
-						{fromTemplateCreating ? 'Creating...' : 'Create and open'}
-					</button>
-					<button
-						onclick={() => (showUseTemplate = null)}
-						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-					>
-						Cancel
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
+	<UseTemplateModal
+		templateId={showUseTemplate}
+		initialTitle={fromTemplateTitle}
+		projectId={data.project.id}
+		onclose={() => (showUseTemplate = null)}
+	/>
 {/if}
 
-<!-- Save as template modal -->
 {#if saveAsTemplateDocId}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-		role="dialog"
-		aria-modal="true"
-	>
-		<div
-			class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Save as template
-			</h2>
-			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				A copy of this document will be saved as a reusable template in this project.
-			</p>
-			<div class="flex flex-col gap-3">
-				<div>
-					<label
-						for="tmpl-title"
-						class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
-						>Template name</label
-					>
-					<input
-						id="tmpl-title"
-						type="text"
-						bind:value={templateTitle}
-						onkeydown={(e) => {
-							if (e.key === 'Enter' && templateTitle.trim() && !savingTemplate) saveAsTemplate();
-						}}
-						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-					/>
-				</div>
-				{#if saveTemplateError}
-					<p class="font-sans text-sm text-red-600 dark:text-red-400">{saveTemplateError}</p>
-				{/if}
-				<div class="flex gap-2">
-					<button
-						onclick={saveAsTemplate}
-						disabled={savingTemplate || !templateTitle.trim()}
-						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
-					>
-						{savingTemplate ? 'Saving...' : 'Save template'}
-					</button>
-					<button
-						onclick={() => (saveAsTemplateDocId = null)}
-						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-					>
-						Cancel
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
+	<SaveAsTemplateModal
+		docId={saveAsTemplateDocId}
+		initialTitle={templateTitle}
+		onclose={() => (saveAsTemplateDocId = null)}
+	/>
 {/if}
