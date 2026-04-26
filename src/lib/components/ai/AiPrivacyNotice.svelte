@@ -44,7 +44,7 @@
 						id="privacy-notice-title"
 						class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
 					>
-						Tus documentos son privados
+						Your documents are private
 					</h2>
 					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
 						When you use the AI assistant, the content of your documents is sent to OpenRouter <strong
@@ -71,7 +71,7 @@
 					onclick={dismiss}
 					class="rounded-lg bg-accent px-5 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 				>
-					Entendido
+					Got it
 				</button>
 			</div>
 		</div>
