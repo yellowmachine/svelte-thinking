@@ -5,7 +5,7 @@
 	const { Story } = defineMeta({
 		title: 'Layout/Navbar',
 		component: Navbar,
-		tags: ['autodocs'],
+		tags: ['autodocs', '!vitest'],
 		parameters: {
 			layout: 'fullscreen'
 		}
