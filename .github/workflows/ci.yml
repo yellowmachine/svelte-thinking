@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
-    branches: [main]
+    branches: [main, staging]
 
 jobs:
   ci:
@@ -34,8 +34,8 @@ jobs:
           # PUBLIC_* vars are baked in at build — leave empty for CI.
           PUBLIC_SENTRY_DSN: ""
 
-      - name: Test (server)
-        run: bun run vitest run --project server
+      - name: Unit tests
+        run: bun run vitest run
 
   e2e:
     name: E2E Tests
