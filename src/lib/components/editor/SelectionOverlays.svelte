@@ -299,8 +299,7 @@
 					subnoteNotes = '';
 					subnoteSlug = slugify(currentSelection?.text?.slice(0, 40) ?? '');
 					subnoteRefId =
-						sourceReference?.id ??
-						(projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
+						sourceReference?.id ?? (projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
 					subnoteError = '';
 					showSubnote = true;
 				}}
@@ -377,8 +376,7 @@
 				{#if selectionReview.loading}
 					<div class="flex items-center gap-2">
 						<Spinner size="sm" class="text-accent" />
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-							>Reviewing…</span
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Reviewing…</span
 						>
 					</div>
 				{:else}
@@ -415,11 +413,7 @@
 
 <!-- Author info popover (bibliography-based) -->
 {#if authorPopover && authorPopover.coords}
-	<div
-		class="fixed inset-0 z-20"
-		onclick={() => (authorPopover = null)}
-		aria-hidden="true"
-	></div>
+	<div class="fixed inset-0 z-20" onclick={() => (authorPopover = null)} aria-hidden="true"></div>
 	<div
 		class="pointer-events-none fixed z-20"
 		style="top: {authorPopover.coords.bottom + 8}px; left: {authorPopover.coords.left}px;"
@@ -468,8 +462,7 @@
 								title={ref.title}>{ref.title}</span
 							>
 							{#if ref.year}
-								<span
-									class="shrink-0 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
+								<span class="shrink-0 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
 									>({ref.year})</span
 								>
 							{/if}
@@ -530,7 +523,8 @@
 {#if showNewComment && savedCommentSelection && savedCommentSelection.coords}
 	<div
 		class="pointer-events-none fixed z-20"
-		style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection.coords.left}px;"
+		style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection.coords
+			.left}px;"
 	>
 		<div
 			class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
@@ -576,7 +570,8 @@
 {#if showSubnote && savedCommentSelection?.coords}
 	<div
 		class="pointer-events-none fixed z-20"
-		style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection.coords.left}px;"
+		style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection.coords
+			.left}px;"
 	>
 		<div
 			class="pointer-events-auto w-80 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"

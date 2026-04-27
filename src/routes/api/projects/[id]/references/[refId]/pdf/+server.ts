@@ -37,13 +37,15 @@ export const POST: RequestHandler = async (event) => {
 	}
 
 	const key = `projects/${projectId}/references/${refId}/paper.pdf`;
-	const url = await uploadFileWithConfig(s3, key, Buffer.from(await file.arrayBuffer()), 'application/pdf');
+	const url = await uploadFileWithConfig(
+		s3,
+		key,
+		Buffer.from(await file.arrayBuffer()),
+		'application/pdf'
+	);
 
 	await event.locals.withRLS((db) =>
-		db
-			.update(reference)
-			.set({ pdfKey: key, pdfUrl: url })
-			.where(eq(reference.id, refId))
+		db.update(reference).set({ pdfKey: key, pdfUrl: url }).where(eq(reference.id, refId))
 	);
 
 	return json({ ok: true, url: `/api/references/${refId}/pdf` });
@@ -72,10 +74,7 @@ export const DELETE: RequestHandler = async (event) => {
 	await deleteFileWithConfig(s3, ref.pdfKey).catch(() => {});
 
 	await event.locals.withRLS((db) =>
-		db
-			.update(reference)
-			.set({ pdfKey: null, pdfUrl: null })
-			.where(eq(reference.id, refId))
+		db.update(reference).set({ pdfKey: null, pdfUrl: null }).where(eq(reference.id, refId))
 	);
 
 	return json({ ok: true });

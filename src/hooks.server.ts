@@ -35,7 +35,9 @@ const handleAuthCookieDomain: Handle = async ({ event, resolve }) => {
 			const parts = hostname.split('.');
 			if (parts.length >= 2) domain = parts.slice(-2).join('.');
 		}
-	} catch { /* dev o ORIGIN inválido: sin domain */ }
+	} catch {
+		/* dev o ORIGIN inválido: sin domain */
+	}
 
 	if (!domain) return response;
 
@@ -138,7 +140,8 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 
 		const profile = await db.transaction(async (tx) => {
 			await tx.execute(sql`SELECT set_config('app.current_user_id', ${session.user.id}, true)`);
-			return tx.select({ id: userProfile.id })
+			return tx
+				.select({ id: userProfile.id })
 				.from(userProfile)
 				.where(eq(userProfile.userId, session.user.id))
 				.limit(1);

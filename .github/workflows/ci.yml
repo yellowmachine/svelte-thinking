@@ -32,7 +32,7 @@ jobs:
         env:
           # Runtime secrets are injected at startup, not needed at build time.
           # PUBLIC_* vars are baked in at build — leave empty for CI.
-          PUBLIC_SENTRY_DSN: ""
+          PUBLIC_SENTRY_DSN: ''
 
       - name: Unit tests
         run: bun run vitest run --project server

@@ -7,15 +7,21 @@
 	const tpl = data.template?.parameters as Record<string, unknown> | undefined;
 
 	let selectedDataset = $state(data.datasets[0]?.id ?? '');
-	let selectedType = $state<'describe' | 'ttest'>((data.template?.type as 'describe' | 'ttest') ?? 'describe');
+	let selectedType = $state<'describe' | 'ttest'>(
+		(data.template?.type as 'describe' | 'ttest') ?? 'describe'
+	);
 	let running = $state(false);
 	let runError = $state('');
 
 	// ttest-specific params — pre-filled from template if present
 	let ttestColumnA = $state((tpl?.column_a as string) ?? '');
 	let ttestColumnB = $state((tpl?.column_b as string) ?? '');
-	let ttestType = $state<'independent' | 'paired' | 'one_sample'>((tpl?.test_type as 'independent' | 'paired' | 'one_sample') ?? 'independent');
-	let ttestAlternative = $state<'two-sided' | 'less' | 'greater'>((tpl?.alternative as 'two-sided' | 'less' | 'greater') ?? 'two-sided');
+	let ttestType = $state<'independent' | 'paired' | 'one_sample'>(
+		(tpl?.test_type as 'independent' | 'paired' | 'one_sample') ?? 'independent'
+	);
+	let ttestAlternative = $state<'two-sided' | 'less' | 'greater'>(
+		(tpl?.alternative as 'two-sided' | 'less' | 'greater') ?? 'two-sided'
+	);
 	let ttestAlpha = $state((tpl?.alpha as number) ?? 0.05);
 
 	async function run() {
@@ -50,7 +56,7 @@
 	}
 </script>
 
-<div class="p-8 max-w-xl">
+<div class="max-w-xl p-8">
 	<div>
 		<a
 			href="/project/{data.project.id}/analyses"
@@ -64,7 +70,9 @@
 	<div class="mt-8 space-y-6">
 		<!-- Dataset -->
 		<div>
-			<label for="analysis-dataset" class="block text-sm font-medium text-ink dark:text-dark-ink">Dataset</label>
+			<label for="analysis-dataset" class="block text-sm font-medium text-ink dark:text-dark-ink"
+				>Dataset</label
+			>
 			<select
 				id="analysis-dataset"
 				bind:value={selectedDataset}
@@ -107,9 +115,13 @@
 
 		<!-- t-test params -->
 		{#if selectedType === 'ttest'}
-			<div class="space-y-4 rounded-lg border border-paper-border p-4 dark:border-dark-paper-border">
+			<div
+				class="space-y-4 rounded-lg border border-paper-border p-4 dark:border-dark-paper-border"
+			>
 				<div>
-					<label for="ttest-type" class="block text-sm font-medium text-ink dark:text-dark-ink">Test type</label>
+					<label for="ttest-type" class="block text-sm font-medium text-ink dark:text-dark-ink"
+						>Test type</label
+					>
 					<select
 						id="ttest-type"
 						bind:value={ttestType}
@@ -121,7 +133,9 @@
 					</select>
 				</div>
 				<div>
-					<label for="ttest-col-a" class="block text-sm font-medium text-ink dark:text-dark-ink">Column A</label>
+					<label for="ttest-col-a" class="block text-sm font-medium text-ink dark:text-dark-ink"
+						>Column A</label
+					>
 					<input
 						id="ttest-col-a"
 						type="text"
@@ -132,7 +146,9 @@
 				</div>
 				{#if ttestType !== 'one_sample'}
 					<div>
-						<label for="ttest-col-b" class="block text-sm font-medium text-ink dark:text-dark-ink">Column B</label>
+						<label for="ttest-col-b" class="block text-sm font-medium text-ink dark:text-dark-ink"
+							>Column B</label
+						>
 						<input
 							id="ttest-col-b"
 							type="text"
@@ -144,7 +160,10 @@
 				{/if}
 				<div class="flex gap-4">
 					<div class="flex-1">
-						<label for="ttest-alternative" class="block text-sm font-medium text-ink dark:text-dark-ink">Alternative</label>
+						<label
+							for="ttest-alternative"
+							class="block text-sm font-medium text-ink dark:text-dark-ink">Alternative</label
+						>
 						<select
 							id="ttest-alternative"
 							bind:value={ttestAlternative}
@@ -156,12 +175,16 @@
 						</select>
 					</div>
 					<div class="w-24">
-						<label for="ttest-alpha" class="block text-sm font-medium text-ink dark:text-dark-ink">α</label>
+						<label for="ttest-alpha" class="block text-sm font-medium text-ink dark:text-dark-ink"
+							>α</label
+						>
 						<input
 							id="ttest-alpha"
 							type="number"
 							bind:value={ttestAlpha}
-							min="0.001" max="0.1" step="0.005"
+							min="0.001"
+							max="0.1"
+							step="0.005"
 							class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 						/>
 					</div>

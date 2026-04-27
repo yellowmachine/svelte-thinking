@@ -16,9 +16,7 @@ export const load: PageServerLoad = async (event) => {
 				.where(eq(project.id, projectId))
 				.limit(1)
 		),
-		event.locals.withRLS((db) =>
-			db.select().from(issue).where(eq(issue.id, issueId)).limit(1)
-		)
+		event.locals.withRLS((db) => db.select().from(issue).where(eq(issue.id, issueId)).limit(1))
 	]);
 
 	const p = proj[0];

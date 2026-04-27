@@ -40,7 +40,10 @@ export const versionSharesRouter = router({
 					.limit(1);
 
 				if (!docRows[0] || docRows[0].ownerUserId !== ctx.user.id) {
-					throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the document owner can share versions' });
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: 'Only the document owner can share versions'
+					});
 				}
 
 				// Buscar share activo existente para este commit
@@ -108,12 +111,13 @@ export const versionSharesRouter = router({
 					.limit(1);
 
 				if (!docRows[0] || docRows[0].ownerUserId !== ctx.user.id) {
-					throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the document owner can revoke shares' });
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: 'Only the document owner can revoke shares'
+					});
 				}
 
-				await db
-					.delete(documentVersionShare)
-					.where(eq(documentVersionShare.id, input.shareId));
+				await db.delete(documentVersionShare).where(eq(documentVersionShare.id, input.shareId));
 
 				return { ok: true };
 			});

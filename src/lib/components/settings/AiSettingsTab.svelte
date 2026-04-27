@@ -19,7 +19,13 @@
 	};
 	type TaskConfig = { keyId: string; model: string };
 	type AiTaskId = 'agent' | 'draft' | 'review' | 'requirements';
-	type AiTaskDef = { id: AiTaskId; label: string; description: string; hint: string; defaultModel: string };
+	type AiTaskDef = {
+		id: AiTaskId;
+		label: string;
+		description: string;
+		hint: string;
+		defaultModel: string;
+	};
 	type AiModel = { id: string; label: string; toolCalling: boolean; pricing: string | null };
 
 	let aiKeys = $state<AiKey[]>([]);
@@ -197,8 +203,8 @@
 				AI Connection
 			</h2>
 			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Connect your OpenRouter account to enable AI features. OpenRouter gives you access to
-				dozens of AI models with a single connection.
+				Connect your OpenRouter account to enable AI features. OpenRouter gives you access to dozens
+				of AI models with a single connection.
 			</p>
 
 			<!-- OpenRouter OAuth feedback -->
@@ -290,8 +296,8 @@
 					/>
 				</svg>
 				<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-					Your documents are sent to OpenRouter only to process your query. OpenRouter does not
-					use API data to train models.
+					Your documents are sent to OpenRouter only to process your query. OpenRouter does not use
+					API data to train models.
 					<a
 						href="https://openrouter.ai/privacy"
 						target="_blank"
@@ -404,8 +410,8 @@
 					Task configuration
 				</h2>
 				<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Choose which key and model to use for each AI feature. Falls back to the first active
-					key if not configured.
+					Choose which key and model to use for each AI feature. Falls back to the first active key
+					if not configured.
 				</p>
 
 				<div class="flex flex-col gap-4">
@@ -422,12 +428,25 @@
 											{task.label}
 										</p>
 										<div class="group relative">
-											<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 cursor-default text-ink-faint dark:text-dark-ink-faint" viewBox="0 0 20 20" fill="currentColor">
-												<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-3.5 w-3.5 cursor-default text-ink-faint dark:text-dark-ink-faint"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+											>
+												<path
+													fill-rule="evenodd"
+													d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+													clip-rule="evenodd"
+												/>
 											</svg>
-											<div class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-64 -translate-x-1/2 rounded-md bg-ink px-3 py-2 font-sans text-xs text-paper opacity-0 shadow-md transition-opacity group-hover:opacity-100 dark:bg-dark-ink dark:text-dark-paper">
+											<div
+												class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-64 -translate-x-1/2 rounded-md bg-ink px-3 py-2 font-sans text-xs text-paper opacity-0 shadow-md transition-opacity group-hover:opacity-100 dark:bg-dark-ink dark:text-dark-paper"
+											>
 												{task.hint}
-												<div class="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-ink dark:border-t-dark-ink"></div>
+												<div
+													class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ink dark:border-t-dark-ink"
+												></div>
 											</div>
 										</div>
 									</div>
@@ -470,7 +489,9 @@
 									}}
 									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 								>
-									<option value="">— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option>
+									<option value=""
+										>— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option
+									>
 									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
 										{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
 											task.id as 'agent' | 'draft' | 'review' | 'requirements'

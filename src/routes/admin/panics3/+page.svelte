@@ -27,7 +27,8 @@
 			method="POST"
 			action="?/disableAll"
 			onsubmit={(e) => {
-				if (!confirm(`Disable internal storage for all ${data.users.length} users?`)) e.preventDefault();
+				if (!confirm(`Disable internal storage for all ${data.users.length} users?`))
+					e.preventDefault();
 			}}
 			class="mb-8"
 		>

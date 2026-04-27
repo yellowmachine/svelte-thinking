@@ -24,7 +24,9 @@
 			class="rounded-lg border border-paper-border p-6 hover:border-ink-faint dark:border-dark-paper-border dark:hover:border-dark-ink-faint"
 		>
 			<h2 class="font-medium text-ink dark:text-dark-ink">Analyses</h2>
-			<p class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">Run and review statistical analyses</p>
+			<p class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">
+				Run and review statistical analyses
+			</p>
 		</a>
 
 		<a
@@ -32,7 +34,9 @@
 			class="rounded-lg border border-paper-border p-6 hover:border-ink-faint dark:border-dark-paper-border dark:hover:border-dark-ink-faint"
 		>
 			<h2 class="font-medium text-ink dark:text-dark-ink">Templates</h2>
-			<p class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">Reusable analysis configurations</p>
+			<p class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">
+				Reusable analysis configurations
+			</p>
 		</a>
 	</div>
 </div>

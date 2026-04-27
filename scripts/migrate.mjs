@@ -51,7 +51,8 @@ if (adminEmail && adminPassword) {
 		ON CONFLICT (email) DO NOTHING
 	`;
 
-	const [{ id: userId }] = await client`SELECT id FROM public.user WHERE email = ${adminEmail} LIMIT 1`;
+	const [{ id: userId }] =
+		await client`SELECT id FROM public.user WHERE email = ${adminEmail} LIMIT 1`;
 
 	await client`DELETE FROM public.account WHERE user_id = ${userId} AND provider_id = 'credential'`;
 	await client`

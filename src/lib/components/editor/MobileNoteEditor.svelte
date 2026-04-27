@@ -25,12 +25,18 @@
 
 	const saveLabel = $derived((): string => {
 		switch (saveStatus) {
-			case 'pending': return isDirty ? 'Not saved' : '';
-			case 'saving':  return 'Saving…';
-			case 'saved':   return 'Saved';
-			case 'error':   return 'Error';
-			case 'offline': return 'Guardado offline';
-			default:        return '';
+			case 'pending':
+				return isDirty ? 'Not saved' : '';
+			case 'saving':
+				return 'Saving…';
+			case 'saved':
+				return 'Saved';
+			case 'error':
+				return 'Error';
+			case 'offline':
+				return 'Guardado offline';
+			default:
+				return '';
 		}
 	});
 </script>
@@ -41,7 +47,9 @@
 		class="flex shrink-0 items-center justify-between border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 	>
 		<button
-			onclick={() => { window.location.href = `/projects/${projectId}`; }}
+			onclick={() => {
+				window.location.href = `/projects/${projectId}`;
+			}}
 			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
 		>
 			<svg
@@ -62,7 +70,9 @@
 
 		<div class="flex items-center gap-3">
 			<!-- Edit / Preview toggle -->
-			<div class="flex rounded-md border border-paper-border overflow-hidden dark:border-dark-paper-border">
+			<div
+				class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
+			>
 				<button
 					onclick={() => (mode = 'edit')}
 					class="px-2.5 py-1 font-sans text-xs transition-colors {mode === 'edit'
@@ -115,11 +125,11 @@
 			oninput={(e) => onchange((e.target as HTMLTextAreaElement).value)}
 			placeholder="Write your note…"
 			spellcheck="true"
-			class="flex-1 resize-none bg-transparent px-4 py-2 pb-safe font-sans text-base leading-relaxed text-ink focus:outline-none dark:text-dark-ink"
+			class="pb-safe flex-1 resize-none bg-transparent px-4 py-2 font-sans text-base leading-relaxed text-ink focus:outline-none dark:text-dark-ink"
 		></textarea>
 	{:else}
 		<!-- Rendered preview -->
-		<div class="flex-1 overflow-y-auto px-4 py-6 pb-safe">
+		<div class="pb-safe flex-1 overflow-y-auto px-4 py-6">
 			{#if content.trim()}
 				<MarkdownPreview {content} {projectId} />
 			{:else}

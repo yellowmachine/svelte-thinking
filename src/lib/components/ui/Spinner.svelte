@@ -29,19 +29,12 @@
 	aria-hidden="true"
 >
 	<!-- Track -->
-	<circle
-		cx={cx}
-		cy={cx}
-		r={r}
-		stroke="currentColor"
-		stroke-width={sw}
-		class="opacity-20"
-	/>
+	<circle {cx} cy={cx} {r} stroke="currentColor" stroke-width={sw} class="opacity-20" />
 	<!-- Arc -->
 	<circle
-		cx={cx}
+		{cx}
 		cy={cx}
-		r={r}
+		{r}
 		stroke="currentColor"
 		stroke-width={sw}
 		stroke-linecap="round"

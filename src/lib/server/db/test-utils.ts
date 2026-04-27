@@ -33,8 +33,12 @@ export async function createTestDb(): Promise<TestDb> {
 	await db.execute(sql`CREATE ROLE app_user`);
 	await db.execute(sql`GRANT USAGE ON SCHEMA public TO app_user`);
 	await db.execute(sql`GRANT USAGE ON SCHEMA scholio TO app_user`);
-	await db.execute(sql`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user`);
-	await db.execute(sql`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA scholio TO app_user`);
+	await db.execute(
+		sql`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user`
+	);
+	await db.execute(
+		sql`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA scholio TO app_user`
+	);
 	await db.execute(sql`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user`);
 	await db.execute(sql`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA scholio TO app_user`);
 

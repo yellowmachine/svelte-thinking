@@ -10,7 +10,13 @@ export const load: PageServerLoad = async (event) => {
 	const userId = event.locals.user!.id;
 
 	const proj = await event.locals.withRLS((db) =>
-		db.select({ id: project.id, title: project.title, ownerId: project.ownerId, agentSystemPrompt: project.agentSystemPrompt })
+		db
+			.select({
+				id: project.id,
+				title: project.title,
+				ownerId: project.ownerId,
+				agentSystemPrompt: project.agentSystemPrompt
+			})
 			.from(project)
 			.where(eq(project.id, projectId))
 			.limit(1)
@@ -20,7 +26,8 @@ export const load: PageServerLoad = async (event) => {
 	if (!proj?.[0]) error(404, 'Proyecto no encontrado');
 
 	const conversations = await event.locals.withRLS((db) =>
-		db.select()
+		db
+			.select()
 			.from(aiConversation)
 			.where(eq(aiConversation.projectId, projectId))
 			.orderBy(desc(aiConversation.updatedAt))

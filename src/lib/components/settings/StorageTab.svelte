@@ -221,9 +221,9 @@
 					/>
 				</svg>
 				<p class="font-sans text-xs leading-relaxed text-amber-800 dark:text-amber-300">
-					Scholio provides <strong>50 MB</strong> of shared storage for beta users — enough for
-					~20 whiteboard photos. Your files are stored on our servers. For more storage or
-					privacy control, configure your own S3 bucket below.
+					Scholio provides <strong>50 MB</strong> of shared storage for beta users — enough for ~20 whiteboard
+					photos. Your files are stored on our servers. For more storage or privacy control, configure
+					your own S3 bucket below.
 				</p>
 			</div>
 
@@ -233,7 +233,9 @@
 				{@const quotaMB = (internalQuotaBytes / (1024 * 1024)).toFixed(0)}
 				{@const pct = Math.min(100, (internalUsedBytes / internalQuotaBytes) * 100)}
 				<div class="mt-4">
-					<div class="mb-1 flex justify-between font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+					<div
+						class="mb-1 flex justify-between font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+					>
 						<span>{usedMB} MB used</span>
 						<span>{quotaMB} MB quota</span>
 					</div>
@@ -259,8 +261,8 @@
 				Your own S3 bucket
 			</h2>
 			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Connect your own S3 bucket (AWS, Cloudflare R2, Backblaze B2, MinIO, etc.) to upload
-				photos and datasets. Without configuration, file uploads are disabled.
+				Connect your own S3 bucket (AWS, Cloudflare R2, Backblaze B2, MinIO, etc.) to upload photos
+				and datasets. Without configuration, file uploads are disabled.
 			</p>
 
 			<!-- Privacy notice -->
@@ -281,8 +283,8 @@
 					/>
 				</svg>
 				<p class="font-sans text-xs leading-relaxed text-blue-800 dark:text-blue-300">
-					Credentials are encrypted before being stored. Scholio does not access
-					your bucket except to upload or delete files that you manage yourself.
+					Credentials are encrypted before being stored. Scholio does not access your bucket except
+					to upload or delete files that you manage yourself.
 				</p>
 			</div>
 

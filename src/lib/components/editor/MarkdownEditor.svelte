@@ -1,11 +1,26 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, keymap, highlightActiveLine, tooltips, Decoration, WidgetType, ViewPlugin, placeholder } from '@codemirror/view';
+	import {
+		EditorView,
+		keymap,
+		highlightActiveLine,
+		tooltips,
+		Decoration,
+		WidgetType,
+		ViewPlugin,
+		placeholder
+	} from '@codemirror/view';
 	import { EditorState, StateEffect, StateField } from '@codemirror/state';
 	import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 	import { markdown } from '@codemirror/lang-markdown';
 	import { oneDark } from '@codemirror/theme-one-dark';
-	import { autocompletion, acceptCompletion, startCompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
+	import {
+		autocompletion,
+		acceptCompletion,
+		startCompletion,
+		type CompletionContext,
+		type Completion
+	} from '@codemirror/autocomplete';
 	import {
 		commentRangesField,
 		commentTheme,
@@ -46,12 +61,14 @@
 		references?: CiteRef[];
 		chapters?: { id: string; title: string }[];
 		ondocchange?: (content: string) => void;
-		onselectionchange?: (sel: {
-			text: string;
-			from: number;
-			to: number;
-			coords: { top: number; bottom: number; left: number; right: number } | null;
-		} | null) => void;
+		onselectionchange?: (
+			sel: {
+				text: string;
+				from: number;
+				to: number;
+				coords: { top: number; bottom: number; left: number; right: number } | null;
+			} | null
+		) => void;
 		onlookup?: (partial: string, context: string) => Promise<string[]>;
 		/** Called when cursor is inside a capitalised mid-sentence word ≥3 chars. */
 		onwordprefix?: (prefix: string, from: number, cursorPos: number) => void;
@@ -70,11 +87,23 @@
 		/** Called when cursor dwells on a [[person:Name]] token (debounced 700ms). */
 		onauthorhover?: (name: string, coords: { bottom: number; left: number }) => void;
 		/** Called when cursor dwells on a heading line (debounced 700ms). */
-		onheadinghover?: (info: { level: number; title: string; wordCount: number }, coords: { bottom: number; left: number }) => void;
+		onheadinghover?: (
+			info: { level: number; title: string; wordCount: number },
+			coords: { bottom: number; left: number }
+		) => void;
 		commentRanges?: CommentRange[];
 		scrollToRange?: { from: number; to: number } | null;
 		/** Which [[ completions to enable. undefined = all active. */
-		completions?: Set<'wikilink' | 'citation' | 'heading' | 'footnote' | 'mention' | 'epigraph' | 'image' | 'callout'>;
+		completions?: Set<
+			| 'wikilink'
+			| 'citation'
+			| 'heading'
+			| 'footnote'
+			| 'mention'
+			| 'epigraph'
+			| 'image'
+			| 'callout'
+		>;
 		/** BCP-47 language tag for spell check (e.g. 'es-ES', 'en-US'). */
 		spellLanguage?: string;
 		/** Project ID — enables ![[ image autocomplete when provided. */
@@ -94,7 +123,10 @@
 	const CITE_TOKEN_RE = /\[\[@([\w:._-]+)\]\]/g;
 	const PERSON_TOKEN_RE = /\[\[person:([^\]]+)\]\]/g;
 
-	function citationAtPos(doc: string, pos: number): { citeKey: string; from: number; to: number } | null {
+	function citationAtPos(
+		doc: string,
+		pos: number
+	): { citeKey: string; from: number; to: number } | null {
 		CITE_TOKEN_RE.lastIndex = 0;
 		let m: RegExpExecArray | null;
 		while ((m = CITE_TOKEN_RE.exec(doc)) !== null) {
@@ -105,7 +137,10 @@
 		return null;
 	}
 
-	function personAtPos(doc: string, pos: number): { name: string; from: number; to: number } | null {
+	function personAtPos(
+		doc: string,
+		pos: number
+	): { name: string; from: number; to: number } | null {
 		PERSON_TOKEN_RE.lastIndex = 0;
 		let m: RegExpExecArray | null;
 		while ((m = PERSON_TOKEN_RE.exec(doc)) !== null) {
@@ -116,7 +151,10 @@
 		return null;
 	}
 
-	function headingAtPos(doc: string, pos: number): { level: number; title: string; wordCount: number } | null {
+	function headingAtPos(
+		doc: string,
+		pos: number
+	): { level: number; title: string; wordCount: number } | null {
 		const lineStart = doc.lastIndexOf('\n', pos - 1) + 1;
 		const lineEnd = doc.indexOf('\n', pos);
 		const line = doc.slice(lineStart, lineEnd === -1 ? doc.length : lineEnd);
@@ -172,8 +210,7 @@
 		const filtered = typed
 			? photos.filter(
 					(p) =>
-						p.filename.toLowerCase().includes(typed) ||
-						p.description?.toLowerCase().includes(typed)
+						p.filename.toLowerCase().includes(typed) || p.description?.toLowerCase().includes(typed)
 				)
 			: photos;
 
@@ -234,7 +271,9 @@
 				label: c.title,
 				detail: 'chapter',
 				apply: (view: EditorView, _c: unknown, _f: number, to: number) => {
-					view.dispatch({ changes: { from: match.from, to, insert: `[[doc:${c.id}|${c.title}]]` } });
+					view.dispatch({
+						changes: { from: match.from, to, insert: `[[doc:${c.id}|${c.title}]]` }
+					});
 				}
 			}));
 
@@ -266,20 +305,22 @@
 				options.push({
 					label: r.citeKey,
 					detail: [author, year].filter(Boolean).join(', '),
-					info: showAbstract && abstract
-						? () => {
-							const wrap = document.createElement('div');
-							const titleEl = document.createElement('div');
-							titleEl.style.cssText = 'font-weight:600;margin-bottom:4px;font-size:0.85em;';
-							titleEl.textContent = r.title;
-							wrap.appendChild(titleEl);
-							const absEl = document.createElement('div');
-							absEl.style.cssText = 'font-size:0.8em;opacity:0.75;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;';
-							absEl.textContent = abstract;
-							wrap.appendChild(absEl);
-							return wrap;
-						}
-						: r.title,
+					info:
+						showAbstract && abstract
+							? () => {
+									const wrap = document.createElement('div');
+									const titleEl = document.createElement('div');
+									titleEl.style.cssText = 'font-weight:600;margin-bottom:4px;font-size:0.85em;';
+									titleEl.textContent = r.title;
+									wrap.appendChild(titleEl);
+									const absEl = document.createElement('div');
+									absEl.style.cssText =
+										'font-size:0.8em;opacity:0.75;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;';
+									absEl.textContent = abstract;
+									wrap.appendChild(absEl);
+									return wrap;
+								}
+							: r.title,
 					apply: `@${r.citeKey}]]`
 				});
 
@@ -388,7 +429,7 @@
 	// e.g. partial="Dawk", name="Richard Dawkins" → "Dawkins"
 	function tokenNameFor(name: string, partial: string): string {
 		const p = partial.toLowerCase();
-		const word = name.split(/\s+/).find(w => w.toLowerCase().startsWith(p));
+		const word = name.split(/\s+/).find((w) => w.toLowerCase().startsWith(p));
 		return word ?? name;
 	}
 
@@ -403,8 +444,8 @@
 		const seen = new Set<string>();
 		let m: RegExpExecArray | null;
 		while ((m = localRe.exec(value)) !== null) seen.add(m[1]);
-		const local = [...seen].filter(n =>
-			n.split(/\s+/).some(w => w.toLowerCase().startsWith(partial.toLowerCase()))
+		const local = [...seen].filter((n) =>
+			n.split(/\s+/).some((w) => w.toLowerCase().startsWith(partial.toLowerCase()))
 		);
 
 		// from: right after [[p so CM6 filters labels against the partial.
@@ -443,7 +484,9 @@
 		if (!match) return null;
 		return {
 			from: match.from,
-			options: [{ label: '[[index:persons]]', detail: 'onomastic index', apply: '[[index:persons]]' }]
+			options: [
+				{ label: '[[index:persons]]', detail: 'onomastic index', apply: '[[index:persons]]' }
+			]
 		};
 	}
 
@@ -455,7 +498,9 @@
 			(all || completions.has('citation') ? citationCompletion(context) : null) ??
 			(all || completions.has('heading') ? headingCompletion(context) : null) ??
 			(all || completions.has('footnote') ? footnoteCompletion(context) : null) ??
-			(all || completions.has('wikilink') ? (wikilinkCompletion(context) ?? indexCompletion(context)) : null)
+			(all || completions.has('wikilink')
+				? (wikilinkCompletion(context) ?? indexCompletion(context))
+				: null)
 		);
 	}
 
@@ -491,8 +536,12 @@
 			function onMouseDown(e: MouseEvent) {
 				if (e.button === 0 && v.contentDOM.contains(e.target as Node)) dragging = true;
 			}
-			function onMouseMove(e: MouseEvent) { lastY = e.clientY; }
-			function onMouseUp() { dragging = false; }
+			function onMouseMove(e: MouseEvent) {
+				lastY = e.clientY;
+			}
+			function onMouseUp() {
+				dragging = false;
+			}
 
 			document.addEventListener('mousedown', onMouseDown);
 			document.addEventListener('mousemove', onMouseMove);
@@ -547,26 +596,27 @@
 					}
 				},
 				...defaultKeymap,
-				...historyKeymap,
+				...historyKeymap
 			]),
 			markdown({ codeLanguages }),
 			tooltips({ position: 'fixed' }),
-			autocompletion({ override: [allCompletions, mentionCompletionSource, imageCompletionSource], closeOnBlur: true }),
+			autocompletion({
+				override: [allCompletions, mentionCompletionSource, imageCompletionSource],
+				closeOnBlur: true
+			}),
 			...codeBlockExtension(),
 			EditorView.lineWrapping,
 			ghostTextField,
 			spellHoverField,
 			EditorView.baseTheme({
 				'.cm-ghost-text': { color: 'var(--color-ink-faint, #aaa)', pointerEvents: 'none' },
-				'.cm-spell-hover': { backgroundColor: 'oklch(92% 0.05 10 / 0.6)' },
+				'.cm-spell-hover': { backgroundColor: 'oklch(92% 0.05 10 / 0.6)' }
 			}),
 			commentRangesField,
 			commentTheme,
 			EditorView.updateListener.of((update) => {
 				// toString() is O(n) on CM6's rope — compute once, share across all blocks.
-				const doc = (update.docChanged || update.selectionSet)
-					? update.state.doc.toString()
-					: '';
+				const doc = update.docChanged || update.selectionSet ? update.state.doc.toString() : '';
 
 				if (update.docChanged) {
 					value = doc;
@@ -583,7 +633,10 @@
 					}
 				}
 				// Heading ghost text — cursor inside [[#partial
-				if ((update.docChanged || update.selectionSet) && (onheadingprefix || onheadingprefixclear)) {
+				if (
+					(update.docChanged || update.selectionSet) &&
+					(onheadingprefix || onheadingprefixclear)
+				) {
 					const sel = update.state.selection.main;
 					if (sel.empty) {
 						const pos = sel.head;
@@ -650,9 +703,7 @@
 						const cm = textBefore.match(/\[\[@([\w.-]*)$/);
 						if (cm && !/[\w.\-\]]/.test(doc[pos] ?? '')) {
 							const partial = cm[1].toLowerCase();
-							const matched = references.find((r) =>
-								r.citeKey.toLowerCase().startsWith(partial)
-							);
+							const matched = references.find((r) => r.citeKey.toLowerCase().startsWith(partial));
 							if (matched) {
 								const suffix = matched.citeKey.slice(partial.length);
 								const hasSubnotes = (matched.subnotes?.length ?? 0) > 0;
@@ -679,9 +730,15 @@
 					}
 				}
 				// Token hover — cursor dwell on [[@key]], [[person:Name]], or ## heading
-				if (update.selectionSet && (oncitehover || oncitehoverclear || onauthorhover || onheadinghover)) {
+				if (
+					update.selectionSet &&
+					(oncitehover || oncitehoverclear || onauthorhover || onheadinghover)
+				) {
 					const sel = update.state.selection.main;
-					if (citeHoverTimer) { clearTimeout(citeHoverTimer); citeHoverTimer = null; }
+					if (citeHoverTimer) {
+						clearTimeout(citeHoverTimer);
+						citeHoverTimer = null;
+					}
 					if (sel.empty) {
 						const pos = sel.from;
 						const cite = oncitehover ? citationAtPos(doc, pos) : null;
@@ -690,12 +747,14 @@
 						if (cite) {
 							citeHoverTimer = setTimeout(() => {
 								const coords = update.view.coordsAtPos(cite.from);
-								if (coords) oncitehover!(cite.citeKey, { bottom: coords.bottom, left: coords.left });
+								if (coords)
+									oncitehover!(cite.citeKey, { bottom: coords.bottom, left: coords.left });
 							}, 700);
 						} else if (person) {
 							citeHoverTimer = setTimeout(() => {
 								const coords = update.view.coordsAtPos(person.from);
-								if (coords) onauthorhover!(person.name, { bottom: coords.bottom, left: coords.left });
+								if (coords)
+									onauthorhover!(person.name, { bottom: coords.bottom, left: coords.left });
 							}, 700);
 						} else if (heading) {
 							citeHoverTimer = setTimeout(() => {
@@ -743,23 +802,25 @@
 		// Trigger completion for non-word chars that CM6 activateOnTyping won't handle.
 		// We use inputHandler (not keymap) so it fires regardless of keyboard layout —
 		// keymap key names like '@' don't match on AltGr keyboards (Spanish, German…).
-		exts.push(EditorView.inputHandler.of((view, from, to, insert) => {
-			if (insert === '@' || insert === '#') {
-				const before = view.state.doc.sliceString(Math.max(0, from - 2), from);
-				if (before !== '[[') return false;
-				view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + 1 } });
-				startCompletion(view);
-				return true;
-			}
-			if (insert === ':') {
-				const before = view.state.doc.sliceString(Math.max(0, from - 50), from);
-				if (!before.endsWith('[[doc') && !/\[\[@[\w.-]+$/.test(before)) return false;
-				view.dispatch({ changes: { from, to, insert: ':' }, selection: { anchor: from + 1 } });
-				startCompletion(view);
-				return true;
-			}
-			return false;
-		}));
+		exts.push(
+			EditorView.inputHandler.of((view, from, to, insert) => {
+				if (insert === '@' || insert === '#') {
+					const before = view.state.doc.sliceString(Math.max(0, from - 2), from);
+					if (before !== '[[') return false;
+					view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + 1 } });
+					startCompletion(view);
+					return true;
+				}
+				if (insert === ':') {
+					const before = view.state.doc.sliceString(Math.max(0, from - 50), from);
+					if (!before.endsWith('[[doc') && !/\[\[@[\w.-]+$/.test(before)) return false;
+					view.dispatch({ changes: { from, to, insert: ':' }, selection: { anchor: from + 1 } });
+					startCompletion(view);
+					return true;
+				}
+				return false;
+			})
+		);
 
 		if (isDarkMode()) exts.push(oneDark);
 		return exts;
@@ -773,10 +834,13 @@
 			for (const e of tr.effects) if (e.is(setSpellHoverEffect)) return e.value;
 			return val;
 		},
-		provide: f => EditorView.decorations.from(f, val => {
-			if (!val) return Decoration.none;
-			return Decoration.set([Decoration.mark({ class: 'cm-spell-hover' }).range(val.from, val.to)]);
-		})
+		provide: (f) =>
+			EditorView.decorations.from(f, (val) => {
+				if (!val) return Decoration.none;
+				return Decoration.set([
+					Decoration.mark({ class: 'cm-spell-hover' }).range(val.from, val.to)
+				]);
+			})
 	});
 
 	// Ghost text (inline mention suggestion)
@@ -784,31 +848,42 @@
 
 	class GhostWidget extends WidgetType {
 		text: string;
-		constructor(text: string) { super(); this.text = text; }
+		constructor(text: string) {
+			super();
+			this.text = text;
+		}
 		toDOM() {
 			const span = document.createElement('span');
 			span.className = 'cm-ghost-text';
 			span.textContent = this.text;
 			return span;
 		}
-		eq(other: GhostWidget) { return other.text === this.text; }
-		ignoreEvent() { return true; }
+		eq(other: GhostWidget) {
+			return other.text === this.text;
+		}
+		ignoreEvent() {
+			return true;
+		}
 	}
 
 	const ghostTextField = StateField.define<{ text: string; pos: number } | null>({
 		create: () => null,
 		update(val, tr) {
 			for (const e of tr.effects) {
-				if (e.is(setGhostTextEffect)) return e.value ? { text: e.value, pos: tr.state.selection.main.head } : null;
+				if (e.is(setGhostTextEffect))
+					return e.value ? { text: e.value, pos: tr.state.selection.main.head } : null;
 			}
 			// Clear ghost text on any document change
 			if (tr.docChanged) return null;
 			return val ? { text: val.text, pos: tr.newSelection.main.head } : null;
 		},
-		provide: f => EditorView.decorations.from(f, val => {
-			if (!val) return Decoration.none;
-			return Decoration.set([Decoration.widget({ widget: new GhostWidget(val.text), side: 1 }).range(val.pos)]);
-		})
+		provide: (f) =>
+			EditorView.decorations.from(f, (val) => {
+				if (!val) return Decoration.none;
+				return Decoration.set([
+					Decoration.widget({ widget: new GhostWidget(val.text), side: 1 }).range(val.pos)
+				]);
+			})
 	});
 
 	function createView(el: HTMLDivElement, doc: string) {

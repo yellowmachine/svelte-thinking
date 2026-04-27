@@ -23,37 +23,46 @@ export default defineConfig({
 	plugins: [
 		tailwindcss(),
 		sveltekit(),
-		...(enableSW ? [VitePWA({
-			registerType: 'autoUpdate',
-			devOptions: { enabled: process.env.NODE_ENV !== 'production', type: 'module' },
-			// injectManifest: use our custom SW (src/sw.ts) so we can use setCatchHandler
-			// for the offline fallback — navigateFallback (SPA mode) is wrong for SSR apps
-			strategies: 'injectManifest',
-			srcDir: 'src',
-			filename: 'sw.ts',
-			manifest: {
-				name: 'Scholio',
-				short_name: 'Scholio',
-				description: 'Escritura académica colaborativa',
-				theme_color: '#2C1E14',
-				background_color: '#F5F0E8',
-				display: 'standalone',
-				scope: '/',
-				start_url: '/projects',
-				icons: [
-					{ src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-					{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-					{ src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-					{ src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+		...(enableSW
+			? [
+					VitePWA({
+						registerType: 'autoUpdate',
+						devOptions: { enabled: process.env.NODE_ENV !== 'production', type: 'module' },
+						// injectManifest: use our custom SW (src/sw.ts) so we can use setCatchHandler
+						// for the offline fallback — navigateFallback (SPA mode) is wrong for SSR apps
+						strategies: 'injectManifest',
+						srcDir: 'src',
+						filename: 'sw.ts',
+						manifest: {
+							name: 'Scholio',
+							short_name: 'Scholio',
+							description: 'Escritura académica colaborativa',
+							theme_color: '#2C1E14',
+							background_color: '#F5F0E8',
+							display: 'standalone',
+							scope: '/',
+							start_url: '/projects',
+							icons: [
+								{ src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+								{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+								{ src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+								{
+									src: 'maskable-icon-512x512.png',
+									sizes: '512x512',
+									type: 'image/png',
+									purpose: 'maskable'
+								}
+							]
+						},
+						injectManifest: {
+							// html excluded — no hash in filename, must always revalidate from network.
+							// /offline is the exception: precached so setCatchHandler can serve it when offline.
+							globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
+							additionalManifestEntries: [{ url: '/offline', revision: String(Date.now()) }]
+						}
+					})
 				]
-			},
-			injectManifest: {
-				// html excluded — no hash in filename, must always revalidate from network.
-				// /offline is the exception: precached so setCatchHandler can serve it when offline.
-				globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
-				additionalManifestEntries: [{ url: '/offline', revision: String(Date.now()) }]
-			}
-		})] : []),
+			: []),
 		...(isDev ? [devtoolsJson()] : [])
 	],
 	server: { port: 5174, host: true, allowedHosts: ['scholio-dev.local'] },

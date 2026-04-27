@@ -24,7 +24,9 @@ test.describe('Guardado de documentos', () => {
 
 		// Guardar y esperar a que el servidor confirme el draft
 		await Promise.all([
-			page.waitForResponse((res) => res.url().includes('/api/trpc/') && res.request().method() === 'POST'),
+			page.waitForResponse(
+				(res) => res.url().includes('/api/trpc/') && res.request().method() === 'POST'
+			),
 			page.locator('button:has-text("Save")').last().click()
 		]);
 

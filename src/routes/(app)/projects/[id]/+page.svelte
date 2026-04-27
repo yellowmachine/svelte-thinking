@@ -48,13 +48,19 @@
 		if (savedView === 'list' || savedView === 'grid') docViewMode = savedView;
 	});
 
-	$effect(() => { localStorage.setItem('doc-sort', docSortMode); });
-	$effect(() => { localStorage.setItem('doc-view', docViewMode); });
+	$effect(() => {
+		localStorage.setItem('doc-sort', docSortMode);
+	});
+	$effect(() => {
+		localStorage.setItem('doc-view', docViewMode);
+	});
 
 	const documents = $derived(
 		docSortMode === 'alpha'
 			? [...data.documents].sort((a, b) => a.title.localeCompare(b.title))
-			: [...data.documents].sort((a, b) => new Date(a.updatedAt ?? 0).getTime() - new Date(b.updatedAt ?? 0).getTime())
+			: [...data.documents].sort(
+					(a, b) => new Date(a.updatedAt ?? 0).getTime() - new Date(b.updatedAt ?? 0).getTime()
+				)
 	);
 	const canEdit = $derived(data.isOwner || data.myRole === 'author' || data.myRole === 'coauthor');
 	const activeShareDocSet = $derived(new Set(data.activeShareDocumentIds));
@@ -71,9 +77,13 @@
 	const hasS3 = $derived(data.projectOrgId ? data.hasOrgS3Config : data.hasUserS3Config);
 	const canUploadS3 = $derived(hasS3);
 	const s3CtaType = $derived(
-		hasS3 ? 'ok' :
-		!data.projectOrgId ? 'personal' :
-		(data.orgs ?? []).find((o) => o.id === data.projectOrgId)?.role === 'owner' ? 'org-owner' : 'org-member'
+		hasS3
+			? 'ok'
+			: !data.projectOrgId
+				? 'personal'
+				: (data.orgs ?? []).find((o) => o.id === data.projectOrgId)?.role === 'owner'
+					? 'org-owner'
+					: 'org-member'
 	);
 	const invitations: InvitationType[] = $derived(
 		data.invitations.map((inv) => ({
@@ -93,7 +103,11 @@
 	}
 
 	// Get badge text for a document if it's an unassigned chapter
-	function getDocumentBadge(doc: { type: string; id: string; isReadonly?: boolean }): string | null {
+	function getDocumentBadge(doc: {
+		type: string;
+		id: string;
+		isReadonly?: boolean;
+	}): string | null {
 		if (doc.type !== 'chapter') return null;
 		if (doc.isReadonly) return null; // imported chapters (EPUB) are standalone by design
 		if (isChapterReferenced(doc.id)) return null;
@@ -384,7 +398,6 @@
 		}
 	}
 
-
 	const statusLabel: Record<string, string> = {
 		draft: 'Draft',
 		active: 'Active',
@@ -416,7 +429,11 @@
 	}
 </script>
 
-<svelte:window onclick={() => { if (docMenuOpenId) docMenuOpenId = null; }} />
+<svelte:window
+	onclick={() => {
+		if (docMenuOpenId) docMenuOpenId = null;
+	}}
+/>
 
 <div class="mx-auto max-w-5xl px-6 py-8">
 	<!-- Header -->
@@ -498,7 +515,6 @@
 						{data.project.description || 'Add a description…'}
 					</button>
 				{/if}
-
 			</div>
 			<div class="hidden shrink-0 items-center gap-2 sm:flex">
 				<a
@@ -506,7 +522,13 @@
 					class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent transition-colors hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+						<path
+							d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
 					</svg>
 					Assistant
 				</a>
@@ -517,29 +539,63 @@
 						title="View open comments"
 					>
 						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path
+								d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
 						</svg>
 						{data.openComments}
 					</a>
 				{/if}
 				{#if data.isOwner}
 					<button
-						onclick={() => { showUrlModal = true; }}
+						onclick={() => {
+							showUrlModal = true;
+						}}
 						title="Import URL"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<circle cx="12" cy="12" r="10" /><path
+								d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+							/>
 						</svg>
 						URL
 					</button>
 					<button
-						onclick={() => { showEpubModal = true; }}
+						onclick={() => {
+							showEpubModal = true;
+						}}
 						title="Import EPUB book"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path
+								d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+							/>
 						</svg>
 						EPUB
 					</button>
@@ -594,7 +650,9 @@
 	{/if}
 
 	{#if data.project.isImporting}
-		<div class="mb-4 flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-ink dark:text-dark-ink">
+		<div
+			class="mb-4 flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-ink dark:text-dark-ink"
+		>
 			<Spinner size="sm" />
 			<span>Importando capítulos del EPUB… Los documentos aparecerán en breve.</span>
 		</div>
@@ -608,7 +666,7 @@
 		/>
 	{/if}
 
-		{#if showEpubModal}
+	{#if showEpubModal}
 		<EpubImportModal
 			projectId={data.project.id}
 			isImporting={data.project.isImporting ?? false}
@@ -618,40 +676,89 @@
 
 	<div class="grid gap-8 lg:grid-cols-3">
 		<!-- Documents section -->
-		<div class="{docViewMode === 'grid' ? 'lg:col-span-3' : 'lg:col-span-2'}">
+		<div class={docViewMode === 'grid' ? 'lg:col-span-3' : 'lg:col-span-2'}>
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
 				<div class="hidden items-center gap-2 sm:flex">
 					<!-- Sort toggle -->
-					<div class="flex rounded-md border border-paper-border text-xs font-sans overflow-hidden dark:border-dark-paper-border">
+					<div
+						class="flex overflow-hidden rounded-md border border-paper-border font-sans text-xs dark:border-dark-paper-border"
+					>
 						<button
 							onclick={() => (docSortMode = 'date')}
-							class="px-2.5 py-1 transition-colors {docSortMode === 'date' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
-						>Date</button>
+							class="px-2.5 py-1 transition-colors {docSortMode === 'date'
+								? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'
+								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+							>Date</button
+						>
 						<button
 							onclick={() => (docSortMode = 'alpha')}
-							class="px-2.5 py-1 transition-colors {docSortMode === 'alpha' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
-						>A–Z</button>
+							class="px-2.5 py-1 transition-colors {docSortMode === 'alpha'
+								? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'
+								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+							>A–Z</button
+						>
 					</div>
 					<!-- List / Grid view toggle -->
-					<div class="flex rounded-md border border-paper-border overflow-hidden dark:border-dark-paper-border">
+					<div
+						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
+					>
 						<button
 							onclick={() => (docViewMode = 'list')}
 							aria-label="List view"
-							class="px-2 py-1 transition-colors {docViewMode === 'list' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+							class="px-2 py-1 transition-colors {docViewMode === 'list'
+								? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'
+								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
-								<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.75"
+								stroke-linecap="round"
+								aria-hidden="true"
+							>
+								<line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line
+									x1="3"
+									y1="18"
+									x2="21"
+									y2="18"
+								/>
 							</svg>
 						</button>
 						<button
 							onclick={() => (docViewMode = 'grid')}
 							aria-label="Grid view"
-							class="px-2 py-1 transition-colors {docViewMode === 'grid' ? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink' : 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+							class="px-2 py-1 transition-colors {docViewMode === 'grid'
+								? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'
+								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
-								<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-								<rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.75"
+								stroke-linecap="round"
+								aria-hidden="true"
+							>
+								<rect x="3" y="3" width="7" height="7" rx="1" /><rect
+									x="14"
+									y="3"
+									width="7"
+									height="7"
+									rx="1"
+								/>
+								<rect x="3" y="14" width="7" height="7" rx="1" /><rect
+									x="14"
+									y="14"
+									width="7"
+									height="7"
+									rx="1"
+								/>
 							</svg>
 						</button>
 					</div>
@@ -723,7 +830,11 @@
 
 						<div class="flex gap-2">
 							<span
-								title={creatingDoc ? 'Creating document…' : !newDocTitle.trim() ? 'Enter a title first' : ''}
+								title={creatingDoc
+									? 'Creating document…'
+									: !newDocTitle.trim()
+										? 'Enter a title first'
+										: ''}
 								class={creatingDoc || !newDocTitle.trim() ? 'cursor-not-allowed' : ''}
 							>
 								<button
@@ -746,11 +857,7 @@
 			{/if}
 
 			<!-- Semantic search -->
-			<form
-				method="GET"
-				action="/projects/{data.project.id}/search"
-				class="mb-3"
-			>
+			<form method="GET" action="/projects/{data.project.id}/search" class="mb-3">
 				<div class="relative">
 					<svg
 						width="13"
@@ -777,16 +884,32 @@
 
 			<!-- Pending offline documents -->
 			{#if pendingCreates.length > 0}
-				<div class="mb-3 flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/40 dark:bg-amber-900/10">
+				<div
+					class="mb-3 flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/40 dark:bg-amber-900/10"
+				>
 					<p class="px-1 font-sans text-[11px] font-medium text-amber-700 dark:text-amber-400">
 						{onlineStore.online ? 'Syncing…' : 'Pending sync when online'}
 					</p>
 					{#each pendingCreates as pc (pc.id)}
 						<div class="flex items-center gap-2 rounded-lg px-2 py-1.5">
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" class="shrink-0 text-amber-500" aria-hidden="true">
-								<path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 5v5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+							<svg
+								width="12"
+								height="12"
+								viewBox="0 0 24 24"
+								fill="none"
+								class="shrink-0 text-amber-500"
+								aria-hidden="true"
+							>
+								<path
+									d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 5v5l3 3"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
 							</svg>
-							<span class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{pc.title}</span>
+							<span class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+								>{pc.title}</span
+							>
 						</div>
 					{/each}
 				</div>
@@ -806,14 +929,33 @@
 
 			<!-- Starter documents banner -->
 			{#if hasStarterDocs && !starterBannerDismissed}
-				<div class="mb-4 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 dark:border-accent/20 dark:bg-accent/10">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0 text-accent" aria-hidden="true">
-						<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+				<div
+					class="mb-4 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 dark:border-accent/20 dark:bg-accent/10"
+				>
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						class="mt-0.5 shrink-0 text-accent"
+						aria-hidden="true"
+					>
+						<circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
 					</svg>
 					<div class="min-w-0 flex-1">
-						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Sample documents</p>
-						<p class="mt-0.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-							Two AI-generated example documents have been added to show you features like citations, footnotes, and epigraphs. Explore them freely — or delete them whenever you like.
+						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							Sample documents
+						</p>
+						<p
+							class="mt-0.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
+						>
+							Two AI-generated example documents have been added to show you features like
+							citations, footnotes, and epigraphs. Explore them freely — or delete them whenever you
+							like.
 						</p>
 					</div>
 					<button
@@ -821,8 +963,17 @@
 						class="shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 						aria-label="Dismiss"
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-							<path d="M18 6 6 18M6 6l12 12"/>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							aria-hidden="true"
+						>
+							<path d="M18 6 6 18M6 6l12 12" />
 						</svg>
 					</button>
 				</div>
@@ -839,7 +990,9 @@
 				</div>
 			{:else if normalDocs.length > 0}
 				{#if normalDocsFiltered.length === 0}
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">No documents match your filter.</p>
+					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+						No documents match your filter.
+					</p>
 				{:else if docViewMode === 'grid'}
 					<!-- Grid view: all documents, 4 columns -->
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
@@ -850,17 +1003,44 @@
 							>
 								<!-- Type icon / badge -->
 								<div class="flex items-center justify-between">
-									<span class="font-sans text-[10px] font-medium uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">{doc.type}</span>
+									<span
+										class="font-sans text-[10px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+										>{doc.type}</span
+									>
 									{#if navigatingToDocId === doc.id}
 										<Spinner size="sm" />
 									{:else if isDocReadOnly(doc)}
-										<svg width="11" height="11" viewBox="0 0 24 24" fill="none" class="text-ink-faint dark:text-dark-ink-faint" aria-hidden="true">
-											<rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.75"/>
-											<path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+										<svg
+											width="11"
+											height="11"
+											viewBox="0 0 24 24"
+											fill="none"
+											class="text-ink-faint dark:text-dark-ink-faint"
+											aria-hidden="true"
+										>
+											<rect
+												x="3"
+												y="11"
+												width="18"
+												height="11"
+												rx="2"
+												stroke="currentColor"
+												stroke-width="1.75"
+											/>
+											<path
+												d="M7 11V7a5 5 0 0 1 10 0v4"
+												stroke="currentColor"
+												stroke-width="1.75"
+												stroke-linecap="round"
+											/>
 										</svg>
 									{/if}
 								</div>
-								<p class="line-clamp-3 font-serif text-sm font-medium leading-snug text-ink dark:text-dark-ink">{doc.title}</p>
+								<p
+									class="line-clamp-3 font-serif text-sm leading-snug font-medium text-ink dark:text-dark-ink"
+								>
+									{doc.title}
+								</p>
 								{#if doc.updatedAt}
 									<p class="mt-auto font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
 										{new Date(doc.updatedAt).toLocaleDateString()}
@@ -870,128 +1050,185 @@
 						{/each}
 					</div>
 				{:else}
-				<div
-					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					{#each normalDocsVisible as doc (doc.id)}
-						<div class="group relative flex items-center {doc.generatedByAi ? 'rounded-lg border-2 border-accent/30 dark:border-accent/25' : ''}">
-							<div class="min-w-0 flex-1">
-								<DocumentItem
-									title={doc.title}
-									type={doc.type as DocumentType}
-									badge={doc.generatedByAi ? 'Example · Delete anytime' : getDocumentBadge(doc)}
-									onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
-								/>
-							</div>
-							{#if data.isOwner && activeShareDocSet.has(doc.id)}
-								<span
-									class="mr-1 shrink-0 text-accent"
-									title="Has active public links"
-									aria-label="Has active public links"
-								>
-									<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-										<circle cx="2" cy="10" r="1.5" fill="currentColor"/>
-										<path d="M2 7a3 3 0 0 1 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-										<path d="M2 3.5A6.5 6.5 0 0 1 8.5 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-									</svg>
-								</span>
-							{/if}
-							{#if isDocReadOnly(doc)}
-								<span
-									title="Read-only"
-									class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"
-									aria-label="Read-only"
-								>
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-										<rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.75"/>
-										<path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-									</svg>
-								</span>
-							{/if}
-							{#if navigatingToDocId === doc.id}
-								<span class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"><Spinner size="sm" /></span>
-							{/if}
-							{#if (data.openCommentsByDoc[doc.id] ?? 0) > 0}
-								<a
-									href="/projects/{data.project.id}/review#doc-{doc.id}"
-									onclick={(e) => e.stopPropagation()}
-									class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
-									title="View open comments"
-								>
-									<svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-										<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-									</svg>
-									{data.openCommentsByDoc[doc.id]}
-								</a>
-							{/if}
-							{#if canEdit}
-								<div class="relative">
-									<button
-										onclick={(e) => { e.stopPropagation(); docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id; }}
-										class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
-										aria-label="Document options"
+					<div
+						class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
+					>
+						{#each normalDocsVisible as doc (doc.id)}
+							<div
+								class="group relative flex items-center {doc.generatedByAi
+									? 'rounded-lg border-2 border-accent/30 dark:border-accent/25'
+									: ''}"
+							>
+								<div class="min-w-0 flex-1">
+									<DocumentItem
+										title={doc.title}
+										type={doc.type as DocumentType}
+										badge={doc.generatedByAi ? 'Example · Delete anytime' : getDocumentBadge(doc)}
+										onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
+									/>
+								</div>
+								{#if data.isOwner && activeShareDocSet.has(doc.id)}
+									<span
+										class="mr-1 shrink-0 text-accent"
+										title="Has active public links"
+										aria-label="Has active public links"
 									>
-										<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-											<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+										<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+											<circle cx="2" cy="10" r="1.5" fill="currentColor" />
+											<path
+												d="M2 7a3 3 0 0 1 3 3"
+												stroke="currentColor"
+												stroke-width="1.2"
+												stroke-linecap="round"
+											/>
+											<path
+												d="M2 3.5A6.5 6.5 0 0 1 8.5 10"
+												stroke="currentColor"
+												stroke-width="1.2"
+												stroke-linecap="round"
+											/>
 										</svg>
-									</button>
-									{#if docMenuOpenId === doc.id}
-										<div
-											class="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-											onclick={(e) => e.stopPropagation()}
+									</span>
+								{/if}
+								{#if isDocReadOnly(doc)}
+									<span
+										title="Read-only"
+										class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+										aria-label="Read-only"
+									>
+										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<rect
+												x="3"
+												y="11"
+												width="18"
+												height="11"
+												rx="2"
+												stroke="currentColor"
+												stroke-width="1.75"
+											/>
+											<path
+												d="M7 11V7a5 5 0 0 1 10 0v4"
+												stroke="currentColor"
+												stroke-width="1.75"
+												stroke-linecap="round"
+											/>
+										</svg>
+									</span>
+								{/if}
+								{#if navigatingToDocId === doc.id}
+									<span class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+										><Spinner size="sm" /></span
+									>
+								{/if}
+								{#if (data.openCommentsByDoc[doc.id] ?? 0) > 0}
+									<a
+										href="/projects/{data.project.id}/review#doc-{doc.id}"
+										onclick={(e) => e.stopPropagation()}
+										class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+										title="View open comments"
+									>
+										<svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+											<path
+												d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+										</svg>
+										{data.openCommentsByDoc[doc.id]}
+									</a>
+								{/if}
+								{#if canEdit}
+									<div class="relative">
+										<button
+											onclick={(e) => {
+												e.stopPropagation();
+												docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id;
+											}}
+											class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+											aria-label="Document options"
 										>
-											<a
-											href="/projects/{data.project.id}/documents/{doc.id}/history"
-											onclick={() => (docMenuOpenId = null)}
-											class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-										>
-											Ver historial
-										</a>
-										{#if canEdit}
-											<a
-												href="/projects/{data.project.id}/documents/{doc.id}?published"
-												onclick={() => (docMenuOpenId = null)}
-												class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+											<svg
+												width="14"
+												height="14"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+												aria-hidden="true"
 											>
-												Ver publicado
-											</a>
-										{/if}
-											{#if data.isOwner && data.collaborators.length > 0}
-												<button
-													onclick={() => { delegateDocTarget = { id: doc.id, title: doc.title }; docMenuOpenId = null; }}
+												<circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle
+													cx="12"
+													cy="19"
+													r="1.5"
+												/>
+											</svg>
+										</button>
+										{#if docMenuOpenId === doc.id}
+											<div
+												class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+												onclick={(e) => e.stopPropagation()}
+											>
+												<a
+													href="/projects/{data.project.id}/documents/{doc.id}/history"
+													onclick={() => (docMenuOpenId = null)}
 													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 												>
-													Delegate writing…
+													Ver historial
+												</a>
+												{#if canEdit}
+													<a
+														href="/projects/{data.project.id}/documents/{doc.id}?published"
+														onclick={() => (docMenuOpenId = null)}
+														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+													>
+														Ver publicado
+													</a>
+												{/if}
+												{#if data.isOwner && data.collaborators.length > 0}
+													<button
+														onclick={() => {
+															delegateDocTarget = { id: doc.id, title: doc.title };
+															docMenuOpenId = null;
+														}}
+														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+													>
+														Delegate writing…
+													</button>
+												{/if}
+												<button
+													onclick={() => {
+														openSaveAsTemplate(doc.id, doc.title);
+														docMenuOpenId = null;
+													}}
+													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+												>
+													Save as template
 												</button>
-											{/if}
-											<button
-												onclick={() => { openSaveAsTemplate(doc.id, doc.title); docMenuOpenId = null; }}
-												class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-											>
-												Save as template
-											</button>
-											<hr class="my-1 border-paper-border dark:border-dark-paper-border" />
-											<button
-												onclick={() => { deleteDocTarget = { id: doc.id, title: doc.title }; docMenuOpenId = null; }}
-												class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
-											>
-												Delete…
-											</button>
-										</div>
-									{/if}
-								</div>
-							{/if}
-						</div>
-					{/each}
-				</div>
-				{#if !docFilter.trim() && normalDocsFiltered.length > normalDocsLimit}
-					<button
-						onclick={() => (normalDocsLimit += DOCS_PAGE_SIZE)}
-						class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
-					>
-						Show {Math.min(DOCS_PAGE_SIZE, normalDocsFiltered.length - normalDocsLimit)} more
-					</button>
-				{/if}
+												<hr class="my-1 border-paper-border dark:border-dark-paper-border" />
+												<button
+													onclick={() => {
+														deleteDocTarget = { id: doc.id, title: doc.title };
+														docMenuOpenId = null;
+													}}
+													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
+												>
+													Delete…
+												</button>
+											</div>
+										{/if}
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+					{#if !docFilter.trim() && normalDocsFiltered.length > normalDocsLimit}
+						<button
+							onclick={() => (normalDocsLimit += DOCS_PAGE_SIZE)}
+							class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+						>
+							Show {Math.min(DOCS_PAGE_SIZE, normalDocsFiltered.length - normalDocsLimit)} more
+						</button>
+					{/if}
 				{/if}
 			{/if}
 
@@ -1013,65 +1250,85 @@
 				</div>
 				{#if privateDocs.length > 0}
 					{#if privateDocsFiltered.length === 0}
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">No notes match your filter.</p>
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							No notes match your filter.
+						</p>
 					{:else}
-					<div
-						class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						{#each privateDocsVisible as doc (doc.id)}
-							<div class="group relative flex items-center">
-								<div class="min-w-0 flex-1">
-									<DocumentItem
-										title={doc.title}
-										type={doc.type as DocumentType}
-										onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
-									/>
-								</div>
-								{#if navigatingToDocId === doc.id}
-									<span class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"><Spinner size="sm" /></span>
-								{/if}
-								{#if activeShareDocSet.has(doc.id)}
-									<span
-										class="mr-1 h-2 w-2 shrink-0 rounded-full bg-accent"
-										title="Has active public links"
-										aria-label="Has active public links"
-									></span>
-								{/if}
-								<div class="relative">
-									<button
-										onclick={(e) => { e.stopPropagation(); docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id; }}
-										class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
-										aria-label="Note options"
-									>
-										<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-											<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-										</svg>
-									</button>
-									{#if docMenuOpenId === doc.id}
-										<div
-											class="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-											onclick={(e) => e.stopPropagation()}
-										>
-											<button
-												onclick={() => { deleteDocTarget = { id: doc.id, title: doc.title }; docMenuOpenId = null; }}
-												class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
-											>
-												Delete…
-											</button>
-										</div>
-									{/if}
-								</div>
-							</div>
-						{/each}
-					</div>
-					{#if !docFilter.trim() && privateDocsFiltered.length > privateDocsLimit}
-						<button
-							onclick={() => (privateDocsLimit += DOCS_PAGE_SIZE)}
-							class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+						<div
+							class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
 						>
-							Show {Math.min(DOCS_PAGE_SIZE, privateDocsFiltered.length - privateDocsLimit)} more
-						</button>
-					{/if}
+							{#each privateDocsVisible as doc (doc.id)}
+								<div class="group relative flex items-center">
+									<div class="min-w-0 flex-1">
+										<DocumentItem
+											title={doc.title}
+											type={doc.type as DocumentType}
+											onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
+										/>
+									</div>
+									{#if navigatingToDocId === doc.id}
+										<span class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+											><Spinner size="sm" /></span
+										>
+									{/if}
+									{#if activeShareDocSet.has(doc.id)}
+										<span
+											class="mr-1 h-2 w-2 shrink-0 rounded-full bg-accent"
+											title="Has active public links"
+											aria-label="Has active public links"
+										></span>
+									{/if}
+									<div class="relative">
+										<button
+											onclick={(e) => {
+												e.stopPropagation();
+												docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id;
+											}}
+											class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+											aria-label="Note options"
+										>
+											<svg
+												width="14"
+												height="14"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+												aria-hidden="true"
+											>
+												<circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle
+													cx="12"
+													cy="19"
+													r="1.5"
+												/>
+											</svg>
+										</button>
+										{#if docMenuOpenId === doc.id}
+											<div
+												class="absolute top-full right-0 z-20 mt-1 w-36 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+												onclick={(e) => e.stopPropagation()}
+											>
+												<button
+													onclick={() => {
+														deleteDocTarget = { id: doc.id, title: doc.title };
+														docMenuOpenId = null;
+													}}
+													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
+												>
+													Delete…
+												</button>
+											</div>
+										{/if}
+									</div>
+								</div>
+							{/each}
+						</div>
+						{#if !docFilter.trim() && privateDocsFiltered.length > privateDocsLimit}
+							<button
+								onclick={() => (privateDocsLimit += DOCS_PAGE_SIZE)}
+								class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+							>
+								Show {Math.min(DOCS_PAGE_SIZE, privateDocsFiltered.length - privateDocsLimit)} more
+							</button>
+						{/if}
 					{/if}
 				{:else}
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
@@ -1139,13 +1396,27 @@
 		<!-- Sidebar -->
 		<ProjectSidebar
 			isOwner={data.isOwner}
-			canEdit={canEdit}
-			canUploadS3={canUploadS3}
+			{canEdit}
+			{canUploadS3}
 			{s3CtaType}
 			requirementCounts={data.requirementCounts}
-			collaborators={data.collaborators as { id: string; userId: string; role: 'author' | 'coauthor' | 'reviewer' | 'commenter'; name: string; email: string }[]}
+			collaborators={data.collaborators as {
+				id: string;
+				userId: string;
+				role: 'author' | 'coauthor' | 'reviewer' | 'commenter';
+				name: string;
+				email: string;
+			}[]}
 			{invitations}
-			project={data.project as { id: string; status: string; citationStyle?: string | null; doi?: string | null; version?: string | null; publishedAt?: Date | null; isSearchable?: boolean }}
+			project={data.project as {
+				id: string;
+				status: string;
+				citationStyle?: string | null;
+				doi?: string | null;
+				version?: string | null;
+				publishedAt?: Date | null;
+				isSearchable?: boolean;
+			}}
 		/>
 	</div>
 </div>
@@ -1162,8 +1433,12 @@
 
 <!-- Delegate writing (from list) -->
 {#if delegateDocTarget}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 backdrop-blur-sm dark:bg-dark-ink/30">
-		<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 backdrop-blur-sm dark:bg-dark-ink/30"
+	>
+		<div
+			class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+		>
 			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Delegate writing</h2>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				Select a collaborator to give exclusive write access to
@@ -1176,8 +1451,12 @@
 						disabled={delegatingInList}
 						class="flex items-center justify-between rounded-lg border border-paper-border px-4 py-2.5 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
 					>
-						<span class="font-sans text-sm text-ink dark:text-dark-ink">{collab.name ?? collab.userId}</span>
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{collab.role}</span>
+						<span class="font-sans text-sm text-ink dark:text-dark-ink"
+							>{collab.name ?? collab.userId}</span
+						>
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+							>{collab.role}</span
+						>
 					</button>
 				{/each}
 			</div>
@@ -1195,7 +1474,6 @@
 		</div>
 	</div>
 {/if}
-
 
 {#if showGenerateDraft}
 	<GenerateDraftModal

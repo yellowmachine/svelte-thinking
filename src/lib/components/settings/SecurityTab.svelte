@@ -7,7 +7,15 @@
 		twoFactorEnabled: boolean;
 	} = $props();
 
-	type TwoFaStep = 'idle' | 'enabling' | 'qr' | 'verifying' | 'done' | 'disabling' | 'view-confirm' | 'viewing';
+	type TwoFaStep =
+		| 'idle'
+		| 'enabling'
+		| 'qr'
+		| 'verifying'
+		| 'done'
+		| 'disabling'
+		| 'view-confirm'
+		| 'viewing';
 
 	let twoFaEnabled = $state(initialEnabled);
 	let twoFaStep: TwoFaStep = $state('idle');
@@ -230,7 +238,8 @@
 				<!-- Show QR and text secret for adding another device -->
 				<div class="mt-5 flex flex-col gap-4">
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Escanea el código QR con tu nueva app autenticadora, o introduce el código en texto manualmente.
+						Escanea el código QR con tu nueva app autenticadora, o introduce el código en texto
+						manualmente.
 					</p>
 					{#if twoFaQrDataUrl}
 						<img
@@ -245,7 +254,9 @@
 								Código en texto (para entrada manual):
 							</p>
 							<div class="flex items-center gap-2">
-								<code class="rounded bg-paper-ui px-3 py-2 font-mono text-sm tracking-widest text-ink dark:bg-dark-paper-ui dark:text-dark-ink">
+								<code
+									class="rounded bg-paper-ui px-3 py-2 font-mono text-sm tracking-widest text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
+								>
 									{twoFaTextSecret}
 								</code>
 								<button
@@ -352,11 +363,7 @@
 						Scan with your authenticator app
 					</p>
 					{#if twoFaQrDataUrl}
-						<img
-							src={twoFaQrDataUrl}
-							alt="QR code to configure 2FA"
-							class="h-44 w-44 rounded"
-						/>
+						<img src={twoFaQrDataUrl} alt="QR code to configure 2FA" class="h-44 w-44 rounded" />
 					{/if}
 				</div>
 
@@ -405,8 +412,20 @@
 								class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
 							>
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5" />
-									<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5" />
+									<rect
+										x="9"
+										y="9"
+										width="13"
+										height="13"
+										rx="2"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
+									<path
+										d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
 								</svg>
 								Copy all
 							</button>
@@ -414,7 +433,9 @@
 								type="button"
 								onclick={() => {
 									const blob = new Blob(
-										[`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`],
+										[
+											`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`
+										],
 										{ type: 'text/plain' }
 									);
 									const a = document.createElement('a');
@@ -426,7 +447,13 @@
 								class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
 							>
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									<path
+										d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
 								</svg>
 								Download
 							</button>
@@ -435,7 +462,10 @@
 				{/if}
 
 				<div class="flex flex-col gap-2">
-					<label for="totp-verify" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+					<label
+						for="totp-verify"
+						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+					>
 						Enter the 6-digit code to confirm
 					</label>
 					<div class="flex gap-2">
@@ -514,8 +544,20 @@
 								class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
 							>
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5" />
-									<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5" />
+									<rect
+										x="9"
+										y="9"
+										width="13"
+										height="13"
+										rx="2"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
+									<path
+										d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
 								</svg>
 								Copy all
 							</button>
@@ -523,7 +565,9 @@
 								type="button"
 								onclick={() => {
 									const blob = new Blob(
-										[`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`],
+										[
+											`Scholio 2FA recovery codes\n\n${twoFaBackupCodes.join('\n')}\n\nKeep these codes safe. Each code can only be used once.`
+										],
 										{ type: 'text/plain' }
 									);
 									const a = document.createElement('a');
@@ -535,7 +579,13 @@
 								class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
 							>
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									<path
+										d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
 								</svg>
 								Download
 							</button>

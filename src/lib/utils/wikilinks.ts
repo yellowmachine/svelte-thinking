@@ -19,8 +19,14 @@ export function withCodeProtection(text: string, fn: (s: string) => string): str
 	const placeholder = (i: number) => `\x00CODE${i}\x00`;
 
 	let protected_ = text
-		.replace(CODE_FENCE_RE, (m) => { slots.push(m); return placeholder(slots.length - 1); })
-		.replace(CODE_SPAN_RE, (m) => { slots.push(m); return placeholder(slots.length - 1); });
+		.replace(CODE_FENCE_RE, (m) => {
+			slots.push(m);
+			return placeholder(slots.length - 1);
+		})
+		.replace(CODE_SPAN_RE, (m) => {
+			slots.push(m);
+			return placeholder(slots.length - 1);
+		});
 
 	protected_ = fn(protected_);
 
@@ -42,7 +48,11 @@ const INDEX_PERSONS_RE = /\[\[index:persons\]\]/g;
 const TITLE_LINK_RE = /\[\[(?!doc:|person:|index:|@|#)([^\]|]+)\]\]/g;
 
 function headingAnchor(text: string): string {
-	return text.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+	return text
+		.trim()
+		.toLowerCase()
+		.replace(/\s+/g, '-')
+		.replace(/[^\w-]/g, '');
 }
 
 /** Extract all link targets from a markdown string.
@@ -68,7 +78,14 @@ export function extractWikilinks(markdown: string): { uuids: string[]; titles: s
 
 /** Returns a stable HTML id for a person name, e.g. "John Doe" → "person-john-doe". */
 export function personAnchorId(name: string): string {
-	return 'person-' + name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+	return (
+		'person-' +
+		name
+			.trim()
+			.toLowerCase()
+			.replace(/\s+/g, '-')
+			.replace(/[^\w-]/g, '')
+	);
 }
 
 /**
@@ -121,10 +138,7 @@ function _processWikilinks(
 ): string {
 	// Pre-pass: [[doc:...]] tokens alone on a line must be wrapped in blank lines
 	// so marked treats each as its own paragraph instead of collapsing them into one.
-	let result = markdown.replace(
-		/^[ \t]*(\[\[doc:[a-f0-9-]{36}\|[^\]]+\]\])[ \t]*$/gm,
-		'\n$1\n'
-	);
+	let result = markdown.replace(/^[ \t]*(\[\[doc:[a-f0-9-]{36}\|[^\]]+\]\])[ \t]*$/gm, '\n$1\n');
 
 	// First pass: resolve [[#Heading]] → markdown anchor links
 	result = result.replace(HEADING_LINK_RE, (_match, heading: string) => {

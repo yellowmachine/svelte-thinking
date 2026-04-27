@@ -11,11 +11,7 @@ const issuePriorityValues = ['low', 'medium', 'high', 'critical'] as const;
 export const issuesRouter = router({
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
 		return ctx.withRLS((db) =>
-			db
-				.select()
-				.from(issue)
-				.where(eq(issue.projectId, projectId))
-				.orderBy(asc(issue.createdAt))
+			db.select().from(issue).where(eq(issue.projectId, projectId)).orderBy(asc(issue.createdAt))
 		);
 	}),
 
@@ -106,10 +102,7 @@ export const issuesRouter = router({
 					updatedAt: issueComment.updatedAt
 				})
 				.from(issueComment)
-				.where(
-					eq(issueComment.issueId, issueId) &&
-					isNull(issueComment.parentCommentId)
-				)
+				.where(eq(issueComment.issueId, issueId) && isNull(issueComment.parentCommentId))
 				.orderBy(asc(issueComment.createdAt))
 		);
 
@@ -124,10 +117,7 @@ export const issuesRouter = router({
 					createdAt: issueComment.createdAt
 				})
 				.from(issueComment)
-				.where(
-					eq(issueComment.issueId, issueId) &&
-					isNotNull(issueComment.parentCommentId)
-				)
+				.where(eq(issueComment.issueId, issueId) && isNotNull(issueComment.parentCommentId))
 				.orderBy(asc(issueComment.createdAt))
 		);
 

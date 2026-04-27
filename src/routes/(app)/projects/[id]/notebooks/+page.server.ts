@@ -9,7 +9,11 @@ export const load: PageServerLoad = async (event) => {
 
 	const [proj, notebooks] = await Promise.all([
 		event.locals.withRLS((db) =>
-			db.select({ id: project.id, title: project.title }).from(project).where(eq(project.id, projectId)).limit(1)
+			db
+				.select({ id: project.id, title: project.title })
+				.from(project)
+				.where(eq(project.id, projectId))
+				.limit(1)
 		),
 		event.locals.withRLS((db) =>
 			db

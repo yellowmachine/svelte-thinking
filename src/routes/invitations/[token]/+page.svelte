@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { trpc } from '$lib/utils/trpc';
-	import { type ProjectInvitationStatus, isInvitationExpired, isInvitationAccepted, isInvitationPending } from '$lib/domain/invitation';
+	import {
+		type ProjectInvitationStatus,
+		isInvitationExpired,
+		isInvitationAccepted,
+		isInvitationPending
+	} from '$lib/domain/invitation';
 	import { type ProjectRole, PROJECT_ROLE_LABELS } from '$lib/domain/project';
 
 	let {
@@ -78,7 +83,6 @@
 						Redirecting to project...
 					</p>
 				</div>
-
 			{:else if isAlreadyAccepted}
 				<div class="text-center">
 					<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
@@ -94,7 +98,6 @@
 						Ir al proyecto
 					</button>
 				</div>
-
 			{:else if isExpired || data.invitation.status === 'cancelled'}
 				<div class="text-center">
 					<div
@@ -125,10 +128,9 @@
 						This link is no longer valid. Request a new invitation from the project owner.
 					</p>
 				</div>
-
 			{:else}
 				<div
-					class="mb-1 font-sans text-xs font-medium uppercase tracking-widest text-ink-faint dark:text-dark-ink-faint"
+					class="mb-1 font-sans text-xs font-medium tracking-widest text-ink-faint uppercase dark:text-dark-ink-faint"
 				>
 					Collaboration invitation
 				</div>
@@ -154,7 +156,9 @@
 							{data.invitation.invitedEmail}
 						</p>
 						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Role: <span class="font-medium text-accent">{PROJECT_ROLE_LABELS[data.invitation.role]}</span>
+							Role: <span class="font-medium text-accent"
+								>{PROJECT_ROLE_LABELS[data.invitation.role]}</span
+							>
 						</p>
 					</div>
 				</div>

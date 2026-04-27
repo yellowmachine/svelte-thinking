@@ -9,11 +9,25 @@ export const load: PageServerLoad = async (event) => {
 	const [rows, docRows] = await Promise.all([
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: documentVersion.id, versionNumber: documentVersion.versionNumber, content: documentVersion.content, changeDescription: documentVersion.changeDescription, createdAt: documentVersion.createdAt })
+				.select({
+					id: documentVersion.id,
+					versionNumber: documentVersion.versionNumber,
+					content: documentVersion.content,
+					changeDescription: documentVersion.changeDescription,
+					createdAt: documentVersion.createdAt
+				})
 				.from(documentVersion)
 				.where(eq(documentVersion.documentId, docId))
 				.orderBy(asc(documentVersion.versionNumber))
-		) as Promise<{ id: string; versionNumber: number; content: string; changeDescription: string | null; createdAt: Date }[]>,
+		) as Promise<
+			{
+				id: string;
+				versionNumber: number;
+				content: string;
+				changeDescription: string | null;
+				createdAt: Date;
+			}[]
+		>,
 		event.locals.withRLS((db) =>
 			db.select({ title: document.title }).from(document).where(eq(document.id, docId)).limit(1)
 		) as Promise<{ title: string }[]>

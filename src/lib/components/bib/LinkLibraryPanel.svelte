@@ -352,9 +352,7 @@
 				disabled={llLinking || llSelectedIds.size === 0}
 				class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 			>
-				{llLinking
-					? 'Linking…'
-					: `Link${llSelectedIds.size > 0 ? ` ${llSelectedIds.size}` : ''}`}
+				{llLinking ? 'Linking…' : `Link${llSelectedIds.size > 0 ? ` ${llSelectedIds.size}` : ''}`}
 			</button>
 		</div>
 	</div>

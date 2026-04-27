@@ -37,9 +37,7 @@ export const load: PageServerLoad = async (event) => {
 
 	// Proyectos owned que tienen al menos un share activo
 	const now = new Date();
-	const ownedProjectIds = projects
-		.filter((p) => p.ownerId === currentUserId)
-		.map((p) => p.id);
+	const ownedProjectIds = projects.filter((p) => p.ownerId === currentUserId).map((p) => p.id);
 
 	let activeShareProjectIds = new Set<string>();
 	if (ownedProjectIds.length > 0) {

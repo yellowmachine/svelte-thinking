@@ -13,7 +13,10 @@ export const load: PageServerLoad = async () => {
 		await Promise.all([
 			db.select({ total: count() }).from(user),
 			db.select({ total: count() }).from(waitlist).where(eq(waitlist.status, 'pending')),
-			db.select({ total: countDistinct(session.userId) }).from(session).where(gt(session.updatedAt, since))
+			db
+				.select({ total: countDistinct(session.userId) })
+				.from(session)
+				.where(gt(session.updatedAt, since))
 		]);
 
 	return { totalUsers, pendingWaitlist, recentlyActive, activityDays: ACTIVITY_DAYS };

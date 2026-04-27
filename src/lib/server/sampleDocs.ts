@@ -61,7 +61,7 @@ const notesReferences: StarterReference[] = [
 		title: 'The Microbiota-Gut-Brain Axis',
 		authors: [
 			{ first: 'John F.', last: 'Cryan' },
-			{ first: "Kenneth J.", last: "O'Riordan" },
+			{ first: 'Kenneth J.', last: "O'Riordan" },
 			{ first: 'Catherine S. M.', last: 'Cowan' }
 		],
 		year: '2019',

@@ -74,10 +74,10 @@
 	</div>
 
 	{#if connectivity.syncErrors.length > 0}
-		<div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-900/10">
-			<p class="font-sans text-sm font-medium text-red-600 dark:text-red-400">
-				Last sync errors:
-			</p>
+		<div
+			class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-900/10"
+		>
+			<p class="font-sans text-sm font-medium text-red-600 dark:text-red-400">Last sync errors:</p>
 			<ul class="mt-1 space-y-1">
 				{#each connectivity.syncErrors as err}
 					<li class="font-sans text-xs text-red-500 dark:text-red-400">
@@ -97,23 +97,39 @@
 	{#if loading}
 		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Loading…</p>
 	{:else if edits.length === 0}
-		<div class="rounded-xl border border-paper-border bg-paper p-10 text-center dark:border-dark-paper-border dark:bg-dark-paper">
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">No offline edits recorded.</p>
+		<div
+			class="rounded-xl border border-paper-border bg-paper p-10 text-center dark:border-dark-paper-border dark:bg-dark-paper"
+		>
+			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				No offline edits recorded.
+			</p>
 		</div>
 	{:else}
-		<div class="overflow-hidden rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+		<div
+			class="overflow-hidden rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+		>
 			{#each edits as edit, i (edit.id)}
-				<div class="flex items-center gap-3 px-4 py-3 {i > 0 ? 'border-t border-paper-border dark:border-dark-paper-border' : ''}">
+				<div
+					class="flex items-center gap-3 px-4 py-3 {i > 0
+						? 'border-t border-paper-border dark:border-dark-paper-border'
+						: ''}"
+				>
 					<div class="min-w-0 flex-1">
 						<p class="font-mono text-xs text-ink-muted dark:text-dark-ink-muted">
 							{edit.documentId}
 						</p>
 						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							{new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(edit.savedAt)}
+							{new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(
+								edit.savedAt
+							)}
 							· {edit.content.length} chars
 						</p>
 					</div>
-					<span class="shrink-0 rounded-full px-2.5 py-0.5 font-sans text-xs font-medium {statusStyle[edit.status] ?? ''}">
+					<span
+						class="shrink-0 rounded-full px-2.5 py-0.5 font-sans text-xs font-medium {statusStyle[
+							edit.status
+						] ?? ''}"
+					>
 						{statusLabel[edit.status] ?? edit.status}
 					</span>
 				</div>

@@ -33,13 +33,25 @@ export interface TypstDocumentOptions {
 // ---------------------------------------------------------------------------
 
 const CHAPTER_WORD: Record<string, string> = {
-	en: 'CHAPTER', es: 'CAPÍTULO', fr: 'CHAPITRE', de: 'KAPITEL',
-	pt: 'CAPÍTULO', it: 'CAPITOLO', ca: 'CAPÍTOL', nl: 'HOOFDSTUK'
+	en: 'CHAPTER',
+	es: 'CAPÍTULO',
+	fr: 'CHAPITRE',
+	de: 'KAPITEL',
+	pt: 'CAPÍTULO',
+	it: 'CAPITOLO',
+	ca: 'CAPÍTOL',
+	nl: 'HOOFDSTUK'
 };
 
 const TOC_WORD: Record<string, string> = {
-	en: 'Contents', es: 'Contenido', fr: 'Table des matières',
-	de: 'Inhalt', pt: 'Conteúdo', it: 'Indice', ca: 'Contingut', nl: 'Inhoud'
+	en: 'Contents',
+	es: 'Contenido',
+	fr: 'Table des matières',
+	de: 'Inhalt',
+	pt: 'Conteúdo',
+	it: 'Indice',
+	ca: 'Contingut',
+	nl: 'Inhoud'
 };
 
 function chapterWord(lang?: string): string {
@@ -63,12 +75,15 @@ function authorsBlock(authors: string[] | undefined): string {
 function metaLine(opts: TypstDocumentOptions, date: string): string {
 	const parts: string[] = [date];
 	if (opts.version) parts.push(`v${escapeTypstString(opts.version)}`);
-	if (opts.doi)     parts.push(`DOI: ${escapeTypstString(opts.doi)}`);
+	if (opts.doi) parts.push(`DOI: ${escapeTypstString(opts.doi)}`);
 	return `#text(size: 9pt, fill: luma(120))[${parts.join(' · ')}]`;
 }
 
 /** Returns the abstract section if one exists (title matches "abstract" or "resumen"). */
-function extractAbstract(sections: TypstSection[]): { abstract: TypstSection | null; rest: TypstSection[] } {
+function extractAbstract(sections: TypstSection[]): {
+	abstract: TypstSection | null;
+	rest: TypstSection[];
+} {
 	const idx = sections.findIndex((s) =>
 		/^(abstract|resumen|summary|sommaire|zusammenfassung)$/i.test(s.title.trim())
 	);
@@ -79,9 +94,7 @@ function extractAbstract(sections: TypstSection[]): { abstract: TypstSection | n
 }
 
 function renderSections(sections: TypstSection[]): string {
-	return sections
-		.map((s) => `== ${s.title}\n\n${s.content.trim()}`)
-		.join('\n\n#v(1em)\n\n');
+	return sections.map((s) => `== ${s.title}\n\n${s.content.trim()}`).join('\n\n#v(1em)\n\n');
 }
 
 /**
@@ -126,8 +139,14 @@ function abstractBlock(abstract: TypstSection | null): string {
 // Template builders
 // ---------------------------------------------------------------------------
 
-function templatePaper(opts: TypstDocumentOptions, sections: TypstSection[], bibStr: string): string {
-	const date = opts.date ?? new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+function templatePaper(
+	opts: TypstDocumentOptions,
+	sections: TypstSection[],
+	bibStr: string
+): string {
+	const date =
+		opts.date ??
+		new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 	const { abstract, rest } = extractAbstract(sections);
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
@@ -153,8 +172,14 @@ ${abstractBlock(abstract)}${renderSections(rest)}
 ${bibStr}`;
 }
 
-function templateThesis(opts: TypstDocumentOptions, sections: TypstSection[], bibStr: string): string {
-	const date = opts.date ?? new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+function templateThesis(
+	opts: TypstDocumentOptions,
+	sections: TypstSection[],
+	bibStr: string
+): string {
+	const date =
+		opts.date ??
+		new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 	const { abstract, rest } = extractAbstract(sections);
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
@@ -211,8 +236,14 @@ ${renderSections(rest)}
 ${bibStr}`;
 }
 
-function templateMedical(opts: TypstDocumentOptions, sections: TypstSection[], bibStr: string): string {
-	const date = opts.date ?? new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+function templateMedical(
+	opts: TypstDocumentOptions,
+	sections: TypstSection[],
+	bibStr: string
+): string {
+	const date =
+		opts.date ??
+		new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 	const { abstract, rest } = extractAbstract(sections);
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
@@ -250,8 +281,14 @@ ${abstractBlock(abstract)}${renderSections(rest)}
 ${bibStr}`;
 }
 
-function templateReport(opts: TypstDocumentOptions, sections: TypstSection[], bibStr: string): string {
-	const date = opts.date ?? new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+function templateReport(
+	opts: TypstDocumentOptions,
+	sections: TypstSection[],
+	bibStr: string
+): string {
+	const date =
+		opts.date ??
+		new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
 #set page(
@@ -303,8 +340,14 @@ ${renderSections(sections)}
 ${bibStr}`;
 }
 
-function templateGeneric(opts: TypstDocumentOptions, sections: TypstSection[], bibStr: string): string {
-	const date = opts.date ?? new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+function templateGeneric(
+	opts: TypstDocumentOptions,
+	sections: TypstSection[],
+	bibStr: string
+): string {
+	const date =
+		opts.date ??
+		new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 	const { abstract, rest } = extractAbstract(sections);
 	return `\
 #set document(title: "${escapeTypstString(opts.title)}")
@@ -330,8 +373,14 @@ ${abstractBlock(abstract)}${renderSections(rest)}
 ${bibStr}`;
 }
 
-function templateBook(opts: TypstDocumentOptions, sections: TypstSection[], bibStr: string): string {
-	const date = opts.date ?? new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+function templateBook(
+	opts: TypstDocumentOptions,
+	sections: TypstSection[],
+	bibStr: string
+): string {
+	const date =
+		opts.date ??
+		new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 	const lang = opts.language?.split('-')[0] ?? 'en';
 	const chWord = chapterWord(lang);
 	const toc = tocWord(lang);
@@ -405,12 +454,18 @@ export function buildTypstSource(opts: TypstDocumentOptions): string {
 	const bibStr = buildBibSection(opts);
 
 	switch (opts.template) {
-		case 'paper':   return templatePaper(opts, opts.sections, bibStr);
-		case 'thesis':  return templateThesis(opts, opts.sections, bibStr);
-		case 'medical': return templateMedical(opts, opts.sections, bibStr);
-		case 'report':  return templateReport(opts, opts.sections, bibStr);
-		case 'book':    return templateBook(opts, opts.sections, bibStr);
-		default:        return templateGeneric(opts, opts.sections, bibStr);
+		case 'paper':
+			return templatePaper(opts, opts.sections, bibStr);
+		case 'thesis':
+			return templateThesis(opts, opts.sections, bibStr);
+		case 'medical':
+			return templateMedical(opts, opts.sections, bibStr);
+		case 'report':
+			return templateReport(opts, opts.sections, bibStr);
+		case 'book':
+			return templateBook(opts, opts.sections, bibStr);
+		default:
+			return templateGeneric(opts, opts.sections, bibStr);
 	}
 }
 
@@ -420,7 +475,7 @@ export async function compileToPdf(
 	files?: Record<string, string>
 ): Promise<Uint8Array> {
 	const hasImages = images && Object.keys(images).length > 0;
-	const hasFiles  = files  && Object.keys(files).length  > 0;
+	const hasFiles = files && Object.keys(files).length > 0;
 	const needsJson = hasImages || hasFiles;
 
 	const res = await fetch(`${TYPST_URL}/compile`, {
@@ -450,16 +505,16 @@ function serializeRefs(opts: TypstDocumentOptions): string {
 				.join(' and ');
 			if (authors) fields.push(`  author      = {${authors}}`);
 			fields.push(`  title        = {${ref.title}}`);
-			if (ref.year)        fields.push(`  year         = {${ref.year}}`);
-			if (ref.journal)     fields.push(`  journal      = {${ref.journal}}`);
-			if (ref.volume)      fields.push(`  volume       = {${ref.volume}}`);
-			if (ref.issue)       fields.push(`  number       = {${ref.issue}}`);
-			if (ref.pages)       fields.push(`  pages        = {${ref.pages}}`);
-			if (ref.publisher)   fields.push(`  publisher    = {${ref.publisher}}`);
-			if (ref.booktitle)   fields.push(`  booktitle    = {${ref.booktitle}}`);
-			if (ref.school)      fields.push(`  school       = {${ref.school}}`);
-			if (ref.doi)         fields.push(`  doi          = {${ref.doi}}`);
-			if (ref.url)         fields.push(`  url          = {${ref.url}}`);
+			if (ref.year) fields.push(`  year         = {${ref.year}}`);
+			if (ref.journal) fields.push(`  journal      = {${ref.journal}}`);
+			if (ref.volume) fields.push(`  volume       = {${ref.volume}}`);
+			if (ref.issue) fields.push(`  number       = {${ref.issue}}`);
+			if (ref.pages) fields.push(`  pages        = {${ref.pages}}`);
+			if (ref.publisher) fields.push(`  publisher    = {${ref.publisher}}`);
+			if (ref.booktitle) fields.push(`  booktitle    = {${ref.booktitle}}`);
+			if (ref.school) fields.push(`  school       = {${ref.school}}`);
+			if (ref.doi) fields.push(`  doi          = {${ref.doi}}`);
+			if (ref.url) fields.push(`  url          = {${ref.url}}`);
 			return `@${ref.type}{${ref.citeKey},\n${fields.join(',\n')}\n}`;
 		})
 		.join('\n\n');

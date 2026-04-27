@@ -15,7 +15,9 @@
 			>
 				✉️
 			</div>
-			<h2 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Check your email</h2>
+			<h2 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+				Check your email
+			</h2>
 			<p class="mt-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				If an account exists for <span class="font-medium text-ink dark:text-dark-ink"
 					>{form.email}</span
@@ -24,10 +26,7 @@
 			<p class="mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 				Can't find it? Check your spam folder.
 			</p>
-			<a
-				href="/login"
-				class="mt-6 inline-block font-sans text-sm text-accent hover:underline"
-			>
+			<a href="/login" class="mt-6 inline-block font-sans text-sm text-accent hover:underline">
 				Back to sign in
 			</a>
 		</div>

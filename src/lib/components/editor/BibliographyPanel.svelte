@@ -44,7 +44,8 @@
 		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
 	>
 		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Bibliografía</h3>
-		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{refs.length} refs</span>
+		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{refs.length} refs</span
+		>
 	</div>
 
 	<div class="border-b border-paper-border px-3 py-2 dark:border-dark-paper-border">
@@ -105,7 +106,7 @@
 									<span class="font-mono text-[10px] font-semibold text-accent">:{s.slug}</span>
 									{#if s.notes}
 										<p
-											class="mt-0.5 whitespace-pre-wrap font-sans text-[10px] leading-snug text-ink-muted dark:text-dark-ink-muted"
+											class="mt-0.5 font-sans text-[10px] leading-snug whitespace-pre-wrap text-ink-muted dark:text-dark-ink-muted"
 										>
 											{s.notes}
 										</p>

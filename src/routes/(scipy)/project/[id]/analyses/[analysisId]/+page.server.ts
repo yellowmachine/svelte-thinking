@@ -9,7 +9,11 @@ export const load: PageServerLoad = async (event) => {
 	const { id: projectId, analysisId } = event.params;
 
 	const [proj] = await event.locals.withRLS((db) =>
-		db.select({ id: project.id, title: project.title }).from(project).where(eq(project.id, projectId)).limit(1)
+		db
+			.select({ id: project.id, title: project.title })
+			.from(project)
+			.where(eq(project.id, projectId))
+			.limit(1)
 	);
 	if (!proj) error(404, 'Project not found');
 

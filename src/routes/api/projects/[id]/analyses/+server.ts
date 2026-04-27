@@ -16,10 +16,7 @@ export const GET: RequestHandler = async (event) => {
 	if (!proj) error(404, 'Project not found');
 
 	const analyses = await event.locals.withRLS((db) =>
-		db
-			.select()
-			.from(projectAnalysis)
-			.where(eq(projectAnalysis.projectId, projectId))
+		db.select().from(projectAnalysis).where(eq(projectAnalysis.projectId, projectId))
 	);
 
 	return json(analyses);
@@ -41,11 +38,7 @@ export const POST: RequestHandler = async (event) => {
 			db.select({ id: project.id }).from(project).where(eq(project.id, projectId)).limit(1)
 		),
 		event.locals.withRLS((db) =>
-			db
-				.select()
-				.from(projectDataset)
-				.where(eq(projectDataset.id, datasetId))
-				.limit(1)
+			db.select().from(projectDataset).where(eq(projectDataset.id, datasetId)).limit(1)
 		)
 	]);
 

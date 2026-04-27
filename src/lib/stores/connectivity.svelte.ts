@@ -49,10 +49,18 @@ class ConnectivityStore {
 			} catch (e) {
 				const isForbidden =
 					e instanceof Error &&
-					('code' in e ? (e as { code?: string }).code === 'FORBIDDEN' : e.message.includes('FORBIDDEN'));
+					('code' in e
+						? (e as { code?: string }).code === 'FORBIDDEN'
+						: e.message.includes('FORBIDDEN'));
 				const finalStatus = isForbidden ? 'writer_lost' : 'failed';
-				const message = isForbidden ? 'Write access lost' : (e instanceof Error ? e.message : 'Unknown error');
-				console.warn(`[offline] syncAll: ✗ failed document ${documentId} — ${message} (status: ${finalStatus})`);
+				const message = isForbidden
+					? 'Write access lost'
+					: e instanceof Error
+						? e.message
+						: 'Unknown error';
+				console.warn(
+					`[offline] syncAll: ✗ failed document ${documentId} — ${message} (status: ${finalStatus})`
+				);
 				errors.push({ documentId, message, at: new Date() });
 				await offlineDb.pendingEdits
 					.where({ documentId, status: 'pending' })

@@ -43,7 +43,8 @@
 		comment: {
 			...base,
 			id: 'c-2',
-			anchorText: 'La diversidad epistémica en equipos interdisciplinares ha sido ampliamente documentada'
+			anchorText:
+				'La diversidad epistémica en equipos interdisciplinares ha sido ampliamente documentada'
 		}
 	}}
 />

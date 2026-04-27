@@ -1,5 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { isUniqueViolation, isForeignKeyViolation, isRlsViolation, constraintName } from './detect-db-error';
+import {
+	isUniqueViolation,
+	isForeignKeyViolation,
+	isRlsViolation,
+	constraintName
+} from './detect-db-error';
 
 type Entity = 'document' | 'project' | 'membership';
 
@@ -20,11 +25,17 @@ export function mapDbError(err: unknown, meta: Meta): TRPCError {
 	}
 
 	if (isRlsViolation(err)) {
-		return new TRPCError({ code: 'FORBIDDEN', message: 'No tienes permisos para realizar esta operación' });
+		return new TRPCError({
+			code: 'FORBIDDEN',
+			message: 'No tienes permisos para realizar esta operación'
+		});
 	}
 
 	if (isForeignKeyViolation(err)) {
-		return new TRPCError({ code: 'BAD_REQUEST', message: 'La referencia relacionada no existe o no es válida' });
+		return new TRPCError({
+			code: 'BAD_REQUEST',
+			message: 'La referencia relacionada no existe o no es válida'
+		});
 	}
 
 	return new TRPCError({

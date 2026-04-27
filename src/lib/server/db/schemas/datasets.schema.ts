@@ -3,26 +3,27 @@ import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';
 
-export const projectDataset = scholioSchema.table(
-	'project_dataset',
-	{
-		id: text('id').primaryKey(),
-		projectId: text('project_id')
-			.notNull()
-			.references(() => project.id, { onDelete: 'cascade' }),
-		uploadedBy: text('uploaded_by').notNull(),
-		filename: text('filename').notNull(), // original filename — used as the $ref name
-		mimeType: text('mime_type').notNull(),
-		size: integer('size').notNull(),
-		content: text('content').notNull(), // raw file content stored in DB (CSV/TSV/JSON)
-		createdAt: timestamp('created_at').notNull().defaultNow()
-	},
-	(t) => [
-		index('dataset_project_idx').on(t.projectId),
+export const projectDataset = scholioSchema
+	.table(
+		'project_dataset',
+		{
+			id: text('id').primaryKey(),
+			projectId: text('project_id')
+				.notNull()
+				.references(() => project.id, { onDelete: 'cascade' }),
+			uploadedBy: text('uploaded_by').notNull(),
+			filename: text('filename').notNull(), // original filename — used as the $ref name
+			mimeType: text('mime_type').notNull(),
+			size: integer('size').notNull(),
+			content: text('content').notNull(), // raw file content stored in DB (CSV/TSV/JSON)
+			createdAt: timestamp('created_at').notNull().defaultNow()
+		},
+		(t) => [
+			index('dataset_project_idx').on(t.projectId),
 
-		pgPolicy('dataset_access', {
-			for: 'all',
-			using: sql`
+			pgPolicy('dataset_access', {
+				for: 'all',
+				using: sql`
 				EXISTS (
 					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
@@ -36,6 +37,7 @@ export const projectDataset = scholioSchema.table(
 					)
 				)
 			`
-		})
-	]
-).enableRLS();
+			})
+		]
+	)
+	.enableRLS();

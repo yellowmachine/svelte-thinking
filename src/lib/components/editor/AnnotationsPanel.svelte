@@ -215,7 +215,9 @@
 							</button>
 						</div>
 					{:else if s.notes}
-						<p class="whitespace-pre-wrap font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">
+						<p
+							class="font-sans text-xs leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink"
+						>
 							{s.notes}
 						</p>
 					{/if}

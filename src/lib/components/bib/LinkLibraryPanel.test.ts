@@ -26,15 +26,15 @@ function makeRef(overrides: Partial<LibraryRef> = {}): LibraryRef {
 }
 
 // llFiltered logic mirrored from LinkLibraryPanel
-function filterRefs(
-	refs: LibraryRef[],
-	search: string,
-	filterProjectId: string
-): LibraryRef[] {
+function filterRefs(refs: LibraryRef[], search: string, filterProjectId: string): LibraryRef[] {
 	const q = search.toLowerCase().trim();
 	return refs.filter((r) => {
 		if (filterProjectId === '__unlinked__' && r.projectIds.length > 0) return false;
-		if (filterProjectId && filterProjectId !== '__unlinked__' && !r.projectIds.includes(filterProjectId))
+		if (
+			filterProjectId &&
+			filterProjectId !== '__unlinked__' &&
+			!r.projectIds.includes(filterProjectId)
+		)
 			return false;
 		if (!q) return true;
 		return (
@@ -80,10 +80,7 @@ describe('LinkLibraryPanel filter logic', () => {
 	});
 
 	it('shows only unlinked refs when __unlinked__ filter is active', () => {
-		const refs = [
-			makeRef({ id: 'r1', projectIds: [] }),
-			makeRef({ id: 'r2', projectIds: ['p1'] })
-		];
+		const refs = [makeRef({ id: 'r1', projectIds: [] }), makeRef({ id: 'r2', projectIds: ['p1'] })];
 		expect(filterRefs(refs, '', '__unlinked__')).toHaveLength(1);
 		expect(filterRefs(refs, '', '__unlinked__')[0].id).toBe('r1');
 	});

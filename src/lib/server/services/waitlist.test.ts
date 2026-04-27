@@ -135,7 +135,10 @@ describe('waitlist: approve y validación de token', () => {
 
 describe('waitlist: token expirado', () => {
 	it('token expirado no pasa validación', async () => {
-		const { ok, id } = await joinWaitlist(db, { email: 'expired@test.com', name: 'Expired' }) as { ok: true; id: string };
+		const { ok, id } = (await joinWaitlist(db, { email: 'expired@test.com', name: 'Expired' })) as {
+			ok: true;
+			id: string;
+		};
 		expect(ok).toBe(true);
 
 		const expiredToken = crypto.randomUUID();

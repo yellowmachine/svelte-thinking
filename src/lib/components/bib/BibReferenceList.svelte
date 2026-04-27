@@ -46,7 +46,10 @@
 		ondelete: (ref: BibRef) => void;
 		onaddnew: () => void;
 		onimport: () => void;
-		onreferenceupdated: (id: string, updates: { pdfKey?: string | null; pdfUrl?: string | null }) => void;
+		onreferenceupdated: (
+			id: string,
+			updates: { pdfKey?: string | null; pdfUrl?: string | null }
+		) => void;
 	} = $props();
 
 	let copiedId = $state<string | null>(null);
@@ -289,9 +292,7 @@
 						</button>
 
 						{#if expandedSubnotes.has(ref.id)}
-							<div
-								class="mt-1.5 border-l-2 border-paper-border pl-3 dark:border-dark-paper-border"
-							>
+							<div class="mt-1.5 border-l-2 border-paper-border pl-3 dark:border-dark-paper-border">
 								{#if subnotesByRef[ref.id]?.length > 0}
 									<ul class="flex flex-col gap-1">
 										{#each subnotesByRef[ref.id] as sn (sn.id)}
@@ -347,9 +348,7 @@
 										{/each}
 									</ul>
 								{:else if !loadingSubnotes.has(ref.id)}
-									<p
-										class="font-sans text-[11px] text-ink-faint italic dark:text-dark-ink-faint"
-									>
+									<p class="font-sans text-[11px] text-ink-faint italic dark:text-dark-ink-faint">
 										No subnotes yet.
 									</p>
 								{/if}

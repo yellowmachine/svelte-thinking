@@ -1,7 +1,11 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { eq, desc, and, gt, isNull } from 'drizzle-orm';
-import { document, documentVersion, documentVersionShare } from '$lib/server/db/schemas/documents.schema';
+import {
+	document,
+	documentVersion,
+	documentVersionShare
+} from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 
 export const load: PageServerLoad = async (event) => {
@@ -50,9 +54,8 @@ export const load: PageServerLoad = async (event) => {
 	const proj = projectRows[0];
 	const ownerId = proj?.ownerId ?? '';
 	const doc = docRows[0];
-	const canWrite = doc.writerUserId === null
-		? currentUserId === ownerId
-		: currentUserId === doc.writerUserId;
+	const canWrite =
+		doc.writerUserId === null ? currentUserId === ownerId : currentUserId === doc.writerUserId;
 
 	const isOwner = doc.ownerUserId === currentUserId;
 

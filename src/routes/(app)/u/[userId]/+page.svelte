@@ -109,7 +109,9 @@
 <div class="mx-auto max-w-2xl px-6 py-10">
 	<!-- Cabecera del perfil -->
 	<div class="flex items-start gap-5">
-		<div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent/20 font-serif text-2xl font-semibold text-accent">
+		<div
+			class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent/20 font-serif text-2xl font-semibold text-accent"
+		>
 			{initials}
 		</div>
 		<div class="min-w-0 flex-1">
@@ -130,7 +132,9 @@
 						class="flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-accent dark:text-dark-ink-faint"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="#A6CE39" class="shrink-0">
-							<path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"/>
+							<path
+								d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM7.369 4.378c.525 0 .947.431.947.947s-.422.947-.947.947a.95.95 0 0 1-.947-.947c0-.525.422-.947.947-.947zm-.722 3.038h1.444v10.041H6.647V7.416zm3.562 0h3.9c3.712 0 5.344 2.653 5.344 5.025 0 2.578-2.016 5.016-5.325 5.016h-3.919V7.416zm1.444 1.303v7.444h2.297c3.272 0 3.872-2.484 3.872-3.722 0-2.016-1.284-3.722-3.884-3.722h-2.285z"
+							/>
 						</svg>
 						{data.profile.orcid}
 					</a>
@@ -139,8 +143,18 @@
 							title="Identity verified with ORCID"
 							class="inline-flex items-center gap-0.5 rounded-full bg-green-100 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400"
 						>
-							<svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-								<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+							<svg
+								width="10"
+								height="10"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+								aria-hidden="true"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+									clip-rule="evenodd"
+								/>
 							</svg>
 							Verificado
 						</span>
@@ -156,13 +170,17 @@
 	<!-- Reputación como colaborador -->
 	{#if data.reputation.projectsTotal > 0 || data.reputation.totalCommits > 0}
 		<section class="mt-8">
-			<h2 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
+			<h2
+				class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+			>
 				Collaboration history
 			</h2>
 
 			<!-- Stats row -->
 			<div class="grid grid-cols-3 gap-3">
-				<div class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<p class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
 						{data.reputation.projectsTotal}
 					</p>
@@ -170,13 +188,17 @@
 						{data.reputation.projectsTotal === 1 ? 'project' : 'projects'}
 					</p>
 				</div>
-				<div class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<p class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
 						{data.reputation.projectsCompleted}
 					</p>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">completed</p>
 				</div>
-				<div class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<p class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
 						{data.reputation.totalCommits}
 					</p>
@@ -188,7 +210,11 @@
 			{#if data.reputation.rolesWorked.length > 0}
 				<div class="mt-3 flex flex-wrap gap-2">
 					{#each data.reputation.rolesWorked as role (role)}
-						<span class="rounded-full px-2.5 py-1 font-sans text-xs font-medium {roleColor[role as Role] ?? 'bg-paper-border text-ink-muted'}">
+						<span
+							class="rounded-full px-2.5 py-1 font-sans text-xs font-medium {roleColor[
+								role as Role
+							] ?? 'bg-paper-border text-ink-muted'}"
+						>
 							{roleLabel[role as Role] ?? role}
 						</span>
 					{/each}
@@ -211,18 +237,24 @@
 	<!-- Proyectos buscables que pertenecen a este usuario -->
 	{#if data.ownedSearchableProjects.length > 0}
 		<section class="mt-8">
-			<h2 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
+			<h2
+				class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+			>
 				Open projects
 			</h2>
 			<ul class="flex flex-col gap-3">
 				{#each data.ownedSearchableProjects as proj (proj.id)}
-					<li class="flex items-center justify-between gap-4 rounded-xl border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper">
+					<li
+						class="flex items-center justify-between gap-4 rounded-xl border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+					>
 						<div class="min-w-0">
 							<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
 								{proj.title}
 							</p>
 							{#if proj.description}
-								<p class="mt-0.5 truncate font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								<p
+									class="mt-0.5 truncate font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+								>
 									{proj.description}
 								</p>
 							{/if}
@@ -251,7 +283,9 @@
 	<!-- Invite to collaborate (solo si no es el propio perfil) -->
 	{#if !data.isOwnProfile}
 		<section class="mt-8">
-			<h2 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
+			<h2
+				class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+			>
 				Invite to collaborate
 			</h2>
 
@@ -271,15 +305,20 @@
 					No tienes proyectos donde puedas invitar.
 				</p>
 			{:else}
-				<div class="flex flex-col gap-3 rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="flex flex-col gap-3 rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<div class="flex flex-col gap-1">
-						<label for="inv-project" class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<label
+							for="inv-project"
+							class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+						>
 							Proyecto
 						</label>
 						<select
 							id="inv-project"
 							bind:value={inviteProjectId}
-							class="rounded-lg border border-paper-border bg-surface px-3 py-2 font-sans text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-surface dark:text-dark-ink"
+							class="bg-surface dark:bg-dark-surface rounded-lg border border-paper-border px-3 py-2 font-sans text-sm text-ink focus:ring-2 focus:ring-accent focus:outline-none dark:border-dark-paper-border dark:text-dark-ink"
 						>
 							{#each myProjects as p (p.id)}
 								<option value={p.id}>{p.title}</option>
@@ -294,7 +333,7 @@
 						<select
 							id="inv-role"
 							bind:value={inviteRole}
-							class="rounded-lg border border-paper-border bg-surface px-3 py-2 font-sans text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-surface dark:text-dark-ink"
+							class="bg-surface dark:bg-dark-surface rounded-lg border border-paper-border px-3 py-2 font-sans text-sm text-ink focus:ring-2 focus:ring-accent focus:outline-none dark:border-dark-paper-border dark:text-dark-ink"
 						>
 							{#each roleValues as role (role)}
 								<option value={role}>{roleLabel[role]}</option>
@@ -315,7 +354,10 @@
 							{sendingInvite ? 'Sending…' : 'Send invitation'}
 						</button>
 						<button
-							onclick={() => { inviting = false; inviteError = ''; }}
+							onclick={() => {
+								inviting = false;
+								inviteError = '';
+							}}
 							class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted"
 						>
 							Cancelar

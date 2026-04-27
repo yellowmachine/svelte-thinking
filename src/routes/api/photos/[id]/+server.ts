@@ -30,9 +30,7 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	const client = createS3Client(s3);
-	const response = await client.send(
-		new GetObjectCommand({ Bucket: s3.bucket, Key: photo.key })
-	);
+	const response = await client.send(new GetObjectCommand({ Bucket: s3.bucket, Key: photo.key }));
 
 	if (!response.Body) error(502, 'Empty response from S3');
 

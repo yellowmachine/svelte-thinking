@@ -33,11 +33,27 @@
 			Scholio
 		</a>
 
-		<div class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper">
-			<div class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="text-red-500 dark:text-red-400" aria-hidden="true">
-					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.75"/>
-					<path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+		<div
+			class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper"
+		>
+			<div
+				class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20"
+			>
+				<svg
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					class="text-red-500 dark:text-red-400"
+					aria-hidden="true"
+				>
+					<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.75" />
+					<path
+						d="M12 8v4M12 16h.01"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+					/>
 				</svg>
 			</div>
 

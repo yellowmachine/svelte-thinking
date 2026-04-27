@@ -552,8 +552,6 @@
 	// Subnote form (triggered from floating button)
 	let showSubnote = $state(false);
 
-
-
 	// Annotations panel — subnotes for this document's source reference
 	type Subnote = {
 		id: number;
@@ -573,7 +571,6 @@
 			referenceId: sourceReference.id
 		})) as Subnote[];
 	}
-
 
 	// New comment form (triggered from floating button)
 	let showNewComment = $state(false);
@@ -732,8 +729,6 @@
 		if (showComments) showHistory = false;
 	}
 
-
-
 	function handleCommentClick(id: string) {
 		const c = inlineComments.find((x) => x.id === id);
 		if (!c) return;
@@ -855,7 +850,6 @@
 		paragraphCommentPos = coords;
 		showNewParagraphComment = true;
 	}
-
 
 	// Export dropdown
 	let showExport = $state(false);
@@ -1008,7 +1002,6 @@
 	let showFloating = $state(false);
 	let floatingDebounce: ReturnType<typeof setTimeout> | null = null;
 
-
 	function updateSelection(sel: typeof currentSelection) {
 		currentSelection = sel;
 		activeBibCiteKey = sel ? getCiteKeyAtPos(sel.from) : null;
@@ -1149,8 +1142,6 @@
 				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 		}, 150);
 	});
-
-
 </script>
 
 {#if data.document}
@@ -1822,19 +1813,19 @@
 									ondocchange={handleDocChange}
 									onselectionchange={updateSelection}
 									onauthorhover={(name, coords) => showAuthorInfo(name, coords)}
-								onheadinghover={(info, coords) => {
-									headingTooltip = { title: info.title, wordCount: info.wordCount, coords };
-								}}
-								{commentRanges}
-								{scrollToRange}
-								onlookup={lookupNames}
-								{onwordprefix}
-								{onwordprefixclear}
-								{onwordghosttab}
-								{onheadingprefix}
-								{onheadingprefixclear}
-								{onheadingghosttab}
-								{spellLanguage}
+									onheadinghover={(info, coords) => {
+										headingTooltip = { title: info.title, wordCount: info.wordCount, coords };
+									}}
+									{commentRanges}
+									{scrollToRange}
+									onlookup={lookupNames}
+									{onwordprefix}
+									{onwordprefixclear}
+									{onwordghosttab}
+									{onheadingprefix}
+									{onheadingprefixclear}
+									{onheadingghosttab}
+									{spellLanguage}
 								/>
 							</div>
 						</div>
@@ -1922,16 +1913,16 @@
 			{/if}
 
 			<SelectionOverlays
-				showFloating={showFloating}
-				currentSelection={currentSelection}
-				projectRefs={projectRefs}
-				sourceReference={sourceReference}
-				hasAiKey={hasAiKey}
-				reviewTypeLabels={reviewTypeLabels}
+				{showFloating}
+				{currentSelection}
+				{projectRefs}
+				{sourceReference}
+				{hasAiKey}
+				{reviewTypeLabels}
 				documentId={data.document.id}
 				currentUserId={data.currentUserId}
 				currentUserName={(data as any).user?.name ?? null}
-				content={content}
+				{content}
 				bind:showNewComment
 				bind:showSubnote
 				bind:showReviewTypeMenu
@@ -2171,7 +2162,10 @@
 					onclose={toggleEnrich}
 					onapplyperson={(name) => {
 						const token = `[[person:${name}]]`;
-						const re = new RegExp(`(?<!\\[\\[person:)\\b${name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b(?![^\\[]*\\]\\])`, 'g');
+						const re = new RegExp(
+							`(?<!\\[\\[person:)\\b${name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b(?![^\\[]*\\]\\])`,
+							'g'
+						);
 						content = content.replace(re, token);
 					}}
 					oapplyref={(ctx, text, citeKey) => {
@@ -2179,7 +2173,10 @@
 						if (ctxIdx !== -1) {
 							const textIdx = content.indexOf(text, ctxIdx);
 							if (textIdx !== -1 && textIdx < ctxIdx + ctx.length)
-								content = content.slice(0, textIdx) + `[[@${citeKey}]]` + content.slice(textIdx + text.length);
+								content =
+									content.slice(0, textIdx) +
+									`[[@${citeKey}]]` +
+									content.slice(textIdx + text.length);
 						} else {
 							content = content.replace(text, `[[@${citeKey}]]`);
 						}

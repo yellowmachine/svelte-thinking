@@ -83,12 +83,12 @@
 						{currentUserId}
 						isActive={c.id === activeCommentId}
 						onclick={oncommentclick}
-						onresolved={onresolved}
-						onreopened={onreopened}
-						onreplyadded={onreplyadded}
-						ondeleted={ondeleted}
+						{onresolved}
+						{onreopened}
+						{onreplyadded}
+						{ondeleted}
 						{chapters}
-						onlookup={onlookup}
+						{onlookup}
 					/>
 				</div>
 			{/each}

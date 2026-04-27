@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { type ProjectRole, type ProjectStatus, PROJECT_ROLE_LABELS, PROJECT_STATUS_LABELS } from '$lib/domain/project';
+	import {
+		type ProjectRole,
+		type ProjectStatus,
+		PROJECT_ROLE_LABELS,
+		PROJECT_STATUS_LABELS
+	} from '$lib/domain/project';
 
 	type Variant = ProjectRole | ProjectStatus;
 
@@ -24,7 +29,9 @@
 </script>
 
 <span
-	class="inline-flex items-center rounded-full px-2.5 py-0.5 font-sans text-xs font-medium {styles[variant]}"
+	class="inline-flex items-center rounded-full px-2.5 py-0.5 font-sans text-xs font-medium {styles[
+		variant
+	]}"
 >
 	{displayLabel}
 </span>

@@ -40,20 +40,14 @@ export function buildProfileText(profile: {
 	institution?: string | null;
 	bio?: string | null;
 }): string {
-	return [profile.displayName, profile.institution, profile.bio]
-		.filter(Boolean)
-		.join('\n');
+	return [profile.displayName, profile.institution, profile.bio].filter(Boolean).join('\n');
 }
 
 /**
  * Indexa el perfil de un usuario como un único vector en user_profile.profileEmbedding.
  * Fire-and-forget: el caller no necesita await salvo en tests.
  */
-export async function indexUserProfile(
-	db: Db,
-	userId: string,
-	profileText: string
-): Promise<void> {
+export async function indexUserProfile(db: Db, userId: string, profileText: string): Promise<void> {
 	if (!profileText.trim()) return;
 	const [embedding] = await embedTexts([profileText]);
 	await db

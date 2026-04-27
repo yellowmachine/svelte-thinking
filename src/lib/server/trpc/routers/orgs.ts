@@ -116,7 +116,9 @@ export const orgsRouter = router({
 	}),
 
 	create: protectedProcedure
-		.input(z.object({ name: z.string().min(2).max(80), slug: z.string().min(2).max(60).optional() }))
+		.input(
+			z.object({ name: z.string().min(2).max(80), slug: z.string().min(2).max(60).optional() })
+		)
 		.mutation(async ({ ctx, input }) => {
 			const id = crypto.randomUUID();
 			const slug = input.slug ?? (slugify(input.name) || id.slice(0, 8));
@@ -201,18 +203,16 @@ export const orgsRouter = router({
 			return rows[0];
 		}),
 
-	removeMember: protectedProcedure
-		.input(z.string())
-		.mutation(async ({ ctx, input: memberId }) => {
-			const rows = await ctx.withRLS((db) =>
-				db
-					.delete(organizationMember)
-					.where(eq(organizationMember.id, memberId))
-					.returning({ id: organizationMember.id })
-			);
-			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			return { ok: true };
-		}),
+	removeMember: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: memberId }) => {
+		const rows = await ctx.withRLS((db) =>
+			db
+				.delete(organizationMember)
+				.where(eq(organizationMember.id, memberId))
+				.returning({ id: organizationMember.id })
+		);
+		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+		return { ok: true };
+	}),
 
 	// ── API Keys ─────────────────────────────────────────────────────────────
 
@@ -231,7 +231,9 @@ export const orgsRouter = router({
 	}),
 
 	addKey: protectedProcedure
-		.input(z.object({ orgId: z.string(), name: z.string().min(1).max(80), apiKey: z.string().min(1) }))
+		.input(
+			z.object({ orgId: z.string(), name: z.string().min(1).max(80), apiKey: z.string().min(1) })
+		)
 		.mutation(async ({ ctx, input }) => {
 			let encrypted;
 			try {
@@ -268,14 +270,12 @@ export const orgsRouter = router({
 			return { enabled: input.enabled };
 		}),
 
-	deleteKey: protectedProcedure
-		.input(z.string())
-		.mutation(async ({ ctx, input: keyId }) => {
-			await ctx.withRLS((db) =>
-				db.delete(organizationApiKey).where(eq(organizationApiKey.id, keyId))
-			);
-			return { ok: true };
-		}),
+	deleteKey: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: keyId }) => {
+		await ctx.withRLS((db) =>
+			db.delete(organizationApiKey).where(eq(organizationApiKey.id, keyId))
+		);
+		return { ok: true };
+	}),
 
 	setTaskConfig: protectedProcedure
 		.input(
@@ -287,13 +287,13 @@ export const orgsRouter = router({
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
-			const rows = await ctx.withRLS((db) =>
+			const rows = (await ctx.withRLS((db) =>
 				db
 					.select({ aiTaskConfig: organization.aiTaskConfig, ownerId: organization.ownerId })
 					.from(organization)
 					.where(eq(organization.id, input.orgId))
 					.limit(1)
-			) as { aiTaskConfig: string | null; ownerId: string }[];
+			)) as { aiTaskConfig: string | null; ownerId: string }[];
 
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 			if (!canManageOrg(ctx.user.id, rows[0].ownerId)) throw new TRPCError({ code: 'FORBIDDEN' });
@@ -311,15 +311,20 @@ export const orgsRouter = router({
 		}),
 
 	clearTaskConfig: protectedProcedure
-		.input(z.object({ orgId: z.string(), task: z.enum(AI_TASKS.map((t) => t.id) as [AiTask, ...AiTask[]]) }))
+		.input(
+			z.object({
+				orgId: z.string(),
+				task: z.enum(AI_TASKS.map((t) => t.id) as [AiTask, ...AiTask[]])
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
-			const rows = await ctx.withRLS((db) =>
+			const rows = (await ctx.withRLS((db) =>
 				db
 					.select({ aiTaskConfig: organization.aiTaskConfig, ownerId: organization.ownerId })
 					.from(organization)
 					.where(eq(organization.id, input.orgId))
 					.limit(1)
-			) as { aiTaskConfig: string | null; ownerId: string }[];
+			)) as { aiTaskConfig: string | null; ownerId: string }[];
 
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 			if (!canManageOrg(ctx.user.id, rows[0].ownerId)) throw new TRPCError({ code: 'FORBIDDEN' });
@@ -456,7 +461,10 @@ export const orgsRouter = router({
 			.limit(1);
 
 		if (existing[0]) {
-			throw new TRPCError({ code: 'CONFLICT', message: 'You are already a member of this organization' });
+			throw new TRPCError({
+				code: 'CONFLICT',
+				message: 'You are already a member of this organization'
+			});
 		}
 
 		// Resolve org owner for denormalized column
@@ -490,9 +498,7 @@ export const orgsRouter = router({
 			const rows = await ctx.withRLS((db) =>
 				db
 					.delete(orgInvitation)
-					.where(
-						and(eq(orgInvitation.id, invitationId), eq(orgInvitation.status, 'pending'))
-					)
+					.where(and(eq(orgInvitation.id, invitationId), eq(orgInvitation.status, 'pending')))
 					.returning({ id: orgInvitation.id })
 			);
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });

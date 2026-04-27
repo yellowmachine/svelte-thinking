@@ -229,9 +229,7 @@
 						Generate questions
 					</button>
 				{:else if loadingQuestions}
-					<p class="py-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						Generating…
-					</p>
+					<p class="py-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Generating…</p>
 				{:else if questionsError}
 					<p class="font-sans text-xs text-red-500">{questionsError}</p>
 				{:else if reviewQuestions}
@@ -242,7 +240,9 @@
 									class="mt-0.5 shrink-0 font-sans text-[10px] font-semibold text-ink-faint dark:text-dark-ink-faint"
 									>{i + 1}.</span
 								>
-								<span class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink">{q}</span>
+								<span class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink"
+									>{q}</span
+								>
 							</li>
 						{/each}
 					</ol>

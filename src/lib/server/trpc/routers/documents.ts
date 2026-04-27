@@ -14,7 +14,11 @@ import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { sendCommitNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 import { DOCUMENT_TYPES } from '$lib/domain/document';
-import { canDelegateWriting, roleAllowsWrite, type CollaboratorRole } from '$lib/domain/permissions';
+import {
+	canDelegateWriting,
+	roleAllowsWrite,
+	type CollaboratorRole
+} from '$lib/domain/permissions';
 import type { Db } from '$lib/server/db';
 
 async function notifyCollaboratorsOnCommit(
@@ -140,9 +144,7 @@ function initialContent(type: (typeof documentTypeValues)[number]): string {
 
 export const documentsRouter = router({
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
-		return ctx.withRLS((db) =>
-			db.select().from(document).where(eq(document.projectId, projectId))
-		);
+		return ctx.withRLS((db) => db.select().from(document).where(eq(document.projectId, projectId)));
 	}),
 
 	byId: protectedProcedure.input(z.string()).query(async ({ ctx, input }) => {
@@ -239,13 +241,15 @@ export const documentsRouter = router({
 		}),
 
 	update: protectedProcedure
-		.input(z.object({
-			id: z.string(),
-			title: z.string().min(1).max(255).optional(),
-			isPublic: z.boolean().optional(),
-			isReadonly: z.boolean().optional(),
-			spellLanguage: z.string().nullable().optional()
-		}))
+		.input(
+			z.object({
+				id: z.string(),
+				title: z.string().min(1).max(255).optional(),
+				isPublic: z.boolean().optional(),
+				isReadonly: z.boolean().optional(),
+				spellLanguage: z.string().nullable().optional()
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
 			return ctx.withRLS(async (db) => {
@@ -259,7 +263,11 @@ export const documentsRouter = router({
 						.limit(1);
 					if (current?.renderedHtml) {
 						const { default: TurndownService } = await import('turndown');
-						const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', bulletListMarker: '-' });
+						const td = new TurndownService({
+							headingStyle: 'atx',
+							codeBlockStyle: 'fenced',
+							bulletListMarker: '-'
+						});
 						extra = { draftContent: td.turndown(current.renderedHtml), renderedHtml: null };
 					}
 				}
@@ -365,9 +373,7 @@ export const documentsRouter = router({
 				// and [[doc:uuid|Title]] (book→chapter, UUID-stable).
 				const { uuids: linkedUuids, titles } = extractWikilinks(contentToCommit);
 
-				await db
-					.delete(documentLink)
-					.where(eq(documentLink.sourceDocumentId, input.documentId));
+				await db.delete(documentLink).where(eq(documentLink.sourceDocumentId, input.documentId));
 
 				if ((titles.length > 0 || linkedUuids.length > 0) && updated.projectId) {
 					const [sameProjectDocs, externalDocs] = await Promise.all([
@@ -411,20 +417,42 @@ export const documentsRouter = router({
 					}
 				}
 
-				return { document: updated, versionNumber: nextVersion, _projectId: updated.projectId, _content: contentToCommit, _versionId: versionId, _title: updated.title, _type: updated.type };
+				return {
+					document: updated,
+					versionNumber: nextVersion,
+					_projectId: updated.projectId,
+					_content: contentToCommit,
+					_versionId: versionId,
+					_title: updated.title,
+					_type: updated.type
+				};
 			});
 
 			// Fire-and-forget outside the transaction so tx is already committed
-			ctx.withRLS((db) =>
-				indexDocument(db, input.documentId, result._projectId, result._content)
-			).catch((err) => console.error('[embeddings] indexDocument failed:', err));
+			ctx
+				.withRLS((db) => indexDocument(db, input.documentId, result._projectId, result._content))
+				.catch((err) => console.error('[embeddings] indexDocument failed:', err));
 
 			// Fire-and-forget: generate AI summary for the project chat agent
 			void (async () => {
 				try {
-					const { apiKey, model } = await resolveTaskKey(ctx.withRLS as never, ctx.db as Db, ctx.user.id, 'summary', result._projectId);
+					const { apiKey, model } = await resolveTaskKey(
+						ctx.withRLS as never,
+						ctx.db as Db,
+						ctx.user.id,
+						'summary',
+						result._projectId
+					);
 					await ctx.withRLS((db) =>
-						generateAndSaveDocumentSummary(db as Db, result._versionId, result._content, result._title, result._type, apiKey, model)
+						generateAndSaveDocumentSummary(
+							db as Db,
+							result._versionId,
+							result._content,
+							result._title,
+							result._type,
+							apiKey,
+							model
+						)
 					);
 				} catch (err) {
 					console.error('[summary] generateDocumentSummary failed:', err);
@@ -596,7 +624,13 @@ export const documentsRouter = router({
 				try {
 					const [created] = await db
 						.insert(document)
-						.values({ id: docId, projectId: src.projectId, title: input.templateTitle, type: src.type, isTemplate: true })
+						.values({
+							id: docId,
+							projectId: src.projectId,
+							title: input.templateTitle,
+							type: src.type,
+							isTemplate: true
+						})
 						.returning();
 
 					const versionId = crypto.randomUUID();
@@ -633,10 +667,12 @@ export const documentsRouter = router({
 	// El writer actual puede liberar su slot (set to null) incluso si su rol fue degradado.
 	// writerUserId = null → owner recupera el acceso; SET → delega a un colaborador.
 	setWriter: protectedProcedure
-		.input(z.object({
-			documentId: z.string(),
-			writerUserId: z.string().nullable()
-		}))
+		.input(
+			z.object({
+				documentId: z.string(),
+				writerUserId: z.string().nullable()
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
 			return ctx.withRLS(async (db) => {
 				const [doc] = await db
@@ -655,32 +691,52 @@ export const documentsRouter = router({
 
 				if (!proj) throw new TRPCError({ code: 'NOT_FOUND' });
 
-				if (!canDelegateWriting({ userId: ctx.user.id, ownerId: proj.ownerId, writerUserId: doc.writerUserId })) {
-					throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario o el writer actual pueden modificar la delegación' });
+				if (
+					!canDelegateWriting({
+						userId: ctx.user.id,
+						ownerId: proj.ownerId,
+						writerUserId: doc.writerUserId
+					})
+				) {
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: 'Solo el propietario o el writer actual pueden modificar la delegación'
+					});
 				}
 
 				// A downgraded writer can only release (set to null), not transfer to another user.
 				const isProjectOwner = ctx.user.id === proj.ownerId;
 				if (!isProjectOwner && input.writerUserId !== null) {
-					throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario puede transferir la escritura a otro usuario' });
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: 'Solo el propietario puede transferir la escritura a otro usuario'
+					});
 				}
 
 				if (input.writerUserId !== null) {
 					const [collab] = await db
 						.select({ userId: projectCollaborator.userId, role: projectCollaborator.role })
 						.from(projectCollaborator)
-						.where(and(
-							eq(projectCollaborator.projectId, doc.projectId),
-							eq(projectCollaborator.userId, input.writerUserId)
-						))
+						.where(
+							and(
+								eq(projectCollaborator.projectId, doc.projectId),
+								eq(projectCollaborator.userId, input.writerUserId)
+							)
+						)
 						.limit(1);
 
 					if (!collab) {
-						throw new TRPCError({ code: 'BAD_REQUEST', message: 'El usuario no es colaborador de este proyecto' });
+						throw new TRPCError({
+							code: 'BAD_REQUEST',
+							message: 'El usuario no es colaborador de este proyecto'
+						});
 					}
 
 					if (!roleAllowsWrite(collab.role as CollaboratorRole)) {
-						throw new TRPCError({ code: 'BAD_REQUEST', message: 'El colaborador no tiene un rol que permita escritura' });
+						throw new TRPCError({
+							code: 'BAD_REQUEST',
+							message: 'El colaborador no tiene un rol que permita escritura'
+						});
 					}
 				}
 

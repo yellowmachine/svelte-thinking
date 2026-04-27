@@ -61,14 +61,13 @@
 	}
 
 	async function deleteTemplate(templateId: string) {
-		const res = await fetch(
-			`/api/projects/${data.project.id}/templates?templateId=${templateId}`,
-			{ method: 'DELETE' }
-		);
+		const res = await fetch(`/api/projects/${data.project.id}/templates?templateId=${templateId}`, {
+			method: 'DELETE'
+		});
 		if (res.ok) await invalidateAll();
 	}
 
-	async function useTemplate(template: typeof data.templates[0]) {
+	async function useTemplate(template: (typeof data.templates)[0]) {
 		window.location.href = `/project/${data.project.id}/analyses/new?templateId=${template.id}`;
 	}
 </script>
@@ -100,7 +99,9 @@
 
 			<div class="mt-4 space-y-4">
 				<div>
-					<label for="tpl-name" class="block text-sm font-medium text-ink dark:text-dark-ink">Name</label>
+					<label for="tpl-name" class="block text-sm font-medium text-ink dark:text-dark-ink"
+						>Name</label
+					>
 					<input
 						id="tpl-name"
 						type="text"
@@ -111,7 +112,9 @@
 				</div>
 
 				<div>
-					<label for="tpl-description" class="block text-sm font-medium text-ink dark:text-dark-ink">Description <span class="text-ink-faint">(optional)</span></label>
+					<label for="tpl-description" class="block text-sm font-medium text-ink dark:text-dark-ink"
+						>Description <span class="text-ink-faint">(optional)</span></label
+					>
 					<input
 						id="tpl-description"
 						type="text"
@@ -150,10 +153,19 @@
 				</div>
 
 				{#if type === 'ttest'}
-					<div class="space-y-3 rounded-lg border border-paper-border p-4 dark:border-dark-paper-border">
+					<div
+						class="space-y-3 rounded-lg border border-paper-border p-4 dark:border-dark-paper-border"
+					>
 						<div>
-							<label for="tpl-ttest-type" class="block text-sm font-medium text-ink dark:text-dark-ink">Test type</label>
-							<select id="tpl-ttest-type" bind:value={ttestType} class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink">
+							<label
+								for="tpl-ttest-type"
+								class="block text-sm font-medium text-ink dark:text-dark-ink">Test type</label
+							>
+							<select
+								id="tpl-ttest-type"
+								bind:value={ttestType}
+								class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+							>
 								<option value="independent">Independent samples</option>
 								<option value="paired">Paired samples</option>
 								<option value="one_sample">One sample</option>
@@ -161,28 +173,64 @@
 						</div>
 						<div class="flex gap-4">
 							<div class="flex-1">
-								<label for="tpl-ttest-col-a" class="block text-sm font-medium text-ink dark:text-dark-ink">Column A</label>
-								<input id="tpl-ttest-col-a" type="text" bind:value={ttestColumnA} placeholder="e.g. control" class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+								<label
+									for="tpl-ttest-col-a"
+									class="block text-sm font-medium text-ink dark:text-dark-ink">Column A</label
+								>
+								<input
+									id="tpl-ttest-col-a"
+									type="text"
+									bind:value={ttestColumnA}
+									placeholder="e.g. control"
+									class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								/>
 							</div>
 							{#if ttestType !== 'one_sample'}
 								<div class="flex-1">
-									<label for="tpl-ttest-col-b" class="block text-sm font-medium text-ink dark:text-dark-ink">Column B</label>
-									<input id="tpl-ttest-col-b" type="text" bind:value={ttestColumnB} placeholder="e.g. treatment" class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+									<label
+										for="tpl-ttest-col-b"
+										class="block text-sm font-medium text-ink dark:text-dark-ink">Column B</label
+									>
+									<input
+										id="tpl-ttest-col-b"
+										type="text"
+										bind:value={ttestColumnB}
+										placeholder="e.g. treatment"
+										class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									/>
 								</div>
 							{/if}
 						</div>
 						<div class="flex gap-4">
 							<div class="flex-1">
-								<label for="tpl-ttest-alt" class="block text-sm font-medium text-ink dark:text-dark-ink">Alternative</label>
-								<select id="tpl-ttest-alt" bind:value={ttestAlternative} class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink">
+								<label
+									for="tpl-ttest-alt"
+									class="block text-sm font-medium text-ink dark:text-dark-ink">Alternative</label
+								>
+								<select
+									id="tpl-ttest-alt"
+									bind:value={ttestAlternative}
+									class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								>
 									<option value="two-sided">Two-sided</option>
 									<option value="less">Less</option>
 									<option value="greater">Greater</option>
 								</select>
 							</div>
 							<div class="w-24">
-								<label for="tpl-ttest-alpha" class="block text-sm font-medium text-ink dark:text-dark-ink">α</label>
-								<input id="tpl-ttest-alpha" type="number" bind:value={ttestAlpha} min="0.001" max="0.1" step="0.005" class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+								<label
+									for="tpl-ttest-alpha"
+									class="block text-sm font-medium text-ink dark:text-dark-ink">α</label
+								>
+								<input
+									id="tpl-ttest-alpha"
+									type="number"
+									bind:value={ttestAlpha}
+									min="0.001"
+									max="0.1"
+									step="0.005"
+									class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								/>
 							</div>
 						</div>
 					</div>
@@ -217,19 +265,27 @@
 		{:else}
 			<div class="space-y-3">
 				{#each templates as template (template.id)}
-					<div class="flex items-start justify-between rounded-lg border border-paper-border p-4 dark:border-dark-paper-border">
+					<div
+						class="flex items-start justify-between rounded-lg border border-paper-border p-4 dark:border-dark-paper-border"
+					>
 						<div>
 							<div class="flex items-center gap-2">
 								<span class="font-medium text-ink dark:text-dark-ink">{template.name}</span>
-								<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">{template.type}</span>
+								<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint"
+									>{template.type}</span
+								>
 								{#if template.isPublic}
-									<span class="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900 dark:text-green-300">
+									<span
+										class="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700 dark:bg-green-900 dark:text-green-300"
+									>
 										public
 									</span>
 								{/if}
 							</div>
 							{#if template.description}
-								<p class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">{template.description}</p>
+								<p class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">
+									{template.description}
+								</p>
 							{/if}
 						</div>
 						<div class="flex items-center gap-3">

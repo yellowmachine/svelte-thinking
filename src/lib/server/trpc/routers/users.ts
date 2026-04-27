@@ -41,9 +41,7 @@ export const usersRouter = router({
 				.select({ role: projectCollaborator.role, status: project.status })
 				.from(projectCollaborator)
 				.innerJoin(project, eq(project.id, projectCollaborator.projectId))
-				.where(
-					and(eq(projectCollaborator.userId, userId), ne(projectCollaborator.role, 'owner'))
-				),
+				.where(and(eq(projectCollaborator.userId, userId), ne(projectCollaborator.role, 'owner'))),
 
 			ctx.db
 				.select({ total: count(), lastAt: max(documentVersion.createdAt) })
@@ -139,67 +137,66 @@ export const usersRouter = router({
 			);
 		}),
 
-	updateProfile: protectedProcedure
-		.input(updateProfileSchema)
-		.mutation(async ({ ctx, input }) => {
-			return ctx.withRLS(async (db) => {
-				const existing = await db
-					.select({ id: userProfile.id })
-					.from(userProfile)
-					.where(eq(userProfile.userId, ctx.user.id))
-					.limit(1);
+	updateProfile: protectedProcedure.input(updateProfileSchema).mutation(async ({ ctx, input }) => {
+		return ctx.withRLS(async (db) => {
+			const existing = await db
+				.select({ id: userProfile.id })
+				.from(userProfile)
+				.where(eq(userProfile.userId, ctx.user.id))
+				.limit(1);
 
-				if (!existing[0]) {
-					const [created] = await db
-						.insert(userProfile)
-						.values({
-							id: crypto.randomUUID(),
-							userId: ctx.user.id,
-							displayName: input.displayName ?? ctx.user.name,
-							bio: input.bio,
-							institution: input.institution,
-							orcid: input.orcid
-						})
-						.returning();
-
-					const profileText = buildProfileText({
-						displayName: created.displayName,
-						institution: created.institution,
-						bio: created.bio
-					});
-					indexUserProfile(ctx.db, ctx.user.id, profileText).catch(console.error);
-
-					return created;
-				}
-
-				const updateData: Record<string, unknown> = { ...input, updatedAt: new Date() };
-				// Si el ORCID se edita manualmente, pierde la verificación OAuth
-				if ('orcid' in input) updateData.orcidVerified = false;
-
-				const [updated] = await db
-					.update(userProfile)
-					.set(updateData)
-					.where(eq(userProfile.userId, ctx.user.id))
+			if (!existing[0]) {
+				const [created] = await db
+					.insert(userProfile)
+					.values({
+						id: crypto.randomUUID(),
+						userId: ctx.user.id,
+						displayName: input.displayName ?? ctx.user.name,
+						bio: input.bio,
+						institution: input.institution,
+						orcid: input.orcid
+					})
 					.returning();
 
-				// Re-indexar embedding (fire-and-forget)
 				const profileText = buildProfileText({
-					displayName: updated.displayName,
-					institution: updated.institution,
-					bio: updated.bio
+					displayName: created.displayName,
+					institution: created.institution,
+					bio: created.bio
 				});
 				indexUserProfile(ctx.db, ctx.user.id, profileText).catch(console.error);
 
-				return updated;
+				return created;
+			}
+
+			const updateData: Record<string, unknown> = { ...input, updatedAt: new Date() };
+			// Si el ORCID se edita manualmente, pierde la verificación OAuth
+			if ('orcid' in input) updateData.orcidVerified = false;
+
+			const [updated] = await db
+				.update(userProfile)
+				.set(updateData)
+				.where(eq(userProfile.userId, ctx.user.id))
+				.returning();
+
+			// Re-indexar embedding (fire-and-forget)
+			const profileText = buildProfileText({
+				displayName: updated.displayName,
+				institution: updated.institution,
+				bio: updated.bio
 			});
-		}),
+			indexUserProfile(ctx.db, ctx.user.id, profileText).catch(console.error);
+
+			return updated;
+		});
+	}),
 
 	getSpellAllowlist: protectedProcedure.query(async ({ ctx }) => {
-		const rows = await ctx.withRLS((db) =>
-			db.select({ word: userSpellAllowlist.word })
+		const rows = (await ctx.withRLS((db) =>
+			db
+				.select({ word: userSpellAllowlist.word })
 				.from(userSpellAllowlist)
 				.where(eq(userSpellAllowlist.userId, ctx.user.id))
-		) as { word: string }[];
+		)) as { word: string }[];
 		return rows.map((r) => r.word);
 	}),
 
@@ -208,9 +205,7 @@ export const usersRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			const word = input.word.toLowerCase().trim();
 			await ctx.withRLS((db) =>
-				db.insert(userSpellAllowlist)
-					.values({ userId: ctx.user.id, word })
-					.onConflictDoNothing()
+				db.insert(userSpellAllowlist).values({ userId: ctx.user.id, word }).onConflictDoNothing()
 			);
 			return { word };
 		}),
@@ -219,7 +214,8 @@ export const usersRouter = router({
 		.input(z.object({ word: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			await ctx.withRLS((db) =>
-				db.delete(userSpellAllowlist)
+				db
+					.delete(userSpellAllowlist)
 					.where(
 						and(
 							eq(userSpellAllowlist.userId, ctx.user.id),

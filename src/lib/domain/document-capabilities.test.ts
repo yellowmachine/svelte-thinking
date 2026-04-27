@@ -14,13 +14,15 @@ import {
 
 describe('getSaveDraftCapability', () => {
 	it('returns ready when online and canWrite', () => {
-		expect(getSaveDraftCapability({ canWrite: true, online: true, saving: false }))
-			.toEqual({ kind: 'ready' });
+		expect(getSaveDraftCapability({ canWrite: true, online: true, saving: false })).toEqual({
+			kind: 'ready'
+		});
 	});
 
 	it('returns saving when save is in-flight', () => {
-		expect(getSaveDraftCapability({ canWrite: true, online: true, saving: true }))
-			.toEqual({ kind: 'saving' });
+		expect(getSaveDraftCapability({ canWrite: true, online: true, saving: true })).toEqual({
+			kind: 'saving'
+		});
 	});
 
 	it('returns queued when offline but canWrite', () => {
@@ -117,23 +119,27 @@ describe('canTriggerCommit', () => {
 
 describe('getReclaimWritingCapability', () => {
 	it('returns available when owner has delegated to another user', () => {
-		expect(getReclaimWritingCapability({ isOwner: true, writerUserId: 'user-2' }))
-			.toEqual({ kind: 'available' });
+		expect(getReclaimWritingCapability({ isOwner: true, writerUserId: 'user-2' })).toEqual({
+			kind: 'available'
+		});
 	});
 
 	it('returns hidden when owner has no delegated writer', () => {
-		expect(getReclaimWritingCapability({ isOwner: true, writerUserId: null }))
-			.toEqual({ kind: 'hidden' });
+		expect(getReclaimWritingCapability({ isOwner: true, writerUserId: null })).toEqual({
+			kind: 'hidden'
+		});
 	});
 
 	it('returns hidden when not owner', () => {
-		expect(getReclaimWritingCapability({ isOwner: false, writerUserId: 'user-2' }))
-			.toEqual({ kind: 'hidden' });
+		expect(getReclaimWritingCapability({ isOwner: false, writerUserId: 'user-2' })).toEqual({
+			kind: 'hidden'
+		});
 	});
 
 	it('returns hidden when neither owner nor delegated', () => {
-		expect(getReclaimWritingCapability({ isOwner: false, writerUserId: null }))
-			.toEqual({ kind: 'hidden' });
+		expect(getReclaimWritingCapability({ isOwner: false, writerUserId: null })).toEqual({
+			kind: 'hidden'
+		});
 	});
 });
 
@@ -143,17 +149,20 @@ describe('getReclaimWritingCapability', () => {
 
 describe('getReleaseWriterCapability', () => {
 	it('returns available when user is writer but role was downgraded (no write access)', () => {
-		expect(getReleaseWriterCapability({ isCurrentWriter: true, canWrite: false }))
-			.toEqual({ kind: 'available' });
+		expect(getReleaseWriterCapability({ isCurrentWriter: true, canWrite: false })).toEqual({
+			kind: 'available'
+		});
 	});
 
 	it('returns hidden when user is writer and still has write access', () => {
-		expect(getReleaseWriterCapability({ isCurrentWriter: true, canWrite: true }))
-			.toEqual({ kind: 'hidden' });
+		expect(getReleaseWriterCapability({ isCurrentWriter: true, canWrite: true })).toEqual({
+			kind: 'hidden'
+		});
 	});
 
 	it('returns hidden when user is not the writer', () => {
-		expect(getReleaseWriterCapability({ isCurrentWriter: false, canWrite: false }))
-			.toEqual({ kind: 'hidden' });
+		expect(getReleaseWriterCapability({ isCurrentWriter: false, canWrite: false })).toEqual({
+			kind: 'hidden'
+		});
 	});
 });

@@ -153,7 +153,10 @@
 			class="mb-6 w-full cursor-pointer rounded-xl border-2 border-dashed transition-colors {dragOver
 				? 'border-accent bg-accent/5'
 				: 'border-paper-border hover:border-accent/50 dark:border-dark-paper-border'}"
-			ondragover={(e) => { e.preventDefault(); dragOver = true; }}
+			ondragover={(e) => {
+				e.preventDefault();
+				dragOver = true;
+			}}
 			ondragleave={() => (dragOver = false)}
 			ondrop={onDrop}
 			onclick={() => fileInput.click()}
@@ -199,7 +202,9 @@
 	{#if staged.length > 0}
 		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-5 dark:bg-dark-paper">
 			<h2 class="mb-4 font-serif text-base font-semibold text-ink dark:text-dark-ink">
-				{staged.length === 1 ? '1 photo ready to upload' : `${staged.length} photos ready to upload`}
+				{staged.length === 1
+					? '1 photo ready to upload'
+					: `${staged.length} photos ready to upload`}
 			</h2>
 
 			<div class="flex flex-col gap-4">
@@ -207,19 +212,20 @@
 					<div class="flex gap-4">
 						<!-- Preview -->
 						<div class="relative shrink-0">
-							<img
-								src={item.preview}
-								alt="Preview"
-								class="h-20 w-20 rounded-lg object-cover"
-							/>
+							<img src={item.preview} alt="Preview" class="h-20 w-20 rounded-lg object-cover" />
 							<button
 								type="button"
 								aria-label="Remove"
 								onclick={() => removeStaged(i)}
-								class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white shadow"
+								class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white shadow"
 							>
 								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+									<path
+										d="M18 6L6 18M6 6l12 12"
+										stroke="currentColor"
+										stroke-width="2.5"
+										stroke-linecap="round"
+									/>
 								</svg>
 							</button>
 						</div>
@@ -241,7 +247,9 @@
 			</div>
 
 			{#if uploadError}
-				<p class="mt-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+				<p
+					class="mt-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
+				>
 					{uploadError}
 				</p>
 			{/if}
@@ -282,7 +290,9 @@
 
 	<!-- Gallery grid -->
 	{#if photos.length === 0}
-		<div class="rounded-xl border border-dashed border-paper-border py-16 text-center dark:border-dark-paper-border">
+		<div
+			class="rounded-xl border border-dashed border-paper-border py-16 text-center dark:border-dark-paper-border"
+		>
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				No photos yet. Upload the first one from your phone or computer.
 			</p>
@@ -290,7 +300,9 @@
 	{:else}
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
 			{#each photos as photo (photo.id)}
-				<div class="group relative overflow-hidden rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="group relative overflow-hidden rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<button
 						type="button"
 						class="block w-full"
@@ -311,7 +323,9 @@
 						</div>
 					{/if}
 					<!-- Hover overlay -->
-					<div class="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+					<div
+						class="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100"
+					>
 						<div class="flex justify-end gap-1.5">
 							<button
 								title="Copiar markdown"
@@ -319,8 +333,20 @@
 								class="rounded-md bg-white/90 p-1.5 text-ink transition-colors hover:bg-white"
 							>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5" />
-									<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5" />
+									<rect
+										x="9"
+										y="9"
+										width="13"
+										height="13"
+										rx="2"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
+									<path
+										d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
 								</svg>
 							</button>
 							{#if photo.uploadedBy === data.currentUserId}
@@ -330,7 +356,13 @@
 									class="rounded-md bg-white/90 p-1.5 text-red-600 transition-colors hover:bg-white"
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-										<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+										<path
+											d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
 									</svg>
 								</button>
 							{/if}
@@ -390,10 +422,15 @@
 		<button
 			aria-label="Cerrar"
 			onclick={() => (lightboxPhoto = null)}
-			class="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+			class="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
 		>
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+				<path
+					d="M18 6L6 18M6 6l12 12"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+				/>
 			</svg>
 		</button>
 	</div>

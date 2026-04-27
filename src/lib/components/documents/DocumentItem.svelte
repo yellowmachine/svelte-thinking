@@ -37,9 +37,11 @@
 	<svg width="13" height="13" viewBox="0 0 13 13" fill="none" class="shrink-0 opacity-60">
 		<path d={typeIcon[type]} stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
 	</svg>
-	<span class="truncate flex-1">{title}</span>
+	<span class="flex-1 truncate">{title}</span>
 	{#if badge}
-		<span class="ml-2 shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+		<span
+			class="ml-2 shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+		>
 			{badge}
 		</span>
 	{/if}

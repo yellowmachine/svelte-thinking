@@ -7,27 +7,28 @@ const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '
 
 // document_link: index of [[wikilinks]] between documents, updated on commit.
 // source → target. One row per unique (source, target) pair.
-export const documentLink = scholioSchema.table(
-	'document_link',
-	{
-		id: text('id').primaryKey(),
-		sourceDocumentId: text('source_document_id')
-			.notNull()
-			.references(() => document.id, { onDelete: 'cascade' }),
-		targetDocumentId: text('target_document_id')
-			.notNull()
-			.references(() => document.id, { onDelete: 'cascade' }),
-		createdAt: timestamp('created_at').notNull().defaultNow()
-	},
-	(t) => [
-		uniqueIndex('doc_link_unique_idx').on(t.sourceDocumentId, t.targetDocumentId),
-		index('doc_link_source_idx').on(t.sourceDocumentId),
-		index('doc_link_target_idx').on(t.targetDocumentId),
+export const documentLink = scholioSchema
+	.table(
+		'document_link',
+		{
+			id: text('id').primaryKey(),
+			sourceDocumentId: text('source_document_id')
+				.notNull()
+				.references(() => document.id, { onDelete: 'cascade' }),
+			targetDocumentId: text('target_document_id')
+				.notNull()
+				.references(() => document.id, { onDelete: 'cascade' }),
+			createdAt: timestamp('created_at').notNull().defaultNow()
+		},
+		(t) => [
+			uniqueIndex('doc_link_unique_idx').on(t.sourceDocumentId, t.targetDocumentId),
+			index('doc_link_source_idx').on(t.sourceDocumentId),
+			index('doc_link_target_idx').on(t.targetDocumentId),
 
-		// Access: readable if you have access to the source document's project
-		pgPolicy('document_link_access', {
-			for: 'all',
-			using: sql`
+			// Access: readable if you have access to the source document's project
+			pgPolicy('document_link_access', {
+				for: 'all',
+				using: sql`
 				EXISTS (
 					SELECT 1 FROM scholio.document
 					JOIN scholio.project ON project.id = document.project_id
@@ -42,11 +43,11 @@ export const documentLink = scholioSchema.table(
 					)
 				)
 			`
-		}),
-		// Also readable when the TARGET is mine and the SOURCE is public
-		pgPolicy('document_link_incoming_public', {
-			for: 'select',
-			using: sql`
+			}),
+			// Also readable when the TARGET is mine and the SOURCE is public
+			pgPolicy('document_link_incoming_public', {
+				for: 'select',
+				using: sql`
 				EXISTS (
 					SELECT 1 FROM scholio.document source_doc
 					WHERE source_doc.id = ${t.sourceDocumentId}
@@ -66,6 +67,7 @@ export const documentLink = scholioSchema.table(
 					)
 				)
 			`
-		})
-	]
-).enableRLS();
+			})
+		]
+	)
+	.enableRLS();

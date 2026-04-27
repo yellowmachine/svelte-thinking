@@ -22,7 +22,10 @@
 <Story
 	name="Long name"
 	args={{
-		user: { name: 'María Alejandra Rodríguez Castellanos', email: 'mrodriguez@institutoavanzado.edu.mx' }
+		user: {
+			name: 'María Alejandra Rodríguez Castellanos',
+			email: 'mrodriguez@institutoavanzado.edu.mx'
+		}
 	}}
 />
 

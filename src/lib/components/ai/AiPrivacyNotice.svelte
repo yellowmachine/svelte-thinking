@@ -1,9 +1,7 @@
 <script lang="ts">
 	const PRIVACY_KEY = 'scholio_ai_privacy_seen';
 
-	let visible = $state(
-		typeof localStorage !== 'undefined' && !localStorage.getItem(PRIVACY_KEY)
-	);
+	let visible = $state(typeof localStorage !== 'undefined' && !localStorage.getItem(PRIVACY_KEY));
 
 	function dismiss() {
 		localStorage.setItem(PRIVACY_KEY, '1');

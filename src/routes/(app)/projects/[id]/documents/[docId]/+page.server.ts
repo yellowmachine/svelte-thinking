@@ -12,7 +12,15 @@ import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions
 export const load: PageServerLoad = async (event) => {
 	const { id: projectId, docId } = event.params;
 
-	const [docResult, projectResult, inlineComments, projectDocs, backlinks, externalDocs, collaborators] = await Promise.all([
+	const [
+		docResult,
+		projectResult,
+		inlineComments,
+		projectDocs,
+		backlinks,
+		externalDocs,
+		collaborators
+	] = await Promise.all([
 		// Document + content
 		event.locals.withRLS(async (db) => {
 			const docs = await db.select().from(document).where(eq(document.id, docId)).limit(1);
@@ -31,10 +39,12 @@ export const load: PageServerLoad = async (event) => {
 				db
 					.select({ role: projectCollaborator.role })
 					.from(projectCollaborator)
-					.where(and(
-						eq(projectCollaborator.projectId, doc.projectId),
-						eq(projectCollaborator.userId, currentUserId)
-					))
+					.where(
+						and(
+							eq(projectCollaborator.projectId, doc.projectId),
+							eq(projectCollaborator.userId, currentUserId)
+						)
+					)
 					.limit(1)
 			]);
 			const ownerId = projectRows[0]?.ownerId ?? '';
@@ -55,7 +65,9 @@ export const load: PageServerLoad = async (event) => {
 					.select({
 						content: documentVersion.content,
 						createdAt: documentVersion.createdAt,
-						committerName: sql<string | null>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+						committerName: sql<
+							string | null
+						>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
 					})
 					.from(documentVersion)
 					.where(eq(documentVersion.id, doc.currentVersionId))
@@ -81,7 +93,9 @@ export const load: PageServerLoad = async (event) => {
 				.select({
 					content: documentVersion.content,
 					createdAt: documentVersion.createdAt,
-					committerName: sql<string | null>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+					committerName: sql<
+						string | null
+					>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
 				})
 				.from(documentVersion)
 				.where(eq(documentVersion.id, doc.currentVersionId))
@@ -99,7 +113,13 @@ export const load: PageServerLoad = async (event) => {
 		// Project info (title + owner + citationStyle)
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: project.id, title: project.title, ownerId: project.ownerId, orgId: project.orgId, citationStyle: project.citationStyle })
+				.select({
+					id: project.id,
+					title: project.title,
+					ownerId: project.ownerId,
+					orgId: project.orgId,
+					citationStyle: project.citationStyle
+				})
 				.from(project)
 				.where(eq(project.id, projectId))
 				.limit(1)
@@ -164,7 +184,12 @@ export const load: PageServerLoad = async (event) => {
 		// All documents in project (for wikilink resolution in preview)
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: document.id, title: document.title, projectId: document.projectId, type: document.type })
+				.select({
+					id: document.id,
+					title: document.title,
+					projectId: document.projectId,
+					type: document.type
+				})
 				.from(document)
 				.where(eq(document.projectId, projectId))
 		) as Promise<{ id: string; title: string; projectId: string; type: string }[]>,
@@ -208,7 +233,8 @@ export const load: PageServerLoad = async (event) => {
 	let sourceReference: { id: string; citeKey: string } | null = null;
 	if (docResult.sourceReferenceId) {
 		const rows = await event.locals.withRLS((db) =>
-			db.select({ id: reference.id, citeKey: reference.citeKey })
+			db
+				.select({ id: reference.id, citeKey: reference.citeKey })
 				.from(reference)
 				.where(eq(reference.id, docResult.sourceReferenceId!))
 				.limit(1)
@@ -235,7 +261,12 @@ export const load: PageServerLoad = async (event) => {
 		projectTitle: proj?.title ?? '',
 		projectOwnerId: proj?.ownerId ?? '',
 		projectOrgId: proj?.orgId ?? null,
-		projectCitationStyle: (proj?.citationStyle ?? null) as 'apa' | 'ieee' | 'vancouver' | 'chicago' | null,
+		projectCitationStyle: (proj?.citationStyle ?? null) as
+			| 'apa'
+			| 'ieee'
+			| 'vancouver'
+			| 'chicago'
+			| null,
 		writerName,
 		collaborators,
 		inlineComments,

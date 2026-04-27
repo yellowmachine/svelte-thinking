@@ -48,23 +48,33 @@ describe('canRemoveCollaborator', () => {
 
 describe('canDelegateWriting', () => {
 	it('allows the project owner (no delegation)', () => {
-		expect(canDelegateWriting({ userId: 'owner', ownerId: 'owner', writerUserId: null })).toBe(true);
+		expect(canDelegateWriting({ userId: 'owner', ownerId: 'owner', writerUserId: null })).toBe(
+			true
+		);
 	});
 
 	it('allows the project owner when writer is set', () => {
-		expect(canDelegateWriting({ userId: 'owner', ownerId: 'owner', writerUserId: 'writer' })).toBe(true);
+		expect(canDelegateWriting({ userId: 'owner', ownerId: 'owner', writerUserId: 'writer' })).toBe(
+			true
+		);
 	});
 
 	it('allows the current writer to release their slot', () => {
-		expect(canDelegateWriting({ userId: 'writer', ownerId: 'owner', writerUserId: 'writer' })).toBe(true);
+		expect(canDelegateWriting({ userId: 'writer', ownerId: 'owner', writerUserId: 'writer' })).toBe(
+			true
+		);
 	});
 
 	it('blocks a non-owner with no writer slot', () => {
-		expect(canDelegateWriting({ userId: 'other', ownerId: 'owner', writerUserId: null })).toBe(false);
+		expect(canDelegateWriting({ userId: 'other', ownerId: 'owner', writerUserId: null })).toBe(
+			false
+		);
 	});
 
 	it('blocks a non-owner who is not the current writer', () => {
-		expect(canDelegateWriting({ userId: 'other', ownerId: 'owner', writerUserId: 'writer' })).toBe(false);
+		expect(canDelegateWriting({ userId: 'other', ownerId: 'owner', writerUserId: 'writer' })).toBe(
+			false
+		);
 	});
 });
 
@@ -96,7 +106,12 @@ describe('roleAllowsWrite', () => {
 });
 
 describe('canWriteDocument', () => {
-	const base = { isProjectOwner: false, writerUserId: null, currentUserId: 'u1', collaboratorRole: null };
+	const base = {
+		isProjectOwner: false,
+		writerUserId: null,
+		currentUserId: 'u1',
+		collaboratorRole: null
+	};
 
 	it('allows project owner when no delegation', () => {
 		expect(canWriteDocument({ ...base, isProjectOwner: true })).toBe(true);
@@ -107,17 +122,27 @@ describe('canWriteDocument', () => {
 	});
 
 	it('allows delegated writer with write-capable role', () => {
-		expect(canWriteDocument({ ...base, writerUserId: 'u1', collaboratorRole: 'author' })).toBe(true);
-		expect(canWriteDocument({ ...base, writerUserId: 'u1', collaboratorRole: 'coauthor' })).toBe(true);
+		expect(canWriteDocument({ ...base, writerUserId: 'u1', collaboratorRole: 'author' })).toBe(
+			true
+		);
+		expect(canWriteDocument({ ...base, writerUserId: 'u1', collaboratorRole: 'coauthor' })).toBe(
+			true
+		);
 	});
 
 	it('blocks delegated writer whose role was downgraded', () => {
-		expect(canWriteDocument({ ...base, writerUserId: 'u1', collaboratorRole: 'reviewer' })).toBe(false);
-		expect(canWriteDocument({ ...base, writerUserId: 'u1', collaboratorRole: 'commenter' })).toBe(false);
+		expect(canWriteDocument({ ...base, writerUserId: 'u1', collaboratorRole: 'reviewer' })).toBe(
+			false
+		);
+		expect(canWriteDocument({ ...base, writerUserId: 'u1', collaboratorRole: 'commenter' })).toBe(
+			false
+		);
 	});
 
 	it('blocks a non-writer even with author role', () => {
-		expect(canWriteDocument({ ...base, writerUserId: 'u2', collaboratorRole: 'author' })).toBe(false);
+		expect(canWriteDocument({ ...base, writerUserId: 'u2', collaboratorRole: 'author' })).toBe(
+			false
+		);
 	});
 
 	it('blocks project owner when writing is delegated to another', () => {

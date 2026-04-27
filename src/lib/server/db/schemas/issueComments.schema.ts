@@ -5,28 +5,29 @@ import { issue } from './issues.schema';
 
 const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
 
-export const issueComment = scholioSchema.table(
-	'issue_comment',
-	{
-		id: text('id').primaryKey(),
-		issueId: text('issue_id')
-			.notNull()
-			.references(() => issue.id, { onDelete: 'cascade' }),
-		// Denormalized for RLS — avoids a join to issue just to get projectId
-		projectId: text('project_id').notNull(),
-		authorId: text('author_id').notNull(),
-		content: text('content').notNull(),
-		parentCommentId: text('parent_comment_id'),
-		createdAt: timestamp('created_at').notNull().defaultNow(),
-		updatedAt: timestamp('updated_at').notNull().defaultNow()
-	},
-	(t) => [
-		index('issue_comment_issue_idx').on(t.issueId),
+export const issueComment = scholioSchema
+	.table(
+		'issue_comment',
+		{
+			id: text('id').primaryKey(),
+			issueId: text('issue_id')
+				.notNull()
+				.references(() => issue.id, { onDelete: 'cascade' }),
+			// Denormalized for RLS — avoids a join to issue just to get projectId
+			projectId: text('project_id').notNull(),
+			authorId: text('author_id').notNull(),
+			content: text('content').notNull(),
+			parentCommentId: text('parent_comment_id'),
+			createdAt: timestamp('created_at').notNull().defaultNow(),
+			updatedAt: timestamp('updated_at').notNull().defaultNow()
+		},
+		(t) => [
+			index('issue_comment_issue_idx').on(t.issueId),
 
-		// SELECT: any project member
-		pgPolicy('issue_comment_select', {
-			for: 'select',
-			using: sql`
+			// SELECT: any project member
+			pgPolicy('issue_comment_select', {
+				for: 'select',
+				using: sql`
 				EXISTS (
 					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
@@ -40,12 +41,12 @@ export const issueComment = scholioSchema.table(
 					)
 				)
 			`
-		}),
+			}),
 
-		// INSERT: project member + must set themselves as author
-		pgPolicy('issue_comment_insert', {
-			for: 'insert',
-			withCheck: sql`
+			// INSERT: project member + must set themselves as author
+			pgPolicy('issue_comment_insert', {
+				for: 'insert',
+				withCheck: sql`
 				${t.authorId} = ${currentUserId}
 				AND EXISTS (
 					SELECT 1 FROM scholio.project
@@ -60,18 +61,19 @@ export const issueComment = scholioSchema.table(
 					)
 				)
 			`
-		}),
+			}),
 
-		// UPDATE: author only
-		pgPolicy('issue_comment_update', {
-			for: 'update',
-			using: sql`${t.authorId} = ${currentUserId}`
-		}),
+			// UPDATE: author only
+			pgPolicy('issue_comment_update', {
+				for: 'update',
+				using: sql`${t.authorId} = ${currentUserId}`
+			}),
 
-		// DELETE: author only
-		pgPolicy('issue_comment_delete', {
-			for: 'delete',
-			using: sql`${t.authorId} = ${currentUserId}`
-		})
-	]
-).enableRLS();
+			// DELETE: author only
+			pgPolicy('issue_comment_delete', {
+				for: 'delete',
+				using: sql`${t.authorId} = ${currentUserId}`
+			})
+		]
+	)
+	.enableRLS();

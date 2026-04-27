@@ -47,16 +47,38 @@
 	<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Network</h1>
 
 	<section class="mt-8">
-		<h2 class="mb-4 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint">
+		<h2
+			class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+		>
 			Pending invitations
 		</h2>
 
 		{#if data.invitations.length === 0}
-			<div class="flex flex-col items-center justify-center rounded-xl border border-dashed border-paper-border py-12 dark:border-dark-paper-border">
-				<svg width="28" height="28" viewBox="0 0 24 24" fill="none" class="mb-2 text-ink-faint dark:text-dark-ink-faint">
-					<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-					<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
-					<path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+			<div
+				class="flex flex-col items-center justify-center rounded-xl border border-dashed border-paper-border py-12 dark:border-dark-paper-border"
+			>
+				<svg
+					width="28"
+					height="28"
+					viewBox="0 0 24 24"
+					fill="none"
+					class="mb-2 text-ink-faint dark:text-dark-ink-faint"
+				>
+					<path
+						d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+					<circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5" />
+					<path
+						d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
 				</svg>
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 					No pending invitations.
@@ -65,7 +87,9 @@
 		{:else}
 			<ul class="flex flex-col gap-3">
 				{#each data.invitations as inv (inv.id)}
-					<li class="flex items-center justify-between gap-4 rounded-xl border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper">
+					<li
+						class="flex items-center justify-between gap-4 rounded-xl border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+					>
 						<div class="min-w-0 flex-1">
 							<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
 								{inv.projectTitle ?? 'Untitled project'}
@@ -75,7 +99,9 @@
 								{#if inv.invitedByName}
 									· invited by {inv.invitedByName}
 								{/if}
-								· expires {new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short' }).format(new Date(inv.expiresAt))}
+								· expires {new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short' }).format(
+									new Date(inv.expiresAt)
+								)}
 							</p>
 						</div>
 						<div class="flex shrink-0 items-center gap-2">

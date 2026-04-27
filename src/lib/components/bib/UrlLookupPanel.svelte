@@ -170,7 +170,11 @@
 						Review and edit the fields after adding if needed.
 					</p>
 					<label class="flex cursor-pointer items-center gap-2">
-						<input type="checkbox" bind:checked={urlSavePdf} class="h-3.5 w-3.5 rounded accent-accent" />
+						<input
+							type="checkbox"
+							bind:checked={urlSavePdf}
+							class="h-3.5 w-3.5 rounded accent-accent"
+						/>
 						<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 							Save a PDF snapshot
 						</span>

@@ -18,9 +18,10 @@ const EPIGRAPH_PATTERN = /^>\s*\[!epigraph\]\n((?:>\s*.*\n?)*)/gm;
 /**
  * Extract all epigraphs from markdown and return a map of placeholder → epigraph data
  */
-export function extractEpigraphsForProcessing(
-	markdown: string
-): { processed: string; epigraphs: Map<string, ParsedEpigraph> } {
+export function extractEpigraphsForProcessing(markdown: string): {
+	processed: string;
+	epigraphs: Map<string, ParsedEpigraph>;
+} {
 	const epigraphs = new Map<string, ParsedEpigraph>();
 	let idx = 0;
 
@@ -77,10 +78,7 @@ export function renderEpigraphHTML(quote: string, author: string, source: string
 /**
  * Restore epigraph placeholders in HTML with rendered epigraph blocks
  */
-export function restoreEpigraphs(
-	html: string,
-	epigraphs: Map<string, ParsedEpigraph>
-): string {
+export function restoreEpigraphs(html: string, epigraphs: Map<string, ParsedEpigraph>): string {
 	let result = html;
 	for (const [id, data] of epigraphs.entries()) {
 		const htmlBlock = renderEpigraphHTML(data.quote, data.author, data.source);

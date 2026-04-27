@@ -40,9 +40,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	// 2. Impersonar al owner para leer el documento y la versión (RLS lo permite)
 	const [docRows, versionRows] = await db.transaction(async (tx) => {
-		await tx.execute(
-			sql`SELECT set_config('app.current_user_id', ${share.createdBy}, true)`
-		);
+		await tx.execute(sql`SELECT set_config('app.current_user_id', ${share.createdBy}, true)`);
 		await tx.execute(sql`SET LOCAL search_path = scholio, public`);
 
 		return Promise.all([

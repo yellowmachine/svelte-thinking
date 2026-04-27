@@ -52,7 +52,8 @@ export const actions: Actions = {
 			)
 			.limit(1);
 
-		if (!rows[0]) return fail(403, { message: 'El enlace de registro no es válido o ha expirado.' });
+		if (!rows[0])
+			return fail(403, { message: 'El enlace de registro no es válido o ha expirado.' });
 
 		let userId: string;
 		try {
@@ -63,7 +64,10 @@ export const actions: Actions = {
 			userId = result.user.id;
 		} catch (e) {
 			if (e instanceof APIError) {
-				const isEmailTaken = e.body?.code === 'USER_ALREADY_EXISTS' || e.message?.toLowerCase().includes('already exists') || e.message?.toLowerCase().includes('email');
+				const isEmailTaken =
+					e.body?.code === 'USER_ALREADY_EXISTS' ||
+					e.message?.toLowerCase().includes('already exists') ||
+					e.message?.toLowerCase().includes('email');
 
 				if (isEmailTaken) {
 					// El usuario ya existe en public.user (cuenta de Librarian u otra app).
@@ -83,7 +87,9 @@ export const actions: Actions = {
 
 						if (!existingProfile[0]) {
 							await db.transaction(async (tx) => {
-								await tx.execute(sql`SELECT set_config('app.current_user_id', ${existingUser[0].id}, true)`);
+								await tx.execute(
+									sql`SELECT set_config('app.current_user_id', ${existingUser[0].id}, true)`
+								);
 								await tx.insert(userProfile).values({
 									id: crypto.randomUUID(),
 									userId: existingUser[0].id,

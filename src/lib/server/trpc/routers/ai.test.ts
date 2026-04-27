@@ -83,9 +83,7 @@ describe('indexDocument', () => {
 		// withRLS wrapper para indexDocument (mismo patrón que hooks.server.ts)
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
 			db.transaction(async (tx) => {
-				await (tx as any).execute(
-					`SELECT set_config('app.current_user_id', '${USER}', true)`
-				);
+				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
 				return fn(tx as unknown as TestDb);
 			});
 
@@ -113,14 +111,17 @@ describe('indexDocument', () => {
 
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
 			db.transaction(async (tx) => {
-				await (tx as any).execute(
-					`SELECT set_config('app.current_user_id', '${USER}', true)`
-				);
+				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
 				return fn(tx as unknown as TestDb);
 			});
 
 		await withRLS((tx) =>
-			indexDocument(tx as any, documentId, projectId, 'Un único párrafo corto con suficiente texto para pasar el filtro de longitud mínima.')
+			indexDocument(
+				tx as any,
+				documentId,
+				projectId,
+				'Un único párrafo corto con suficiente texto para pasar el filtro de longitud mínima.'
+			)
 		);
 
 		const chunks = await db
@@ -136,9 +137,7 @@ describe('indexDocument', () => {
 
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
 			db.transaction(async (tx) => {
-				await (tx as any).execute(
-					`SELECT set_config('app.current_user_id', '${USER}', true)`
-				);
+				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
 				return fn(tx as unknown as TestDb);
 			});
 
@@ -191,10 +190,7 @@ describe('documents.commit triggers indexing', () => {
 			.where(eq(documentChunk.documentId, documentId));
 
 		expect(chunks.length).toBeGreaterThan(0);
-		expect(fetch).toHaveBeenCalledWith(
-			expect.stringContaining('/embed'),
-			expect.any(Object)
-		);
+		expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/embed'), expect.any(Object));
 	});
 });
 
@@ -203,16 +199,19 @@ describe('documents.commit triggers indexing', () => {
 describe('ai.sendMessage — search_documents_semantic', () => {
 	it('el agente llama a search_documents_semantic y devuelve respuesta', async () => {
 		// Seed chunks manualmente para esta prueba
-		await db.insert(documentChunk).values([
-			{
-				id: crypto.randomUUID(),
-				documentId,
-				projectId,
-				chunkIndex: 0,
-				text: 'La teoría del capital de Böhm-Bawerk explica la estructura de producción.',
-				embedding: fakeEmbedding(1)
-			}
-		]).onConflictDoNothing();
+		await db
+			.insert(documentChunk)
+			.values([
+				{
+					id: crypto.randomUUID(),
+					documentId,
+					projectId,
+					chunkIndex: 0,
+					text: 'La teoría del capital de Böhm-Bawerk explica la estructura de producción.',
+					embedding: fakeEmbedding(1)
+				}
+			])
+			.onConflictDoNothing();
 
 		const fetchMock = vi.fn();
 

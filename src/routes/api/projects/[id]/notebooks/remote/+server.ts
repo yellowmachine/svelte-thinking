@@ -29,10 +29,7 @@ export const POST: RequestHandler = async (event) => {
 				.select()
 				.from(userJupyterConnection)
 				.where(
-					and(
-						eq(userJupyterConnection.id, connectionId),
-						eq(userJupyterConnection.userId, user.id)
-					)
+					and(eq(userJupyterConnection.id, connectionId), eq(userJupyterConnection.userId, user.id))
 				)
 				.limit(1)
 		)
@@ -68,10 +65,11 @@ export const POST: RequestHandler = async (event) => {
 		token = '';
 	}
 
-	if (upstream.status === 401 || upstream.status === 403) error(401, 'Invalid or expired Jupyter token');
+	if (upstream.status === 401 || upstream.status === 403)
+		error(401, 'Invalid or expired Jupyter token');
 	if (!upstream.ok) error(502, `Jupyter server returned ${upstream.status}`);
 
-	const data = await upstream.json() as { name: string; content: unknown; size?: number };
+	const data = (await upstream.json()) as { name: string; content: unknown; size?: number };
 
 	let notebook;
 	try {

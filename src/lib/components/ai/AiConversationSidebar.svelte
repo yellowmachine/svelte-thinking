@@ -69,13 +69,7 @@
 			href="/projects/{projectId}"
 			class="flex items-center gap-1.5 font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
-			<svg
-				width="14"
-				height="14"
-				viewBox="0 0 16 16"
-				fill="none"
-				aria-hidden="true"
-			>
+			<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 				<path
 					d="M10 12L6 8l4-4"
 					stroke="currentColor"
@@ -93,7 +87,12 @@
 			class="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+				<path
+					d="M12 5v14M5 12h14"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+				/>
 			</svg>
 		</button>
 	</div>
@@ -128,7 +127,7 @@
 						type="button"
 						aria-label="Delete conversation"
 						onclick={(e) => ondeleteconversation(conv.id, e)}
-						class="mr-2 mt-2.5 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-dark-ink-faint"
+						class="mt-2.5 mr-2 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-dark-ink-faint"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path

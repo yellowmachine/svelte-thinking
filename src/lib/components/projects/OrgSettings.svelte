@@ -19,7 +19,9 @@
 
 	// Org detail state
 	let members = $state<{ id: string; userId: string; role: string; createdAt: Date }[]>([]);
-	let invitations = $state<{ id: string; invitedEmail: string; status: OrgInvitationStatus; expiresAt: Date }[]>([]);
+	let invitations = $state<
+		{ id: string; invitedEmail: string; status: OrgInvitationStatus; expiresAt: Date }[]
+	>([]);
 	let keys = $state<{ id: string; name: string; enabled: boolean; createdAt: Date }[]>([]);
 	let taskConfig = $state<Record<string, { keyId: string; model: string }>>({});
 	let orgData = $state<{ ownerId: string } | null>(null);
@@ -38,7 +40,13 @@
 	let keyError = $state('');
 
 	// S3 form (owner only)
-	type OrgS3Config = { endpoint: string; bucket: string; region: string; publicUrl: string | null; verified: boolean };
+	type OrgS3Config = {
+		endpoint: string;
+		bucket: string;
+		region: string;
+		publicUrl: string | null;
+		verified: boolean;
+	};
 	let orgS3Config = $state<OrgS3Config | null>(null);
 	let orgS3Endpoint = $state('');
 	let orgS3Bucket = $state('');
@@ -76,7 +84,7 @@
 			}
 			// Load org S3 config (owner only — silently skip on error)
 			try {
-				const s3 = await trpc.s3Config.getOrg.query(orgId) as OrgS3Config | null;
+				const s3 = (await trpc.s3Config.getOrg.query(orgId)) as OrgS3Config | null;
 				orgS3Config = s3;
 				if (s3) {
 					orgS3Endpoint = s3.endpoint;
@@ -150,7 +158,11 @@
 		addingKey = true;
 		keyError = '';
 		try {
-			await trpc.orgs.addKey.mutate({ orgId: selectedOrgId, name: newKeyName.trim(), apiKey: newKeyValue.trim() });
+			await trpc.orgs.addKey.mutate({
+				orgId: selectedOrgId,
+				name: newKeyName.trim(),
+				apiKey: newKeyValue.trim()
+			});
 			newKeyName = '';
 			newKeyValue = '';
 			await loadDetail(selectedOrgId);
@@ -171,7 +183,6 @@
 		keys = keys.filter((k) => k.id !== keyId);
 	}
 
-
 	async function saveOrgS3() {
 		if (!selectedOrgId) return;
 		orgS3Saving = true;
@@ -191,7 +202,7 @@
 			});
 			orgS3AccessKey = '';
 			orgS3SecretKey = '';
-			orgS3Config = await trpc.s3Config.getOrg.query(selectedOrgId) as OrgS3Config | null;
+			orgS3Config = (await trpc.s3Config.getOrg.query(selectedOrgId)) as OrgS3Config | null;
 			orgS3Success = 'Configuration saved. Test the connection to verify it.';
 		} catch (e: unknown) {
 			orgS3Error = e instanceof Error ? e.message : 'Error saving S3 config.';
@@ -209,9 +220,11 @@
 			const result = await trpc.s3Config.testOrg.mutate(selectedOrgId);
 			if (result.ok) {
 				orgS3Success = 'Connection verified successfully.';
-				orgS3Config = await trpc.s3Config.getOrg.query(selectedOrgId) as OrgS3Config | null;
+				orgS3Config = (await trpc.s3Config.getOrg.query(selectedOrgId)) as OrgS3Config | null;
 			} else {
-				orgS3Error = (result as { error?: string }).error ?? 'Connection failed. Check credentials and bucket.';
+				orgS3Error =
+					(result as { error?: string }).error ??
+					'Connection failed. Check credentials and bucket.';
 			}
 		} catch (e: unknown) {
 			orgS3Error = e instanceof Error ? e.message : 'Error testing connection.';
@@ -236,7 +249,12 @@
 
 	async function setTask(task: string, keyId: string, model: string) {
 		if (!selectedOrgId) return;
-		await trpc.orgs.setTaskConfig.mutate({ orgId: selectedOrgId, task: task as 'agent' | 'draft' | 'review' | 'requirements', keyId, model });
+		await trpc.orgs.setTaskConfig.mutate({
+			orgId: selectedOrgId,
+			task: task as 'agent' | 'draft' | 'review' | 'requirements',
+			keyId,
+			model
+		});
 		taskConfig = { ...taskConfig, [task]: { keyId, model } };
 	}
 </script>
@@ -249,7 +267,10 @@
 				<button
 					type="button"
 					onclick={() => (selectedOrgId = org.id)}
-					class="w-full truncate rounded-lg px-3 py-2 text-left font-sans text-sm transition-colors {selectedOrgId === org.id ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
+					class="w-full truncate rounded-lg px-3 py-2 text-left font-sans text-sm transition-colors {selectedOrgId ===
+					org.id
+						? 'bg-accent/10 text-accent'
+						: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
 				>
 					{org.name}
 					{#if org.role === 'owner'}
@@ -261,7 +282,9 @@
 
 		<!-- Create org -->
 		<div class="mt-4 border-t border-paper-border pt-4 dark:border-dark-paper-border">
-			<p class="mb-2 font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">New organization</p>
+			<p class="mb-2 font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
+				New organization
+			</p>
 			<input
 				bind:value={createName}
 				placeholder="Name"
@@ -285,29 +308,43 @@
 	<!-- Main panel -->
 	<div class="min-w-0 flex-1">
 		{#if !selectedOrg}
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Select or create an organization.</p>
+			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Select or create an organization.
+			</p>
 		{:else if loadingDetail}
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading…</p>
 		{:else}
 			<div class="space-y-8">
 				<div>
-					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">{selectedOrg.name}</h3>
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">/{selectedOrg.slug}</p>
+					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+						{selectedOrg.name}
+					</h3>
+					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						/{selectedOrg.slug}
+					</p>
 				</div>
 
 				<!-- API Keys (owner only) -->
 				{#if isOwner}
 					<section>
-						<h4 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">API Keys</h4>
+						<h4
+							class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
+						>
+							API Keys
+						</h4>
 						<div class="space-y-2">
 							{#each keys as key (key.id)}
-								<div class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border">
+								<div
+									class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border"
+								>
 									<span class="font-sans text-sm text-ink dark:text-dark-ink">{key.name}</span>
 									<div class="flex items-center gap-2">
 										<button
 											type="button"
 											onclick={() => toggleKey(key.id, !key.enabled)}
-											class="font-sans text-xs {key.enabled ? 'text-green-600' : 'text-ink-faint dark:text-dark-ink-faint'}"
+											class="font-sans text-xs {key.enabled
+												? 'text-green-600'
+												: 'text-ink-faint dark:text-dark-ink-faint'}"
 										>
 											{key.enabled ? 'Active' : 'Disabled'}
 										</button>
@@ -351,15 +388,23 @@
 
 					<!-- AI Task Config (owner only) -->
 					<section>
-						<h4 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">AI Task Configuration</h4>
+						<h4
+							class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
+						>
+							AI Task Configuration
+						</h4>
 						{#if keys.filter((k) => k.enabled).length === 0}
-							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Add an API key first.</p>
+							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+								Add an API key first.
+							</p>
 						{:else}
 							<div class="space-y-3">
 								{#each AI_TASKS as task (task.id)}
 									{@const current = taskConfig[task.id]}
 									<div class="flex items-center gap-3">
-										<span class="w-28 font-sans text-sm text-ink dark:text-dark-ink">{task.label}</span>
+										<span class="w-28 font-sans text-sm text-ink dark:text-dark-ink"
+											>{task.label}</span
+										>
 										<select
 											value={current?.keyId ?? ''}
 											onchange={(e) => {
@@ -397,29 +442,48 @@
 
 					<!-- S3 Storage (owner only) -->
 					<section>
-						<h4 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">S3 Storage</h4>
+						<h4
+							class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
+						>
+							S3 Storage
+						</h4>
 
 						{#if orgS3Config}
-							<div class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+							<div
+								class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+							>
 								<div class="min-w-0 flex-1">
 									<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
 										{orgS3Config.bucket}
-										<span class="font-normal text-ink-faint dark:text-dark-ink-faint">@ {orgS3Config.endpoint}</span>
+										<span class="font-normal text-ink-faint dark:text-dark-ink-faint"
+											>@ {orgS3Config.endpoint}</span
+										>
 									</p>
 									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 										{orgS3Config.verified ? 'Verified' : 'Unverified'} · Region: {orgS3Config.region}
 									</p>
 								</div>
 								<div class="flex items-center gap-3">
-									<span class="font-sans text-xs {orgS3Config.verified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}">
+									<span
+										class="font-sans text-xs {orgS3Config.verified
+											? 'text-green-600 dark:text-green-400'
+											: 'text-amber-600 dark:text-amber-400'}"
+									>
 										{orgS3Config.verified ? '✓ OK' : '⚠ Unverified'}
 									</span>
-									<button type="button" onclick={testOrgS3} disabled={orgS3Testing}
-										class="font-sans text-xs text-accent hover:underline disabled:opacity-50">
+									<button
+										type="button"
+										onclick={testOrgS3}
+										disabled={orgS3Testing}
+										class="font-sans text-xs text-accent hover:underline disabled:opacity-50"
+									>
 										{orgS3Testing ? 'Testing…' : 'Test'}
 									</button>
-									<button type="button" onclick={removeOrgS3}
-										class="font-sans text-xs text-red-500 hover:text-red-700">
+									<button
+										type="button"
+										onclick={removeOrgS3}
+										class="font-sans text-xs text-red-500 hover:text-red-700"
+									>
 										Remove
 									</button>
 								</div>
@@ -427,10 +491,18 @@
 						{/if}
 
 						{#if orgS3Error}
-							<p class="mb-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">{orgS3Error}</p>
+							<p
+								class="mb-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
+							>
+								{orgS3Error}
+							</p>
 						{/if}
 						{#if orgS3Success}
-							<p class="mb-3 rounded-lg bg-green-50 px-3 py-2 font-sans text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">{orgS3Success}</p>
+							<p
+								class="mb-3 rounded-lg bg-green-50 px-3 py-2 font-sans text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400"
+							>
+								{orgS3Success}
+							</p>
 						{/if}
 
 						<p class="mb-3 font-sans text-sm font-medium text-ink dark:text-dark-ink">
@@ -438,39 +510,79 @@
 						</p>
 						<div class="grid grid-cols-2 gap-3">
 							<div class="col-span-2">
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Endpoint URL</label>
-								<input bind:value={orgS3Endpoint} type="url" placeholder="https://…"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									>Endpoint URL</label
+								>
+								<input
+									bind:value={orgS3Endpoint}
+									type="url"
+									placeholder="https://…"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								/>
 							</div>
 							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Bucket</label>
-								<input bind:value={orgS3Bucket} placeholder="my-bucket"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									>Bucket</label
+								>
+								<input
+									bind:value={orgS3Bucket}
+									placeholder="my-bucket"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								/>
 							</div>
 							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Region</label>
-								<input bind:value={orgS3Region} placeholder="us-east-1"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									>Region</label
+								>
+								<input
+									bind:value={orgS3Region}
+									placeholder="us-east-1"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								/>
 							</div>
 							<div class="col-span-2">
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Public URL (optional)</label>
-								<input bind:value={orgS3PublicUrl} type="url" placeholder="https://cdn.example.com"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									>Public URL (optional)</label
+								>
+								<input
+									bind:value={orgS3PublicUrl}
+									type="url"
+									placeholder="https://cdn.example.com"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								/>
 							</div>
 							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Access Key ID</label>
-								<input bind:value={orgS3AccessKey} autocomplete="off"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									>Access Key ID</label
+								>
+								<input
+									bind:value={orgS3AccessKey}
+									autocomplete="off"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								/>
 							</div>
 							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Secret Access Key</label>
-								<input bind:value={orgS3SecretKey} type="password" autocomplete="new-password"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink" />
+								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									>Secret Access Key</label
+								>
+								<input
+									bind:value={orgS3SecretKey}
+									type="password"
+									autocomplete="new-password"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+								/>
 							</div>
 						</div>
-						<button type="button" onclick={saveOrgS3}
-							disabled={orgS3Saving || !orgS3Endpoint.trim() || !orgS3Bucket.trim() || !orgS3AccessKey.trim() || !orgS3SecretKey.trim()}
-							class="mt-3 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:opacity-80 disabled:opacity-50">
+						<button
+							type="button"
+							onclick={saveOrgS3}
+							disabled={orgS3Saving ||
+								!orgS3Endpoint.trim() ||
+								!orgS3Bucket.trim() ||
+								!orgS3AccessKey.trim() ||
+								!orgS3SecretKey.trim()}
+							class="mt-3 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:opacity-80 disabled:opacity-50"
+						>
 							{orgS3Saving ? 'Saving…' : 'Save'}
 						</button>
 					</section>
@@ -478,13 +590,23 @@
 
 				<!-- Members -->
 				<section>
-					<h4 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Members</h4>
+					<h4
+						class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
+					>
+						Members
+					</h4>
 					<div class="space-y-2">
 						{#each members as member (member.id)}
-							<div class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border">
-								<span class="font-mono text-xs text-ink-muted dark:text-dark-ink-muted">{member.userId.slice(0, 12)}…</span>
+							<div
+								class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border"
+							>
+								<span class="font-mono text-xs text-ink-muted dark:text-dark-ink-muted"
+									>{member.userId.slice(0, 12)}…</span
+								>
 								<div class="flex items-center gap-3">
-									<span class="font-sans text-xs capitalize text-ink-faint dark:text-dark-ink-faint">{member.role}</span>
+									<span class="font-sans text-xs text-ink-faint capitalize dark:text-dark-ink-faint"
+										>{member.role}</span
+									>
 									{#if isOwner}
 										<button
 											type="button"
@@ -498,7 +620,9 @@
 							</div>
 						{/each}
 						{#if members.length === 0}
-							<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">No members yet.</p>
+							<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+								No members yet.
+							</p>
 						{/if}
 					</div>
 				</section>
@@ -506,7 +630,11 @@
 				<!-- Invite (owner only) -->
 				{#if isOwner}
 					<section>
-						<h4 class="mb-3 font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Invite member</h4>
+						<h4
+							class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
+						>
+							Invite member
+						</h4>
 						<div class="flex gap-2">
 							<input
 								bind:value={inviteEmail}
@@ -532,8 +660,12 @@
 						{#if invitations.filter((i) => isInvitationPending(i.status)).length > 0}
 							<div class="mt-3 space-y-1">
 								{#each invitations.filter((i) => isInvitationPending(i.status)) as inv (inv.id)}
-									<div class="flex items-center justify-between rounded-lg bg-paper-ui px-3 py-2 dark:bg-dark-paper-ui">
-										<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">{inv.invitedEmail}</span>
+									<div
+										class="flex items-center justify-between rounded-lg bg-paper-ui px-3 py-2 dark:bg-dark-paper-ui"
+									>
+										<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+											>{inv.invitedEmail}</span
+										>
 										<button
 											type="button"
 											onclick={() => cancelInvite(inv.id)}

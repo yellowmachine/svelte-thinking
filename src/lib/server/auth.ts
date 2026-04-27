@@ -15,31 +15,31 @@ import { sendPasswordResetEmail } from '$lib/server/email';
 // automáticamente (scholio.review), lo que cubre todos sus subdominios.
 // En localhost no se activa: cookie sin domain, solo funciona en localhost.
 function isLocalhost(origin: string): boolean {
-  try {
-    const { hostname } = new URL(origin);
-    return hostname === 'localhost' || hostname === '127.0.0.1';
-  } catch {
-    return true;
-  }
+	try {
+		const { hostname } = new URL(origin);
+		return hostname === 'localhost' || hostname === '127.0.0.1';
+	} catch {
+		return true;
+	}
 }
 
 export const auth = betterAuth({
-  baseURL: env.ORIGIN,
-  secret: env.BETTER_AUTH_SECRET,
-  database: drizzleAdapter(db, { provider: 'pg' }),
-  pages: {
-    error: '/auth/error'
-  },
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: true,
-    sendResetPassword: async ({ user, url }) => {
-      console.log('[auth] sendResetPassword called for', user.email, 'url:', url);
-      await sendPasswordResetEmail(user.email, url);
-      console.log('[auth] sendPasswordResetEmail done');
-    }
-  },
-  /*emailVerification: {
+	baseURL: env.ORIGIN,
+	secret: env.BETTER_AUTH_SECRET,
+	database: drizzleAdapter(db, { provider: 'pg' }),
+	pages: {
+		error: '/auth/error'
+	},
+	emailAndPassword: {
+		enabled: true,
+		requireEmailVerification: true,
+		sendResetPassword: async ({ user, url }) => {
+			console.log('[auth] sendResetPassword called for', user.email, 'url:', url);
+			await sendPasswordResetEmail(user.email, url);
+			console.log('[auth] sendPasswordResetEmail done');
+		}
+	},
+	/*emailVerification: {
     sendOnSignUp: true,
     sendOnSignIn: true,
     autoSignInAfterVerification: true,
@@ -48,33 +48,33 @@ export const auth = betterAuth({
     }
   },
   */
-  socialProviders: {
-    github: {
-      clientId: env.GITHUB_CLIENT_ID!,
-      clientSecret: env.GITHUB_CLIENT_SECRET!
-    }
-  },
-  databaseHooks: {
-    user: {
-      create: {
-        before: async (user) => {
-          const rows = await db
-            .select({ status: waitlist.status })
-            .from(waitlist)
-            .where(eq(waitlist.email, user.email))
-            .limit(1);
+	socialProviders: {
+		github: {
+			clientId: env.GITHUB_CLIENT_ID!,
+			clientSecret: env.GITHUB_CLIENT_SECRET!
+		}
+	},
+	databaseHooks: {
+		user: {
+			create: {
+				before: async (user) => {
+					const rows = await db
+						.select({ status: waitlist.status })
+						.from(waitlist)
+						.where(eq(waitlist.email, user.email))
+						.limit(1);
 
-          if (!rows[0] || rows[0].status !== 'approved') return false;
-          return { data: user };
-        }
-      }
-    }
-  },
-  advanced: {
-    ...(!isLocalhost(env.ORIGIN ?? '') ? { crossSubDomainCookies: { enabled: true } } : {})
-  },
-  plugins: [
-    twoFactor({ issuer: 'Scholio' }),
-    sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
-  ]
+					if (!rows[0] || rows[0].status !== 'approved') return false;
+					return { data: user };
+				}
+			}
+		}
+	},
+	advanced: {
+		...(!isLocalhost(env.ORIGIN ?? '') ? { crossSubDomainCookies: { enabled: true } } : {})
+	},
+	plugins: [
+		twoFactor({ issuer: 'Scholio' }),
+		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
+	]
 });

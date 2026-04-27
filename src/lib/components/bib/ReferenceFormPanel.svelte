@@ -265,8 +265,7 @@
 									type="text"
 									placeholder="Apellido"
 									value={author.last}
-									oninput={(e) =>
-										updateAuthor(i, 'last', (e.target as HTMLInputElement).value)}
+									oninput={(e) => updateAuthor(i, 'last', (e.target as HTMLInputElement).value)}
 									onblur={autoCiteKey}
 									class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 								/>
@@ -274,15 +273,13 @@
 									type="text"
 									placeholder="Nombre"
 									value={author.first}
-									oninput={(e) =>
-										updateAuthor(i, 'first', (e.target as HTMLInputElement).value)}
+									oninput={(e) => updateAuthor(i, 'first', (e.target as HTMLInputElement).value)}
 									class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 								/>
 								{#if form.authors.length > 1}
 									<button
 										onclick={() => removeAuthor(i)}
-										class="shrink-0 rounded-md px-1.5 text-ink-faint hover:text-red-500"
-										>×</button
+										class="shrink-0 rounded-md px-1.5 text-ink-faint hover:text-red-500">×</button
 									>
 								{/if}
 							</div>
@@ -807,8 +804,8 @@
 					class="rounded-md bg-paper-ui px-3 py-2 font-sans text-xs text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
 				>
 					Use <strong>Title</strong> for the full name of the translation (e.g.
-					<em>The Holy Bible, New Revised Standard Version</em>). Biblical citations appear as inline
-					parentheticals — usually not in the bibliography.
+					<em>The Holy Bible, New Revised Standard Version</em>). Biblical citations appear as
+					inline parentheticals — usually not in the bibliography.
 				</p>
 				<div>
 					<label

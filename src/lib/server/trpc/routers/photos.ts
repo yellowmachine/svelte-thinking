@@ -34,9 +34,7 @@ export const photosRouter = router({
 		const s3 = await resolveProjectS3Config(photo.projectId, ctx.user.id, ctx.withRLS);
 		if (s3) await deleteFileWithConfig(s3, photo.key);
 
-		await ctx.withRLS((db) =>
-			db.delete(projectPhoto).where(and(eq(projectPhoto.id, photoId)))
-		);
+		await ctx.withRLS((db) => db.delete(projectPhoto).where(and(eq(projectPhoto.id, photoId))));
 
 		await cacheDel(CACHE_KEY.photoPresign(photoId));
 

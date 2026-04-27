@@ -16,11 +16,7 @@ export const load: PageServerLoad = async ({ url }) => {
 			createdAt: user.createdAt
 		})
 		.from(user)
-		.where(
-			q
-				? or(ilike(user.name, `%${q}%`), ilike(user.email, `%${q}%`))
-				: undefined
-		)
+		.where(q ? or(ilike(user.name, `%${q}%`), ilike(user.email, `%${q}%`)) : undefined)
 		.orderBy(desc(user.createdAt))
 		.limit(50);
 

@@ -35,7 +35,9 @@
 		}
 	}
 
-	$effect(() => { loadConnections(); });
+	$effect(() => {
+		loadConnections();
+	});
 
 	// ── Add connection form ──────────────────────────────────────────────────
 	let addName = $state('');
@@ -48,7 +50,11 @@
 		addError = '';
 		addSaving = true;
 		try {
-			await trpc.jupyter.add.mutate({ name: addName.trim(), baseUrl: addUrl.trim(), token: addToken.trim() });
+			await trpc.jupyter.add.mutate({
+				name: addName.trim(),
+				baseUrl: addUrl.trim(),
+				token: addToken.trim()
+			});
 			await loadConnections();
 			resetAddForm();
 			view = 'list';
@@ -94,7 +100,7 @@
 				const err = await res.json().catch(() => ({}));
 				throw new Error(err.message ?? `Error ${res.status}`);
 			}
-			const data = await res.json() as { type: string; items?: ContentsItem[] };
+			const data = (await res.json()) as { type: string; items?: ContentsItem[] };
 			contentsItems = data.items ?? [];
 			browsePath = path;
 		} catch (err) {
@@ -105,9 +111,8 @@
 	}
 
 	function navigateTo(path: string, name: string) {
-		breadcrumbs = path === ''
-			? []
-			: [...breadcrumbs.filter((b) => b.path !== path), { name, path }];
+		breadcrumbs =
+			path === '' ? [] : [...breadcrumbs.filter((b) => b.path !== path), { name, path }];
 		loadContents(path);
 	}
 
@@ -154,7 +159,9 @@
 		if (e.key === 'Escape') onclose();
 	}
 
-	const addValid = $derived(addName.trim().length > 0 && addUrl.trim().length > 0 && addToken.trim().length > 0);
+	const addValid = $derived(
+		addName.trim().length > 0 && addUrl.trim().length > 0 && addToken.trim().length > 0
+	);
 </script>
 
 <!-- Backdrop -->
@@ -162,7 +169,9 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
-	onclick={(e) => { if (e.target === e.currentTarget) onclose(); }}
+	onclick={(e) => {
+		if (e.target === e.currentTarget) onclose();
+	}}
 >
 	<div
 		role="dialog"
@@ -174,18 +183,32 @@
 		style="max-height: 80vh;"
 	>
 		<!-- Header -->
-		<div class="flex shrink-0 items-center justify-between gap-3 border-b border-paper-border px-5 py-4 dark:border-dark-paper-border">
+		<div
+			class="flex shrink-0 items-center justify-between gap-3 border-b border-paper-border px-5 py-4 dark:border-dark-paper-border"
+		>
 			<div class="flex items-center gap-2">
 				{#if view === 'browse' || view === 'add'}
 					<button
-						onclick={() => { view = 'list'; resetAddForm(); }}
+						onclick={() => {
+							view = 'list';
+							resetAddForm();
+						}}
 						class="mr-1 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 						aria-label="Back"
 					>
-						<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z" clip-rule="evenodd"/></svg>
+						<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"
+							><path
+								fill-rule="evenodd"
+								d="M17 10a.75.75 0 0 1-.75.75H5.612l4.158 3.96a.75.75 0 1 1-1.04 1.08l-5.5-5.25a.75.75 0 0 1 0-1.08l5.5-5.25a.75.75 0 1 1 1.04 1.08L5.612 9.25H16.25A.75.75 0 0 1 17 10Z"
+								clip-rule="evenodd"
+							/></svg
+						>
 					</button>
 				{/if}
-				<h2 id="jupyter-modal-title" class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+				<h2
+					id="jupyter-modal-title"
+					class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
+				>
 					{#if view === 'add'}Add Jupyter connection
 					{:else if view === 'browse' && selectedConn}{selectedConn.name}
 					{:else}Import from Jupyter{/if}
@@ -196,13 +219,19 @@
 				class="text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 				aria-label="Close"
 			>
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+					><path
+						d="M18 6L6 18M6 6l12 12"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/></svg
+				>
 			</button>
 		</div>
 
 		<!-- Body -->
 		<div class="min-h-0 flex-1 overflow-y-auto p-5">
-
 			<!-- ── View: list ── -->
 			{#if view === 'list'}
 				{#if loadingConnections}
@@ -219,54 +248,80 @@
 								class="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 							>
 								<div>
-									<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{conn.name}</p>
-									<p class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">{conn.baseUrl}</p>
+									<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+										{conn.name}
+									</p>
+									<p class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">
+										{conn.baseUrl}
+									</p>
 								</div>
-								<svg class="h-4 w-4 shrink-0 text-ink-faint dark:text-dark-ink-faint" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
+								<svg
+									class="h-4 w-4 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+									viewBox="0 0 20 20"
+									fill="currentColor"
+									><path
+										fill-rule="evenodd"
+										d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
+										clip-rule="evenodd"
+									/></svg
+								>
 							</button>
 						{/each}
 					</div>
 				{/if}
 				<button
-					onclick={() => { view = 'add'; }}
+					onclick={() => {
+						view = 'add';
+					}}
 					class="w-full rounded-lg border border-dashed border-paper-border py-2.5 font-sans text-sm text-ink-muted transition-colors hover:border-ink-faint hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:border-dark-ink-faint dark:hover:text-dark-ink"
 				>
 					+ Add connection
 				</button>
 
-			<!-- ── View: add ── -->
+				<!-- ── View: add ── -->
 			{:else if view === 'add'}
 				<div class="flex flex-col gap-4">
 					<div>
-						<label class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted" for="jup-name">Name</label>
+						<label
+							class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+							for="jup-name">Name</label
+						>
 						<input
 							id="jup-name"
 							bind:value={addName}
 							type="text"
 							placeholder="JupyterHub UCM"
-							class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:ring-1 focus:ring-ink-faint focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted" for="jup-url">Server URL</label>
+						<label
+							class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+							for="jup-url">Server URL</label
+						>
 						<input
 							id="jup-url"
 							bind:value={addUrl}
 							type="url"
 							placeholder="https://jupyter.example.edu"
-							class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink focus:ring-1 focus:ring-ink-faint focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted" for="jup-token">API Token</label>
+						<label
+							class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+							for="jup-token">API Token</label
+						>
 						<input
 							id="jup-token"
 							bind:value={addToken}
 							type="password"
 							placeholder="Token from JupyterHub → Settings → API Tokens"
-							class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink focus:outline-none focus:ring-1 focus:ring-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink focus:ring-1 focus:ring-ink-faint focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
-						<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Stored encrypted. Never shared.</p>
+						<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							Stored encrypted. Never shared.
+						</p>
 					</div>
 
 					{#if addError}
@@ -282,16 +337,30 @@
 					</button>
 				</div>
 
-			<!-- ── View: browse ── -->
+				<!-- ── View: browse ── -->
 			{:else if view === 'browse'}
 				<!-- Breadcrumbs -->
-				<div class="mb-3 flex flex-wrap items-center gap-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					<button onclick={() => navigateToCrumb(-1)} class="hover:text-ink dark:hover:text-dark-ink">
+				<div
+					class="mb-3 flex flex-wrap items-center gap-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+				>
+					<button
+						onclick={() => navigateToCrumb(-1)}
+						class="hover:text-ink dark:hover:text-dark-ink"
+					>
 						root
 					</button>
 					{#each breadcrumbs as crumb, i}
-						<svg class="h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
-						<button onclick={() => navigateToCrumb(i)} class="hover:text-ink dark:hover:text-dark-ink">
+						<svg class="h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="currentColor"
+							><path
+								fill-rule="evenodd"
+								d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
+								clip-rule="evenodd"
+							/></svg
+						>
+						<button
+							onclick={() => navigateToCrumb(i)}
+							class="hover:text-ink dark:hover:text-dark-ink"
+						>
 							{crumb.name}
 						</button>
 					{/each}
@@ -315,13 +384,34 @@
 									onclick={() => navigateTo(item.path, item.name)}
 									class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 								>
-									<svg class="h-4 w-4 shrink-0 text-ink-faint dark:text-dark-ink-faint" viewBox="0 0 20 20" fill="currentColor"><path d="M3.75 3A1.75 1.75 0 0 0 2 4.75v3.26a3.235 3.235 0 0 1 1.5-.01V4.75a.25.25 0 0 1 .25-.25h4.23l1.46 1.46c.14.14.328.22.524.22h5.28c.138 0 .25.112.25.25v9.5a.25.25 0 0 1-.25.25H3.75a.25.25 0 0 1-.25-.25V15H2v.75A1.75 1.75 0 0 0 3.75 17.5h12.5A1.75 1.75 0 0 0 18 15.75v-9.5A1.75 1.75 0 0 0 16.25 4.5H10.31L8.99 3.22A.75.75 0 0 0 8.465 3H3.75Z"/></svg>
+									<svg
+										class="h-4 w-4 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+										viewBox="0 0 20 20"
+										fill="currentColor"
+										><path
+											d="M3.75 3A1.75 1.75 0 0 0 2 4.75v3.26a3.235 3.235 0 0 1 1.5-.01V4.75a.25.25 0 0 1 .25-.25h4.23l1.46 1.46c.14.14.328.22.524.22h5.28c.138 0 .25.112.25.25v9.5a.25.25 0 0 1-.25.25H3.75a.25.25 0 0 1-.25-.25V15H2v.75A1.75 1.75 0 0 0 3.75 17.5h12.5A1.75 1.75 0 0 0 18 15.75v-9.5A1.75 1.75 0 0 0 16.25 4.5H10.31L8.99 3.22A.75.75 0 0 0 8.465 3H3.75Z"
+										/></svg
+									>
 									<span class="font-sans text-sm text-ink dark:text-dark-ink">{item.name}</span>
 								</button>
 							{:else}
-								<div class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui">
-									<svg class="h-4 w-4 shrink-0 text-ink-faint dark:text-dark-ink-faint" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm2.25 8.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" clip-rule="evenodd"/></svg>
-									<span class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink">{item.name}</span>
+								<div
+									class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+								>
+									<svg
+										class="h-4 w-4 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+										viewBox="0 0 20 20"
+										fill="currentColor"
+										><path
+											fill-rule="evenodd"
+											d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm2.25 8.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z"
+											clip-rule="evenodd"
+										/></svg
+									>
+									<span
+										class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink"
+										>{item.name}</span
+									>
 									<button
 										onclick={() => importNotebook(item.path)}
 										disabled={!!importing}

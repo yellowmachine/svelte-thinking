@@ -17,11 +17,7 @@ export const load: PageServerLoad = async (event) => {
 				.limit(1)
 		),
 		event.locals.withRLS((db) =>
-			db
-				.select()
-				.from(issue)
-				.where(eq(issue.projectId, projectId))
-				.orderBy(asc(issue.createdAt))
+			db.select().from(issue).where(eq(issue.projectId, projectId)).orderBy(asc(issue.createdAt))
 		)
 	]);
 

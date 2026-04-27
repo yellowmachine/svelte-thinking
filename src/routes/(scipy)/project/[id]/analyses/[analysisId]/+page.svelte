@@ -14,7 +14,7 @@
 	}
 </script>
 
-<div class="p-8 max-w-2xl">
+<div class="max-w-2xl p-8">
 	<div>
 		<a
 			href="/project/{data.project.id}/analyses"
@@ -22,7 +22,7 @@
 		>
 			← Analyses
 		</a>
-		<h1 class="mt-1 text-2xl font-semibold text-ink dark:text-dark-ink capitalize">
+		<h1 class="mt-1 text-2xl font-semibold text-ink capitalize dark:text-dark-ink">
 			{analysis.type}
 		</h1>
 		<p class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">
@@ -31,19 +31,22 @@
 	</div>
 
 	{#if analysis.status === 'failed'}
-		<div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+		<div
+			class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950"
+		>
 			<p class="text-sm font-medium text-red-700 dark:text-red-300">Analysis failed</p>
 			<p class="mt-1 text-sm text-red-600 dark:text-red-400">{analysis.errorMessage}</p>
 		</div>
-
 	{:else if analysis.type === 'describe' && result}
 		<div class="mt-6 overflow-x-auto">
 			<table class="w-full text-sm">
 				<thead>
-					<tr class="border-b border-paper-border text-left text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint">
-						<th class="pb-2 pr-4 font-medium">Stat</th>
+					<tr
+						class="border-b border-paper-border text-left text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
+					>
+						<th class="pr-4 pb-2 font-medium">Stat</th>
 						{#each Object.keys(result.data as object) as col}
-							<th class="pb-2 pr-4 font-medium font-mono">{col}</th>
+							<th class="pr-4 pb-2 font-mono font-medium">{col}</th>
 						{/each}
 					</tr>
 				</thead>
@@ -59,7 +62,6 @@
 				</tbody>
 			</table>
 		</div>
-
 	{:else if analysis.type === 'ttest' && result}
 		{@const d = result.data as Record<string, unknown>}
 		<div class="mt-6 space-y-3">
@@ -77,7 +79,9 @@
 				</tbody>
 			</table>
 			<p class="text-sm text-ink-faint dark:text-dark-ink-faint">
-				Reject H₀: <span class="font-medium text-ink dark:text-dark-ink">{d.reject_null ? 'Yes' : 'No'}</span>
+				Reject H₀: <span class="font-medium text-ink dark:text-dark-ink"
+					>{d.reject_null ? 'Yes' : 'No'}</span
+				>
 				· α = {fmt(params.alpha)}
 				· {fmt(params.alternative)}
 			</p>

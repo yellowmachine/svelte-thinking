@@ -31,7 +31,10 @@
 			year: '1974',
 			journal: 'The Philosophical Review',
 			subnotes: [
-				{ slug: 'p1', notes: 'Argues that subjective experience is irreducible to physical facts.' },
+				{
+					slug: 'p1',
+					notes: 'Argues that subjective experience is irreducible to physical facts.'
+				},
 				{ slug: 'p2', notes: 'Introduces the bat thought experiment.' }
 			]
 		},

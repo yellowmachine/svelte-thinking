@@ -36,21 +36,21 @@ describe('RLS: user_profile', () => {
 	});
 
 	it('usuario no autenticado no puede leer perfiles', async () => {
-		const rows = await asAnon(db, (tx) =>
-			tx.select().from(userProfile)
-		);
+		const rows = await asAnon(db, (tx) => tx.select().from(userProfile));
 		expect(rows).toHaveLength(0);
 	});
 
 	it('usuario solo puede modificar su propio perfil', async () => {
 		await asUser(db, USER_A, (tx) =>
-			tx.update(userProfile)
+			tx
+				.update(userProfile)
 				.set({ displayName: 'User A updated' })
 				.where(eq(userProfile.userId, USER_A))
 		);
 
 		const rows = await asUser(db, USER_A, (tx) =>
-			tx.select({ displayName: userProfile.displayName })
+			tx
+				.select({ displayName: userProfile.displayName })
 				.from(userProfile)
 				.where(eq(userProfile.userId, USER_A))
 		);
@@ -59,13 +59,12 @@ describe('RLS: user_profile', () => {
 
 	it('usuario no puede modificar el perfil de otro', async () => {
 		await asUser(db, USER_B, (tx) =>
-			tx.update(userProfile)
-				.set({ displayName: 'Hacked' })
-				.where(eq(userProfile.userId, USER_A))
+			tx.update(userProfile).set({ displayName: 'Hacked' }).where(eq(userProfile.userId, USER_A))
 		);
 
 		const rows = await asUser(db, USER_A, (tx) =>
-			tx.select({ displayName: userProfile.displayName })
+			tx
+				.select({ displayName: userProfile.displayName })
 				.from(userProfile)
 				.where(eq(userProfile.userId, USER_A))
 		);
@@ -110,33 +109,25 @@ describe('RLS: project', () => {
 	});
 
 	it('usuario ve sus propios proyectos', async () => {
-		const rows = await asUser(db, USER_A, (tx) =>
-			tx.select({ id: project.id }).from(project)
-		);
+		const rows = await asUser(db, USER_A, (tx) => tx.select({ id: project.id }).from(project));
 		expect(rows.map((r) => r.id)).toContain(PROJECT_A);
 	});
 
 	it('usuario no ve proyectos privados de otro donde no es miembro', async () => {
-		const rows = await asUser(db, USER_C, (tx) =>
-			tx.select({ id: project.id }).from(project)
-		);
+		const rows = await asUser(db, USER_C, (tx) => tx.select({ id: project.id }).from(project));
 		const ids = rows.map((r) => r.id);
 		expect(ids).not.toContain(PROJECT_B); // B no compartió con C
-		expect(ids).toContain(PROJECT_A);     // C es colaborador en A
+		expect(ids).toContain(PROJECT_A); // C es colaborador en A
 	});
 
 	it('usuario no autenticado no ve ningún proyecto', async () => {
-		const rows = await asAnon(db, (tx) =>
-			tx.select().from(project)
-		);
+		const rows = await asAnon(db, (tx) => tx.select().from(project));
 		expect(rows).toHaveLength(0);
 	});
 
 	it('usuario no puede modificar proyectos ajenos', async () => {
 		await asUser(db, USER_B, (tx) =>
-			tx.update(project)
-				.set({ title: 'Proyecto hackeado' })
-				.where(eq(project.id, PROJECT_A))
+			tx.update(project).set({ title: 'Proyecto hackeado' }).where(eq(project.id, PROJECT_A))
 		);
 
 		const rows = await asUser(db, USER_A, (tx) =>

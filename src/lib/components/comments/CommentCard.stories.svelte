@@ -34,7 +34,8 @@
 	name="General with replies"
 	args={{
 		authorName: 'Carlos Rodríguez',
-		content: 'De acuerdo con el comentario anterior. Además, el tamaño muestral parece insuficiente.',
+		content:
+			'De acuerdo con el comentario anterior. Además, el tamaño muestral parece insuficiente.',
 		type: 'general',
 		status: 'open',
 		replyCount: 3

@@ -117,7 +117,9 @@
 				id: project.id,
 				...(field === 'doi' ? { doi: editBuffer.trim() || null } : {}),
 				...(field === 'version' ? { version: editBuffer.trim() || null } : {}),
-				...(field === 'publishedAt' ? { publishedAt: editBuffer ? new Date(editBuffer) : null } : {})
+				...(field === 'publishedAt'
+					? { publishedAt: editBuffer ? new Date(editBuffer) : null }
+					: {})
 			});
 			await invalidateAll();
 		} catch {
@@ -352,8 +354,21 @@
 					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" />
-						<path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+						<rect
+							x="3"
+							y="3"
+							width="18"
+							height="18"
+							rx="2"
+							stroke="currentColor"
+							stroke-width="1.5"
+						/>
+						<path
+							d="M12 8v8M8 12h8"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
 					</svg>
 					Configure S3
 				</a>
@@ -363,8 +378,21 @@
 					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" />
-						<path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+						<rect
+							x="3"
+							y="3"
+							width="18"
+							height="18"
+							rx="2"
+							stroke="currentColor"
+							stroke-width="1.5"
+						/>
+						<path
+							d="M12 8v8M8 12h8"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
 					</svg>
 					Configure org S3
 				</a>
@@ -674,7 +702,9 @@
 												{(u.displayName ?? u.name).charAt(0).toUpperCase()}
 											</span>
 											<div class="min-w-0">
-												<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+												<p
+													class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink"
+												>
 													{u.displayName ?? u.name}
 												</p>
 												{#if u.institution}

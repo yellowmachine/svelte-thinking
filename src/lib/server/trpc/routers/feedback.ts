@@ -6,10 +6,12 @@ import { notifySlack } from '$lib/server/slack';
 
 export const feedbackRouter = router({
 	submit: protectedProcedure
-		.input(z.object({
-			message: z.string().min(1).max(2000),
-			showName: z.boolean().default(false)
-		}))
+		.input(
+			z.object({
+				message: z.string().min(1).max(2000),
+				showName: z.boolean().default(false)
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
 			const userName = input.showName ? (ctx.user.name ?? null) : null;
 			await ctx.db.insert(feedback).values({

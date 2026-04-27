@@ -103,7 +103,6 @@
 		a.click();
 		URL.revokeObjectURL(url);
 	}
-
 </script>
 
 <div class="mx-auto flex max-w-6xl flex-col px-6 py-8" style="min-height: calc(100vh - 4rem)">
@@ -246,7 +245,7 @@
 		{:else if panel === 'edit'}
 			<ReferenceFormPanel
 				mode="edit"
-				editingRef={editingRef}
+				{editingRef}
 				projectId={data.project.id}
 				onclose={closePanel}
 				onsave={(ref) => {
@@ -274,9 +273,17 @@
 							abstract: result.abstract ?? '',
 							doi: result.doi,
 							url: result.url,
-							note: '', isbn: '', booktitle: '', organization: '',
-							series: '', school: '', institution: '',
-							reportNumber: '', address: '', edition: '', extra: {}
+							note: '',
+							isbn: '',
+							booktitle: '',
+							organization: '',
+							series: '',
+							school: '',
+							institution: '',
+							reportNumber: '',
+							address: '',
+							edition: '',
+							extra: {}
 						}
 					});
 					const fresh = await trpc.references.list.query(data.project.id);
@@ -294,15 +301,31 @@
 					const newRef = await trpc.references.create.mutate({
 						projectId: data.project.id,
 						reference: {
-							citeKey: result.citeKey, type: result.type as never,
-							title: result.title, authors: result.authors, editors: [],
-							year: result.year ?? '', abstract: result.abstract ?? '',
-							journal: result.journal ?? '', volume: result.volume ?? '',
-							issue: result.issue ?? '', pages: result.pages ?? '',
-							publisher: result.publisher ?? '', booktitle: result.booktitle ?? '',
-							school: result.school ?? '', institution: result.institution ?? '',
-							url: sourceUrl, doi: '', note: '', isbn: '',
-							organization: '', series: '', reportNumber: '', address: '', edition: '', extra: {}
+							citeKey: result.citeKey,
+							type: result.type as never,
+							title: result.title,
+							authors: result.authors,
+							editors: [],
+							year: result.year ?? '',
+							abstract: result.abstract ?? '',
+							journal: result.journal ?? '',
+							volume: result.volume ?? '',
+							issue: result.issue ?? '',
+							pages: result.pages ?? '',
+							publisher: result.publisher ?? '',
+							booktitle: result.booktitle ?? '',
+							school: result.school ?? '',
+							institution: result.institution ?? '',
+							url: sourceUrl,
+							doi: '',
+							note: '',
+							isbn: '',
+							organization: '',
+							series: '',
+							reportNumber: '',
+							address: '',
+							edition: '',
+							extra: {}
 						}
 					});
 					const fresh = await trpc.references.list.query(data.project.id);
@@ -310,9 +333,16 @@
 					panel = null;
 					if (importDocument) {
 						trpc.references.importDocumentFromUrl
-							.mutate({ url: sourceUrl, projectId: data.project.id, title: result.title, referenceId: newRef.id })
+							.mutate({
+								url: sourceUrl,
+								projectId: data.project.id,
+								title: result.title,
+								referenceId: newRef.id
+							})
 							.then(({ docId }) => goto(`/projects/${data.project.id}/documents/${docId}`))
-							.catch((e) => flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error'));
+							.catch((e) =>
+								flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error')
+							);
 					}
 					if (savePdf) {
 						const refId = newRef.id;
@@ -320,11 +350,20 @@
 						trpc.references.generatePdfFromUrl
 							.mutate({ refId, projectId: data.project.id })
 							.then((res) => {
-								if (res?.pdfKey) references = references.map((r) => r.id === refId ? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` } : r);
+								if (res?.pdfKey)
+									references = references.map((r) =>
+										r.id === refId
+											? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` }
+											: r
+									);
 								else flash.set('PDF generation failed — you can upload one manually.', 'error');
 							})
-							.catch(() => flash.set('PDF generation failed — you can upload one manually.', 'error'))
-							.finally(() => { generatingPdfIds.delete(refId); });
+							.catch(() =>
+								flash.set('PDF generation failed — you can upload one manually.', 'error')
+							)
+							.finally(() => {
+								generatingPdfIds.delete(refId);
+							});
 					}
 				}}
 			/>

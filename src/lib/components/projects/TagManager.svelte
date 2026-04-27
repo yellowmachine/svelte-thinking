@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 
-	let { projectId, initialTags }: { projectId: string; initialTags: { id: string; name: string }[] } = $props();
+	let {
+		projectId,
+		initialTags
+	}: { projectId: string; initialTags: { id: string; name: string }[] } = $props();
 
 	let tags = $state([...initialTags]);
 	let allTags = $state<{ id: string; userId: string; name: string }[]>([]);
@@ -68,13 +71,15 @@
 	{#if tags.length > 0}
 		<div class="mb-2 flex flex-wrap gap-1.5">
 			{#each tags as t (t.id)}
-				<span class="flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 font-sans text-xs font-medium text-accent dark:bg-accent/20">
+				<span
+					class="flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 font-sans text-xs font-medium text-accent dark:bg-accent/20"
+				>
 					{t.name}
 					<button
 						onclick={() => removeTag(t.id)}
 						class="ml-0.5 rounded-full text-accent/60 hover:text-accent"
-						aria-label="Remove tag"
-					>✕</button>
+						aria-label="Remove tag">✕</button
+					>
 				</span>
 			{/each}
 		</div>
@@ -87,7 +92,9 @@
 			bind:value={inputValue}
 			onfocus={openDropdown}
 			onkeydown={onKeydown}
-			oninput={() => { showDropdown = true; }}
+			oninput={() => {
+				showDropdown = true;
+			}}
 			placeholder="Add tag…"
 			class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 		/>
@@ -95,7 +102,7 @@
 		{#if showDropdown && (filtered.length > 0 || inputValue.trim())}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+				class="absolute top-full right-0 left-0 z-20 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 				onmousedown={(e) => e.preventDefault()}
 			>
 				{#each filtered as t (t.id)}
@@ -103,14 +110,15 @@
 						type="button"
 						onclick={() => addTag(t)}
 						class="flex w-full items-center px-3 py-1.5 font-sans text-xs text-ink hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
-					>{t.name}</button>
+						>{t.name}</button
+					>
 				{/each}
 				{#if inputValue.trim() && !filtered.some((t) => t.name.toLowerCase() === inputValue.toLowerCase())}
 					<button
 						type="button"
 						onclick={createAndAdd}
 						disabled={loading}
-						class="flex w-full items-center gap-1.5 px-3 py-1.5 font-sans text-xs text-accent hover:bg-paper-ui dark:hover:bg-dark-paper-ui disabled:opacity-50"
+						class="flex w-full items-center gap-1.5 px-3 py-1.5 font-sans text-xs text-accent hover:bg-paper-ui disabled:opacity-50 dark:hover:bg-dark-paper-ui"
 					>
 						<span class="font-medium">+ Create</span> "{inputValue.trim()}"
 					</button>
@@ -121,6 +129,8 @@
 </div>
 
 <!-- Close dropdown on outside click -->
-<svelte:window onclick={(e) => {
-	if (!(e.target as HTMLElement).closest?.('.relative')) showDropdown = false;
-}} />
+<svelte:window
+	onclick={(e) => {
+		if (!(e.target as HTMLElement).closest?.('.relative')) showDropdown = false;
+	}}
+/>

@@ -2,7 +2,12 @@ import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { loginAsTestUser } from './helpers/login';
 import { TEST_USER } from './helpers/create-test-user';
 import { COLLABORATOR_USER, getCollaboratorUserId } from './helpers/create-collaborator';
-import { trpcMutate, trpcQuery, loginViaApi, loginViaApiNo2FA } from './helpers/create-test-document';
+import {
+	trpcMutate,
+	trpcQuery,
+	loginViaApi,
+	loginViaApiNo2FA
+} from './helpers/create-test-document';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -221,7 +226,10 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 		await page.goto(`/projects/${projectId}/documents/${docId}`);
 		await page.getByRole('button', { name: /^comments/i }).click();
 
-		await page.getByRole('button', { name: /^resolve$/i }).first().click();
+		await page
+			.getByRole('button', { name: /^resolve$/i })
+			.first()
+			.click();
 
 		// El comentario pasa a estado resuelto
 		await expect(page.getByRole('button', { name: /^reopen$/i }).first()).toBeVisible();
@@ -259,7 +267,10 @@ test.describe('Flujo 2 — Colaboración en documentos', () => {
 		// Abrir diff en nueva pestaña
 		const [diffPage] = await Promise.all([
 			page.context().waitForEvent('page'),
-			page.getByRole('button', { name: /compare/i }).first().click()
+			page
+				.getByRole('button', { name: /compare/i })
+				.first()
+				.click()
 		]);
 
 		await diffPage.waitForLoadState();
@@ -302,7 +313,10 @@ test.describe('Flujo 3a — Owner expulsa colaborador', () => {
 
 		await page.goto(`/projects/${projectId}`);
 
-		await page.getByRole('button', { name: /remove/i }).first().click();
+		await page
+			.getByRole('button', { name: /remove/i })
+			.first()
+			.click();
 
 		// Confirmar en SafeDeleteDialog — introducir el código de 3 caracteres
 		const dialog = page.getByRole('dialog');
@@ -459,24 +473,22 @@ test.describe('Flujo 4 — Seguridad RLS', () => {
 		const page = await collabContext.newPage();
 		await page.goto(`/projects/${privateProjectId}/documents/${privateDocId}`);
 
-		await expect(page).not.toHaveURL(
-			`/projects/${privateProjectId}/documents/${privateDocId}`
-		);
+		await expect(page).not.toHaveURL(`/projects/${privateProjectId}/documents/${privateDocId}`);
 		await page.close();
 	});
 
 	// ── API / tRPC ────────────────────────────────────────────────────────────
 
 	test('usuario B: projects.byId con proyecto ajeno → NOT_FOUND', async () => {
-		await expect(
-			trpcQuery('projects.byId', privateProjectId, collabCookie)
-		).rejects.toThrow('NOT_FOUND');
+		await expect(trpcQuery('projects.byId', privateProjectId, collabCookie)).rejects.toThrow(
+			'NOT_FOUND'
+		);
 	});
 
 	test('usuario B: documents.withContent con documento ajeno → NOT_FOUND', async () => {
-		await expect(
-			trpcQuery('documents.withContent', privateDocId, collabCookie)
-		).rejects.toThrow('NOT_FOUND');
+		await expect(trpcQuery('documents.withContent', privateDocId, collabCookie)).rejects.toThrow(
+			'NOT_FOUND'
+		);
 	});
 
 	test('usuario B: comments.createGeneral en documento ajeno → error', async () => {
@@ -491,17 +503,11 @@ test.describe('Flujo 4 — Seguridad RLS', () => {
 
 	test('usuario B: projects.update con proyecto ajeno → error', async () => {
 		await expect(
-			trpcMutate(
-				'projects.update',
-				{ id: privateProjectId, title: 'Hackeado' },
-				collabCookie
-			)
+			trpcMutate('projects.update', { id: privateProjectId, title: 'Hackeado' }, collabCookie)
 		).rejects.toThrow();
 	});
 
 	test('usuario B: projects.delete con proyecto ajeno → error', async () => {
-		await expect(
-			trpcMutate('projects.delete', privateProjectId, collabCookie)
-		).rejects.toThrow();
+		await expect(trpcMutate('projects.delete', privateProjectId, collabCookie)).rejects.toThrow();
 	});
 });

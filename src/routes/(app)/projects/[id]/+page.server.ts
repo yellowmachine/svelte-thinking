@@ -1,7 +1,11 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
-import { document, documentVersion, documentVersionShare } from '$lib/server/db/schemas/documents.schema';
+import {
+	document,
+	documentVersion,
+	documentVersionShare
+} from '$lib/server/db/schemas/documents.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
@@ -12,7 +16,15 @@ export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
 	const userId = event.locals.user!.id;
 
-	const [proj, documents, collaborators, invitations, requirementCounts, openCommentsCount, docCommentCounts] = await Promise.all([
+	const [
+		proj,
+		documents,
+		collaborators,
+		invitations,
+		requirementCounts,
+		openCommentsCount,
+		docCommentCounts
+	] = await Promise.all([
 		event.locals.withRLS((db) =>
 			db.select().from(project).where(eq(project.id, projectId)).limit(1)
 		),
@@ -36,7 +48,12 @@ export const load: PageServerLoad = async (event) => {
 			const versions = await db
 				.select({ id: documentVersion.id, content: documentVersion.content })
 				.from(documentVersion)
-				.where(inArray(documentVersion.id, booksNeedingContent.map((b) => b.currentVersionId!)));
+				.where(
+					inArray(
+						documentVersion.id,
+						booksNeedingContent.map((b) => b.currentVersionId!)
+					)
+				);
 
 			const versionById = new Map(versions.map((v) => [v.id, v.content]));
 
@@ -44,7 +61,8 @@ export const load: PageServerLoad = async (event) => {
 				...d,
 				bookContent:
 					d.type === 'book'
-						? (d.draftContent ?? (d.currentVersionId ? (versionById.get(d.currentVersionId) ?? '') : ''))
+						? (d.draftContent ??
+							(d.currentVersionId ? (versionById.get(d.currentVersionId) ?? '') : ''))
 						: ''
 			}));
 		}),
@@ -81,7 +99,9 @@ export const load: PageServerLoad = async (event) => {
 				})
 				.from(projectRequirement)
 				.where(eq(projectRequirement.projectId, projectId))
-		) as Promise<{ total: number; fulfilled: number; requiredTotal: number; requiredFulfilled: number }[]>,
+		) as Promise<
+			{ total: number; fulfilled: number; requiredTotal: number; requiredFulfilled: number }[]
+		>,
 
 		event.locals.withRLS((db) =>
 			db
@@ -118,7 +138,14 @@ export const load: PageServerLoad = async (event) => {
 	const myRole = collaborators.find((c) => c.userId === userId)?.role ?? null;
 	const isOwner = proj[0].ownerId === userId;
 
-	const reqCounts = (requirementCounts as { total: number; fulfilled: number; requiredTotal: number; requiredFulfilled: number }[])[0] ?? { total: 0, fulfilled: 0, requiredTotal: 0, requiredFulfilled: 0 };
+	const reqCounts = (
+		requirementCounts as {
+			total: number;
+			fulfilled: number;
+			requiredTotal: number;
+			requiredFulfilled: number;
+		}[]
+	)[0] ?? { total: 0, fulfilled: 0, requiredTotal: 0, requiredFulfilled: 0 };
 
 	const openCommentsByDoc = Object.fromEntries(
 		docCommentCounts.map((r) => [r.documentId, r.value])
@@ -146,7 +173,8 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	const projectTags = await event.locals.withRLS((db) =>
-		db.select({ id: tag.id, name: tag.name })
+		db
+			.select({ id: tag.id, name: tag.name })
 			.from(projectTag)
 			.innerJoin(tag, eq(tag.id, projectTag.tagId))
 			.where(eq(projectTag.projectId, projectId))

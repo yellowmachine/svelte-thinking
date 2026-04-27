@@ -114,7 +114,7 @@
 
 <!-- Bottom nav -->
 <nav
-	class="fixed inset-x-0 bottom-0 z-10 border-t border-paper-border bg-paper/95 pb-safe backdrop-blur-sm sm:hidden dark:border-dark-paper-border dark:bg-dark-paper/95"
+	class="pb-safe fixed inset-x-0 bottom-0 z-10 border-t border-paper-border bg-paper/95 backdrop-blur-sm sm:hidden dark:border-dark-paper-border dark:bg-dark-paper/95"
 >
 	<div class="flex items-center">
 		<!-- Proyectos -->
@@ -147,7 +147,17 @@
 				? 'text-accent'
 				: 'text-ink-muted dark:text-dark-ink-muted'}"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.75"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
 				<circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
 			</svg>
 			Explore
@@ -215,7 +225,7 @@
 	></button>
 
 	<div
-		class="fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-paper-border bg-paper pb-safe sm:hidden dark:border-dark-paper-border dark:bg-dark-paper"
+		class="pb-safe fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-paper-border bg-paper sm:hidden dark:border-dark-paper-border dark:bg-dark-paper"
 	>
 		<!-- Handle -->
 		<div class="flex justify-center pt-3 pb-1">
@@ -224,7 +234,9 @@
 
 		<div class="px-4 pb-2">
 			<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-				{sheet === 'note' ? 'Which project to add the note to?' : 'Which project to add the photo to?'}
+				{sheet === 'note'
+					? 'Which project to add the note to?'
+					: 'Which project to add the photo to?'}
 			</p>
 		</div>
 
@@ -241,7 +253,7 @@
 				{#each projects as p (p.id)}
 					<li>
 						<button
-							onclick={() => sheet === 'note' ? createNote(p.id) : selectPhotoProject(p.id)}
+							onclick={() => (sheet === 'note' ? createNote(p.id) : selectPhotoProject(p.id))}
 							disabled={creating}
 							class="w-full px-4 py-3 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 						>

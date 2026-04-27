@@ -55,7 +55,8 @@
 	name="Published"
 	args={{
 		title: 'Algoritmos de Optimización Cuántica',
-		description: 'Comparativa de rendimiento entre algoritmos clásicos y cuánticos en problemas NP.',
+		description:
+			'Comparativa de rendimiento entre algoritmos clásicos y cuánticos en problemas NP.',
 		status: 'published',
 		collaboratorCount: 3,
 		updatedAt: new Date(Date.now() - 86400000 * 30)

@@ -8,12 +8,12 @@ export const DELETE: RequestHandler = async (event) => {
 
 	const { notebookId } = event.params;
 
-	const rows = await event.locals.withRLS((db) =>
+	const rows = (await event.locals.withRLS((db) =>
 		db
 			.delete(projectNotebook)
 			.where(eq(projectNotebook.id, notebookId))
 			.returning({ id: projectNotebook.id })
-	) as { id: string }[];
+	)) as { id: string }[];
 
 	if (!rows[0]) error(404, 'Notebook not found');
 

@@ -72,11 +72,14 @@
 
 	$effect(() => {
 		loadingAvailable = true;
-		trpc.contextLinks.listAvailable.query(projectId).then((docs) => {
-			availableDocs = docs as AvailableDoc[];
-		}).finally(() => {
-			loadingAvailable = false;
-		});
+		trpc.contextLinks.listAvailable
+			.query(projectId)
+			.then((docs) => {
+				availableDocs = docs as AvailableDoc[];
+			})
+			.finally(() => {
+				loadingAvailable = false;
+			});
 	});
 </script>
 

@@ -31,7 +31,10 @@
 
 	const daysLeft = $derived(
 		scheduledDeleteAt
-			? Math.max(0, Math.ceil((new Date(scheduledDeleteAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+			? Math.max(
+					0,
+					Math.ceil((new Date(scheduledDeleteAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+				)
 			: null
 	);
 
@@ -88,16 +91,28 @@
 						aria-label="Has active public links"
 					>
 						<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-							<circle cx="2" cy="10" r="1.5" fill="currentColor"/>
-							<path d="M2 7a3 3 0 0 1 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-							<path d="M2 3.5A6.5 6.5 0 0 1 8.5 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+							<circle cx="2" cy="10" r="1.5" fill="currentColor" />
+							<path
+								d="M2 7a3 3 0 0 1 3 3"
+								stroke="currentColor"
+								stroke-width="1.2"
+								stroke-linecap="round"
+							/>
+							<path
+								d="M2 3.5A6.5 6.5 0 0 1 8.5 10"
+								stroke="currentColor"
+								stroke-width="1.2"
+								stroke-linecap="round"
+							/>
 						</svg>
 					</span>
 				{/if}
 			</div>
 			<div class="flex shrink-0 items-center gap-1.5">
 				{#if daysLeft !== null}
-					<span class="rounded-full bg-red-100 px-2.5 py-0.5 font-sans text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+					<span
+						class="rounded-full bg-red-100 px-2.5 py-0.5 font-sans text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400"
+					>
 						Deleting in {daysLeft}d
 					</span>
 				{:else}
@@ -156,25 +171,57 @@
 								title="View open comments"
 							>
 								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+									<path
+										d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
 								</svg>
 								{openComments}
 							</a>
 						{:else}
-							<span class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+							<span
+								class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+							>
 								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+									<path
+										d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
 								</svg>
 								{openComments}
 							</span>
 						{/if}
 					{/if}
 					{#if openIssues > 0}
-						<span class="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 font-sans text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" title="Open issues">
+						<span
+							class="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 font-sans text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+							title="Open issues"
+						>
 							<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
-								<line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-								<circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+								<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+								<line
+									x1="12"
+									y1="8"
+									x2="12"
+									y2="12"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+								/>
+								<circle
+									cx="12"
+									cy="16"
+									r="0.5"
+									fill="currentColor"
+									stroke="currentColor"
+									stroke-width="1"
+								/>
 							</svg>
 							{openIssues}
 						</span>
@@ -186,31 +233,49 @@
 
 	<!-- ⋮ menu (owner only) -->
 	{#if ondelete}
-		<div class="absolute right-2 top-2">
+		<div class="absolute top-2 right-2">
 			<button
 				type="button"
 				onclick={toggleMenu}
-				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint opacity-0 transition-opacity hover:bg-paper-ui hover:text-ink group-hover:opacity-100 dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:bg-paper-ui hover:text-ink dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 				aria-label="Project options"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-					<circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" />
+					<circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle
+						cx="12"
+						cy="19"
+						r="2"
+					/>
 				</svg>
 			</button>
 
 			{#if menuOpen}
 				<div
-					class="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+					class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 					role="menu"
 				>
 					<button
 						type="button"
 						role="menuitem"
-						onclick={(e) => { e.stopPropagation(); menuOpen = false; ondelete?.(); }}
+						onclick={(e) => {
+							e.stopPropagation();
+							menuOpen = false;
+							ondelete?.();
+						}}
 						class="flex w-full items-center gap-2 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
 					>
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-							<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							aria-hidden="true"
+						>
+							<polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path
+								d="M10 11v6M14 11v6"
+							/><path d="M9 6V4h6v2" />
 						</svg>
 						Delete project…
 					</button>

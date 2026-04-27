@@ -5,7 +5,7 @@ slug: bienvenida
 summary: Academic writing finally gets the tool it deserves. Here's what's live on day one — and where we're taking it.
 ---
 
-Academic writing is broken. Not the research — the *tooling*.
+Academic writing is broken. Not the research — the _tooling_.
 
 Google Docs doesn't understand citations. Word has no real version control. Overleaf has no AI and collaboration is an afterthought. We've all been duct-taping our workflows together for too long.
 

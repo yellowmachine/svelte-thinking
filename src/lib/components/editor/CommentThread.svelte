@@ -57,7 +57,11 @@
 	let submittingReply = $state(false);
 	let resolving = $state(false);
 
-	const COMMENT_COMPLETIONS = new Set<'citation' | 'heading' | 'mention'>(['citation', 'heading', 'mention']);
+	const COMMENT_COMPLETIONS = new Set<'citation' | 'heading' | 'mention'>([
+		'citation',
+		'heading',
+		'mention'
+	]);
 
 	// Delete
 	let showDelete = $state(false);
@@ -226,7 +230,10 @@
 			{#if !replyEditorActive}
 				<button
 					class="w-full rounded border border-paper-border bg-paper-ui px-2 py-1.5 text-left font-sans text-xs text-ink-faint transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
-					onclick={(e) => { e.stopPropagation(); replyEditorActive = true; }}
+					onclick={(e) => {
+						e.stopPropagation();
+						replyEditorActive = true;
+					}}
 				>
 					Reply…
 				</button>
@@ -242,13 +249,20 @@
 				</div>
 				<div class="mt-1.5 flex justify-end gap-2">
 					<button
-						onclick={(e) => { e.stopPropagation(); replyEditorActive = false; replyText = ''; }}
+						onclick={(e) => {
+							e.stopPropagation();
+							replyEditorActive = false;
+							replyText = '';
+						}}
 						class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						Cancel
 					</button>
 					<button
-						onclick={(e) => { e.stopPropagation(); submitReply(); }}
+						onclick={(e) => {
+							e.stopPropagation();
+							submitReply();
+						}}
 						disabled={submittingReply || !replyText.trim()}
 						class="rounded bg-accent px-2 py-1 font-sans text-xs text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 					>

@@ -8,7 +8,16 @@ import {
 
 describe('DOCUMENT_TYPES', () => {
 	it('contains all expected types', () => {
-		const expected = ['paper', 'notes', 'outline', 'bibliography', 'supplementary', 'book', 'chapter', 'reading_note'];
+		const expected = [
+			'paper',
+			'notes',
+			'outline',
+			'bibliography',
+			'supplementary',
+			'book',
+			'chapter',
+			'reading_note'
+		];
 		expect([...DOCUMENT_TYPES]).toEqual(expected);
 	});
 });

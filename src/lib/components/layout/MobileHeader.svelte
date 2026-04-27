@@ -9,7 +9,9 @@
 
 	async function handleLogout(e: SubmitEvent) {
 		e.preventDefault();
-		try { await offlineDb.delete(); } catch {}
+		try {
+			await offlineDb.delete();
+		} catch {}
 		(e.target as HTMLFormElement).submit();
 	}
 
@@ -42,7 +44,7 @@
 	>
 		Scholio
 		<span
-			class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent"
+			class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
 		>
 			beta
 		</span>
@@ -67,7 +69,7 @@
 
 		{#if menuOpen}
 			<div
-				class="absolute right-0 top-full z-50 mt-1.5 w-44 rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+				class="absolute top-full right-0 z-50 mt-1.5 w-44 rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 			>
 				<div class="border-b border-paper-border px-4 py-2.5 dark:border-dark-paper-border">
 					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{user.name}</p>

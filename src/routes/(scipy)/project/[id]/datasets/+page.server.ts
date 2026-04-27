@@ -10,13 +10,15 @@ export const load: PageServerLoad = async (event) => {
 
 	const [proj, datasets] = await Promise.all([
 		event.locals.withRLS((db) =>
-			db.select({ id: project.id, title: project.title, ownerId: project.ownerId })
+			db
+				.select({ id: project.id, title: project.title, ownerId: project.ownerId })
 				.from(project)
 				.where(eq(project.id, projectId))
 				.limit(1)
 		),
 		event.locals.withRLS((db) =>
-			db.select()
+			db
+				.select()
 				.from(projectDataset)
 				.where(eq(projectDataset.projectId, projectId))
 				.orderBy(desc(projectDataset.createdAt))

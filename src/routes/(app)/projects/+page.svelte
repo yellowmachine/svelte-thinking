@@ -149,7 +149,10 @@
 					{isOrgWorkspace ? workspaceName : 'My projects'}
 				</h1>
 				{#if isOrgWorkspace}
-					<span class="rounded-full border border-accent/30 px-2 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wide text-accent">org</span>
+					<span
+						class="rounded-full border border-accent/30 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+						>org</span
+					>
 				{/if}
 			</div>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
@@ -181,7 +184,9 @@
 	</div>
 
 	{#if importError}
-		<p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-sans text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400">
+		<p
+			class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-sans text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400"
+		>
 			{importError}
 		</p>
 	{/if}
@@ -191,13 +196,21 @@
 		<div class="mb-6 flex flex-wrap gap-2">
 			<button
 				onclick={() => (activeTagId = null)}
-				class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId === null ? 'border-accent bg-accent text-white' : 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
-			>All</button>
+				class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId ===
+				null
+					? 'border-accent bg-accent text-white'
+					: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+				>All</button
+			>
 			{#each data.allTags as t (t.id)}
 				<button
 					onclick={() => (activeTagId = activeTagId === t.id ? null : t.id)}
-					class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId === t.id ? 'border-accent bg-accent text-white' : 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
-				>{t.name}</button>
+					class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId ===
+					t.id
+						? 'border-accent bg-accent text-white'
+						: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+					>{t.name}</button
+				>
 			{/each}
 		</div>
 	{/if}
@@ -205,9 +218,7 @@
 	<!-- Create form -->
 	{#if showCreate}
 		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-6 dark:bg-dark-paper">
-			<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				New project
-			</h2>
+			<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">New project</h2>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-1.5">
 					<label
@@ -222,7 +233,12 @@
 						bind:value={newTitle}
 						placeholder="E.g.: Analysis of academic discourse on social media"
 						autofocus
-						onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); createProject(); } }}
+						onkeydown={(e) => {
+							if (e.key === 'Enter' && !e.shiftKey) {
+								e.preventDefault();
+								createProject();
+							}
+						}}
 						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					/>
 				</div>
@@ -310,7 +326,9 @@
 	{:else}
 		{#if ownedProjects.length > 0}
 			{#if sharedProjects.length > 0}
-				<h2 class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+				<h2
+					class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+				>
 					My projects
 				</h2>
 			{/if}
@@ -328,7 +346,9 @@
 						hasActiveShares={activeShareSet.has(proj.id)}
 						reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
 						onclick={() => (window.location.href = `/projects/${proj.id}`)}
-						ondelete={() => { deleteTarget = { id: proj.id, title: proj.title }; }}
+						ondelete={() => {
+							deleteTarget = { id: proj.id, title: proj.title };
+						}}
 					/>
 				{/each}
 			</div>
@@ -336,7 +356,9 @@
 
 		{#if sharedProjects.length > 0}
 			<div class="mt-10">
-				<h2 class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+				<h2
+					class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+				>
 					Shared with me
 				</h2>
 				<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

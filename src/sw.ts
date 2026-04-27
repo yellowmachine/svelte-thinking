@@ -11,7 +11,6 @@ declare let self: ServiceWorkerGlobalScope;
 self.skipWaiting();
 clientsClaim();
 
-
 // /offline route must be registered BEFORE precacheAndRoute so our NetworkFirst
 // handler takes precedence over the precache route (Workbox checks routes in
 // registration order). Without this, navigating to /offline while online serves
