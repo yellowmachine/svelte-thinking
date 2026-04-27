@@ -33,6 +33,9 @@ jobs:
           # Runtime secrets are injected at startup, not needed at build time.
           # PUBLIC_* vars are baked in at build — leave empty for CI.
           PUBLIC_SENTRY_DSN: ''
+          # Dummy URL so the db module doesn't throw during postbuild analysis.
+          # postgres-js is lazy — no actual connection is made at build time.
+          DATABASE_URL: 'postgresql://ci:ci@localhost/ci'
 
       - name: Unit tests
         run: bun run vitest run --project server
