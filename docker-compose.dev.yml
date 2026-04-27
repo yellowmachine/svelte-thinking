@@ -59,7 +59,6 @@ services:
     security_opt:
       - "no-new-privileges:true"
     image: rustfs/rustfs:latest
-    container_name: rustfs-server
     ports:
       - "9000:9000" # S3 API port
       - "9001:9001" # Console port
