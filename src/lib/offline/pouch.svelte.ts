@@ -1,5 +1,32 @@
 import { browser } from '$app/environment';
 
+export interface OfflineDocDiffCommentCreate {
+	id: string;
+	type: 'general' | 'inline';
+	content: string;
+	anchorText?: string;
+	anchorContext?: string;
+	lineStart?: number;
+	lineEnd?: number;
+	characterStart?: number;
+	characterEnd?: number;
+	paragraphNumber?: number;
+	parentCommentId?: string;
+	createdAt?: string;
+}
+
+export interface OfflineDocDiff {
+	comments?: {
+		create?: OfflineDocDiffCommentCreate[];
+		update?: Array<{ id: string; content: string }>;
+		delete?: Array<{ id: string }>;
+	};
+	subnotes?: {
+		upsert?: Array<{ referenceId: string; slug: string; notes: string }>;
+		delete?: Array<{ referenceId: string; slug: string }>;
+	};
+}
+
 export interface OfflineDoc {
 	_id: string;
 	_rev?: string;
@@ -9,6 +36,7 @@ export interface OfflineDoc {
 	type: string;
 	content: string;
 	updatedAt: string;
+	diff?: OfflineDocDiff;
 }
 
 export interface OfflineProjectMeta {
@@ -39,6 +67,16 @@ export interface OfflineReferences {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	references: any[];
 	cachedAt: string;
+}
+
+export interface OfflineProjectOps {
+	_id: string;
+	_rev?: string;
+	projectId: string;
+	subnotes?: {
+		upsert?: Array<{ referenceId: string; slug: string; notes: string }>;
+		delete?: Array<{ referenceId: string; slug: string }>;
+	};
 }
 
 export type SyncStatus = 'initializing' | 'synced' | 'syncing' | 'error' | 'offline';
@@ -134,6 +172,13 @@ class PouchStore {
 		}
 	}
 
+	async mergeDiff(documentId: string, incoming: OfflineDocDiff): Promise<void> {
+		const existing = await this.getDocument(documentId);
+		if (!existing) return;
+		const merged = _mergeDiffs(existing.diff ?? {}, incoming);
+		await this.putDocument({ ...existing, diff: merged }, { offline: true });
+	}
+
 	async listDocuments(): Promise<OfflineDoc[]> {
 		if (!this.db) return [];
 		const result = await this.db.allDocs<OfflineDoc>({ include_docs: true, startkey: 'doc_', endkey: 'doc_￿' });
@@ -212,6 +257,57 @@ class PouchStore {
 		}
 	}
 
+	// ── Project ops (pending subnote operations) ───────────────────────────
+
+	async getProjectOps(projectId: string): Promise<OfflineProjectOps | null> {
+		if (!this.db) return null;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const db = this.db as any;
+		try { return await db.get(`ops_${projectId}`) as OfflineProjectOps; } catch { return null; }
+	}
+
+	private async _putProjectOps(data: Omit<OfflineProjectOps, '_id' | '_rev'>): Promise<void> {
+		if (!this.db) return;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const db = this.db as any;
+		const id = `ops_${data.projectId}`;
+		try {
+			const existing = await db.get(id);
+			await db.put({ ...data, _id: id, _rev: existing._rev });
+		} catch (e) {
+			if ((e as { status?: number }).status === 404) await db.put({ ...data, _id: id });
+			else throw e;
+		}
+		this.pendingPush.add(id);
+	}
+
+	async mergeProjectOps(projectId: string, incoming: OfflineProjectOps['subnotes']): Promise<void> {
+		const existing = await this.getProjectOps(projectId);
+		const prev = existing?.subnotes ?? {};
+		let upserts = [...(prev.upsert ?? [])];
+		let deletes = [...(prev.delete ?? [])];
+
+		for (const s of (incoming?.upsert ?? [])) {
+			const i = upserts.findIndex((x) => x.referenceId === s.referenceId && x.slug === s.slug);
+			if (i >= 0) upserts[i] = s;
+			else upserts.push(s);
+			deletes = deletes.filter((x) => !(x.referenceId === s.referenceId && x.slug === s.slug));
+		}
+
+		for (const s of (incoming?.delete ?? [])) {
+			upserts = upserts.filter((x) => !(x.referenceId === s.referenceId && x.slug === s.slug));
+			if (!deletes.find((x) => x.referenceId === s.referenceId && x.slug === s.slug)) deletes.push(s);
+		}
+
+		await this._putProjectOps({
+			projectId,
+			subnotes: {
+				...(upserts.length && { upsert: upserts }),
+				...(deletes.length && { delete: deletes })
+			}
+		});
+	}
+
 	async isPrefetched(projectId: string): Promise<boolean> {
 		const meta = await this.getProjectMeta(projectId);
 		return !!meta;
@@ -228,6 +324,7 @@ class PouchStore {
 		const toRemove: string[] = [
 			`project_${projectId}`,
 			`refs_${projectId}`,
+			`ops_${projectId}`,
 			...docIds.map((id) => `doc_${id}`),
 			...docIds.map((id) => `comments_${id}`)
 		];
@@ -261,4 +358,73 @@ export const pouchStore = new PouchStore();
 
 if (browser) {
 	pouchStore.init();
+}
+
+// ── Diff merge helper ──────────────────────────────────────────────────────────
+
+function _mergeDiffs(prev: OfflineDocDiff, incoming: OfflineDocDiff): OfflineDocDiff {
+	const result: OfflineDocDiff = {};
+
+	// ── Comments ────────────────────────────────────────────────────────────
+	const ic = incoming.comments;
+	if (ic || prev.comments) {
+		let creates = [...(prev.comments?.create ?? [])];
+		let updates = [...(prev.comments?.update ?? [])];
+		let deletes = [...(prev.comments?.delete ?? [])];
+
+		for (const c of (ic?.create ?? [])) {
+			if (!creates.find((x) => x.id === c.id)) creates.push(c);
+		}
+
+		for (const u of (ic?.update ?? [])) {
+			// If the comment hasn't reached the server yet, update it in creates
+			const ci = creates.findIndex((x) => x.id === u.id);
+			if (ci >= 0) {
+				creates[ci] = { ...creates[ci], content: u.content };
+			} else {
+				const ui = updates.findIndex((x) => x.id === u.id);
+				if (ui >= 0) updates[ui] = u;
+				else updates.push(u);
+			}
+		}
+
+		for (const d of (ic?.delete ?? [])) {
+			const wasLocalOnly = creates.some((x) => x.id === d.id);
+			creates = creates.filter((x) => x.id !== d.id);
+			updates = updates.filter((x) => x.id !== d.id);
+			if (!wasLocalOnly && !deletes.find((x) => x.id === d.id)) deletes.push(d);
+		}
+
+		result.comments = {
+			...(creates.length && { create: creates }),
+			...(updates.length && { update: updates }),
+			...(deletes.length && { delete: deletes })
+		};
+	}
+
+	// ── Subnotes ────────────────────────────────────────────────────────────
+	const is = incoming.subnotes;
+	if (is || prev.subnotes) {
+		let upserts = [...(prev.subnotes?.upsert ?? [])];
+		let snDeletes = [...(prev.subnotes?.delete ?? [])];
+
+		for (const s of (is?.upsert ?? [])) {
+			const i = upserts.findIndex((x) => x.referenceId === s.referenceId && x.slug === s.slug);
+			if (i >= 0) upserts[i] = s;
+			else upserts.push(s);
+			snDeletes = snDeletes.filter((x) => !(x.referenceId === s.referenceId && x.slug === s.slug));
+		}
+
+		for (const s of (is?.delete ?? [])) {
+			upserts = upserts.filter((x) => !(x.referenceId === s.referenceId && x.slug === s.slug));
+			if (!snDeletes.find((x) => x.referenceId === s.referenceId && x.slug === s.slug)) snDeletes.push(s);
+		}
+
+		result.subnotes = {
+			...(upserts.length && { upsert: upserts }),
+			...(snDeletes.length && { delete: snDeletes })
+		};
+	}
+
+	return result;
 }

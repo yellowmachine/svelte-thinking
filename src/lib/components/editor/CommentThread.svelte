@@ -5,7 +5,7 @@
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
 	import { onlineStore } from '$lib/stores/online.svelte';
-	import { pendingComments } from '$lib/offline/pending-comments.svelte';
+	import { pouchStore } from '$lib/offline/pouch.svelte';
 
 	function renderMd(text: string): string {
 		return DOMPurify.sanitize(marked.parse(text) as string);
@@ -94,18 +94,24 @@
 		submittingReply = true;
 		try {
 			if (!onlineStore.online) {
-				const localId = `pending_${crypto.randomUUID()}`;
-				pendingComments.add({
-					id: localId,
-					documentId,
-					content: replyText.trim(),
-					parentCommentId: comment.id
+				const localId = crypto.randomUUID();
+				const createdAt = new Date().toISOString();
+				await pouchStore.mergeDiff(documentId, {
+					comments: {
+						create: [{
+							id: localId,
+							type: 'inline',
+							content: replyText.trim(),
+							parentCommentId: comment.id,
+							createdAt
+						}]
+					}
 				});
 				onreplyadded?.(comment.id, {
 					id: localId,
 					authorName: comment.authorName,
 					content: replyText.trim(),
-					createdAt: new Date(),
+					createdAt: new Date(createdAt),
 					_pending: true
 				});
 			} else {
@@ -128,7 +134,7 @@
 		savingEdit = true;
 		try {
 			if (!onlineStore.online) {
-				pendingComments.addUpdate(comment.id, documentId, trimmed);
+				await pouchStore.mergeDiff(documentId, { comments: { update: [{ id: comment.id, content: trimmed }] } });
 			} else {
 				await trpc.comments.update.mutate({ id: comment.id, content: trimmed });
 			}

@@ -22,7 +22,6 @@
 	import { flash } from '$lib/stores/flash.svelte';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { pouchStore } from '$lib/offline/pouch.svelte';
-	import { pendingSubnotes } from '$lib/offline/pending-subnotes.svelte';
 	import { onMount, onDestroy } from 'svelte';
 
 	// ── Citation style ────────────────────────────────────────────────────────
@@ -129,29 +128,19 @@
 		if (!newSubnoteSlug.trim()) return;
 		savingSubnote = true;
 		try {
+			const slug = newSubnoteSlug.trim();
+			const notes = newSubnoteNotes;
 			if (!onlineStore.online) {
-				const localId = `pending_${crypto.randomUUID()}`;
-				pendingSubnotes.add({
-					id: localId,
+				await pouchStore.mergeProjectOps(data.project.id, { upsert: [{ referenceId: refId, slug, notes }] });
+				subnotesByRef[refId] = [...(subnotesByRef[refId] ?? []), {
+					id: slug,
 					referenceId: refId,
-					projectId: data.project.id,
-					slug: newSubnoteSlug.trim(),
-					notes: newSubnoteNotes
-				});
-				const localSubnote: Subnote = {
-					id: localId,
-					referenceId: refId,
-					slug: newSubnoteSlug.trim(),
-					notes: newSubnoteNotes,
+					slug,
+					notes,
 					_pending: true
-				};
-				subnotesByRef[refId] = [...(subnotesByRef[refId] ?? []), localSubnote];
+				} as Subnote];
 			} else {
-				const row = await trpc.references.addSubnote.mutate({
-					referenceId: refId,
-					slug: newSubnoteSlug.trim(),
-					notes: newSubnoteNotes
-				});
+				const row = await trpc.references.addSubnote.mutate({ referenceId: refId, slug, notes });
 				subnotesByRef[refId] = [...(subnotesByRef[refId] ?? []), row as Subnote];
 			}
 			addingSubnoteRef = null;
@@ -162,29 +151,28 @@
 		}
 	}
 
-	async function deleteSubnote(refId: string, id: number | string) {
-		if (typeof id === 'string' && id.startsWith('pending_')) {
-			// Remove local pending subnote without server call
-			pendingSubnotes.update(id, { status: 'synced' });
-			pendingSubnotes.clearSynced();
+	async function deleteSubnote(refId: string, id: number | string, slug: string) {
+		if (typeof id === 'string') {
+			// Pending-only subnote: remove from ops and local state
+			await pouchStore.mergeProjectOps(data.project.id, { delete: [{ referenceId: refId, slug }] });
 			subnotesByRef[refId] = (subnotesByRef[refId] ?? []).filter((s) => s.id !== id);
 			return;
 		}
 		deletingSubnoteId = id;
 		try {
-			await trpc.references.deleteSubnote.mutate({ id: id as number });
+			await trpc.references.deleteSubnote.mutate({ id });
 			subnotesByRef[refId] = (subnotesByRef[refId] ?? []).filter((s) => s.id !== id);
 		} finally {
 			deletingSubnoteId = null;
 		}
 	}
 
-	async function updateSubnote(refId: string, id: number) {
+	async function updateSubnote(refId: string, id: number, slug: string) {
 		const notes = editSubnoteNotes;
 		savingSubnoteEdit = true;
 		try {
 			if (!onlineStore.online) {
-				pendingSubnotes.addUpdate(id, data.project.id, refId, notes);
+				await pouchStore.mergeProjectOps(data.project.id, { upsert: [{ referenceId: refId, slug, notes }] });
 			} else {
 				await trpc.references.updateSubnote.mutate({ id, notes });
 			}
@@ -198,43 +186,6 @@
 			savingSubnoteEdit = false;
 		}
 	}
-
-	async function replayPendingSubnotes() {
-		const pending = pendingSubnotes.forProject(data.project.id);
-		if (pending.length === 0) return;
-
-		for (const p of pending) {
-			try {
-				if (p.type === 'update' && p.subnoteId !== undefined) {
-					await trpc.references.updateSubnote.mutate({ id: p.subnoteId, notes: p.notes });
-					subnotesByRef[p.referenceId] = (subnotesByRef[p.referenceId] ?? []).map((s) =>
-						s.id === p.subnoteId ? { ...s, notes: p.notes } : s
-					);
-				} else {
-					const row = await trpc.references.addSubnote.mutate({
-						referenceId: p.referenceId,
-						slug: p.slug,
-						notes: p.notes
-					});
-					subnotesByRef[p.referenceId] = (subnotesByRef[p.referenceId] ?? []).map((s) =>
-						s.id === p.id ? { ...row, referenceId: p.referenceId, _pending: false } as Subnote : s
-					);
-				}
-				pendingSubnotes.update(p.id, { status: 'synced' });
-			} catch {
-				pendingSubnotes.update(p.id, { status: 'failed' });
-			}
-		}
-		pendingSubnotes.clearSynced();
-	}
-
-	onMount(() => {
-		window.addEventListener('online', replayPendingSubnotes);
-	});
-
-	onDestroy(() => {
-		window.removeEventListener('online', replayPendingSubnotes);
-	});
 
 	// ── PDF attachment ───────────────────────────────────────────────────────
 
@@ -1243,7 +1194,7 @@
 																	</button>
 																{/if}
 																<button
-																	onclick={() => deleteSubnote(ref.id, sn.id)}
+																	onclick={() => deleteSubnote(ref.id, sn.id, sn.slug)}
 																	disabled={deletingSubnoteId === sn.id}
 																	title="Delete subnote"
 																	class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-red-400"
@@ -1267,7 +1218,7 @@
 																	></textarea>
 																	<div class="flex gap-1.5">
 																		<button
-																			onclick={() => updateSubnote(ref.id, sn.id as number)}
+																			onclick={() => updateSubnote(ref.id, sn.id as number, sn.slug)}
 																			disabled={savingSubnoteEdit}
 																			class="rounded bg-accent px-2.5 py-1 font-sans text-[11px] font-medium text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
 																		>

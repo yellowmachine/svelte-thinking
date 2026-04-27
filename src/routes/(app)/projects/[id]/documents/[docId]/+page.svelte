@@ -15,7 +15,6 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { pouchStore } from '$lib/offline/pouch.svelte';
-	import { pendingComments } from '$lib/offline/pending-comments.svelte';
 	import {
 		findAnchor,
 		posToLine,
@@ -580,7 +579,13 @@
 		submittingSubnote = true;
 		subnoteError = '';
 		try {
-			await trpc.references.addSubnote.mutate({ referenceId: subnoteRefId, slug: subnoteSlug.trim(), notes: subnoteNotes.trim() });
+			const slug = subnoteSlug.trim();
+			const notes = subnoteNotes.trim();
+			if (!onlineStore.online) {
+				await pouchStore.mergeProjectOps(data.document.projectId, { upsert: [{ referenceId: subnoteRefId, slug, notes }] });
+			} else {
+				await trpc.references.addSubnote.mutate({ referenceId: subnoteRefId, slug, notes });
+			}
 			showSubnote = false;
 			savedCommentSelection = null;
 			subnoteSlug = '';
@@ -866,17 +871,23 @@
 			let newComment: InlineComment;
 
 			if (!onlineStore.online) {
-				const localId = `pending_${crypto.randomUUID()}`;
-				pendingComments.add({
-					id: localId,
-					documentId: data.document.id,
-					content: newCommentText.trim(),
-					anchorText: sel.text,
-					anchorContext: anchorContext || undefined,
-					lineStart,
-					lineEnd,
-					characterStart: sel.from,
-					characterEnd: sel.to
+				const localId = crypto.randomUUID();
+				const createdAt = new Date().toISOString();
+				await pouchStore.mergeDiff(data.document.id, {
+					comments: {
+						create: [{
+							id: localId,
+							type: 'inline',
+							content: newCommentText.trim(),
+							anchorText: sel.text,
+							anchorContext: anchorContext || undefined,
+							lineStart,
+							lineEnd,
+							characterStart: sel.from,
+							characterEnd: sel.to,
+							createdAt
+						}]
+					}
 				});
 				newComment = {
 					id: localId,
@@ -890,7 +901,7 @@
 					characterEnd: sel.to,
 					paragraphNumber: null,
 					status: 'open',
-					createdAt: new Date(),
+					createdAt: new Date(createdAt),
 					replies: [],
 					_pending: true
 				};
@@ -1030,13 +1041,19 @@
 			let newComment: InlineComment;
 
 			if (!onlineStore.online) {
-				const localId = `pending_${crypto.randomUUID()}`;
-				pendingComments.add({
-					id: localId,
-					documentId: data.document.id,
-					content: paragraphCommentText.trim(),
-					paragraphNumber: pendingParagraphNumber,
-					anchorContext: paragraphText || undefined
+				const localId = crypto.randomUUID();
+				const createdAt = new Date().toISOString();
+				await pouchStore.mergeDiff(data.document.id, {
+					comments: {
+						create: [{
+							id: localId,
+							type: 'inline',
+							content: paragraphCommentText.trim(),
+							paragraphNumber: pendingParagraphNumber,
+							anchorContext: paragraphText || undefined,
+							createdAt
+						}]
+					}
 				});
 				newComment = {
 					id: localId,
@@ -1050,7 +1067,7 @@
 					characterEnd: null,
 					paragraphNumber: pendingParagraphNumber,
 					status: 'open',
-					createdAt: new Date(),
+					createdAt: new Date(createdAt),
 					replies: [],
 					_pending: true
 				};
@@ -1559,66 +1576,7 @@
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (floatingDebounce) clearTimeout(floatingDebounce);
-		window.removeEventListener('online', replayPendingComments);
 	});
-
-	async function replayPendingComments() {
-		const pending = pendingComments.forDocument(data.document.id);
-		if (pending.length === 0) return;
-
-		for (const p of pending) {
-			try {
-				if (p.type === 'update' && p.commentId) {
-					await trpc.comments.update.mutate({ id: p.commentId, content: p.content });
-					// Optimistic update was already applied locally when queueing
-				} else if (p.parentCommentId) {
-					const reply = await trpc.comments.addReply.mutate({
-						commentId: p.parentCommentId,
-						content: p.content
-					});
-					inlineComments = inlineComments.map((c) =>
-						c.id === p.parentCommentId
-							? { ...c, replies: c.replies.map((r) => r.id === p.id ? { ...r, id: reply.id, _pending: false } : r) }
-							: c
-					);
-				} else if (p.paragraphNumber) {
-					const created = await trpc.comments.createInline.mutate({
-						documentId: p.documentId,
-						content: p.content,
-						paragraphNumber: p.paragraphNumber,
-						anchorContext: p.anchorContext,
-						anchorText: undefined,
-						lineStart: undefined,
-						lineEnd: undefined,
-						characterStart: undefined,
-						characterEnd: undefined
-					});
-					inlineComments = inlineComments.map((c) =>
-						c.id === p.id ? { ...c, id: created.id, _pending: false } : c
-					);
-				} else {
-					const created = await trpc.comments.createInline.mutate({
-						documentId: p.documentId,
-						content: p.content,
-						anchorText: p.anchorText ?? '',
-						anchorContext: p.anchorContext,
-						lineStart: p.lineStart ?? 0,
-						lineEnd: p.lineEnd ?? 0,
-						characterStart: p.characterStart ?? 0,
-						characterEnd: p.characterEnd ?? 0,
-						paragraphNumber: undefined
-					});
-					inlineComments = inlineComments.map((c) =>
-						c.id === p.id ? { ...c, id: created.id, _pending: false } : c
-					);
-				}
-				pendingComments.update(p.id, { status: 'synced' });
-			} catch {
-				pendingComments.update(p.id, { status: 'failed' });
-			}
-		}
-		pendingComments.clearSynced();
-	}
 
 	onMount(async () => {
 		// If offline, prefer PouchDB content (may have unsaved edits) over cached server data
@@ -1652,9 +1610,6 @@
 				updatedAt: data.document.updatedAt?.toISOString() ?? new Date().toISOString()
 			});
 		}
-
-		// Replay any pending offline comments when reconnected
-		window.addEventListener('online', replayPendingComments);
 
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
