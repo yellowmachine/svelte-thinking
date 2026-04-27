@@ -149,9 +149,14 @@ export const GET: RequestHandler = async (event) => {
 
 	const sections = chapterRefs.map((ref) => {
 		const chapter = chapterData.get(ref.uuid);
+		// Strip leading h1 from chapter content — the section title already comes from the wikilink
+		const chapterContent = (chapter?.content ?? '')
+			.replace(FRONTMATTER_RE, '')
+			.trimStart()
+			.replace(/^# [^\n]*\n?/, '');
 		return {
 			title: ref.title,
-			content: markdownToTypst(chapter?.content ?? '', imageRegistry),
+			content: markdownToTypst(chapterContent, imageRegistry),
 			sectionType: (chapter?.type === 'chapter' ? 'chapter' : 'unnumbered') as 'chapter' | 'unnumbered'
 		};
 	});
