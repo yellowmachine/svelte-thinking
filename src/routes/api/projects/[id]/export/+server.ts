@@ -270,7 +270,7 @@ export const GET: RequestHandler = async (event) => {
 					const bytes = await (
 						response.Body as unknown as { transformToByteArray(): Promise<Uint8Array> }
 					).transformToByteArray();
-					const safe = ref.citeKey.replace(/[^\w.\-]/g, '_');
+					const safe = ref.citeKey.replace(/[^\w.-]/g, '_');
 					zipFiles[`pdfs/${safe}.pdf`] = bytes;
 				} catch {
 					// Skip PDFs that fail to download — don't abort the whole export
@@ -281,7 +281,7 @@ export const GET: RequestHandler = async (event) => {
 
 	for (const ds of datasets) {
 		// Sanitize filename to avoid path traversal
-		const safe = ds.filename.replace(/[^\w.\-]/g, '_');
+		const safe = ds.filename.replace(/[^\w.-]/g, '_');
 		zipFiles[`datasets/${safe}`] = new TextEncoder().encode(ds.content);
 	}
 

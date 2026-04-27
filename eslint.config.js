@@ -36,6 +36,7 @@ export default defineConfig(
 			'svelte/no-unused-props': 'warn',
 			'svelte/prefer-writable-derived': 'warn',
 			'svelte/no-useless-children-snippet': 'warn',
+			'svelte/no-unnecessary-state-wrap': 'warn',
 			'no-irregular-whitespace': 'warn',
 			'no-empty': 'warn'
 		}

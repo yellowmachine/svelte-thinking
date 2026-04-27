@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-	import { resolve } from '$app/paths';
 	import { invalidateAll } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
 	import { parseBibtexFile } from '$lib/utils/bibtex';
@@ -92,7 +91,7 @@
 		}
 	}
 
-	let deleting = $state(new SvelteSet<string>());
+	let deleting = new SvelteSet<string>();
 
 	async function deleteRef(id: string) {
 		deleting.add(id);
@@ -180,10 +179,7 @@
 							{group.projectTitle}
 						</h2>
 						{#if group.bibHref}
-							<a
-								href={resolve(group.bibHref as any)}
-								class="font-sans text-xs text-accent hover:underline"
-							>
+							<a href={group.bibHref} class="font-sans text-xs text-accent hover:underline">
 								Ver en proyecto →
 							</a>
 						{/if}
@@ -221,7 +217,7 @@
 										<code class="font-mono text-[11px] text-accent">@{ref.citeKey}</code>
 										{#if ref.externalHref}
 											<a
-												href={resolve(ref.externalHref as any)}
+												href={ref.externalHref}
 												target="_blank"
 												rel="noopener noreferrer"
 												class="font-sans text-xs text-accent hover:underline"
