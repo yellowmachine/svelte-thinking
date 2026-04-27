@@ -9,17 +9,20 @@ Decisión: usar **GitHub API desde el backend** (opción más limpia para beta V
 **Why:** El repo permanece privado, el usuario percibe acceso directo y privilegiado, y el backend puede enriquecer el issue automáticamente con metadatos útiles.
 
 **Flujo:**
+
 ```
 Usuario beta → form en /feedback → API de Scholio → GitHub API (token propio) → Issue en repo privado
 ```
 
 **Metadatos automáticos a incluir en el issue:**
+
 - Plan del usuario
 - Navegador / OS
 - Ruta donde estaba en la app
 - Versión del deploy
 
 **Alternativas descartadas:**
+
 - Repo público `scholio-feedback` — expone issues entre usuarios
 - Enlace directo a GitHub Issue forms — requiere que el repo sea público o que el usuario tenga acceso
 

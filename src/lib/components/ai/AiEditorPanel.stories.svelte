@@ -13,7 +13,8 @@
 	const reviewConversation = [
 		{
 			role: 'user',
-			content: 'Revisa la redacción del párrafo de introducción. El tono me parece demasiado informal.'
+			content:
+				'Revisa la redacción del párrafo de introducción. El tono me parece demasiado informal.'
 		},
 		{
 			role: 'assistant',

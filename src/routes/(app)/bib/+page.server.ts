@@ -4,7 +4,7 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { eq, asc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
-	const references = await event.locals.withRLS((db) =>
+	const references = (await event.locals.withRLS((db) =>
 		db
 			.select({
 				id: reference.id,
@@ -27,7 +27,7 @@ export const load: PageServerLoad = async (event) => {
 			.leftJoin(project, eq(project.id, projectReference.projectId))
 			.where(eq(reference.userId, event.locals.user!.id))
 			.orderBy(asc(reference.citeKey))
-	) as {
+	)) as {
 		id: string;
 		projectId: string | null;
 		projectTitle: string | null;

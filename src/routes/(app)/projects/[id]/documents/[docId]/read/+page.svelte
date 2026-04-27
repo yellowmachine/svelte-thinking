@@ -101,7 +101,7 @@
 		<button
 			onclick={exportPdf}
 			disabled={isExporting}
-			class="ml-auto flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink disabled:opacity-60 disabled:cursor-not-allowed dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="ml-auto flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:text-dark-ink-muted dark:hover:text-dark-ink"
 			title="Export to PDF"
 		>
 			{#if isExporting}
@@ -131,9 +131,11 @@
 		<!-- TOC sidebar (desktop only) -->
 		{#if data.chapters.length > 0}
 			<aside
-				class="hidden w-56 shrink-0 overflow-y-auto border-r border-paper-border px-4 py-6 dark:border-dark-paper-border lg:block"
+				class="hidden w-56 shrink-0 overflow-y-auto border-r border-paper-border px-4 py-6 lg:block dark:border-dark-paper-border"
 			>
-				<p class="mb-3 font-sans text-xs font-semibold uppercase tracking-wider text-ink-faint dark:text-dark-ink-faint">
+				<p
+					class="mb-3 font-sans text-xs font-semibold tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
+				>
 					Contents
 				</p>
 				<nav class="flex flex-col gap-0.5">
@@ -164,20 +166,28 @@
 				<!-- Preamble (intro, epigraphs, etc.) -->
 				{#if data.book.preamble}
 					<div class="mb-12">
-						<MarkdownPreview content={data.book.preamble} projectId={data.book.projectId} docMap={docMap()} />
+						<MarkdownPreview
+							content={data.book.preamble}
+							projectId={data.book.projectId}
+							docMap={docMap()}
+						/>
 					</div>
 				{/if}
 
 				{#if data.chapters.length === 0}
 					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						This book has no chapters yet. Add chapter references using <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[</code> in the editor.
+						This book has no chapters yet. Add chapter references using <code
+							class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[</code
+						> in the editor.
 					</p>
 				{:else}
 					<!-- Chapters -->
 					{#each data.chapters as chapter, i}
 						<section id="chapter-{chapter.id}" class="mb-16 scroll-mt-20">
 							<div class="mb-6 border-b border-paper-border pb-4 dark:border-dark-paper-border">
-								<p class="mb-1 font-sans text-xs uppercase tracking-wider text-ink-faint dark:text-dark-ink-faint">
+								<p
+									class="mb-1 font-sans text-xs tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
+								>
 									Chapter {i + 1}
 								</p>
 								<h2 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
@@ -186,9 +196,13 @@
 							</div>
 
 							{#if chapter.content.trim()}
-								<MarkdownPreview content={chapter.content} projectId={data.book.projectId} docMap={docMap()} />
+								<MarkdownPreview
+									content={chapter.content}
+									projectId={data.book.projectId}
+									docMap={docMap()}
+								/>
 							{:else}
-								<p class="font-sans text-sm italic text-ink-faint dark:text-dark-ink-faint">
+								<p class="font-sans text-sm text-ink-faint italic dark:text-dark-ink-faint">
 									This chapter has no content yet.
 								</p>
 							{/if}

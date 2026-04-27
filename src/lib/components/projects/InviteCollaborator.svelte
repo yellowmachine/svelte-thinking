@@ -100,11 +100,15 @@
 							<select
 								value={c.role}
 								disabled={changingRoleFor === c.userId}
-								onchange={(e) => changeRole(c.userId, (e.currentTarget as HTMLSelectElement).value as CollaboratorRole)}
+								onchange={(e) =>
+									changeRole(
+										c.userId,
+										(e.currentTarget as HTMLSelectElement).value as CollaboratorRole
+									)}
 								class="rounded border px-1.5 py-0.5 text-xs transition-colors focus:outline-none disabled:opacity-50
 									{savedRoleFor === c.userId
-										? 'border-green-400 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/20 dark:text-green-400'
-										: 'border-paper-border bg-paper text-ink-muted focus:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted'}"
+									? 'border-green-400 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/20 dark:text-green-400'
+									: 'border-paper-border bg-paper text-ink-muted focus:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted'}"
 							>
 								{#each roleOptions as opt (opt.value)}
 									<option value={opt.value}>{opt.label}</option>

@@ -20,7 +20,7 @@ export const GET: RequestHandler = async (event) => {
 	const { docId, id: projectId } = event.params;
 
 	// Load book document with committed content
-	const bookDoc = await event.locals.withRLS(async (db) => {
+	const bookDoc = (await event.locals.withRLS(async (db) => {
 		const docs = await db.select().from(document).where(eq(document.id, docId)).limit(1);
 		if (!docs[0] || docs[0].type !== 'book') return null;
 
@@ -34,7 +34,7 @@ export const GET: RequestHandler = async (event) => {
 			.limit(1);
 
 		return { ...doc, content: versions[0]?.content ?? '' };
-	}) as { title: string; content: string; spellLanguage: string | null } | null;
+	})) as { title: string; content: string; spellLanguage: string | null } | null;
 
 	if (!bookDoc) error(404, 'Book not found');
 
@@ -66,11 +66,12 @@ export const GET: RequestHandler = async (event) => {
 
 	// Preamble: content before the first chapter reference
 	const firstMatchIdx = contentWithoutFrontmatter.search(UUID_LINK_RE);
-	const preamble = firstMatchIdx > 0 ? contentWithoutFrontmatter.slice(0, firstMatchIdx).trim() : '';
+	const preamble =
+		firstMatchIdx > 0 ? contentWithoutFrontmatter.slice(0, firstMatchIdx).trim() : '';
 
 	// Load committed content and type for each referenced chapter
 	const chapterIds = chapterRefs.map((r) => r.uuid);
-	const chapterData = await event.locals.withRLS(async (db) => {
+	const chapterData = (await event.locals.withRLS(async (db) => {
 		if (chapterIds.length === 0) return new Map<string, { content: string; type: string }>();
 
 		const docs = await db.select().from(document).where(inArray(document.id, chapterIds));
@@ -88,15 +89,15 @@ export const GET: RequestHandler = async (event) => {
 		);
 
 		return new Map(withContent.map((c) => [c.id, { content: c.content, type: c.type }]));
-	}) as Map<string, { content: string; type: string }>;
+	})) as Map<string, { content: string; type: string }>;
 
 	// Load project collaborators for author list
-	const collaborators = await event.locals.withRLS((db) =>
+	const collaborators = (await event.locals.withRLS((db) =>
 		db
 			.select({ userId: projectCollaborator.userId, role: projectCollaborator.role })
 			.from(projectCollaborator)
 			.where(eq(projectCollaborator.projectId, projectId))
-	) as { userId: string; role: string }[];
+	)) as { userId: string; role: string }[];
 
 	const authorRoles = ['owner', 'author', 'coauthor'];
 	const authorCollabs = collaborators.filter((c) => authorRoles.includes(c.role));
@@ -104,22 +105,23 @@ export const GET: RequestHandler = async (event) => {
 
 	const authorNames: string[] = [];
 	if (authorUserIds.length > 0) {
-		const profiles = await event.locals.withRLS((db) =>
+		const profiles = (await event.locals.withRLS((db) =>
 			db
 				.select({ userId: userProfile.userId, displayName: userProfile.displayName })
 				.from(userProfile)
 				.where(inArray(userProfile.userId, authorUserIds))
-		) as { userId: string; displayName: string | null }[];
+		)) as { userId: string; displayName: string | null }[];
 
 		const missingIds = authorUserIds.filter((id) => !profiles.find((p) => p.userId === id));
-		const authNames = missingIds.length > 0
-			? await event.locals.withRLS((db) =>
-				db
-					.select({ id: authUser.id, name: authUser.name })
-					.from(authUser)
-					.where(inArray(authUser.id, missingIds))
-			) as { id: string; name: string }[]
-			: [];
+		const authNames =
+			missingIds.length > 0
+				? ((await event.locals.withRLS((db) =>
+						db
+							.select({ id: authUser.id, name: authUser.name })
+							.from(authUser)
+							.where(inArray(authUser.id, missingIds))
+					)) as { id: string; name: string }[])
+				: [];
 
 		const nameMap = new Map<string, string>();
 		for (const p of profiles) if (p.displayName) nameMap.set(p.userId, p.displayName);
@@ -134,13 +136,17 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	// Load project references for bibliography
-	const refs = (await event.locals.withRLS((db) =>
-		db
-			.select({ ref: reference })
-			.from(reference)
-			.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-			.where(eq(projectReference.projectId, projectId))
-	).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref))) as unknown as RefData[];
+	const refs = (await event.locals
+		.withRLS((db) =>
+			db
+				.select({ ref: reference })
+				.from(reference)
+				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+				.where(eq(projectReference.projectId, projectId))
+		)
+		.then((rows) =>
+			(rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref)
+		)) as unknown as RefData[];
 
 	// Convert content to Typst sections
 	const imageRegistry = new Map<string, string>();
@@ -149,10 +155,17 @@ export const GET: RequestHandler = async (event) => {
 
 	const sections = chapterRefs.map((ref) => {
 		const chapter = chapterData.get(ref.uuid);
+		// Strip leading h1 from chapter content — the section title already comes from the wikilink
+		const chapterContent = (chapter?.content ?? '')
+			.replace(FRONTMATTER_RE, '')
+			.trimStart()
+			.replace(/^# [^\n]*\n?/, '');
 		return {
 			title: ref.title,
-			content: markdownToTypst(chapter?.content ?? '', imageRegistry),
-			sectionType: (chapter?.type === 'chapter' ? 'chapter' : 'unnumbered') as 'chapter' | 'unnumbered'
+			content: markdownToTypst(chapterContent, imageRegistry),
+			sectionType: (chapter?.type === 'chapter' ? 'chapter' : 'unnumbered') as
+				| 'chapter'
+				| 'unnumbered'
 		};
 	});
 

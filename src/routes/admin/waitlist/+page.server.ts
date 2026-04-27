@@ -8,10 +8,7 @@ import { sendWaitlistApprovalEmail } from '$lib/server/email';
 import { notifySlack } from '$lib/server/slack';
 
 export const load: PageServerLoad = async () => {
-	const entries = await db
-		.select()
-		.from(waitlist)
-		.orderBy(desc(waitlist.createdAt));
+	const entries = await db.select().from(waitlist).orderBy(desc(waitlist.createdAt));
 	return { entries };
 };
 
@@ -41,7 +38,11 @@ export const actions: Actions = {
 			personalNote
 		});
 
-		notifySlack({ type: 'waitlist_approved', name: rows[0].name ?? rows[0].email, email: rows[0].email });
+		notifySlack({
+			type: 'waitlist_approved',
+			name: rows[0].name ?? rows[0].email,
+			email: rows[0].email
+		});
 		return { ok: true };
 	},
 
@@ -57,7 +58,11 @@ export const actions: Actions = {
 			.returning({ email: waitlist.email, name: waitlist.name });
 
 		if (rejected[0]) {
-			notifySlack({ type: 'waitlist_rejected', name: rejected[0].name ?? rejected[0].email, email: rejected[0].email });
+			notifySlack({
+				type: 'waitlist_rejected',
+				name: rejected[0].name ?? rejected[0].email,
+				email: rejected[0].email
+			});
 		}
 		return { ok: true };
 	}

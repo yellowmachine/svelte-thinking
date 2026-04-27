@@ -67,24 +67,44 @@
 {#if selected}
 	<!-- Offline document reader -->
 	<div class="flex min-h-screen flex-col bg-paper dark:bg-dark-paper">
-		<div class="sticky top-0 z-10 flex items-center gap-3 border-b border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper">
+		<div
+			class="sticky top-0 z-10 flex items-center gap-3 border-b border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+		>
 			<button
 				type="button"
 				onclick={() => (selected = null)}
 				class="flex items-center gap-1.5 font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M19 12H5M12 5l-7 7 7 7"/>
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M19 12H5M12 5l-7 7 7 7" />
 				</svg>
 				Back
 			</button>
-			<h1 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">{selected.title}</h1>
-			<span class="ml-auto rounded bg-amber-100 px-2 py-0.5 font-sans text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Offline — read only</span>
+			<h1 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+				{selected.title}
+			</h1>
+			<span
+				class="ml-auto rounded bg-amber-100 px-2 py-0.5 font-sans text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+				>Offline — read only</span
+			>
 		</div>
 		<div class="mx-auto w-full max-w-3xl px-6 py-8">
 			{#if selected.content}
-				<div class="prose prose-sm dark:prose-invert max-w-none font-serif text-ink dark:text-dark-ink">
-					<pre class="whitespace-pre-wrap font-serif text-base leading-relaxed">{selected.content}</pre>
+				<div
+					class="prose prose-sm max-w-none font-serif text-ink dark:text-dark-ink dark:prose-invert"
+				>
+					<pre
+						class="font-serif text-base leading-relaxed whitespace-pre-wrap">{selected.content}</pre>
 				</div>
 			{:else}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
@@ -94,9 +114,25 @@
 		</div>
 	</div>
 {:else}
-	<div id="main-content" class="flex min-h-screen flex-col items-center justify-center gap-6 bg-paper px-6 py-12 text-center dark:bg-dark-paper">
-		<svg width="48" height="48" viewBox="0 0 24 24" fill="none" class="text-ink-faint dark:text-dark-ink-faint" aria-hidden="true">
-			<path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.56 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+	<div
+		id="main-content"
+		class="flex min-h-screen flex-col items-center justify-center gap-6 bg-paper px-6 py-12 text-center dark:bg-dark-paper"
+	>
+		<svg
+			width="48"
+			height="48"
+			viewBox="0 0 24 24"
+			fill="none"
+			class="text-ink-faint dark:text-dark-ink-faint"
+			aria-hidden="true"
+		>
+			<path
+				d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0119 12.55M5 12.55a10.94 10.94 0 015.17-2.39M10.71 5.05A16 16 0 0122.56 9M1.42 9a15.91 15.91 0 014.7-2.88M8.53 16.11a6 6 0 016.95 0M12 20h.01"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
 		</svg>
 
 		<div class="flex flex-col gap-2">
@@ -116,7 +152,9 @@
 			<div class="w-full max-w-sm text-left">
 				{#each groups as group}
 					<div class="mb-4">
-						<span class="mb-1 block font-sans text-xs font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">
+						<span
+							class="mb-1 block font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
+						>
 							{group.title}
 						</span>
 						<ul class="flex flex-col gap-1">

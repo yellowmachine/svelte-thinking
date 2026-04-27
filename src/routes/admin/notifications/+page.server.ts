@@ -5,10 +5,7 @@ import { notification } from '$lib/server/db/schemas/notifications.schema';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const notifications = await db
-		.select()
-		.from(notification)
-		.orderBy(desc(notification.createdAt));
+	const notifications = await db.select().from(notification).orderBy(desc(notification.createdAt));
 
 	return { notifications, adminEmail: locals.user!.email };
 };

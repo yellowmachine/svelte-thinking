@@ -23,12 +23,18 @@ export const actions: Actions = {
 
 			// If 2FA is required, Better Auth returns { twoFactorRedirect: true }
 			// The two-factor cookie is set automatically via sveltekitCookies plugin
-			if (result && typeof result === 'object' && 'twoFactorRedirect' in result && result.twoFactorRedirect) {
+			if (
+				result &&
+				typeof result === 'object' &&
+				'twoFactorRedirect' in result &&
+				result.twoFactorRedirect
+			) {
 				return { twoFactor: true, email };
 			}
 		} catch (e) {
 			if (e instanceof APIError) {
-				const isUnverified = e.message?.toLowerCase().includes('email') && e.message?.toLowerCase().includes('verif');
+				const isUnverified =
+					e.message?.toLowerCase().includes('email') && e.message?.toLowerCase().includes('verif');
 				if (isUnverified) {
 					return fail(400, {
 						message: 'Debes verificar tu correo antes de iniciar sesión.',

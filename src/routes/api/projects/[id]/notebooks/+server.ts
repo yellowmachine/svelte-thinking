@@ -18,10 +18,7 @@ export const GET: RequestHandler = async (event) => {
 	if (!proj) error(404, 'Project not found');
 
 	const notebooks = await event.locals.withRLS((db) =>
-		db
-			.select()
-			.from(projectNotebook)
-			.where(eq(projectNotebook.projectId, projectId))
+		db.select().from(projectNotebook).where(eq(projectNotebook.projectId, projectId))
 	);
 
 	return json(notebooks);

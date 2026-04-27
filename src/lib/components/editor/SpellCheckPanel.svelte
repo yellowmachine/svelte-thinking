@@ -1,5 +1,5 @@
 <script lang="ts">
-export type SpellCorrection = {
+	export type SpellCorrection = {
 		original: string;
 		suggestion: string;
 		explanation: string;
@@ -39,7 +39,9 @@ export type SpellCorrection = {
 		const CONTEXT = 50;
 		const before = documentText.slice(Math.max(0, c.from - CONTEXT), c.from).replace(/\n/g, ' ');
 		const error = documentText.slice(c.from, c.to);
-		const after = documentText.slice(c.to, Math.min(documentText.length, c.to + CONTEXT)).replace(/\n/g, ' ');
+		const after = documentText
+			.slice(c.to, Math.min(documentText.length, c.to + CONTEXT))
+			.replace(/\n/g, ' ');
 		return { before, error, after };
 	}
 
@@ -78,14 +80,17 @@ export type SpellCorrection = {
 
 <div class="flex h-full flex-col">
 	<!-- Header -->
-	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
+	<div
+		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
+	>
 		<div class="flex items-center gap-2">
 			<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-			{mode === 'grammar' ? 'Grammar assistant' : 'Spell check'}
-		</h3>
+				{mode === 'grammar' ? 'Grammar assistant' : 'Spell check'}
+			</h3>
 			{#if !loading && corrections.length > 0}
 				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					{corrections.length} {corrections.length === 1 ? 'issue' : 'issues'}
+					{corrections.length}
+					{corrections.length === 1 ? 'issue' : 'issues'}
 				</span>
 			{/if}
 		</div>
@@ -104,7 +109,12 @@ export type SpellCorrection = {
 				aria-label="Close"
 			>
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-					<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					<path
+						d="M1 1l12 12M13 1L1 13"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+					/>
 				</svg>
 			</button>
 		</div>
@@ -131,10 +141,13 @@ export type SpellCorrection = {
 						onmouseleave={() => onhoverend?.()}
 					>
 						<!-- Context -->
-						<p class="mb-2 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+						<p
+							class="mb-2 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
+						>
 							…{ctx.before}<span
 								class="rounded bg-red-100 px-0.5 font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400"
-								>{ctx.error}</span>{ctx.after}…
+								>{ctx.error}</span
+							>{ctx.after}…
 						</p>
 
 						<!-- Suggestion + explanation -->
@@ -157,21 +170,23 @@ export type SpellCorrection = {
 								Accept
 							</button>
 							{#if mode === 'spell'}
-							<button
-								onclick={() => ignoreAlways(i)}
-								disabled={ignoring === i}
-								class="rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
-							>
-								{ignoring === i ? 'Saving…' : 'Ignore always'}
-							</button>
-						{:else}
-							<button
-								onclick={() => { corrections = corrections.filter((_, j) => j !== i); }}
-								class="rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
-							>
-								Dismiss
-							</button>
-						{/if}
+								<button
+									onclick={() => ignoreAlways(i)}
+									disabled={ignoring === i}
+									class="rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+								>
+									{ignoring === i ? 'Saving…' : 'Ignore always'}
+								</button>
+							{:else}
+								<button
+									onclick={() => {
+										corrections = corrections.filter((_, j) => j !== i);
+									}}
+									class="rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+								>
+									Dismiss
+								</button>
+							{/if}
 						</div>
 					</li>
 				{/each}

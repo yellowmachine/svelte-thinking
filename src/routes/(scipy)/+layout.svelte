@@ -8,7 +8,10 @@
 	<header class="border-b border-paper-border px-6 py-3 dark:border-dark-paper-border">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-3">
-				<a href="https://scholio.review" class="text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink">
+				<a
+					href="https://scholio.review"
+					class="text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+				>
 					← Scholio
 				</a>
 				<span class="text-ink-faint dark:text-dark-ink-faint">/</span>

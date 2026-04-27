@@ -18,74 +18,85 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 export const GET: RequestHandler = async (event) => {
 	const projectId = event.params.id;
 
-	const [proj, documents, collaborators, references, photos, datasets, allComments] = await Promise.all([
-		event.locals.withRLS((db) =>
-			db.select().from(project).where(eq(project.id, projectId)).limit(1)
-		),
-		event.locals.withRLS((db) =>
-			db.select().from(document).where(eq(document.projectId, projectId)).orderBy(asc(document.createdAt))
-		),
-		event.locals.withRLS((db) =>
-			db
-				.select({
-					role: projectCollaborator.role,
-					joinedAt: projectCollaborator.createdAt,
-					email: user.email,
-					name: user.name,
-					orcid: userProfile.orcid
-				})
-				.from(projectCollaborator)
-				.innerJoin(user, eq(user.id, projectCollaborator.userId))
-				.leftJoin(userProfile, eq(userProfile.userId, projectCollaborator.userId))
-				.where(eq(projectCollaborator.projectId, projectId))
-		),
-		event.locals.withRLS((db) =>
-			db
-				.select({ ref: reference })
-				.from(reference)
-				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-				.where(eq(projectReference.projectId, projectId))
-				.orderBy(asc(reference.citeKey))
-		).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref)),
-		event.locals.withRLS((db) =>
-			db.select().from(projectPhoto).where(eq(projectPhoto.projectId, projectId))
-		),
-		event.locals.withRLS((db) =>
-			db
-				.select({ filename: projectDataset.filename, mimeType: projectDataset.mimeType, content: projectDataset.content })
-				.from(projectDataset)
-				.where(eq(projectDataset.projectId, projectId))
-		),
-		event.locals.withRLS((db) =>
-			db
-				.select({
-					id: comment.id,
-					documentId: comment.documentId,
-					parentCommentId: comment.parentCommentId,
-					type: comment.type,
-					content: comment.content,
-					status: comment.status,
-					anchorText: comment.anchorText,
-					lineStart: comment.lineStart,
-					lineEnd: comment.lineEnd,
-					createdAt: comment.createdAt,
-					authorEmail: user.email,
-					authorName: user.name,
-					authorOrcid: userProfile.orcid
-				})
-				.from(comment)
-				.innerJoin(document, eq(document.id, comment.documentId))
-				.innerJoin(user, eq(user.id, comment.authorId))
-				.leftJoin(userProfile, eq(userProfile.userId, comment.authorId))
-				.where(eq(document.projectId, projectId))
-				.orderBy(asc(comment.createdAt))
-		)
-	]);
+	const [proj, documents, collaborators, references, photos, datasets, allComments] =
+		await Promise.all([
+			event.locals.withRLS((db) =>
+				db.select().from(project).where(eq(project.id, projectId)).limit(1)
+			),
+			event.locals.withRLS((db) =>
+				db
+					.select()
+					.from(document)
+					.where(eq(document.projectId, projectId))
+					.orderBy(asc(document.createdAt))
+			),
+			event.locals.withRLS((db) =>
+				db
+					.select({
+						role: projectCollaborator.role,
+						joinedAt: projectCollaborator.createdAt,
+						email: user.email,
+						name: user.name,
+						orcid: userProfile.orcid
+					})
+					.from(projectCollaborator)
+					.innerJoin(user, eq(user.id, projectCollaborator.userId))
+					.leftJoin(userProfile, eq(userProfile.userId, projectCollaborator.userId))
+					.where(eq(projectCollaborator.projectId, projectId))
+			),
+			event.locals
+				.withRLS((db) =>
+					db
+						.select({ ref: reference })
+						.from(reference)
+						.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+						.where(eq(projectReference.projectId, projectId))
+						.orderBy(asc(reference.citeKey))
+				)
+				.then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref)),
+			event.locals.withRLS((db) =>
+				db.select().from(projectPhoto).where(eq(projectPhoto.projectId, projectId))
+			),
+			event.locals.withRLS((db) =>
+				db
+					.select({
+						filename: projectDataset.filename,
+						mimeType: projectDataset.mimeType,
+						content: projectDataset.content
+					})
+					.from(projectDataset)
+					.where(eq(projectDataset.projectId, projectId))
+			),
+			event.locals.withRLS((db) =>
+				db
+					.select({
+						id: comment.id,
+						documentId: comment.documentId,
+						parentCommentId: comment.parentCommentId,
+						type: comment.type,
+						content: comment.content,
+						status: comment.status,
+						anchorText: comment.anchorText,
+						lineStart: comment.lineStart,
+						lineEnd: comment.lineEnd,
+						createdAt: comment.createdAt,
+						authorEmail: user.email,
+						authorName: user.name,
+						authorOrcid: userProfile.orcid
+					})
+					.from(comment)
+					.innerJoin(document, eq(document.id, comment.documentId))
+					.innerJoin(user, eq(user.id, comment.authorId))
+					.leftJoin(userProfile, eq(userProfile.userId, comment.authorId))
+					.where(eq(document.projectId, projectId))
+					.orderBy(asc(comment.createdAt))
+			)
+		]);
 
 	if (!proj[0]) error(404, 'Proyecto no encontrado');
 
 	// Group comments by documentId, nest replies under their parent
-	type CommentRow = typeof allComments[number];
+	type CommentRow = (typeof allComments)[number];
 	function serializeComment(c: CommentRow, replies: CommentRow[]) {
 		const entry: Record<string, unknown> = {
 			type: c.type,
@@ -175,26 +186,28 @@ export const GET: RequestHandler = async (event) => {
 			return entry;
 		}),
 		documents: documentsWithVersions,
-		references: references.map((r) => ({
-			cite_key: r.citeKey,
-			type: r.type,
-			title: r.title,
-			authors: r.authors,
-			year: r.year ?? null,
-			abstract: r.abstract ?? null,
-			doi: r.doi ?? null,
-			url: r.url ?? null,
-			journal: r.journal ?? null,
-			volume: r.volume ?? null,
-			issue: r.issue ?? null,
-			pages: r.pages ?? null,
-			publisher: r.publisher ?? null,
-			booktitle: r.booktitle ?? null,
-			school: r.school ?? null,
-			institution: r.institution ?? null,
-			note: r.note ?? null,
-			reading_notes_doc_id: r.readingNotesDocId ?? null
-		})).map((r) => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== null)))
+		references: references
+			.map((r) => ({
+				cite_key: r.citeKey,
+				type: r.type,
+				title: r.title,
+				authors: r.authors,
+				year: r.year ?? null,
+				abstract: r.abstract ?? null,
+				doi: r.doi ?? null,
+				url: r.url ?? null,
+				journal: r.journal ?? null,
+				volume: r.volume ?? null,
+				issue: r.issue ?? null,
+				pages: r.pages ?? null,
+				publisher: r.publisher ?? null,
+				booktitle: r.booktitle ?? null,
+				school: r.school ?? null,
+				institution: r.institution ?? null,
+				note: r.note ?? null,
+				reading_notes_doc_id: r.readingNotesDocId ?? null
+			}))
+			.map((r) => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== null)))
 	};
 
 	const yaml = stringify(exportData, { lineWidth: 0 });
@@ -257,7 +270,7 @@ export const GET: RequestHandler = async (event) => {
 					const bytes = await (
 						response.Body as unknown as { transformToByteArray(): Promise<Uint8Array> }
 					).transformToByteArray();
-					const safe = ref.citeKey.replace(/[^\w.\-]/g, '_');
+					const safe = ref.citeKey.replace(/[^\w.-]/g, '_');
 					zipFiles[`pdfs/${safe}.pdf`] = bytes;
 				} catch {
 					// Skip PDFs that fail to download — don't abort the whole export
@@ -268,7 +281,7 @@ export const GET: RequestHandler = async (event) => {
 
 	for (const ds of datasets) {
 		// Sanitize filename to avoid path traversal
-		const safe = ds.filename.replace(/[^\w.\-]/g, '_');
+		const safe = ds.filename.replace(/[^\w.-]/g, '_');
 		zipFiles[`datasets/${safe}`] = new TextEncoder().encode(ds.content);
 	}
 

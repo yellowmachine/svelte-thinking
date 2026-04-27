@@ -17,7 +17,7 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	// Load document content (draft > current version)
-	const docResult = await event.locals.withRLS(async (db) => {
+	const docResult = (await event.locals.withRLS(async (db) => {
 		const docs = await db.select().from(document).where(eq(document.id, docId)).limit(1);
 		if (!docs[0]) return null;
 		const doc = docs[0];
@@ -36,18 +36,22 @@ export const GET: RequestHandler = async (event) => {
 			.limit(1);
 
 		return { title: doc.title, content: versions[0]?.content ?? '' };
-	}) as { title: string; content: string } | null;
+	})) as { title: string; content: string } | null;
 
 	if (!docResult) error(404, 'Documento no encontrado');
 
 	// Load project references for bibliography
-	const refs = (await event.locals.withRLS((db) =>
-		db
-			.select({ ref: reference })
-			.from(reference)
-			.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-			.where(eq(projectReference.projectId, projectId))
-	).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref))) as unknown as RefData[];
+	const refs = (await event.locals
+		.withRLS((db) =>
+			db
+				.select({ ref: reference })
+				.from(reference)
+				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+				.where(eq(projectReference.projectId, projectId))
+		)
+		.then((rows) =>
+			(rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref)
+		)) as unknown as RefData[];
 
 	const slug = docResult.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 

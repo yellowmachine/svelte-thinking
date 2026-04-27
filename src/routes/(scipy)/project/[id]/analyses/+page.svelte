@@ -12,7 +12,9 @@
 
 	function formatDate(date: Date | string) {
 		return new Date(date).toLocaleDateString('en-GB', {
-			day: 'numeric', month: 'short', year: 'numeric'
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric'
 		});
 	}
 </script>
@@ -45,7 +47,9 @@
 		{:else}
 			<table class="w-full text-sm">
 				<thead>
-					<tr class="border-b border-paper-border text-left text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint">
+					<tr
+						class="border-b border-paper-border text-left text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
+					>
 						<th class="pb-2 font-medium">Type</th>
 						<th class="pb-2 font-medium">Status</th>
 						<th class="pb-2 font-medium">Date</th>
@@ -57,7 +61,9 @@
 						<tr class="border-b border-paper-border dark:border-dark-paper-border">
 							<td class="py-3 font-mono text-ink dark:text-dark-ink">{analysis.type}</td>
 							<td class="py-3 {statusColors[analysis.status]}">{analysis.status}</td>
-							<td class="py-3 text-ink-faint dark:text-dark-ink-faint">{formatDate(analysis.createdAt)}</td>
+							<td class="py-3 text-ink-faint dark:text-dark-ink-faint"
+								>{formatDate(analysis.createdAt)}</td
+							>
 							<td class="py-3 text-right">
 								{#if analysis.status === 'completed'}
 									<a

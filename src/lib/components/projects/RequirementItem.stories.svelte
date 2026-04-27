@@ -33,7 +33,8 @@
 		requirement: {
 			id: 'req-1',
 			name: 'Resumen ejecutivo',
-			description: 'Síntesis del documento en no más de 250 palabras. Debe incluir objetivo, metodología y conclusiones principales.',
+			description:
+				'Síntesis del documento en no más de 250 palabras. Debe incluir objetivo, metodología y conclusiones principales.',
 			required: true,
 			fulfilledDocumentId: null
 		},
@@ -63,7 +64,8 @@
 		requirement: {
 			id: 'req-3',
 			name: 'Metodología',
-			description: 'Descripción detallada del diseño del estudio, muestra, instrumentos y análisis estadístico.',
+			description:
+				'Descripción detallada del diseño del estudio, muestra, instrumentos y análisis estadístico.',
 			required: true,
 			fulfilledDocumentId: null
 		},

@@ -23,8 +23,15 @@
 		commentAnchors = [] as { id: string; anchorText: string }[],
 		paragraphComments = [] as { id: string; paragraphNumber: number }[],
 		oncommentclick = undefined as ((id: string) => void) | undefined,
-		onselection = undefined as ((sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) => void) | undefined,
-		onparagraphcomment = undefined as ((paragraphNumber: number, coords: { top: number; right: number }) => void) | undefined
+		onselection = undefined as
+			| ((sel: {
+					text: string;
+					coords: { top: number; bottom: number; left: number; right: number };
+			  }) => void)
+			| undefined,
+		onparagraphcomment = undefined as
+			| ((paragraphNumber: number, coords: { top: number; right: number }) => void)
+			| undefined
 	}: {
 		content: string;
 		preRenderedHtml?: string;
@@ -35,7 +42,10 @@
 		commentAnchors?: { id: string; anchorText: string }[];
 		paragraphComments?: { id: string; paragraphNumber: number }[];
 		oncommentclick?: (id: string) => void;
-		onselection?: (sel: { text: string; coords: { top: number; bottom: number; left: number; right: number } }) => void;
+		onselection?: (sel: {
+			text: string;
+			coords: { top: number; bottom: number; left: number; right: number };
+		}) => void;
 		onparagraphcomment?: (paragraphNumber: number, coords: { top: number; right: number }) => void;
 	} = $props();
 
@@ -48,7 +58,9 @@
 	$effect(() => {
 		if (einkStore.enabled) return;
 		const next = content;
-		const timer = setTimeout(() => { snapshot = next; }, 400);
+		const timer = setTimeout(() => {
+			snapshot = next;
+		}, 400);
 		return () => clearTimeout(timer);
 	});
 
@@ -70,7 +82,10 @@
 		let out = src.replace(/\$\$([\s\S]+?)\$\$/g, (_match, tex) => {
 			const id = `math-block-${idx++}`;
 			try {
-				mathBlocks.set(id, katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false }));
+				mathBlocks.set(
+					id,
+					katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false })
+				);
 			} catch {
 				mathBlocks.set(id, `<span class="math-error">LaTeX error</span>`);
 			}
@@ -81,7 +96,10 @@
 		out = out.replace(/(?<!\$)\$(?!\$)((?:[^$\n])+?)\$(?!\$)/g, (_match, tex) => {
 			const id = `math-inline-${idx++}`;
 			try {
-				mathBlocks.set(id, katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false }));
+				mathBlocks.set(
+					id,
+					katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false })
+				);
 			} catch {
 				mathBlocks.set(id, `<span class="math-error">${tex}</span>`);
 			}
@@ -116,7 +134,11 @@
 		if (!container || diagrams.size === 0) return;
 
 		const { default: mermaid } = await import('mermaid');
-		mermaid.initialize({ startOnLoad: false, theme: 'neutral', fontFamily: '"Source Serif 4", Georgia, serif' });
+		mermaid.initialize({
+			startOnLoad: false,
+			theme: 'neutral',
+			fontFamily: '"Source Serif 4", Georgia, serif'
+		});
 
 		for (const [id, code] of diagrams) {
 			const el = container.querySelector(`[data-mermaid-id="${id}"]`);
@@ -161,18 +183,26 @@
 		const { processed: withDiagramPlaceholders, diagrams } = extractDiagrams(src);
 		const { processed: withPlaceholders, plots } = extractPlots(withDiagramPlaceholders);
 		const { processed: withCalloutPlaceholders, callouts } = extractCallouts(withPlaceholders);
-		const { processed: withEpigraphPlaceholders, epigraphs } = extractEpigraphsForProcessing(withCalloutPlaceholders);
+		const { processed: withEpigraphPlaceholders, epigraphs } =
+			extractEpigraphsForProcessing(withCalloutPlaceholders);
 		const { processed: withMathPlaceholders, mathBlocks } = renderMath(withEpigraphPlaceholders);
-		const withWikilinks = wikilinkMap.size > 0 ? processWikilinks(withMathPlaceholders, wikilinkMap) : withMathPlaceholders;
+		const withWikilinks =
+			wikilinkMap.size > 0
+				? processWikilinks(withMathPlaceholders, wikilinkMap)
+				: withMathPlaceholders;
 		const withPersons = processPersonsAndIndex(withWikilinks);
 		const withCitations = refs.size > 0 ? processCitations(withPersons, refs, style) : withPersons;
 		const rawHtml = marked.parse(withCitations) as string;
 		const restored = restoreMath(rawHtml, mathBlocks);
 		const withEpigraphs = restoreEpigraphs(restored, epigraphs);
 		const withCallouts = restoreCallouts(withEpigraphs, callouts);
-		const html = typeof DOMPurify.sanitize === 'function'
-			? DOMPurify.sanitize(withCallouts, { ADD_TAGS: ['math', 'figure', 'figcaption'], ADD_ATTR: ['data-vega-id', 'data-mermaid-id', 'role'] })
-			: withCallouts;
+		const html =
+			typeof DOMPurify.sanitize === 'function'
+				? DOMPurify.sanitize(withCallouts, {
+						ADD_TAGS: ['math', 'figure', 'figcaption'],
+						ADD_ATTR: ['data-vega-id', 'data-mermaid-id', 'role']
+					})
+				: withCallouts;
 		return { html, plots, diagrams };
 	}
 
@@ -227,7 +257,11 @@
 
 	let parsed = $derived(
 		preRenderedHtml !== undefined
-			? { html: preRenderedHtml, plots: new Map<string, object>(), diagrams: new Map<string, string>() }
+			? {
+					html: preRenderedHtml,
+					plots: new Map<string, object>(),
+					diagrams: new Map<string, string>()
+				}
 			: parseMarkdown(snapshot, refsMap, citationStyle, docMap)
 	);
 
@@ -253,7 +287,8 @@
 			const idx = node.nodeValue?.indexOf(text) ?? -1;
 			if (idx === -1) continue;
 			// Skip if already inside an anchor mark
-			if ((node.parentElement as HTMLElement)?.closest?.('.comment-anchor, .annotation-anchor')) continue;
+			if ((node.parentElement as HTMLElement)?.closest?.('.comment-anchor, .annotation-anchor'))
+				continue;
 			const before = node.splitText(idx);
 			const after = before.splitText(text.length);
 			const mark = document.createElement('mark');
@@ -351,7 +386,9 @@
 
 		if (!target) return;
 		target.scrollIntoView({ behavior: 'instant', block: 'center' });
-		const highlightClass = commentId.startsWith('ann-') ? 'annotation-highlight' : 'comment-highlight';
+		const highlightClass = commentId.startsWith('ann-')
+			? 'annotation-highlight'
+			: 'comment-highlight';
 		(target as HTMLElement).classList.add(highlightClass);
 		setTimeout(() => (target as HTMLElement).classList.remove(highlightClass), 1800);
 	}
@@ -364,7 +401,10 @@
 		const text = sel.toString().trim();
 		const range = sel.getRangeAt(0);
 		const rect = range.getBoundingClientRect();
-		onselection({ text, coords: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right } });
+		onselection({
+			text,
+			coords: { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right }
+		});
 	}
 </script>
 
@@ -382,13 +422,18 @@
 			type="button"
 			onclick={refresh}
 			title="Refresh preview"
-			class="absolute right-0 top-0 z-10 rounded border border-ink/20 bg-paper px-2 py-0.5 font-sans text-xs text-ink-muted hover:bg-paper-ui hover:text-ink"
+			class="absolute top-0 right-0 z-10 rounded border border-ink/20 bg-paper px-2 py-0.5 font-sans text-xs text-ink-muted hover:bg-paper-ui hover:text-ink"
 		>
 			↻ Refresh
 		</button>
 	{/if}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div bind:this={container} class="prose prose-serif max-w-none dark:prose-invert" style="overflow: visible;" onmouseup={handleMouseUp}>
+	<div
+		bind:this={container}
+		class="prose-serif prose max-w-none dark:prose-invert"
+		style="overflow: visible;"
+		onmouseup={handleMouseUp}
+	>
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html parsed.html}
 	</div>
@@ -432,13 +477,13 @@
 	}
 
 	.prose :global(.wikilink-unresolved) {
-		color: var(--color-ink-faint, #A89880);
+		color: var(--color-ink-faint, #a89880);
 		font-style: italic;
 		cursor: help;
 	}
 
 	.prose :global(.mention-person) {
-		border-bottom: 1px dotted var(--color-ink-faint, #A89880);
+		border-bottom: 1px dotted var(--color-ink-faint, #a89880);
 	}
 
 	.prose :global(.persons-index) {
@@ -555,7 +600,9 @@
 		padding: 0.1em 0.35em;
 		border-radius: 3px;
 		opacity: 0;
-		transition: opacity 0.15s, color 0.15s;
+		transition:
+			opacity 0.15s,
+			color 0.15s;
 		white-space: nowrap;
 		line-height: 1.4;
 	}
@@ -589,8 +636,12 @@
 	}
 
 	@keyframes comment-highlight-fade {
-		0%   { background-color: oklch(0.92 0.12 85 / 0.55); }
-		100% { background-color: transparent; }
+		0% {
+			background-color: oklch(0.92 0.12 85 / 0.55);
+		}
+		100% {
+			background-color: transparent;
+		}
 	}
 
 	/* Applied to <mark> when clicked from sidebar */
@@ -612,8 +663,12 @@
 	}
 
 	@keyframes annotation-highlight-fade {
-		0%   { background-color: oklch(0.85 0.12 195 / 0.6); }
-		100% { background-color: transparent; }
+		0% {
+			background-color: oklch(0.85 0.12 195 / 0.6);
+		}
+		100% {
+			background-color: transparent;
+		}
 	}
 
 	.prose :global(mark.annotation-highlight) {
@@ -657,7 +712,9 @@
 		border-left-color: oklch(0.6 0.1 240);
 		color: oklch(0.35 0.08 240);
 	}
-	.prose :global(.callout-note .callout-header) { color: oklch(0.45 0.1 240); }
+	.prose :global(.callout-note .callout-header) {
+		color: oklch(0.45 0.1 240);
+	}
 
 	/* warning — amber */
 	.prose :global(.callout-warning) {
@@ -665,7 +722,9 @@
 		border-left-color: oklch(0.72 0.14 70);
 		color: oklch(0.4 0.08 70);
 	}
-	.prose :global(.callout-warning .callout-header) { color: oklch(0.5 0.14 70); }
+	.prose :global(.callout-warning .callout-header) {
+		color: oklch(0.5 0.14 70);
+	}
 
 	/* tip — green */
 	.prose :global(.callout-tip) {
@@ -673,7 +732,9 @@
 		border-left-color: oklch(0.58 0.12 150);
 		color: oklch(0.35 0.08 150);
 	}
-	.prose :global(.callout-tip .callout-header) { color: oklch(0.45 0.12 150); }
+	.prose :global(.callout-tip .callout-header) {
+		color: oklch(0.45 0.12 150);
+	}
 
 	/* caution — red/orange */
 	.prose :global(.callout-caution) {
@@ -681,11 +742,21 @@
 		border-left-color: oklch(0.6 0.15 25);
 		color: oklch(0.38 0.08 25);
 	}
-	.prose :global(.callout-caution .callout-header) { color: oklch(0.48 0.15 25); }
+	.prose :global(.callout-caution .callout-header) {
+		color: oklch(0.48 0.15 25);
+	}
 
 	/* Dark mode adjustments */
-	:global(.dark) .prose :global(.callout-note) { background: oklch(0.25 0.04 240 / 0.5); }
-	:global(.dark) .prose :global(.callout-warning) { background: oklch(0.25 0.05 70 / 0.5); }
-	:global(.dark) .prose :global(.callout-tip) { background: oklch(0.25 0.04 150 / 0.5); }
-	:global(.dark) .prose :global(.callout-caution) { background: oklch(0.25 0.05 25 / 0.5); }
+	:global(.dark) .prose :global(.callout-note) {
+		background: oklch(0.25 0.04 240 / 0.5);
+	}
+	:global(.dark) .prose :global(.callout-warning) {
+		background: oklch(0.25 0.05 70 / 0.5);
+	}
+	:global(.dark) .prose :global(.callout-tip) {
+		background: oklch(0.25 0.04 150 / 0.5);
+	}
+	:global(.dark) .prose :global(.callout-caution) {
+		background: oklch(0.25 0.05 25 / 0.5);
+	}
 </style>

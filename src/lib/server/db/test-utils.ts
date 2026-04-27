@@ -21,6 +21,10 @@ export async function createTestDb(): Promise<TestDb> {
 	const client = new PGlite({ extensions: { vector } });
 	const db = drizzle(client, { schema });
 
+	// Prerequisites that exist in prod but must be created explicitly in tests.
+	await db.execute(sql`CREATE SCHEMA IF NOT EXISTS scholio`);
+	await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`);
+
 	// Run all Drizzle migrations (as superuser)
 	await migrate(db, { migrationsFolder: './drizzle' });
 
@@ -28,8 +32,15 @@ export async function createTestDb(): Promise<TestDb> {
 	// RLS applies to this role (not to the superuser).
 	await db.execute(sql`CREATE ROLE app_user`);
 	await db.execute(sql`GRANT USAGE ON SCHEMA public TO app_user`);
-	await db.execute(sql`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user`);
+	await db.execute(sql`GRANT USAGE ON SCHEMA scholio TO app_user`);
+	await db.execute(
+		sql`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user`
+	);
+	await db.execute(
+		sql`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA scholio TO app_user`
+	);
 	await db.execute(sql`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user`);
+	await db.execute(sql`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA scholio TO app_user`);
 
 	return db;
 }

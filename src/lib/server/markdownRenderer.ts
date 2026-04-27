@@ -27,28 +27,46 @@ export async function renderMarkdownToHtml(
 
 	src = src.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => {
 		const id = `math-block-${mathIdx++}`;
-		try { mathBlocks.set(id, katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false })); }
-		catch { mathBlocks.set(id, `<span class="math-error">LaTeX error</span>`); }
+		try {
+			mathBlocks.set(
+				id,
+				katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false })
+			);
+		} catch {
+			mathBlocks.set(id, `<span class="math-error">LaTeX error</span>`);
+		}
 		return `<!--math:${id}-->`;
 	});
 	src = src.replace(/(?<!\$)\$(?!\$)((?:[^$\n])+?)\$(?!\$)/g, (_, tex) => {
 		const id = `math-inline-${mathIdx++}`;
-		try { mathBlocks.set(id, katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false })); }
-		catch { mathBlocks.set(id, `<span class="math-error">${tex}</span>`); }
+		try {
+			mathBlocks.set(
+				id,
+				katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false })
+			);
+		} catch {
+			mathBlocks.set(id, `<span class="math-error">${tex}</span>`);
+		}
 		return `<!--math:${id}-->`;
 	});
 
 	// Pipeline (same order as MarkdownPreview, skipping Mermaid/Vega which need a browser)
 	const { processed: withCalloutPlaceholders, callouts } = extractCallouts(src);
-	const { processed: withEpigraphPlaceholders, epigraphs } = extractEpigraphsForProcessing(withCalloutPlaceholders);
-	const withWikilinks = docMap.size > 0 ? processWikilinks(withEpigraphPlaceholders, docMap) : withEpigraphPlaceholders;
+	const { processed: withEpigraphPlaceholders, epigraphs } =
+		extractEpigraphsForProcessing(withCalloutPlaceholders);
+	const withWikilinks =
+		docMap.size > 0 ? processWikilinks(withEpigraphPlaceholders, docMap) : withEpigraphPlaceholders;
 	const withPersons = processPersonsAndIndex(withWikilinks);
-	const withCitations = references.size > 0 ? processCitations(withPersons, references, citationStyle) : withPersons;
+	const withCitations =
+		references.size > 0 ? processCitations(withPersons, references, citationStyle) : withPersons;
 
 	let html = marked.parse(withCitations) as string;
 
 	// Restore placeholders
-	html = html.replace(/<!--math:(math-(?:block|inline)-\d+)-->/g, (_, id) => mathBlocks.get(id) ?? '');
+	html = html.replace(
+		/<!--math:(math-(?:block|inline)-\d+)-->/g,
+		(_, id) => mathBlocks.get(id) ?? ''
+	);
 	html = restoreEpigraphs(html, epigraphs);
 	html = restoreCallouts(html, callouts);
 

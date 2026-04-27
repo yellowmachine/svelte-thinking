@@ -232,7 +232,6 @@ function mdToTypst(md: string): string {
 	return t;
 }
 
-
 export function toTypst(content: string, docTitle: string, refs: RefData[]): string {
 	const body = mdToTypst(content);
 	const bib = serializeBib(refs);

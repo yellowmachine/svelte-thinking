@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-	import { resolve } from '$app/paths';
 	import { invalidateAll } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
 	import { parseBibtexFile } from '$lib/utils/bibtex';
@@ -35,14 +34,22 @@
 
 	// Group by project (references without a project go under a fallback group)
 	const byProject = $derived.by(() => {
-		const map = new SvelteMap<string, { projectId: string | null; projectTitle: string; bibHref: string | null; refs: (Ref & { externalHref: string | null })[]}>();
+		const map = new SvelteMap<
+			string,
+			{
+				projectId: string | null;
+				projectTitle: string;
+				bibHref: string | null;
+				refs: (Ref & { externalHref: string | null })[];
+			}
+		>();
 		for (const r of filtered) {
 			const key = r.projectId ?? '__none__';
 			if (!map.has(key)) {
 				map.set(key, {
 					projectId: r.projectId,
 					projectTitle: r.projectTitle ?? 'Sin proyecto',
-					bibHref: r.projectId ? resolve(`/projects/${r.projectId}/bib`) : null,
+					bibHref: r.projectId ? `/projects/${r.projectId}/bib` : null,
 					refs: []
 				});
 			}
@@ -61,7 +68,11 @@
 	let importError = $state('');
 
 	function importPreview(): number {
-		try { return parseBibtexFile(importRaw).length; } catch { return 0; }
+		try {
+			return parseBibtexFile(importRaw).length;
+		} catch {
+			return 0;
+		}
 	}
 
 	async function runImport() {
@@ -80,7 +91,7 @@
 		}
 	}
 
-	let deleting = $state(new SvelteSet<string>());
+	let deleting = new SvelteSet<string>();
 
 	async function deleteRef(id: string) {
 		deleting.add(id);
@@ -99,7 +110,7 @@
 			inproceedings: 'Conferencia',
 			incollection: 'Chapter',
 			phdthesis: 'Tesis doctoral',
-			mastersthesis: 'Master\'s thesis',
+			mastersthesis: "Master's thesis",
 			techreport: 'Technical report',
 			misc: 'Miscellaneous'
 		};
@@ -122,7 +133,12 @@
 			</p>
 		</div>
 		<button
-			onclick={() => { showImport = true; importRaw = ''; importResult = null; importError = ''; }}
+			onclick={() => {
+				showImport = true;
+				importRaw = '';
+				importResult = null;
+				importError = '';
+			}}
 			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			Import .bib
@@ -140,7 +156,9 @@
 	</div>
 
 	{#if data.references.length === 0}
-		<div class="rounded-lg border border-paper-border bg-paper p-8 text-center dark:border-dark-paper-border dark:bg-dark-paper">
+		<div
+			class="rounded-lg border border-paper-border bg-paper p-8 text-center dark:border-dark-paper-border dark:bg-dark-paper"
+		>
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				No references yet. Add them from the
 				<strong>Bibliography</strong> section of each project.
@@ -155,20 +173,21 @@
 			{#each byProject as group (group.projectId)}
 				<section>
 					<div class="mb-3 flex items-center justify-between">
-						<h2 class="font-sans text-xs font-semibold uppercase tracking-wider text-ink-muted dark:text-dark-ink-muted">
+						<h2
+							class="font-sans text-xs font-semibold tracking-wider text-ink-muted uppercase dark:text-dark-ink-muted"
+						>
 							{group.projectTitle}
 						</h2>
 						{#if group.bibHref}
-						<a
-							href={resolve(group.bibHref)}
-							class="font-sans text-xs text-accent hover:underline"
-						>
-							Ver en proyecto →
-						</a>
-					{/if}
+							<a href={group.bibHref} class="font-sans text-xs text-accent hover:underline">
+								Ver en proyecto →
+							</a>
+						{/if}
 					</div>
 
-					<div class="divide-y divide-paper-border rounded-lg border border-paper-border dark:divide-dark-paper-border dark:border-dark-paper-border">
+					<div
+						class="divide-y divide-paper-border rounded-lg border border-paper-border dark:divide-dark-paper-border dark:border-dark-paper-border"
+					>
 						{#each group.refs as ref (ref.id)}
 							<div class="px-4 py-3">
 								<div class="flex items-start justify-between gap-3">
@@ -182,19 +201,23 @@
 											</p>
 										{/if}
 										{#if ref.journal || ref.booktitle}
-											<p class="mt-0.5 font-sans text-xs italic text-ink-faint dark:text-dark-ink-faint">
+											<p
+												class="mt-0.5 font-sans text-xs text-ink-faint italic dark:text-dark-ink-faint"
+											>
 												{ref.journal ?? ref.booktitle}
 											</p>
 										{/if}
 									</div>
 									<div class="flex shrink-0 items-center gap-2">
-										<span class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+										<span
+											class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+										>
 											{typeLabel(ref.type)}
 										</span>
 										<code class="font-mono text-[11px] text-accent">@{ref.citeKey}</code>
 										{#if ref.externalHref}
 											<a
-												href={resolve(ref.externalHref)}
+												href={ref.externalHref}
 												target="_blank"
 												rel="noopener noreferrer"
 												class="font-sans text-xs text-accent hover:underline"
@@ -210,8 +233,20 @@
 												aria-label="Borrar referencia"
 												class="rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
 											>
-												<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-													<path d="M2 4h10M5 4V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V4M6 7v3M8 7v3M3 4l.8 7.2A1 1 0 0 0 4.8 12h4.4a1 1 0 0 0 1-.8L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+												<svg
+													width="13"
+													height="13"
+													viewBox="0 0 14 14"
+													fill="none"
+													aria-hidden="true"
+												>
+													<path
+														d="M2 4h10M5 4V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V4M6 7v3M8 7v3M3 4l.8 7.2A1 1 0 0 0 4.8 12h4.4a1 1 0 0 0 1-.8L11 4"
+														stroke="currentColor"
+														stroke-width="1.3"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													/>
 												</svg>
 											</button>
 										{/if}
@@ -233,9 +268,14 @@
 		aria-modal="true"
 		aria-labelledby="import-bib-title"
 	>
-		<div class="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper">
+		<div
+			class="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+		>
 			<div class="flex items-center justify-between">
-				<h2 id="import-bib-title" class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+				<h2
+					id="import-bib-title"
+					class="font-serif text-lg font-semibold text-ink dark:text-dark-ink"
+				>
 					Import .bib
 				</h2>
 				<button
@@ -244,7 +284,12 @@
 					aria-label="Close"
 				>
 					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-						<path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						<path
+							d="M1 1l12 12M13 1L1 13"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
 					</svg>
 				</button>
 			</div>
@@ -263,16 +308,21 @@
 			{/if}
 
 			{#if importResult}
-				<div class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30">
+				<div
+					class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30"
+				>
 					<p class="font-sans text-sm text-green-700 dark:text-green-400">
-						✓ {importResult.inserted} {importResult.inserted === 1 ? 'reference imported' : 'references imported'}
+						✓ {importResult.inserted}
+						{importResult.inserted === 1 ? 'reference imported' : 'references imported'}
 						{#if importResult.skipped > 0}· {importResult.skipped} skipped (already in library){/if}
 					</p>
 				</div>
 			{/if}
 
 			{#if importError}
-				<p class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
+				<p
+					class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
+				>
 					{importError}
 				</p>
 			{/if}

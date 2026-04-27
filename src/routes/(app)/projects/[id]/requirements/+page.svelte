@@ -106,7 +106,6 @@
 	);
 	const progress = $derived(total > 0 ? Math.round((fulfilled / total) * 100) : 0);
 	const allRequiredDone = $derived(requiredFulfilled === requiredTotal && requiredTotal > 0);
-
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-8">
@@ -117,7 +116,13 @@
 			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-				<path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+				<path
+					d="M10 12L6 8l4-4"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
 			</svg>
 			{data.project.title}
 		</a>
@@ -127,7 +132,9 @@
 
 			{#if requirements.length > 0 && data.isOwner}
 				<button
-					onclick={() => { requirements = []; }}
+					onclick={() => {
+						requirements = [];
+					}}
 					class="font-sans text-sm text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Regenerate
@@ -137,7 +144,9 @@
 
 		{#if requirements.length > 0}
 			<div class="mt-4">
-				<div class="mb-1.5 flex items-center justify-between font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+				<div
+					class="mb-1.5 flex items-center justify-between font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+				>
 					<span>{fulfilled} of {total} completed</span>
 					{#if allRequiredDone}
 						<span class="font-medium text-green-600 dark:text-green-400">All required done</span>
@@ -145,9 +154,13 @@
 						<span>{requiredFulfilled} of {requiredTotal} required</span>
 					{/if}
 				</div>
-				<div class="h-1.5 w-full overflow-hidden rounded-full bg-paper-border dark:bg-dark-paper-border">
+				<div
+					class="h-1.5 w-full overflow-hidden rounded-full bg-paper-border dark:bg-dark-paper-border"
+				>
 					<div
-						class="h-full rounded-full transition-all duration-300 {allRequiredDone ? 'bg-green-500' : 'bg-accent'}"
+						class="h-full rounded-full transition-all duration-300 {allRequiredDone
+							? 'bg-green-500'
+							: 'bg-accent'}"
 						style="width: {progress}%"
 					></div>
 				</div>
@@ -157,12 +170,15 @@
 
 	<!-- Generate form (shown when no requirements exist) -->
 	{#if requirements.length === 0}
-		<div class="rounded-xl border border-paper-border bg-paper-ui p-6 dark:border-dark-paper-border dark:bg-dark-paper-ui">
+		<div
+			class="rounded-xl border border-paper-border bg-paper-ui p-6 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+		>
 			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
 				Generate requirements with AI
 			</h2>
 			<p class="mb-4 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				Describe the type of document you want to create and the AI will automatically generate the required sections and checklist.
+				Describe the type of document you want to create and the AI will automatically generate the
+				required sections and checklist.
 			</p>
 
 			<textarea
@@ -186,7 +202,16 @@
 					<Spinner size="sm" />
 					Generating…
 				{:else}
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
 						<path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" />
 					</svg>
 					Generate requirements
@@ -194,7 +219,7 @@
 			</button>
 		</div>
 
-	<!-- Requirements list -->
+		<!-- Requirements list -->
 	{:else}
 		<ul class="space-y-3">
 			{#each requirements as req (req.id)}
@@ -215,10 +240,14 @@
 
 		<!-- Generate PDF CTA -->
 		{#if allRequiredDone}
-			<div class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/20">
+			<div
+				class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/20"
+			>
 				<div class="flex items-center justify-between gap-4">
 					<div>
-						<p class="font-sans text-sm font-semibold text-green-800 dark:text-green-300">Project complete</p>
+						<p class="font-sans text-sm font-semibold text-green-800 dark:text-green-300">
+							Project complete
+						</p>
 						<p class="font-sans text-xs text-green-700 dark:text-green-400">
 							{#if exportingPdf}
 								Compiling with Typst, this may take a few seconds…
@@ -238,10 +267,19 @@
 							<Spinner size="sm" />
 							Generating…
 						{:else}
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-								<polyline points="7 10 12 15 17 10"/>
-								<line x1="12" y1="15" x2="12" y2="3"/>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+								<polyline points="7 10 12 15 17 10" />
+								<line x1="12" y1="15" x2="12" y2="3" />
 							</svg>
 							Export PDF
 						{/if}

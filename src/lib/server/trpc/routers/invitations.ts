@@ -35,103 +35,98 @@ export const invitationsRouter = router({
 	// Invitaciones de un proyecto (solo visible para el owner, RLS filtra)
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
 		return ctx.withRLS((db) =>
-			db
-				.select()
-				.from(projectInvitation)
-				.where(eq(projectInvitation.projectId, projectId))
+			db.select().from(projectInvitation).where(eq(projectInvitation.projectId, projectId))
 		);
 	}),
 
-	create: protectedProcedure
-		.input(createInvitationSchema)
-		.mutation(async ({ ctx, input }) => {
-			return ctx.withRLS(async (db) => {
-				// Verifica que el proyecto existe y el usuario es owner (RLS ya lo garantiza,
-				// pero lo comprobamos explícitamente para dar un error claro)
-				const projects = await db
-					.select({ title: project.title, ownerId: project.ownerId })
-					.from(project)
-					.where(eq(project.id, input.projectId))
-					.limit(1);
+	create: protectedProcedure.input(createInvitationSchema).mutation(async ({ ctx, input }) => {
+		return ctx.withRLS(async (db) => {
+			// Verifica que el proyecto existe y el usuario es owner (RLS ya lo garantiza,
+			// pero lo comprobamos explícitamente para dar un error claro)
+			const projects = await db
+				.select({ title: project.title, ownerId: project.ownerId })
+				.from(project)
+				.where(eq(project.id, input.projectId))
+				.limit(1);
 
-				if (!projects[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-				if (!canInviteToProject(ctx.user.id, projects[0].ownerId)) {
-					throw new TRPCError({ code: 'FORBIDDEN' });
-				}
-				if (input.invitedEmail.toLowerCase() === ctx.user.email.toLowerCase()) {
-					throw new TRPCError({ code: 'BAD_REQUEST', message: 'No puedes invitarte a ti mismo' });
-				}
+			if (!projects[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+			if (!canInviteToProject(ctx.user.id, projects[0].ownerId)) {
+				throw new TRPCError({ code: 'FORBIDDEN' });
+			}
+			if (input.invitedEmail.toLowerCase() === ctx.user.email.toLowerCase()) {
+				throw new TRPCError({ code: 'BAD_REQUEST', message: 'No puedes invitarte a ti mismo' });
+			}
 
-				// Evita reinvitar a alguien que ya es colaborador
-				const alreadyMember = await db
-					.select({ id: projectCollaborator.id })
-					.from(projectCollaborator)
-					.innerJoin(user, eq(user.id, projectCollaborator.userId))
-					.where(
-						and(
-							eq(projectCollaborator.projectId, input.projectId),
-							eq(user.email, input.invitedEmail.toLowerCase())
-						)
+			// Evita reinvitar a alguien que ya es colaborador
+			const alreadyMember = await db
+				.select({ id: projectCollaborator.id })
+				.from(projectCollaborator)
+				.innerJoin(user, eq(user.id, projectCollaborator.userId))
+				.where(
+					and(
+						eq(projectCollaborator.projectId, input.projectId),
+						eq(user.email, input.invitedEmail.toLowerCase())
 					)
-					.limit(1);
+				)
+				.limit(1);
 
-				if (alreadyMember[0]) {
-					throw new TRPCError({
-						code: 'CONFLICT',
-						message: 'This user is already a member of the project'
-					});
-				}
+			if (alreadyMember[0]) {
+				throw new TRPCError({
+					code: 'CONFLICT',
+					message: 'This user is already a member of the project'
+				});
+			}
 
-				// Evita duplicados de invitaciones pendientes
-				const existing = await db
-					.select({ id: projectInvitation.id })
-					.from(projectInvitation)
-					.where(
-						and(
-							eq(projectInvitation.projectId, input.projectId),
-							eq(projectInvitation.invitedEmail, input.invitedEmail),
-							eq(projectInvitation.status, 'pending')
-						)
+			// Evita duplicados de invitaciones pendientes
+			const existing = await db
+				.select({ id: projectInvitation.id })
+				.from(projectInvitation)
+				.where(
+					and(
+						eq(projectInvitation.projectId, input.projectId),
+						eq(projectInvitation.invitedEmail, input.invitedEmail),
+						eq(projectInvitation.status, 'pending')
 					)
-					.limit(1);
+				)
+				.limit(1);
 
-				if (existing[0]) {
-					throw new TRPCError({
-						code: 'CONFLICT',
-						message: 'Ya existe una invitación pendiente para este email'
-					});
-				}
+			if (existing[0]) {
+				throw new TRPCError({
+					code: 'CONFLICT',
+					message: 'Ya existe una invitación pendiente para este email'
+				});
+			}
 
-				const token = generateToken();
+			const token = generateToken();
 
-				const [invitation] = await db
-					.insert(projectInvitation)
-					.values({
-						id: crypto.randomUUID(),
-						projectId: input.projectId,
-						projectTitle: projects[0].title,
-						invitedEmail: input.invitedEmail,
-						invitedBy: ctx.user.id,
-						role: input.role,
-						token,
-						expiresAt: sevenDaysFromNow()
-					})
-					.returning();
-
-				// Envía el email (no bloquea si falla — la invitación ya está en DB)
-				const origin = ctx.event.url.origin;
-				sendProjectInvitation({
-					to: input.invitedEmail,
-					inviterName: ctx.user.name,
+			const [invitation] = await db
+				.insert(projectInvitation)
+				.values({
+					id: crypto.randomUUID(),
+					projectId: input.projectId,
 					projectTitle: projects[0].title,
+					invitedEmail: input.invitedEmail,
+					invitedBy: ctx.user.id,
 					role: input.role,
 					token,
-					origin
-				}).catch(console.error);
+					expiresAt: sevenDaysFromNow()
+				})
+				.returning();
 
-				return invitation;
-			});
-		}),
+			// Envía el email (no bloquea si falla — la invitación ya está en DB)
+			const origin = ctx.event.url.origin;
+			sendProjectInvitation({
+				to: input.invitedEmail,
+				inviterName: ctx.user.name,
+				projectTitle: projects[0].title,
+				role: input.role,
+				token,
+				origin
+			}).catch(console.error);
+
+			return invitation;
+		});
+	}),
 
 	// Pública — devuelve info de la invitación para la página de aceptación
 	// No usa RLS: el token opaco es la autenticación
@@ -245,7 +240,8 @@ export const invitationsRouter = router({
 					.limit(1);
 
 				if (!projects[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-				if (!canInviteToProject(ctx.user.id, projects[0].ownerId)) throw new TRPCError({ code: 'FORBIDDEN' });
+				if (!canInviteToProject(ctx.user.id, projects[0].ownerId))
+					throw new TRPCError({ code: 'FORBIDDEN' });
 
 				const existing = await db
 					.select({ id: projectInvitation.id })
@@ -301,12 +297,7 @@ export const invitationsRouter = router({
 			db
 				.update(projectInvitation)
 				.set({ status: 'cancelled' })
-				.where(
-					and(
-						eq(projectInvitation.id, invitationId),
-						eq(projectInvitation.status, 'pending')
-					)
-				)
+				.where(and(eq(projectInvitation.id, invitationId), eq(projectInvitation.status, 'pending')))
 				.returning({ id: projectInvitation.id })
 		);
 

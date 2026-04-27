@@ -15,7 +15,9 @@
 		</a>
 
 		{#if form?.ok}
-			<div class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper">
+			<div
+				class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
 				<h1 class="mb-3 font-serif text-xl font-semibold text-ink dark:text-dark-ink">
 					Request submitted
 				</h1>
@@ -24,12 +26,15 @@
 				</p>
 			</div>
 		{:else}
-			<div class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper">
+			<div
+				class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
 				<h1 class="mb-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink">
 					Your account does not have access to Scholio yet
 				</h1>
 				<p class="mb-6 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-					Scholio is in closed beta. If you want access to the academic writing platform, request a spot and we will notify you when it is ready.
+					Scholio is in closed beta. If you want access to the academic writing platform, request a
+					spot and we will notify you when it is ready.
 				</p>
 
 				{#if form?.message}
@@ -40,7 +45,10 @@
 
 				<form method="post" action="?/joinWaitlist" class="space-y-4">
 					<div>
-						<label for="name" class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						<label
+							for="name"
+							class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
+						>
 							Nombre
 						</label>
 						<input
@@ -51,7 +59,10 @@
 						/>
 					</div>
 					<div>
-						<label for="email" class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						<label
+							for="email"
+							class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
+						>
 							Email
 						</label>
 						<input
@@ -73,7 +84,10 @@
 			</div>
 
 			<form method="post" action="/logout" class="mt-4 text-center">
-				<button type="submit" class="font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
+				<button
+					type="submit"
+					class="font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+				>
 					Sign out
 				</button>
 			</form>

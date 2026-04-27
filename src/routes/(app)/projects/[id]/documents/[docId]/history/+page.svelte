@@ -61,7 +61,10 @@
 			sharingVersionId = v.id;
 			try {
 				const result = await trpc.versionShares.create.mutate({ versionId: v.id });
-				shares = { ...shares, [v.id]: { id: result.id, token: result.token, expiresAt: result.expiresAt } };
+				shares = {
+					...shares,
+					[v.id]: { id: result.id, token: result.token, expiresAt: result.expiresAt }
+				};
 				token = result.token;
 			} finally {
 				sharingVersionId = null;
@@ -70,7 +73,9 @@
 
 		await navigator.clipboard.writeText(previewUrl(token));
 		copiedVersionId = v.id;
-		setTimeout(() => { copiedVersionId = null; }, 2000);
+		setTimeout(() => {
+			copiedVersionId = null;
+		}, 2000);
 	}
 
 	async function revokeShare(v: Version) {
@@ -263,22 +268,44 @@
 												: 'Crear URL pública para esta versión'}
 											class="flex h-6 w-6 items-center justify-center rounded transition-colors disabled:opacity-40
 												{shares[v.id]
-													? 'text-accent hover:bg-accent/10'
-													: 'text-ink-faint hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui'}"
+												? 'text-accent hover:bg-accent/10'
+												: 'text-ink-faint hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui'}"
 											aria-label={shares[v.id] ? 'Copiar URL pública' : 'Crear URL pública'}
 										>
 											{#if copiedVersionId === v.id}
 												<!-- Check de confirmación -->
-												<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<svg
+													width="13"
+													height="13"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2.5"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													aria-hidden="true"
+												>
 													<polyline points="20 6 9 17 4 12" />
 												</svg>
 											{:else if sharingVersionId === v.id}
 												<Spinner size="sm" />
 											{:else}
 												<!-- Clipboard -->
-												<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<svg
+													width="13"
+													height="13"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													aria-hidden="true"
+												>
 													<rect x="9" y="2" width="6" height="4" rx="1" />
-													<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+													<path
+														d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+													/>
 												</svg>
 											{/if}
 										</button>
@@ -292,7 +319,17 @@
 												class="flex h-6 w-6 items-center justify-center rounded text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-900/20"
 												aria-label="Revocar URL pública"
 											>
-												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<svg
+													width="12"
+													height="12"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													aria-hidden="true"
+												>
 													<circle cx="12" cy="12" r="10" />
 													<line x1="8" y1="12" x2="16" y2="12" />
 												</svg>
@@ -346,7 +383,9 @@
 						v{selectedVersion.versionNumber} · AI summary
 					</p>
 					{#if summaryContent}
-						<p class="font-sans text-sm leading-relaxed text-ink dark:text-dark-ink whitespace-pre-wrap">
+						<p
+							class="font-sans text-sm leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink"
+						>
 							{summaryContent}
 						</p>
 					{:else}

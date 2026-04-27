@@ -19,7 +19,11 @@ export const load: PageServerLoad = async (event) => {
 		),
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: projectDataset.id, filename: projectDataset.filename, mimeType: projectDataset.mimeType })
+				.select({
+					id: projectDataset.id,
+					filename: projectDataset.filename,
+					mimeType: projectDataset.mimeType
+				})
 				.from(projectDataset)
 				.where(eq(projectDataset.projectId, projectId))
 				.orderBy(desc(projectDataset.createdAt))

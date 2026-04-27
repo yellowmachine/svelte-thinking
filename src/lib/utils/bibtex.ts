@@ -153,8 +153,7 @@ export function parseSingleBibtexEntry(raw: string): ParsedBibtex | null {
 
 	// Read cite key (up to first comma or closing brace)
 	let keyEnd = pos;
-	while (keyEnd < trimmed.length && trimmed[keyEnd] !== ',' && trimmed[keyEnd] !== '}')
-		keyEnd++;
+	while (keyEnd < trimmed.length && trimmed[keyEnd] !== ',' && trimmed[keyEnd] !== '}') keyEnd++;
 	const citeKey = trimmed.slice(pos, keyEnd).trim();
 	pos = keyEnd + 1; // skip comma
 
@@ -216,7 +215,7 @@ export function parseSingleBibtexEntry(raw: string): ParsedBibtex | null {
 			} else {
 				// Bare value (number or macro)
 				const start = pos;
-				while (pos < trimmed.length && !/[,}\)\s]/.test(trimmed[pos])) pos++;
+				while (pos < trimmed.length && !/[,})\s]/.test(trimmed[pos])) pos++;
 				value = trimmed.slice(start, pos).trim();
 			}
 		}
@@ -406,3 +405,43 @@ export function generateCiteKey(authors: Author[], year: string): string {
 	const y = year ? year.replace(/\D/g, '').slice(0, 4) : '';
 	return normalized + y || 'ref';
 }
+
+export const TYPE_LABELS: Record<string, string> = {
+	article: 'Article',
+	book: 'Book',
+	inproceedings: 'Conference paper',
+	incollection: 'Book chapter',
+	phdthesis: 'PhD thesis',
+	mastersthesis: "Master's thesis",
+	techreport: 'Technical report',
+	misc: 'Other',
+	magisterial: 'Church document',
+	patristic: 'Patristic / medieval text',
+	scholastic: 'Scholastic work',
+	biblical: 'Biblical text',
+	classical: 'Classical text',
+	earlymodern: 'Early modern work',
+	film: 'Film / TV',
+	interview: 'Interview',
+	newspaper: 'Newspaper article'
+};
+
+export const ALL_TYPES: ReferenceType[] = [
+	'article',
+	'book',
+	'inproceedings',
+	'incollection',
+	'phdthesis',
+	'mastersthesis',
+	'techreport',
+	'misc',
+	'magisterial',
+	'patristic',
+	'scholastic',
+	'biblical',
+	'classical',
+	'earlymodern',
+	'film',
+	'interview',
+	'newspaper'
+];

@@ -78,7 +78,16 @@ async function generateRequirementsFromAI(
 				})
 				.from(userApiKey)
 				.where(eq(userApiKey.userId, userId))
-		) as Promise<{ id: string; encryptedApiKey: string; encryptedDataKey: string; iv: string; authTag: string; enabled: boolean }[]>
+		) as Promise<
+			{
+				id: string;
+				encryptedApiKey: string;
+				encryptedDataKey: string;
+				iv: string;
+				authTag: string;
+				enabled: boolean;
+			}[]
+		>
 	]);
 
 	const taskConfig = parseTaskConfig(profileRows[0]?.aiTaskConfig ?? null);
@@ -90,7 +99,8 @@ async function generateRequirementsFromAI(
 	if (!keyRow) {
 		throw new TRPCError({
 			code: 'PRECONDITION_FAILED',
-			message: 'Configura tu API key de OpenRouter en Ajustes → Asistente IA para generar requisitos.'
+			message:
+				'Configura tu API key de OpenRouter en Ajustes → Asistente IA para generar requisitos.'
 		});
 	}
 
@@ -106,7 +116,10 @@ async function generateRequirementsFromAI(
 
 	const model = taskEntry?.model ?? getDefaultModel('requirements');
 
-	const extraHeaders = { 'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174', 'X-Title': 'Scholio' };
+	const extraHeaders = {
+		'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
+		'X-Title': 'Scholio'
+	};
 
 	const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 		method: 'POST',
@@ -126,13 +139,19 @@ async function generateRequirementsFromAI(
 	});
 
 	if (!res.ok) {
-		throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Error de OpenRouter (${res.status}).` });
+		throw new TRPCError({
+			code: 'INTERNAL_SERVER_ERROR',
+			message: `Error de OpenRouter (${res.status}).`
+		});
 	}
 
 	const data = (await res.json()) as { choices: { message: { content: string } }[] };
 	const raw = data.choices[0]?.message?.content?.trim() ?? '{}';
 
-	type RawResult = { template?: string; requirements?: { name: string; description: string; required: boolean }[] };
+	type RawResult = {
+		template?: string;
+		requirements?: { name: string; description: string; required: boolean }[];
+	};
 	let parsed: RawResult = {};
 	try {
 		parsed = JSON.parse(raw);
@@ -189,7 +208,10 @@ export const requirementsRouter = router({
 
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 			if (!canManageRequirements(ctx.user.id, rows[0].ownerId)) {
-				throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el propietario puede generar requisitos.' });
+				throw new TRPCError({
+					code: 'FORBIDDEN',
+					message: 'Solo el propietario puede generar requisitos.'
+				});
 			}
 
 			// Delete existing requirements before regenerating
@@ -198,10 +220,10 @@ export const requirementsRouter = router({
 			);
 
 			const { template, requirements: aiRequirements } = await generateRequirementsFromAI(
-			input.description,
-			ctx.withRLS as WithRLS,
-			ctx.user.id
-		);
+				input.description,
+				ctx.withRLS as WithRLS,
+				ctx.user.id
+			);
 
 			if (aiRequirements.length === 0) {
 				throw new TRPCError({
@@ -254,18 +276,20 @@ export const requirementsRouter = router({
 		}),
 
 	// Remove fulfillment from a requirement
-	unfulfill: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: requirementId }) => {
-		const rows = (await ctx.withRLS((db) =>
-			db
-				.update(projectRequirement)
-				.set({ fulfilledDocumentId: null })
-				.where(eq(projectRequirement.id, requirementId))
-				.returning({ id: projectRequirement.id })
-		)) as { id: string }[];
+	unfulfill: protectedProcedure
+		.input(z.string())
+		.mutation(async ({ ctx, input: requirementId }) => {
+			const rows = (await ctx.withRLS((db) =>
+				db
+					.update(projectRequirement)
+					.set({ fulfilledDocumentId: null })
+					.where(eq(projectRequirement.id, requirementId))
+					.returning({ id: projectRequirement.id })
+			)) as { id: string }[];
 
-		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-		return { id: requirementId };
-	}),
+			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+			return { id: requirementId };
+		}),
 
 	// Delete a single requirement
 	delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input: requirementId }) => {

@@ -13,7 +13,9 @@ export type OrgInvitationStatus = 'pending' | 'accepted' | 'rejected' | 'expired
 // Guards
 // ---------------------------------------------------------------------------
 
-export function isInvitationPending(status: ProjectInvitationStatus | OrgInvitationStatus): boolean {
+export function isInvitationPending(
+	status: ProjectInvitationStatus | OrgInvitationStatus
+): boolean {
 	return status === 'pending';
 }
 
@@ -21,6 +23,8 @@ export function isInvitationExpired(expiresAt: Date): boolean {
 	return new Date(expiresAt) < new Date();
 }
 
-export function isInvitationAccepted(status: ProjectInvitationStatus | OrgInvitationStatus): boolean {
+export function isInvitationAccepted(
+	status: ProjectInvitationStatus | OrgInvitationStatus
+): boolean {
 	return status === 'accepted';
 }

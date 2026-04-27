@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	isInvitationPending,
-	isInvitationExpired,
-	isInvitationAccepted
-} from './invitation';
+import { isInvitationPending, isInvitationExpired, isInvitationAccepted } from './invitation';
 
 describe('isInvitationPending', () => {
 	it('returns true for pending status', () => {

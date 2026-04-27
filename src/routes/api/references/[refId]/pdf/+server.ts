@@ -31,7 +31,9 @@ export const GET: RequestHandler = async (event) => {
 	const response = await client.send(new GetObjectCommand({ Bucket: s3.bucket, Key: ref.pdfKey }));
 	if (!response.Body) error(502);
 
-	const bytes = await (response.Body as unknown as { transformToByteArray(): Promise<Uint8Array> }).transformToByteArray();
+	const bytes = await (
+		response.Body as unknown as { transformToByteArray(): Promise<Uint8Array> }
+	).transformToByteArray();
 
 	return new Response(bytes.buffer as ArrayBuffer, {
 		headers: {

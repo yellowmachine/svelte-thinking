@@ -51,10 +51,9 @@
 	}
 
 	async function handleDelete(datasetId: string) {
-		const res = await fetch(
-			`/api/projects/${data.project.id}/datasets?datasetId=${datasetId}`,
-			{ method: 'DELETE' }
-		);
+		const res = await fetch(`/api/projects/${data.project.id}/datasets?datasetId=${datasetId}`, {
+			method: 'DELETE'
+		});
 
 		if (res.ok) {
 			await invalidateAll();
@@ -101,7 +100,9 @@
 		{:else}
 			<table class="w-full text-sm">
 				<thead>
-					<tr class="border-b border-paper-border text-left text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint">
+					<tr
+						class="border-b border-paper-border text-left text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
+					>
 						<th class="pb-2 font-medium">File</th>
 						<th class="pb-2 font-medium">Size</th>
 						<th class="pb-2 font-medium">Uploaded</th>
@@ -112,8 +113,12 @@
 					{#each datasets as dataset (dataset.id)}
 						<tr class="border-b border-paper-border dark:border-dark-paper-border">
 							<td class="py-3 font-mono text-ink dark:text-dark-ink">{dataset.filename}</td>
-							<td class="py-3 text-ink-faint dark:text-dark-ink-faint">{formatSize(dataset.size)}</td>
-							<td class="py-3 text-ink-faint dark:text-dark-ink-faint">{formatDate(dataset.createdAt)}</td>
+							<td class="py-3 text-ink-faint dark:text-dark-ink-faint"
+								>{formatSize(dataset.size)}</td
+							>
+							<td class="py-3 text-ink-faint dark:text-dark-ink-faint"
+								>{formatDate(dataset.createdAt)}</td
+							>
 							<td class="py-3 text-right">
 								{#if dataset.uploadedBy === data.userId}
 									<button

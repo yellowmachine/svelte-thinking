@@ -19,19 +19,36 @@ function guessMime(filename: string): string {
 }
 
 const VALID_DOC_TYPES = new Set([
-	'paper', 'notes', 'outline', 'bibliography',
-	'supplementary', 'book', 'chapter', 'reading_note'
+	'paper',
+	'notes',
+	'outline',
+	'bibliography',
+	'supplementary',
+	'book',
+	'chapter',
+	'reading_note'
 ]);
 
-const VALID_PROJECT_STATUSES = new Set([
-	'draft', 'active', 'review', 'published', 'archived'
-]);
+const VALID_PROJECT_STATUSES = new Set(['draft', 'active', 'review', 'published', 'archived']);
 
 const VALID_REF_TYPES = new Set([
-	'article', 'book', 'inproceedings', 'incollection', 'phdthesis',
-	'mastersthesis', 'techreport', 'misc', 'magisterial', 'patristic',
-	'scholastic', 'biblical', 'classical', 'earlymodern',
-	'film', 'interview', 'newspaper'
+	'article',
+	'book',
+	'inproceedings',
+	'incollection',
+	'phdthesis',
+	'mastersthesis',
+	'techreport',
+	'misc',
+	'magisterial',
+	'patristic',
+	'scholastic',
+	'biblical',
+	'classical',
+	'earlymodern',
+	'film',
+	'interview',
+	'newspaper'
 ]);
 
 export const POST: RequestHandler = async (event) => {
@@ -44,7 +61,8 @@ export const POST: RequestHandler = async (event) => {
 	const formData = await event.request.formData();
 	const file = formData.get('file');
 	if (!(file instanceof File)) error(400, 'Se esperaba un campo "file"');
-	if (!file.name.endsWith('.scholio') && !file.name.endsWith('.zip')) error(400, 'Expected a .scholio file');
+	if (!file.name.endsWith('.scholio') && !file.name.endsWith('.zip'))
+		error(400, 'Expected a .scholio file');
 
 	const buffer = new Uint8Array(await file.arrayBuffer());
 	if (buffer.byteLength > MAX_SIZE) error(413, 'El archivo es demasiado grande (máx. 200 MB)');
@@ -120,7 +138,7 @@ export const POST: RequestHandler = async (event) => {
 					userId: user.id,
 					citeKey: String(r.cite_key ?? crypto.randomUUID()),
 					type: VALID_REF_TYPES.has(r.type as string)
-						? (r.type as typeof reference.$inferInsert['type'])
+						? (r.type as (typeof reference.$inferInsert)['type'])
 						: 'misc',
 					title: String(r.title ?? 'Sin título'),
 					authors: Array.isArray(r.authors) ? r.authors : [],
@@ -140,9 +158,9 @@ export const POST: RequestHandler = async (event) => {
 					note: typeof r.note === 'string' ? r.note : null
 				}));
 			await tx.insert(reference).values(refRows);
-			await tx.insert(projectReference).values(
-				refRows.map((r) => ({ referenceId: r.id, projectId }))
-			);
+			await tx
+				.insert(projectReference)
+				.values(refRows.map((r) => ({ referenceId: r.id, projectId })));
 		}
 
 		// 3. Documents + versions
@@ -151,7 +169,9 @@ export const POST: RequestHandler = async (event) => {
 			if (!r || typeof r !== 'object') continue;
 
 			const docId = crypto.randomUUID();
-			const rawVersions = Array.isArray(r.versions) ? r.versions as Record<string, unknown>[] : [];
+			const rawVersions = Array.isArray(r.versions)
+				? (r.versions as Record<string, unknown>[])
+				: [];
 
 			// Create versions first so we can set currentVersionId
 			const versionRows = rawVersions.map((v, i) => ({
@@ -185,7 +205,7 @@ export const POST: RequestHandler = async (event) => {
 				projectId,
 				title: typeof r.title === 'string' ? r.title : 'Sin título',
 				type: VALID_DOC_TYPES.has(r.type as string)
-					? (r.type as typeof document.$inferInsert['type'])
+					? (r.type as (typeof document.$inferInsert)['type'])
 					: 'notes',
 				isPublic: r.is_public === true,
 				isPrivate: false,
@@ -200,7 +220,7 @@ export const POST: RequestHandler = async (event) => {
 
 			// 4. Comments (top-level first, then replies)
 			const rawComments = Array.isArray(r.comments)
-				? r.comments as Record<string, unknown>[]
+				? (r.comments as Record<string, unknown>[])
 				: [];
 
 			for (const rc of rawComments) {
@@ -220,7 +240,7 @@ export const POST: RequestHandler = async (event) => {
 				});
 
 				const rawReplies = Array.isArray(rc.replies)
-					? rc.replies as Record<string, unknown>[]
+					? (rc.replies as Record<string, unknown>[])
 					: [];
 				for (const rr of rawReplies) {
 					if (!rr || typeof rr !== 'object') continue;

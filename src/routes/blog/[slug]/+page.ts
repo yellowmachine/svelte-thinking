@@ -10,8 +10,9 @@ interface PostMeta {
 }
 
 export const load: PageLoad = async ({ params }) => {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const modules = import.meta.glob<{ default: ComponentType; metadata: PostMeta }>('/src/posts/*.md');
+	const modules = import.meta.glob<{ default: ComponentType; metadata: PostMeta }>(
+		'/src/posts/*.md'
+	);
 
 	const entry = Object.entries(modules).find(([path]) => {
 		const filename = path.split('/').at(-1)!;

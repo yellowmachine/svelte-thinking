@@ -12,12 +12,12 @@ services:
       - postgres_prod_data:/var/lib/postgresql/data
       - ./scripts/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
       interval: 10s
       timeout: 5s
       retries: 5
     ports:
-      - "5432:5432"
+      - '5432:5432'
     networks:
       - scholio-network
 
@@ -72,9 +72,9 @@ services:
       # Notifications
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
     ports:
-    - "3000:3000"
+      - '3000:3000'
     healthcheck:
-      test: ["CMD-SHELL", "exit 0"]
+      test: ['CMD-SHELL', 'exit 0']
       interval: 30s
       timeout: 5s
       retries: 1
@@ -89,7 +89,7 @@ services:
       scholio:
         condition: service_healthy
     ports:
-    - "3001:3000"
+      - '3001:3000'
     environment:
       NODE_ENV: production
       ORIGIN: ${LIBRARIAN_ORIGIN}
@@ -153,7 +153,7 @@ services:
     volumes:
       - redis_prod_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -162,11 +162,11 @@ services:
 
   rustfs:
     security_opt:
-      - "no-new-privileges:true"
+      - 'no-new-privileges:true'
     image: rustfs/rustfs:latest
     ports:
-      - "9000:9000" # S3 API port
-      - "9001:9001" # Console port
+      - '9000:9000' # S3 API port
+      - '9001:9001' # Console port
     environment:
       - RUSTFS_VOLUMES=/data/rustfs{0..3} # Define 4 storage volumes
       - RUSTFS_ADDRESS=0.0.0.0:9000
@@ -189,10 +189,10 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "sh",
-          "-c",
-          "curl -f http://127.0.0.1:9000/health && curl -f http://127.0.0.1:9001/rustfs/console/health",
+          'CMD',
+          'sh',
+          '-c',
+          'curl -f http://127.0.0.1:9000/health && curl -f http://127.0.0.1:9001/rustfs/console/health'
         ]
       interval: 30s
       timeout: 10s

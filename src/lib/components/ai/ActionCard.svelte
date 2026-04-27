@@ -97,26 +97,46 @@
 			>
 				{#if status === 'done'}
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+						<path
+							d="M20 6L9 17l-5-5"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
 					</svg>
 				{:else if action.type === 'create_issue'}
 					<!-- Issue icon: circle with dot -->
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
-						<circle cx="12" cy="12" r="3" fill="currentColor"/>
+						<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" />
+						<circle cx="12" cy="12" r="3" fill="currentColor" />
 					</svg>
 				{:else}
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-						<polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						<path
+							d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+						<polyline
+							points="14 2 14 8 20 8"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
 					</svg>
 				{/if}
 			</div>
 
 			<!-- Info -->
 			<div class="min-w-0 flex-1">
-				<p class="font-sans text-[11px] font-semibold uppercase tracking-wide
-					{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent'}">
+				<p
+					class="font-sans text-[11px] font-semibold tracking-wide uppercase
+					{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent'}"
+				>
 					{#if status === 'done'}
 						{action.type === 'create_issue' ? 'Issue created' : 'Document created'}
 					{:else}
@@ -129,8 +149,10 @@
 				<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 					{#if action.type === 'create_document'}
 						{docTypeLabel[action.docType] ?? action.docType}
-						{#if wordCount > 0} · ~{wordCount.toLocaleString()} words{/if}
-						{#if action.requirementId} · links requirement{/if}
+						{#if wordCount > 0}
+							· ~{wordCount.toLocaleString()} words{/if}
+						{#if action.requirementId}
+							· links requirement{/if}
 					{:else}
 						Issue · {priorityLabel[action.priority ?? 'medium']} priority
 					{/if}
@@ -139,15 +161,23 @@
 		</div>
 
 		<!-- Actions -->
-		<div class="flex justify-end gap-2 px-4 pb-3 pt-3">
+		<div class="flex justify-end gap-2 px-4 pt-3 pb-3">
 			{#if status === 'done'}
 				<a
-					href="{base}/projects/{projectId}/{action.type === 'create_issue' ? 'issues' : 'documents'}/{createdId}"
+					href="{base}/projects/{projectId}/{action.type === 'create_issue'
+						? 'issues'
+						: 'documents'}/{createdId}"
 					class="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
 				>
 					{action.type === 'create_issue' ? 'Open issue' : 'Open document'}
 					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						<path
+							d="M5 12h14M12 5l7 7-7 7"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
 					</svg>
 				</a>
 			{:else}
@@ -168,7 +198,13 @@
 						Creating…
 					{:else}
 						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path
+								d="M20 6L9 17l-5-5"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
 						</svg>
 						Create
 					{/if}

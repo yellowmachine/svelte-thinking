@@ -38,12 +38,9 @@ export const SUPPORTED_LANGUAGES = [
 const OPEN_IN: Record<string, (code: string) => string | null> = {
 	python: (code) =>
 		`https://pythontutor.com/render.html#code=${encodeURIComponent(code)}&mode=display&origin=opt-frontend.js&py=3`,
-	javascript: (code) =>
-		`https://jsfiddle.net/?js=${encodeURIComponent(code)}`,
-	rust: (code) =>
-		`https://play.rust-lang.org/?code=${encodeURIComponent(code)}&edition=2021`,
-	go: (code) =>
-		`https://go.dev/play/?code=${encodeURIComponent(code)}`,
+	javascript: (code) => `https://jsfiddle.net/?js=${encodeURIComponent(code)}`,
+	rust: (code) => `https://play.rust-lang.org/?code=${encodeURIComponent(code)}&edition=2021`,
+	go: (code) => `https://go.dev/play/?code=${encodeURIComponent(code)}`,
 	cpp: (code) =>
 		`https://godbolt.org/#g:!((g:!((g:!((h:codeEditor,i:(filename:'1',fontScale:14,fontUsePx:'0',j:1,lang:c%2B%2B,selection:(endColumn:1,endLineNumber:1,positionColumn:1,positionLineNumber:1,selectionStartColumn:1,selectionStartLineNumber:1,startColumn:1,startLineNumber:1),source:'${encodeURIComponent(code)}'),l:'5',n:'0',o:'C%2B%2B+source+%231',t:'0')),k:50,l:'4',n:'0',o:'',s:0,t:'0')),version:4)`,
 	c: (code) =>

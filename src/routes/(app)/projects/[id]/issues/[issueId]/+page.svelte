@@ -103,8 +103,24 @@
 	}
 
 	// ── Comments ─────────────────────────────────────────────────────────────
-	type Reply = { id: string; parentCommentId: string | null; authorId: string; authorName: string; content: string; createdAt: Date };
-	type CommentThread = { id: string; issueId: string; authorId: string; authorName: string; content: string; createdAt: Date; updatedAt: Date; replies: Reply[] };
+	type Reply = {
+		id: string;
+		parentCommentId: string | null;
+		authorId: string;
+		authorName: string;
+		content: string;
+		createdAt: Date;
+	};
+	type CommentThread = {
+		id: string;
+		issueId: string;
+		authorId: string;
+		authorName: string;
+		content: string;
+		createdAt: Date;
+		updatedAt: Date;
+		replies: Reply[];
+	};
 
 	let comments = $state<CommentThread[]>([]);
 	let commentsLoading = $state(true);
@@ -120,7 +136,7 @@
 	async function loadComments() {
 		commentsLoading = true;
 		try {
-			comments = await trpc.issues.listComments.query(data.issue.id) as CommentThread[];
+			comments = (await trpc.issues.listComments.query(data.issue.id)) as CommentThread[];
 		} finally {
 			commentsLoading = false;
 		}
@@ -131,11 +147,11 @@
 		if (!text || submittingComment) return;
 		submittingComment = true;
 		try {
-			const created = await trpc.issues.addComment.mutate({
+			const created = (await trpc.issues.addComment.mutate({
 				issueId: data.issue.id,
 				projectId: data.projectId,
 				content: text
-			}) as CommentThread;
+			})) as CommentThread;
 			comments = [...comments, created];
 			newCommentText = '';
 		} finally {
@@ -178,7 +194,11 @@
 	}
 
 	function formatCommentDate(date: Date | string) {
-		return new Date(date).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
+		return new Date(date).toLocaleDateString('en', {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric'
+		});
 	}
 
 	$effect(() => {
@@ -229,11 +249,17 @@
 <div class="mx-auto max-w-3xl px-4 py-8" onkeydown={editing ? onSaveKeydown : undefined}>
 	<!-- Breadcrumb -->
 	<div class="mb-6 flex items-center gap-2 font-sans text-sm text-zinc-500 dark:text-zinc-400">
-		<a href={resolve(`/projects/${data.projectId}`)} class="hover:text-zinc-700 dark:hover:text-zinc-200">
+		<a
+			href={resolve(`/projects/${data.projectId}`)}
+			class="hover:text-zinc-700 dark:hover:text-zinc-200"
+		>
 			{data.projectTitle}
 		</a>
 		<span>/</span>
-		<a href={resolve(`/projects/${data.projectId}/issues`)} class="hover:text-zinc-700 dark:hover:text-zinc-200">
+		<a
+			href={resolve(`/projects/${data.projectId}/issues`)}
+			class="hover:text-zinc-700 dark:hover:text-zinc-200"
+		>
 			Issues
 		</a>
 	</div>
@@ -243,7 +269,9 @@
 		{#if editing}
 			<input
 				bind:value={editTitle}
-				onkeydown={(e) => { if (e.key === 'Escape') cancelEdit(); }}
+				onkeydown={(e) => {
+					if (e.key === 'Escape') cancelEdit();
+				}}
 				class="w-full rounded border border-zinc-300 bg-transparent px-2 py-1 font-sans text-2xl font-semibold text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-600 dark:text-zinc-100"
 			/>
 		{:else}
@@ -259,8 +287,20 @@
 						class="mt-1 shrink-0 rounded p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-							<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+							<path
+								d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+							<path
+								d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
 						</svg>
 					</button>
 				{/if}
@@ -276,7 +316,9 @@
 			<select
 				value={status}
 				onchange={(e) => updateStatus((e.currentTarget as HTMLSelectElement).value as IssueStatus)}
-				class="rounded-full border-0 px-2.5 py-0.5 font-sans text-xs font-medium outline-none cursor-pointer {STATUS_CLASS[status]}"
+				class="cursor-pointer rounded-full border-0 px-2.5 py-0.5 font-sans text-xs font-medium outline-none {STATUS_CLASS[
+					status
+				]}"
 			>
 				{#each STATUS_OPTIONS as opt (opt.value)}
 					<option value={opt.value}>{opt.label}</option>
@@ -291,8 +333,11 @@
 			<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500">Priority</span>
 			<select
 				value={priority}
-				onchange={(e) => updatePriority((e.currentTarget as HTMLSelectElement).value as IssuePriority)}
-				class="bg-transparent font-sans text-xs font-semibold uppercase tracking-wide outline-none cursor-pointer {PRIORITY_CLASS[priority]}"
+				onchange={(e) =>
+					updatePriority((e.currentTarget as HTMLSelectElement).value as IssuePriority)}
+				class="cursor-pointer bg-transparent font-sans text-xs font-semibold tracking-wide uppercase outline-none {PRIORITY_CLASS[
+					priority
+				]}"
 			>
 				{#each PRIORITY_OPTIONS as opt (opt.value)}
 					<option value={opt.value}>{opt.label}</option>
@@ -301,7 +346,9 @@
 		</div>
 
 		{#if data.issue.isPrivate}
-			<span class="rounded-full bg-zinc-100 px-2 py-0.5 font-sans text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+			<span
+				class="rounded-full bg-zinc-100 px-2 py-0.5 font-sans text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+			>
 				Private
 			</span>
 		{/if}
@@ -327,7 +374,9 @@
 			{:else if canDelete}
 				<button
 					type="button"
-					onclick={() => { showDeleteDialog = true; }}
+					onclick={() => {
+						showDeleteDialog = true;
+					}}
 					class="font-sans text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 				>
 					Delete
@@ -345,14 +394,14 @@
 		<div class="rounded-lg border border-zinc-200 dark:border-zinc-700">
 			<MarkdownEditor
 				value={editContent}
-				ondocchange={(val) => { editContent = val; }}
+				ondocchange={(val) => {
+					editContent = val;
+				}}
 			/>
 		</div>
-		<p class="mt-2 font-sans text-xs text-zinc-400 dark:text-zinc-500">
-			⌘S / Ctrl+S to save
-		</p>
+		<p class="mt-2 font-sans text-xs text-zinc-400 dark:text-zinc-500">⌘S / Ctrl+S to save</p>
 	{:else if savedContent}
-		<div class="prose prose-zinc max-w-none dark:prose-invert">
+		<div class="prose max-w-none prose-zinc dark:prose-invert">
 			<MarkdownPreview content={savedContent} />
 		</div>
 	{:else if data.canEdit}
@@ -370,7 +419,9 @@
 	<!-- Comments -->
 	<div class="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800">
 		<h2 class="mb-6 font-sans text-sm font-semibold text-zinc-600 dark:text-zinc-400">
-			Comments {#if comments.length > 0}<span class="font-normal text-zinc-400 dark:text-zinc-500">({comments.length})</span>{/if}
+			Comments {#if comments.length > 0}<span class="font-normal text-zinc-400 dark:text-zinc-500"
+					>({comments.length})</span
+				>{/if}
 		</h2>
 
 		{#if commentsLoading}
@@ -382,24 +433,32 @@
 				{#each comments as c (c.id)}
 					<div class="flex gap-3">
 						<!-- Avatar -->
-						<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 font-sans text-xs font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+						<div
+							class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 font-sans text-xs font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
+						>
 							{(c.authorName ?? '?')[0].toUpperCase()}
 						</div>
 						<div class="min-w-0 flex-1">
 							<!-- Header -->
 							<div class="flex items-baseline gap-2">
-								<span class="font-sans text-sm font-medium text-zinc-800 dark:text-zinc-200">{c.authorName}</span>
-								<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500">{formatCommentDate(c.createdAt)}</span>
+								<span class="font-sans text-sm font-medium text-zinc-800 dark:text-zinc-200"
+									>{c.authorName}</span
+								>
+								<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500"
+									>{formatCommentDate(c.createdAt)}</span
+								>
 							</div>
 							<!-- Body -->
-							<div class="prose prose-zinc prose-sm mt-1 max-w-none dark:prose-invert">
+							<div class="prose prose-sm mt-1 max-w-none prose-zinc dark:prose-invert">
 								<MarkdownPreview content={c.content} />
 							</div>
 							<!-- Actions -->
 							<div class="mt-1.5 flex items-center gap-3">
 								<button
 									type="button"
-									onclick={() => { replyOpen = { ...replyOpen, [c.id]: !replyOpen[c.id] }; }}
+									onclick={() => {
+										replyOpen = { ...replyOpen, [c.id]: !replyOpen[c.id] };
+									}}
 									class="font-sans text-xs text-zinc-400 transition-colors hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
 								>
 									Reply
@@ -417,18 +476,27 @@
 
 							<!-- Replies -->
 							{#if c.replies.length > 0}
-								<div class="mt-4 flex flex-col gap-4 border-l-2 border-zinc-100 pl-4 dark:border-zinc-800">
+								<div
+									class="mt-4 flex flex-col gap-4 border-l-2 border-zinc-100 pl-4 dark:border-zinc-800"
+								>
 									{#each c.replies as r (r.id)}
 										<div class="flex gap-2.5">
-											<div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 font-sans text-[11px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+											<div
+												class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 font-sans text-[11px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+											>
 												{(r.authorName ?? '?')[0].toUpperCase()}
 											</div>
 											<div class="min-w-0 flex-1">
 												<div class="flex items-baseline gap-2">
-													<span class="font-sans text-sm font-medium text-zinc-800 dark:text-zinc-200">{r.authorName}</span>
-													<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500">{formatCommentDate(r.createdAt)}</span>
+													<span
+														class="font-sans text-sm font-medium text-zinc-800 dark:text-zinc-200"
+														>{r.authorName}</span
+													>
+													<span class="font-sans text-xs text-zinc-400 dark:text-zinc-500"
+														>{formatCommentDate(r.createdAt)}</span
+													>
 												</div>
-												<div class="prose prose-zinc prose-sm mt-0.5 max-w-none dark:prose-invert">
+												<div class="prose prose-sm mt-0.5 max-w-none prose-zinc dark:prose-invert">
 													<MarkdownPreview content={r.content} />
 												</div>
 												{#if r.authorId === data.currentUserId}
@@ -466,7 +534,9 @@
 										</button>
 										<button
 											type="button"
-											onclick={() => { replyOpen = { ...replyOpen, [c.id]: false }; }}
+											onclick={() => {
+												replyOpen = { ...replyOpen, [c.id]: false };
+											}}
 											class="rounded-md px-3 py-1.5 font-sans text-xs text-zinc-500 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
 										>
 											Cancel
@@ -482,7 +552,9 @@
 
 		<!-- New comment -->
 		<div class="mt-8 flex gap-3">
-			<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 font-sans text-xs font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+			<div
+				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 font-sans text-xs font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
+			>
 				You
 			</div>
 			<div class="flex-1">
@@ -511,7 +583,9 @@
 	open={showDeleteDialog}
 	label="this issue"
 	warning="The issue and its content will be permanently deleted."
-	deleting={deleting}
+	{deleting}
 	onconfirm={handleDelete}
-	oncancel={() => { showDeleteDialog = false; }}
+	oncancel={() => {
+		showDeleteDialog = false;
+	}}
 />

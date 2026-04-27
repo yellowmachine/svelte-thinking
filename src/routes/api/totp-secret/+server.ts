@@ -30,7 +30,7 @@ export const POST: RequestHandler = async (event) => {
 	if (!row[0]) error(404, 'Secreto 2FA no encontrado');
 
 	const { symmetricDecrypt } = await import('better-auth/crypto');
-	const secret = await symmetricDecrypt({ key: env.BETTER_AUTH_SECRET, data: row[0].secret });
+	const secret = await symmetricDecrypt({ key: env.BETTER_AUTH_SECRET!, data: row[0].secret });
 
 	const { createOTP } = await import('@better-auth/utils/otp');
 	const otp = createOTP(secret, { digits: 6, period: 30 });

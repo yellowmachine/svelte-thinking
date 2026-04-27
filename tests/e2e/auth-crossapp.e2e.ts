@@ -158,7 +158,9 @@ test.describe('Librarian user → Scholio cross-app flow', () => {
 	});
 
 	// Case 2
-	test('Librarian user submits waitlist from /no-access with pre-filled email', async ({ page }) => {
+	test('Librarian user submits waitlist from /no-access with pre-filled email', async ({
+		page
+	}) => {
 		await page.goto('/login');
 		await page.fill('input[name="email"]', LIBRARIAN_USER.email);
 		await page.fill('input[name="password"]', LIBRARIAN_USER.password);
@@ -175,7 +177,9 @@ test.describe('Librarian user → Scholio cross-app flow', () => {
 		await page.getByRole('button', { name: /request access/i }).click();
 
 		// Success state shown
-		await expect(page.getByText(/waitlist|access|received|request/i)).toBeVisible({ timeout: 5000 });
+		await expect(page.getByText(/waitlist|access|received|request/i)).toBeVisible({
+			timeout: 5000
+		});
 
 		// Verify record is in DB with the Librarian note
 		const sql = postgres(TEST_DB_URL);
@@ -188,7 +192,9 @@ test.describe('Librarian user → Scholio cross-app flow', () => {
 	});
 
 	// Case 3
-	test('Registration link with existing email creates user_profile and invalidates token', async ({ page }) => {
+	test('Registration link with existing email creates user_profile and invalidates token', async ({
+		page
+	}) => {
 		const token = await createWaitlistToken(LIBRARIAN_USER.email, LIBRARIAN_USER.name);
 
 		await page.goto(`/register?token=${token}`);
@@ -213,11 +219,15 @@ test.describe('Librarian user → Scholio cross-app flow', () => {
 	});
 
 	// Case 4
-	test('Login after cross-app registration shows welcome message and reaches /projects', async ({ page }) => {
+	test('Login after cross-app registration shows welcome message and reaches /projects', async ({
+		page
+	}) => {
 		await page.goto(`/login?welcome=1&email=${encodeURIComponent(LIBRARIAN_USER.email)}`);
 
 		// Welcome message visible
-		await expect(page.getByText('Your Scholio access is ready. Sign in with your credentials.')).toBeVisible();
+		await expect(
+			page.getByText('Your Scholio access is ready. Sign in with your credentials.')
+		).toBeVisible();
 
 		// Email pre-filled
 		await expect(page.locator('input[name="email"]')).toHaveValue(LIBRARIAN_USER.email);
@@ -245,7 +255,9 @@ test.describe('New Scholio user — full waitlist → register → login flow', 
 		await page.fill('input[name="email"]', NEW_SCHOLIO_USER.email);
 		await page.getByRole('button', { name: /request access/i }).click();
 
-		await expect(page.getByText(/request received|received|waitlist/i)).toBeVisible({ timeout: 5000 });
+		await expect(page.getByText(/request received|received|waitlist/i)).toBeVisible({
+			timeout: 5000
+		});
 
 		// Step 2: simulate admin approval — create token directly in DB
 		const token = await createWaitlistToken(NEW_SCHOLIO_USER.email, NEW_SCHOLIO_USER.name);

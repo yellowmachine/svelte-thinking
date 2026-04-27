@@ -112,7 +112,7 @@ El panel "Mencionado en" del editor muestra los backlinks entrantes al documento
 
 El problema de la justificación epistémica ocupa un lugar central en la
 filosofía analítica desde al menos [[Conocimiento y creencia]] [@ayer1956].
-La formulación clásica del conocimiento como *creencia verdadera justificada*
+La formulación clásica del conocimiento como _creencia verdadera justificada_
 fue cuestionada definitivamente por Edmund Gettier [@gettier1963].
 
 ## Formalización
@@ -152,17 +152,17 @@ Las soluciones contemporáneas al problema se discuten en
 
 ## Stack técnico
 
-| Capa | Tecnología |
-|---|---|
-| Frontend | SvelteKit 5, Svelte 5 (runes), TailwindCSS |
-| API | tRPC v11 con procedimientos protegidos |
+| Capa          | Tecnología                                           |
+| ------------- | ---------------------------------------------------- |
+| Frontend      | SvelteKit 5, Svelte 5 (runes), TailwindCSS           |
+| API           | tRPC v11 con procedimientos protegidos               |
 | Base de datos | PostgreSQL con Row-Level Security (RLS), Drizzle ORM |
-| Auth | Better Auth (email + GitHub OAuth) |
-| Storage | MinIO (S3-compatible) |
-| IA | Anthropic SDK — Claude Haiku 4.5 |
-| Pagos | Stripe (Checkout + Customer Portal + Webhooks) |
-| Errores | Sentry |
-| Runtime | Bun |
+| Auth          | Better Auth (email + GitHub OAuth)                   |
+| Storage       | MinIO (S3-compatible)                                |
+| IA            | Anthropic SDK — Claude Haiku 4.5                     |
+| Pagos         | Stripe (Checkout + Customer Portal + Webhooks)       |
+| Errores       | Sentry                                               |
+| Runtime       | Bun                                                  |
 
 ---
 
@@ -256,11 +256,11 @@ docker image prune -af
 
 ```json
 {
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "50m",
-    "max-file": "3"
-  }
+	"log-driver": "json-file",
+	"log-opts": {
+		"max-size": "50m",
+		"max-file": "3"
+	}
 }
 ```
 
@@ -283,21 +283,21 @@ docker system prune -af
 
 Todas están documentadas en `.env.example`. Las imprescindibles para producción:
 
-| Variable | Descripción |
-|---|---|
-| `DATABASE_URL` | Conexión a PostgreSQL (rol app, con RLS) |
-| `MIGRATION_DATABASE_URL` | Conexión a PostgreSQL (superusuario, solo migraciones) |
-| `BETTER_AUTH_SECRET` | Secreto para sesiones (generar con `openssl rand -base64 32`) |
-| `ANTHROPIC_API_KEY` | API key de Anthropic para el asistente IA |
-| `STORAGE_ENDPOINT` | Endpoint MinIO / S3 |
-| `STORAGE_ACCESS_KEY` | Access key de MinIO / S3 |
-| `STORAGE_SECRET_KEY` | Secret key de MinIO / S3 |
-| `STRIPE_SECRET_KEY` | API key secreta de Stripe |
-| `STRIPE_WEBHOOK_SECRET` | Secreto del webhook de Stripe |
-| `STRIPE_PRICE_PRO_MONTHLY` | Price ID del plan Pro en Stripe |
-| `STRIPE_PRICE_TEAM_MONTHLY` | Price ID del plan Team en Stripe |
-| `SENTRY_DSN` | DSN de Sentry (servidor) |
-| `PUBLIC_SENTRY_DSN` | DSN de Sentry (cliente, se expone al navegador) |
+| Variable                    | Descripción                                                   |
+| --------------------------- | ------------------------------------------------------------- |
+| `DATABASE_URL`              | Conexión a PostgreSQL (rol app, con RLS)                      |
+| `MIGRATION_DATABASE_URL`    | Conexión a PostgreSQL (superusuario, solo migraciones)        |
+| `BETTER_AUTH_SECRET`        | Secreto para sesiones (generar con `openssl rand -base64 32`) |
+| `ANTHROPIC_API_KEY`         | API key de Anthropic para el asistente IA                     |
+| `STORAGE_ENDPOINT`          | Endpoint MinIO / S3                                           |
+| `STORAGE_ACCESS_KEY`        | Access key de MinIO / S3                                      |
+| `STORAGE_SECRET_KEY`        | Secret key de MinIO / S3                                      |
+| `STRIPE_SECRET_KEY`         | API key secreta de Stripe                                     |
+| `STRIPE_WEBHOOK_SECRET`     | Secreto del webhook de Stripe                                 |
+| `STRIPE_PRICE_PRO_MONTHLY`  | Price ID del plan Pro en Stripe                               |
+| `STRIPE_PRICE_TEAM_MONTHLY` | Price ID del plan Team en Stripe                              |
+| `SENTRY_DSN`                | DSN de Sentry (servidor)                                      |
+| `PUBLIC_SENTRY_DSN`         | DSN de Sentry (cliente, se expone al navegador)               |
 
 ---
 

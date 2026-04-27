@@ -44,10 +44,19 @@
 	const CONV_KEY = `ai-editor-conv-${documentId}`;
 
 	const SHORTCUTS = [
-		{ label: 'Improve clarity', prompt: 'Review this document and suggest what could be made clearer or more concise.' },
-		{ label: 'Check argument flow', prompt: 'Does the argument flow logically from section to section? Where are the weak points?' },
+		{
+			label: 'Improve clarity',
+			prompt: 'Review this document and suggest what could be made clearer or more concise.'
+		},
+		{
+			label: 'Check argument flow',
+			prompt: 'Does the argument flow logically from section to section? Where are the weak points?'
+		},
 		{ label: 'Strengthen conclusion', prompt: 'Make the conclusion more direct and impactful.' },
-		{ label: 'Academic tone', prompt: 'Identify any passages where the tone is too informal or imprecise.' }
+		{
+			label: 'Academic tone',
+			prompt: 'Identify any passages where the tone is too informal or imprecise.'
+		}
 	];
 
 	const TOOL_LABELS: Record<string, string> = {
@@ -146,23 +155,20 @@
 		abortController = controller;
 
 		try {
-			const res = await fetch(
-				`/api/projects/${projectId}/documents/${documentId}/chat`,
-				{
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						projectId,
-						documentTitle,
-						documentContent: getDocumentContent(),
-						spellLanguage,
-						conversationId,
-						message: text,
-						...(!orgId && selectedModel ? { modelOverride: selectedModel } : {})
-					}),
-					signal: controller.signal
-				}
-			);
+			const res = await fetch(`/api/projects/${projectId}/documents/${documentId}/chat`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					projectId,
+					documentTitle,
+					documentContent: getDocumentContent(),
+					spellLanguage,
+					conversationId,
+					message: text,
+					...(!orgId && selectedModel ? { modelOverride: selectedModel } : {})
+				}),
+				signal: controller.signal
+			});
 
 			if (!res.ok || !res.body) {
 				const errText = await res.text().catch(() => 'Request failed');
@@ -184,7 +190,11 @@
 					if (!line.startsWith('data: ')) continue;
 					const raw = line.slice(6).trim();
 					let evt: Record<string, unknown>;
-					try { evt = JSON.parse(raw); } catch { continue; }
+					try {
+						evt = JSON.parse(raw);
+					} catch {
+						continue;
+					}
 
 					if (evt.type === 'tool_start') {
 						loadingHint = TOOL_LABELS[evt.name as string] ?? `Calling ${evt.name}…`;
@@ -267,16 +277,28 @@
 	}
 </script>
 
-<div class="flex h-full flex-col border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+<div
+	class="flex h-full flex-col border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+>
 	<!-- Header -->
-	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
+	<div
+		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
+	>
 		<div class="flex items-center gap-2">
 			<div class="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10 text-accent">
 				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+					<path
+						d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
 				</svg>
 			</div>
-			<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Scholio Assistant</span>
+			<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+				>Scholio Assistant</span
+			>
 		</div>
 		<div class="flex items-center gap-2">
 			{#if messages.length > 0}
@@ -308,7 +330,12 @@
 				aria-label="Close assistant"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					<path
+						d="M18 6L6 18M6 6l12 12"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+					/>
 				</svg>
 			</button>
 		</div>
@@ -331,13 +358,24 @@
 						The assistant can read your documents, references, and requirements.
 					</p>
 					<div class="mt-1 flex flex-wrap justify-center gap-1.5">
-						<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Propone edits inline</span>
-						<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Lee tus referencias</span>
-						<span class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70">Mejora el estilo</span>
+						<span
+							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+							>Propone edits inline</span
+						>
+						<span
+							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+							>Lee tus referencias</span
+						>
+						<span
+							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+							>Mejora el estilo</span
+						>
 					</div>
 				</div>
 				<div class="flex flex-col gap-1.5">
-					<p class="mb-1 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint">
+					<p
+						class="mb-1 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+					>
 						Quick questions
 					</p>
 					{#each SHORTCUTS as s}
@@ -357,24 +395,33 @@
 					{#if msg.role === 'system'}
 						<div class="flex items-center gap-2">
 							<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
-							<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">{msg.content}</span>
+							<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
+								>{msg.content}</span
+							>
 							<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
 						</div>
 					{:else if msg.role === 'user'}
 						<div class="flex justify-end">
-							<div class="max-w-[85%] rounded-2xl rounded-tr-sm bg-accent px-4 py-2.5 font-sans text-sm leading-relaxed text-white">
+							<div
+								class="max-w-[85%] rounded-2xl rounded-tr-sm bg-accent px-4 py-2.5 font-sans text-sm leading-relaxed text-white"
+							>
 								{msg.content}
 							</div>
 						</div>
 					{:else}
 						<div class="flex flex-col gap-1.5">
-							<div class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink dark:bg-dark-paper-ui dark:text-dark-ink" style="white-space: pre-wrap;">
+							<div
+								class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
+								style="white-space: pre-wrap;"
+							>
 								{msg.content}
 							</div>
 							{#if msg.docsUsed && msg.docsUsed.length > 0}
 								<div class="flex flex-wrap gap-1 pl-1">
 									{#each msg.docsUsed as doc}
-										<span class="rounded-full bg-accent/8 px-2 py-0.5 font-sans text-[10px] text-accent dark:bg-accent/12">
+										<span
+											class="rounded-full bg-accent/8 px-2 py-0.5 font-sans text-[10px] text-accent dark:bg-accent/12"
+										>
 											{doc.title}
 										</span>
 									{/each}
@@ -403,7 +450,13 @@
 											{projectId}
 											onconfirm={(count) => {
 												pendingActions = pendingActions.filter((_, idx) => idx !== j);
-												messages = [...messages, { role: 'system', content: `${count} ${count === 1 ? 'reference' : 'references'} added to bibliography` }];
+												messages = [
+													...messages,
+													{
+														role: 'system',
+														content: `${count} ${count === 1 ? 'reference' : 'references'} added to bibliography`
+													}
+												];
 											}}
 											ondiscard={() => {
 												pendingActions = pendingActions.filter((_, idx) => idx !== j);
@@ -418,7 +471,9 @@
 				{#if loading}
 					<div class="flex items-center gap-2 pl-1">
 						<Spinner size="sm" class="text-accent" />
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{loadingHint}</span>
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+							>{loadingHint}</span
+						>
 					</div>
 				{/if}
 			</div>
@@ -426,9 +481,14 @@
 	</div>
 
 	{#if error}
-		<div class="mx-4 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+		<div
+			class="mx-4 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400"
+		>
 			{#if error === 'NO_KEY'}
-				No AI key configured. <a href="/settings?tab=ai" class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a> to add one.
+				No AI key configured. <a
+					href="/settings?tab=ai"
+					class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a
+				> to add one.
 			{:else}
 				{error}
 			{/if}
@@ -437,7 +497,9 @@
 
 	<!-- Input -->
 	<div class="border-t border-paper-border px-3 pt-2.5 pb-3 dark:border-dark-paper-border">
-		<div class="flex items-end gap-2 rounded-xl border border-paper-border bg-paper-ui px-3 py-2 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui">
+		<div
+			class="flex items-end gap-2 rounded-xl border border-paper-border bg-paper-ui px-3 py-2 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui"
+		>
 			<textarea
 				bind:value={input}
 				onkeydown={handleKeydown}
@@ -454,7 +516,7 @@
 					class="shrink-0 rounded-lg border border-paper-border bg-paper p-1.5 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-						<rect x="5" y="5" width="14" height="14" rx="2"/>
+						<rect x="5" y="5" width="14" height="14" rx="2" />
 					</svg>
 				</button>
 			{:else}
@@ -466,7 +528,13 @@
 					aria-label="Send"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						<path
+							d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
 					</svg>
 				</button>
 			{/if}

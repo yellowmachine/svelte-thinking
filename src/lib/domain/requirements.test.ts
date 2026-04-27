@@ -20,23 +20,33 @@ const req = (overrides: Partial<Requirement> = {}): Requirement => ({
 
 describe('getRequirementState', () => {
 	it('returns empty when total is 0', () => {
-		expect(getRequirementState({ total: 0, fulfilled: 0, requiredTotal: 0, requiredFulfilled: 0 })).toBe('empty');
+		expect(
+			getRequirementState({ total: 0, fulfilled: 0, requiredTotal: 0, requiredFulfilled: 0 })
+		).toBe('empty');
 	});
 
 	it('returns complete when all are fulfilled', () => {
-		expect(getRequirementState({ total: 3, fulfilled: 3, requiredTotal: 2, requiredFulfilled: 2 })).toBe('complete');
+		expect(
+			getRequirementState({ total: 3, fulfilled: 3, requiredTotal: 2, requiredFulfilled: 2 })
+		).toBe('complete');
 	});
 
 	it('returns required-done when all required are fulfilled but not all optional', () => {
-		expect(getRequirementState({ total: 3, fulfilled: 2, requiredTotal: 2, requiredFulfilled: 2 })).toBe('required-done');
+		expect(
+			getRequirementState({ total: 3, fulfilled: 2, requiredTotal: 2, requiredFulfilled: 2 })
+		).toBe('required-done');
 	});
 
 	it('returns pending otherwise', () => {
-		expect(getRequirementState({ total: 3, fulfilled: 1, requiredTotal: 2, requiredFulfilled: 1 })).toBe('pending');
+		expect(
+			getRequirementState({ total: 3, fulfilled: 1, requiredTotal: 2, requiredFulfilled: 1 })
+		).toBe('pending');
 	});
 
 	it('returns pending when requiredTotal is 0 but some unfulfilled', () => {
-		expect(getRequirementState({ total: 2, fulfilled: 1, requiredTotal: 0, requiredFulfilled: 0 })).toBe('pending');
+		expect(
+			getRequirementState({ total: 2, fulfilled: 1, requiredTotal: 0, requiredFulfilled: 0 })
+		).toBe('pending');
 	});
 });
 
@@ -75,7 +85,12 @@ describe('countRequirements', () => {
 	});
 
 	it('returns zeros for empty list', () => {
-		expect(countRequirements([])).toEqual({ total: 0, fulfilled: 0, requiredTotal: 0, requiredFulfilled: 0 });
+		expect(countRequirements([])).toEqual({
+			total: 0,
+			fulfilled: 0,
+			requiredTotal: 0,
+			requiredFulfilled: 0
+		});
 	});
 });
 

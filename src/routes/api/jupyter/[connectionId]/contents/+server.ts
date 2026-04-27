@@ -46,10 +46,7 @@ export const GET: RequestHandler = async (event) => {
 			.select()
 			.from(userJupyterConnection)
 			.where(
-				and(
-					eq(userJupyterConnection.id, connectionId),
-					eq(userJupyterConnection.userId, user.id)
-				)
+				and(eq(userJupyterConnection.id, connectionId), eq(userJupyterConnection.userId, user.id))
 			)
 			.limit(1)
 	);
@@ -95,7 +92,12 @@ export const GET: RequestHandler = async (event) => {
 
 	// Only return notebooks and directories — no file content, no raw data
 	if (data.type === 'notebook') {
-		return json({ type: 'notebook', name: data.name, path: data.path, lastModified: data.last_modified });
+		return json({
+			type: 'notebook',
+			name: data.name,
+			path: data.path,
+			lastModified: data.last_modified
+		});
 	}
 
 	if (data.type === 'directory') {

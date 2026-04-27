@@ -11,11 +11,14 @@
 </svelte:head>
 
 <main class="mx-auto max-w-2xl px-6 py-16">
-	<a href={resolve('/blog')} class="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-1 text-sm transition-colors">
+	<a
+		href={resolve('/blog')}
+		class="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-1 text-sm transition-colors"
+	>
 		← Blog
 	</a>
 
-	<article class="prose prose-neutral dark:prose-invert mt-4 max-w-none">
+	<article class="prose mt-4 max-w-none prose-neutral dark:prose-invert">
 		<header class="not-prose mb-8">
 			<time class="text-muted-foreground mb-3 block text-sm">
 				{new Date(data.meta.date).toLocaleDateString('es-ES', {

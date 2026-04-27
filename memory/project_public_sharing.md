@@ -9,6 +9,7 @@ Patrón elegido: **share token** (igual que Notion, Figma, Google Docs).
 **Why:** `isPublic` booleano solo no permite revocar acceso por documento sin afectar otros. El token da control granular y es revocable individualmente.
 
 **Tabla planificada:**
+
 ```sql
 share_token (
   token       text PK,          -- crypto.randomUUID()
@@ -25,6 +26,7 @@ share_token (
 Google indexa `/p/[token]` si la ruta hace SSR — cubre el discovery externo sin búsqueda interna. Suficiente para fases iniciales. Requiere buenos meta tags (title, description, Open Graph). Caveat: tokens revocados pueden seguir en caché de Google días/semanas — responder 410 Gone al revocar para acelerar desindexación.
 
 **Hoja de ruta de búsqueda interna (solo cuando haya necesidad de explorar contenido público dentro de la app):**
+
 1. **Postgres FTS** (`tsvector`) sobre title/content — SQL puro, sin dependencias extra.
 2. **pgvector + embeddings** — búsqueda semántica. Muy relevante para papers académicos con vocabulario especializado.
 

@@ -169,7 +169,9 @@
 			© 2026 Scholio · <a
 				href="/conduct"
 				class="hover:text-ink-muted dark:hover:text-dark-ink-muted">Code of conduct</a
-			> · <a
+			>
+			·
+			<a
 				href="mailto:contact@scholio.review"
 				class="hover:text-ink-muted dark:hover:text-dark-ink-muted">contact@scholio.review</a
 			>

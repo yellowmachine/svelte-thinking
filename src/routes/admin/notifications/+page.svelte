@@ -44,11 +44,19 @@
 	</div>
 
 	<!-- Create form -->
-	<div class="mb-8 rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper">
-		<h2 class="mb-4 font-sans text-sm font-semibold text-ink dark:text-dark-ink">New notification</h2>
+	<div
+		class="mb-8 rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+	>
+		<h2 class="mb-4 font-sans text-sm font-semibold text-ink dark:text-dark-ink">
+			New notification
+		</h2>
 		<form method="POST" action="?/create" use:enhance class="space-y-4">
 			<div>
-				<label for="message" class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Message</label>
+				<label
+					for="message"
+					class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+					>Message</label
+				>
 				<textarea
 					id="message"
 					name="message"
@@ -60,7 +68,11 @@
 			</div>
 			<div class="flex gap-4">
 				<div class="flex-1">
-					<label for="startsAt" class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">Starts at</label>
+					<label
+						for="startsAt"
+						class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+						>Starts at</label
+					>
 					<input
 						type="datetime-local"
 						id="startsAt"
@@ -71,7 +83,11 @@
 					/>
 				</div>
 				<div class="w-36">
-					<label for="ttlHours" class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted">TTL (hours)</label>
+					<label
+						for="ttlHours"
+						class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+						>TTL (hours)</label
+					>
 					<input
 						type="number"
 						id="ttlHours"
@@ -107,16 +123,27 @@
 			{#each data.notifications as n (n.id)}
 				{@const active = isActive(n)}
 				{@const scheduled = isScheduled(n)}
-				<li class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper">
+				<li
+					class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<div class="flex items-start gap-3">
-						<div class="flex-1 min-w-0">
+						<div class="min-w-0 flex-1">
 							<div class="mb-1 flex items-center gap-2">
 								{#if active}
-									<span class="rounded-full bg-green-100 px-2 py-0.5 font-sans text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+									<span
+										class="rounded-full bg-green-100 px-2 py-0.5 font-sans text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
+										>Active</span
+									>
 								{:else if scheduled}
-									<span class="rounded-full bg-blue-100 px-2 py-0.5 font-sans text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Scheduled</span>
+									<span
+										class="rounded-full bg-blue-100 px-2 py-0.5 font-sans text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+										>Scheduled</span
+									>
 								{:else}
-									<span class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-xs font-medium text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint">Expired</span>
+									<span
+										class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-xs font-medium text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+										>Expired</span
+									>
 								{/if}
 							</div>
 							<p class="font-sans text-sm text-ink dark:text-dark-ink">{n.message}</p>
@@ -128,11 +155,23 @@
 							<input type="hidden" name="id" value={n.id} />
 							<button
 								type="submit"
-								onclick={(e) => { if (!confirm('Delete this notification?')) e.preventDefault(); }}
+								onclick={(e) => {
+									if (!confirm('Delete this notification?')) e.preventDefault();
+								}}
 								class="rounded p-1 text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:text-dark-ink-faint dark:hover:bg-red-900/20 dark:hover:text-red-400"
 								aria-label="Delete notification"
 							>
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
 									<polyline points="3 6 5 6 21 6" />
 									<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
 									<path d="M10 11v6M14 11v6" />

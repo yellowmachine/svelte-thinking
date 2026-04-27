@@ -20,13 +20,16 @@ export interface SaveDraftContext {
 
 export function getSaveDraftCapability(ctx: SaveDraftContext): SaveDraftCapability {
 	if (!ctx.canWrite) {
-		return { kind: 'blocked', reason: 'You don\'t have write permission on this document.' };
+		return { kind: 'blocked', reason: "You don't have write permission on this document." };
 	}
 	if (ctx.saving) {
 		return { kind: 'saving' };
 	}
 	if (!ctx.online) {
-		return { kind: 'queued', hint: 'No connection. The draft will be saved locally and synced when you reconnect.' };
+		return {
+			kind: 'queued',
+			hint: 'No connection. The draft will be saved locally and synced when you reconnect.'
+		};
 	}
 	return { kind: 'ready' };
 }
@@ -53,7 +56,7 @@ export interface CommitContext {
 
 export function getCommitCapability(ctx: CommitContext): CommitCapability {
 	if (!ctx.canWrite) {
-		return { kind: 'blocked', reason: 'You don\'t have write permission on this document.' };
+		return { kind: 'blocked', reason: "You don't have write permission on this document." };
 	}
 	if (!ctx.online) {
 		return { kind: 'blocked', reason: 'You need a connection to create a version.' };
@@ -75,9 +78,7 @@ export function canTriggerCommit(cap: CommitCapability): boolean {
 // Reclaim writing (owner takes back from delegated writer)
 // ---------------------------------------------------------------------------
 
-export type ReclaimWritingCapability =
-	| { kind: 'available' }
-	| { kind: 'hidden' }; // not owner, or no writer delegated
+export type ReclaimWritingCapability = { kind: 'available' } | { kind: 'hidden' }; // not owner, or no writer delegated
 
 export interface ReclaimWritingContext {
 	isOwner: boolean;
@@ -95,9 +96,7 @@ export function getReclaimWritingCapability(ctx: ReclaimWritingContext): Reclaim
 // Release writing (downgraded writer yields their slot)
 // ---------------------------------------------------------------------------
 
-export type ReleaseWriterCapability =
-	| { kind: 'available' }
-	| { kind: 'hidden' };
+export type ReleaseWriterCapability = { kind: 'available' } | { kind: 'hidden' };
 
 export interface ReleaseWriterContext {
 	/** The current user is the designated writerUserId on this document. */

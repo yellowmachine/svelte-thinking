@@ -19,7 +19,9 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	// Must run before the link regex in inlineToTypst would match [alt](url)
 	const imagePlaceholders: string[] = [];
 	src = src.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_m, alt: string, url: string) => {
-		const localName = imageRegistry ? registerImage(url, imageRegistry) : `img-${imagePlaceholders.length}${extOf(url)}`;
+		const localName = imageRegistry
+			? registerImage(url, imageRegistry)
+			: `img-${imagePlaceholders.length}${extOf(url)}`;
 		const typstImg = alt.trim()
 			? `#figure(image("${localName}"), caption: [${alt.trim()}])`
 			: `#image("${localName}")`;
@@ -68,7 +70,11 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	// ── 0.5 Protect epigraph blocks (multiline blockquotes with [!epigraph]) ──
 	const epigraphs: string[] = [];
 	src = src.replace(/^> \[!epigraph\]\n((?:> [^\n]*\n?)*)/gm, (_m, body: string) => {
-		const lines = body.split('\n').filter(l => l.startsWith('> ')).map(l => l.slice(2).trim()).filter(Boolean);
+		const lines = body
+			.split('\n')
+			.filter((l) => l.startsWith('> '))
+			.map((l) => l.slice(2).trim())
+			.filter(Boolean);
 		if (lines.length === 0) return _m; // fallback if no lines
 
 		const typstEpigraph = renderEpigraphToTypst(lines);
@@ -102,10 +108,15 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	// ── 4. Footnotes (two-pass) ───────────────────────────────────────────────
 	// Collect definitions: [^id]: content (possibly multiline, indented continuation)
 	const footnotes = new Map<string, string>();
-	src = src.replace(/^\[\^([^\]]+)\]:([ \t])([\s\S]*?)(?=\n\[\^|\n\n[^\s]|$)/gm,
+	src = src.replace(
+		/^\[\^([^\]]+)\]:([ \t])([\s\S]*?)(?=\n\[\^|\n\n[^\s]|$)/gm,
 		(_m, id: string, _sep: string, body: string) => {
 			// Normalize indented continuation lines
-			const content = body.split('\n').map((l, i) => i === 0 ? l.trim() : l.replace(/^    /, '').trim()).filter(Boolean).join(' ');
+			const content = body
+				.split('\n')
+				.map((l, i) => (i === 0 ? l.trim() : l.replace(/^ {4}/u, '').trim()))
+				.filter(Boolean)
+				.join(' ');
 			footnotes.set(id.trim(), content);
 			return ''; // remove definition from body
 		}
@@ -162,10 +173,22 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 		const h3 = line.match(/^### (.+)/);
 		const h2 = line.match(/^## (.+)/);
 		const h1 = line.match(/^# (.+)/);
-		if (h4) { out.push(`==== ${inlineToTypst(h4[1])}`); continue; }
-		if (h3) { out.push(`=== ${inlineToTypst(h3[1])}`); continue; }
-		if (h2) { out.push(`== ${inlineToTypst(h2[1])}`); continue; }
-		if (h1) { out.push(`= ${inlineToTypst(h1[1])}`); continue; }
+		if (h4) {
+			out.push(`==== ${inlineToTypst(h4[1])}`);
+			continue;
+		}
+		if (h3) {
+			out.push(`=== ${inlineToTypst(h3[1])}`);
+			continue;
+		}
+		if (h2) {
+			out.push(`== ${inlineToTypst(h2[1])}`);
+			continue;
+		}
+		if (h1) {
+			out.push(`= ${inlineToTypst(h1[1])}`);
+			continue;
+		}
 
 		// Horizontal rule
 		if (/^---+$/.test(line.trim())) {
@@ -220,7 +243,7 @@ function renderEpigraphToTypst(lines: string[]): string {
 	if (lines.length === 0) return '';
 
 	// Detect attribution line (starts with — or --)
-	const attrIdx = lines.findIndex(l => /^[—–-]/.test(l));
+	const attrIdx = lines.findIndex((l) => /^[—–-]/.test(l));
 	let quoteLines: string[];
 	let attr: string;
 	if (attrIdx >= 0) {
@@ -236,16 +259,19 @@ function renderEpigraphToTypst(lines: string[]): string {
 		quoteLines = lines.slice(0, -1);
 		attr = lines[lines.length - 1];
 	}
-	const source = attrIdx >= 0 && lines.length > attrIdx + 1 ? lines.slice(attrIdx + 1).join(' ') : '';
+	const source =
+		attrIdx >= 0 && lines.length > attrIdx + 1 ? lines.slice(attrIdx + 1).join(' ') : '';
 
-	const quote = quoteLines.map(l => l.replace(/^[""]|[""]$/g, '')).join(' ').trim();
+	const quote = quoteLines
+		.map((l) => l.replace(/^[""]|[""]$/g, ''))
+		.join(' ')
+		.trim();
 
 	if (!quote) return '';
 
 	const attributionParts = [attr, source].filter(Boolean).map(escapeTypstStringHelper);
-	const attribution = attributionParts.length > 0
-		? `, attribution: [${attributionParts.join(', ')}]`
-		: '';
+	const attribution =
+		attributionParts.length > 0 ? `, attribution: [${attributionParts.join(', ')}]` : '';
 
 	return `#quote(block: true${attribution})[${escapeTypstStringHelper(quote)}]`;
 }
@@ -269,21 +295,20 @@ function registerImage(url: string, registry: Map<string, string>): string {
 
 /** Converts a person name to a safe Typst label identifier. */
 function personNameToLabel(name: string): string {
-	return 'spp-' + name
-		.toLowerCase()
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '') // strip diacritics
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '');
+	return (
+		'spp-' +
+		name
+			.toLowerCase()
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '') // strip diacritics
+			.replace(/[^a-z0-9]+/g, '-')
+			.replace(/^-+|-+$/g, '')
+	);
 }
 
 /** Escapes Typst special characters that can appear in person names. */
 function escapeTypstName(name: string): string {
-	return name
-		.replace(/#/g, '\\#')
-		.replace(/\[/g, '\\[')
-		.replace(/\]/g, '\\]')
-		.replace(/@/g, '\\@');
+	return name.replace(/#/g, '\\#').replace(/\[/g, '\\[').replace(/\]/g, '\\]').replace(/@/g, '\\@');
 }
 
 /**

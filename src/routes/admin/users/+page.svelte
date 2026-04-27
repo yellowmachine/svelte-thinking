@@ -4,13 +4,21 @@
 	let { data } = $props();
 
 	function formatDate(d: Date) {
-		return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+		return new Date(d).toLocaleDateString('es-ES', {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric'
+		});
 	}
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<div class="mb-8">
-		<a href="/admin" class="font-sans text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink">← Admin</a>
+		<a
+			href="/admin"
+			class="font-sans text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+			>← Admin</a
+		>
 		<h1 class="mt-2 font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Usuarios</h1>
 	</div>
 
@@ -33,7 +41,9 @@
 	</form>
 
 	{#if data.users.length === 0}
-		<div class="rounded-xl border border-dashed border-paper-border py-10 text-center dark:border-dark-paper-border">
+		<div
+			class="rounded-xl border border-dashed border-paper-border py-10 text-center dark:border-dark-paper-border"
+		>
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				{data.q ? 'Sin resultados para esa búsqueda.' : 'No hay usuarios registrados.'}
 			</p>
@@ -41,15 +51,21 @@
 	{:else}
 		<div class="flex flex-col gap-3">
 			{#each data.users as u (u.id)}
-				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<div class="flex items-start justify-between gap-4">
 						<div class="min-w-0">
 							<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">{u.name}</p>
 							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</p>
 							<div class="mt-2 flex items-center gap-2">
-								<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{formatDate(u.createdAt)}</span>
+								<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+									>{formatDate(u.createdAt)}</span
+								>
 								{#if u.twoFactorEnabled}
-									<span class="rounded-full bg-emerald-100 px-2 py-0.5 font-sans text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+									<span
+										class="rounded-full bg-emerald-100 px-2 py-0.5 font-sans text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+									>
 										2FA activo
 									</span>
 								{/if}
@@ -61,7 +77,8 @@
 								method="POST"
 								action="?/disable2FA"
 								onsubmit={(e) => {
-									if (!confirm(`¿Desactivar 2FA para ${u.email}? Se cerrarán todas sus sesiones.`)) e.preventDefault();
+									if (!confirm(`¿Desactivar 2FA para ${u.email}? Se cerrarán todas sus sesiones.`))
+										e.preventDefault();
 								}}
 								class="shrink-0"
 							>

@@ -33,7 +33,11 @@ export async function createTestUser() {
 	const signupRes = await fetch(`${BASE_URL}/api/auth/sign-up/email`, {
 		method: 'POST',
 		headers: headers(),
-		body: JSON.stringify({ email: TEST_USER.email, password: TEST_USER.password, name: TEST_USER.name })
+		body: JSON.stringify({
+			email: TEST_USER.email,
+			password: TEST_USER.password,
+			name: TEST_USER.name
+		})
 	});
 	if (!signupRes.ok && signupRes.status !== 422) {
 		throw new Error(`signup failed: ${signupRes.status} ${await signupRes.text()}`);

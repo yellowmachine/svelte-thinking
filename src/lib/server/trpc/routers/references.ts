@@ -5,7 +5,11 @@ import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
 import { router, protectedProcedure } from '../init';
-import { reference, projectReference, referenceSubnote } from '$lib/server/db/schemas/references.schema';
+import {
+	reference,
+	projectReference,
+	referenceSubnote
+} from '$lib/server/db/schemas/references.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { parseBibtexFile, formatBibtexFile, generateCiteKey } from '$lib/utils/bibtex';
@@ -177,35 +181,48 @@ export const referencesRouter = router({
 	}),
 
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
-		return ctx.withRLS((db) =>
-			db
-				.select({ ref: reference })
-				.from(reference)
-				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-				.where(eq(projectReference.projectId, projectId))
-				.orderBy(asc(reference.citeKey))
-		).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref));
+		return ctx
+			.withRLS((db) =>
+				db
+					.select({ ref: reference })
+					.from(reference)
+					.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+					.where(eq(projectReference.projectId, projectId))
+					.orderBy(asc(reference.citeKey))
+			)
+			.then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref));
 	}),
 
 	// Like `list` but includes subnotes — used by the document editor for citation autocomplete.
-	listWithSubnotes: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
-		const rows = await ctx.withRLS((db) =>
-			db
-				.select({ ref: reference, subnote: referenceSubnote })
-				.from(reference)
-				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-				.leftJoin(referenceSubnote, eq(referenceSubnote.referenceId, reference.id))
-				.where(eq(projectReference.projectId, projectId))
-				.orderBy(asc(reference.citeKey), asc(referenceSubnote.createdAt))
-		) as { ref: typeof reference.$inferSelect; subnote: typeof referenceSubnote.$inferSelect | null }[];
+	listWithSubnotes: protectedProcedure
+		.input(z.string())
+		.query(async ({ ctx, input: projectId }) => {
+			const rows = (await ctx.withRLS((db) =>
+				db
+					.select({ ref: reference, subnote: referenceSubnote })
+					.from(reference)
+					.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+					.leftJoin(referenceSubnote, eq(referenceSubnote.referenceId, reference.id))
+					.where(eq(projectReference.projectId, projectId))
+					.orderBy(asc(reference.citeKey), asc(referenceSubnote.createdAt))
+			)) as {
+				ref: typeof reference.$inferSelect;
+				subnote: typeof referenceSubnote.$inferSelect | null;
+			}[];
 
-		const refMap = new Map<string, typeof reference.$inferSelect & { subnotes: { slug: string; notes: string }[] }>();
-		for (const row of rows) {
-			if (!refMap.has(row.ref.id)) refMap.set(row.ref.id, { ...row.ref, subnotes: [] });
-			if (row.subnote) refMap.get(row.ref.id)!.subnotes.push({ slug: row.subnote.slug, notes: row.subnote.notes });
-		}
-		return [...refMap.values()];
-	}),
+			const refMap = new Map<
+				string,
+				typeof reference.$inferSelect & { subnotes: { slug: string; notes: string }[] }
+			>();
+			for (const row of rows) {
+				if (!refMap.has(row.ref.id)) refMap.set(row.ref.id, { ...row.ref, subnotes: [] });
+				if (row.subnote)
+					refMap
+						.get(row.ref.id)!
+						.subnotes.push({ slug: row.subnote.slug, notes: row.subnote.notes });
+			}
+			return [...refMap.values()];
+		}),
 
 	create: protectedProcedure
 		.input(z.object({ projectId: z.string(), reference: referenceInputSchema }))
@@ -223,9 +240,7 @@ export const referencesRouter = router({
 				await db
 					.insert(reference)
 					.values({ id: refId, userId: ctx.user.id, ...toDbValues(refInput, uniqueKey) });
-				await db
-					.insert(projectReference)
-					.values({ referenceId: refId, projectId });
+				await db.insert(projectReference).values({ referenceId: refId, projectId });
 			});
 
 			const rows = (await ctx.withRLS((db) =>
@@ -274,14 +289,14 @@ export const referencesRouter = router({
 
 		if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
 
-		await ctx.withRLS((db) =>
-			db.delete(reference).where(eq(reference.id, id))
-		);
+		await ctx.withRLS((db) => db.delete(reference).where(eq(reference.id, id)));
 
 		if (row.pdfKey && row.projectId) {
 			const { resolveProjectS3Config } = await import('$lib/server/s3Storage');
 			const { deleteFileWithConfig } = await import('$lib/server/storage');
-			const s3 = await resolveProjectS3Config(row.projectId, ctx.user.id, ctx.withRLS).catch(() => null);
+			const s3 = await resolveProjectS3Config(row.projectId, ctx.user.id, ctx.withRLS).catch(
+				() => null
+			);
 			if (s3) await deleteFileWithConfig(s3, row.pdfKey).catch(() => {});
 		}
 
@@ -348,9 +363,16 @@ export const referencesRouter = router({
 			if (ref.readingNotesDocId) {
 				const staleId = ref.readingNotesDocId;
 				const cleared = await ctx.withRLS(async (db) => {
-					const [existing] = await db.select({ id: document.id }).from(document).where(eq(document.id, staleId)).limit(1);
+					const [existing] = await db
+						.select({ id: document.id })
+						.from(document)
+						.where(eq(document.id, staleId))
+						.limit(1);
 					if (existing) return false;
-					await db.update(reference).set({ readingNotesDocId: null }).where(eq(reference.id, refId));
+					await db
+						.update(reference)
+						.set({ readingNotesDocId: null })
+						.where(eq(reference.id, refId));
 					return true;
 				});
 				if (!cleared) return { docId: staleId };
@@ -411,10 +433,7 @@ export const referencesRouter = router({
 					if (entry.doi) {
 						const existing = await ctx.withRLS((db) =>
 							db.query.reference.findFirst({
-								where: and(
-									eq(reference.userId, ctx.user.id),
-									eq(reference.doi, entry.doi!)
-								),
+								where: and(eq(reference.userId, ctx.user.id), eq(reference.doi, entry.doi!)),
 								columns: { id: true }
 							})
 						);
@@ -487,11 +506,13 @@ export const referencesRouter = router({
 	// ── Link references from another project (no-copy) ───────────────────
 
 	importFromProject: protectedProcedure
-		.input(z.object({
-			sourceProjectId: z.string(),
-			targetProjectId: z.string(),
-			referenceIds: z.array(z.string()).optional()
-		}))
+		.input(
+			z.object({
+				sourceProjectId: z.string(),
+				targetProjectId: z.string(),
+				referenceIds: z.array(z.string()).optional()
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { sourceProjectId, targetProjectId, referenceIds } = input;
 
@@ -517,7 +538,10 @@ export const referencesRouter = router({
 					.where(
 						and(
 							eq(projectReference.projectId, targetProjectId),
-							inArray(projectReference.referenceId, toLink.map((r) => r.referenceId))
+							inArray(
+								projectReference.referenceId,
+								toLink.map((r) => r.referenceId)
+							)
 						)
 					)
 			)) as { referenceId: string }[];
@@ -542,11 +566,7 @@ export const referencesRouter = router({
 		.input(z.object({ refId: z.string(), projectId: z.string() }))
 		.mutation(async ({ ctx, input: { refId, projectId } }) => {
 			const [ref] = (await ctx.withRLS((db) =>
-				db
-					.select({ url: reference.url })
-					.from(reference)
-					.where(eq(reference.id, refId))
-					.limit(1)
+				db.select({ url: reference.url }).from(reference).where(eq(reference.id, refId)).limit(1)
 			)) as { url: string | null }[];
 
 			if (!ref?.url) return { pdfKey: null };
@@ -571,7 +591,9 @@ export const referencesRouter = router({
 				const pdfBytes = Buffer.from(result.pdf, 'base64');
 				const key = `projects/${projectId}/references/${refId}.pdf`;
 				await uploadFileWithConfig(s3, key, pdfBytes, 'application/pdf');
-				console.info(`[generatePdfFromUrl] PDF uploaded: ${key} (${Math.round(pdfBytes.length / 1024)} KB)`);
+				console.info(
+					`[generatePdfFromUrl] PDF uploaded: ${key} (${Math.round(pdfBytes.length / 1024)} KB)`
+				);
 
 				await ctx.withRLS((db) =>
 					db
@@ -619,7 +641,9 @@ export const referencesRouter = router({
 			let pageTitle: string | null = null;
 			try {
 				const res = await fetch(url, {
-					headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
+					headers: {
+						'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
+					},
 					signal: AbortSignal.timeout(10_000)
 				});
 				if (!res.ok)
@@ -743,7 +767,14 @@ ${truncated}`;
 
 	// ── Import an HTML page as a readonly document ────────────────────────
 	importDocumentFromUrl: protectedProcedure
-		.input(z.object({ url: z.string().url().max(2000), projectId: z.string(), title: z.string().min(1).max(255), referenceId: z.string().optional() }))
+		.input(
+			z.object({
+				url: z.string().url().max(2000),
+				projectId: z.string(),
+				title: z.string().min(1).max(255),
+				referenceId: z.string().optional()
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { url, projectId, title, referenceId } = input;
 
@@ -751,30 +782,55 @@ ${truncated}`;
 			let renderedHtml: string;
 			try {
 				const res = await fetch(url, {
-					headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
+					headers: {
+						'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
+					},
 					signal: AbortSignal.timeout(15_000)
 				});
 				if (!res.ok)
-					throw new TRPCError({ code: 'BAD_REQUEST', message: `Could not fetch URL (HTTP ${res.status}).` });
+					throw new TRPCError({
+						code: 'BAD_REQUEST',
+						message: `Could not fetch URL (HTTP ${res.status}).`
+					});
 				const html = await res.text();
 				const { document: dom, window } = parseHTML(html);
 				const article = new Readability(dom as unknown as Document).parse();
 				if (!article?.content)
-					throw new TRPCError({ code: 'BAD_REQUEST', message: 'No readable content found at that URL.' });
+					throw new TRPCError({
+						code: 'BAD_REQUEST',
+						message: 'No readable content found at that URL.'
+					});
 
 				// Rewrite relative image/link URLs to absolute using the base URL
 				const base = new URL(url);
 				const { document: articleDoc } = parseHTML(article.content);
 				for (const img of Array.from(articleDoc.querySelectorAll('img'))) {
 					const src = img.getAttribute('src');
-					if (src && !src.startsWith('data:') && !src.startsWith('http://') && !src.startsWith('https://')) {
-						try { img.setAttribute('src', new URL(src, base).href); } catch { img.removeAttribute('src'); }
+					if (
+						src &&
+						!src.startsWith('data:') &&
+						!src.startsWith('http://') &&
+						!src.startsWith('https://')
+					) {
+						try {
+							img.setAttribute('src', new URL(src, base).href);
+						} catch {
+							img.removeAttribute('src');
+						}
 					}
 				}
 				for (const a of Array.from(articleDoc.querySelectorAll('a[href]'))) {
 					const href = a.getAttribute('href');
-					if (href && !href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('#') && !href.startsWith('mailto:')) {
-						try { a.setAttribute('href', new URL(href, base).href); } catch {}
+					if (
+						href &&
+						!href.startsWith('http://') &&
+						!href.startsWith('https://') &&
+						!href.startsWith('#') &&
+						!href.startsWith('mailto:')
+					) {
+						try {
+							a.setAttribute('href', new URL(href, base).href);
+						} catch {}
 					}
 				}
 
@@ -808,7 +864,10 @@ ${truncated}`;
 					});
 				} catch (e: unknown) {
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
-						throw new TRPCError({ code: 'CONFLICT', message: `Ya existe un documento con el título "${title}" en este proyecto.` });
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un documento con el título "${title}" en este proyecto.`
+						});
 					}
 					throw e;
 				}
@@ -818,78 +877,87 @@ ${truncated}`;
 		}),
 
 	// ── Fetch metadata from a DOI via CrossRef ────────────────────────────
-	fetchDoi: protectedProcedure
-		.input(z.string().min(1).max(300))
-		.query(async ({ input: doi }) => {
-			const normalized = doi
-				.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
-				.trim();
+	fetchDoi: protectedProcedure.input(z.string().min(1).max(300)).query(async ({ input: doi }) => {
+		const normalized = doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').trim();
 
-			let data: Record<string, unknown>;
-			try {
-				const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(normalized)}`, {
-					headers: { 'User-Agent': 'Scholio/1.0 (https://scholio.review; mailto:support@scholio.review)' },
-					signal: AbortSignal.timeout(8000)
-				});
-				if (!res.ok) throw new TRPCError({ code: 'NOT_FOUND', message: 'DOI not found in CrossRef.' });
-				const json = await res.json() as { message: Record<string, unknown> };
-				data = json.message;
-			} catch (e) {
-				if (e instanceof TRPCError) throw e;
-				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not reach CrossRef.' });
-			}
+		let data: Record<string, unknown>;
+		try {
+			const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(normalized)}`, {
+				headers: {
+					'User-Agent': 'Scholio/1.0 (https://scholio.review; mailto:support@scholio.review)'
+				},
+				signal: AbortSignal.timeout(8000)
+			});
+			if (!res.ok)
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'DOI not found in CrossRef.' });
+			const json = (await res.json()) as { message: Record<string, unknown> };
+			data = json.message;
+		} catch (e) {
+			if (e instanceof TRPCError) throw e;
+			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not reach CrossRef.' });
+		}
 
-			const titleArr = data['title'] as string[] | undefined;
-			const title = titleArr?.[0] ?? '(no title)';
+		const titleArr = data['title'] as string[] | undefined;
+		const title = titleArr?.[0] ?? '(no title)';
 
-			const authorsRaw = (data['author'] ?? []) as { given?: string; family?: string }[];
-			const authors: Author[] = authorsRaw.map((a) => ({
+		const authorsRaw = (data['author'] ?? []) as { given?: string; family?: string }[];
+		const authors: Author[] = authorsRaw
+			.map((a) => ({
 				first: a.given ?? '',
 				last: a.family ?? ''
-			})).filter((a) => a.last);
+			}))
+			.filter((a) => a.last);
 
-			const editorsRaw = (data['editor'] ?? []) as { given?: string; family?: string }[];
-			const editors: Author[] = editorsRaw.map((a) => ({ first: a.given ?? '', last: a.family ?? '' })).filter((a) => a.last);
+		const editorsRaw = (data['editor'] ?? []) as { given?: string; family?: string }[];
+		const editors: Author[] = editorsRaw
+			.map((a) => ({ first: a.given ?? '', last: a.family ?? '' }))
+			.filter((a) => a.last);
 
-			const yearParts = (data['published'] as { 'date-parts'?: number[][] } | undefined)?.['date-parts']?.[0];
-			const year = yearParts?.[0] ? String(yearParts[0]) : null;
+		const yearParts = (data['published'] as { 'date-parts'?: number[][] } | undefined)?.[
+			'date-parts'
+		]?.[0];
+		const year = yearParts?.[0] ? String(yearParts[0]) : null;
 
-			const type = (data['type'] as string | undefined);
-			const refType: typeof referenceTypeValues[number] =
-				type === 'journal-article' ? 'article'
-				: type === 'book' ? 'book'
-				: type === 'proceedings-article' ? 'inproceedings'
-				: type === 'book-chapter' ? 'incollection'
-				: 'misc';
+		const type = data['type'] as string | undefined;
+		const refType: (typeof referenceTypeValues)[number] =
+			type === 'journal-article'
+				? 'article'
+				: type === 'book'
+					? 'book'
+					: type === 'proceedings-article'
+						? 'inproceedings'
+						: type === 'book-chapter'
+							? 'incollection'
+							: 'misc';
 
-			const journal = (data['container-title'] as string[] | undefined)?.[0] ?? null;
-			const volume = data['volume'] as string | null ?? null;
-			const issue = data['issue'] as string | null ?? null;
-			const pages = data['page'] as string | null ?? null;
-			const publisher = data['publisher'] as string | null ?? null;
-			const abstractRaw = data['abstract'] as string | null ?? null;
-			const abstract = abstractRaw ? abstractRaw.replace(/<[^>]+>/g, '').trim() : null;
-			const url = `https://doi.org/${normalized}`;
+		const journal = (data['container-title'] as string[] | undefined)?.[0] ?? null;
+		const volume = (data['volume'] as string | null) ?? null;
+		const issue = (data['issue'] as string | null) ?? null;
+		const pages = (data['page'] as string | null) ?? null;
+		const publisher = (data['publisher'] as string | null) ?? null;
+		const abstractRaw = (data['abstract'] as string | null) ?? null;
+		const abstract = abstractRaw ? abstractRaw.replace(/<[^>]+>/g, '').trim() : null;
+		const url = `https://doi.org/${normalized}`;
 
-			const citeKey = generateCiteKey(authors, year ?? '');
+		const citeKey = generateCiteKey(authors, year ?? '');
 
-			return {
-				citeKey,
-				type: refType,
-				title,
-				authors,
-				editors,
-				year,
-				journal,
-				volume,
-				issue,
-				pages,
-				publisher,
-				abstract,
-				doi: normalized,
-				url
-			};
-		}),
+		return {
+			citeKey,
+			type: refType,
+			title,
+			authors,
+			editors,
+			year,
+			journal,
+			volume,
+			issue,
+			pages,
+			publisher,
+			abstract,
+			doi: normalized,
+			url
+		};
+	}),
 
 	// ── Subnotes ──────────────────────────────────────────────────────────────
 
@@ -906,23 +974,43 @@ ${truncated}`;
 		}),
 
 	addSubnote: protectedProcedure
-		.input(z.object({
-			referenceId: z.string(),
-			slug: z.string().min(1).max(50).transform((s) =>
-				s.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'note'
-			),
-			notes: z.string().max(10000).default(''),
-			anchorText: z.string().max(2000).optional()
-		}))
+		.input(
+			z.object({
+				referenceId: z.string(),
+				slug: z
+					.string()
+					.min(1)
+					.max(50)
+					.transform(
+						(s) =>
+							s
+								.toLowerCase()
+								.replace(/[^a-z0-9-]/g, '')
+								.replace(/-+/g, '-')
+								.replace(/^-|-$/g, '') || 'note'
+					),
+				notes: z.string().max(10000).default(''),
+				anchorText: z.string().max(2000).optional()
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
 			const [row] = (await ctx.withRLS((db) =>
 				db
 					.insert(referenceSubnote)
-					.values({ referenceId: input.referenceId, slug: input.slug, notes: input.notes, anchorText: input.anchorText ?? null })
+					.values({
+						referenceId: input.referenceId,
+						slug: input.slug,
+						notes: input.notes,
+						anchorText: input.anchorText ?? null
+					})
 					.onConflictDoNothing()
 					.returning()
 			)) as (typeof referenceSubnote.$inferSelect)[];
-			if (!row) throw new TRPCError({ code: 'CONFLICT', message: `Slug "${input.slug}" already exists for this reference.` });
+			if (!row)
+				throw new TRPCError({
+					code: 'CONFLICT',
+					message: `Slug "${input.slug}" already exists for this reference.`
+				});
 			return row;
 		}),
 
@@ -947,5 +1035,5 @@ ${truncated}`;
 				db.delete(referenceSubnote).where(eq(referenceSubnote.id, input.id))
 			);
 			return { id: input.id };
-		}),
+		})
 });

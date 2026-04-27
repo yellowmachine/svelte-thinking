@@ -314,7 +314,11 @@ export const commentsRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			// Verify parent exists
 			const [parent] = await ctx.withRLS((db) =>
-				db.select({ id: comment.id, documentId: comment.documentId }).from(comment).where(eq(comment.id, input.commentId)).limit(1)
+				db
+					.select({ id: comment.id, documentId: comment.documentId })
+					.from(comment)
+					.where(eq(comment.id, input.commentId))
+					.limit(1)
 			);
 			if (!parent) throw new TRPCError({ code: 'NOT_FOUND' });
 

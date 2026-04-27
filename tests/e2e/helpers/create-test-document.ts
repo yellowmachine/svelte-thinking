@@ -51,7 +51,11 @@ function parseCookies(setCookie: string | null): string {
  * Login via API para un usuario con 2FA activado.
  * Devuelve el Cookie header con la sesión completa.
  */
-export async function loginViaApi(email: string, password: string, totpSecret: string): Promise<string> {
+export async function loginViaApi(
+	email: string,
+	password: string,
+	totpSecret: string
+): Promise<string> {
 	// Paso 1: email+password → temp cookie + twoFactorRedirect
 	const step1 = await fetch(`${BASE_URL}/api/auth/sign-in/email`, {
 		method: 'POST',

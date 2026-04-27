@@ -29,11 +29,7 @@ export const datasetsRouter = router({
 		.input(z.object({ projectId: z.string(), filename: z.string() }))
 		.query(async ({ ctx, input }) => {
 			const [proj] = await ctx.withRLS((db) =>
-				db
-					.select({ id: project.id })
-					.from(project)
-					.where(eq(project.id, input.projectId))
-					.limit(1)
+				db.select({ id: project.id }).from(project).where(eq(project.id, input.projectId)).limit(1)
 			);
 			if (!proj) throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado' });
 
@@ -65,16 +61,12 @@ export const datasetsRouter = router({
 			db
 				.select({ id: projectDataset.id })
 				.from(projectDataset)
-				.where(
-					and(eq(projectDataset.id, datasetId), eq(projectDataset.uploadedBy, ctx.user.id))
-				)
+				.where(and(eq(projectDataset.id, datasetId), eq(projectDataset.uploadedBy, ctx.user.id)))
 				.limit(1)
 		);
 		if (!dataset) throw new TRPCError({ code: 'NOT_FOUND' });
 
-		await ctx.withRLS((db) =>
-			db.delete(projectDataset).where(eq(projectDataset.id, datasetId))
-		);
+		await ctx.withRLS((db) => db.delete(projectDataset).where(eq(projectDataset.id, datasetId)));
 
 		return { id: datasetId };
 	})

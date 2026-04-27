@@ -15,10 +15,15 @@ async function collectBody(req) {
 
 function compile(inputPath, outputPath) {
 	return new Promise((resolve, reject) => {
-		execFile('typst', ['compile', inputPath, outputPath], { timeout: 60_000 }, (err, _stdout, stderr) => {
-			if (err) reject(new Error(stderr || err.message));
-			else resolve();
-		});
+		execFile(
+			'typst',
+			['compile', inputPath, outputPath],
+			{ timeout: 60_000 },
+			(err, _stdout, stderr) => {
+				if (err) reject(new Error(stderr || err.message));
+				else resolve();
+			}
+		);
 	});
 }
 
@@ -58,7 +63,9 @@ const server = createServer(async (req, res) => {
 		const bodyBuf = await collectBody(req);
 		const contentType = req.headers['content-type'] ?? '';
 
-		let source, images = {}, files = {};
+		let source,
+			images = {},
+			files = {};
 		if (contentType.includes('application/json')) {
 			const data = JSON.parse(bodyBuf.toString('utf8'));
 			source = data.source;

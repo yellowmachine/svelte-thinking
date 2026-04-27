@@ -15,9 +15,7 @@
 
 	// Dismissed IDs managed client-side; initial list comes from server (already filtered).
 	let dismissed = $state<Set<string>>(new Set());
-	let visibleNotifications = $derived(
-		data.activeNotifications.filter((n) => !dismissed.has(n.id))
-	);
+	let visibleNotifications = $derived(data.activeNotifications.filter((n) => !dismissed.has(n.id)));
 
 	async function dismiss(id: string) {
 		dismissed = new Set([...dismissed, id]);
@@ -34,7 +32,6 @@
 		workspaceStore.init(data.orgs);
 		onlineStore.init();
 	});
-
 </script>
 
 <div class="flex h-screen flex-col overflow-hidden bg-paper-ui dark:bg-dark-paper-ui">
@@ -51,8 +48,21 @@
 
 	<!-- Notification banners -->
 	{#each visibleNotifications as n (n.id)}
-		<div class="flex shrink-0 items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700/50 dark:bg-amber-900/20">
-			<svg class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		<div
+			class="flex shrink-0 items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700/50 dark:bg-amber-900/20"
+		>
+			<svg
+				class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+				width="15"
+				height="15"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
 				<circle cx="12" cy="12" r="10" />
 				<line x1="12" y1="8" x2="12" y2="12" />
 				<line x1="12" y1="16" x2="12.01" y2="16" />
@@ -63,7 +73,17 @@
 				aria-label="Dismiss notification"
 				class="shrink-0 rounded p-0.5 text-amber-600 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-800/30"
 			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
 					<line x1="18" y1="6" x2="6" y2="18" />
 					<line x1="6" y1="6" x2="18" y2="18" />
 				</svg>

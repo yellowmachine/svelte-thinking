@@ -7,13 +7,23 @@
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
-	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
-	import CommentThread from '$lib/components/editor/CommentThread.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
+	import AnnotationsPanel from '$lib/components/editor/AnnotationsPanel.svelte';
+	import BibliographyPanel from '$lib/components/editor/BibliographyPanel.svelte';
+	import CommentsPanel from '$lib/components/editor/CommentsPanel.svelte';
 	import SpellCheckPanel, {
 		type SpellCorrection
 	} from '$lib/components/editor/SpellCheckPanel.svelte';
+	import ReviewPanel from '$lib/components/editor/ReviewPanel.svelte';
+	import VersionHistoryPanel from '$lib/components/editor/VersionHistoryPanel.svelte';
+	import CommitDialog from '$lib/components/editor/CommitDialog.svelte';
+	import CitePicker from '$lib/components/editor/CitePicker.svelte';
+	import DraftPanel from '$lib/components/editor/DraftPanel.svelte';
+	import EnrichPanel from '$lib/components/editor/EnrichPanel.svelte';
+	import MarkdownCheatsheet from '$lib/components/editor/MarkdownCheatsheet.svelte';
+	import WriterLostModal from '$lib/components/editor/WriterLostModal.svelte';
+	import SelectionOverlays from '$lib/components/editor/SelectionOverlays.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { offlineDb } from '$lib/offline.db';
@@ -165,7 +175,6 @@
 	let showCitePicker = $state(false);
 	let showCiteStyleMenu = $state(false);
 	let citeStyleMenuPos = $state({ top: 0, left: 0 });
-	let citeSearch = $state('');
 	let editorEl: {
 		insertAtCursor: (text: string) => void;
 		getSelection: () => { text: string; from: number; to: number } | null;
@@ -277,28 +286,6 @@
 		return true;
 	}
 
-	const filteredRefs = $derived(() => {
-		const q = citeSearch.toLowerCase();
-		if (!q) return projectRefs;
-		return projectRefs.filter(
-			(r) =>
-				r.citeKey.toLowerCase().includes(q) ||
-				r.title.toLowerCase().includes(q) ||
-				r.authors.some((a) => a.last.toLowerCase().includes(q))
-		);
-	});
-
-	const filteredBibRefs = $derived(() => {
-		const q = bibFilter.toLowerCase();
-		if (!q) return projectRefs;
-		return projectRefs.filter(
-			(r) =>
-				r.citeKey.toLowerCase().includes(q) ||
-				r.title.toLowerCase().includes(q) ||
-				r.authors.some((a) => a.last.toLowerCase().includes(q))
-		);
-	});
-
 	function isNoKeyError(e: unknown): boolean {
 		return !!(
 			e &&
@@ -338,17 +325,6 @@
 		} catch {
 			/* non-critical */
 		}
-	}
-
-	function openCitePicker() {
-		citeSearch = '';
-		showCitePicker = true;
-		loadRefs();
-	}
-
-	function insertCitation(ref: CiteRef) {
-		editorEl?.insertAtCursor(`[[@${ref.citeKey}]]`);
-		showCitePicker = false;
 	}
 
 	// Citation style: localStorage per-document overrides project default, which overrides 'apa'
@@ -405,21 +381,6 @@
 
 	// Version history
 	let showHistory = $state(false);
-	type Version = {
-		id: string;
-		versionNumber: number;
-		changeDescription: string | null;
-		createdAt: Date;
-	};
-	let versions: Version[] = $state([]);
-	let loadingVersions = $state(false);
-	let selectedVersionId: string | null = $state(null);
-	type VersionDiff = {
-		current: { id: string; versionNumber: number; content: string };
-		previous: { id: string; versionNumber: number; content: string } | null;
-	};
-	let compareDiff: VersionDiff | null = $state(null);
-	let loadingCompare = $state(false);
 
 	// Public toggle
 	let isPublic = $state(untrack(() => data.document?.isPublic ?? false));
@@ -518,10 +479,6 @@
 
 	// Commit dialog
 	let showCommit = $state(false);
-	let commitMessage = $state('');
-
-	let committing = $state(false);
-	let commitError = $state('');
 
 	// ── Action capabilities ───────────────────────────────────────────────────
 	const saveCap = $derived.by(() =>
@@ -537,7 +494,7 @@
 			canWrite,
 			online: onlineStore.online,
 			hasContent: content.trim().length > 0,
-			committing
+			committing: false
 		})
 	);
 
@@ -594,46 +551,6 @@
 
 	// Subnote form (triggered from floating button)
 	let showSubnote = $state(false);
-	let subnoteSlug = $state('');
-	let subnoteNotes = $state('');
-	let subnoteRefId = $state('');
-	let submittingSubnote = $state(false);
-	let subnoteError = $state('');
-
-	function slugify(text: string): string {
-		return (
-			text
-				.toLowerCase()
-				.replace(/[^a-z0-9]+/g, '-')
-				.replace(/^-|-$/g, '')
-				.slice(0, 50) || 'note'
-		);
-	}
-
-	async function submitSubnote() {
-		if (!subnoteRefId || !subnoteSlug.trim() || !subnoteNotes.trim()) return;
-		submittingSubnote = true;
-		subnoteError = '';
-		const anchorText = savedCommentSelection?.text ?? currentSelection?.text ?? null;
-		try {
-			await trpc.references.addSubnote.mutate({
-				referenceId: subnoteRefId,
-				slug: subnoteSlug.trim(),
-				notes: subnoteNotes.trim(),
-				anchorText: anchorText ?? undefined
-			});
-			showSubnote = false;
-			savedCommentSelection = null;
-			subnoteSlug = '';
-			subnoteNotes = '';
-			subnoteRefId = '';
-			await loadDocSubnotes();
-		} catch (e) {
-			subnoteError = e instanceof Error ? e.message : 'Error saving subnote.';
-		} finally {
-			submittingSubnote = false;
-		}
-	}
 
 	// Annotations panel — subnotes for this document's source reference
 	type Subnote = {
@@ -646,11 +563,7 @@
 		updatedAt: Date;
 	};
 	let docSubnotes = $state<Subnote[]>([]);
-	let editingSubnoteId = $state<number | null>(null);
-	let editingSubnoteNotes = $state('');
 	let sourceReference = $state(data.sourceReference);
-	let assigningReference = $state(false);
-	let assignRefId = $state('');
 
 	async function loadDocSubnotes() {
 		if (!sourceReference) return;
@@ -659,37 +572,8 @@
 		})) as Subnote[];
 	}
 
-	async function assignSourceReference() {
-		if (!assignRefId) return;
-		await trpc.documents.setSourceReference.mutate({
-			documentId: data.document.id,
-			referenceId: assignRefId
-		});
-		const ref = projectRefs.find((r) => r.id === assignRefId);
-		if (ref) sourceReference = { id: ref.id!, citeKey: ref.citeKey };
-		assigningReference = false;
-		assignRefId = '';
-		await loadDocSubnotes();
-	}
-
-	async function saveSubnoteEdit(id: number) {
-		await trpc.references.updateSubnote.mutate({ id, notes: editingSubnoteNotes });
-		docSubnotes = docSubnotes.map((s) =>
-			s.id === id ? { ...s, notes: editingSubnoteNotes, updatedAt: new Date() } : s
-		);
-		editingSubnoteId = null;
-	}
-
-	async function deleteDocSubnote(id: number) {
-		await trpc.references.deleteSubnote.mutate({ id });
-		docSubnotes = docSubnotes.filter((s) => s.id !== id);
-	}
-
 	// New comment form (triggered from floating button)
 	let showNewComment = $state(false);
-	let savedCommentSelection = $state<Selection | null>(null); // preserved when selectionchange fires on button click
-	let newCommentText = $state('');
-	let submittingComment = $state(false);
 
 	// Citation explain popover
 	const CITE_SELECTION_RE = /^\[\[@([\w:._-]+)\]\]$/;
@@ -835,144 +719,14 @@
 		}
 	});
 
-	async function doCommit() {
-		if (!commitMessage.trim()) return;
-		committing = true;
-		commitError = '';
-		try {
-			if (isDirty) await doSaveDraft();
-			await trpc.documents.commit.mutate({
-				documentId: data.document.id,
-				message: commitMessage.trim()
-			});
-			lastSavedContent = content;
-			showCommit = false;
-			commitMessage = '';
-			saveStatus = 'idle';
-			if (showHistory) await loadVersions();
-		} catch (e) {
-			commitError = e instanceof Error ? e.message : 'Error creating version';
-		} finally {
-			committing = false;
-		}
-	}
-
-	async function loadVersions() {
-		loadingVersions = true;
-		try {
-			versions = await trpc.documents.versions.query(data.document.id);
-		} finally {
-			loadingVersions = false;
-		}
-	}
-
-	async function toggleHistory() {
+	function toggleHistory() {
 		showHistory = !showHistory;
 		if (showHistory) showComments = false;
-		if (showHistory && versions.length === 0) await loadVersions();
-		if (!showHistory) {
-			selectedVersionId = null;
-			compareDiff = null;
-		}
 	}
 
 	function toggleComments() {
 		showComments = !showComments;
 		if (showComments) showHistory = false;
-	}
-
-	async function selectVersion(versionId: string) {
-		if (selectedVersionId === versionId) {
-			selectedVersionId = null;
-			compareDiff = null;
-			return;
-		}
-		selectedVersionId = versionId;
-		loadingCompare = true;
-		try {
-			compareDiff = await trpc.documents.versionDiff.query({
-				documentId: data.document.id,
-				versionId
-			});
-		} finally {
-			loadingCompare = false;
-		}
-	}
-
-	async function restoreVersion(versionId: string) {
-		if (compareDiff === null) return;
-		await trpc.documents.restoreVersion.mutate({ documentId: data.document.id, versionId });
-		content = compareDiff.current.content;
-		lastSavedContent = compareDiff.current.content;
-		saveStatus = 'pending';
-		selectedVersionId = null;
-		compareDiff = null;
-		showHistory = false;
-		if (autoSaveTimer) clearTimeout(autoSaveTimer);
-		autoSaveTimer = setTimeout(doSaveDraft, 30_000);
-	}
-
-	function extractParagraph(md: string, from: number): string {
-		// Walk backwards to the previous blank line (paragraph boundary)
-		let start = from;
-		while (start > 0 && !(md[start - 1] === '\n' && (start < 2 || md[start - 2] === '\n'))) {
-			start--;
-		}
-		// Walk forwards to the next blank line
-		let end = from;
-		while (end < md.length && !(md[end] === '\n' && end + 1 < md.length && md[end + 1] === '\n')) {
-			end++;
-		}
-		return md.slice(start, end).trim();
-	}
-
-	async function submitComment() {
-		const sel = savedCommentSelection ?? currentSelection;
-		if (!sel || !newCommentText.trim()) return;
-		submittingComment = true;
-		try {
-			const lineStart = posToLine(content, sel.from);
-			const lineEnd = posToLine(content, sel.to);
-			const anchorContext = extractParagraph(content, sel.from);
-			const created = await trpc.comments.createInline.mutate({
-				documentId: data.document.id,
-				content: newCommentText.trim(),
-				anchorText: sel.text,
-				anchorContext: anchorContext || undefined,
-				lineStart,
-				lineEnd,
-				characterStart: sel.from,
-				characterEnd: sel.to,
-				paragraphNumber: undefined
-			});
-
-			const newComment: InlineComment = {
-				id: created.id,
-				authorId: created.authorId,
-				authorName: data.currentUserId === created.authorId ? ((data as any).user?.name ?? '') : '',
-				content: created.content,
-				anchorText: created.anchorText,
-				lineStart: created.lineStart,
-				characterStart: created.characterStart,
-				characterEnd: created.characterEnd,
-				paragraphNumber: null,
-				status: 'open',
-				createdAt: created.createdAt,
-				replies: []
-			};
-
-			inlineComments = [...inlineComments, newComment].sort(
-				(a, b) => (a.characterStart ?? 0) - (b.characterStart ?? 0)
-			);
-
-			newCommentText = '';
-			showNewComment = false;
-			savedCommentSelection = null;
-			currentSelection = null;
-			showComments = true;
-		} finally {
-			submittingComment = false;
-		}
 	}
 
 	function handleCommentClick(id: string) {
@@ -1072,8 +826,6 @@
 	let showNewParagraphComment = $state(false);
 	let pendingParagraphNumber = $state<number | null>(null);
 	let paragraphCommentPos = $state({ top: 0, right: 0 });
-	let paragraphCommentText = $state('');
-	let submittingParagraphComment = $state(false);
 
 	function handlePreviewSelection(sel: {
 		text: string;
@@ -1096,54 +848,7 @@
 	function handleParagraphComment(paragraphNumber: number, coords: { top: number; right: number }) {
 		pendingParagraphNumber = paragraphNumber;
 		paragraphCommentPos = coords;
-		paragraphCommentText = '';
 		showNewParagraphComment = true;
-	}
-
-	async function submitParagraphComment() {
-		if (!pendingParagraphNumber || !paragraphCommentText.trim()) return;
-		submittingParagraphComment = true;
-		try {
-			const paragraphText =
-				previewRef?.getParagraphText(pendingParagraphNumber) ??
-				splitPreviewRef?.getParagraphText(pendingParagraphNumber);
-			const created = await trpc.comments.createInline.mutate({
-				documentId: data.document.id,
-				content: paragraphCommentText.trim(),
-				paragraphNumber: pendingParagraphNumber,
-				anchorContext: paragraphText || undefined,
-				anchorText: undefined,
-				lineStart: undefined,
-				lineEnd: undefined,
-				characterStart: undefined,
-				characterEnd: undefined
-			});
-
-			const newComment: InlineComment = {
-				id: created.id,
-				authorId: created.authorId,
-				authorName: data.currentUserId === created.authorId ? ((data as any).user?.name ?? '') : '',
-				content: created.content,
-				anchorText: null,
-				lineStart: null,
-				characterStart: null,
-				characterEnd: null,
-				paragraphNumber: created.paragraphNumber,
-				status: 'open',
-				createdAt: created.createdAt,
-				replies: []
-			};
-
-			inlineComments = [...inlineComments, newComment];
-			paragraphCommentText = '';
-			showNewParagraphComment = false;
-			pendingParagraphNumber = null;
-			showComments = true;
-		} catch (e) {
-			console.error('Failed to submit paragraph comment', e);
-		} finally {
-			submittingParagraphComment = false;
-		}
 	}
 
 	// Export dropdown
@@ -1182,17 +887,7 @@
 	}
 
 	// ── Review assistant ─────────────────────────────────────────────────────────
-	type ReviewResult = {
-		requirements: { name: string; covered: boolean; note: string }[];
-		uncitedRefs: string[];
-	};
 	let showReview = $state(false);
-	let loadingReview = $state(false);
-	let reviewResult = $state<ReviewResult | null>(null);
-	let reviewError = $state('');
-	let reviewQuestions = $state<string[] | null>(null);
-	let loadingQuestions = $state(false);
-	let questionsError = $state('');
 
 	function toggleReview() {
 		showReview = !showReview;
@@ -1205,57 +900,8 @@
 		}
 	}
 
-	async function runReview() {
-		if (loadingReview) return;
-		loadingReview = true;
-		reviewError = '';
-		reviewResult = null;
-		try {
-			reviewResult = await trpc.ai.reviewDocument.mutate({
-				projectId: data.document.projectId,
-				documentId: data.document.id
-			});
-		} catch (e: unknown) {
-			reviewError = isNoKeyError(e)
-				? NO_KEY_MSG
-				: e instanceof Error
-					? e.message
-					: 'Error reviewing document.';
-		} finally {
-			loadingReview = false;
-		}
-	}
-
-	async function runReviewQuestions() {
-		if (loadingQuestions) return;
-		loadingQuestions = true;
-		questionsError = '';
-		reviewQuestions = null;
-		try {
-			reviewQuestions = await trpc.ai.generateReviewQuestions.mutate({
-				projectId: data.document.projectId,
-				documentId: data.document.id
-			});
-		} catch (e: unknown) {
-			questionsError = isNoKeyError(e)
-				? NO_KEY_MSG
-				: e instanceof Error
-					? e.message
-					: 'Error generating questions.';
-		} finally {
-			loadingQuestions = false;
-		}
-	}
-
 	// ── Enrich (find untagged) ───────────────────────────────────────────────────
-	type UntaggedResult = {
-		persons: string[];
-		refs: { context: string; text: string; citeKey: string }[];
-	};
 	let showEnrich = $state(false);
-	let loadingEnrich = $state(false);
-	let enrichResult = $state<UntaggedResult | null>(null);
-	let enrichError = $state('');
 
 	function toggleEnrich() {
 		showEnrich = !showEnrich;
@@ -1269,83 +915,8 @@
 		}
 	}
 
-	async function runEnrich() {
-		if (loadingEnrich) return;
-		loadingEnrich = true;
-		enrichError = '';
-		enrichResult = null;
-		try {
-			enrichResult = await trpc.ai.findUntagged.mutate({
-				projectId: data.document.projectId,
-				documentId: data.document.id
-			});
-		} catch (e: unknown) {
-			enrichError = isNoKeyError(e)
-				? NO_KEY_MSG
-				: e instanceof Error
-					? e.message
-					: 'Error analysing document.';
-		} finally {
-			loadingEnrich = false;
-		}
-	}
-
-	function enrichSnippet(term: string): { before: string; match: string; after: string } | null {
-		const idx = content.indexOf(term);
-		if (idx === -1) return null;
-		const start = Math.max(0, idx - 50);
-		const end = Math.min(content.length, idx + term.length + 50);
-		return {
-			before: (start > 0 ? '…' : '') + content.slice(start, idx),
-			match: term,
-			after: content.slice(idx + term.length, end) + (end < content.length ? '…' : '')
-		};
-	}
-
-	function applyPerson(name: string) {
-		const token = `[[person:${name}]]`;
-		// Replace all occurrences of the bare name not already inside [[person:...]]
-		const re = new RegExp(
-			`(?<!\\[\\[person:)\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b(?![^\\[]*\\]\\])`,
-			'g'
-		);
-		content = content.replace(re, token);
-		enrichResult = enrichResult
-			? { ...enrichResult, persons: enrichResult.persons.filter((p) => p !== name) }
-			: null;
-	}
-
-	function applyRef(context: string, text: string, citeKey: string) {
-		// Use context as anchor to find the exact occurrence, then replace only `text` within it
-		const ctxIdx = content.indexOf(context);
-		if (ctxIdx !== -1) {
-			const textIdx = content.indexOf(text, ctxIdx);
-			if (textIdx !== -1 && textIdx < ctxIdx + context.length) {
-				content =
-					content.slice(0, textIdx) + `[[@${citeKey}]]` + content.slice(textIdx + text.length);
-			}
-		} else {
-			// fallback: plain replace if context not found
-			content = content.replace(text, `[[@${citeKey}]]`);
-		}
-		enrichResult = enrichResult
-			? { ...enrichResult, refs: enrichResult.refs.filter((r) => r.text !== text) }
-			: null;
-	}
-
-	function applyAll() {
-		if (!enrichResult) return;
-		enrichResult.persons.forEach(applyPerson);
-		enrichResult.refs.forEach((r) => applyRef(r.context, r.text, r.citeKey));
-	}
-
 	// ── Draft assistant ──────────────────────────────────────────────────────────
 	let showDraft = $state(false);
-	let draftMode = $state<'new' | 'rewrite'>('new');
-	let draftInstruction = $state('');
-	let draftResult = $state('');
-	let loadingDraft = $state(false);
-	let draftError = $state('');
 
 	// Selection AI review
 	type ReviewType = 'clarity' | 'argument' | 'citations' | 'terminology';
@@ -1416,10 +987,6 @@
 		currentSelection = null;
 	}
 
-	// Rewrite mode — snapshot of the selected range
-	type SelectionSnapshot = { text: string; from: number; to: number };
-	let capturedSelection = $state<SelectionSnapshot | null>(null);
-
 	function toggleDraft() {
 		showDraft = !showDraft;
 		if (showDraft) {
@@ -1428,86 +995,12 @@
 			showHistory = false;
 			showComments = false;
 			showBib = false;
-		} else {
-			capturedSelection = null;
-			draftResult = '';
 		}
-	}
-
-	function setDraftMode(m: 'new' | 'rewrite') {
-		draftMode = m;
-		draftResult = '';
-		draftError = '';
-		capturedSelection = null;
-	}
-
-	function captureSelection() {
-		const sel = editorEl?.getSelection() ?? null;
-		capturedSelection = sel;
-		draftResult = '';
-		draftError = '';
-	}
-
-	async function runDraft() {
-		if (!draftInstruction.trim() || loadingDraft) return;
-		if (draftMode === 'rewrite' && !capturedSelection) return;
-		loadingDraft = true;
-		draftError = '';
-		draftResult = '';
-		try {
-			if (draftMode === 'rewrite') {
-				const instruction = `Rewrite the following text fragment according to this instruction: ${draftInstruction}\n\nOriginal text:\n${capturedSelection!.text}`;
-				const { text } = await trpc.ai.draftSection.mutate({
-					projectId: data.document.projectId,
-					instruction,
-					documentContext: undefined
-				});
-				draftResult = text;
-			} else {
-				const preview = content.slice(-2000);
-				const { text } = await trpc.ai.draftSection.mutate({
-					projectId: data.document.projectId,
-					instruction: draftInstruction,
-					documentContext: preview || undefined
-				});
-				draftResult = text;
-			}
-		} catch (e: unknown) {
-			draftError = isNoKeyError(e)
-				? NO_KEY_MSG
-				: e instanceof Error
-					? e.message
-					: 'Error generating draft.';
-		} finally {
-			loadingDraft = false;
-		}
-	}
-
-	function acceptDraft() {
-		if (!draftResult) return;
-		if (draftMode === 'rewrite' && capturedSelection) {
-			const wrapped = `> ⚠️ AI DRAFT — review and rewrite before publishing\n\n${draftResult}\n\n> ⚠️ END AI DRAFT`;
-			editorEl?.replaceRange(capturedSelection.from, capturedSelection.to, wrapped);
-			capturedSelection = null;
-		} else {
-			const wrapped = `\n\n> ⚠️ AI DRAFT — review and rewrite before publishing\n\n${draftResult}\n\n> ⚠️ END AI DRAFT\n\n`;
-			editorEl?.insertAtCursor(wrapped);
-		}
-		draftResult = '';
-		draftInstruction = '';
-	}
-
-	function rejectDraft() {
-		draftResult = '';
 	}
 
 	// Show floating button only after selection stabilizes (not during drag)
 	let showFloating = $state(false);
 	let floatingDebounce: ReturnType<typeof setTimeout> | null = null;
-
-	function focusOnMount(node: HTMLElement) {
-		node.focus();
-	}
 
 	function updateSelection(sel: typeof currentSelection) {
 		currentSelection = sel;
@@ -1540,7 +1033,6 @@
 			}
 			if (showNewParagraphComment) {
 				showNewParagraphComment = false;
-				paragraphCommentText = '';
 				e.stopPropagation();
 				return;
 			}
@@ -1572,7 +1064,6 @@
 			!paragraphCommentEl.contains(e.target as Node)
 		) {
 			showNewParagraphComment = false;
-			paragraphCommentText = '';
 		}
 	}
 
@@ -1650,28 +1141,6 @@
 				.querySelector(`[data-comment-id="${CSS.escape(targetId)}"]`)
 				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 		}, 150);
-	});
-
-	// Scroll sidebar to current comment whenever it changes
-	$effect(() => {
-		const id = currentCommentId;
-		if (!id || !showComments) return;
-		Promise.resolve().then(() => {
-			document
-				.querySelector(`[data-comment-id="${CSS.escape(id)}"]`)
-				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-		});
-	});
-
-	// Scroll bibliography panel to active citeKey whenever cursor moves onto a citation
-	$effect(() => {
-		const key = activeBibCiteKey;
-		if (!key || !showBib) return;
-		Promise.resolve().then(() => {
-			document
-				.querySelector(`[data-bib-ref="${CSS.escape(key)}"]`)
-				?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-		});
 	});
 </script>
 
@@ -2344,19 +1813,19 @@
 									ondocchange={handleDocChange}
 									onselectionchange={updateSelection}
 									onauthorhover={(name, coords) => showAuthorInfo(name, coords)}
-								onheadinghover={(info, coords) => {
-									headingTooltip = { title: info.title, wordCount: info.wordCount, coords };
-								}}
-								{commentRanges}
-								{scrollToRange}
-								onlookup={lookupNames}
-								{onwordprefix}
-								{onwordprefixclear}
-								{onwordghosttab}
-								{onheadingprefix}
-								{onheadingprefixclear}
-								{onheadingghosttab}
-								{spellLanguage}
+									onheadinghover={(info, coords) => {
+										headingTooltip = { title: info.title, wordCount: info.wordCount, coords };
+									}}
+									{commentRanges}
+									{scrollToRange}
+									onlookup={lookupNames}
+									{onwordprefix}
+									{onwordprefixclear}
+									{onwordghosttab}
+									{onheadingprefix}
+									{onheadingprefixclear}
+									{onheadingghosttab}
+									{spellLanguage}
 								/>
 							</div>
 						</div>
@@ -2443,761 +1912,108 @@
 				</div>
 			{/if}
 
-			<!-- Floating action buttons on selection -->
-			{#if showFloating && currentSelection && currentSelection.coords && !showNewComment}
-				<div
-					class="pointer-events-none fixed z-20 flex gap-1.5"
-					style="top: {currentSelection.coords.bottom + 8}px; left: {currentSelection.coords
-						.left}px;"
-				>
-					<button
-						class="pointer-events-auto rounded-md bg-amber-400 px-3 py-1.5 font-sans text-xs font-semibold text-white shadow-md transition-colors hover:bg-amber-500"
-						onclick={() => {
-							savedCommentSelection = currentSelection;
-							showNewComment = true;
-							showComments = true;
-							showHistory = false;
-						}}
-					>
-						+ Comment
-					</button>
-					{#if projectRefs.length > 0}
-						<button
-							class="pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:hover:bg-dark-paper-ui"
-							onclick={() => {
-								savedCommentSelection = currentSelection;
-								subnoteNotes = '';
-								subnoteSlug = slugify(currentSelection?.text?.slice(0, 40) ?? '');
-								subnoteRefId =
-									sourceReference?.id ??
-									(projectRefs.length === 1 ? (projectRefs[0].id ?? '') : '');
-								subnoteError = '';
-								showSubnote = true;
-							}}
-						>
-							+ Annotation
-						</button>
-					{/if}
-					{#if hasAiKey && currentSelection && currentSelection.text.trim().length > 20}
-						<div class="pointer-events-auto relative">
-							<button
-								class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
-								onclick={() => (showReviewTypeMenu = !showReviewTypeMenu)}
-							>
-								Review ▾
-							</button>
-							{#if showReviewTypeMenu}
-								<div
-									class="absolute top-full left-0 z-30 mt-1 w-44 rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-								>
-									{#each Object.entries(reviewTypeLabels) as [type, label]}
-										<button
-											class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted block w-full px-3 py-2 text-left font-sans text-xs text-ink dark:text-dark-ink"
-											onclick={() => runReviewSelection(type as ReviewType)}
-										>
-											{label}
-										</button>
-									{/each}
-								</div>
-							{/if}
-						</div>
-						<button
-							class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
-							onclick={() => {
-								const sel = currentSelection!;
-								showFloating = false;
-								runSpellCheck({ text: sel.text, offset: sel.from });
-							}}
-						>
-							Spell
-						</button>
-					{/if}
-				</div>
-			{/if}
-
-			<!-- Selection AI review popover -->
-			{#if selectionReview && selectionReview.coords}
-				<div
-					class="pointer-events-none fixed z-20"
-					style="top: {selectionReview.coords.bottom + 8}px; left: {selectionReview.coords.left}px;"
-				>
-					<div
-						class="pointer-events-auto w-96 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						<div
-							class="flex items-center justify-between border-b border-paper-border px-3 py-2 dark:border-dark-paper-border"
-						>
-							<span class="font-sans text-xs font-semibold text-ink dark:text-dark-ink"
-								>{reviewTypeLabels[selectionReview.reviewType]}</span
-							>
-							<button
-								onclick={() => (selectionReview = null)}
-								class="text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-								aria-label="Close"
-							>
-								<svg
-									width="12"
-									height="12"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"><path d="M18 6L6 18M6 6l12 12" /></svg
-								>
-							</button>
-						</div>
-						<div class="space-y-2 px-3 py-2.5">
-							{#if selectionReview.loading}
-								<div class="flex items-center gap-2">
-									<Spinner size="sm" class="text-accent" />
-									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-										>Reviewing…</span
-									>
-								</div>
-							{:else}
-								<p
-									class="font-sans text-xs leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink"
-								>
-									{selectionReview.suggestion}
-								</p>
-								<p class="font-sans text-[10px] text-ink-faint italic dark:text-dark-ink-faint">
-									{selectionReview.explanation}
-								</p>
-								<div class="flex gap-2 pt-1">
-									<button
-										onclick={acceptSelectionReview}
-										class="rounded bg-accent px-3 py-1 font-sans text-xs font-semibold text-white hover:bg-accent-hover"
-									>
-										Accept
-									</button>
-									<button
-										onclick={() => (selectionReview = null)}
-										class="rounded border border-paper-border px-3 py-1 font-sans text-xs text-ink-faint hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:text-dark-ink"
-									>
-										Discard
-									</button>
-								</div>
-								<p class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
-									Generated by AI · may be inaccurate
-								</p>
-							{/if}
-						</div>
-					</div>
-				</div>
-			{/if}
-
-			<!-- Author info popover (bibliography-based) -->
-			{#if authorPopover && authorPopover.coords}
-				<div
-					class="fixed inset-0 z-20"
-					onclick={() => (authorPopover = null)}
-					aria-hidden="true"
-				></div>
-				<div
-					class="pointer-events-none fixed z-20"
-					style="top: {authorPopover.coords.bottom + 8}px; left: {authorPopover.coords.left}px;"
-				>
-					<div
-						class="pointer-events-auto w-72 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						<div
-							class="flex items-center justify-between border-b border-paper-border px-3 py-2 dark:border-dark-paper-border"
-						>
-							<span class="font-sans text-xs font-semibold text-ink dark:text-dark-ink"
-								>{authorPopover.name}</span
-							>
-							<button
-								onclick={() => (authorPopover = null)}
-								class="text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-								aria-label="Close"
-							>
-								<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-									><path
-										d="M18 6L6 18M6 6l12 12"
-										stroke="currentColor"
-										stroke-width="1.5"
-										stroke-linecap="round"
-									/></svg
-								>
-							</button>
-						</div>
-						{#if authorPopover.refs.length === 0}
-							<p class="px-3 py-2.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Not in project bibliography.
-							</p>
-						{:else}
-							<div class="space-y-0.5 p-1.5">
-								{#each authorPopover.refs as ref}
-									<button
-										onclick={() => {
-											scrollEditorToCiteKey(ref.citeKey);
-											authorPopover = null;
-										}}
-										class="flex w-full items-baseline gap-1.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-									>
-										<span class="shrink-0 font-mono text-[10px] text-accent">@{ref.citeKey}</span>
-										<span
-											class="min-w-0 truncate font-sans text-xs text-ink dark:text-dark-ink"
-											title={ref.title}>{ref.title}</span
-										>
-										{#if ref.year}
-											<span
-												class="shrink-0 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
-												>({ref.year})</span
-											>
-										{/if}
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				</div>
-			{/if}
-
-			<!-- Heading word count tooltip -->
-			{#if headingTooltip && headingTooltip.coords}
-				<div
-					class="pointer-events-none fixed z-20"
-					style="top: {headingTooltip.coords.bottom + 6}px; left: {headingTooltip.coords.left}px;"
-				>
-					<div
-						class="pointer-events-auto flex items-center gap-1.5 rounded border border-paper-border bg-paper px-2.5 py-1.5 shadow-sm dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						<svg
-							width="11"
-							height="11"
-							viewBox="0 0 24 24"
-							fill="none"
-							class="text-ink-faint dark:text-dark-ink-faint"
-							aria-hidden="true"
-						>
-							<path
-								d="M4 6h16M4 12h10M4 18h7"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-							/>
-						</svg>
-						<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-							>{headingTooltip.wordCount} words in this section</span
-						>
-						<button
-							onclick={() => (headingTooltip = null)}
-							class="ml-1 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-							aria-label="Close"
-						>
-							<svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-								><path
-									d="M18 6L6 18M6 6l12 12"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/></svg
-							>
-						</button>
-					</div>
-				</div>
-			{/if}
-
-			<!-- New comment popover (anchored near selection) -->
-			{#if showNewComment && savedCommentSelection && savedCommentSelection.coords}
-				<div
-					class="pointer-events-none fixed z-20"
-					style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection
-						.coords.left}px;"
-				>
-					<div
-						class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						<p
-							class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
-						>
-							«{savedCommentSelection.text.slice(0, 60)}{savedCommentSelection.text.length > 60
-								? '…'
-								: ''}»
-						</p>
-						<textarea
-							use:focusOnMount
-							bind:value={newCommentText}
-							rows={3}
-							placeholder="Write your comment…"
-							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						></textarea>
-						<div class="mt-2 flex gap-2">
-							<button
-								onclick={submitComment}
-								disabled={submittingComment || !newCommentText.trim()}
-								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-							>
-								{submittingComment ? 'Saving…' : 'Comment'}
-							</button>
-							<button
-								onclick={() => {
-									showNewComment = false;
-									savedCommentSelection = null;
-									newCommentText = '';
-								}}
-								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-							>
-								Cancel
-							</button>
-						</div>
-					</div>
-				</div>
-			{/if}
-
-			<!-- Subnote popover (anchored near selection) -->
-			{#if showSubnote && savedCommentSelection?.coords}
-				<div
-					class="pointer-events-none fixed z-20"
-					style="top: {savedCommentSelection.coords.bottom + 8}px; left: {savedCommentSelection
-						.coords.left}px;"
-				>
-					<div
-						class="pointer-events-auto w-80 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						<p class="mb-2 font-sans text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
-							Nueva subnota bibliográfica
-						</p>
-						<p
-							class="mb-3 truncate border-l-2 border-paper-border pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
-						>
-							«{savedCommentSelection.text.slice(0, 80)}{savedCommentSelection.text.length > 80
-								? '…'
-								: ''}»
-						</p>
-						{#if !sourceReference}
-							<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-								>Referencia</label
-							>
-							<select
-								bind:value={subnoteRefId}
-								class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-							>
-								<option value="">— elige referencia —</option>
-								{#each projectRefs as ref}
-									<option value={ref.id ?? ''}>{ref.citeKey}</option>
-								{/each}
-							</select>
-						{:else}
-							<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Referencia: <span class="font-mono text-accent">@{sourceReference.citeKey}</span>
-							</p>
-						{/if}
-						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-							>Slug <span class="text-ink-faint">(identificador único)</span></label
-						>
-						<input
-							bind:value={subnoteSlug}
-							type="text"
-							placeholder="p247-exchange"
-							class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						/>
-						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-							>Nota</label
-						>
-						<textarea
-							use:focusOnMount
-							bind:value={subnoteNotes}
-							rows={3}
-							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						></textarea>
-						{#if subnoteError}
-							<p class="mt-1 font-sans text-xs text-red-500">{subnoteError}</p>
-						{/if}
-						<div class="mt-2 flex gap-2">
-							<button
-								onclick={submitSubnote}
-								disabled={submittingSubnote ||
-									!subnoteSlug.trim() ||
-									!subnoteNotes.trim() ||
-									!subnoteRefId}
-								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-							>
-								{submittingSubnote ? 'Saving…' : 'Save annotation'}
-							</button>
-							<button
-								onclick={() => {
-									showSubnote = false;
-									savedCommentSelection = null;
-								}}
-								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-							>
-								Cancel
-							</button>
-						</div>
-					</div>
-				</div>
-			{/if}
-
-			<!-- Paragraph comment form -->
-			{#if showNewParagraphComment && pendingParagraphNumber !== null}
-				<div
-					class="pointer-events-none fixed z-20"
-					style="top: {paragraphCommentPos.top}px; right: {window.innerWidth -
-						paragraphCommentPos.right +
-						8}px;"
-				>
-					<div
-						bind:this={paragraphCommentEl}
-						class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Comentario en ¶{pendingParagraphNumber}
-						</p>
-						<textarea
-							use:focusOnMount
-							bind:value={paragraphCommentText}
-							rows={3}
-							placeholder="Write your comment…"
-							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						></textarea>
-						<div class="mt-2 flex gap-2">
-							<button
-								onclick={submitParagraphComment}
-								disabled={submittingParagraphComment || !paragraphCommentText.trim()}
-								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-							>
-								{submittingParagraphComment ? 'Saving…' : 'Comment'}
-							</button>
-							<button
-								onclick={() => {
-									showNewParagraphComment = false;
-									paragraphCommentText = '';
-								}}
-								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-							>
-								Cancel
-							</button>
-						</div>
-					</div>
-				</div>
-			{/if}
-
+			<SelectionOverlays
+				{showFloating}
+				{currentSelection}
+				{projectRefs}
+				{sourceReference}
+				{hasAiKey}
+				{reviewTypeLabels}
+				documentId={data.document.id}
+				currentUserId={data.currentUserId}
+				currentUserName={(data as any).user?.name ?? null}
+				{content}
+				bind:showNewComment
+				bind:showSubnote
+				bind:showReviewTypeMenu
+				bind:showComments
+				bind:showHistory
+				bind:selectionReview
+				bind:authorPopover
+				bind:headingTooltip
+				bind:showNewParagraphComment
+				bind:pendingParagraphNumber
+				bind:paragraphCommentPos
+				bind:paragraphCommentEl
+				oncommentcreated={(comment) => {
+					inlineComments = [...inlineComments, comment].sort(
+						(a, b) => (a.characterStart ?? 0) - (b.characterStart ?? 0)
+					);
+				}}
+				onannotationcreated={loadDocSubnotes}
+				onparagraphcommentcreated={(comment) => {
+					inlineComments = [...inlineComments, comment];
+				}}
+				onscrolltocite={scrollEditorToCiteKey}
+				onreviewselection={(type) => runReviewSelection(type as ReviewType)}
+				onspellcheck={(text, offset) => {
+					showFloating = false;
+					runSpellCheck({ text, offset });
+				}}
+				onacceptreview={acceptSelectionReview}
+				ongetparagraphtext={(n) =>
+					previewRef?.getParagraphText(n) ?? splitPreviewRef?.getParagraphText(n)}
+				onclearselection={() => {
+					currentSelection = null;
+				}}
+			/>
 			<!-- Comments sidebar -->
 			{#if showComments}
-				<div
-					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Comments</h3>
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							{openCommentsCount} abierto{openCommentsCount !== 1 ? 's' : ''}
-						</span>
-					</div>
-
-					<div class="flex-1 space-y-2 overflow-y-auto p-3">
-						{#if inlineComments.length === 0}
-							<p
-								class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-							>
-								No comments yet.<br />
-								<span class="text-xs text-ink-faint dark:text-dark-ink-faint"
-									>Selecciona texto para comentar.</span
-								>
-							</p>
-						{:else}
-							{#each inlineComments as c (c.id)}
-								<div data-comment-id={c.id}>
-									<CommentThread
-										comment={{ ...c, resolved: c.status === 'resolved' }}
-										currentUserId={data.currentUserId}
-										isActive={c.id === currentCommentId}
-										onclick={handleCommentClick}
-										onresolved={handleCommentResolved}
-										onreopened={handleCommentReopened}
-										onreplyadded={handleReplyAdded}
-										ondeleted={(id) => {
-											inlineComments = inlineComments.filter((x) => x.id !== id);
-										}}
-										{chapters}
-										onlookup={lookupNames}
-									/>
-								</div>
-							{/each}
-						{/if}
-					</div>
-				</div>
+				<CommentsPanel
+					comments={inlineComments}
+					activeCommentId={currentCommentId}
+					currentUserId={data.currentUserId}
+					{chapters}
+					onlookup={lookupNames}
+					oncommentclick={handleCommentClick}
+					onresolved={handleCommentResolved}
+					onreopened={handleCommentReopened}
+					onreplyadded={handleReplyAdded}
+					ondeleted={(id) => {
+						inlineComments = inlineComments.filter((x) => x.id !== id);
+					}}
+				/>
 			{/if}
 
 			<!-- Annotations panel (subnotes for source-reference docs) -->
 			{#if data.document.isReadonly}
-				<div
-					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Anotaciones
-						</h3>
-						{#if sourceReference}
-							<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint"
-								>@{sourceReference.citeKey}</span
-							>
-						{/if}
-					</div>
-
-					<div class="flex-1 space-y-2 overflow-y-auto p-3">
-						{#if !sourceReference}
-							<!-- No reference assigned yet -->
-							<div class="px-1 py-6 text-center">
-								<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-									Sin referencia bibliográfica.
-								</p>
-								<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									Asigna una referencia para poder anotar este documento.
-								</p>
-								{#if !assigningReference}
-									<button
-										onclick={() => {
-											loadRefs();
-											assigningReference = true;
-										}}
-										class="mt-3 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-accent/90"
-										>Asignar referencia</button
-									>
-								{:else}
-									<div class="mt-3 text-left">
-										<select
-											bind:value={assignRefId}
-											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-										>
-											<option value="">— elige referencia —</option>
-											{#each projectRefs as ref}
-												<option value={ref.id ?? ''}>{ref.citeKey}</option>
-											{/each}
-										</select>
-										<div class="mt-2 flex gap-2">
-											<button
-												onclick={assignSourceReference}
-												disabled={!assignRefId}
-												class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
-												>Guardar</button
-											>
-											<button
-												onclick={() => {
-													assigningReference = false;
-													assignRefId = '';
-												}}
-												class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-												>Cancelar</button
-											>
-										</div>
-									</div>
-								{/if}
-							</div>
-						{:else if docSubnotes.length === 0}
-							<p
-								class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-							>
-								Sin anotaciones.<br />
-								<span class="text-xs text-ink-faint dark:text-dark-ink-faint"
-									>Selecciona texto para anotar.</span
-								>
-							</p>
-						{:else}
-							{#each docSubnotes as s (s.id)}
-								<div
-									class="rounded-lg border border-paper-border bg-paper p-3 dark:border-dark-paper-border dark:bg-dark-paper"
-								>
-									<div class="mb-1.5 flex items-center justify-between gap-2">
-										<button
-											onclick={() => s.anchorText && scrollToAnnotation(s.id)}
-											class="font-mono text-xs font-semibold text-accent {s.anchorText
-												? 'cursor-pointer hover:underline'
-												: 'cursor-default'}"
-											disabled={!s.anchorText}>:{s.slug}</button
-										>
-										<div class="flex items-center gap-1">
-											<button
-												onclick={() => {
-													editingSubnoteId = s.id;
-													editingSubnoteNotes = s.notes;
-												}}
-												class="rounded p-0.5 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-												aria-label="Editar"
-											>
-												<svg
-													width="12"
-													height="12"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												>
-													<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-													<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-												</svg>
-											</button>
-											<button
-												onclick={() => deleteDocSubnote(s.id)}
-												class="rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint"
-												aria-label="Eliminar"
-											>
-												<svg
-													width="12"
-													height="12"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												>
-													<polyline points="3 6 5 6 21 6" />
-													<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-													<path d="M10 11v6M14 11v6" />
-													<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-												</svg>
-											</button>
-										</div>
-									</div>
-
-									{#if s.anchorText}
-										<blockquote
-											class="mb-2 border-l-2 border-accent bg-accent/5 px-2.5 py-1.5 font-serif text-xs leading-relaxed text-ink-muted italic dark:text-dark-ink-muted"
-										>
-											"{s.anchorText}"
-										</blockquote>
-									{/if}
-
-									{#if editingSubnoteId === s.id}
-										<textarea
-											class="w-full resize-none rounded border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink outline-none focus:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-											rows="4"
-											bind:value={editingSubnoteNotes}
-											onkeydown={(e) => {
-												if (e.key === 'Escape') editingSubnoteId = null;
-											}}
-										></textarea>
-										<div class="mt-1.5 flex gap-2">
-											<button
-												onclick={() => saveSubnoteEdit(s.id)}
-												class="rounded bg-accent px-2 py-0.5 font-sans text-xs text-white hover:bg-accent/90"
-												>Guardar</button
-											>
-											<button
-												onclick={() => (editingSubnoteId = null)}
-												class="rounded px-2 py-0.5 font-sans text-xs text-ink-faint hover:text-ink dark:text-dark-ink-faint"
-												>Cancelar</button
-											>
-										</div>
-									{:else if s.notes}
-										<p
-											class="font-sans text-xs leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink"
-										>
-											{s.notes}
-										</p>
-									{/if}
-								</div>
-							{/each}
-						{/if}
-					</div>
-				</div>
+				<AnnotationsPanel
+					subnotes={docSubnotes}
+					{sourceReference}
+					{projectRefs}
+					onscrolltoannotation={scrollToAnnotation}
+					onloadrefs={loadRefs}
+					onassignreference={async (refId) => {
+						await trpc.documents.setSourceReference.mutate({
+							documentId: data.document.id,
+							referenceId: refId
+						});
+						const ref = projectRefs.find((r) => r.id === refId);
+						if (ref) sourceReference = { id: ref.id!, citeKey: ref.citeKey };
+						await loadDocSubnotes();
+					}}
+					onsavesubnote={async (id, notes) => {
+						await trpc.references.updateSubnote.mutate({ id, notes });
+						docSubnotes = docSubnotes.map((s) =>
+							s.id === id ? { ...s, notes, updatedAt: new Date() } : s
+						);
+					}}
+					ondeletesubnote={async (id) => {
+						await trpc.references.deleteSubnote.mutate({ id });
+						docSubnotes = docSubnotes.filter((s) => s.id !== id);
+					}}
+				/>
 			{/if}
 
 			<!-- Bibliography panel -->
 			{#if showBib && viewMode !== 'preview'}
-				<div
-					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Bibliografía
-						</h3>
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-							>{projectRefs.length} refs</span
-						>
-					</div>
-
-					<div class="border-b border-paper-border px-3 py-2 dark:border-dark-paper-border">
-						<input
-							type="text"
-							bind:value={bibFilter}
-							placeholder="Filtrar… ej. dennett"
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
-						/>
-					</div>
-
-					<div class="flex-1 space-y-1 overflow-y-auto p-2">
-						{#if projectRefs.length === 0}
-							<p
-								class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-							>
-								Sin referencias en este proyecto.
-							</p>
-						{:else if filteredBibRefs().length === 0}
-							<p
-								class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-							>
-								Sin coincidencias.
-							</p>
-						{:else}
-							{#each filteredBibRefs() as ref (ref.id ?? ref.citeKey)}
-								<div
-									data-bib-ref={ref.citeKey}
-									class="rounded-lg border p-2.5 transition-colors {activeBibCiteKey === ref.citeKey
-										? 'border-accent/50 bg-accent/5 dark:border-accent/40 dark:bg-accent/10'
-										: 'border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper'}"
-								>
-									<div class="flex items-center justify-between gap-1">
-										<button
-											onclick={() => scrollEditorToCiteKey(ref.citeKey)}
-											class="font-mono text-xs font-semibold text-accent hover:underline"
-										>
-											@{ref.citeKey}
-										</button>
-										<button
-											onclick={() => editorEl?.insertAtCursor(`[[@${ref.citeKey}]]`)}
-											title="Insertar cita en el cursor"
-											class="rounded px-1.5 py-0.5 font-sans text-[10px] text-ink-faint transition-colors hover:bg-accent hover:text-white dark:text-dark-ink-faint"
-										>
-											+ cita
-										</button>
-									</div>
-									<p
-										class="mt-0.5 line-clamp-2 font-sans text-xs leading-snug text-ink dark:text-dark-ink"
-									>
-										{ref.title}
-									</p>
-									{#if ref.authors.length > 0}
-										<p class="mt-0.5 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
-											{ref.authors.map((a) => a.last).join(', ')}{ref.year
-												? ` (${ref.year})`
-												: ''}
-										</p>
-									{/if}
-									{#if ref.subnotes && ref.subnotes.length > 0}
-										<div
-											class="mt-2 space-y-1.5 border-t border-paper-border pt-2 dark:border-dark-paper-border"
-										>
-											{#each ref.subnotes as s}
-												<div class="border-l-2 border-accent/30 pl-2">
-													<span class="font-mono text-[10px] font-semibold text-accent"
-														>:{s.slug}</span
-													>
-													{#if s.notes}
-														<p
-															class="mt-0.5 whitespace-pre-wrap font-sans text-[10px] leading-snug text-ink-muted dark:text-dark-ink-muted"
-														>
-															{s.notes}
-														</p>
-													{/if}
-												</div>
-											{/each}
-										</div>
-									{/if}
-								</div>
-							{/each}
-						{/if}
-					</div>
-				</div>
+				<BibliographyPanel
+					refs={projectRefs}
+					activeKey={activeBibCiteKey}
+					bind:filter={bibFilter}
+					onscrolltocite={scrollEditorToCiteKey}
+					oninsert={(key) => editorEl?.insertAtCursor(`[[@${key}]]`)}
+				/>
 			{/if}
 
 			<!-- Backlinks panel -->
@@ -3328,784 +2144,101 @@
 
 			<!-- Review sidebar -->
 			{#if showReview}
-				<div
-					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Document review
-						</h3>
-						<div class="flex items-center gap-2">
-							{#if loadingReview}
-								<Spinner size="sm" class="text-accent" />
-							{/if}
-							<button
-								type="button"
-								onclick={toggleReview}
-								class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
-								aria-label="Close review"
-							>
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M18 6L6 18M6 6l12 12"
-										stroke="currentColor"
-										stroke-width="1.5"
-										stroke-linecap="round"
-									/>
-								</svg>
-							</button>
-						</div>
-					</div>
-
-					<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-						{#if !reviewResult && !loadingReview}
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Checks each project requirement against the document content, and identifies
-								relevant references that aren't cited yet.
-							</p>
-							<button
-								type="button"
-								onclick={runReview}
-								class="flex items-center justify-center gap-2 rounded-lg bg-accent py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-							>
-								Run review
-							</button>
-						{/if}
-
-						{#if loadingReview && !reviewResult}
-							<p class="py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								Analysing document…
-							</p>
-						{/if}
-
-						{#if reviewError}
-							<div
-								class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400"
-							>
-								{#if reviewError === NO_KEY_MSG}
-									No AI key configured. <a
-										href="/settings?tab=ai"
-										class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a
-									> to add one.
-								{:else}
-									{reviewError}
-								{/if}
-							</div>
-						{/if}
-
-						{#if reviewResult}
-							<!-- Requirements checklist -->
-							{#if reviewResult.requirements.length > 0}
-								<div>
-									<p
-										class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-									>
-										Requirements
-									</p>
-									<div class="flex flex-col gap-2">
-										{#each reviewResult.requirements as req}
-											<div
-												class="rounded-lg border {req.covered
-													? 'border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-900/10'
-													: 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/10'} px-3 py-2"
-											>
-												<div class="flex items-start gap-2">
-													<span
-														class="mt-0.5 shrink-0 text-sm {req.covered
-															? 'text-green-600 dark:text-green-400'
-															: 'text-amber-600 dark:text-amber-400'}"
-													>
-														{req.covered ? '✓' : '✗'}
-													</span>
-													<div>
-														<p class="font-sans text-xs font-medium text-ink dark:text-dark-ink">
-															{req.name}
-														</p>
-														{#if req.note}
-															<p
-																class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-															>
-																{req.note}
-															</p>
-														{/if}
-													</div>
-												</div>
-											</div>
-										{/each}
-									</div>
-								</div>
-							{/if}
-
-							<!-- Uncited references -->
-							{#if reviewResult.uncitedRefs.length > 0}
-								<div>
-									<p
-										class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-									>
-										Relevant but uncited
-									</p>
-									<div class="flex flex-col gap-1.5">
-										{#each reviewResult.uncitedRefs as citeKey}
-											<button
-												type="button"
-												onclick={() => editorEl?.insertAtCursor(`[[@${citeKey}]]`)}
-												title="Insert citation"
-												class="flex items-center justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-left transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-											>
-												<span class="font-mono text-xs text-ink dark:text-dark-ink"
-													>[[@{citeKey}]]</span
-												>
-												<span class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
-													>insert</span
-												>
-											</button>
-										{/each}
-									</div>
-								</div>
-							{:else if reviewResult.requirements.length > 0}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									All relevant references are cited.
-								</p>
-							{/if}
-
-							<!-- Review questions -->
-							<div class="border-t border-paper-border pt-4 dark:border-dark-paper-border">
-								<p
-									class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-								>
-									Critical questions
-								</p>
-								{#if !reviewQuestions && !loadingQuestions}
-									<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										Questions a peer reviewer would likely raise about this document.
-									</p>
-									<button
-										type="button"
-										onclick={runReviewQuestions}
-										disabled={!hasAiKey}
-										class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-									>
-										Generate questions
-									</button>
-								{:else if loadingQuestions}
-									<p class="py-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										Generating…
-									</p>
-								{:else if questionsError}
-									<p class="font-sans text-xs text-red-500">{questionsError}</p>
-								{:else if reviewQuestions}
-									<ol class="flex flex-col gap-2">
-										{#each reviewQuestions as q, i}
-											<li class="flex items-start gap-2">
-												<span
-													class="mt-0.5 shrink-0 font-sans text-[10px] font-semibold text-ink-faint dark:text-dark-ink-faint"
-													>{i + 1}.</span
-												>
-												<span class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink"
-													>{q}</span
-												>
-											</li>
-										{/each}
-									</ol>
-									<button
-										type="button"
-										onclick={runReviewQuestions}
-										disabled={loadingQuestions}
-										class="mt-3 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-									>
-										Regenerate
-									</button>
-								{/if}
-							</div>
-
-							<button
-								type="button"
-								onclick={runReview}
-								disabled={loadingReview}
-								class="mt-auto rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-							>
-								Re-run review
-							</button>
-						{/if}
-					</div>
-				</div>
+				<ReviewPanel
+					projectId={data.document.projectId}
+					documentId={data.document.id}
+					{hasAiKey}
+					onclose={toggleReview}
+					oninsertcitation={(citeKey) => editorEl?.insertAtCursor(`[[@${citeKey}]]`)}
+				/>
 			{/if}
 
 			<!-- Enrich sidebar -->
 			{#if showEnrich}
-				<div
-					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Enrich document
-						</h3>
-						<button
-							type="button"
-							onclick={toggleEnrich}
-							class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
-							aria-label="Close"
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-								><path
-									d="M18 6L6 18M6 6l12 12"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/></svg
-							>
-						</button>
-					</div>
-
-					<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-						{#if !enrichResult && !loadingEnrich}
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Finds person names not yet tagged as <code
-									class="rounded bg-paper-ui px-1 font-mono text-[11px] dark:bg-dark-paper-ui"
-									>[[person:]]</code
-								> and informal citations that match a reference in your bibliography.
-							</p>
-							<button
-								type="button"
-								onclick={runEnrich}
-								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-							>
-								Analyse document
-							</button>
-						{:else if loadingEnrich}
-							<p class="py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								Analysing…
-							</p>
-						{:else if enrichError}
-							<p class="font-sans text-xs text-red-500">{enrichError}</p>
-						{:else if enrichResult}
-							{#if enrichResult.persons.length === 0 && enrichResult.refs.length === 0}
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									No untagged persons or informal citations found.
-								</p>
-							{:else}
-								<button
-									type="button"
-									onclick={applyAll}
-									class="rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-xs text-accent transition-colors hover:bg-accent/10"
-								>
-									Apply all
-								</button>
-							{/if}
-
-							{#if enrichResult.persons.length > 0}
-								<div>
-									<p
-										class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-									>
-										People
-									</p>
-									<div class="flex flex-col gap-1.5">
-										{#each enrichResult.persons as name}
-											{@const snippet = enrichSnippet(name)}
-											<div
-												class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-											>
-												<div class="min-w-0">
-													{#if snippet}
-														<p
-															class="font-sans text-[11px] leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-														>
-															{snippet.before}<strong class="text-ink dark:text-dark-ink"
-																>{snippet.match}</strong
-															>{snippet.after}
-														</p>
-													{/if}
-													<span
-														class="mt-0.5 block font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint"
-														>→ [[person:{name}]]</span
-													>
-												</div>
-												<button
-													type="button"
-													onclick={() => applyPerson(name)}
-													class="ml-2 shrink-0 font-sans text-[10px] text-accent hover:underline"
-													>Apply</button
-												>
-											</div>
-										{/each}
-									</div>
-								</div>
-							{/if}
-
-							{#if enrichResult.refs.length > 0}
-								<div>
-									<p
-										class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-									>
-										Informal citations
-									</p>
-									<div class="flex flex-col gap-1.5">
-										{#each enrichResult.refs as ref}
-											{@const refTextIdx = ref.context.indexOf(ref.text)}
-											{@const refSnippet =
-												refTextIdx !== -1
-													? {
-															before: ref.context.slice(0, refTextIdx),
-															match: ref.text,
-															after: ref.context.slice(refTextIdx + ref.text.length)
-														}
-													: enrichSnippet(ref.text)}
-											<div
-												class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-											>
-												<div class="min-w-0">
-													{#if refSnippet}
-														<p
-															class="font-sans text-[11px] leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-														>
-															{refSnippet.before}<strong class="text-ink dark:text-dark-ink"
-																>{refSnippet.match}</strong
-															>{refSnippet.after}
-														</p>
-													{/if}
-													<span
-														class="mt-0.5 block font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint"
-														>→ [[@{ref.citeKey}]]</span
-													>
-												</div>
-												<button
-													type="button"
-													onclick={() => applyRef(ref.context, ref.text, ref.citeKey)}
-													class="ml-2 shrink-0 font-sans text-[10px] text-accent hover:underline"
-													>Apply</button
-												>
-											</div>
-										{/each}
-									</div>
-								</div>
-							{/if}
-
-							<button
-								type="button"
-								onclick={runEnrich}
-								disabled={loadingEnrich}
-								class="mt-auto rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-							>
-								Re-analyse
-							</button>
-						{/if}
-					</div>
-				</div>
+				<EnrichPanel
+					projectId={data.document.projectId}
+					documentId={data.document.id}
+					{content}
+					onclose={toggleEnrich}
+					onapplyperson={(name) => {
+						const token = `[[person:${name}]]`;
+						const re = new RegExp(
+							`(?<!\\[\\[person:)\\b${name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\b(?![^\\[]*\\]\\])`,
+							'g'
+						);
+						content = content.replace(re, token);
+					}}
+					oapplyref={(ctx, text, citeKey) => {
+						const ctxIdx = content.indexOf(ctx);
+						if (ctxIdx !== -1) {
+							const textIdx = content.indexOf(text, ctxIdx);
+							if (textIdx !== -1 && textIdx < ctxIdx + ctx.length)
+								content =
+									content.slice(0, textIdx) +
+									`[[@${citeKey}]]` +
+									content.slice(textIdx + text.length);
+						} else {
+							content = content.replace(text, `[[@${citeKey}]]`);
+						}
+					}}
+				/>
 			{/if}
 
 			<!-- Draft assistant sidebar -->
 			{#if showDraft}
-				<div
-					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Draft assistant
-						</h3>
-						<button
-							type="button"
-							onclick={toggleDraft}
-							class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
-							aria-label="Close draft assistant"
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M18 6L6 18M6 6l12 12"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						</button>
-					</div>
-
-					<div class="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
-						<!-- Mode toggle -->
-						<div
-							class="flex overflow-hidden rounded-lg border border-paper-border dark:border-dark-paper-border"
-						>
-							<button
-								type="button"
-								onclick={() => setDraftMode('new')}
-								class="flex-1 py-1.5 font-sans text-xs transition-colors {draftMode === 'new'
-									? 'bg-accent text-white'
-									: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							>
-								New text
-							</button>
-							<button
-								type="button"
-								onclick={() => setDraftMode('rewrite')}
-								class="flex-1 border-l border-paper-border py-1.5 font-sans text-xs transition-colors dark:border-dark-paper-border {draftMode ===
-								'rewrite'
-									? 'bg-accent text-white'
-									: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							>
-								Rewrite selection
-							</button>
-						</div>
-
-						{#if draftMode === 'new'}
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								Describe what to write. The assistant will use your project references,
-								requirements, and existing documents as context.
-							</p>
-						{:else}
-							<!-- Rewrite mode: capture selection -->
-							<div class="flex flex-col gap-2">
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-									Select text in the editor, then capture it here.
-								</p>
-								<button
-									type="button"
-									onclick={captureSelection}
-									class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:text-dark-ink"
-								>
-									Capture selection
-								</button>
-								{#if capturedSelection}
-									<div
-										class="rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink-muted dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-muted"
-										style="max-height: 80px; overflow-y: auto;"
-									>
-										{capturedSelection.text}
-									</div>
-								{/if}
-							</div>
-						{/if}
-
-						<textarea
-							bind:value={draftInstruction}
-							placeholder={draftMode === 'new'
-								? 'E.g.: Write an introductory paragraph for the methodology section…'
-								: 'E.g.: Make this more formal, add a citation, expand this argument…'}
-							rows="3"
-							class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						></textarea>
-
-						<button
-							type="button"
-							onclick={runDraft}
-							disabled={!draftInstruction.trim() ||
-								loadingDraft ||
-								(draftMode === 'rewrite' && !capturedSelection)}
-							class="flex items-center justify-center gap-2 rounded-lg bg-accent py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
-						>
-							{#if loadingDraft}
-								<Spinner size="sm" class="text-white" />
-								Generating…
-							{:else}
-								Generate
-							{/if}
-						</button>
-
-						{#if draftError}
-							<div
-								class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400"
-							>
-								{#if draftError === NO_KEY_MSG}
-									No AI key configured. <a
-										href="/settings?tab=ai"
-										class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a
-									> to add one.
-								{:else}
-									{draftError}
-								{/if}
-							</div>
-						{/if}
-
-						{#if draftResult}
-							<div class="flex flex-col gap-2">
-								<!-- Diff preview: original → new (rewrite mode only) -->
-								{#if draftMode === 'rewrite' && capturedSelection}
-									<div class="rounded-xl border border-accent/20 bg-accent/5 p-3">
-										<div
-											class="mb-2 space-y-1 rounded-md bg-paper px-2.5 py-2 font-mono text-xs dark:bg-dark-paper"
-										>
-											<p class="text-red-500 line-through opacity-70">{capturedSelection.text}</p>
-											<p class="text-green-600 dark:text-green-400">{draftResult}</p>
-										</div>
-									</div>
-								{:else}
-									<div
-										class="rounded-lg border border-paper-border bg-paper-ui px-3 py-2.5 font-sans text-sm leading-relaxed text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-										style="white-space: pre-wrap;"
-									>
-										{draftResult}
-									</div>
-								{/if}
-								<div class="flex gap-2">
-									<button
-										type="button"
-										onclick={acceptDraft}
-										class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover"
-									>
-										{draftMode === 'rewrite' ? 'Accept' : 'Insert at cursor'}
-									</button>
-									<button
-										type="button"
-										onclick={rejectDraft}
-										class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-									>
-										Reject
-									</button>
-								</div>
-							</div>
-						{/if}
-					</div>
-				</div>
+				<DraftPanel
+					projectId={data.document.projectId}
+					onclose={toggleDraft}
+					ongetselection={() => editorEl?.getSelection() ?? null}
+					oninsertcursor={(text) => editorEl?.insertAtCursor(text)}
+					onreplacerange={(from, to, text) => editorEl?.replaceRange(from, to, text)}
+				/>
 			{/if}
 
 			<!-- Version history sidebar -->
 			{#if showHistory}
-				<div
-					class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-					>
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Version history
-						</h3>
-						{#if loadingVersions}
-							<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-								>Cargando...</span
-							>
-						{/if}
-					</div>
-
-					<div class="flex-1 overflow-y-auto">
-						{#if versions.length === 0 && !loadingVersions}
-							<div
-								class="px-4 py-8 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-							>
-								No saved versions yet.
-							</div>
-						{:else}
-							<ul class="divide-y divide-paper-border dark:divide-dark-paper-border">
-								{#each versions as v (v.id)}
-									<li class="px-4 py-3">
-										<div class="flex items-start justify-between gap-2">
-											<div class="min-w-0">
-												<p class="font-sans text-xs font-semibold text-accent">
-													v{v.versionNumber}
-												</p>
-												<p class="mt-0.5 truncate font-sans text-sm text-ink dark:text-dark-ink">
-													{v.changeDescription ?? 'No description'}
-												</p>
-												<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-													{new Intl.DateTimeFormat('es', {
-														day: 'numeric',
-														month: 'short',
-														hour: '2-digit',
-														minute: '2-digit'
-													}).format(new Date(v.createdAt))}
-												</p>
-											</div>
-											<div class="flex shrink-0 flex-col gap-1">
-												<button
-													onclick={() =>
-														window.open(
-															`/projects/${data.document.projectId}/documents/${data.document.id}/diff/${v.id}`,
-															'_blank'
-														)}
-													class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-												>
-													Compare ↗
-												</button>
-												{#if selectedVersionId === v.id && compareDiff !== null}
-													<button
-														onclick={() => restoreVersion(v.id)}
-														class="rounded px-2 py-1 font-sans text-xs text-accent transition-colors hover:underline"
-													>
-														Restaurar
-													</button>
-												{/if}
-											</div>
-										</div>
-
-										{#if selectedVersionId === v.id}
-											<div class="mt-3">
-												{#if loadingCompare}
-													<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-														Cargando diff...
-													</p>
-												{:else if compareDiff !== null}
-													<DiffViewer
-														oldText={compareDiff.previous?.content ?? ''}
-														newText={compareDiff.current.content}
-														oldLabel={compareDiff.previous
-															? `v${compareDiff.previous.versionNumber}`
-															: '(empty)'}
-														newLabel="v{v.versionNumber}"
-													/>
-												{/if}
-											</div>
-										{/if}
-									</li>
-								{/each}
-							</ul>
-						{/if}
-					</div>
-				</div>
+				<VersionHistoryPanel
+					documentId={data.document.id}
+					projectId={data.document.projectId}
+					onclose={toggleHistory}
+					onrestore={(restoredContent) => {
+						content = restoredContent;
+						lastSavedContent = restoredContent;
+						saveStatus = 'pending';
+						if (autoSaveTimer) clearTimeout(autoSaveTimer);
+						autoSaveTimer = setTimeout(doSaveDraft, 30_000);
+					}}
+				/>
 			{/if}
 		</div>
 
 		<!-- Cite picker modal -->
 		{#if showCitePicker}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div
-				class="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-sm sm:items-center"
-				onclick={(e) => {
-					if (e.target === e.currentTarget) showCitePicker = false;
+			<CitePicker
+				refs={projectRefs}
+				{refsLoaded}
+				projectId={data.document.projectId}
+				onclose={() => (showCitePicker = false)}
+				oninsert={(ref) => {
+					editorEl?.insertAtCursor(`[[@${ref.citeKey}]]`);
+					showCitePicker = false;
 				}}
-			>
-				<div
-					class="w-full max-w-sm rounded-t-2xl border border-paper-border bg-paper shadow-2xl sm:rounded-2xl dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<div
-						class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-					>
-						<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-							Insertar cita
-						</h2>
-						<button
-							onclick={() => (showCitePicker = false)}
-							aria-label="Cerrar"
-							class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-						>
-							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-								<path
-									d="M1 1l12 12M13 1L1 13"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						</button>
-					</div>
-
-					<div class="px-4 pt-3">
-						<input
-							type="search"
-							bind:value={citeSearch}
-							placeholder="Search by author, title or key…"
-							class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						/>
-					</div>
-
-					<div class="max-h-72 overflow-y-auto px-2 py-2">
-						{#if !refsLoaded}
-							<p
-								class="px-3 py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint"
-							>
-								Cargando…
-							</p>
-						{:else if projectRefs.length === 0}
-							<div class="px-3 py-6 text-center">
-								<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-									Sin referencias en este proyecto.
-								</p>
-								<a
-									href="/projects/{data.document.projectId}/bib"
-									class="mt-1 block font-sans text-xs text-accent hover:underline"
-								>
-									Go to Bibliography →
-								</a>
-							</div>
-						{:else if filteredRefs().length === 0}
-							<p
-								class="px-3 py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint"
-							>
-								Sin resultados.
-							</p>
-						{:else}
-							{#each filteredRefs() as ref (ref.citeKey)}
-								<button
-									onclick={() => insertCitation(ref)}
-									class="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-								>
-									<span
-										class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-1.5 py-0.5 font-mono text-xs text-accent"
-									>
-										{ref.citeKey}
-									</span>
-									<span class="min-w-0">
-										<span class="block truncate font-sans text-sm text-ink dark:text-dark-ink"
-											>{ref.title}</span
-										>
-										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-											{ref.authors[0]?.last ?? ''}{ref.authors.length > 1 ? ' et al.' : ''}{ref.year
-												? ' · ' + ref.year
-												: ''}
-										</span>
-									</span>
-								</button>
-							{/each}
-						{/if}
-					</div>
-				</div>
-			</div>
+			/>
 		{/if}
 
 		<!-- Commit dialog -->
 		{#if showCommit}
-			<div
-				class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 backdrop-blur-sm dark:bg-dark-ink/30"
-			>
-				<div
-					class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">
-						Create version
-					</h2>
-					<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Describe the changes in this version.
-					</p>
-
-					<div class="mt-4 flex flex-col gap-3">
-						<textarea
-							bind:value={commitMessage}
-							rows={3}
-							autofocus
-							placeholder="E.g. Introduction revision and hypothesis adjustment"
-							class="resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-						></textarea>
-
-						{#if commitError}
-							<p class="font-sans text-sm text-red-600 dark:text-red-400">{commitError}</p>
-						{/if}
-
-						<div class="flex gap-3">
-							<button
-								onclick={doCommit}
-								disabled={committing || !commitMessage.trim()}
-								class="flex-1 rounded-md bg-accent py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-							>
-								{committing ? 'Saving version...' : 'Create version'}
-							</button>
-							<button
-								onclick={() => {
-									showCommit = false;
-									commitMessage = '';
-									commitError = '';
-								}}
-								class="rounded-md border border-paper-border px-4 py-2.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
-							>
-								Cancel
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
+			<CommitDialog
+				documentId={data.document.id}
+				{isDirty}
+				ondosave={doSaveDraft}
+				oncommitted={() => {
+					lastSavedContent = content;
+					saveStatus = 'idle';
+					showCommit = false;
+				}}
+				onclose={() => (showCommit = false)}
+			/>
 		{/if}
 	</div>
 	<!-- end desktop editor wrapper -->
@@ -4211,178 +2344,14 @@
 />
 
 {#if showCheatsheet}
-	<div
-		class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-		role="presentation"
-		onclick={() => (showCheatsheet = false)}
-	></div>
-
-	<div
-		class="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col overflow-hidden bg-paper shadow-2xl dark:bg-dark-paper"
-	>
-		<div
-			class="flex shrink-0 items-center justify-between border-b border-paper-border px-6 py-4 dark:border-dark-paper-border"
-		>
-			<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Referencia de sintaxis
-			</p>
-			<button
-				onclick={() => (showCheatsheet = false)}
-				class="rounded p-1 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-				aria-label="Cerrar"
-			>
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path
-						d="M18 6L6 18M6 6l12 12"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
-			</button>
-		</div>
-
-		<div class="flex-1 space-y-6 overflow-y-auto px-6 py-5 font-sans text-sm">
-			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formato</p>
-				<table class="w-full">
-					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-						{#each [['# Title', 'Heading 1'], ['## Section', 'Heading 2'], ['**negrita**', 'Negrita'], ['*cursiva*', 'Cursiva'], ['`code`', 'Inline code'], ['> cita', 'Bloque de cita'], ['- elemento', 'Lista'], ['1. elemento', 'Lista numerada'], ['[texto](url)', 'Enlace'], ['---', 'Separador']] as item}
-							<tr>
-								<td class="py-1.5 pr-4 font-mono text-xs text-accent">{item[0]}</td>
-								<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">{item[1]}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Bibliographic citations</p>
-				<table class="w-full">
-					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[@citeKey]]</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Single citation</td>
-						</tr>
-						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[@key1; @key2]]</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Multiple citations</td>
-						</tr>
-					</tbody>
-				</table>
-				<p class="mt-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">
-					Type <span class="font-mono">[[@</span> to autocomplete.
-				</p>
-			</div>
-
-			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Mathematics (KaTeX)</p>
-				<table class="w-full">
-					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">$E = mc^2$</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Inline</td>
-						</tr>
-						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">$$...$$</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Bloque centrado</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-
-			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formal logic</p>
-				<table class="w-full">
-					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-						{#each [['$\\neg p$', '¬p', 'Negation'], ['$p \\land q$', 'p ∧ q', 'Conjunction'], ['$p \\lor q$', 'p ∨ q', 'Disjunction'], ['$p \\rightarrow q$', 'p → q', 'Implication'], ['$p \\leftrightarrow q$', 'p ↔ q', 'Bicondicional'], ['$\\forall x$', '∀x', 'Universal'], ['$\\exists x$', '∃x', 'Existencial'], ['$\\therefore$', '∴', 'Por tanto'], ['$\\bot$ / $\\top$', '⊥ / ⊤', 'Contradiction / Tautology']] as item}
-							<tr>
-								<td class="py-1.5 pr-3 font-mono text-xs text-accent">{item[0]}</td>
-								<td class="py-1.5 pr-4 text-ink dark:text-dark-ink">{item[1]}</td>
-								<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">{item[2]}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Wikilinks</p>
-				<table class="w-full">
-					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[Title]]</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Same project</td>
-						</tr>
-						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[Title:hash]]</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">External document</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-
-			<div>
-				<p class="mb-2 font-medium text-ink dark:text-dark-ink">Atajos de teclado</p>
-				<table class="w-full">
-					<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-						{#each [['Ctrl+S', 'Save draft'], ['Ctrl+/', 'This reference'], ['Esc', 'Close panels']] as item}
-							<tr>
-								<td class="py-1.5 pr-4">
-									<kbd
-										class="rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-mono text-xs text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-										>{item[0]}</kbd
-									>
-								</td>
-								<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">{item[1]}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</div>
-	</div>
+	<MarkdownCheatsheet onclose={() => (showCheatsheet = false)} />
 {/if}
 
 <!-- ── Writer lost modal ── -->
 {#if writerLostContent !== null}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-		role="dialog"
-		aria-modal="true"
-	>
-		<div
-			class="flex w-full max-w-lg flex-col gap-4 rounded-2xl bg-paper p-6 shadow-xl dark:bg-dark-paper"
-		>
-			<div>
-				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Cambios offline no sincronizados
-				</h2>
-				<p class="mt-1 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-					Mientras estabas sin conexión, otro colaborador tomó el control de edición. Tus cambios no
-					se han sincronizado. Cópialos antes de cerrar.
-				</p>
-			</div>
-			<textarea
-				readonly
-				value={writerLostContent}
-				class="h-48 w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
-			></textarea>
-			<div class="flex justify-end">
-				<button
-					type="button"
-					onclick={async () => {
-						await offlineDb.pendingEdits
-							.where({ documentId: data.document.id, status: 'writer_lost' })
-							.modify({ status: 'synced' });
-						writerLostContent = null;
-					}}
-					class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
-				>
-					Descartar
-				</button>
-			</div>
-		</div>
-	</div>
+	<WriterLostModal
+		content={writerLostContent}
+		documentId={data.document.id}
+		onclose={() => (writerLostContent = null)}
+	/>
 {/if}

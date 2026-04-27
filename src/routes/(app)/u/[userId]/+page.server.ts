@@ -62,9 +62,8 @@ export const load: PageServerLoad = async (event) => {
 
 	const reputation = {
 		projectsTotal: collabRows.length,
-		projectsCompleted: collabRows.filter(
-			(r) => r.status === 'published' || r.status === 'archived'
-		).length,
+		projectsCompleted: collabRows.filter((r) => r.status === 'published' || r.status === 'archived')
+			.length,
 		rolesWorked: [...new Set(collabRows.map((r) => r.role))] as string[],
 		totalCommits: commitRows[0]?.total ?? 0,
 		lastActiveAt: commitRows[0]?.lastAt ?? null

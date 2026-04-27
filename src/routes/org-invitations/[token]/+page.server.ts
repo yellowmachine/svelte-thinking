@@ -2,7 +2,13 @@ import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { orgInvitation, organization } from '$lib/server/db/schemas/organizations.schema';
-export const load = async ({ params, locals }: { params: { token: string }; locals: App.Locals }) => {
+export const load = async ({
+	params,
+	locals
+}: {
+	params: { token: string };
+	locals: App.Locals;
+}) => {
 	const rows = await db
 		.select({
 			id: orgInvitation.id,

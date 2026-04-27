@@ -30,7 +30,10 @@ export const actions: Actions = {
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				return fail(400, { token, message: (body as { message?: string }).message ?? 'The link may have expired.' });
+				return fail(400, {
+					token,
+					message: (body as { message?: string }).message ?? 'The link may have expired.'
+				});
 			}
 		} catch (e) {
 			console.error('[reset-password] unexpected error:', e);

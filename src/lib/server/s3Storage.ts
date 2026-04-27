@@ -144,11 +144,7 @@ export async function resolveProjectS3Config(
 ): Promise<UserS3Config | null> {
 	// 1. Confirm project access and get orgId — RLS enforces project authorization
 	const [proj] = (await withRLS((db: Db) =>
-		db
-			.select({ orgId: project.orgId })
-			.from(project)
-			.where(eq(project.id, projectId))
-			.limit(1)
+		db.select({ orgId: project.orgId }).from(project).where(eq(project.id, projectId)).limit(1)
 	)) as { orgId: string | null }[];
 
 	const orgId = proj?.orgId ?? null;

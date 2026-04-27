@@ -15,14 +15,16 @@ export const load: PageServerLoad = async (event) => {
 				.where(eq(project.id, projectId))
 				.limit(1)
 		),
-		event.locals.withRLS((db) =>
-			db
-				.select({ ref: reference })
-				.from(reference)
-				.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-				.where(eq(projectReference.projectId, projectId))
-				.orderBy(asc(reference.citeKey))
-		).then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref))
+		event.locals
+			.withRLS((db) =>
+				db
+					.select({ ref: reference })
+					.from(reference)
+					.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+					.where(eq(projectReference.projectId, projectId))
+					.orderBy(asc(reference.citeKey))
+			)
+			.then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref))
 	]);
 
 	if (!(proj as { id: string }[])[0]) error(404, 'Proyecto no encontrado');

@@ -34,8 +34,10 @@ export const load: PageServerLoad = async (event) => {
 		},
 		orcid: profile?.orcid ?? null,
 		orcidVerified: profile?.orcidVerified ?? false,
-		orcidStatus: orcidStatus === 'connected' ? 'connected' : orcidStatus === 'error' ? 'error' : null,
-		openrouterStatus: openrouterStatus === 'success' ? 'success' : openrouterStatus === 'error' ? 'error' : null,
+		orcidStatus:
+			orcidStatus === 'connected' ? 'connected' : orcidStatus === 'error' ? 'error' : null,
+		openrouterStatus:
+			openrouterStatus === 'success' ? 'success' : openrouterStatus === 'error' ? 'error' : null,
 		githubLinked: !!githubAccount,
 		isAdmin: !!env.ADMIN_EMAIL && user.email === env.ADMIN_EMAIL
 	};
@@ -104,6 +106,5 @@ export const actions: Actions = {
 		}
 
 		return { passwordSuccess: true };
-	},
-
+	}
 };

@@ -87,10 +87,17 @@ export const load: PageServerLoad = async (event) => {
 	}));
 
 	// Group by document
-	const byDocument = new Map<string, { documentId: string; documentTitle: string; threads: typeof threadsWithReplies }>();
+	const byDocument = new Map<
+		string,
+		{ documentId: string; documentTitle: string; threads: typeof threadsWithReplies }
+	>();
 	for (const t of threadsWithReplies) {
 		if (!byDocument.has(t.documentId)) {
-			byDocument.set(t.documentId, { documentId: t.documentId, documentTitle: t.documentTitle, threads: [] });
+			byDocument.set(t.documentId, {
+				documentId: t.documentId,
+				documentTitle: t.documentTitle,
+				threads: []
+			});
 		}
 		byDocument.get(t.documentId)!.threads.push(t);
 	}

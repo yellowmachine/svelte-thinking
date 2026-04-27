@@ -37,20 +37,14 @@
 				style:outline={isActive(theme.id, false) ? `2px solid ${theme.light.accent}` : 'none'}
 				style:outline-offset="1px"
 			>
-				<span
-					class="absolute inset-0"
-					style:background-color={theme.light.ui}
-				></span>
+				<span class="absolute inset-0" style:background-color={theme.light.ui}></span>
 				<!-- accent dot -->
 				<span
-					class="absolute bottom-1.5 right-1.5 h-2.5 w-2.5 rounded-full"
+					class="absolute right-1.5 bottom-1.5 h-2.5 w-2.5 rounded-full"
 					style:background-color={theme.light.accent}
 				></span>
 				<!-- paper stripe -->
-				<span
-					class="absolute inset-x-0 top-0 h-4"
-					style:background-color={theme.light.bg}
-				></span>
+				<span class="absolute inset-x-0 top-0 h-4" style:background-color={theme.light.bg}></span>
 			</button>
 
 			<!-- Dark swatch -->
@@ -63,18 +57,12 @@
 				style:outline={isActive(theme.id, true) ? `2px solid ${theme.dark.accent}` : 'none'}
 				style:outline-offset="1px"
 			>
+				<span class="absolute inset-0" style:background-color={theme.dark.ui}></span>
 				<span
-					class="absolute inset-0"
-					style:background-color={theme.dark.ui}
-				></span>
-				<span
-					class="absolute bottom-1.5 right-1.5 h-2.5 w-2.5 rounded-full"
+					class="absolute right-1.5 bottom-1.5 h-2.5 w-2.5 rounded-full"
 					style:background-color={theme.dark.accent}
 				></span>
-				<span
-					class="absolute inset-x-0 top-0 h-4"
-					style:background-color={theme.dark.bg}
-				></span>
+				<span class="absolute inset-x-0 top-0 h-4" style:background-color={theme.dark.bg}></span>
 			</button>
 
 			<p class="truncate text-center font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">

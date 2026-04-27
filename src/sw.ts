@@ -11,7 +11,6 @@ declare let self: ServiceWorkerGlobalScope;
 self.skipWaiting();
 clientsClaim();
 
-
 // /offline route must be registered BEFORE precacheAndRoute so our NetworkFirst
 // handler takes precedence over the precache route (Workbox checks routes in
 // registration order). Without this, navigating to /offline while online serves
@@ -86,7 +85,7 @@ registerRoute(
 // Fallback: when a navigate request fails (offline + not cached), serve /offline
 // /offline is precached via additionalManifestEntries so it's always available
 setCatchHandler(async ({ event }) => {
-	const req = event.request;
+	const req = (event as FetchEvent).request;
 	if (req.mode === 'navigate') {
 		const cached = await caches.match('/offline');
 		return cached ?? Response.error();

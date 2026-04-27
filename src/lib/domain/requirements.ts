@@ -57,7 +57,10 @@ export function getRequirementState(counts: RequirementCounts): RequirementState
 	return 'pending';
 }
 
-export function getProgressLabel(state: RequirementState, counts: RequirementCounts): string | null {
+export function getProgressLabel(
+	state: RequirementState,
+	counts: RequirementCounts
+): string | null {
 	if (state === 'empty') return null;
 	if (state === 'complete') return `${counts.total}/${counts.total}`;
 	return `${counts.requiredFulfilled}/${counts.requiredTotal}`;

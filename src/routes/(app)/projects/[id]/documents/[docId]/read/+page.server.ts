@@ -75,12 +75,12 @@ export const load: PageServerLoad = async (event) => {
 	}));
 
 	// Load project docs for wikilink resolution inside chapter content
-	const projectDocs = await event.locals.withRLS((db) =>
+	const projectDocs = (await event.locals.withRLS((db) =>
 		db
 			.select({ id: document.id, title: document.title, projectId: document.projectId })
 			.from(document)
 			.where(eq(document.projectId, projectId))
-	) as { id: string; title: string; projectId: string }[];
+	)) as { id: string; title: string; projectId: string }[];
 
 	return {
 		book: {

@@ -10,8 +10,7 @@ export default async function globalSetup() {
 		env: {
 			...process.env,
 			DATABASE_URL: 'postgres://scholarly_app:scholarly_app_test@localhost:5434/scholio_test',
-			MIGRATION_DATABASE_URL:
-				'postgres://scholarly:scholarly_test@localhost:5434/scholio_test'
+			MIGRATION_DATABASE_URL: 'postgres://scholarly:scholarly_test@localhost:5434/scholio_test'
 		}
 	});
 }

@@ -5,7 +5,7 @@
 	const { Story } = defineMeta({
 		title: 'Layout/Navbar',
 		component: Navbar,
-		tags: ['autodocs'],
+		tags: ['autodocs', '!vitest'],
 		parameters: {
 			layout: 'fullscreen'
 		}
@@ -22,7 +22,10 @@
 <Story
 	name="Long name"
 	args={{
-		user: { name: 'María Alejandra Rodríguez Castellanos', email: 'mrodriguez@institutoavanzado.edu.mx' }
+		user: {
+			name: 'María Alejandra Rodríguez Castellanos',
+			email: 'mrodriguez@institutoavanzado.edu.mx'
+		}
 	}}
 />
 

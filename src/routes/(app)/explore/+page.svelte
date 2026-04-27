@@ -118,7 +118,7 @@
 			placeholder={tab === 'projects'
 				? 'Search projects by topic…'
 				: 'Search researchers by specialty…'}
-			class="flex-1 rounded-lg border border-paper-border bg-paper px-4 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint"
+			class="flex-1 rounded-lg border border-paper-border bg-paper px-4 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:ring-2 focus:ring-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint"
 		/>
 		<button
 			onclick={search}
@@ -146,9 +146,7 @@
 	{#if tab === 'projects' && searched}
 		<div class="mt-8">
 			{#if projectResults.length === 0}
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					No projects found.
-				</p>
+				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">No projects found.</p>
 			{:else}
 				<ul class="flex flex-col gap-4">
 					{#each projectResults as proj (proj.id)}
@@ -167,9 +165,9 @@
 									{/if}
 
 									{#if proj.abstractContent}
-										<div class="mt-3 rounded-lg bg-surface px-4 py-3 dark:bg-dark-surface">
+										<div class="bg-surface dark:bg-dark-surface mt-3 rounded-lg px-4 py-3">
 											<p
-												class="mb-1 font-sans text-xs font-semibold uppercase tracking-wide text-ink-faint dark:text-dark-ink-faint"
+												class="mb-1 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
 											>
 												Abstract
 											</p>
@@ -229,7 +227,10 @@
 						<li
 							class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
 						>
-							<a href={resolve(`/u/${r.user_id}`)} class="flex items-start gap-4 hover:no-underline">
+							<a
+								href={resolve(`/u/${r.user_id}`)}
+								class="flex items-start gap-4 hover:no-underline"
+							>
 								<span
 									class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/20 font-sans text-sm font-semibold text-accent"
 								>

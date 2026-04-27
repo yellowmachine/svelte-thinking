@@ -12,7 +12,7 @@ export interface PendingEdit {
 }
 
 export interface PendingCreate {
-	id: string;          // locally-generated UUID — used as server-side ID on sync
+	id: string; // locally-generated UUID — used as server-side ID on sync
 	projectId: string;
 	title: string;
 	type: string;
@@ -23,12 +23,12 @@ export interface PendingCreate {
 }
 
 export interface OfflineIndexEntry {
-	url: string;           // primary key, e.g. /projects/abc or /projects/abc/documents/xyz
+	url: string; // primary key, e.g. /projects/abc or /projects/abc/documents/xyz
 	title: string;
 	type: 'project' | 'document';
-	projectId?: string;    // set for documents
+	projectId?: string; // set for documents
 	visitedAt: Date;
-	content?: string;      // last-seen document content (saved when visiting online)
+	content?: string; // last-seen document content (saved when visiting online)
 }
 
 class OfflineDB extends Dexie {

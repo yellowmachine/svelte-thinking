@@ -43,7 +43,7 @@ export interface CiteRef {
 
 function initials(first: string): string {
 	return first
-		.split(/[\s\-]+/)
+		.split(/[\s-]+/)
 		.filter(Boolean)
 		.map((n) => n[0].toUpperCase() + '.')
 		.join(' ');
@@ -66,7 +66,7 @@ function vancouverName(a: Author): string {
 	if (!a.last.trim()) return '';
 	if (!a.first) return a.last;
 	const ini = a.first
-		.split(/[\s\-]+/)
+		.split(/[\s-]+/)
 		.filter(Boolean)
 		.map((n) => n[0].toUpperCase())
 		.join('');
@@ -85,24 +85,18 @@ function apaAuthorList(authors: Author[]): string {
 			.concat(`, & ${apaName(valid[valid.length - 1])}`);
 	}
 	// >20 authors: first 19, ..., last
-	return (
-		valid
-			.slice(0, 19)
-			.map(apaName)
-			.join(', ')
-			.concat(` . . . ${apaName(valid[valid.length - 1])}`)
-	);
+	return valid
+		.slice(0, 19)
+		.map(apaName)
+		.join(', ')
+		.concat(` . . . ${apaName(valid[valid.length - 1])}`);
 }
 
 function ieeeAuthorList(authors: Author[]): string {
 	const valid = authors.filter((a) => a.last.trim());
 	if (!valid.length) return '';
 	if (valid.length > 6) {
-		return valid
-			.slice(0, 6)
-			.map(ieeeName)
-			.join(', ')
-			.concat(' *et al.*');
+		return valid.slice(0, 6).map(ieeeName).join(', ').concat(' *et al.*');
 	}
 	if (valid.length === 1) return ieeeName(valid[0]);
 	return valid
@@ -164,14 +158,16 @@ function apaFull(ref: CiteRef): string {
 			return `${authors} ${year} ${title}.${journal ? ' ' + journal : ''}${vol}${issue}${pages}.${doi}`;
 		}
 		case 'book': {
-			const eds = (ref.edition ? ` (${ref.edition} ed.)` : '');
+			const eds = ref.edition ? ` (${ref.edition} ed.)` : '';
 			const pub = ref.publisher ? ` ${ref.publisher}.` : '';
 			return `${authors} ${year} *${title}*${eds}.${pub}`;
 		}
 		case 'incollection': {
 			const editorList = (ref.editors ?? []).filter((e) => e.last.trim());
 			const eds =
-				editorList.length > 0 ? ` In ${apaAuthorList(editorList)} (Ed${editorList.length > 1 ? 's' : ''}.),` : ' In';
+				editorList.length > 0
+					? ` In ${apaAuthorList(editorList)} (Ed${editorList.length > 1 ? 's' : ''}.),`
+					: ' In';
 			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
 			const pp = ref.pages ? ` (pp. ${ref.pages})` : '';
 			const pub = ref.publisher ? ` ${ref.publisher}.` : '';
@@ -306,7 +302,11 @@ function chicagoNoteAuthorList(authors: Author[]): string {
 	if (valid.length === 1) return chicagoNoteName(valid[0]);
 	if (valid.length === 2) return `${chicagoNoteName(valid[0])} and ${chicagoNoteName(valid[1])}`;
 	if (valid.length <= 3)
-		return valid.slice(0, -1).map(chicagoNoteName).join(', ') + ', and ' + chicagoNoteName(valid[valid.length - 1]);
+		return (
+			valid.slice(0, -1).map(chicagoNoteName).join(', ') +
+			', and ' +
+			chicagoNoteName(valid[valid.length - 1])
+		);
 	return `${chicagoNoteName(valid[0])} et al.`;
 }
 
@@ -341,9 +341,7 @@ function chicagoNote(ref: CiteRef): string {
 		}
 		case 'incollection': {
 			const edList = (ref.editors ?? []).filter((e) => e.last.trim());
-			const eds = edList.length > 0
-				? `, ed. ${edList.map(chicagoNoteName).join(' and ')}`
-				: '';
+			const eds = edList.length > 0 ? `, ed. ${edList.map(chicagoNoteName).join(' and ')}` : '';
 			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
 			const place = ref.address ? `${ref.address}: ` : '';
 			const pub = ref.publisher ? `${place}${ref.publisher}, ` : '';
@@ -378,7 +376,11 @@ function chicagoNote(ref: CiteRef): string {
 				return `${code}${canon}.`;
 			}
 			// Conciliar — Latin title in footnote
-			if (doctype === 'conciliar_constitution' || doctype === 'conciliar_decree' || doctype === 'conciliar_declaration') {
+			if (
+				doctype === 'conciliar_constitution' ||
+				doctype === 'conciliar_decree' ||
+				doctype === 'conciliar_declaration'
+			) {
 				const latTitle = ref.extra?.latin_title || ref.title;
 				const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
 				const para = ref.extra?.paragraph ? `, §${ref.extra.paragraph}` : '';
@@ -394,9 +396,12 @@ function chicagoNote(ref: CiteRef): string {
 		}
 		case 'patristic': {
 			const section = ref.extra?.section ? ` ${ref.extra.section}` : '';
-			const ed = ref.extra?.edition && ref.volume
-				? `, ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}`
-				: ref.extra?.edition ? `, ${ref.extra.edition}` : '';
+			const ed =
+				ref.extra?.edition && ref.volume
+					? `, ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}`
+					: ref.extra?.edition
+						? `, ${ref.extra.edition}`
+						: '';
 			const pub = ref.publisher
 				? ` (${ref.address ? ref.address + ': ' : ''}${ref.publisher}, ${year})`
 				: ` (${year})`;
@@ -483,9 +488,8 @@ function chicagoBib(ref: CiteRef): string {
 		}
 		case 'incollection': {
 			const edList = (ref.editors ?? []).filter((e) => e.last.trim());
-			const eds = edList.length > 0
-				? `, edited by ${edList.map(chicagoNoteName).join(' and ')}`
-				: '';
+			const eds =
+				edList.length > 0 ? `, edited by ${edList.map(chicagoNoteName).join(' and ')}` : '';
 			const book = ref.booktitle ? ` *${ref.booktitle}*` : '';
 			const place = ref.address ? `${ref.address}: ` : '';
 			const pub = ref.publisher ? `${place}${ref.publisher},` : '';
@@ -515,7 +519,11 @@ function chicagoBib(ref: CiteRef): string {
 				const code = ref.extra?.canon_code === 'CCEO' ? 'CCEO' : '1983 CIC';
 				return `*${ref.title}* [${code}]. ${year}.`;
 			}
-			if (doctype === 'conciliar_constitution' || doctype === 'conciliar_decree' || doctype === 'conciliar_declaration') {
+			if (
+				doctype === 'conciliar_constitution' ||
+				doctype === 'conciliar_decree' ||
+				doctype === 'conciliar_declaration'
+			) {
 				const latTitle = ref.extra?.latin_title || ref.title;
 				const siglum = ref.extra?.siglum ? ` [${ref.extra.siglum}]` : '';
 				return `*${latTitle}*${siglum}. ${year}.`;
@@ -525,9 +533,12 @@ function chicagoBib(ref: CiteRef): string {
 			return `${auth}*${ref.title}*. ${year}.${url}`;
 		}
 		case 'patristic': {
-			const ed = ref.extra?.edition && ref.volume
-				? ` ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}.`
-				: ref.extra?.edition ? ` ${ref.extra.edition}.` : '.';
+			const ed =
+				ref.extra?.edition && ref.volume
+					? ` ${ref.extra.edition} ${ref.volume}:${ref.extra.column ?? ref.pages ?? ''}.`
+					: ref.extra?.edition
+						? ` ${ref.extra.edition}.`
+						: '.';
 			return `${authors}. *${ref.title}*.${ed} ${year}.`;
 		}
 		case 'scholastic': {
@@ -548,7 +559,9 @@ function chicagoBib(ref: CiteRef): string {
 		}
 		case 'earlymodern': {
 			const trans = ref.extra?.translator ? ` Translated by ${ref.extra.translator}.` : '';
-			const origYear = ref.extra?.original_year ? ` Originally published ${ref.extra.original_year}.` : '';
+			const origYear = ref.extra?.original_year
+				? ` Originally published ${ref.extra.original_year}.`
+				: '';
 			const place = ref.address ? `${ref.address}: ` : '';
 			const pub = ref.publisher ? ` ${place}${ref.publisher},` : '';
 			return `${authors}. *${ref.title}*.${trans}${pub} ${year}.${origYear}`;

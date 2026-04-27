@@ -7,12 +7,13 @@
 
 import { describe, it, expect, beforeAll, vi, afterEach } from 'vitest';
 import { createTestDb, createTestCaller, type TestDb } from '$lib/server/db/test-utils';
-import { userProfile } from '$lib/server/db/schemas/users.schema';
+import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { documentChunk } from '$lib/server/db/schemas/documentChunks.schema';
 import { eq } from 'drizzle-orm';
 import { indexDocument } from '$lib/server/embeddings';
+import { encryptSecret } from '$lib/server/kms';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -35,6 +36,16 @@ beforeAll(async () => {
 	db = await createTestDb();
 
 	await db.insert(userProfile).values({ id: USER, userId: USER, displayName: 'AI Test User' });
+
+	const encryptedKey = await encryptSecret('sk-test-fake-openrouter-key');
+	await db.insert(userApiKey).values({
+		id: crypto.randomUUID(),
+		userId: USER,
+		name: 'Test key',
+		...encryptedKey,
+		enabled: true,
+		source: 'manual'
+	});
 
 	const caller = createTestCaller(db, USER);
 	const proj = await caller.projects.create({ title: 'Test Project' });
@@ -71,11 +82,9 @@ describe('indexDocument', () => {
 
 		// withRLS wrapper para indexDocument (mismo patrón que hooks.server.ts)
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
-			db.transaction(async (tx: TestDb) => {
-				await (tx as any).execute(
-					`SELECT set_config('app.current_user_id', '${USER}', true)`
-				);
-				return fn(tx);
+			db.transaction(async (tx) => {
+				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
+				return fn(tx as unknown as TestDb);
 			});
 
 		await withRLS((tx) => indexDocument(tx as any, documentId, projectId, content));
@@ -101,15 +110,18 @@ describe('indexDocument', () => {
 		);
 
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
-			db.transaction(async (tx: TestDb) => {
-				await (tx as any).execute(
-					`SELECT set_config('app.current_user_id', '${USER}', true)`
-				);
-				return fn(tx);
+			db.transaction(async (tx) => {
+				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
+				return fn(tx as unknown as TestDb);
 			});
 
 		await withRLS((tx) =>
-			indexDocument(tx as any, documentId, projectId, 'Un único párrafo corto con suficiente texto para pasar el filtro de longitud mínima.')
+			indexDocument(
+				tx as any,
+				documentId,
+				projectId,
+				'Un único párrafo corto con suficiente texto para pasar el filtro de longitud mínima.'
+			)
 		);
 
 		const chunks = await db
@@ -124,11 +136,9 @@ describe('indexDocument', () => {
 		vi.stubGlobal('fetch', vi.fn());
 
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
-			db.transaction(async (tx: TestDb) => {
-				await (tx as any).execute(
-					`SELECT set_config('app.current_user_id', '${USER}', true)`
-				);
-				return fn(tx);
+			db.transaction(async (tx) => {
+				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
+				return fn(tx as unknown as TestDb);
 			});
 
 		await withRLS((tx) => indexDocument(tx as any, documentId, projectId, ''));
@@ -180,10 +190,7 @@ describe('documents.commit triggers indexing', () => {
 			.where(eq(documentChunk.documentId, documentId));
 
 		expect(chunks.length).toBeGreaterThan(0);
-		expect(fetch).toHaveBeenCalledWith(
-			expect.stringContaining('/embed'),
-			expect.any(Object)
-		);
+		expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/embed'), expect.any(Object));
 	});
 });
 
@@ -192,27 +199,26 @@ describe('documents.commit triggers indexing', () => {
 describe('ai.sendMessage — search_documents_semantic', () => {
 	it('el agente llama a search_documents_semantic y devuelve respuesta', async () => {
 		// Seed chunks manualmente para esta prueba
-		await db.insert(documentChunk).values([
-			{
-				id: crypto.randomUUID(),
-				documentId,
-				projectId,
-				chunkIndex: 0,
-				text: 'La teoría del capital de Böhm-Bawerk explica la estructura de producción.',
-				embedding: fakeEmbedding(1)
-			}
-		]).onConflictDoNothing();
+		await db
+			.insert(documentChunk)
+			.values([
+				{
+					id: crypto.randomUUID(),
+					documentId,
+					projectId,
+					chunkIndex: 0,
+					text: 'La teoría del capital de Böhm-Bawerk explica la estructura de producción.',
+					embedding: fakeEmbedding(1)
+				}
+			])
+			.onConflictDoNothing();
 
 		const fetchMock = vi.fn();
 
-		// Llamada 1: embed-service para la query
-		// Llamada 2: OpenRouter con tool_call search_documents_semantic
-		// Llamada 3: OpenRouter con respuesta final tras recibir el resultado del tool
+		// Llamada 1: OpenRouter — responde con tool_call search_documents_semantic
+		// Llamada 2: embed-service — embedding de la query para la búsqueda semántica
+		// Llamada 3: OpenRouter — respuesta final tras recibir el resultado del tool
 		fetchMock
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({ embeddings: [fakeEmbedding(1)] })
-			})
 			.mockResolvedValueOnce({
 				ok: true,
 				json: async () => ({
@@ -236,6 +242,10 @@ describe('ai.sendMessage — search_documents_semantic', () => {
 						}
 					]
 				})
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ embeddings: [fakeEmbedding(1)] })
 			})
 			.mockResolvedValueOnce({
 				ok: true,
