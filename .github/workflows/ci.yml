@@ -35,7 +35,7 @@ jobs:
           PUBLIC_SENTRY_DSN: ""
 
       - name: Unit tests
-        run: bun run vitest run
+        run: bun run vitest run --project server
 
   e2e:
     name: E2E Tests
