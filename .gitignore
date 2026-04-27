@@ -1,6 +1,5 @@
 node_modules
 worker/.seqs.json
-static/lib/
 
 # Output
 .output
