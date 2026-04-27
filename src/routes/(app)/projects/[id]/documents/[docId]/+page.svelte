@@ -2573,7 +2573,6 @@
 {#if writerLostContent !== null}
 	<WriterLostModal
 		content={writerLostContent}
-		documentId={data.document.id}
 		onclose={() => (writerLostContent = null)}
 	/>
 {/if}

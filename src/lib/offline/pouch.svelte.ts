@@ -93,11 +93,7 @@ class PouchStore {
 		if (!browser) return;
 		if (this.db) return;
 		try {
-			const PouchDB = (window as unknown as { PouchDB: PouchDB.Static }).PouchDB;
-			if (!PouchDB) {
-				console.error('[pouch] window.PouchDB not found — script tag may not have loaded');
-				return;
-			}
+			const { default: PouchDB } = await import('pouchdb-browser');
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			this.db = new (PouchDB as any)<OfflineDoc>('scholio-docs', { auto_compaction: true });
 			this._startPull();

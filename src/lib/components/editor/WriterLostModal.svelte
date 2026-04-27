@@ -1,13 +1,9 @@
 <script lang="ts">
-	import { offlineDb } from '$lib/offline.db';
-
 	let {
 		content,
-		documentId,
 		onclose
 	}: {
 		content: string;
-		documentId: string;
 		onclose: () => void;
 	} = $props();
 </script>
@@ -37,12 +33,7 @@
 		<div class="flex justify-end">
 			<button
 				type="button"
-				onclick={async () => {
-					await offlineDb.pendingEdits
-						.where({ documentId, status: 'writer_lost' })
-						.modify({ status: 'synced' });
-					onclose();
-				}}
+				onclick={onclose}
 				class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 			>
 				Descartar
