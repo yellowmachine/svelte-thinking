@@ -215,7 +215,7 @@ export function parseSingleBibtexEntry(raw: string): ParsedBibtex | null {
 			} else {
 				// Bare value (number or macro)
 				const start = pos;
-				while (pos < trimmed.length && !/[,}\)\s]/.test(trimmed[pos])) pos++;
+				while (pos < trimmed.length && !/[,})\s]/.test(trimmed[pos])) pos++;
 				value = trimmed.slice(start, pos).trim();
 			}
 		}

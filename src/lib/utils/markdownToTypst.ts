@@ -114,7 +114,7 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 			// Normalize indented continuation lines
 			const content = body
 				.split('\n')
-				.map((l, i) => (i === 0 ? l.trim() : l.replace(/^    /, '').trim()))
+				.map((l, i) => (i === 0 ? l.trim() : l.replace(/^ {4}/u, '').trim()))
 				.filter(Boolean)
 				.join(' ');
 			footnotes.set(id.trim(), content);

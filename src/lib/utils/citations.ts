@@ -43,7 +43,7 @@ export interface CiteRef {
 
 function initials(first: string): string {
 	return first
-		.split(/[\s\-]+/)
+		.split(/[\s-]+/)
 		.filter(Boolean)
 		.map((n) => n[0].toUpperCase() + '.')
 		.join(' ');
@@ -66,7 +66,7 @@ function vancouverName(a: Author): string {
 	if (!a.last.trim()) return '';
 	if (!a.first) return a.last;
 	const ini = a.first
-		.split(/[\s\-]+/)
+		.split(/[\s-]+/)
 		.filter(Boolean)
 		.map((n) => n[0].toUpperCase())
 		.join('');

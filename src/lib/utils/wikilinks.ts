@@ -30,6 +30,7 @@ export function withCodeProtection(text: string, fn: (s: string) => string): str
 
 	protected_ = fn(protected_);
 
+	// eslint-disable-next-line no-control-regex
 	return protected_.replace(/\x00CODE(\d+)\x00/g, (_, i) => slots[Number(i)]);
 }
 // Two supported syntaxes:
