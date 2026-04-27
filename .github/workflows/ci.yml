@@ -36,6 +36,9 @@ jobs:
           # Dummy URL so the db module doesn't throw during postbuild analysis.
           # postgres-js is lazy — no actual connection is made at build time.
           DATABASE_URL: 'postgresql://ci:ci@localhost/ci'
+          # Better Auth reads baseURL from ORIGIN at module load time.
+          ORIGIN: 'https://ci.example.com'
+          BETTER_AUTH_SECRET: 'ci-dummy-secret-not-used-at-build-time'
 
       - name: Unit tests
         run: bun run vitest run --project server
