@@ -8,7 +8,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
+		"prepare": "husky",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
@@ -32,6 +32,15 @@
 		"auth:schema": "better-auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
+	},
+	"lint-staged": {
+		"*.{ts,js,svelte}": [
+			"prettier --check",
+			"eslint --max-warnings=0"
+		],
+		"*.{json,yml,yaml,md,css}": [
+			"prettier --check"
+		]
 	},
 	"devDependencies": {
 		"@better-auth/cli": "~1.4.21",
@@ -67,6 +76,8 @@
 		"eslint-plugin-storybook": "^10.3.0",
 		"eslint-plugin-svelte": "^3.14.0",
 		"globals": "^17.3.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.4.0",
 		"mdsvex": "^0.12.6",
 		"otpauth": "^9.5.0",
 		"playwright": "^1.58.2",
