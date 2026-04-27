@@ -5,8 +5,7 @@
 	import { pouchStore } from '$lib/offline/pouch.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { env } from '$env/dynamic/public';
-	const PUBLIC_LIBRARIAN_URL = env.PUBLIC_LIBRARIAN_URL ?? 'https://librarian.scholio.review';
+	import { PUBLIC_LIBRARIAN_URL } from '$env/static/public';
 
 	async function handleLogout(e: SubmitEvent) {
 		e.preventDefault();

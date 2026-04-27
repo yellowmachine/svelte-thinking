@@ -22,7 +22,6 @@ import { env } from '$env/dynamic/private';
 
 export const TTL = {
   taskKey: 5 * 60,        // 5 min — decrypted AI key + model
-  authorInfo: 24 * 60 * 60, // 24 h  — author bio lookup
   s3Config: 10 * 60,       // 10 min — decrypted S3 credentials
   photoPresign: 55 * 60,   // 55 min — presigned URL (valid for 60 min)
   projectIndex: 60          // 60 s  — project index for AI agent
@@ -35,8 +34,6 @@ export const TTL = {
 export const CACHE_KEY = {
   taskKey: (userId: string, task: string, projectId: string) =>
     `scholio:taskkey:${userId}:${task}:${projectId}`,
-  authorInfo: (name: string) =>
-    `scholio:author:${name.toLowerCase()}`,
   userS3: (userId: string) =>
     `scholio:s3:user:${userId}`,
   orgS3: (orgId: string) =>

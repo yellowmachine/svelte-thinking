@@ -1,6 +1,6 @@
 // Shared AI configuration constants — safe to import in both client and server code.
 
-export type AiTask = 'agent' | 'draft' | 'review' | 'requirements' | 'lookup' | 'bibliography' | 'spell' | 'grammar' | 'summary';
+export type AiTask = 'agent' | 'draft' | 'review' | 'requirements' | 'bibliography' | 'spell' | 'grammar' | 'summary';
 
 export interface TaskConfig {
 	keyId: string;
@@ -14,7 +14,6 @@ export const AI_TASKS: { id: AiTask; label: string; description: string; hint: s
 	{ id: 'draft', label: 'Draft', description: 'Generate document drafts and sections', hint: 'Benefits from a high-quality, long-context model. Gemini 2.5 Pro or Claude Sonnet handle long documents well.', defaultModel: 'anthropic/claude-sonnet-4-6' },
 	{ id: 'review', label: 'Review', description: 'Review and give feedback on documents', hint: 'A reasoning-focused model gives better structured feedback. DeepSeek R1 or o3-mini are strong and affordable choices.', defaultModel: 'deepseek/deepseek-r1' },
 	{ id: 'requirements', label: 'Requirements', description: 'Generate project requirements', hint: 'Needs structured output and logical thinking. Gemini Flash or DeepSeek V3 offer a good speed/quality balance.', defaultModel: 'google/gemini-2.5-flash-preview' },
-	{ id: 'lookup', label: 'Lookup', description: 'Quick in-editor lookups (name suggestions, @@ trigger)', hint: 'Runs on every @@ trigger so speed and low cost matter most. Haiku or Gemini Flash are ideal.', defaultModel: 'anthropic/claude-haiku-4-5' },
 	{ id: 'bibliography', label: 'Bibliography', description: 'Extract bibliographic metadata from a URL', hint: 'Simple extraction task — a fast, cheap model like Haiku is more than enough.', defaultModel: 'anthropic/claude-haiku-4-5' },
 	{ id: 'spell', label: 'Spell check', description: 'On-demand spelling and grammar correction', hint: 'Lightweight task. Any fast model works well; no need for a large or expensive one.', defaultModel: 'anthropic/claude-haiku-4-5' },
 	{ id: 'grammar', label: 'Grammar assistant', description: 'Grammar and style suggestions for non-native English writers', hint: 'Lightweight task. Haiku or Gemini Flash are ideal — fast and accurate enough for grammar corrections.', defaultModel: 'anthropic/claude-haiku-4-5' },
@@ -30,13 +29,13 @@ export function getDefaultModel(task: AiTask): string {
 export const MODEL_RECOMMENDATIONS: Record<string, AiTask[]> = {
 	'anthropic/claude-opus-4-5': ['agent', 'draft'],
 	'anthropic/claude-sonnet-4-6': ['agent', 'draft', 'review'],
-	'anthropic/claude-haiku-4-5': ['lookup', 'bibliography', 'spell', 'grammar', 'summary'],
+	'anthropic/claude-haiku-4-5': ['bibliography', 'spell', 'grammar', 'summary'],
 	'google/gemini-2.5-pro-preview': ['draft', 'review'],
-	'google/gemini-2.5-flash-preview': ['requirements', 'lookup', 'summary'],
+	'google/gemini-2.5-flash-preview': ['requirements', 'summary'],
 	'openai/gpt-4o': ['agent', 'draft'],
 	'openai/o3-mini': ['review'],
 	'deepseek/deepseek-r1': ['review', 'requirements'],
-	'deepseek/deepseek-chat': ['draft', 'requirements', 'lookup']
+	'deepseek/deepseek-chat': ['draft', 'requirements']
 };
 
 export const MODELS: { id: string; label: string; shortLabel: string; toolCalling: boolean }[] = [

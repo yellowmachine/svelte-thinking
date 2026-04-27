@@ -694,6 +694,20 @@ export const documentsRouter = router({
 			});
 		}),
 
+	setSourceReference: protectedProcedure
+		.input(z.object({ documentId: z.string(), referenceId: z.string().nullable() }))
+		.mutation(async ({ ctx, input }) => {
+			const [updated] = await ctx.withRLS((db) =>
+				db
+					.update(document)
+					.set({ sourceReferenceId: input.referenceId })
+					.where(eq(document.id, input.documentId))
+					.returning({ id: document.id, sourceReferenceId: document.sourceReferenceId })
+			);
+			if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
+			return updated;
+		}),
+
 	// Restaura una versión anterior: la copia como nuevo draft (sin commitear)
 	// El usuario puede revisar antes de hacer commit
 	restoreVersion: protectedProcedure

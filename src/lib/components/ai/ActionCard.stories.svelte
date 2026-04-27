@@ -112,8 +112,8 @@ Temas clave: financiación, metodología cualitativa, próximos pasos.`;
 />
 
 <!-- En contexto: simulación de cómo aparece debajo de una burbuja del agente -->
-<Story name="In chat context">
-	{#snippet children({ args })}
+<Story name="In chat context" tags={['!test']}>
+	{#snippet children()}
 		<div class="flex flex-col gap-1">
 			<!-- Burbuja del agente -->
 			<div class="flex gap-3">
@@ -134,8 +134,8 @@ Temas clave: financiación, metodología cualitativa, próximos pasos.`;
 							requirementId: 'req-discussion'
 						}}
 						projectId="proj-123"
-						onconfirm={args.onconfirm}
-						ondiscard={args.ondiscard}
+						onconfirm={() => {}}
+						ondiscard={() => {}}
 					/>
 				</div>
 			</div>

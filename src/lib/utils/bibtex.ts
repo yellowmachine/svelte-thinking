@@ -406,3 +406,29 @@ export function generateCiteKey(authors: Author[], year: string): string {
 	const y = year ? year.replace(/\D/g, '').slice(0, 4) : '';
 	return normalized + y || 'ref';
 }
+
+export const TYPE_LABELS: Record<string, string> = {
+	article: 'Article',
+	book: 'Book',
+	inproceedings: 'Conference paper',
+	incollection: 'Book chapter',
+	phdthesis: 'PhD thesis',
+	mastersthesis: "Master's thesis",
+	techreport: 'Technical report',
+	misc: 'Other',
+	magisterial: 'Church document',
+	patristic: 'Patristic / medieval text',
+	scholastic: 'Scholastic work',
+	biblical: 'Biblical text',
+	classical: 'Classical text',
+	earlymodern: 'Early modern work',
+	film: 'Film / TV',
+	interview: 'Interview',
+	newspaper: 'Newspaper article'
+};
+
+export const ALL_TYPES: ReferenceType[] = [
+	'article', 'book', 'inproceedings', 'incollection', 'phdthesis', 'mastersthesis',
+	'techreport', 'misc', 'magisterial', 'patristic', 'scholastic', 'biblical',
+	'classical', 'earlymodern', 'film', 'interview', 'newspaper'
+];
