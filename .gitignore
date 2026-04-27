@@ -1,5 +1,7 @@
 node_modules
 worker/.seqs.json
+static/lib/*
+!static/lib/pouchdb.min.js
 
 # Output
 .output
