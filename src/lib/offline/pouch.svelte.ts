@@ -11,6 +11,36 @@ export interface OfflineDoc {
 	updatedAt: string;
 }
 
+export interface OfflineProjectMeta {
+	_id: string;
+	_rev?: string;
+	projectId: string;
+	title: string;
+	description: string | null;
+	documentIds: string[];
+	cachedAt: string;
+}
+
+export interface OfflineComments {
+	_id: string;
+	_rev?: string;
+	documentId: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	general: any[];
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	inline: any[];
+	cachedAt: string;
+}
+
+export interface OfflineReferences {
+	_id: string;
+	_rev?: string;
+	projectId: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	references: any[];
+	cachedAt: string;
+}
+
 export type SyncStatus = 'initializing' | 'synced' | 'syncing' | 'error' | 'offline';
 
 class PouchStore {
@@ -110,6 +140,106 @@ class PouchStore {
 		return result.rows.map((r) => r.doc as OfflineDoc).filter(Boolean);
 	}
 
+	// ── Project meta ───────────────────────────────────────────────────────
+
+	async getProjectMeta(projectId: string): Promise<OfflineProjectMeta | null> {
+		if (!this.db) return null;
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			return await (this.db as any).get(`project_${projectId}`) as OfflineProjectMeta;
+		} catch { return null; }
+	}
+
+	async putProjectMeta(meta: Omit<OfflineProjectMeta, '_id' | '_rev'>): Promise<void> {
+		if (!this.db) return;
+		const id = `project_${meta.projectId}`;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const db = this.db as any;
+		try {
+			const existing = await db.get(id);
+			await db.put({ ...meta, _id: id, _rev: existing._rev });
+		} catch (e) {
+			if ((e as { status?: number }).status === 404) await db.put({ ...meta, _id: id });
+			else throw e;
+		}
+	}
+
+	// ── Comments ───────────────────────────────────────────────────────────
+
+	async getComments(documentId: string): Promise<OfflineComments | null> {
+		if (!this.db) return null;
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			return await (this.db as any).get(`comments_${documentId}`) as OfflineComments;
+		} catch { return null; }
+	}
+
+	async putComments(data: Omit<OfflineComments, '_id' | '_rev'>): Promise<void> {
+		if (!this.db) return;
+		const id = `comments_${data.documentId}`;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const db = this.db as any;
+		try {
+			const existing = await db.get(id);
+			await db.put({ ...data, _id: id, _rev: existing._rev });
+		} catch (e) {
+			if ((e as { status?: number }).status === 404) await db.put({ ...data, _id: id });
+			else throw e;
+		}
+	}
+
+	// ── References ─────────────────────────────────────────────────────────
+
+	async getReferences(projectId: string): Promise<OfflineReferences | null> {
+		if (!this.db) return null;
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			return await (this.db as any).get(`refs_${projectId}`) as OfflineReferences;
+		} catch { return null; }
+	}
+
+	async putReferences(data: Omit<OfflineReferences, '_id' | '_rev'>): Promise<void> {
+		if (!this.db) return;
+		const id = `refs_${data.projectId}`;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const db = this.db as any;
+		try {
+			const existing = await db.get(id);
+			await db.put({ ...data, _id: id, _rev: existing._rev });
+		} catch (e) {
+			if ((e as { status?: number }).status === 404) await db.put({ ...data, _id: id });
+			else throw e;
+		}
+	}
+
+	async isPrefetched(projectId: string): Promise<boolean> {
+		const meta = await this.getProjectMeta(projectId);
+		return !!meta;
+	}
+
+	async clearProject(projectId: string): Promise<void> {
+		if (!this.db) return;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const db = this.db as any;
+
+		const meta = await this.getProjectMeta(projectId);
+		const docIds = meta?.documentIds ?? [];
+
+		const toRemove: string[] = [
+			`project_${projectId}`,
+			`refs_${projectId}`,
+			...docIds.map((id) => `doc_${id}`),
+			...docIds.map((id) => `comments_${id}`)
+		];
+
+		await Promise.allSettled(toRemove.map(async (id) => {
+			try {
+				const doc = await db.get(id);
+				await db.remove(doc);
+			} catch { /* already gone */ }
+		}));
+	}
+
 	destroy() {
 		this.pullHandler?.cancel();
 	}
@@ -121,6 +251,9 @@ class PouchStore {
 			this.db = null;
 		}
 		localStorage.removeItem('scholio-pending-creates');
+		localStorage.removeItem('scholio-pending-comments');
+		localStorage.removeItem('scholio-pending-subnotes');
+		localStorage.removeItem('scholio-prefetch-meta');
 	}
 }
 

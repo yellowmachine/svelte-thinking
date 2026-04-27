@@ -4,6 +4,8 @@
 	import MarkdownEditor from './MarkdownEditor.svelte';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
+	import { onlineStore } from '$lib/stores/online.svelte';
+	import { pendingComments } from '$lib/offline/pending-comments.svelte';
 
 	function renderMd(text: string): string {
 		return DOMPurify.sanitize(marked.parse(text) as string);
@@ -14,6 +16,7 @@
 		content: string;
 		authorName: string;
 		createdAt: Date;
+		_pending?: boolean;
 	};
 
 	type Comment = {
@@ -30,22 +33,28 @@
 
 	let {
 		comment,
+		documentId,
 		currentUserId,
 		isActive = false,
+		isPending = false,
 		onresolved,
 		onreopened,
 		onreplyadded,
+		onupdated,
 		ondeleted,
 		onclick,
 		onlookup,
 		chapters = []
 	}: {
 		comment: Comment;
+		documentId: string;
 		currentUserId: string;
 		isActive?: boolean;
+		isPending?: boolean;
 		onresolved?: (id: string) => void;
 		onreopened?: (id: string) => void;
 		onreplyadded?: (commentId: string, reply: Reply) => void;
+		onupdated?: (id: string, content: string) => void;
 		ondeleted?: (id: string) => void;
 		onclick?: (id: string) => void;
 		onlookup?: (partial: string, context: string) => Promise<string[]>;
@@ -56,6 +65,10 @@
 	let replyEditorActive = $state(false);
 	let submittingReply = $state(false);
 	let resolving = $state(false);
+
+	let editingComment = $state(false);
+	let editContent = $state('');
+	let savingEdit = $state(false);
 
 	const COMMENT_COMPLETIONS = new Set<'citation' | 'heading' | 'mention'>(['citation', 'heading', 'mention']);
 
@@ -80,15 +93,49 @@
 		if (!replyText.trim()) return;
 		submittingReply = true;
 		try {
-			const reply = await trpc.comments.addReply.mutate({
-				commentId: comment.id,
-				content: replyText.trim()
-			});
-			onreplyadded?.(comment.id, reply);
+			if (!onlineStore.online) {
+				const localId = `pending_${crypto.randomUUID()}`;
+				pendingComments.add({
+					id: localId,
+					documentId,
+					content: replyText.trim(),
+					parentCommentId: comment.id
+				});
+				onreplyadded?.(comment.id, {
+					id: localId,
+					authorName: comment.authorName,
+					content: replyText.trim(),
+					createdAt: new Date(),
+					_pending: true
+				});
+			} else {
+				const reply = await trpc.comments.addReply.mutate({
+					commentId: comment.id,
+					content: replyText.trim()
+				});
+				onreplyadded?.(comment.id, reply);
+			}
 			replyText = '';
 			replyEditorActive = false;
 		} finally {
 			submittingReply = false;
+		}
+	}
+
+	async function saveEdit() {
+		const trimmed = editContent.trim();
+		if (!trimmed) return;
+		savingEdit = true;
+		try {
+			if (!onlineStore.online) {
+				pendingComments.addUpdate(comment.id, documentId, trimmed);
+			} else {
+				await trpc.comments.update.mutate({ id: comment.id, content: trimmed });
+			}
+			onupdated?.(comment.id, trimmed);
+			editingComment = false;
+		} finally {
+			savingEdit = false;
 		}
 	}
 
@@ -171,7 +218,28 @@
 				{comment.resolved ? 'Reopen' : 'Resolve'}
 			</button>
 
-			{#if isAuthor}
+			{#if isAuthor && !isPending}
+				<button
+					onclick={(e) => {
+						e.stopPropagation();
+						editContent = comment.content;
+						editingComment = !editingComment;
+					}}
+					title={editingComment ? 'Cancel edit' : 'Edit comment'}
+					class="rounded p-1 text-ink-faint transition-colors hover:text-accent dark:text-dark-ink-faint dark:hover:text-accent"
+					aria-label="Edit comment"
+				>
+					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path
+							d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
+				</button>
+
 				<button
 					onclick={(e) => {
 						e.stopPropagation();
@@ -195,14 +263,54 @@
 		</div>
 	</div>
 
+	<!-- Inline edit form -->
+	{#if editingComment}
+		<div
+			class="mt-2"
+			onclick={(e) => e.stopPropagation()}
+			onmousedown={(e) => e.stopPropagation()}
+			role="presentation"
+		>
+			<div class="reply-editor rounded border border-accent/40 bg-paper-ui dark:bg-dark-paper-ui">
+				<MarkdownEditor
+					bind:value={editContent}
+					{chapters}
+					{onlookup}
+					completions={COMMENT_COMPLETIONS}
+					ondocchange={(v) => (editContent = v)}
+				/>
+			</div>
+			<div class="mt-1.5 flex justify-end gap-2">
+				<button
+					onclick={(e) => { e.stopPropagation(); editingComment = false; }}
+					class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					Cancel
+				</button>
+				<button
+					onclick={(e) => { e.stopPropagation(); saveEdit(); }}
+					disabled={savingEdit || !editContent.trim()}
+					class="rounded bg-accent px-2 py-1 font-sans text-xs text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+				>
+					{savingEdit ? '…' : 'Save'}
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Replies -->
 	{#if comment.replies.length > 0}
 		<div class="mt-3 space-y-2 border-t border-paper-border pt-2 dark:border-dark-paper-border">
 			{#each comment.replies as reply (reply.id)}
-				<div>
-					<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
-						{reply.authorName}
-					</p>
+				<div class={reply._pending ? 'opacity-60' : ''}>
+					<div class="flex items-center gap-1.5">
+						<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+							{reply.authorName}
+						</p>
+						{#if reply._pending}
+							<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">· pending sync</span>
+						{/if}
+					</div>
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">
 						{@html renderMd(reply.content)}

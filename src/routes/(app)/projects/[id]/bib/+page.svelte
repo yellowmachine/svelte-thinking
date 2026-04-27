@@ -20,6 +20,10 @@
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { goto } from '$app/navigation';
 	import { flash } from '$lib/stores/flash.svelte';
+	import { onlineStore } from '$lib/stores/online.svelte';
+	import { pouchStore } from '$lib/offline/pouch.svelte';
+	import { pendingSubnotes } from '$lib/offline/pending-subnotes.svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	// ── Citation style ────────────────────────────────────────────────────────
 
@@ -72,7 +76,7 @@
 
 	// ── Subnotes ─────────────────────────────────────────────────────────────
 
-	type Subnote = { id: number; referenceId: string; slug: string; notes: string };
+	type Subnote = { id: number | string; referenceId: string; slug: string; notes: string; _pending?: boolean };
 
 	let expandedSubnotes = new SvelteSet<string>();
 	let subnotesByRef = $state<Record<string, Subnote[]>>({});
@@ -82,7 +86,11 @@
 	let newSubnoteSlug = $state('');
 	let newSubnoteNotes = $state('');
 	let savingSubnote = $state(false);
-	let deletingSubnoteId = $state<number | null>(null);
+	let deletingSubnoteId = $state<number | string | null>(null);
+
+	let editingSubnote = $state<{ refId: string; id: number } | null>(null);
+	let editSubnoteNotes = $state('');
+	let savingSubnoteEdit = $state(false);
 
 	async function toggleSubnotes(refId: string) {
 		if (expandedSubnotes.has(refId)) {
@@ -93,8 +101,18 @@
 		if (!(refId in subnotesByRef)) {
 			loadingSubnotes.add(refId);
 			try {
-				const rows = await trpc.references.listSubnotes.query({ referenceId: refId });
-				subnotesByRef[refId] = rows as Subnote[];
+				if (!onlineStore.online) {
+					// Read from PouchDB cache
+					const cached = await pouchStore.getReferences(data.project.id);
+					const ref = cached?.references?.find((r: { id: string }) => r.id === refId);
+					subnotesByRef[refId] = (ref?.subnotes ?? []).map((s: { id: number; slug: string; notes: string }) => ({
+						...s,
+						referenceId: refId
+					}));
+				} else {
+					const rows = await trpc.references.listSubnotes.query({ referenceId: refId });
+					subnotesByRef[refId] = rows as Subnote[];
+				}
 			} finally {
 				loadingSubnotes.delete(refId);
 			}
@@ -111,12 +129,31 @@
 		if (!newSubnoteSlug.trim()) return;
 		savingSubnote = true;
 		try {
-			const row = await trpc.references.addSubnote.mutate({
-				referenceId: refId,
-				slug: newSubnoteSlug.trim(),
-				notes: newSubnoteNotes
-			});
-			subnotesByRef[refId] = [...(subnotesByRef[refId] ?? []), row as Subnote];
+			if (!onlineStore.online) {
+				const localId = `pending_${crypto.randomUUID()}`;
+				pendingSubnotes.add({
+					id: localId,
+					referenceId: refId,
+					projectId: data.project.id,
+					slug: newSubnoteSlug.trim(),
+					notes: newSubnoteNotes
+				});
+				const localSubnote: Subnote = {
+					id: localId,
+					referenceId: refId,
+					slug: newSubnoteSlug.trim(),
+					notes: newSubnoteNotes,
+					_pending: true
+				};
+				subnotesByRef[refId] = [...(subnotesByRef[refId] ?? []), localSubnote];
+			} else {
+				const row = await trpc.references.addSubnote.mutate({
+					referenceId: refId,
+					slug: newSubnoteSlug.trim(),
+					notes: newSubnoteNotes
+				});
+				subnotesByRef[refId] = [...(subnotesByRef[refId] ?? []), row as Subnote];
+			}
 			addingSubnoteRef = null;
 		} catch (e) {
 			flash.set(e instanceof Error ? e.message : 'Error saving subnote', 'error');
@@ -125,15 +162,79 @@
 		}
 	}
 
-	async function deleteSubnote(refId: string, id: number) {
+	async function deleteSubnote(refId: string, id: number | string) {
+		if (typeof id === 'string' && id.startsWith('pending_')) {
+			// Remove local pending subnote without server call
+			pendingSubnotes.update(id, { status: 'synced' });
+			pendingSubnotes.clearSynced();
+			subnotesByRef[refId] = (subnotesByRef[refId] ?? []).filter((s) => s.id !== id);
+			return;
+		}
 		deletingSubnoteId = id;
 		try {
-			await trpc.references.deleteSubnote.mutate({ id });
+			await trpc.references.deleteSubnote.mutate({ id: id as number });
 			subnotesByRef[refId] = (subnotesByRef[refId] ?? []).filter((s) => s.id !== id);
 		} finally {
 			deletingSubnoteId = null;
 		}
 	}
+
+	async function updateSubnote(refId: string, id: number) {
+		const notes = editSubnoteNotes;
+		savingSubnoteEdit = true;
+		try {
+			if (!onlineStore.online) {
+				pendingSubnotes.addUpdate(id, data.project.id, refId, notes);
+			} else {
+				await trpc.references.updateSubnote.mutate({ id, notes });
+			}
+			subnotesByRef[refId] = (subnotesByRef[refId] ?? []).map((s) =>
+				s.id === id ? { ...s, notes } : s
+			);
+			editingSubnote = null;
+		} catch (e) {
+			flash.set(e instanceof Error ? e.message : 'Error saving subnote', 'error');
+		} finally {
+			savingSubnoteEdit = false;
+		}
+	}
+
+	async function replayPendingSubnotes() {
+		const pending = pendingSubnotes.forProject(data.project.id);
+		if (pending.length === 0) return;
+
+		for (const p of pending) {
+			try {
+				if (p.type === 'update' && p.subnoteId !== undefined) {
+					await trpc.references.updateSubnote.mutate({ id: p.subnoteId, notes: p.notes });
+					subnotesByRef[p.referenceId] = (subnotesByRef[p.referenceId] ?? []).map((s) =>
+						s.id === p.subnoteId ? { ...s, notes: p.notes } : s
+					);
+				} else {
+					const row = await trpc.references.addSubnote.mutate({
+						referenceId: p.referenceId,
+						slug: p.slug,
+						notes: p.notes
+					});
+					subnotesByRef[p.referenceId] = (subnotesByRef[p.referenceId] ?? []).map((s) =>
+						s.id === p.id ? { ...row, referenceId: p.referenceId, _pending: false } as Subnote : s
+					);
+				}
+				pendingSubnotes.update(p.id, { status: 'synced' });
+			} catch {
+				pendingSubnotes.update(p.id, { status: 'failed' });
+			}
+		}
+		pendingSubnotes.clearSynced();
+	}
+
+	onMount(() => {
+		window.addEventListener('online', replayPendingSubnotes);
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('online', replayPendingSubnotes);
+	});
 
 	// ── PDF attachment ───────────────────────────────────────────────────────
 
@@ -1111,30 +1212,76 @@
 											{#if subnotesByRef[ref.id]?.length > 0}
 												<ul class="flex flex-col gap-1">
 													{#each subnotesByRef[ref.id] as sn (sn.id)}
-														<li class="flex items-start gap-2">
-															<span class="mt-px shrink-0 rounded bg-paper-ui px-1.5 py-px font-mono text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
-																{sn.slug}
-															</span>
-															{#if sn.notes}
-																<span class="flex-1 font-sans text-[11px] leading-snug text-ink dark:text-dark-ink">{sn.notes}</span>
-															{:else}
-																<span class="flex-1 font-sans text-[11px] italic text-ink-faint dark:text-dark-ink-faint">no notes</span>
-															{/if}
-															<button
-																onclick={() => deleteSubnote(ref.id, sn.id)}
-																disabled={deletingSubnoteId === sn.id}
-																title="Delete subnote"
-																class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-red-400"
-															>
-																{#if deletingSubnoteId === sn.id}
-																	<Spinner size="sm" />
+														<li class="flex flex-col gap-1 {sn._pending ? 'opacity-60' : ''}">
+															<div class="flex items-start gap-2">
+																<span class="mt-px shrink-0 rounded bg-paper-ui px-1.5 py-px font-mono text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted">
+																	{sn.slug}{sn._pending ? ' ⏳' : ''}
+																</span>
+																{#if editingSubnote?.id === sn.id}
+																	<span class="flex-1"></span>
+																{:else if sn.notes}
+																	<span class="flex-1 font-sans text-[11px] leading-snug text-ink dark:text-dark-ink">{sn.notes}</span>
 																{:else}
-																	<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-																		<line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-																		<line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-																	</svg>
+																	<span class="flex-1 font-sans text-[11px] italic text-ink-faint dark:text-dark-ink-faint">no notes</span>
 																{/if}
-															</button>
+																{#if !sn._pending && typeof sn.id === 'number'}
+																	<button
+																		onclick={() => {
+																			if (editingSubnote?.id === sn.id) {
+																				editingSubnote = null;
+																			} else {
+																				editingSubnote = { refId: ref.id, id: sn.id as number };
+																				editSubnoteNotes = sn.notes;
+																			}
+																		}}
+																		title={editingSubnote?.id === sn.id ? 'Cancel' : 'Edit notes'}
+																		class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-accent dark:text-dark-ink-faint dark:hover:text-accent"
+																	>
+																		<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+																			<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+																		</svg>
+																	</button>
+																{/if}
+																<button
+																	onclick={() => deleteSubnote(ref.id, sn.id)}
+																	disabled={deletingSubnoteId === sn.id}
+																	title="Delete subnote"
+																	class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-red-400"
+																>
+																	{#if deletingSubnoteId === sn.id}
+																		<Spinner size="sm" />
+																	{:else}
+																		<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+																			<line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+																			<line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+																		</svg>
+																	{/if}
+																</button>
+															</div>
+															{#if editingSubnote?.id === sn.id}
+																<div class="flex flex-col gap-1">
+																	<textarea
+																		bind:value={editSubnoteNotes}
+																		rows="2"
+																		class="w-full rounded border border-paper-border bg-paper px-2 py-1 font-sans text-[11px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:focus:border-accent"
+																	></textarea>
+																	<div class="flex gap-1.5">
+																		<button
+																			onclick={() => updateSubnote(ref.id, sn.id as number)}
+																			disabled={savingSubnoteEdit}
+																			class="rounded bg-accent px-2.5 py-1 font-sans text-[11px] font-medium text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
+																		>
+																			{#if savingSubnoteEdit}<Spinner size="sm" />{:else}Save{/if}
+																		</button>
+																		<button
+																			onclick={() => (editingSubnote = null)}
+																			class="rounded border border-paper-border px-2.5 py-1 font-sans text-[11px] text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+																		>
+																			Cancel
+																		</button>
+																	</div>
+																</div>
+															{/if}
 														</li>
 													{/each}
 												</ul>

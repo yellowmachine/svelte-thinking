@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, asc, ilike, or, sql, isNotNull, count, ne } from 'drizzle-orm';
+import { eq, and, asc, ilike, or, sql, isNotNull, count, ne, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import {
@@ -17,7 +17,8 @@ import { embedQuery, indexDocument } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
 import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
-import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference, referenceSubnote } from '$lib/server/db/schemas/references.schema';
+import { comment } from '$lib/server/db/schemas/comments.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig, uploadFileWithConfig } from '$lib/server/storage';
 import { isProjectOwner, canRemoveCollaborator, canChangeCollaboratorRole } from '$lib/domain/permissions';
@@ -773,6 +774,122 @@ export const projectsRouter = router({
 
       return { projectId };
     });
+  }),
+
+  // Returns a complete project snapshot for offline prefetch:
+  // all documents with content, all comments grouped by document, and all references with subnotes.
+  // Designed to be called once per "Download for offline" action.
+  snapshot: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
+    const projRows = await ctx.withRLS((db) =>
+      db.select().from(project).where(eq(project.id, projectId)).limit(1)
+    );
+    if (!projRows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+
+    const [docsWithContent, rawComments, references] = await Promise.all([
+      // All docs with content — batch version IDs to avoid N+1
+      ctx.withRLS(async (db) => {
+        const docs = await db.select().from(document).where(eq(document.projectId, projectId));
+        const versionIds = docs
+          .filter((d) => d.draftContent === null && d.currentVersionId)
+          .map((d) => d.currentVersionId as string);
+        const versions = versionIds.length > 0
+          ? await db
+              .select({ id: documentVersion.id, content: documentVersion.content })
+              .from(documentVersion)
+              .where(inArray(documentVersion.id, versionIds))
+          : [];
+        const versionMap = new Map(versions.map((v) => [v.id, v.content]));
+        return docs.map((doc) => ({
+          ...doc,
+          content: doc.draftContent ?? (doc.currentVersionId ? (versionMap.get(doc.currentVersionId) ?? '') : ''),
+          hasDraft: doc.draftContent !== null
+        }));
+      }),
+
+      // All comments for all docs in the project — single query via join
+      ctx.withRLS((db) =>
+        db
+          .select({
+            id: comment.id,
+            documentId: comment.documentId,
+            authorId: comment.authorId,
+            authorName: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${comment.authorId})`,
+            type: comment.type,
+            content: comment.content,
+            anchorText: comment.anchorText,
+            anchorContext: comment.anchorContext,
+            lineStart: comment.lineStart,
+            lineEnd: comment.lineEnd,
+            characterStart: comment.characterStart,
+            characterEnd: comment.characterEnd,
+            paragraphNumber: comment.paragraphNumber,
+            status: comment.status,
+            parentCommentId: comment.parentCommentId,
+            createdAt: comment.createdAt,
+            updatedAt: comment.updatedAt
+          })
+          .from(comment)
+          .innerJoin(document, eq(document.id, comment.documentId))
+          .where(eq(document.projectId, projectId))
+          .orderBy(comment.createdAt)
+      ),
+
+      // References with subnotes
+      ctx.withRLS(async (db) => {
+        const rows = await db
+          .select({ ref: reference, subnote: referenceSubnote })
+          .from(reference)
+          .innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
+          .leftJoin(referenceSubnote, eq(referenceSubnote.referenceId, reference.id))
+          .where(eq(projectReference.projectId, projectId))
+          .orderBy(asc(reference.citeKey), asc(referenceSubnote.createdAt));
+
+        const refMap = new Map<string, typeof reference.$inferSelect & { subnotes: { id: number; slug: string; notes: string }[] }>();
+        for (const row of rows) {
+          if (!refMap.has(row.ref.id)) refMap.set(row.ref.id, { ...row.ref, subnotes: [] });
+          if (row.subnote) {
+            refMap.get(row.ref.id)!.subnotes.push({ id: row.subnote.id, slug: row.subnote.slug, notes: row.subnote.notes });
+          }
+        }
+        return [...refMap.values()];
+      })
+    ]);
+
+    // Group comments by documentId → { general: top-level, inline: threads with nested replies }
+    type CommentRow = (typeof rawComments)[0];
+    type InlineThread = CommentRow & { replies: CommentRow[] };
+    const byDoc = new Map<string, { generalMap: Map<string, CommentRow>; inlineMap: Map<string, InlineThread> }>();
+
+    for (const c of rawComments) {
+      if (!byDoc.has(c.documentId)) {
+        byDoc.set(c.documentId, { generalMap: new Map(), inlineMap: new Map() });
+      }
+      const bucket = byDoc.get(c.documentId)!;
+      if (c.type === 'general' && !c.parentCommentId) {
+        bucket.generalMap.set(c.id, c);
+      } else if (c.type === 'inline') {
+        if (!c.parentCommentId) {
+          bucket.inlineMap.set(c.id, { ...c, replies: [] });
+        } else {
+          bucket.inlineMap.get(c.parentCommentId)?.replies.push(c);
+        }
+      }
+    }
+
+    const commentsByDoc: Record<string, { general: CommentRow[]; inline: InlineThread[] }> = {};
+    for (const [docId, { generalMap, inlineMap }] of byDoc) {
+      commentsByDoc[docId] = {
+        general: [...generalMap.values()],
+        inline: [...inlineMap.values()]
+      };
+    }
+
+    return {
+      project: projRows[0],
+      documents: docsWithContent,
+      commentsByDoc,
+      references
+    };
   }),
 
   importEpub: protectedProcedure

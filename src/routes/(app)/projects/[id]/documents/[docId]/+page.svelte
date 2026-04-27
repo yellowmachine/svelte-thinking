@@ -15,6 +15,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { pouchStore } from '$lib/offline/pouch.svelte';
+	import { pendingComments } from '$lib/offline/pending-comments.svelte';
 	import {
 		findAnchor,
 		posToLine,
@@ -530,7 +531,7 @@
 	}));
 
 	// Inline comments
-	type Reply = { id: string; authorName: string; content: string; createdAt: Date };
+	type Reply = { id: string; authorName: string; content: string; createdAt: Date; _pending?: boolean };
 	type InlineComment = {
 		id: string;
 		authorId: string;
@@ -544,6 +545,7 @@
 		status: 'open' | 'resolved';
 		createdAt: Date;
 		replies: Reply[];
+		_pending?: boolean;
 	};
 
 	let showComments = $state(false);
@@ -860,32 +862,66 @@
 			const lineStart = posToLine(content, sel.from);
 			const lineEnd = posToLine(content, sel.to);
 			const anchorContext = extractParagraph(content, sel.from);
-			const created = await trpc.comments.createInline.mutate({
-				documentId: data.document.id,
-				content: newCommentText.trim(),
-				anchorText: sel.text,
-				anchorContext: anchorContext || undefined,
-				lineStart,
-				lineEnd,
-				characterStart: sel.from,
-				characterEnd: sel.to,
-				paragraphNumber: undefined
-			});
 
-			const newComment: InlineComment = {
-				id: created.id,
-				authorId: created.authorId,
-				authorName: data.currentUserId === created.authorId ? ((data as any).user?.name ?? '') : '',
-				content: created.content,
-				anchorText: created.anchorText,
-				lineStart: created.lineStart,
-				characterStart: created.characterStart,
-				characterEnd: created.characterEnd,
-				paragraphNumber: null,
-				status: 'open',
-				createdAt: created.createdAt,
-				replies: []
-			};
+			let newComment: InlineComment;
+
+			if (!onlineStore.online) {
+				const localId = `pending_${crypto.randomUUID()}`;
+				pendingComments.add({
+					id: localId,
+					documentId: data.document.id,
+					content: newCommentText.trim(),
+					anchorText: sel.text,
+					anchorContext: anchorContext || undefined,
+					lineStart,
+					lineEnd,
+					characterStart: sel.from,
+					characterEnd: sel.to
+				});
+				newComment = {
+					id: localId,
+					authorId: data.currentUserId,
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					authorName: (data as any).user?.name ?? '',
+					content: newCommentText.trim(),
+					anchorText: sel.text,
+					lineStart,
+					characterStart: sel.from,
+					characterEnd: sel.to,
+					paragraphNumber: null,
+					status: 'open',
+					createdAt: new Date(),
+					replies: [],
+					_pending: true
+				};
+			} else {
+				const created = await trpc.comments.createInline.mutate({
+					documentId: data.document.id,
+					content: newCommentText.trim(),
+					anchorText: sel.text,
+					anchorContext: anchorContext || undefined,
+					lineStart,
+					lineEnd,
+					characterStart: sel.from,
+					characterEnd: sel.to,
+					paragraphNumber: undefined
+				});
+				newComment = {
+					id: created.id,
+					authorId: created.authorId,
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					authorName: data.currentUserId === created.authorId ? ((data as any).user?.name ?? '') : '',
+					content: created.content,
+					anchorText: created.anchorText,
+					lineStart: created.lineStart,
+					characterStart: created.characterStart,
+					characterEnd: created.characterEnd,
+					paragraphNumber: null,
+					status: 'open',
+					createdAt: created.createdAt,
+					replies: []
+				};
+			}
 
 			inlineComments = [...inlineComments, newComment].sort(
 				(a, b) => (a.characterStart ?? 0) - (b.characterStart ?? 0)
@@ -990,32 +1026,62 @@
 			const paragraphText =
 				previewRef?.getParagraphText(pendingParagraphNumber) ??
 				splitPreviewRef?.getParagraphText(pendingParagraphNumber);
-			const created = await trpc.comments.createInline.mutate({
-				documentId: data.document.id,
-				content: paragraphCommentText.trim(),
-				paragraphNumber: pendingParagraphNumber,
-				anchorContext: paragraphText || undefined,
-				anchorText: undefined,
-				lineStart: undefined,
-				lineEnd: undefined,
-				characterStart: undefined,
-				characterEnd: undefined
-			});
 
-			const newComment: InlineComment = {
-				id: created.id,
-				authorId: created.authorId,
-				authorName: data.currentUserId === created.authorId ? ((data as any).user?.name ?? '') : '',
-				content: created.content,
-				anchorText: null,
-				lineStart: null,
-				characterStart: null,
-				characterEnd: null,
-				paragraphNumber: created.paragraphNumber,
-				status: 'open',
-				createdAt: created.createdAt,
-				replies: []
-			};
+			let newComment: InlineComment;
+
+			if (!onlineStore.online) {
+				const localId = `pending_${crypto.randomUUID()}`;
+				pendingComments.add({
+					id: localId,
+					documentId: data.document.id,
+					content: paragraphCommentText.trim(),
+					paragraphNumber: pendingParagraphNumber,
+					anchorContext: paragraphText || undefined
+				});
+				newComment = {
+					id: localId,
+					authorId: data.currentUserId,
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					authorName: (data as any).user?.name ?? '',
+					content: paragraphCommentText.trim(),
+					anchorText: null,
+					lineStart: null,
+					characterStart: null,
+					characterEnd: null,
+					paragraphNumber: pendingParagraphNumber,
+					status: 'open',
+					createdAt: new Date(),
+					replies: [],
+					_pending: true
+				};
+			} else {
+				const created = await trpc.comments.createInline.mutate({
+					documentId: data.document.id,
+					content: paragraphCommentText.trim(),
+					paragraphNumber: pendingParagraphNumber,
+					anchorContext: paragraphText || undefined,
+					anchorText: undefined,
+					lineStart: undefined,
+					lineEnd: undefined,
+					characterStart: undefined,
+					characterEnd: undefined
+				});
+				newComment = {
+					id: created.id,
+					authorId: created.authorId,
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					authorName: data.currentUserId === created.authorId ? ((data as any).user?.name ?? '') : '',
+					content: created.content,
+					anchorText: null,
+					lineStart: null,
+					characterStart: null,
+					characterEnd: null,
+					paragraphNumber: created.paragraphNumber,
+					status: 'open',
+					createdAt: created.createdAt,
+					replies: []
+				};
+			}
 
 			inlineComments = [...inlineComments, newComment];
 			paragraphCommentText = '';
@@ -1493,13 +1559,85 @@
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (floatingDebounce) clearTimeout(floatingDebounce);
+		window.removeEventListener('online', replayPendingComments);
 	});
+
+	async function replayPendingComments() {
+		const pending = pendingComments.forDocument(data.document.id);
+		if (pending.length === 0) return;
+
+		for (const p of pending) {
+			try {
+				if (p.type === 'update' && p.commentId) {
+					await trpc.comments.update.mutate({ id: p.commentId, content: p.content });
+					// Optimistic update was already applied locally when queueing
+				} else if (p.parentCommentId) {
+					const reply = await trpc.comments.addReply.mutate({
+						commentId: p.parentCommentId,
+						content: p.content
+					});
+					inlineComments = inlineComments.map((c) =>
+						c.id === p.parentCommentId
+							? { ...c, replies: c.replies.map((r) => r.id === p.id ? { ...r, id: reply.id, _pending: false } : r) }
+							: c
+					);
+				} else if (p.paragraphNumber) {
+					const created = await trpc.comments.createInline.mutate({
+						documentId: p.documentId,
+						content: p.content,
+						paragraphNumber: p.paragraphNumber,
+						anchorContext: p.anchorContext,
+						anchorText: undefined,
+						lineStart: undefined,
+						lineEnd: undefined,
+						characterStart: undefined,
+						characterEnd: undefined
+					});
+					inlineComments = inlineComments.map((c) =>
+						c.id === p.id ? { ...c, id: created.id, _pending: false } : c
+					);
+				} else {
+					const created = await trpc.comments.createInline.mutate({
+						documentId: p.documentId,
+						content: p.content,
+						anchorText: p.anchorText ?? '',
+						anchorContext: p.anchorContext,
+						lineStart: p.lineStart ?? 0,
+						lineEnd: p.lineEnd ?? 0,
+						characterStart: p.characterStart ?? 0,
+						characterEnd: p.characterEnd ?? 0,
+						paragraphNumber: undefined
+					});
+					inlineComments = inlineComments.map((c) =>
+						c.id === p.id ? { ...c, id: created.id, _pending: false } : c
+					);
+				}
+				pendingComments.update(p.id, { status: 'synced' });
+			} catch {
+				pendingComments.update(p.id, { status: 'failed' });
+			}
+		}
+		pendingComments.clearSynced();
+	}
 
 	onMount(async () => {
 		// If offline, prefer PouchDB content (may have unsaved edits) over cached server data
 		const offlineDoc = await pouchStore.getDocument(data.document.id);
 		if (offlineDoc && !onlineStore.online) {
 			content = offlineDoc.content;
+		}
+
+		// If offline and this doc was prefetched, load cached comments
+		if (!onlineStore.online) {
+			const cached = await pouchStore.getComments(data.document.id);
+			if (cached?.inline?.length) {
+				// Merge with any locally-created pending comments (already in inlineComments via $state init)
+				const pendingIds = new Set(inlineComments.filter((c) => c._pending).map((c) => c.id));
+				const cachedComments = (cached.inline as InlineComment[]).filter((c) => !pendingIds.has(c.id));
+				inlineComments = [...cachedComments, ...inlineComments.filter((c) => c._pending)].sort(
+					(a, b) => (a.characterStart ?? 0) - (b.characterStart ?? 0)
+				);
+			}
 		}
 
 		// Keep PouchDB in sync with the server content so it's available offline.
@@ -1514,6 +1652,9 @@
 				updatedAt: data.document.updatedAt?.toISOString() ?? new Date().toISOString()
 			});
 		}
+
+		// Replay any pending offline comments when reconnected
+		window.addEventListener('online', replayPendingComments);
 
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
@@ -2842,15 +2983,23 @@
 							</p>
 						{:else}
 							{#each inlineComments as c (c.id)}
-								<div data-comment-id={c.id}>
+								<div data-comment-id={c.id} class={c._pending ? 'opacity-70' : ''}>
+									{#if c._pending}
+										<p class="mb-1 font-sans text-xs text-amber-600 dark:text-amber-400">Pending sync…</p>
+									{/if}
 									<CommentThread
 										comment={{ ...c, resolved: c.status === 'resolved' }}
+										documentId={data.document.id}
 										currentUserId={data.currentUserId}
 										isActive={c.id === currentCommentId}
+										isPending={c._pending}
 										onclick={handleCommentClick}
 										onresolved={handleCommentResolved}
 										onreopened={handleCommentReopened}
 										onreplyadded={handleReplyAdded}
+										onupdated={(id, content) => {
+											inlineComments = inlineComments.map((x) => x.id === id ? { ...x, content } : x);
+										}}
 										ondeleted={(id) => {
 											inlineComments = inlineComments.filter((x) => x.id !== id);
 										}}

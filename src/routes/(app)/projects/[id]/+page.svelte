@@ -12,6 +12,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 	import { pendingCreates, type PendingCreate } from '$lib/offline/pending-creates.svelte';
+	import { projectPrefetch } from '$lib/offline/project-prefetch.svelte';
 	import { type DocumentType } from '$lib/domain/document';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
@@ -917,6 +918,40 @@
 					</svg>
 					Export
 				</a>
+				<!-- Offline download button -->
+				{#if projectPrefetch.status === 'downloading'}
+					<span class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted">
+						<svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+						</svg>
+						{projectPrefetch.progress.current}/{projectPrefetch.progress.total}
+					</span>
+				{:else if projectPrefetch.isPrefetched(data.project.id)}
+					{@const lastSync = projectPrefetch.lastSynced(data.project.id)}
+					<button
+						type="button"
+						onclick={() => projectPrefetch.prefetchProject(data.project.id)}
+						title="Available offline · click to re-sync"
+						class="flex items-center gap-1.5 rounded-md border border-emerald-300 px-3 py-1.5 font-sans text-sm text-emerald-700 transition-colors hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<polyline points="20 6 9 17 4 12"/>
+						</svg>
+						Offline{lastSync ? ` · ${lastSync.toLocaleDateString('en', { day: 'numeric', month: 'short' })}` : ''}
+					</button>
+				{:else}
+					<button
+						type="button"
+						onclick={() => projectPrefetch.prefetchProject(data.project.id)}
+						title="Download project for offline use"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+						</svg>
+						Offline
+					</button>
+				{/if}
 				<span
 					class="rounded-full bg-paper-border px-3 py-1 font-sans text-xs font-medium text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted"
 				>
