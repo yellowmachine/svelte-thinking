@@ -47,6 +47,8 @@ services:
       EMAIL_FROM: ${EMAIL_FROM}
       # Encryption
       KMS_MASTER_KEY: ${KMS_MASTER_KEY}
+      # Public URLs (exposed to browser via dynamic env)
+      PUBLIC_LIBRARIAN_URL: ${PUBLIC_LIBRARIAN_URL:-https://librarian.scholio.review}
       # Notifications
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
     ports:
