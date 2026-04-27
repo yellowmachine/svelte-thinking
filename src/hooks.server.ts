@@ -30,7 +30,7 @@ const handleAuthCookieDomain: Handle = async ({ event, resolve }) => {
 
 	let domain: string | undefined;
 	try {
-		const { hostname } = new URL(env.ORIGIN);
+		const { hostname } = new URL(env.ORIGIN ?? '');
 		if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
 			const parts = hostname.split('.');
 			if (parts.length >= 2) domain = parts.slice(-2).join('.');

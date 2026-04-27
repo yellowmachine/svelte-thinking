@@ -6,7 +6,7 @@
 	import { page } from '$app/stores';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
-	const projectId = $derived($page.params.id);
+	const projectId = $derived($page.params.id!);
 
 	$effect(() => { workspaceStore.syncToOrg(data.projectOrgId); });
 

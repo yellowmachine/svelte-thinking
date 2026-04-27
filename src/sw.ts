@@ -86,7 +86,7 @@ registerRoute(
 // Fallback: when a navigate request fails (offline + not cached), serve /offline
 // /offline is precached via additionalManifestEntries so it's always available
 setCatchHandler(async ({ event }) => {
-	const req = event.request;
+	const req = (event as FetchEvent).request;
 	if (req.mode === 'navigate') {
 		const cached = await caches.match('/offline');
 		return cached ?? Response.error();

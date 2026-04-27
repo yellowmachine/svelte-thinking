@@ -82,11 +82,11 @@ describe('indexDocument', () => {
 
 		// withRLS wrapper para indexDocument (mismo patrón que hooks.server.ts)
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
-			db.transaction(async (tx: TestDb) => {
+			db.transaction(async (tx) => {
 				await (tx as any).execute(
 					`SELECT set_config('app.current_user_id', '${USER}', true)`
 				);
-				return fn(tx);
+				return fn(tx as unknown as TestDb);
 			});
 
 		await withRLS((tx) => indexDocument(tx as any, documentId, projectId, content));
@@ -112,11 +112,11 @@ describe('indexDocument', () => {
 		);
 
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
-			db.transaction(async (tx: TestDb) => {
+			db.transaction(async (tx) => {
 				await (tx as any).execute(
 					`SELECT set_config('app.current_user_id', '${USER}', true)`
 				);
-				return fn(tx);
+				return fn(tx as unknown as TestDb);
 			});
 
 		await withRLS((tx) =>
@@ -135,11 +135,11 @@ describe('indexDocument', () => {
 		vi.stubGlobal('fetch', vi.fn());
 
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
-			db.transaction(async (tx: TestDb) => {
+			db.transaction(async (tx) => {
 				await (tx as any).execute(
 					`SELECT set_config('app.current_user_id', '${USER}', true)`
 				);
-				return fn(tx);
+				return fn(tx as unknown as TestDb);
 			});
 
 		await withRLS((tx) => indexDocument(tx as any, documentId, projectId, ''));

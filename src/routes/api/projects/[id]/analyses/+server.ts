@@ -69,7 +69,10 @@ export const POST: RequestHandler = async (event) => {
 	);
 
 	// Call scipy microservice
-	const ref = datasetRef(dataset);
+	const ref = datasetRef({
+		key: `projects/${dataset.projectId}/datasets/${dataset.id}/${dataset.filename}`,
+		mimeType: dataset.mimeType
+	});
 	let result: unknown;
 
 	try {

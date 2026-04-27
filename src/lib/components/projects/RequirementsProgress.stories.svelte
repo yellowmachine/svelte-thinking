@@ -1,4 +1,4 @@
-<script module>
+<script module lang="ts">
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import RequirementsProgress from './RequirementsProgress.svelte';
 
@@ -29,7 +29,7 @@
 
 <!-- Dentro del botón, como aparece en la página del proyecto -->
 <Story name="In context (button)" args={{ fulfilled: 2, total: 5, requiredFulfilled: 2, requiredTotal: 4 }}>
-	{#snippet children(args)}
+	{#snippet template(args: any)}
 		<a
 			href="#"
 			class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 font-sans text-sm text-gray-500 hover:bg-gray-50"
@@ -45,7 +45,7 @@
 </Story>
 
 <Story name="In context (complete)" args={{ fulfilled: 5, total: 5, requiredFulfilled: 4, requiredTotal: 4 }}>
-	{#snippet children(args)}
+	{#snippet template(args: any)}
 		<a
 			href="#"
 			class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 font-sans text-sm text-gray-500 hover:bg-gray-50"

@@ -50,8 +50,8 @@ export const auth = betterAuth({
   */
   socialProviders: {
     github: {
-      clientId: env.GITHUB_CLIENT_ID,
-      clientSecret: env.GITHUB_CLIENT_SECRET
+      clientId: env.GITHUB_CLIENT_ID!,
+      clientSecret: env.GITHUB_CLIENT_SECRET!
     }
   },
   databaseHooks: {
@@ -71,7 +71,7 @@ export const auth = betterAuth({
     }
   },
   advanced: {
-    ...(!isLocalhost(env.ORIGIN) ? { crossSubDomainCookies: { enabled: true } } : {})
+    ...(!isLocalhost(env.ORIGIN ?? '') ? { crossSubDomainCookies: { enabled: true } } : {})
   },
   plugins: [
     twoFactor({ issuer: 'Scholio' }),

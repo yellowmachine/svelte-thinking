@@ -160,7 +160,7 @@
 						</h2>
 						{#if group.bibHref}
 						<a
-							href={resolve(group.bibHref)}
+							href={resolve(group.bibHref as any)}
 							class="font-sans text-xs text-accent hover:underline"
 						>
 							Ver en proyecto →
@@ -194,7 +194,7 @@
 										<code class="font-mono text-[11px] text-accent">@{ref.citeKey}</code>
 										{#if ref.externalHref}
 											<a
-												href={resolve(ref.externalHref)}
+												href={resolve(ref.externalHref as any)}
 												target="_blank"
 												rel="noopener noreferrer"
 												class="font-sans text-xs text-accent hover:underline"
