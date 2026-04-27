@@ -49,7 +49,7 @@
 				map.set(key, {
 					projectId: r.projectId,
 					projectTitle: r.projectTitle ?? 'Sin proyecto',
-					bibHref: r.projectId ? resolve(`/projects/${r.projectId}/bib`) : null,
+					bibHref: r.projectId ? `/projects/${r.projectId}/bib` : null,
 					refs: []
 				});
 			}
