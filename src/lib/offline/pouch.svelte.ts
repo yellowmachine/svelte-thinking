@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { onlineStore } from '$lib/stores/online.svelte';
 
 export interface OfflineDocDiffCommentCreate {
 	id: string;
@@ -93,11 +94,24 @@ class PouchStore {
 		if (!browser) return;
 		if (this.db) return;
 		try {
-			const { default: PouchDB } = await import('pouchdb-browser');
+			// pouchdb-browser's ESM build imports 'events' (Node.js built-in) as an external,
+			// which Vite cannot polyfill for the browser in production — EE becomes {} and
+			// new EE() throws. Load the pre-built UMD bundle instead; it ships EventEmitter
+			// already bundled and sets window.PouchDB as a side-effect.
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			this.db = new (PouchDB as any)<OfflineDoc>('scholio-docs', { auto_compaction: true });
+			if (!(window as any).PouchDB) {
+				await new Promise<void>((resolve, reject) => {
+					const s = document.createElement('script');
+					s.src = '/lib/pouchdb.min.js';
+					s.onload = () => resolve();
+					s.onerror = reject;
+					document.head.appendChild(s);
+				});
+			}
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const PouchDB = (window as any).PouchDB;
+			this.db = new PouchDB('scholio-docs', { auto_compaction: true }) as PouchDB.Database<OfflineDoc>;
 			this._startPull();
-			window.addEventListener('online', () => this._onOnline());
 		} catch (e) {
 			console.error('[pouch] init failed:', e);
 		}
@@ -119,7 +133,7 @@ class PouchStore {
 		this.pullHandler = handler as PouchDB.Replication.Replication<OfflineDoc>;
 	}
 
-	private async _onOnline() {
+	async handleOnline() {
 		this._startPull();
 		await this._pushPending();
 	}
@@ -354,6 +368,18 @@ export const pouchStore = new PouchStore();
 
 if (browser) {
 	pouchStore.init();
+
+	// Firefox DevTools offline mode blocks requests but doesn't fire the native
+	// 'online' event when going back online — onlineStore's probe detects the
+	// transition instead. Watch it here so pending docs always get pushed.
+	$effect.root(() => {
+		let prevOnline = true;
+		$effect(() => {
+			const cur = onlineStore.online;
+			if (cur && !prevOnline) pouchStore.handleOnline();
+			prevOnline = cur;
+		});
+	});
 }
 
 // ── Diff merge helper ──────────────────────────────────────────────────────────
