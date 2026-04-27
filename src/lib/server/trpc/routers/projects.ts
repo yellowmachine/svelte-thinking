@@ -652,7 +652,8 @@ export const projectsRouter = router({
     const userId = ctx.user.id;
     const projectId = crypto.randomUUID();
 
-    return ctx.withRLS(async (db) => {
+    const docsToIndex: Array<{ docId: string; content: string }> = [];
+    const result = await ctx.withRLS(async (db) => {
       // Create the project
       const [created] = await db
         .insert(project)
@@ -754,9 +755,7 @@ export const projectsRouter = router({
           .set({ currentVersionId: versionId })
           .where(eq(document.id, docId));
 
-        // Index the document for semantic search — fire-and-forget, same as commit flow
-        indexDocument(db, docId, projectId, content)
-          .catch((err) => console.error('[embeddings] indexDocument failed (sample):', err));
+        docsToIndex.push({ docId, content });
 
         // Fire-and-forget: AI summary for the project chat agent
         const _title = sampleDoc.title;
@@ -773,6 +772,15 @@ export const projectsRouter = router({
 
       return { projectId };
     });
+
+    // Index outside the transaction — each call gets its own RLS context so
+    // SET LOCAL app.current_user_id is set when the INSERT runs
+    for (const { docId, content } of docsToIndex) {
+      ctx.withRLS((db) => indexDocument(db, docId, projectId, content))
+        .catch((err) => console.error('[embeddings] indexDocument failed (sample):', err));
+    }
+
+    return result;
   }),
 
   importEpub: protectedProcedure
