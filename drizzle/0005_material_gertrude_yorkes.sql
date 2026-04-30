@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."project" ADD COLUMN "is_importing" boolean DEFAULT false NOT NULL;

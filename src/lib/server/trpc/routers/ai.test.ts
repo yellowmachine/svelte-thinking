@@ -21,7 +21,7 @@ const USER = 'ai-test-user';
 
 // Deterministic fake embedding (384 dims) — all zeros except first element
 function fakeEmbedding(seed = 1): number[] {
-	const vec = new Array(384).fill(0);
+	const vec = new Array(1536).fill(0);
 	vec[0] = seed * 0.1;
 	return vec;
 }
@@ -69,7 +69,11 @@ describe('indexDocument', () => {
 			vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => ({
-					embeddings: [fakeEmbedding(1), fakeEmbedding(2), fakeEmbedding(3)]
+					data: [
+						{ embedding: fakeEmbedding(1), index: 0 },
+						{ embedding: fakeEmbedding(2), index: 1 },
+						{ embedding: fakeEmbedding(3), index: 2 }
+					]
 				})
 			})
 		);
@@ -97,7 +101,7 @@ describe('indexDocument', () => {
 		expect(chunks.length).toBe(3);
 		expect(chunks[0].chunkIndex).toBe(0);
 		expect(chunks[0].text).toContain('metodología');
-		expect(chunks[0].embedding).toHaveLength(384);
+		expect(chunks[0].embedding).toHaveLength(1536);
 	});
 
 	it('remplaza chunks existentes al re-indexar', async () => {
@@ -105,7 +109,7 @@ describe('indexDocument', () => {
 			'fetch',
 			vi.fn().mockResolvedValue({
 				ok: true,
-				json: async () => ({ embeddings: [fakeEmbedding(1)] })
+				json: async () => ({ data: [{ embedding: fakeEmbedding(1), index: 0 }] })
 			})
 		);
 
@@ -163,7 +167,10 @@ describe('documents.commit triggers indexing', () => {
 			vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => ({
-					embeddings: [fakeEmbedding(1), fakeEmbedding(2)]
+					data: [
+						{ embedding: fakeEmbedding(1), index: 0 },
+						{ embedding: fakeEmbedding(2), index: 1 }
+					]
 				})
 			})
 		);
@@ -245,7 +252,7 @@ describe('ai.sendMessage — search_documents_semantic', () => {
 			})
 			.mockResolvedValueOnce({
 				ok: true,
-				json: async () => ({ embeddings: [fakeEmbedding(1)] })
+				json: async () => ({ data: [{ embedding: fakeEmbedding(1), index: 0 }] })
 			})
 			.mockResolvedValueOnce({
 				ok: true,

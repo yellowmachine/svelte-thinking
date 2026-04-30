@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."reference_subnote" ADD COLUMN "anchor_text" text;

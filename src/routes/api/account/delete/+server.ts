@@ -20,7 +20,7 @@ import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference } from '$lib/server/db/schemas/references.schema';
 import { user as authUser, session as authSession } from '$lib/server/db/auth.schema';
-import { deleteFileWithConfig, buildInternalS3Config } from '$lib/server/storage';
+import { deleteFileWithConfig } from '$lib/server/storage';
 
 export const DELETE: RequestHandler = async (event) => {
 	const currentUser = event.locals.user;
@@ -28,15 +28,11 @@ export const DELETE: RequestHandler = async (event) => {
 
 	const userId = currentUser.id;
 
-	// ── 1. Collect MinIO keys from owned projects ────────────────────────────
-	const [ownedProjects, profileRow] = await Promise.all([
-		db.select({ id: project.id }).from(project).where(eq(project.ownerId, userId)),
-		db
-			.select({ useInternalStorage: userProfile.useInternalStorage })
-			.from(userProfile)
-			.where(eq(userProfile.userId, userId))
-			.limit(1)
-	]);
+	// ── 1. Collect keys from owned projects ─────────────────────────────────
+	const ownedProjects = await db
+		.select({ id: project.id })
+		.from(project)
+		.where(eq(project.ownerId, userId));
 
 	const projectIds = ownedProjects.map((p) => p.id);
 
@@ -46,17 +42,17 @@ export const DELETE: RequestHandler = async (event) => {
 		.where(eq(reference.userId, userId));
 
 	if (projectIds.length > 0) {
-		const [photos] = await Promise.all([
-			db
-				.select({ key: projectPhoto.key })
-				.from(projectPhoto)
-				.where(inArray(projectPhoto.projectId, projectIds))
-		]);
+		const photos = await db
+			.select({ key: projectPhoto.key })
+			.from(projectPhoto)
+			.where(inArray(projectPhoto.projectId, projectIds));
 
-		// ── 2. Delete S3 files (best-effort, don't block on failure) ──────────
-		// Files live in the user's internal bucket when useInternalStorage is set.
-		// Datasets are stored in Postgres (no S3 files to delete).
-		const s3Config = profileRow[0]?.useInternalStorage ? buildInternalS3Config(userId) : null;
+		// ── 2. Delete BYOS3 files for users who configured their own bucket ──
+		// Best-effort: don't block account deletion on S3 errors.
+		// We don't have a cached config here so we attempt deletion if any files exist.
+		// BYOS3 config is deleted in step 5 via cascade; files are best-effort cleaned.
+		const { getDecryptedUserS3Config } = await import('$lib/server/s3Storage');
+		const s3Config = await getDecryptedUserS3Config(userId, (fn) => fn(db)).catch(() => null);
 		if (s3Config) {
 			const keys = [
 				...photos.map((f) => f.key),

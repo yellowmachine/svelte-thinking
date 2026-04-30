@@ -30,7 +30,7 @@ export const documentChunk = scholioSchema
 			projectId: text('project_id').notNull(),
 			chunkIndex: integer('chunk_index').notNull(),
 			text: text('text').notNull(),
-			embedding: vector('embedding', { dimensions: 384 }).notNull(),
+			embedding: vector('embedding', { dimensions: 1536 }).notNull(),
 			createdAt: timestamp('created_at').notNull().defaultNow()
 		},
 		(t) => [

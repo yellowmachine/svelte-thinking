@@ -561,52 +561,11 @@ export const referencesRouter = router({
 			return { inserted: newLinks.length, skipped: toLink.length - newLinks.length };
 		}),
 
-	// ── Generate PDF from the reference's URL via scipy ─────────────────────
+	// ── Generate PDF from the reference's URL (disabled in beta) ───────────
 	generatePdfFromUrl: protectedProcedure
 		.input(z.object({ refId: z.string(), projectId: z.string() }))
-		.mutation(async ({ ctx, input: { refId, projectId } }) => {
-			const [ref] = (await ctx.withRLS((db) =>
-				db.select({ url: reference.url }).from(reference).where(eq(reference.id, refId)).limit(1)
-			)) as { url: string | null }[];
-
-			if (!ref?.url) return { pdfKey: null };
-
-			try {
-				const { scipy } = await import('$lib/server/scipy');
-				console.info(`[generatePdfFromUrl] calling scipy for ref=${refId} url=${ref.url}`);
-				const result = await scipy.pdfFromUrl(ref.url);
-				if (!result.ok) {
-					console.warn(`[generatePdfFromUrl] scipy returned ok=false for ref=${refId}:`, result);
-					return { pdfKey: null };
-				}
-
-				const { resolveProjectS3Config } = await import('$lib/server/s3Storage');
-				const { uploadFileWithConfig } = await import('$lib/server/storage');
-				const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS);
-				if (!s3) {
-					console.warn(`[generatePdfFromUrl] no S3 config for project=${projectId}`);
-					return { pdfKey: null };
-				}
-
-				const pdfBytes = Buffer.from(result.pdf, 'base64');
-				const key = `projects/${projectId}/references/${refId}.pdf`;
-				await uploadFileWithConfig(s3, key, pdfBytes, 'application/pdf');
-				console.info(
-					`[generatePdfFromUrl] PDF uploaded: ${key} (${Math.round(pdfBytes.length / 1024)} KB)`
-				);
-
-				await ctx.withRLS((db) =>
-					db
-						.update(reference)
-						.set({ pdfKey: key, updatedAt: new Date() })
-						.where(eq(reference.id, refId))
-				);
-
-				return { pdfKey: key };
-			} catch (err) {
-				console.error(`[generatePdfFromUrl] failed for ref=${refId}:`, err);
-				return { pdfKey: null };
-			}
+		.mutation(async () => {
+			return { pdfKey: null };
 		}),
 
 	// ── Export all references as a .bib file string ───────────────────────

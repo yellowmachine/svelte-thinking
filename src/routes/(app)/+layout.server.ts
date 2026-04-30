@@ -65,8 +65,7 @@ export const load: LayoutServerLoad = async (event) => {
 					tx
 						.select({
 							theme: userProfile.theme,
-							aiTaskConfig: userProfile.aiTaskConfig,
-							useInternalStorage: userProfile.useInternalStorage
+							aiTaskConfig: userProfile.aiTaskConfig
 						})
 						.from(userProfile)
 						.where(eq(userProfile.userId, userId))
@@ -117,7 +116,7 @@ export const load: LayoutServerLoad = async (event) => {
 		orgs,
 		aiTaskConfig: parseTaskConfig(profile[0]?.aiTaskConfig ?? null),
 		hasAiKey: aiKeys.some((k) => k.enabled),
-		hasUserS3Config: userS3ConfigKey[0] !== undefined || profile[0]?.useInternalStorage === true,
+		hasUserS3Config: userS3ConfigKey[0] !== undefined,
 		activeNotifications
 	};
 };

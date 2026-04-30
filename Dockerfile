@@ -39,7 +39,6 @@ COPY . .
 ENV NODE_ENV=production
 ENV ORIGIN=https://placeholder.local
 ENV DATABASE_URL=postgres://placeholder
-ENV SCIPY_SERVICE_URL=http://placeholder
 ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
 ENV ENABLE_SW=${ENABLE_SW}
 

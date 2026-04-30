@@ -1,12 +1,11 @@
-import { text, timestamp, boolean, bigint, pgPolicy, unique } from 'drizzle-orm/pg-core';
+import { text, timestamp, boolean, pgPolicy, unique } from 'drizzle-orm/pg-core';
 import { customType } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 
-// Reutilizamos el mismo tipo vector(384) que documentChunks
-const vector384 = customType<{ data: number[]; driverData: string }>({
+const vector1536 = customType<{ data: number[]; driverData: string }>({
 	dataType() {
-		return 'vector(384)';
+		return 'vector(1536)';
 	},
 	fromDriver(v: string) {
 		return v.slice(1, -1).split(',').map(Number);
@@ -30,17 +29,11 @@ export const userProfile = scholioSchema
 			institution: text('institution'),
 			orcid: text('orcid'),
 			orcidVerified: boolean('orcid_verified').notNull().default(false),
-			// Embedding del perfil para búsqueda semántica (null hasta primer indexado)
-			profileEmbedding: vector384('profile_embedding'),
+			profileEmbedding: vector1536('profile_embedding'),
 			// Per-task AI configuration: { agent, draft, review, requirements } → { keyId, model }
 			aiTaskConfig: text('ai_task_config'), // JSON stored as text
 			// UI theme preference: 'warm' | 'github' | 'solarized' | 'nord' | 'catppuccin' | 'gruvbox'
 			theme: text('theme'),
-			// Internal storage (beta) — opt-in to use platform's RustFS instead of BYOS3
-			useInternalStorage: boolean('use_internal_storage').notNull().default(false),
-			internalStorageUsedBytes: bigint('internal_storage_used_bytes', { mode: 'number' })
-				.notNull()
-				.default(0),
 			createdAt: timestamp('created_at').notNull().defaultNow(),
 			updatedAt: timestamp('updated_at').notNull().defaultNow()
 		},
