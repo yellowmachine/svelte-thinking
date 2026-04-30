@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."document" ADD COLUMN "is_readonly" boolean DEFAULT false NOT NULL;

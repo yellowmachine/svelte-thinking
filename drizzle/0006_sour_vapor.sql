@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."document" ADD COLUMN "source_reference_id" text;

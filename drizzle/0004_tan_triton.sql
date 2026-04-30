@@ -1,1 +1,0 @@
-ALTER TABLE "scholio"."document" ADD COLUMN "rendered_html" text;
