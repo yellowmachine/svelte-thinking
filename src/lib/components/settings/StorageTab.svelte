@@ -25,54 +25,21 @@
 	let s3Testing = $state(false);
 	let s3Removing = $state(false);
 
-	let internalEnabled = $state(false);
-	let internalUsedBytes = $state(0);
-	let internalQuotaBytes = $state(50 * 1024 * 1024);
-	let togglingInternal = $state(false);
-
 	async function loadS3Config() {
 		loadingS3 = true;
 		try {
-			const [byos3, internal] = await Promise.all([
-				trpc.s3Config.get.query(),
-				trpc.s3Config.internalUsage.query()
-			]);
-			s3Config = byos3;
+			s3Config = await trpc.s3Config.get.query();
 			if (s3Config) {
 				s3Endpoint = s3Config.endpoint;
 				s3Bucket = s3Config.bucket;
 				s3Region = s3Config.region;
 				s3PublicUrl = s3Config.publicUrl ?? '';
 			}
-			internalEnabled = internal.enabled;
-			internalUsedBytes = internal.usedBytes;
-			internalQuotaBytes = internal.quotaBytes;
 			s3Loaded = true;
 		} catch {
 			s3Error = 'Error loading the S3 configuration.';
 		} finally {
 			loadingS3 = false;
-		}
-	}
-
-	async function handleToggleInternal() {
-		togglingInternal = true;
-		s3Error = '';
-		s3Success = '';
-		try {
-			if (internalEnabled) {
-				await trpc.s3Config.disableInternal.mutate();
-				internalEnabled = false;
-				s3Success = 'Scholio storage disabled.';
-			} else {
-				await trpc.s3Config.enableInternal.mutate();
-				internalEnabled = true;
-				s3Success = 'Scholio storage enabled.';
-			}
-		} catch (e: unknown) {
-			s3Error = e instanceof Error ? e.message : 'Error changing storage setting.';
-		} finally {
-			togglingInternal = false;
 		}
 	}
 
@@ -164,95 +131,6 @@
 	{#if loadingS3}
 		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
 	{:else}
-		<!-- Internal storage (beta) -->
-		<section
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<div class="flex items-start justify-between gap-4">
-				<div class="flex-1">
-					<div class="flex items-center gap-2">
-						<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-							Scholio Storage
-						</h2>
-						<span
-							class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-xs font-medium text-accent"
-							>beta</span
-						>
-					</div>
-					<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Use storage hosted on Scholio's servers — no configuration needed.
-					</p>
-				</div>
-				<button
-					type="button"
-					role="switch"
-					aria-label="Toggle Scholio internal storage"
-					aria-checked={internalEnabled}
-					onclick={handleToggleInternal}
-					disabled={togglingInternal}
-					class="relative mt-1 inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors disabled:opacity-50 {internalEnabled
-						? 'bg-accent'
-						: 'bg-ink-faint/30 dark:bg-dark-ink-faint/30'}"
-				>
-					<span
-						class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform {internalEnabled
-							? 'translate-x-5'
-							: 'translate-x-0'}"
-					></span>
-				</button>
-			</div>
-
-			<!-- Explanatory callout -->
-			<div
-				class="mt-4 flex gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/50 dark:bg-amber-950/30"
-			>
-				<svg
-					class="mt-0.5 h-4 w-4 shrink-0 text-amber-500 dark:text-amber-400"
-					viewBox="0 0 24 24"
-					fill="none"
-					aria-hidden="true"
-				>
-					<path
-						d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
-				<p class="font-sans text-xs leading-relaxed text-amber-800 dark:text-amber-300">
-					Scholio provides <strong>50 MB</strong> of shared storage for beta users — enough for ~20 whiteboard
-					photos. Your files are stored on our servers. For more storage or privacy control, configure
-					your own S3 bucket below.
-				</p>
-			</div>
-
-			<!-- Usage bar (only when enabled) -->
-			{#if internalEnabled}
-				{@const usedMB = (internalUsedBytes / (1024 * 1024)).toFixed(1)}
-				{@const quotaMB = (internalQuotaBytes / (1024 * 1024)).toFixed(0)}
-				{@const pct = Math.min(100, (internalUsedBytes / internalQuotaBytes) * 100)}
-				<div class="mt-4">
-					<div
-						class="mb-1 flex justify-between font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-					>
-						<span>{usedMB} MB used</span>
-						<span>{quotaMB} MB quota</span>
-					</div>
-					<div class="h-2 w-full overflow-hidden rounded-full bg-paper-ui dark:bg-dark-paper-ui">
-						<div
-							class="h-2 rounded-full transition-all {pct >= 90
-								? 'bg-red-500'
-								: pct >= 70
-									? 'bg-amber-500'
-									: 'bg-accent'}"
-							style="width: {pct}%"
-						></div>
-					</div>
-				</div>
-			{/if}
-		</section>
-
 		<!-- BYOS3 -->
 		<section
 			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"

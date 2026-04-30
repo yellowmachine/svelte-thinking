@@ -1,12 +1,9 @@
 name: Build, Push and Deploy
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      enabled:
-        description: 'Set to "true" to run'
-        required: true
-        default: 'false'
 
 env:
   REGISTRY: ghcr.io
@@ -16,9 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       typst: ${{ steps.filter.outputs.typst }}
-      scipy: ${{ steps.filter.outputs.scipy }}
-      embed: ${{ steps.filter.outputs.embed }}
-      backup: ${{ steps.filter.outputs.backup }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -27,12 +21,6 @@ jobs:
           filters: |
             typst:
               - 'typst-service/**'
-            scipy:
-              - 'scipy-service/**'
-            embed:
-              - 'embed-service/**'
-            backup:
-              - 'backup-service/**'
 
   build-app:
     runs-on: ubuntu-latest
@@ -67,6 +55,7 @@ jobs:
         with:
           context: .
           push: true
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -97,6 +86,10 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/scholio-typst
           tags: |
             type=raw,value=latest
+            type=sha
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -107,117 +100,11 @@ jobs:
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-  build-scipy:
-    needs: changes
-    if: needs.changes.outputs.scipy == 'true' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/scholio-scipy
-          tags: |
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./scipy-service
-          file: ./scipy-service/Dockerfile
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  build-embed:
-    needs: changes
-    if: needs.changes.outputs.embed == 'true' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/scholio-embed
-          tags: |
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./embed-service
-          file: ./embed-service/Dockerfile
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  build-backup:
-    needs: changes
-    if: needs.changes.outputs.backup == 'true' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/scholio-backup
-          tags: |
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./backup-service/Dockerfile
-          push: true
-          platforms: linux/amd64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  deploy-dokploy:
-    needs: [build-app, build-typst, build-scipy, build-embed, build-backup]
+  deploy-fly:
+    needs: [build-app, build-typst]
     if: |
       always() &&
       needs.build-app.result == 'success' &&
@@ -225,22 +112,37 @@ jobs:
       !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Dokploy after successful build
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy scholio
         run: |
-          curl --fail --show-error --silent \
-            -X POST "${{ secrets.DOKPLOY_COMPOSE_WEBHOOK_STAGING }}" \
-            -H "x-github-event: Push Hook" \
-            -H "Content-Type: application/json" \
-            -d '{"ref":"refs/heads/staging"}'
+          fly deploy --app ${{ vars.FLY_APP_SCHOLIO }} \
+            --image ${{ env.REGISTRY }}/${{ github.repository }}:sha-${{ github.sha }} \
+            --strategy rolling \
+            --yes
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy typst (if rebuilt)
+        if: needs.build-typst.result == 'success'
+        run: |
+          fly deploy --app ${{ vars.FLY_APP_TYPST }} \
+            --image ${{ env.REGISTRY }}/${{ github.repository_owner }}/scholio-typst:sha-${{ github.sha }} \
+            --strategy rolling \
+            --yes
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Notify Slack on successful deploy
         run: |
           curl --silent --show-error -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d "{\"text\":\"✅ *Deployed to staging* · \`${{ github.ref_name }}\` @ \`${{ github.sha }}\`\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Ver en GitHub Actions>\"}"
+            -d "{\"text\":\"✅ *Deployed to production* · \`${{ github.ref_name }}\` @ \`${{ github.sha }}\`\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Ver en GitHub Actions>\"}"
 
   notify-failure:
-    needs: [build-app, build-typst, build-scipy, build-embed, build-backup, deploy-dokploy]
+    needs: [build-app, build-typst, deploy-fly]
     if: failure()
     runs-on: ubuntu-latest
     steps:

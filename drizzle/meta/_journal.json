@@ -64,6 +64,13 @@
       "when": 1777091849435,
       "tag": "0008_far_sister_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777530236280,
+      "tag": "0009_happy_chat",
+      "breakpoints": true
     }
   ]
 }
