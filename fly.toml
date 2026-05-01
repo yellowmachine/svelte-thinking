@@ -2,7 +2,7 @@
 # Antes de usar: fly apps create <nombre> y ajusta el campo app aquí.
 # Secretos: fly secrets set KEY=value --app <nombre>
 app = 'scholio'
-primary_region = 'mad'
+primary_region = 'cdg'
 
 [deploy]
   release_command = "bun scripts/migrate.mjs"
