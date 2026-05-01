@@ -118,7 +118,7 @@ jobs:
 
       - name: Deploy scholio
         run: |
-          fly deploy --app ${{ vars.FLY_APP_SCHOLIO }} \
+          flyctl deploy --app ${{ vars.FLY_APP_SCHOLIO }} \
             --image ${{ env.REGISTRY }}/${{ github.repository }}:sha-${{ github.sha }} \
             --strategy rolling \
             --yes
@@ -128,7 +128,7 @@ jobs:
       - name: Deploy typst (if rebuilt)
         if: needs.build-typst.result == 'success'
         run: |
-          fly deploy --app ${{ vars.FLY_APP_TYPST }} \
+          flyctl deploy --app ${{ vars.FLY_APP_TYPST }} \
             --config typst-service/fly.toml \
             --image ${{ env.REGISTRY }}/${{ github.repository_owner }}/scholio-typst:sha-${{ github.sha }} \
             --strategy rolling \
