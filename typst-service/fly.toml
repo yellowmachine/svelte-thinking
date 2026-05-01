@@ -4,7 +4,7 @@
 #   fly ips allocate-v6 --private --app <nombre>   ← habilita Flycast
 # Desde scholio: TYPST_SERVICE_URL=http://<nombre>.flycast
 app = 'scholio-typst'
-primary_region = 'mad'
+primary_region = 'cdg'
 
 # Sin acceso público — solo accesible internamente vía Flycast
 [http_service]
