@@ -19,7 +19,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json bun.lock ./
-RUN HUSKY=0 bun install --frozen-lockfile --production
+RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # ─── Stage 3: build ───────────────────────────────────────────────────────────
 FROM oven/bun:1 AS build
