@@ -3,6 +3,84 @@ import { eq, and, isNull, isNotNull, desc, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { comment } from '$lib/server/db/schemas/comments.schema';
+import { document } from '$lib/server/db/schemas/documents.schema';
+import { project } from '$lib/server/db/schemas/projects.schema';
+import { notificationPreference } from '$lib/server/db/schemas/users.schema';
+import { sendNewCommentNotification } from '$lib/server/email';
+import { env } from '$env/dynamic/private';
+
+import type { Db } from '$lib/server/db';
+
+async function notifyDocumentOwner(
+	db: Db,
+	documentId: string,
+	commenterId: string,
+	commenterName: string,
+	commentContent: string
+) {
+	try {
+		// Fetch document + project + owner email in one query (bypasses RLS via ctx.db)
+		const rows = await db
+			.select({
+				documentTitle: document.title,
+				projectId: document.projectId,
+				projectTitle: project.title,
+				ownerId: project.ownerId,
+				ownerEmail: sql<string>`(SELECT email FROM "user" WHERE "user".id = ${project.ownerId})`
+			})
+			.from(document)
+			.innerJoin(project, eq(document.projectId, project.id))
+			.where(eq(document.id, documentId))
+			.limit(1);
+
+		const row = rows[0];
+		if (!row || row.ownerId === commenterId) return; // no notificar al propio autor
+
+		// Get or create notification preference
+		const existingPref = await db
+			.select()
+			.from(notificationPreference)
+			.where(
+				and(
+					eq(notificationPreference.userId, row.ownerId),
+					eq(notificationPreference.projectId, row.projectId)
+				)
+			)
+			.limit(1);
+
+		let pref = existingPref[0];
+		if (!pref) {
+			const [created] = await db
+				.insert(notificationPreference)
+				.values({
+					id: crypto.randomUUID(),
+					userId: row.ownerId,
+					projectId: row.projectId,
+					unsubscribeToken: crypto.randomUUID()
+				})
+				.returning();
+			pref = created;
+		}
+
+		if (!pref.commentEmails) return;
+
+		const origin = env.ORIGIN ?? 'http://localhost:5174';
+		const excerpt = commentContent.slice(0, 200) + (commentContent.length > 200 ? '…' : '');
+
+		await sendNewCommentNotification({
+			to: row.ownerEmail,
+			authorName: commenterName,
+			documentTitle: row.documentTitle,
+			projectTitle: row.projectTitle,
+			commentExcerpt: excerpt,
+			documentUrl: `${origin}/projects/${row.projectId}/documents/${documentId}`,
+			unsubscribeUrl: `${origin}/notifications/unsubscribe/${pref.unsubscribeToken}`
+		});
+	} catch (e) {
+		// Notificaciones son best-effort: nunca deben romper la mutación
+		console.error('[notifications] Error sending comment notification:', e);
+	}
+}
 
 const authorNameSql = (authorId: typeof comment.authorId) =>
 	sql<string>`(SELECT name FROM "user" WHERE "user".id = ${authorId})`;
@@ -13,15 +91,30 @@ const createGeneralCommentSchema = z.object({
 	parentCommentId: z.string().optional()
 });
 
-const createInlineCommentSchema = z.object({
-	documentId: z.string(),
-	content: z.string().min(1).max(10000),
-	anchorText: z.string(),
-	lineStart: z.number().int().nonnegative(),
-	lineEnd: z.number().int().nonnegative(),
-	characterStart: z.number().int().nonnegative(),
-	characterEnd: z.number().int().nonnegative()
-});
+const createInlineCommentSchema = z.union([
+	z.object({
+		documentId: z.string(),
+		content: z.string().min(1).max(10000),
+		anchorText: z.string(),
+		anchorContext: z.string().max(2000).optional(),
+		lineStart: z.number().int().nonnegative(),
+		lineEnd: z.number().int().nonnegative(),
+		characterStart: z.number().int().nonnegative(),
+		characterEnd: z.number().int().nonnegative(),
+		paragraphNumber: z.undefined()
+	}),
+	z.object({
+		documentId: z.string(),
+		content: z.string().min(1).max(10000),
+		paragraphNumber: z.number().int().positive(),
+		anchorContext: z.string().max(2000).optional(),
+		anchorText: z.undefined(),
+		lineStart: z.undefined(),
+		lineEnd: z.undefined(),
+		characterStart: z.undefined(),
+		characterEnd: z.undefined()
+	})
+]);
 
 export const commentsRouter = router({
 	// Comentarios generales de un documento (solo top-level, sin replies)
@@ -46,10 +139,12 @@ export const commentsRouter = router({
 					authorName: authorNameSql(comment.authorId),
 					content: comment.content,
 					anchorText: comment.anchorText,
+					anchorContext: comment.anchorContext,
 					lineStart: comment.lineStart,
 					lineEnd: comment.lineEnd,
 					characterStart: comment.characterStart,
 					characterEnd: comment.characterEnd,
+					paragraphNumber: comment.paragraphNumber,
 					status: comment.status,
 					createdAt: comment.createdAt
 				})
@@ -124,6 +219,17 @@ export const commentsRouter = router({
 					.returning()
 			);
 
+			// Solo notificar comentarios raíz, no replies
+			if (!input.parentCommentId) {
+				notifyDocumentOwner(
+					ctx.db,
+					input.documentId,
+					ctx.user.id,
+					ctx.user.name ?? ctx.user.email,
+					input.content
+				);
+			}
+
 			return created;
 		}),
 
@@ -139,13 +245,23 @@ export const commentsRouter = router({
 						authorId: ctx.user.id,
 						type: 'inline',
 						content: input.content,
-						anchorText: input.anchorText,
-						lineStart: input.lineStart,
-						lineEnd: input.lineEnd,
-						characterStart: input.characterStart,
-						characterEnd: input.characterEnd
+						anchorText: input.anchorText ?? null,
+						anchorContext: input.anchorContext ?? null,
+						lineStart: input.lineStart ?? null,
+						lineEnd: input.lineEnd ?? null,
+						characterStart: input.characterStart ?? null,
+						characterEnd: input.characterEnd ?? null,
+						paragraphNumber: input.paragraphNumber ?? null
 					})
 					.returning()
+			);
+
+			notifyDocumentOwner(
+				ctx.db,
+				input.documentId,
+				ctx.user.id,
+				ctx.user.name ?? ctx.user.email,
+				input.content
 			);
 
 			return created;
@@ -198,7 +314,11 @@ export const commentsRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			// Verify parent exists
 			const [parent] = await ctx.withRLS((db) =>
-				db.select({ id: comment.id, documentId: comment.documentId }).from(comment).where(eq(comment.id, input.commentId)).limit(1)
+				db
+					.select({ id: comment.id, documentId: comment.documentId })
+					.from(comment)
+					.where(eq(comment.id, input.commentId))
+					.limit(1)
 			);
 			if (!parent) throw new TRPCError({ code: 'NOT_FOUND' });
 

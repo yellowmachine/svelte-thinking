@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -54,7 +55,7 @@
 
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({ message: res.statusText }));
-				uploadError = err.message ?? 'Error al subir la imagen';
+				uploadError = err.message ?? 'Error uploading image';
 				uploading = false;
 				return;
 			}
@@ -94,13 +95,23 @@
 			extraPhotos = extraPhotos.filter((p) => p.id !== id);
 			if (lightboxPhoto?.id === id) lightboxPhoto = null;
 		} catch (e) {
-			alert(e instanceof Error ? e.message : 'Error al eliminar');
+			alert(e instanceof Error ? e.message : 'Error deleting');
 		}
 	}
 
 	function copyMarkdown(photo: (typeof data.photos)[number]) {
-		const md = `![${photo.filename}](${photo.url})`;
-		navigator.clipboard.writeText(md);
+		const md = `![${photo.filename}](/api/photos/${photo.id})`;
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText(md);
+		} else {
+			const ta = document.createElement('textarea');
+			ta.value = md;
+			ta.style.cssText = 'position:fixed;opacity:0';
+			document.body.appendChild(ta);
+			ta.select();
+			document.execCommand('copy');
+			document.body.removeChild(ta);
+		}
 	}
 
 	function formatSize(bytes: number) {
@@ -129,9 +140,9 @@
 			{data.project.title}
 		</button>
 
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Fotos</h1>
+		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Photos</h1>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Sube fotos de pizarras, notas o esquemas para usarlas en tus documentos.
+			Upload photos of whiteboards, notes or sketches to use in your documents.
 		</p>
 	</div>
 
@@ -142,7 +153,10 @@
 			class="mb-6 w-full cursor-pointer rounded-xl border-2 border-dashed transition-colors {dragOver
 				? 'border-accent bg-accent/5'
 				: 'border-paper-border hover:border-accent/50 dark:border-dark-paper-border'}"
-			ondragover={(e) => { e.preventDefault(); dragOver = true; }}
+			ondragover={(e) => {
+				e.preventDefault();
+				dragOver = true;
+			}}
 			ondragleave={() => (dragOver = false)}
 			ondrop={onDrop}
 			onclick={() => fileInput.click()}
@@ -166,10 +180,10 @@
 				</svg>
 				<div>
 					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Arrastra fotos aquí o haz clic para seleccionar
+						Drag photos here or click to select
 					</p>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						JPG, PNG, WebP, GIF · Máx. 10 MB
+						JPG, PNG, WebP, GIF · Max. 10 MB
 					</p>
 				</div>
 			</div>
@@ -188,7 +202,9 @@
 	{#if staged.length > 0}
 		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-5 dark:bg-dark-paper">
 			<h2 class="mb-4 font-serif text-base font-semibold text-ink dark:text-dark-ink">
-				{staged.length === 1 ? '1 foto lista para subir' : `${staged.length} fotos listas para subir`}
+				{staged.length === 1
+					? '1 photo ready to upload'
+					: `${staged.length} photos ready to upload`}
 			</h2>
 
 			<div class="flex flex-col gap-4">
@@ -196,19 +212,20 @@
 					<div class="flex gap-4">
 						<!-- Preview -->
 						<div class="relative shrink-0">
-							<img
-								src={item.preview}
-								alt="Vista previa"
-								class="h-20 w-20 rounded-lg object-cover"
-							/>
+							<img src={item.preview} alt="Preview" class="h-20 w-20 rounded-lg object-cover" />
 							<button
 								type="button"
-								aria-label="Quitar"
+								aria-label="Remove"
 								onclick={() => removeStaged(i)}
-								class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white shadow"
+								class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white shadow"
 							>
 								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+									<path
+										d="M18 6L6 18M6 6l12 12"
+										stroke="currentColor"
+										stroke-width="2.5"
+										stroke-linecap="round"
+									/>
 								</svg>
 							</button>
 						</div>
@@ -220,7 +237,7 @@
 							</p>
 							<textarea
 								bind:value={item.description}
-								placeholder="Nota u observación (opcional)"
+								placeholder="Note or caption (optional)"
 								rows="2"
 								class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 							></textarea>
@@ -230,7 +247,9 @@
 			</div>
 
 			{#if uploadError}
-				<p class="mt-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+				<p
+					class="mt-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
+				>
 					{uploadError}
 				</p>
 			{/if}
@@ -243,10 +262,10 @@
 					class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 				>
 					{#if uploading}
-						<div class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-						Subiendo...
+						<Spinner class="text-white" />
+						Uploading...
 					{:else}
-						Subir {staged.length === 1 ? 'foto' : `${staged.length} fotos`}
+						Upload {staged.length === 1 ? 'photo' : `${staged.length} photos`}
 					{/if}
 				</button>
 				<button
@@ -263,7 +282,7 @@
 					disabled={uploading}
 					class="ml-auto rounded-md border border-paper-border px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
-					+ Añadir más
+					+ Add more
 				</button>
 			</div>
 		</div>
@@ -271,15 +290,19 @@
 
 	<!-- Gallery grid -->
 	{#if photos.length === 0}
-		<div class="rounded-xl border border-dashed border-paper-border py-16 text-center dark:border-dark-paper-border">
+		<div
+			class="rounded-xl border border-dashed border-paper-border py-16 text-center dark:border-dark-paper-border"
+		>
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin fotos todavía. Sube la primera desde el móvil o el ordenador.
+				No photos yet. Upload the first one from your phone or computer.
 			</p>
 		</div>
 	{:else}
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
 			{#each photos as photo (photo.id)}
-				<div class="group relative overflow-hidden rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="group relative overflow-hidden rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<button
 						type="button"
 						class="block w-full"
@@ -287,7 +310,7 @@
 						aria-label="Ver {photo.filename}"
 					>
 						<img
-							src={photo.url}
+							src={`/api/photos/${photo.id}`}
 							alt={photo.description ?? photo.filename}
 							class="aspect-square w-full object-cover transition-transform duration-200 group-hover:scale-105"
 						/>
@@ -300,7 +323,9 @@
 						</div>
 					{/if}
 					<!-- Hover overlay -->
-					<div class="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+					<div
+						class="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100"
+					>
 						<div class="flex justify-end gap-1.5">
 							<button
 								title="Copiar markdown"
@@ -308,8 +333,20 @@
 								class="rounded-md bg-white/90 p-1.5 text-ink transition-colors hover:bg-white"
 							>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5" />
-									<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5" />
+									<rect
+										x="9"
+										y="9"
+										width="13"
+										height="13"
+										rx="2"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
+									<path
+										d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
 								</svg>
 							</button>
 							{#if photo.uploadedBy === data.currentUserId}
@@ -319,7 +356,13 @@
 									class="rounded-md bg-white/90 p-1.5 text-red-600 transition-colors hover:bg-white"
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-										<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+										<path
+											d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
+											stroke="currentColor"
+											stroke-width="1.5"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
 									</svg>
 								</button>
 							{/if}
@@ -344,7 +387,7 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="relative max-h-full max-w-4xl" onclick={(e) => e.stopPropagation()}>
 			<img
-				src={lightboxPhoto.url}
+				src={`/api/photos/${lightboxPhoto.id}`}
 				alt={lightboxPhoto.description ?? lightboxPhoto.filename}
 				class="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
 			/>
@@ -379,10 +422,15 @@
 		<button
 			aria-label="Cerrar"
 			onclick={() => (lightboxPhoto = null)}
-			class="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+			class="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
 		>
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+				<path
+					d="M18 6L6 18M6 6l12 12"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+				/>
 			</svg>
 		</button>
 	</div>

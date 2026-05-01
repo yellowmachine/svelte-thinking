@@ -3,7 +3,9 @@ import { eq, desc, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
-import { deleteFile } from '$lib/server/storage';
+import { deleteFileWithConfig } from '$lib/server/storage';
+import { resolveProjectS3Config } from '$lib/server/s3Storage';
+import { cacheDel, CACHE_KEY } from '$lib/server/cache';
 
 export const photosRouter = router({
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
@@ -29,11 +31,12 @@ export const photosRouter = router({
 			throw new TRPCError({ code: 'FORBIDDEN' });
 		}
 
-		await deleteFile(photo.key);
+		const s3 = await resolveProjectS3Config(photo.projectId, ctx.user.id, ctx.withRLS);
+		if (s3) await deleteFileWithConfig(s3, photo.key);
 
-		await ctx.withRLS((db) =>
-			db.delete(projectPhoto).where(and(eq(projectPhoto.id, photoId)))
-		);
+		await ctx.withRLS((db) => db.delete(projectPhoto).where(and(eq(projectPhoto.id, photoId))));
+
+		await cacheDel(CACHE_KEY.photoPresign(photoId));
 
 		return { id: photoId };
 	})

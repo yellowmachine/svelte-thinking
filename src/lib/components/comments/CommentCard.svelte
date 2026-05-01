@@ -51,7 +51,7 @@
 >
 	{#if type === 'inline' && anchorText}
 		<div
-			class="mb-3 rounded border-l-2 border-accent bg-accent-light/50 px-3 py-1.5 font-serif text-sm italic text-ink-muted dark:text-dark-ink-muted"
+			class="mb-3 rounded border-l-2 border-accent bg-accent-light/50 px-3 py-1.5 font-serif text-sm text-ink-muted italic dark:text-dark-ink-muted"
 		>
 			"{anchorText}"
 		</div>

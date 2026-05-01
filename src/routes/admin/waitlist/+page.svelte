@@ -8,7 +8,12 @@
 	const rejected = $derived(data.entries.filter((e) => e.status === 'rejected'));
 
 	function formatDate(d: Date) {
-		return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+		return new Date(d).toLocaleDateString('es-ES', {
+			day: 'numeric',
+			month: 'short',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 	}
 </script>
 
@@ -19,32 +24,35 @@
 	</p>
 
 	{#if pending.length === 0}
-		<div class="rounded-xl border border-dashed border-paper-border py-10 text-center dark:border-dark-paper-border">
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Sin solicitudes pendientes.</p>
+		<div
+			class="rounded-xl border border-dashed border-paper-border py-10 text-center dark:border-dark-paper-border"
+		>
+			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Sin solicitudes pendientes.
+			</p>
 		</div>
 	{:else}
 		<div class="flex flex-col gap-3">
 			{#each pending as entry (entry.id)}
-				<div class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<div class="flex items-start justify-between gap-4">
 						<div class="min-w-0">
-							<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">{entry.name ?? '—'}</p>
+							<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">
+								{entry.name ?? '—'}
+							</p>
 							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{entry.email}</p>
 							{#if entry.message}
-								<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">"{entry.message}"</p>
+								<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									"{entry.message}"
+								</p>
 							{/if}
-							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{formatDate(entry.createdAt)}</p>
+							<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								{formatDate(entry.createdAt)}
+							</p>
 						</div>
 						<div class="flex shrink-0 gap-2">
-							<form method="POST" action="?/approve">
-								<input type="hidden" name="id" value={entry.id} />
-								<button
-									type="submit"
-									class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
-								>
-									Aprobar
-								</button>
-							</form>
 							<form method="POST" action="?/reject">
 								<input type="hidden" name="id" value={entry.id} />
 								<button
@@ -56,21 +64,61 @@
 							</form>
 						</div>
 					</div>
+
+					<!-- Approve form with optional personal note -->
+					<form
+						method="POST"
+						action="?/approve"
+						class="mt-4 border-t border-paper-border pt-4 dark:border-dark-paper-border"
+					>
+						<input type="hidden" name="id" value={entry.id} />
+						<label
+							for="personalNote-{entry.id}"
+							class="mb-1.5 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+						>
+							✦ Nota personal <span class="text-ink-faint/60 dark:text-dark-ink-faint/60"
+								>(opcional — aparecerá en el correo como una tarjetita)</span
+							>
+						</label>
+						<textarea
+							id="personalNote-{entry.id}"
+							name="personalNote"
+							rows="3"
+							placeholder="Escribe algo cálido y personal para esta persona…"
+							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-serif text-sm text-ink italic placeholder:text-ink-faint/50 placeholder:not-italic focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint/50"
+						></textarea>
+						<div class="mt-2 flex justify-end">
+							<button
+								type="submit"
+								class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
+							>
+								Aprobar y enviar
+							</button>
+						</div>
+					</form>
 				</div>
 			{/each}
 		</div>
 	{/if}
 
 	{#if approved.length > 0}
-		<h2 class="mb-3 mt-10 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Aprobados</h2>
+		<h2 class="mt-10 mb-3 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+			Aprobados
+		</h2>
 		<div class="flex flex-col gap-2">
 			{#each approved as entry (entry.id)}
-				<div class="flex items-center justify-between rounded-lg border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper">
+				<div
+					class="flex items-center justify-between rounded-lg border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+				>
 					<div>
 						<span class="font-sans text-sm text-ink dark:text-dark-ink">{entry.name ?? '—'}</span>
-						<span class="ml-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{entry.email}</span>
+						<span class="ml-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+							>{entry.email}</span
+						>
 					</div>
-					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{formatDate(entry.createdAt)}</span>
+					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+						>{formatDate(entry.createdAt)}</span
+					>
 				</div>
 			{/each}
 		</div>

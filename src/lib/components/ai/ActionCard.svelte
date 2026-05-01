@@ -1,0 +1,215 @@
+<script lang="ts">
+	import { base } from '$app/paths';
+	import type { PendingAction } from '$lib/server/trpc/routers/ai';
+	import Spinner from '$lib/components/ui/Spinner.svelte';
+
+	type ConfirmableAction = Extract<PendingAction, { type: 'create_document' | 'create_issue' }>;
+
+	type Props = {
+		action: ConfirmableAction;
+		projectId: string;
+		onconfirm: (id: string) => void;
+		ondiscard: () => void;
+	};
+
+	let { action, projectId, onconfirm, ondiscard }: Props = $props();
+
+	const docTypeLabel: Record<string, string> = {
+		paper: 'Article',
+		notes: 'Notes',
+		outline: 'Outline',
+		bibliography: 'Bibliography',
+		supplementary: 'Supplementary'
+	};
+
+	const priorityLabel: Record<string, string> = {
+		low: 'Low',
+		medium: 'Medium',
+		high: 'High',
+		critical: 'Critical'
+	};
+
+	const wordCount = $derived(
+		action.type === 'create_document' && action.content.trim()
+			? action.content.trim().split(/\s+/).length
+			: 0
+	);
+
+	let status: 'idle' | 'loading' | 'done' | 'discarded' = $state('idle');
+	let createdId = $state('');
+
+	async function confirm() {
+		if (status !== 'idle') return;
+		status = 'loading';
+		try {
+			const { trpc } = await import('$lib/utils/trpc');
+			if (action.type === 'create_document') {
+				const result = await trpc.ai.applyAction.mutate({
+					projectId,
+					action: {
+						type: 'create_document',
+						title: action.title,
+						docType: action.docType,
+						content: action.content,
+						requirementId: action.requirementId
+					}
+				});
+				if (result.type === 'document') createdId = result.id;
+			} else {
+				const result = await trpc.ai.applyAction.mutate({
+					projectId,
+					action: {
+						type: 'create_issue',
+						title: action.title,
+						content: action.content,
+						priority: action.priority ?? 'medium'
+					}
+				});
+				if (result.type === 'issue') createdId = result.id;
+			}
+			status = 'done';
+			onconfirm(createdId);
+		} catch {
+			status = 'idle';
+		}
+	}
+
+	function discard() {
+		status = 'discarded';
+		ondiscard();
+	}
+</script>
+
+{#if status !== 'discarded'}
+	<div
+		class="mt-2 overflow-hidden rounded-xl border transition-colors
+		{status === 'done'
+			? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20'
+			: 'border-accent/20 bg-accent/5 dark:border-accent/15 dark:bg-accent/5'}"
+	>
+		<div class="flex items-start gap-3 px-4 pt-4">
+			<!-- Icon -->
+			<div
+				class="mt-0.5 shrink-0 rounded-lg p-2
+				{status === 'done'
+					? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
+					: 'bg-accent/10 text-accent'}"
+			>
+				{#if status === 'done'}
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path
+							d="M20 6L9 17l-5-5"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
+				{:else if action.type === 'create_issue'}
+					<!-- Issue icon: circle with dot -->
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" />
+						<circle cx="12" cy="12" r="3" fill="currentColor" />
+					</svg>
+				{:else}
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path
+							d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+						<polyline
+							points="14 2 14 8 20 8"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
+				{/if}
+			</div>
+
+			<!-- Info -->
+			<div class="min-w-0 flex-1">
+				<p
+					class="font-sans text-[11px] font-semibold tracking-wide uppercase
+					{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent'}"
+				>
+					{#if status === 'done'}
+						{action.type === 'create_issue' ? 'Issue created' : 'Document created'}
+					{:else}
+						{action.type === 'create_issue' ? 'Create issue' : 'Create document'}
+					{/if}
+				</p>
+				<p class="mt-0.5 font-serif text-sm font-semibold text-ink dark:text-dark-ink">
+					{action.title}
+				</p>
+				<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					{#if action.type === 'create_document'}
+						{docTypeLabel[action.docType] ?? action.docType}
+						{#if wordCount > 0}
+							· ~{wordCount.toLocaleString()} words{/if}
+						{#if action.requirementId}
+							· links requirement{/if}
+					{:else}
+						Issue · {priorityLabel[action.priority ?? 'medium']} priority
+					{/if}
+				</p>
+			</div>
+		</div>
+
+		<!-- Actions -->
+		<div class="flex justify-end gap-2 px-4 pt-3 pb-3">
+			{#if status === 'done'}
+				<a
+					href="{base}/projects/{projectId}/{action.type === 'create_issue'
+						? 'issues'
+						: 'documents'}/{createdId}"
+					class="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
+				>
+					{action.type === 'create_issue' ? 'Open issue' : 'Open document'}
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<path
+							d="M5 12h14M12 5l7 7-7 7"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
+				</a>
+			{:else}
+				<button
+					onclick={discard}
+					disabled={status === 'loading'}
+					class="rounded-lg px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-border disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-border"
+				>
+					Discard
+				</button>
+				<button
+					onclick={confirm}
+					disabled={status === 'loading'}
+					class="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+				>
+					{#if status === 'loading'}
+						<Spinner size="sm" />
+						Creating…
+					{:else}
+						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+							<path
+								d="M20 6L9 17l-5-5"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						Create
+					{/if}
+				</button>
+			{/if}
+		</div>
+	</div>
+{/if}

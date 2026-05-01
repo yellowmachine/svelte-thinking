@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Sin conexión · Scholio</title>
+		<style>
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				font-family: system-ui, sans-serif;
+				background-color: #f0ede8;
+				color: #1c1917;
+				min-height: 100svh;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 1.5rem;
+			}
+			.card {
+				background: #f9f7f4;
+				border: 1px solid #e8e2da;
+				border-radius: 1rem;
+				padding: 2.5rem 2rem;
+				max-width: 360px;
+				width: 100%;
+				text-align: center;
+			}
+			.icon {
+				font-size: 2.5rem;
+				margin-bottom: 1rem;
+			}
+			h1 {
+				font-family: Georgia, serif;
+				font-size: 1.25rem;
+				font-weight: 600;
+				margin-bottom: 0.5rem;
+				color: #1c1917;
+			}
+			p {
+				font-size: 0.875rem;
+				color: #57534e;
+				line-height: 1.5;
+				margin-bottom: 1.5rem;
+			}
+			button {
+				background: #7c5c3e;
+				color: #f9f7f4;
+				border: none;
+				border-radius: 0.5rem;
+				padding: 0.5rem 1.25rem;
+				font-size: 0.875rem;
+				font-weight: 500;
+				cursor: pointer;
+				transition: opacity 0.15s;
+			}
+			button:hover {
+				opacity: 0.85;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="card">
+			<div class="icon">📖</div>
+			<h1>Sin conexión</h1>
+			<p>Scholio necesita conexión a internet para funcionar. Comprueba tu red e inténtalo de nuevo.</p>
+			<button onclick="window.location.reload()">Reintentar</button>
+		</div>
+	</body>
+</html>

@@ -3,50 +3,65 @@
 	import type { ActionData, PageData } from './$types';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
+
+	let password = $state('');
+	let confirmPassword = $state('');
+	let passwordMismatch = $derived(confirmPassword.length > 0 && password !== confirmPassword);
 </script>
 
-<div class="rounded-2xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper">
-	<h2 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Crear cuenta</h2>
+<div
+	class="rounded-2xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper"
+>
+	<h2 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Create account</h2>
 	<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-		¿Ya tienes cuenta?
-		<button
-			onclick={() => (window.location.href = '/login')}
-			class="text-accent hover:underline"
-		>Inicia sesión</button>
+		Already have an account?
+		<button onclick={() => (window.location.href = '/login')} class="text-accent hover:underline"
+			>Sign in</button
+		>
 	</p>
 
 	<form method="post" action="?/signUpEmail" use:enhance class="mt-6 flex flex-col gap-4">
 		<input type="hidden" name="token" value={data.token} />
 		<div class="flex flex-col gap-1.5">
-			<label for="name" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Nombre completo</label>
+			<label for="name" class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+				>Full name</label
+			>
 			<input
 				id="name"
 				type="text"
 				name="name"
 				required
 				autocomplete="name"
+				value={data.name ?? ''}
 				class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
 		</div>
 
 		<div class="flex flex-col gap-1.5">
-			<label for="email" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Email</label>
+			<label for="email" class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+				>Email</label
+			>
 			<input
 				id="email"
 				type="email"
 				name="email"
 				required
+				readonly
+				value={data.email}
 				autocomplete="email"
-				class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink opacity-70 focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
 		</div>
 
 		<div class="flex flex-col gap-1.5">
-			<label for="password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Contraseña</label>
+			<label for="password" class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+				>Password</label
+			>
 			<input
 				id="password"
 				type="password"
 				name="password"
+				bind:value={password}
 				required
 				autocomplete="new-password"
 				minlength={8}
@@ -54,23 +69,67 @@
 			/>
 		</div>
 
+		<div class="flex flex-col gap-1.5">
+			<label
+				for="confirm-password"
+				class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Confirm password</label
+			>
+			<input
+				id="confirm-password"
+				type="password"
+				bind:value={confirmPassword}
+				required
+				autocomplete="new-password"
+				minlength={8}
+				class="rounded-md border px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:bg-dark-paper-ui dark:text-dark-ink
+					{passwordMismatch
+					? 'border-red-400 bg-red-50 focus:border-red-500 dark:border-red-700 dark:bg-red-950'
+					: 'border-paper-border bg-paper-ui focus:border-accent dark:border-dark-paper-border'}"
+			/>
+			{#if passwordMismatch}
+				<p class="font-sans text-xs text-red-500 dark:text-red-400">Passwords do not match.</p>
+			{/if}
+		</div>
+
 		{#if form?.message}
-			<p class="rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+			<p
+				class="rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+			>
 				{form.message}
 			</p>
 		{/if}
 
+		<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			By signing up you agree to our
+			<a
+				href="/conduct"
+				target="_blank"
+				class="underline underline-offset-2 hover:text-ink-muted dark:hover:text-dark-ink-muted"
+				>code of conduct</a
+			>
+			and
+			<a
+				href="/privacy"
+				target="_blank"
+				class="underline underline-offset-2 hover:text-ink-muted dark:hover:text-dark-ink-muted"
+				>privacy policy</a
+			>.
+		</p>
+
 		<button
 			type="submit"
-			class="mt-1 rounded-md bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+			disabled={passwordMismatch}
+			class="rounded-md bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 		>
-			Crear cuenta
+			Create account
 		</button>
 	</form>
 
 	<div class="relative my-6 flex items-center">
 		<div class="flex-1 border-t border-paper-border dark:border-dark-paper-border"></div>
-		<span class="mx-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">o regístrate con</span>
+		<span class="mx-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+			>or sign up with</span
+		>
 		<div class="flex-1 border-t border-paper-border dark:border-dark-paper-border"></div>
 	</div>
 
@@ -81,9 +140,11 @@
 			class="flex w-full items-center justify-center gap-2.5 rounded-md border border-paper-border bg-paper px-4 py-2.5 font-sans text-sm font-medium text-ink transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-				<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+				<path
+					d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"
+				/>
 			</svg>
-			Continuar con GitHub
+			Continue with GitHub
 		</button>
 	</form>
 </div>

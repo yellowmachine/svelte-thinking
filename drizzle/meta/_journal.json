@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1773920237224,
-      "tag": "0000_free_warpath",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1773924708036,
-      "tag": "0001_oval_namorita",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1773929875950,
-      "tag": "0002_quick_gabe_jones",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1773934725851,
-      "tag": "0003_user_ai_config_kms",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1773937698018,
-      "tag": "0004_waitlist",
+      "when": 1777531149418,
+      "tag": "0000_real_strong_guy",
       "breakpoints": true
     }
   ]

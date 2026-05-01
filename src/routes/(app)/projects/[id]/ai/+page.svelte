@@ -1,23 +1,69 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
 	import { trpc } from '$lib/utils/trpc';
+	import ActionCard from '$lib/components/ai/ActionCard.svelte';
+	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
+	import AiConversationSidebar from '$lib/components/ai/AiConversationSidebar.svelte';
+	import AiPrivacyNotice from '$lib/components/ai/AiPrivacyNotice.svelte';
+	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import type { PageData } from './$types';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import { MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
 	let { data }: { data: PageData } = $props();
 
-	type Message = { id: string; role: 'user' | 'assistant'; content: string };
-	type Conversation = (typeof data.conversations)[number];
+	onMount(() => {
+		fetch(`/api/projects/${data.project.id}/warm-index`, { method: 'POST' }).catch(() => {});
+	});
 
-	let conversations = $state(data.conversations);
+	type Message = {
+		id: string;
+		role: 'user' | 'assistant' | 'system';
+		content: string;
+		docsUsed?: { id: string; title: string }[];
+	};
+	type Conversation = NonNullable<typeof data.conversations>[number];
+
+	let conversations = $state<Conversation[]>([]);
+	$effect(() => {
+		conversations = data.conversations ?? [];
+	});
 	let activeConvId = $state<string | null>(null);
 	let messages = $state<Message[]>([]);
 	let loadingConv = $state(false);
 
 	let input = $state('');
 	let sending = $state(false);
+	let sendError = $state<string | null>(null);
+	let thinkingHint = $state('Thinking…');
+	let streamingMsgId = $state<string | null>(null);
+	let abortController = $state<AbortController | null>(null);
 
-	let messagesEnd: HTMLDivElement;
+	function stopStream() {
+		abortController?.abort();
+	}
 
-	async function selectConversation(conv: Conversation) {
+	// Pending actions from the latest agent response (in-memory, cleared on next send)
+	let pendingActions = $state<PendingAction[]>([]);
+	let lastAssistantMsgId = $state<string | null>(null);
+
+	const TOOL_LABELS: Record<string, string> = {
+		get_project_context: 'Reading project context…',
+		read_document: 'Reading document…',
+		search_documents_semantic: 'Searching documents…',
+		list_references: 'Loading bibliography…',
+		get_requirement_details: 'Reading requirements…',
+		list_issues: 'Loading issues…',
+		create_document: 'Preparing document…',
+		create_issue: 'Preparing issue…',
+		propose_references: 'Searching bibliography…'
+	};
+
+	let messagesEnd = $state<HTMLDivElement | undefined>(undefined);
+
+	async function selectConversation(conv: { id: string }) {
 		if (loadingConv) return;
 		loadingConv = true;
 		try {
@@ -42,48 +88,153 @@
 
 		input = '';
 		sending = true;
+		sendError = null;
+		pendingActions = [];
+		lastAssistantMsgId = null;
+		thinkingHint = 'Thinking…';
+		streamingMsgId = null;
 
-		// Optimistic user message
-		const tempId = crypto.randomUUID();
-		messages = [...messages, { id: tempId, role: 'user', content: text }];
+		const tempUserId = crypto.randomUUID();
+		messages = [...messages, { id: tempUserId, role: 'user', content: text }];
 		scrollToBottom();
 
+		let localStreamId: string | null = null;
+		const controller = new AbortController();
+		abortController = controller;
+
 		try {
-			const result = await trpc.ai.sendMessage.mutate({
-				projectId: data.project.id,
-				conversationId: activeConvId ?? undefined,
-				message: text
+			const res = await fetch(`/api/projects/${data.project.id}/chat`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					message: text,
+					conversationId: activeConvId ?? undefined,
+					modelOverride: modelOverride ?? undefined
+				}),
+				signal: controller.signal
 			});
 
-			activeConvId = result.conversationId;
-			messages = [...messages, result.message];
-
-			// Update sidebar conversation list
-			const existing = conversations.find((c) => c.id === result.conversationId);
-			if (!existing) {
-				const conv = await trpc.ai.listConversations.query(data.project.id);
-				conversations = conv;
-			} else {
-				conversations = conversations.map((c) =>
-					c.id === result.conversationId ? { ...c, updatedAt: new Date() } : c
-				);
+			if (!res.ok || !res.body) {
+				const errText = await res.text().catch(() => 'Request failed');
+				throw new Error(errText);
 			}
 
-			scrollToBottom();
+			const reader = res.body.getReader();
+			const decoder = new TextDecoder();
+			let buf = '';
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				buf += decoder.decode(value, { stream: true });
+				const lines = buf.split('\n');
+				buf = lines.pop() ?? '';
+
+				for (const line of lines) {
+					if (!line.startsWith('data: ')) continue;
+					const raw = line.slice(6).trim();
+					let evt: Record<string, unknown>;
+					try {
+						evt = JSON.parse(raw);
+					} catch {
+						continue;
+					}
+
+					if (evt.type === 'tool_start') {
+						thinkingHint = TOOL_LABELS[evt.name as string] ?? `Calling ${evt.name as string}…`;
+					} else if (evt.type === 'text_delta') {
+						if (!localStreamId) {
+							localStreamId = crypto.randomUUID();
+							streamingMsgId = localStreamId;
+							messages = [
+								...messages,
+								{ id: localStreamId, role: 'assistant', content: evt.content as string }
+							];
+							scrollToBottom();
+						} else {
+							messages = messages.map((m) =>
+								m.id === localStreamId ? { ...m, content: m.content + (evt.content as string) } : m
+							);
+						}
+					} else if (evt.type === 'done') {
+						activeConvId = evt.conversationId as string;
+						const msgId = evt.messageId as string;
+						const docsUsed = (evt.docsUsed as { id: string; title: string }[]) ?? [];
+
+						if (localStreamId) {
+							messages = messages.map((m) =>
+								m.id === localStreamId
+									? { ...m, id: msgId, docsUsed: docsUsed.length > 0 ? docsUsed : undefined }
+									: m
+							);
+						} else {
+							messages = [...messages, { id: msgId, role: 'assistant', content: '' }];
+						}
+						streamingMsgId = null;
+						lastAssistantMsgId = msgId;
+
+						if (Array.isArray(evt.pendingActions) && (evt.pendingActions as unknown[]).length) {
+							pendingActions = evt.pendingActions as PendingAction[];
+						}
+
+						const existing = conversations.find((c) => c.id === activeConvId);
+						if (!existing) {
+							const conv = await trpc.ai.listConversations.query(data.project.id);
+							conversations = conv ?? [];
+						} else {
+							conversations = conversations.map((c) =>
+								c.id === activeConvId ? { ...c, updatedAt: new Date() } : c
+							);
+						}
+
+						scrollToBottom();
+					} else if (evt.type === 'error') {
+						const kind = evt.kind as string;
+						const msg = evt.message as string;
+						messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
+						streamingMsgId = null;
+						if (kind === 'system') {
+							messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: msg }];
+							scrollToBottom();
+						} else {
+							sendError = msg;
+						}
+					}
+				}
+			}
 		} catch (e) {
-			messages = messages.filter((m) => m.id !== tempId);
-			alert(e instanceof Error ? e.message : 'Error al enviar');
+			if (e instanceof Error && e.name === 'AbortError') {
+				// User stopped — keep whatever was streamed, just stop loading
+			} else {
+				messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
+				streamingMsgId = null;
+				sendError = e instanceof Error ? e.message : 'Request failed';
+			}
 		} finally {
+			abortController = null;
 			sending = false;
 		}
 	}
 
-	async function deleteConversation(id: string, e: MouseEvent) {
+	let convToDelete = $state<string | null>(null);
+	let deletingConv = $state(false);
+
+	function requestDeleteConversation(id: string, e: MouseEvent) {
 		e.stopPropagation();
-		if (!confirm('¿Eliminar esta conversación?')) return;
-		await trpc.ai.deleteConversation.mutate(id);
-		conversations = conversations.filter((c) => c.id !== id);
-		if (activeConvId === id) newConversation();
+		convToDelete = id;
+	}
+
+	async function confirmDeleteConversation() {
+		if (!convToDelete) return;
+		deletingConv = true;
+		try {
+			await trpc.ai.deleteConversation.mutate(convToDelete);
+			conversations = conversations.filter((c) => c.id !== convToDelete);
+			if (activeConvId === convToDelete) newConversation();
+		} finally {
+			deletingConv = false;
+			convToDelete = null;
+		}
 	}
 
 	function scrollToBottom() {
@@ -98,168 +249,519 @@
 		}
 	}
 
-	function formatDate(date: Date | string) {
-		return new Date(date).toLocaleDateString('es', { day: 'numeric', month: 'short' });
+	// ── Agent model selector ─────────────────────────────────────────────────
+	// Models available for the agent task: must support tool calling
+	const agentModels = MODELS.filter(
+		(m) => m.toolCalling && (MODEL_RECOMMENDATIONS[m.id]?.includes('agent') ?? true)
+	);
+
+	// Configured model (from user Settings) — used as default
+	let configuredModel = $state<string>('anthropic/claude-sonnet-4-6');
+	// Per-conversation override chosen in this session
+	let modelOverride = $state<string | null>(null);
+
+	const activeModel = $derived(modelOverride ?? configuredModel);
+	const activeModelLabel = $derived(
+		MODELS.find((m) => m.id === activeModel)?.shortLabel ?? activeModel
+	);
+	const isOverridden = $derived(modelOverride !== null && modelOverride !== configuredModel);
+
+	let showModelPicker = $state(false);
+
+	async function loadAiConfig() {
+		try {
+			const taskData = await trpc.aiConfig.getTaskConfig.query();
+			const agentCfg = (taskData.taskConfig as Record<string, { keyId: string; model: string }>)[
+				'agent'
+			];
+			if (agentCfg?.model) configuredModel = agentCfg.model;
+		} catch {
+			// non-critical
+		}
+	}
+
+	$effect(() => {
+		loadAiConfig();
+	});
+
+	// ── Markdown rendering ────────────────────────────────────────────────────
+	function renderMd(text: string): string {
+		const raw = marked.parse(text) as string;
+		return typeof DOMPurify.sanitize === 'function' ? DOMPurify.sanitize(raw) : raw;
 	}
 </script>
 
-<div class="flex h-[calc(100vh-4rem)] overflow-hidden">
-	<!-- Sidebar: conversation list -->
-	<aside
-		class="flex w-64 shrink-0 flex-col border-r border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<div class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
-			<a
-				href="/projects/{data.project.id}"
-				class="flex items-center gap-1.5 font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-			>
-				<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-				</svg>
-				{data.project.title}
-			</a>
-			<button
-				type="button"
-				onclick={newConversation}
-				title="Nueva conversación"
-				class="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
-			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-				</svg>
-			</button>
-		</div>
+{#if data.project}
+	<div class="flex h-full overflow-hidden">
+		<!-- Sidebar: conversation list -->
+		<AiConversationSidebar
+			{conversations}
+			{activeConvId}
+			projectId={data.project.id}
+			projectTitle={data.project.title}
+			isOwner={data.isOwner}
+			{loadingConv}
+			agentSystemPrompt={data.project.agentSystemPrompt ?? null}
+			onselect={selectConversation}
+			onnew={newConversation}
+			ondeleteconversation={requestDeleteConversation}
+		/>
 
-		<div class="flex-1 overflow-y-auto py-2">
-			{#if conversations.length === 0}
-				<p class="px-4 py-6 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Sin conversaciones
-				</p>
-			{:else}
-				{#each conversations as conv (conv.id)}
+		<!-- Main chat area -->
+		<div class="flex flex-1 flex-col overflow-hidden">
+			<!-- Messages -->
+			<div class="flex-1 overflow-y-auto px-6 py-6">
+				{#if messages.length === 0}
+					<div class="flex h-full flex-col items-center justify-center gap-4 text-center">
+						<div class="rounded-full bg-accent/10 p-4">
+							<svg
+								width="28"
+								height="28"
+								viewBox="0 0 24 24"
+								fill="none"
+								class="text-accent"
+								aria-hidden="true"
+							>
+								<path
+									d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</div>
+						<div>
+							<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+								Research assistant
+							</p>
+							<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+								Hazme preguntas sobre el contenido de tu proyecto.
+							</p>
+							<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								E.g. "What references to Mises are in the draft?"
+							</p>
+							<div class="mt-3 flex flex-wrap justify-center gap-1.5">
+								<span
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+									>Busca en tus documentos</span
+								>
+								<span
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+									>Crea documentos</span
+								>
+								<span
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+									>Abre issues</span
+								>
+							</div>
+						</div>
+					</div>
+				{:else}
+					<div class="mx-auto flex max-w-2xl flex-col gap-6">
+						{#each messages as msg (msg.id)}
+							{#if msg.role === 'system'}
+								<div class="flex items-center gap-3">
+									<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+									<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
+										>{msg.content}</span
+									>
+									<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+								</div>
+							{:else}
+								<div class="flex gap-3 {msg.role === 'user' ? 'flex-row-reverse' : ''}">
+									<!-- Avatar -->
+									<div
+										class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold {msg.role ===
+										'user'
+											? 'bg-accent text-white'
+											: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted'}"
+									>
+										{msg.role === 'user' ? 'You' : 'AI'}
+									</div>
+									<!-- Bubble + pending actions for this message -->
+									<div class="flex max-w-[80%] flex-col">
+										<div
+											class="rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role ===
+											'user'
+												? 'rounded-tr-sm bg-accent text-white'
+												: 'chat-prose rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
+										>
+											{#if msg.role === 'assistant'}
+												<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+												{@html renderMd(msg.content)}
+											{:else}
+												{msg.content}
+											{/if}
+										</div>
+										{#if msg.role === 'assistant' && msg.docsUsed?.length}
+											<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
+												<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
+													>Sources:</span
+												>
+												{#each msg.docsUsed as doc (doc.id)}
+													<a
+														href="/projects/{data.project.id}/documents/{doc.id}"
+														class="font-sans text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
+														>{doc.title}</a
+													>
+												{/each}
+											</div>
+										{/if}
+										{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
+											{#each pendingActions as action, i (i)}
+												{#if action.type === 'propose_references'}
+													<ReferenceSelectCard
+														references={action.references}
+														projectId={data.project.id}
+														onconfirm={(count) => {
+															pendingActions = pendingActions.filter((_, idx) => idx !== i);
+															messages = [
+																...messages,
+																{
+																	id: crypto.randomUUID(),
+																	role: 'system',
+																	content: `${count} ${count === 1 ? 'reference' : 'references'} added to bibliography`
+																}
+															];
+															scrollToBottom();
+														}}
+														ondiscard={() => {
+															pendingActions = pendingActions.filter((_, idx) => idx !== i);
+														}}
+													/>
+												{:else}
+													<ActionCard
+														{action}
+														projectId={data.project.id}
+														onconfirm={() => {
+															const label =
+																action.type === 'create_issue'
+																	? `Issue "${action.title}" created`
+																	: `Document "${action.title}" created`;
+															pendingActions = pendingActions.filter((_, idx) => idx !== i);
+															messages = [
+																...messages,
+																{ id: crypto.randomUUID(), role: 'system', content: label }
+															];
+															scrollToBottom();
+														}}
+														ondiscard={() => {
+															pendingActions = pendingActions.filter((_, idx) => idx !== i);
+														}}
+													/>
+												{/if}
+											{/each}
+										{/if}
+									</div>
+								</div>
+							{/if}
+						{/each}
+
+						{#if sending && !streamingMsgId}
+							<div class="flex gap-3">
+								<div
+									class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper-border text-xs font-semibold text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted"
+								>
+									AI
+								</div>
+								<div class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 dark:bg-dark-paper-ui">
+									<div class="flex items-center gap-2">
+										<div class="flex gap-1">
+											<span
+												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:0ms] dark:bg-dark-ink-faint"
+											></span>
+											<span
+												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:150ms] dark:bg-dark-ink-faint"
+											></span>
+											<span
+												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms] dark:bg-dark-ink-faint"
+											></span>
+										</div>
+										<span
+											class="font-sans text-xs text-ink-faint transition-all dark:text-dark-ink-faint"
+										>
+											{thinkingHint}
+										</span>
+									</div>
+								</div>
+							</div>
+						{/if}
+
+						<div bind:this={messagesEnd}></div>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Input -->
+			<div
+				class="border-t border-paper-border bg-paper px-6 py-4 dark:border-dark-paper-border dark:bg-dark-paper"
+			>
+				{#if sendError}
 					<div
-						class="group relative flex items-start transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {activeConvId === conv.id ? 'bg-paper-ui dark:bg-dark-paper-ui' : ''}"
+						class="mx-auto mb-3 flex max-w-2xl items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/30"
 					>
+						<p class="font-sans text-sm text-red-700 dark:text-red-400">{sendError}</p>
 						<button
 							type="button"
-							onclick={() => selectConversation(conv)}
-							class="flex min-w-0 flex-1 flex-col px-4 py-2.5 text-left"
+							onclick={() => (sendError = null)}
+							aria-label="Cerrar"
+							class="shrink-0 text-red-400 hover:text-red-600 dark:text-red-500"
 						>
-							<span class="block truncate font-sans text-sm text-ink dark:text-dark-ink">
-								{conv.title ?? 'Conversación'}
-							</span>
-							<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								{formatDate(conv.updatedAt)}
-							</span>
-						</button>
-						<button
-							type="button"
-							aria-label="Eliminar conversación"
-							onclick={(e) => deleteConversation(conv.id, e)}
-							class="mr-2 mt-2.5 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 dark:text-dark-ink-faint"
-						>
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M18 6L6 18M6 6l12 12"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+								/>
 							</svg>
 						</button>
 					</div>
-				{/each}
-			{/if}
-		</div>
-	</aside>
-
-	<!-- Main chat area -->
-	<div class="flex flex-1 flex-col overflow-hidden">
-		<!-- Messages -->
-		<div class="flex-1 overflow-y-auto px-6 py-6">
-			{#if messages.length === 0}
-				<div class="flex h-full flex-col items-center justify-center gap-4 text-center">
-					<div class="rounded-full bg-accent/10 p-4">
-						<svg width="28" height="28" viewBox="0 0 24 24" fill="none" class="text-accent" aria-hidden="true">
-							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-						</svg>
-					</div>
-					<div>
-						<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-							Asistente de investigación
-						</p>
-						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Hazme preguntas sobre el contenido de tu proyecto.
-						</p>
-						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Ej: "¿Qué referencias hay a Mises en el borrador?"
-						</p>
-					</div>
-				</div>
-			{:else}
-				<div class="mx-auto flex max-w-2xl flex-col gap-6">
-					{#each messages as msg (msg.id)}
-						<div class="flex gap-3 {msg.role === 'user' ? 'flex-row-reverse' : ''}">
-							<!-- Avatar -->
-							<div
-								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold {msg.role === 'user' ? 'bg-accent text-white' : 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted'}"
-							>
-								{msg.role === 'user' ? 'Tú' : 'AI'}
-							</div>
-							<!-- Bubble -->
-							<div
-								class="max-w-[80%] rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role === 'user'
-									? 'rounded-tr-sm bg-accent text-white'
-									: 'rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
-							>
-								{msg.content}
-							</div>
-						</div>
-					{/each}
-
-					{#if sending}
-						<div class="flex gap-3">
-							<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper-border text-xs font-semibold text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted">
-								AI
-							</div>
-							<div class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 dark:bg-dark-paper-ui">
-								<div class="flex gap-1">
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:0ms] dark:bg-dark-ink-faint"></span>
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:150ms] dark:bg-dark-ink-faint"></span>
-									<span class="h-2 w-2 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms] dark:bg-dark-ink-faint"></span>
-								</div>
-							</div>
-						</div>
-					{/if}
-
-					<div bind:this={messagesEnd}></div>
-				</div>
-			{/if}
-		</div>
-
-		<!-- Input -->
-		<div class="border-t border-paper-border bg-paper px-6 py-4 dark:border-dark-paper-border dark:bg-dark-paper">
-			<div class="mx-auto max-w-2xl">
-				<div class="flex items-end gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui">
-					<textarea
-						bind:value={input}
-						onkeydown={onKeydown}
-						placeholder="Pregunta sobre tu proyecto... (Enter para enviar, Shift+Enter para nueva línea)"
-						rows="1"
-						class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
-						style="max-height: 160px; overflow-y: auto;"
-					></textarea>
-					<button
-						type="button"
-						onclick={send}
-						disabled={sending || !input.trim()}
-						aria-label="Enviar"
-						class="shrink-0 rounded-lg bg-accent p-2 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+				{/if}
+				<div class="mx-auto max-w-2xl">
+					<div
+						class="flex items-end gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui"
 					>
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-						</svg>
-					</button>
+						<textarea
+							bind:value={input}
+							onkeydown={onKeydown}
+							placeholder="Ask about your project... (Enter to send, Shift+Enter for new line)"
+							rows="1"
+							class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
+							style="max-height: 160px; overflow-y: auto;"
+						></textarea>
+						{#if sending}
+							<button
+								type="button"
+								onclick={stopStream}
+								aria-label="Detener"
+								class="shrink-0 rounded-lg border border-paper-border bg-paper p-2 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+							>
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="currentColor"
+									aria-hidden="true"
+								>
+									<rect x="5" y="5" width="14" height="14" rx="2" />
+								</svg>
+							</button>
+						{:else}
+							<button
+								type="button"
+								onclick={send}
+								disabled={!input.trim()}
+								aria-label="Enviar"
+								class="shrink-0 rounded-lg bg-accent p-2 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+							>
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path
+										d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+							</button>
+						{/if}
+					</div>
+					<div class="mt-2 flex items-center justify-between">
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							El asistente tiene acceso al contenido de todos los documentos del proyecto.
+						</p>
+						<!-- Model picker trigger -->
+						<div class="relative">
+							<button
+								type="button"
+								onclick={() => (showModelPicker = !showModelPicker)}
+								class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {isOverridden
+									? 'border-accent/50 text-accent dark:border-accent/50'
+									: 'border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+							>
+								<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
+									>OpenRouter</span
+								>
+								<span class="text-ink-faint dark:text-dark-ink-faint">·</span>
+								<span class="font-sans text-[11px]">{activeModelLabel}</span>
+								{#if isOverridden}
+									<span class="h-1.5 w-1.5 rounded-full bg-accent" title="Model override active"
+									></span>
+								{/if}
+								<svg
+									width="10"
+									height="10"
+									viewBox="0 0 24 24"
+									fill="none"
+									aria-hidden="true"
+									class="text-ink-faint dark:text-dark-ink-faint"
+								>
+									<path
+										d="M6 9l6 6 6-6"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+							</button>
+
+							{#if showModelPicker}
+								<!-- Backdrop -->
+								<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+								<div class="fixed inset-0 z-10" onclick={() => (showModelPicker = false)}></div>
+								<!-- Popover -->
+								<div
+									class="absolute right-0 bottom-full z-20 mb-2 w-64 rounded-xl border border-paper-border bg-paper py-1.5 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+								>
+									<p
+										class="px-3 pt-0.5 pb-1.5 font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
+									>
+										Model for this session
+									</p>
+									{#each agentModels as m (m.id)}
+										<button
+											type="button"
+											onclick={() => {
+												modelOverride = m.id === configuredModel ? null : m.id;
+												showModelPicker = false;
+											}}
+											class="flex w-full items-center justify-between px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {activeModel ===
+											m.id
+												? 'text-accent'
+												: 'text-ink dark:text-dark-ink'}"
+										>
+											<span>{m.shortLabel}</span>
+											{#if activeModel === m.id}
+												<svg
+													width="13"
+													height="13"
+													viewBox="0 0 24 24"
+													fill="none"
+													aria-hidden="true"
+												>
+													<path
+														d="M20 6L9 17l-5-5"
+														stroke="currentColor"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													/>
+												</svg>
+											{/if}
+										</button>
+									{/each}
+									{#if isOverridden}
+										<div
+											class="mx-3 mt-1 border-t border-paper-border pt-1 dark:border-dark-paper-border"
+										>
+											<button
+												type="button"
+												onclick={() => {
+													modelOverride = null;
+													showModelPicker = false;
+												}}
+												class="w-full rounded py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+											>
+												Reset to default ({MODELS.find((m) => m.id === configuredModel)
+													?.shortLabel ?? configuredModel})
+											</button>
+										</div>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					</div>
 				</div>
-				<p class="mt-2 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					El asistente tiene acceso al contenido de todos los documentos del proyecto.
-				</p>
 			</div>
 		</div>
 	</div>
-</div>
+{/if}
+
+<AiPrivacyNotice />
+
+<SafeDeleteDialog
+	open={!!convToDelete}
+	label="this conversation"
+	warning="All messages in this conversation will be permanently deleted."
+	deleting={deletingConv}
+	onconfirm={confirmDeleteConversation}
+	oncancel={() => (convToDelete = null)}
+/>
+
+<style>
+	/* Prose styles scoped to assistant chat bubbles */
+	:global(.chat-prose p) {
+		margin: 0.4em 0;
+	}
+	:global(.chat-prose p:first-child) {
+		margin-top: 0;
+	}
+	:global(.chat-prose p:last-child) {
+		margin-bottom: 0;
+	}
+	:global(.chat-prose ul, .chat-prose ol) {
+		padding-left: 1.25em;
+		margin: 0.4em 0;
+	}
+	:global(.chat-prose li) {
+		margin: 0.15em 0;
+	}
+	:global(.chat-prose h1, .chat-prose h2, .chat-prose h3) {
+		font-family: var(--font-serif, serif);
+		font-weight: 600;
+		margin: 0.75em 0 0.25em;
+		line-height: 1.3;
+	}
+	:global(.chat-prose h1) {
+		font-size: 1.1em;
+	}
+	:global(.chat-prose h2) {
+		font-size: 1.05em;
+	}
+	:global(.chat-prose h3) {
+		font-size: 1em;
+	}
+	:global(.chat-prose code) {
+		font-family: ui-monospace, monospace;
+		font-size: 0.85em;
+		background: rgba(0, 0, 0, 0.06);
+		border-radius: 3px;
+		padding: 0.1em 0.3em;
+	}
+	:global(.chat-prose pre) {
+		background: rgba(0, 0, 0, 0.06);
+		border-radius: 6px;
+		padding: 0.75em 1em;
+		overflow-x: auto;
+		margin: 0.5em 0;
+	}
+	:global(.chat-prose pre code) {
+		background: none;
+		padding: 0;
+	}
+	:global(.chat-prose blockquote) {
+		border-left: 3px solid currentColor;
+		opacity: 0.7;
+		margin: 0.4em 0;
+		padding-left: 0.75em;
+	}
+	:global(.chat-prose strong) {
+		font-weight: 600;
+	}
+	:global(.chat-prose em) {
+		font-style: italic;
+	}
+	:global(.chat-prose a) {
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	:global(.chat-prose hr) {
+		border: none;
+		border-top: 1px solid currentColor;
+		opacity: 0.2;
+		margin: 0.75em 0;
+	}
+</style>

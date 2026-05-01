@@ -1,15 +1,8 @@
-import {
-	pgTable,
-	text,
-	timestamp,
-	pgEnum,
-	index,
-	uniqueIndex,
-	pgPolicy
-} from 'drizzle-orm/pg-core';
+import { text, timestamp, index, uniqueIndex, pgPolicy, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { scholioSchema } from '../scholio-schema';
 
-export const projectStatusEnum = pgEnum('project_status', [
+export const projectStatusEnum = scholioSchema.enum('project_status', [
 	'draft',
 	'active',
 	'review',
@@ -17,7 +10,7 @@ export const projectStatusEnum = pgEnum('project_status', [
 	'archived'
 ]);
 
-export const projectRoleEnum = pgEnum('project_role', [
+export const projectRoleEnum = scholioSchema.enum('project_role', [
 	'owner',
 	'author',
 	'coauthor',
@@ -25,115 +18,149 @@ export const projectRoleEnum = pgEnum('project_role', [
 	'commenter'
 ]);
 
-const currentUserId = sql`current_setting('app.current_user_id', true)`;
+const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
 
-export const project = pgTable(
-	'project',
-	{
-		id: text('id').primaryKey(),
-		title: text('title').notNull(),
-		description: text('description'),
-		status: projectStatusEnum('status').notNull().default('draft'),
-		ownerId: text('owner_id').notNull(),
-		createdAt: timestamp('created_at').notNull().defaultNow(),
-		updatedAt: timestamp('updated_at').notNull().defaultNow()
-	},
-	(t) => [
-		index('project_owner_idx').on(t.ownerId),
+export const project = scholioSchema
+	.table(
+		'project',
+		{
+			id: text('id').primaryKey(),
+			title: text('title').notNull(),
+			description: text('description'),
+			status: projectStatusEnum('status').notNull().default('draft'),
+			ownerId: text('owner_id').notNull(),
+			isSearchable: boolean('is_searchable').notNull().default(false),
+			requirementsPrompt: text('requirements_prompt'),
+			requirementsTemplate: text('requirements_template'),
+			// Custom system prompt for the project-level AI agent (owner only)
+			agentSystemPrompt: text('agent_system_prompt'),
+			// Optional org link — when set, AI key is resolved from the org (not the user)
+			orgId: text('org_id'),
+			citationStyle: text('citation_style'),
+			doi: text('doi'),
+			version: text('version'),
+			publishedAt: timestamp('published_at'),
+			// Graceful deletion: set by owner, actual cascade fires when scheduledDeleteAt <= now()
+			scheduledDeleteAt: timestamp('scheduled_delete_at'),
+			// Set while an EPUB import is running in the background
+			isImporting: boolean('is_importing').notNull().default(false),
+			createdAt: timestamp('created_at').notNull().defaultNow(),
+			updatedAt: timestamp('updated_at').notNull().defaultNow()
+		},
+		(t) => [
+			index('project_owner_idx').on(t.ownerId),
 
-		// SELECT: owner directo o colaborador del proyecto
-		pgPolicy('project_select', {
-			for: 'select',
-			using: sql`
+			// SELECT: owner directo o colaborador del proyecto
+			pgPolicy('project_select', {
+				for: 'select',
+				using: sql`
 				${t.ownerId} = ${currentUserId}
 				OR EXISTS (
-					SELECT 1 FROM project_collaborator
+					SELECT 1 FROM scholio.project_collaborator
 					WHERE project_collaborator.project_id = ${t.id}
 					AND project_collaborator.user_id = ${currentUserId}
 				)
 			`
-		}),
+			}),
 
-		// INSERT: solo puede insertar proyectos donde sea el owner
-		pgPolicy('project_insert', {
-			for: 'insert',
-			withCheck: sql`${t.ownerId} = ${currentUserId}`
-		}),
+			// SELECT: proyecto buscable — cualquier usuario autenticado puede ver
+			pgPolicy('project_select_searchable', {
+				for: 'select',
+				using: sql`${t.isSearchable} = true AND ${currentUserId} IS NOT NULL`
+			}),
 
-		// UPDATE/DELETE: solo el owner
-		pgPolicy('project_update', {
-			for: 'update',
-			using: sql`${t.ownerId} = ${currentUserId}`
-		}),
-		pgPolicy('project_delete', {
-			for: 'delete',
-			using: sql`${t.ownerId} = ${currentUserId}`
-		})
-	]
-).enableRLS();
+			// INSERT: solo puede insertar proyectos donde sea el owner
+			pgPolicy('project_insert', {
+				for: 'insert',
+				withCheck: sql`${t.ownerId} = ${currentUserId}`
+			}),
 
-export const projectCollaborator = pgTable(
-	'project_collaborator',
-	{
-		id: text('id').primaryKey(),
-		projectId: text('project_id')
-			.notNull()
-			.references(() => project.id, { onDelete: 'cascade' }),
-		userId: text('user_id').notNull(),
-		role: projectRoleEnum('role').notNull(),
-		createdAt: timestamp('created_at').notNull().defaultNow()
-	},
-	(t) => [
-		uniqueIndex('project_collaborator_unique_idx').on(t.projectId, t.userId),
-		index('project_collaborator_project_idx').on(t.projectId),
-		index('project_collaborator_user_idx').on(t.userId),
+			// UPDATE/DELETE: solo el owner
+			pgPolicy('project_update', {
+				for: 'update',
+				using: sql`${t.ownerId} = ${currentUserId}`
+			}),
+			pgPolicy('project_delete', {
+				for: 'delete',
+				using: sql`${t.ownerId} = ${currentUserId}`
+			})
+		]
+	)
+	.enableRLS();
 
-		// SELECT: solo el propio colaborador ve su fila.
-		// Sin referencia a project → rompe el ciclo de recursión con project_select.
-		// El owner también tiene fila en esta tabla (role='owner'), así que también la ve.
-		pgPolicy('collaborator_select', {
-			for: 'select',
-			using: sql`${t.userId} = ${currentUserId}`
-		}),
+export const projectCollaborator = scholioSchema
+	.table(
+		'project_collaborator',
+		{
+			id: text('id').primaryKey(),
+			projectId: text('project_id')
+				.notNull()
+				.references(() => project.id, { onDelete: 'cascade' }),
+			userId: text('user_id').notNull(),
+			ownerUserId: text('owner_user_id').notNull(),
+			role: projectRoleEnum('role').notNull(),
+			createdAt: timestamp('created_at').notNull().defaultNow()
+		},
+		(t) => [
+			uniqueIndex('project_collaborator_unique_idx').on(t.projectId, t.userId),
+			index('project_collaborator_project_idx').on(t.projectId),
+			index('project_collaborator_user_idx').on(t.userId),
 
-		// INSERT/UPDATE/DELETE: solo el owner del proyecto.
-		// Separado de SELECT para no activarse cuando project_select lee project_collaborator.
-		// FOR ALL incluye SELECT y causaría ciclo; policies específicos evitan eso.
-		pgPolicy('collaborator_insert', {
-			for: 'insert',
-			withCheck: sql`
+			pgPolicy('collaborator_select', {
+				for: 'select',
+				using: sql`${t.userId} = ${currentUserId}`
+			}),
+
+			// Owner puede ver todos los colaboradores de sus proyectos
+			// (columna directa para evitar recursión circular con project_select → project_collaborator)
+			pgPolicy('collaborator_select_owner', {
+				for: 'select',
+				using: sql`${t.ownerUserId} = ${currentUserId}`
+			}),
+
+			pgPolicy('collaborator_insert', {
+				for: 'insert',
+				withCheck: sql`
 				EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = ${currentUserId}
 				)
 			`
-		}),
-		pgPolicy('collaborator_update', {
-			for: 'update',
-			using: sql`
+			}),
+			pgPolicy('collaborator_update', {
+				for: 'update',
+				using: sql`
 				EXISTS (
-					SELECT 1 FROM project
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = ${currentUserId}
 				)
 			`
-		}),
-		pgPolicy('collaborator_delete', {
-			for: 'delete',
-			using: sql`
-				EXISTS (
-					SELECT 1 FROM project
+			}),
+			pgPolicy('collaborator_delete', {
+				for: 'delete',
+				using: sql`
+				${t.role} != 'owner'
+				AND EXISTS (
+					SELECT 1 FROM scholio.project
 					WHERE project.id = ${t.projectId}
 					AND project.owner_id = ${currentUserId}
 				)
 			`
-		}),
+			}),
 
-		// INSERT extra: sin contexto de usuario (flujo accept — la app valida el token de invitación)
-		pgPolicy('collaborator_insert_invite', {
-			for: 'insert',
-			withCheck: sql`current_setting('app.current_user_id', true) = ''`
-		})
-	]
-).enableRLS();
+			// Colaborador puede abandonar su propio vínculo (leave project)
+			pgPolicy('collaborator_self_delete', {
+				for: 'delete',
+				using: sql`${t.userId} = ${currentUserId}`
+			}),
+
+			// INSERT extra: sin contexto de usuario (flujo accept — la app valida el token de invitación)
+			pgPolicy('collaborator_insert_invite', {
+				for: 'insert',
+				withCheck: sql`current_setting('app.current_user_id', true) = ''`
+			})
+		]
+	)
+	.enableRLS();

@@ -45,6 +45,11 @@ html.dark {
 	color: var(--color-dark-ink);
 }
 
+/* Safe area para PWA en iOS (home indicator) */
+.pb-safe {
+	padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
 /* Scrollbar discreta */
 ::-webkit-scrollbar {
 	width: 6px;
@@ -59,4 +64,177 @@ html.dark {
 
 html.dark ::-webkit-scrollbar-thumb {
 	background: var(--color-dark-paper-border);
+}
+
+/* ── Theme overrides ─────────────────────────────────────────────────────── */
+/* Each [data-theme] block overrides both light and dark CSS variables.      */
+/* Light utilities (bg-paper, text-ink, …) always read --color-*            */
+/* Dark  utilities (dark:bg-dark-paper, …) always read --color-dark-*       */
+
+[data-theme='github'] {
+	--color-paper: #ffffff;
+	--color-paper-ui: #f6f8fa;
+	--color-paper-border: #d0d7de;
+	--color-ink: #1f2328;
+	--color-ink-muted: #636c76;
+	--color-ink-faint: #9198a1;
+	--color-accent: #0969da;
+	--color-accent-hover: #0860ca;
+	--color-accent-light: #ddf4ff;
+	--color-dark-paper: #0d1117;
+	--color-dark-paper-ui: #161b22;
+	--color-dark-paper-border: #30363d;
+	--color-dark-ink: #e6edf3;
+	--color-dark-ink-muted: #8b949e;
+	--color-dark-ink-faint: #6e7781;
+}
+
+[data-theme='solarized'] {
+	--color-paper: #fdf6e3;
+	--color-paper-ui: #eee8d5;
+	--color-paper-border: #ddd6c1;
+	--color-ink: #657b83;
+	--color-ink-muted: #839496;
+	--color-ink-faint: #93a1a1;
+	--color-accent: #268bd2;
+	--color-accent-hover: #1a7bbf;
+	--color-accent-light: #d4e8f6;
+	--color-dark-paper: #002b36;
+	--color-dark-paper-ui: #073642;
+	--color-dark-paper-border: #0d4a5a;
+	--color-dark-ink: #839496;
+	--color-dark-ink-muted: #657b83;
+	--color-dark-ink-faint: #586e75;
+}
+
+[data-theme='nord'] {
+	--color-paper: #eceff4;
+	--color-paper-ui: #e5e9f0;
+	--color-paper-border: #d8dee9;
+	--color-ink: #2e3440;
+	--color-ink-muted: #4c566a;
+	--color-ink-faint: #8090a8;
+	--color-accent: #5e81ac;
+	--color-accent-hover: #507399;
+	--color-accent-light: #d8e4f0;
+	--color-dark-paper: #2e3440;
+	--color-dark-paper-ui: #272c36;
+	--color-dark-paper-border: #3b4252;
+	--color-dark-ink: #eceff4;
+	--color-dark-ink-muted: #d8dee9;
+	--color-dark-ink-faint: #8090a8;
+}
+
+[data-theme='catppuccin'] {
+	--color-paper: #eff1f5;
+	--color-paper-ui: #e6e9ef;
+	--color-paper-border: #ccd0da;
+	--color-ink: #4c4f69;
+	--color-ink-muted: #6c6f85;
+	--color-ink-faint: #9ca0b0;
+	--color-accent: #1e66f5;
+	--color-accent-hover: #1958d4;
+	--color-accent-light: #d3e0fd;
+	--color-dark-paper: #1e1e2e;
+	--color-dark-paper-ui: #181825;
+	--color-dark-paper-border: #313244;
+	--color-dark-ink: #cdd6f4;
+	--color-dark-ink-muted: #bac2de;
+	--color-dark-ink-faint: #a6adc8;
+}
+
+[data-theme='gruvbox'] {
+	--color-paper: #fbf1c7;
+	--color-paper-ui: #f2e5bc;
+	--color-paper-border: #ebdbb2;
+	--color-ink: #3c3836;
+	--color-ink-muted: #665c54;
+	--color-ink-faint: #928374;
+	--color-accent: #b57614;
+	--color-accent-hover: #9e6910;
+	--color-accent-light: #f2d49e;
+	--color-dark-paper: #282828;
+	--color-dark-paper-ui: #1d2021;
+	--color-dark-paper-border: #3c3836;
+	--color-dark-ink: #ebdbb2;
+	--color-dark-ink-muted: #d5c4a1;
+	--color-dark-ink-faint: #928374;
+}
+
+/* ── E-ink mode ──────────────────────────────────────────────────────────── */
+/* High-contrast grayscale for e-paper displays (Boox, etc.)                 */
+
+@custom-variant eink (&:where([data-mode="eink"], [data-mode="eink"] *));
+
+[data-mode='eink'] {
+	--color-paper: #f5f5f0;
+	--color-paper-ui: #ebebeb;
+	--color-paper-border: #111111;
+	--color-ink: #000000;
+	--color-ink-muted: #333333;
+	--color-ink-faint: #666666;
+	--color-accent: #000000;
+	--color-accent-hover: #222222;
+	--color-accent-light: #dddddd;
+}
+
+[data-mode='eink'].dark {
+	--color-dark-paper: #0a0a0a;
+	--color-dark-paper-ui: #111111;
+	--color-dark-paper-border: #eeeeee;
+	--color-dark-ink: #ffffff;
+	--color-dark-ink-muted: #cccccc;
+	--color-dark-ink-faint: #999999;
+}
+
+[data-mode='eink'] * {
+	box-shadow: none !important;
+	text-shadow: none !important;
+	background-image: none !important;
+}
+
+/* ── CodeMirror autocomplete popup ──────────────────────────────────────── */
+/* Inherits whichever of the 12 themes is active via CSS variables.         */
+.cm-tooltip.cm-tooltip-autocomplete {
+	border: 1px solid var(--color-paper-border) !important;
+	border-radius: 8px !important;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+	overflow: hidden !important;
+	background: var(--color-paper) !important;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul {
+	margin: 0 !important;
+	padding: 4px !important;
+	list-style: none !important;
+	max-height: 240px !important;
+	font-family: var(--font-sans) !important;
+	font-size: 15px !important;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+	padding: 5px 10px !important;
+	border-radius: 5px !important;
+	color: var(--color-ink) !important;
+	line-height: 1.4 !important;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background: var(--color-accent) !important;
+	color: #fff !important;
+}
+.cm-completionDetail {
+	opacity: 0.6;
+	font-style: normal !important;
+	margin-left: 8px;
+	font-size: 13px;
+}
+
+html.dark .cm-tooltip.cm-tooltip-autocomplete {
+	border-color: var(--color-dark-paper-border) !important;
+	background: var(--color-dark-paper) !important;
+}
+html.dark .cm-tooltip.cm-tooltip-autocomplete > ul > li {
+	color: var(--color-dark-ink) !important;
+}
+html.dark .cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+	background: var(--color-accent) !important;
+	color: #fff !important;
 }

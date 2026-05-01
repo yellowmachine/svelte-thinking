@@ -1,42 +1,131 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
-import { project } from '$lib/server/db/schemas/projects.schema';
+import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
+import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
+import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
+import { reference } from '$lib/server/db/schemas/references.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { eq, and, isNull, isNotNull, sql } from 'drizzle-orm';
+import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 
 export const load: PageServerLoad = async (event) => {
 	const { id: projectId, docId } = event.params;
 
-	const [docResult, projectResult, inlineComments] = await Promise.all([
+	const [
+		docResult,
+		projectResult,
+		inlineComments,
+		projectDocs,
+		backlinks,
+		externalDocs,
+		collaborators
+	] = await Promise.all([
+		// Document + content
 		event.locals.withRLS(async (db) => {
 			const docs = await db.select().from(document).where(eq(document.id, docId)).limit(1);
 			if (!docs[0]) return null;
 			const doc = docs[0];
 
+			// Determine if the current user can write this document
+			const currentUserId = event.locals.user!.id;
+			const forcePublished = event.url.searchParams.has('published');
+			const [projectRows, collabRows] = await Promise.all([
+				db
+					.select({ ownerId: project.ownerId })
+					.from(project)
+					.where(eq(project.id, doc.projectId))
+					.limit(1),
+				db
+					.select({ role: projectCollaborator.role })
+					.from(projectCollaborator)
+					.where(
+						and(
+							eq(projectCollaborator.projectId, doc.projectId),
+							eq(projectCollaborator.userId, currentUserId)
+						)
+					)
+					.limit(1)
+			]);
+			const ownerId = projectRows[0]?.ownerId ?? '';
+			const collaboratorRole = (collabRows[0]?.role ?? null) as CollaboratorRole | null;
+			const canWrite = canWriteDocument({
+				isProjectOwner: currentUserId === ownerId,
+				writerUserId: doc.writerUserId,
+				currentUserId,
+				collaboratorRole
+			});
+
+			// Non-writers or ?published param always see the last committed version
+			if (!canWrite || forcePublished) {
+				if (!doc.currentVersionId) {
+					return { ...doc, content: null, hasDraft: false, lastCommit: null };
+				}
+				const versions = await db
+					.select({
+						content: documentVersion.content,
+						createdAt: documentVersion.createdAt,
+						committerName: sql<
+							string | null
+						>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+					})
+					.from(documentVersion)
+					.where(eq(documentVersion.id, doc.currentVersionId))
+					.limit(1);
+				const v = versions[0];
+				return {
+					...doc,
+					content: v?.content ?? null,
+					hasDraft: false,
+					lastCommit: v ? { committedAt: v.createdAt, committerName: v.committerName } : null
+				};
+			}
+
 			if (doc.draftContent !== null) {
-				return { ...doc, content: doc.draftContent, hasDraft: true };
+				return { ...doc, content: doc.draftContent, hasDraft: true, lastCommit: null };
 			}
 
 			if (!doc.currentVersionId) {
-				return { ...doc, content: '', hasDraft: false };
+				return { ...doc, content: '', hasDraft: false, lastCommit: null };
 			}
 
 			const versions = await db
-				.select()
+				.select({
+					content: documentVersion.content,
+					createdAt: documentVersion.createdAt,
+					committerName: sql<
+						string | null
+					>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+				})
 				.from(documentVersion)
 				.where(eq(documentVersion.id, doc.currentVersionId))
 				.limit(1);
 
-			return { ...doc, content: versions[0]?.content ?? '', hasDraft: false };
+			const v = versions[0];
+			return {
+				...doc,
+				content: v?.content ?? '',
+				hasDraft: false,
+				lastCommit: v ? { committedAt: v.createdAt, committerName: v.committerName } : null
+			};
 		}),
+
+		// Project info (title + owner + citationStyle)
 		event.locals.withRLS((db) =>
 			db
-				.select({ id: project.id, title: project.title })
+				.select({
+					id: project.id,
+					title: project.title,
+					ownerId: project.ownerId,
+					orgId: project.orgId,
+					citationStyle: project.citationStyle
+				})
 				.from(project)
 				.where(eq(project.id, projectId))
 				.limit(1)
 		),
+
+		// Inline comments + replies
 		event.locals.withRLS(async (db) => {
 			const threads = await db
 				.select({
@@ -48,6 +137,7 @@ export const load: PageServerLoad = async (event) => {
 					lineStart: comment.lineStart,
 					characterStart: comment.characterStart,
 					characterEnd: comment.characterEnd,
+					paragraphNumber: comment.paragraphNumber,
 					status: comment.status,
 					createdAt: comment.createdAt
 				})
@@ -89,15 +179,104 @@ export const load: PageServerLoad = async (event) => {
 			}
 
 			return threads.map((t) => ({ ...t, replies: replyMap.get(t.id) ?? [] }));
-		})
+		}),
+
+		// All documents in project (for wikilink resolution in preview)
+		event.locals.withRLS((db) =>
+			db
+				.select({
+					id: document.id,
+					title: document.title,
+					projectId: document.projectId,
+					type: document.type
+				})
+				.from(document)
+				.where(eq(document.projectId, projectId))
+		) as Promise<{ id: string; title: string; projectId: string; type: string }[]>,
+
+		// Backlinks: documents that [[link]] to this one
+		event.locals.withRLS((db) =>
+			db
+				.select({ id: document.id, title: document.title })
+				.from(documentLink)
+				.innerJoin(document, eq(document.id, documentLink.sourceDocumentId))
+				.where(eq(documentLink.targetDocumentId, docId))
+		) as Promise<{ id: string; title: string }[]>,
+
+		// External context docs linked to this project (for [[title:hash]] resolution)
+		event.locals.withRLS((db) =>
+			db
+				.select({ id: document.id, title: document.title, projectId: document.projectId })
+				.from(projectContextLink)
+				.innerJoin(document, eq(document.id, projectContextLink.linkedDocumentId))
+				.where(eq(projectContextLink.projectId, projectId))
+		) as Promise<{ id: string; title: string; projectId: string }[]>,
+
+		// Project collaborators (visible to owner via collaborator_select_owner policy)
+		event.locals.withRLS((db) =>
+			db
+				.select({
+					userId: projectCollaborator.userId,
+					role: projectCollaborator.role,
+					name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
+				})
+				.from(projectCollaborator)
+				.where(eq(projectCollaborator.projectId, projectId))
+		) as Promise<{ userId: string; role: string; name: string }[]>
 	]);
 
 	if (!docResult) error(404, 'Documento no encontrado');
 
+	const proj = projectResult[0];
+
+	// Resolve source reference (for subnote creation from selected text)
+	let sourceReference: { id: string; citeKey: string } | null = null;
+	if (docResult.sourceReferenceId) {
+		const rows = await event.locals.withRLS((db) =>
+			db
+				.select({ id: reference.id, citeKey: reference.citeKey })
+				.from(reference)
+				.where(eq(reference.id, docResult.sourceReferenceId!))
+				.limit(1)
+		);
+		sourceReference = rows[0] ?? null;
+	}
+
+	// Resolve writer name if set
+	let writerName: string | null = null;
+	if (docResult.writerUserId) {
+		const writerId = docResult.writerUserId;
+		const writerRow = await event.locals.withRLS((db) =>
+			db
+				.select({ name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${writerId})` })
+				.from(document)
+				.where(eq(document.id, docId))
+				.limit(1)
+		);
+		writerName = writerRow[0]?.name ?? null;
+	}
+
 	return {
 		document: docResult,
-		projectTitle: projectResult[0]?.title ?? '',
+		projectTitle: proj?.title ?? '',
+		projectOwnerId: proj?.ownerId ?? '',
+		projectOrgId: proj?.orgId ?? null,
+		projectCitationStyle: (proj?.citationStyle ?? null) as
+			| 'apa'
+			| 'ieee'
+			| 'vancouver'
+			| 'chicago'
+			| null,
+		writerName,
+		collaborators,
 		inlineComments,
-		currentUserId: event.locals.user!.id
+		currentUserId: event.locals.user!.id,
+		projectDocs,
+		backlinks,
+		externalDocs,
+		unpublished: docResult.content === null && !docResult.renderedHtml,
+		forcePublished: event.url.searchParams.has('published'),
+		renderedHtml: docResult.renderedHtml ?? null,
+		sourceReference
 	};
 };

@@ -4,8 +4,8 @@
 	let {
 		oldText,
 		newText,
-		oldLabel = 'Versión anterior',
-		newLabel = 'Versión actual'
+		oldLabel = 'Previous version',
+		newLabel = 'Current version'
 	}: {
 		oldText: string;
 		newText: string;
@@ -58,18 +58,24 @@
 	const hasChanges: boolean = $derived(parts.some((p) => p.added || p.removed));
 </script>
 
-<div class="w-full overflow-hidden rounded-lg border border-paper-border font-sans text-sm dark:border-dark-paper-border">
+<div
+	class="w-full overflow-hidden rounded-lg border border-paper-border font-sans text-sm dark:border-dark-paper-border"
+>
 	{#if !hasChanges}
 		<div class="flex items-center justify-center px-6 py-8 text-ink-muted dark:text-dark-ink-muted">
-			Sin cambios entre las versiones seleccionadas.
+			No changes between selected versions.
 		</div>
 	{:else}
 		<!-- Header -->
-		<div class="grid grid-cols-2 border-b border-paper-border bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper-ui">
+		<div
+			class="grid grid-cols-2 border-b border-paper-border bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper-ui"
+		>
 			<div class="px-4 py-2 text-xs font-medium text-ink-faint dark:text-dark-ink-faint">
 				{oldLabel}
 			</div>
-			<div class="border-l border-paper-border px-4 py-2 text-xs font-medium text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint">
+			<div
+				class="border-l border-paper-border px-4 py-2 text-xs font-medium text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
+			>
 				{newLabel}
 			</div>
 		</div>
@@ -89,7 +95,8 @@
 						{#if oldLine}
 							{#each oldLine.segments as seg (seg.text + seg.type)}
 								{#if seg.type === 'removed'}
-									<mark class="rounded bg-red-200 px-0.5 text-red-800 no-underline dark:bg-red-900 dark:text-red-200"
+									<mark
+										class="rounded bg-red-200 px-0.5 text-red-800 no-underline dark:bg-red-900 dark:text-red-200"
 										>{seg.text}</mark
 									>
 								{:else}
@@ -108,7 +115,8 @@
 						{#if newLine}
 							{#each newLine.segments as seg (seg.text + seg.type)}
 								{#if seg.type === 'added'}
-									<mark class="rounded bg-green-200 px-0.5 text-green-800 no-underline dark:bg-green-900 dark:text-green-200"
+									<mark
+										class="rounded bg-green-200 px-0.5 text-green-800 no-underline dark:bg-green-900 dark:text-green-200"
 										>{seg.text}</mark
 									>
 								{:else}

@@ -1,22 +1,150 @@
 import { z } from 'zod';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, asc, and, inArray, ne, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
+import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
+import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
+import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
+import { notificationPreference } from '$lib/server/db/schemas/users.schema';
+import { extractWikilinks } from '$lib/utils/wikilinks';
+import { indexDocument } from '$lib/server/embeddings';
+import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
+import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
+import { sendCommitNotification } from '$lib/server/email';
+import { env } from '$env/dynamic/private';
+import { DOCUMENT_TYPES } from '$lib/domain/document';
+import {
+	canDelegateWriting,
+	roleAllowsWrite,
+	type CollaboratorRole
+} from '$lib/domain/permissions';
+import type { Db } from '$lib/server/db';
 
-const documentTypeValues = [
-	'paper',
-	'notes',
-	'outline',
-	'bibliography',
-	'supplementary'
-] as const;
+async function notifyCollaboratorsOnCommit(
+	db: Db,
+	documentId: string,
+	projectId: string,
+	committerId: string,
+	committerName: string,
+	commitMessage: string
+) {
+	try {
+		// Get document + project title
+		const rows = await db
+			.select({ documentTitle: document.title, projectTitle: project.title })
+			.from(document)
+			.innerJoin(project, eq(document.projectId, project.id))
+			.where(eq(document.id, documentId))
+			.limit(1);
+
+		const meta = rows[0];
+		if (!meta) return;
+
+		// Get all collaborators except the committer, with their emails
+		const collaborators = await db
+			.select({
+				userId: projectCollaborator.userId,
+				email: sql<string>`(SELECT email FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
+			})
+			.from(projectCollaborator)
+			.where(
+				and(
+					eq(projectCollaborator.projectId, projectId),
+					ne(projectCollaborator.userId, committerId)
+				)
+			);
+
+		if (collaborators.length === 0) return;
+
+		const origin = env.ORIGIN ?? 'http://localhost:5174';
+		const documentUrl = `${origin}/projects/${projectId}/documents/${documentId}`;
+
+		await Promise.all(
+			collaborators.map(async (collab) => {
+				// Check or create notification preference
+				const existing = await db
+					.select()
+					.from(notificationPreference)
+					.where(
+						and(
+							eq(notificationPreference.userId, collab.userId),
+							eq(notificationPreference.projectId, projectId)
+						)
+					)
+					.limit(1);
+
+				let pref = existing[0];
+				if (!pref) {
+					const [created] = await db
+						.insert(notificationPreference)
+						.values({
+							id: crypto.randomUUID(),
+							userId: collab.userId,
+							projectId,
+							unsubscribeToken: crypto.randomUUID()
+						})
+						.returning();
+					pref = created;
+				}
+
+				if (!pref.commitEmails) return;
+
+				await sendCommitNotification({
+					to: collab.email,
+					committerName,
+					documentTitle: meta.documentTitle,
+					projectTitle: meta.projectTitle,
+					commitMessage,
+					documentUrl,
+					unsubscribeUrl: `${origin}/notifications/unsubscribe/${pref.unsubscribeToken}`
+				});
+			})
+		);
+	} catch (e) {
+		console.error('[notifications] Error sending commit notification:', e);
+	}
+}
+
+const documentTypeValues = DOCUMENT_TYPES;
+
+const BOOK_TEMPLATE = `---
+layout: academic
+subtitle:
+edition:
+---
+
+> [!epigraph]
+> "The beginning is the most important part of the work."
+> — Plato
+> The Republic
+
+## About this book
+
+Write a brief introduction to your book here.
+
+---
+
+*Reference chapters below using \`[[\` to insert chapter links.*
+`;
+
+const READING_NOTE_TEMPLATE = `---
+title:
+author:
+year:
+---
+
+`;
+
+function initialContent(type: (typeof documentTypeValues)[number]): string {
+	if (type === 'book') return BOOK_TEMPLATE;
+	if (type === 'reading_note') return READING_NOTE_TEMPLATE;
+	return '';
+}
 
 export const documentsRouter = router({
 	list: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
-		return ctx.withRLS((db) =>
-			db.select().from(document).where(eq(document.projectId, projectId))
-		);
+		return ctx.withRLS((db) => db.select().from(document).where(eq(document.projectId, projectId)));
 	}),
 
 	byId: protectedProcedure.input(z.string()).query(async ({ ctx, input }) => {
@@ -61,52 +189,106 @@ export const documentsRouter = router({
 			z.object({
 				projectId: z.string(),
 				title: z.string().min(1).max(255),
-				type: z.enum(documentTypeValues).default('paper')
+				type: z.enum(documentTypeValues).default('paper'),
+				isPrivate: z.boolean().optional().default(false)
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
 			const docId = crypto.randomUUID();
 
 			return ctx.withRLS(async (db) => {
-				const [created] = await db
-					.insert(document)
-					.values({ id: docId, projectId: input.projectId, title: input.title, type: input.type })
-					.returning();
+				try {
+					const [created] = await db
+						.insert(document)
+						.values({
+							id: docId,
+							projectId: input.projectId,
+							title: input.title,
+							type: input.type,
+							isPrivate: input.isPrivate,
+							ownerUserId: ctx.user.id
+						})
+						.returning();
 
-				// Versión inicial vacía (v1)
-				const versionId = crypto.randomUUID();
-				await db.insert(documentVersion).values({
-					id: versionId,
-					documentId: docId,
-					content: '',
-					versionNumber: 1,
-					changeDescription: 'Versión inicial',
-					createdBy: ctx.user.id
-				});
+					// Versión inicial (v1) — con plantilla si el tipo la tiene
+					const versionId = crypto.randomUUID();
+					await db.insert(documentVersion).values({
+						id: versionId,
+						documentId: docId,
+						content: initialContent(input.type),
+						versionNumber: 1,
+						changeDescription: 'Initial version',
+						createdBy: ctx.user.id
+					});
 
-				const [updated] = await db
-					.update(document)
-					.set({ currentVersionId: versionId })
-					.where(eq(document.id, docId))
-					.returning();
+					const [updated] = await db
+						.update(document)
+						.set({ currentVersionId: versionId })
+						.where(eq(document.id, created.id))
+						.returning();
 
-				return updated;
+					return updated;
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un documento con el título "${input.title}" en este proyecto.`
+						});
+					}
+					throw e;
+				}
 			});
 		}),
 
 	update: protectedProcedure
-		.input(z.object({ id: z.string(), title: z.string().min(1).max(255).optional() }))
+		.input(
+			z.object({
+				id: z.string(),
+				title: z.string().min(1).max(255).optional(),
+				isPublic: z.boolean().optional(),
+				isReadonly: z.boolean().optional(),
+				spellLanguage: z.string().nullable().optional()
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
-			const rows = await ctx.withRLS((db) =>
-				db
-					.update(document)
-					.set({ ...data, updatedAt: new Date() })
-					.where(eq(document.id, id))
-					.returning()
-			);
-			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			return rows[0];
+			return ctx.withRLS(async (db) => {
+				// Unlock: convert stored HTML → markdown so the editor has something to work with
+				let extra: { draftContent?: string; renderedHtml?: null } = {};
+				if (data.isReadonly === false) {
+					const [current] = await db
+						.select({ renderedHtml: document.renderedHtml })
+						.from(document)
+						.where(eq(document.id, id))
+						.limit(1);
+					if (current?.renderedHtml) {
+						const { default: TurndownService } = await import('turndown');
+						const td = new TurndownService({
+							headingStyle: 'atx',
+							codeBlockStyle: 'fenced',
+							bulletListMarker: '-'
+						});
+						extra = { draftContent: td.turndown(current.renderedHtml), renderedHtml: null };
+					}
+				}
+				try {
+					const rows = await db
+						.update(document)
+						.set({ ...data, ...extra, updatedAt: new Date() })
+						.where(eq(document.id, id))
+						.returning();
+					if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+					return rows[0];
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un documento con ese título en este proyecto.`
+						});
+					}
+					throw e;
+				}
+			});
 		}),
 
 	delete: protectedProcedure.input(z.string()).mutation(async ({ ctx, input }) => {
@@ -143,7 +325,7 @@ export const documentsRouter = router({
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
-			return ctx.withRLS(async (db) => {
+			const result = await ctx.withRLS(async (db) => {
 				const docs = await db
 					.select()
 					.from(document)
@@ -186,8 +368,107 @@ export const documentsRouter = router({
 					.where(eq(document.id, input.documentId))
 					.returning();
 
-				return { document: updated, versionNumber: nextVersion };
+				// ── Update wikilink index ──────────────────────────────────────
+				// Handles [[title]] (same project), [[title:hash]] (external),
+				// and [[doc:uuid|Title]] (book→chapter, UUID-stable).
+				const { uuids: linkedUuids, titles } = extractWikilinks(contentToCommit);
+
+				await db.delete(documentLink).where(eq(documentLink.sourceDocumentId, input.documentId));
+
+				if ((titles.length > 0 || linkedUuids.length > 0) && updated.projectId) {
+					const [sameProjectDocs, externalDocs] = await Promise.all([
+						// Same-project: resolve by title
+						db
+							.select({ id: document.id, title: document.title })
+							.from(document)
+							.where(eq(document.projectId, updated.projectId)),
+
+						// External context links: resolve by [[title:hash]] (first 8 chars of ID)
+						db
+							.select({ id: document.id, title: document.title })
+							.from(projectContextLink)
+							.innerJoin(document, eq(document.id, projectContextLink.linkedDocumentId))
+							.where(eq(projectContextLink.projectId, updated.projectId))
+					]);
+
+					const titleToId = new Map(sameProjectDocs.map((d) => [d.title, d.id]));
+					// External: keyed as "title:hash"
+					for (const d of externalDocs) {
+						titleToId.set(`${d.title}:${d.id.slice(0, 8)}`, d.id);
+					}
+
+					const titleLinks = titles
+						.map((t) => titleToId.get(t))
+						.filter((id): id is string => !!id && id !== input.documentId);
+
+					// UUID links are already resolved — just exclude self-links
+					const uuidLinks = linkedUuids.filter((id) => id !== input.documentId);
+
+					const newLinks = [...titleLinks, ...uuidLinks];
+
+					if (newLinks.length > 0) {
+						await db.insert(documentLink).values(
+							[...new Set(newLinks)].map((targetId) => ({
+								id: crypto.randomUUID(),
+								sourceDocumentId: input.documentId,
+								targetDocumentId: targetId
+							}))
+						);
+					}
+				}
+
+				return {
+					document: updated,
+					versionNumber: nextVersion,
+					_projectId: updated.projectId,
+					_content: contentToCommit,
+					_versionId: versionId,
+					_title: updated.title,
+					_type: updated.type
+				};
 			});
+
+			// Fire-and-forget outside the transaction so tx is already committed
+			ctx
+				.withRLS((db) => indexDocument(db, input.documentId, result._projectId, result._content))
+				.catch((err) => console.error('[embeddings] indexDocument failed:', err));
+
+			// Fire-and-forget: generate AI summary for the project chat agent
+			void (async () => {
+				try {
+					const { apiKey, model } = await resolveTaskKey(
+						ctx.withRLS as never,
+						ctx.db as Db,
+						ctx.user.id,
+						'summary',
+						result._projectId
+					);
+					await ctx.withRLS((db) =>
+						generateAndSaveDocumentSummary(
+							db as Db,
+							result._versionId,
+							result._content,
+							result._title,
+							result._type,
+							apiKey,
+							model
+						)
+					);
+				} catch (err) {
+					console.error('[summary] generateDocumentSummary failed:', err);
+				}
+			})();
+
+			notifyCollaboratorsOnCommit(
+				ctx.db,
+				input.documentId,
+				result._projectId,
+				ctx.user.id,
+				ctx.user.name ?? ctx.user.email,
+				input.message
+			);
+
+			return { document: result.document, versionNumber: result.versionNumber };
 		}),
 
 	// Historial de versiones (commits), sin contenido
@@ -215,6 +496,273 @@ export const documentsRouter = router({
 		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 		return rows[0];
 	}),
+
+	// Diff de una versión respecto a su predecesora inmediata.
+	// Devuelve { current, previous } donde previous es null si es la primera versión.
+	versionDiff: protectedProcedure
+		.input(z.object({ documentId: z.string(), versionId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const rows = (await ctx.withRLS((db) =>
+				db
+					.select({
+						id: documentVersion.id,
+						versionNumber: documentVersion.versionNumber,
+						content: documentVersion.content
+					})
+					.from(documentVersion)
+					.where(eq(documentVersion.documentId, input.documentId))
+					.orderBy(asc(documentVersion.versionNumber))
+			)) as { id: string; versionNumber: number; content: string }[];
+
+			const idx = rows.findIndex((v) => v.id === input.versionId);
+			if (idx === -1) throw new TRPCError({ code: 'NOT_FOUND' });
+
+			return {
+				current: rows[idx],
+				previous: idx > 0 ? rows[idx - 1] : null
+			};
+		}),
+
+	// Crea un documento nuevo copiando el contenido de un template.
+	// El tipo del nuevo documento es el mismo que el template original.
+	createFromTemplate: protectedProcedure
+		.input(
+			z.object({
+				templateDocId: z.string(),
+				projectId: z.string(),
+				title: z.string().min(1).max(255)
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			return ctx.withRLS(async (db) => {
+				const [tmpl] = await db
+					.select()
+					.from(document)
+					.where(eq(document.id, input.templateDocId))
+					.limit(1);
+
+				if (!tmpl) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+				if (!tmpl.isTemplate)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: 'Document is not a template' });
+
+				// Resolver contenido: draft > versión actual > ''
+				let content = tmpl.draftContent ?? '';
+				if (!content && tmpl.currentVersionId) {
+					const [ver] = await db
+						.select({ content: documentVersion.content })
+						.from(documentVersion)
+						.where(eq(documentVersion.id, tmpl.currentVersionId))
+						.limit(1);
+					content = ver?.content ?? '';
+				}
+
+				const docId = crypto.randomUUID();
+				try {
+					const [created] = await db
+						.insert(document)
+						.values({ id: docId, projectId: input.projectId, title: input.title, type: tmpl.type })
+						.returning();
+
+					const versionId = crypto.randomUUID();
+					await db.insert(documentVersion).values({
+						id: versionId,
+						documentId: docId,
+						content,
+						versionNumber: 1,
+						changeDescription: `Created from template "${tmpl.title}"`,
+						createdBy: ctx.user.id
+					});
+
+					const [updated] = await db
+						.update(document)
+						.set({ currentVersionId: versionId })
+						.where(eq(document.id, created.id))
+						.returning();
+
+					return updated;
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un documento con el título "${input.title}" en este proyecto.`
+						});
+					}
+					throw e;
+				}
+			});
+		}),
+
+	// Crea una copia del documento actual como template (isTemplate = true).
+	saveAsTemplate: protectedProcedure
+		.input(
+			z.object({
+				documentId: z.string(),
+				templateTitle: z.string().min(1).max(255)
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			return ctx.withRLS(async (db) => {
+				const [src] = await db
+					.select()
+					.from(document)
+					.where(eq(document.id, input.documentId))
+					.limit(1);
+
+				if (!src) throw new TRPCError({ code: 'NOT_FOUND' });
+
+				let content = src.draftContent ?? '';
+				if (!content && src.currentVersionId) {
+					const [ver] = await db
+						.select({ content: documentVersion.content })
+						.from(documentVersion)
+						.where(eq(documentVersion.id, src.currentVersionId))
+						.limit(1);
+					content = ver?.content ?? '';
+				}
+
+				const docId = crypto.randomUUID();
+				try {
+					const [created] = await db
+						.insert(document)
+						.values({
+							id: docId,
+							projectId: src.projectId,
+							title: input.templateTitle,
+							type: src.type,
+							isTemplate: true
+						})
+						.returning();
+
+					const versionId = crypto.randomUUID();
+					await db.insert(documentVersion).values({
+						id: versionId,
+						documentId: docId,
+						content,
+						versionNumber: 1,
+						changeDescription: `Template saved from "${src.title}"`,
+						createdBy: ctx.user.id
+					});
+
+					const [updated] = await db
+						.update(document)
+						.set({ currentVersionId: versionId })
+						.where(eq(document.id, created.id))
+						.returning();
+
+					return updated;
+				} catch (e: unknown) {
+					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: `Ya existe un template con el título "${input.templateTitle}" en este proyecto.`
+						});
+					}
+					throw e;
+				}
+			});
+		}),
+
+	// Transfiere o revoca el rol de escritor en el documento.
+	// El propietario del proyecto puede delegar, reclamar, o transferir.
+	// El writer actual puede liberar su slot (set to null) incluso si su rol fue degradado.
+	// writerUserId = null → owner recupera el acceso; SET → delega a un colaborador.
+	setWriter: protectedProcedure
+		.input(
+			z.object({
+				documentId: z.string(),
+				writerUserId: z.string().nullable()
+			})
+		)
+		.mutation(async ({ ctx, input }) => {
+			return ctx.withRLS(async (db) => {
+				const [doc] = await db
+					.select({ projectId: document.projectId, writerUserId: document.writerUserId })
+					.from(document)
+					.where(eq(document.id, input.documentId))
+					.limit(1);
+
+				if (!doc) throw new TRPCError({ code: 'NOT_FOUND' });
+
+				const [proj] = await db
+					.select({ ownerId: project.ownerId })
+					.from(project)
+					.where(eq(project.id, doc.projectId))
+					.limit(1);
+
+				if (!proj) throw new TRPCError({ code: 'NOT_FOUND' });
+
+				if (
+					!canDelegateWriting({
+						userId: ctx.user.id,
+						ownerId: proj.ownerId,
+						writerUserId: doc.writerUserId
+					})
+				) {
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: 'Solo el propietario o el writer actual pueden modificar la delegación'
+					});
+				}
+
+				// A downgraded writer can only release (set to null), not transfer to another user.
+				const isProjectOwner = ctx.user.id === proj.ownerId;
+				if (!isProjectOwner && input.writerUserId !== null) {
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: 'Solo el propietario puede transferir la escritura a otro usuario'
+					});
+				}
+
+				if (input.writerUserId !== null) {
+					const [collab] = await db
+						.select({ userId: projectCollaborator.userId, role: projectCollaborator.role })
+						.from(projectCollaborator)
+						.where(
+							and(
+								eq(projectCollaborator.projectId, doc.projectId),
+								eq(projectCollaborator.userId, input.writerUserId)
+							)
+						)
+						.limit(1);
+
+					if (!collab) {
+						throw new TRPCError({
+							code: 'BAD_REQUEST',
+							message: 'El usuario no es colaborador de este proyecto'
+						});
+					}
+
+					if (!roleAllowsWrite(collab.role as CollaboratorRole)) {
+						throw new TRPCError({
+							code: 'BAD_REQUEST',
+							message: 'El colaborador no tiene un rol que permita escritura'
+						});
+					}
+				}
+
+				const [updated] = await db
+					.update(document)
+					.set({ writerUserId: input.writerUserId, updatedAt: new Date() })
+					.where(eq(document.id, input.documentId))
+					.returning();
+
+				return updated;
+			});
+		}),
+
+	setSourceReference: protectedProcedure
+		.input(z.object({ documentId: z.string(), referenceId: z.string().nullable() }))
+		.mutation(async ({ ctx, input }) => {
+			const [updated] = await ctx.withRLS((db) =>
+				db
+					.update(document)
+					.set({ sourceReferenceId: input.referenceId })
+					.where(eq(document.id, input.documentId))
+					.returning({ id: document.id, sourceReferenceId: document.sourceReferenceId })
+			);
+			if (!updated) throw new TRPCError({ code: 'NOT_FOUND' });
+			return updated;
+		}),
 
 	// Restaura una versión anterior: la copia como nuevo draft (sin commitear)
 	// El usuario puede revisar antes de hacer commit

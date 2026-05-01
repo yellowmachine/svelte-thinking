@@ -2,13 +2,134 @@ import * as Sentry from '@sentry/sveltekit';
 import { sequence } from '@sveltejs/kit/hooks';
 import type { Handle } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';
-import { building } from '$app/environment';
+import { building, dev } from '$app/environment';
 import { sql } from 'drizzle-orm';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
+import { userProfile } from '$lib/server/db/schemas/users.schema';
+import { eq } from 'drizzle-orm';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
+import { env } from '$env/dynamic/private';
 
 export const handleError = Sentry.handleErrorWithSentry();
+
+const handleDevTools: Handle = ({ event, resolve }) => {
+	if (event.url.pathname === '/.well-known/appspecific/com.chrome.devtools.json') {
+		return new Response(null, { status: 204 });
+	}
+	return resolve(event);
+};
+
+// Añade Domain=<base> al Set-Cookie de las respuestas de auth para que la sesión
+// sea compartida entre scholio.review y librarian.scholio.review.
+// Opera a nivel HTTP directamente, sin depender de better-auth ni SvelteKit cookies.
+const handleAuthCookieDomain: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+
+	if (!event.url.pathname.startsWith('/api/auth')) return response;
+
+	let domain: string | undefined;
+	try {
+		const { hostname } = new URL(env.ORIGIN ?? '');
+		if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+			const parts = hostname.split('.');
+			if (parts.length >= 2) domain = parts.slice(-2).join('.');
+		}
+	} catch {
+		/* dev o ORIGIN inválido: sin domain */
+	}
+
+	if (!domain) return response;
+
+	const cookies = response.headers.getSetCookie();
+	if (!cookies.length) return response;
+
+	const newHeaders = new Headers(response.headers);
+	newHeaders.delete('set-cookie');
+	for (const cookie of cookies) {
+		newHeaders.append(
+			'set-cookie',
+			cookie.toLowerCase().includes('domain=') ? cookie : `${cookie}; Domain=${domain}`
+		);
+	}
+
+	return new Response(response.body, {
+		status: response.status,
+		statusText: response.statusText,
+		headers: newHeaders
+	});
+};
+
+const handleSubdomain: Handle = ({ event, resolve }) => {
+	const host = event.request.headers.get('host') ?? '';
+	event.locals.app = host.startsWith('scipy.') ? 'scipy' : 'scholio';
+	return resolve(event);
+};
+
+// Añade cabeceras de seguridad a todas las respuestas HTML
+const handleHeaders: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event);
+
+	// Solo aplicar a respuestas HTML (no a assets, API, etc.)
+	const contentType = response.headers.get('content-type') ?? '';
+	if (!contentType.includes('text/html')) return response;
+
+	const headers = new Headers(response.headers);
+
+	// Evita que el navegador "adivine" el MIME type
+	headers.set('X-Content-Type-Options', 'nosniff');
+
+	// Bloquea iframes desde otros dominios (clickjacking)
+	headers.set('X-Frame-Options', 'SAMEORIGIN');
+
+	// Controla qué información de referencia se envía al navegar
+	headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+	// Fuerza HTTPS en producción (1 año, incluye subdominios)
+	if (!dev) {
+		headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+	}
+
+	// Content Security Policy
+	// En dev se relaja para permitir HMR de Vite (ws:// y eval)
+	const sentryIngest = 'https://*.ingest.de.sentry.io https://*.sentry.io';
+	const csp = dev
+		? [
+				"default-src 'self'",
+				"script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Vite HMR necesita eval
+				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+				"img-src 'self' data: blob: https://upload.wikimedia.org",
+				"font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
+				`connect-src 'self' ws: wss: ${sentryIngest}`, // WebSocket de HMR + Sentry
+				"worker-src 'self' blob:", // 'self' for SW, blob: for Sentry Session Replay
+				"frame-ancestors 'none'"
+			].join('; ')
+		: [
+				"default-src 'self'",
+				"script-src 'self' 'unsafe-inline'", // SvelteKit necesita inline scripts para hydration
+				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+				"img-src 'self' data: blob: https://upload.wikimedia.org",
+				"font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
+				`connect-src 'self' ${sentryIngest}`,
+				"worker-src 'self' blob:", // 'self' for SW, blob: for Sentry Session Replay
+				"frame-ancestors 'none'"
+			].join('; ');
+
+	headers.set('Content-Security-Policy', csp);
+
+	return new Response(response.body, { status: response.status, headers });
+};
+
+const handleAuthError: Handle = ({ event, resolve }) => {
+	if (event.url.pathname === '/api/auth/error') {
+		const error = event.url.searchParams.get('error') ?? '';
+		return new Response(null, {
+			status: 302,
+			headers: { location: `/auth/error?error=${encodeURIComponent(error)}` }
+		});
+	}
+	return resolve(event);
+};
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
@@ -16,6 +137,19 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	if (session) {
 		event.locals.session = session.session;
 		event.locals.user = session.user;
+
+		const profile = await db.transaction(async (tx) => {
+			await tx.execute(sql`SELECT set_config('app.current_user_id', ${session.user.id}, true)`);
+			return tx
+				.select({ id: userProfile.id })
+				.from(userProfile)
+				.where(eq(userProfile.userId, session.user.id))
+				.limit(1);
+		});
+
+		event.locals.hasScholioProfile = profile.length > 0;
+	} else {
+		event.locals.hasScholioProfile = false;
 	}
 
 	return svelteKitHandler({ event, resolve, auth, building });
@@ -32,6 +166,8 @@ const handleRLS: Handle = ({ event, resolve }) => {
 		return db.transaction(async (tx) => {
 			// set_config con is_local=true equivale a SET LOCAL — solo aplica en esta transacción
 			await tx.execute(sql`SELECT set_config('app.current_user_id', ${userId}, true)`);
+			// search_path para que las policies encuentren las tablas de scholio sin cualificar
+			await tx.execute(sql`SET LOCAL search_path = scholio, public`);
 			return fn(tx as unknown as typeof db);
 		});
 	};
@@ -41,6 +177,11 @@ const handleRLS: Handle = ({ event, resolve }) => {
 
 export const handle: Handle = sequence(
 	Sentry.sentryHandle(),
+	handleDevTools,
+	handleSubdomain,
+	handleAuthError,
+	handleAuthCookieDomain,
 	handleBetterAuth,
-	handleRLS
+	handleRLS,
+	handleHeaders
 );
