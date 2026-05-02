@@ -1,7 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { uploadFileWithConfig } from '$lib/server/storage';
-import { resolveProjectS3Config } from '$lib/server/s3Storage';
+import { processEpubImport } from '$lib/server/epubImport';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { eq } from 'drizzle-orm';
 
@@ -31,15 +30,18 @@ export const POST: RequestHandler = async (event) => {
 		error(400, 'The file is too large. Maximum 100 MB.');
 	}
 
-	const s3 = await resolveProjectS3Config(projectId, user.id, event.locals.withRLS);
-	if (!s3) error(422, 'S3 storage not configured. Configure it in Settings → Storage.');
+	const buffer = new Uint8Array(await file.arrayBuffer());
 
-	const key = `projects/${projectId}/epub/${crypto.randomUUID()}.epub`;
+	const referenceIdRaw = formData.get('referenceId');
+	const referenceId = typeof referenceIdRaw === 'string' ? referenceIdRaw : undefined;
 
-	const arrayBuffer = await file.arrayBuffer();
-	const buffer = Buffer.from(arrayBuffer);
+	processEpubImport({
+		projectId,
+		userId: user.id,
+		withRLS: event.locals.withRLS,
+		buffer,
+		referenceId
+	});
 
-	const url = await uploadFileWithConfig(s3, key, buffer, 'application/epub+zip');
-
-	return json({ url }, { status: 201 });
+	return json({ started: true }, { status: 202 });
 };
