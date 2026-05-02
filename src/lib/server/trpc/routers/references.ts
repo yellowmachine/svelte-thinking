@@ -391,8 +391,8 @@ export const referencesRouter = router({
 
 			await ctx.withRLS(async (db) => {
 				await db.execute(
-					sql`INSERT INTO scholio.document (id, project_id, title, type, draft_content, owner_user_id, created_at, updated_at)
-					    VALUES (${docId}, ${projectId}, ${docTitle}, 'reading_note', ${content}, ${ctx.user.id}, ${now}::timestamptz, ${now}::timestamptz)`
+					sql`INSERT INTO scholio.document (id, project_id, title, type, draft_content, owner_user_id, source_reference_id, created_at, updated_at)
+					    VALUES (${docId}, ${projectId}, ${docTitle}, 'reading_note', ${content}, ${ctx.user.id}, ${refId}, ${now}::timestamptz, ${now}::timestamptz)`
 				);
 				await db.execute(
 					sql`INSERT INTO scholio.document_version (id, document_id, content, version_number, change_description, created_by, created_at)
