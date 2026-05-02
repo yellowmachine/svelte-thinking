@@ -19,8 +19,8 @@ import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
-import { deleteFileWithConfig, uploadFileWithConfig } from '$lib/server/storage';
-import { retrieveEphemeral } from '$lib/server/ephemeralStore';
+import { deleteFileWithConfig } from '$lib/server/storage';
+import { processEpubImport } from '$lib/server/epubImport';
 import {
 	isProjectOwner,
 	canRemoveCollaborator,
@@ -821,339 +821,28 @@ export const projectsRouter = router({
 		.input(
 			z.object({
 				projectId: z.string(),
-				url: z.union([z.string().url().max(2000), z.string().startsWith('eph://').max(50)]),
+				url: z.string().url().max(2000),
 				referenceId: z.string().optional()
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
-			const { projectId, url, referenceId: providedReferenceId } = input;
+			const { projectId, url, referenceId } = input;
 
-			// Mark project as importing
-			await ctx.withRLS((db) =>
-				db.update(project).set({ isImporting: true }).where(eq(project.id, projectId))
-			);
+			const res = await fetch(url, {
+				headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
+				signal: AbortSignal.timeout(60_000)
+			});
+			if (!res.ok) throw new TRPCError({ code: 'BAD_REQUEST', message: `HTTP ${res.status}` });
+			const buffer = new Uint8Array(await res.arrayBuffer());
 
-			// Run in background — response returns immediately
-			(async () => {
-				const log = (...args: unknown[]) => console.log('[importEpub]', ...args);
-				try {
-					log('start', { projectId, url });
-
-					// Load EPUB buffer
-					let buffer: Uint8Array;
-					if (url.startsWith('eph://')) {
-						const ephBuffer = retrieveEphemeral(url);
-						if (!ephBuffer) throw new Error('Ephemeral file not found or expired');
-						buffer = ephBuffer;
-						log('loaded from ephemeral store', buffer.byteLength, 'bytes');
-					} else {
-						const res = await fetch(url, {
-							headers: {
-								'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
-							},
-							signal: AbortSignal.timeout(60_000)
-						});
-						if (!res.ok) throw new Error(`HTTP ${res.status}`);
-						buffer = new Uint8Array(await res.arrayBuffer());
-						log('downloaded', buffer.byteLength, 'bytes');
-					}
-
-					// Unzip
-					const { unzipSync } = await import('fflate');
-					const files = unzipSync(buffer);
-					const decode = (b: Uint8Array) => new TextDecoder().decode(b);
-					log('unzipped, files:', Object.keys(files).length);
-
-					// Find OPF via META-INF/container.xml
-					const containerXml = decode(files['META-INF/container.xml']);
-					const { parseHTML } = await import('linkedom');
-					const { document: containerDoc } = parseHTML(`<?xml version="1.0"?>${containerXml}`);
-					const rootfilePath =
-						containerDoc.querySelector('rootfile')?.getAttribute('full-path') ?? '';
-					if (!rootfilePath) throw new Error('No rootfile in container.xml');
-					log('rootfile:', rootfilePath);
-
-					// Parse OPF
-					const opfBase = rootfilePath.includes('/')
-						? rootfilePath.slice(0, rootfilePath.lastIndexOf('/') + 1)
-						: '';
-					const opfXml = decode(files[rootfilePath]);
-					const { document: opfDoc } = parseHTML(`<?xml version="1.0"?>${opfXml}`);
-
-					// Metadata — use getElementsByTagName to avoid namespace selector issues
-					const metaEl = (localName: string) =>
-						opfDoc.getElementsByTagName(`dc:${localName}`)[0] ??
-						opfDoc.getElementsByTagName(localName)[0] ??
-						null;
-					const title = metaEl('title')?.textContent?.trim() ?? 'Untitled';
-					const creatorEl = metaEl('creator');
-					const creatorText = creatorEl?.textContent?.trim() ?? '';
-					const dateText = metaEl('date')?.textContent?.trim()?.slice(0, 4) ?? '';
-					log('metadata:', { title, creatorText, dateText });
-
-					// Parse author name: "Last, First" or "First Last"
-					let authorFirst = '',
-						authorLast = creatorText;
-					if (creatorText.includes(',')) {
-						const [last, first] = creatorText.split(',').map((s: string) => s.trim());
-						authorLast = last;
-						authorFirst = first ?? '';
-					} else if (creatorText.includes(' ')) {
-						const parts = creatorText.split(' ');
-						authorFirst = parts.slice(0, -1).join(' ');
-						authorLast = parts[parts.length - 1];
-					}
-					const authors = creatorText ? [{ first: authorFirst, last: authorLast }] : [];
-
-					// Manifest: id → href map (getElementsByTagName avoids namespace issues)
-					const manifestItems = new Map<string, string>();
-					Array.from(opfDoc.getElementsByTagName('item')).forEach((item) => {
-						const id = item.getAttribute('id');
-						const href = item.getAttribute('href');
-						const type = item.getAttribute('media-type') ?? '';
-						if (id && href && (type.includes('html') || type.includes('xhtml'))) {
-							manifestItems.set(id, href);
-						}
-					});
-					log('manifest html items:', manifestItems.size);
-
-					// Image manifest: id → href (for src rewriting)
-					const imageItems = new Map<string, string>();
-					Array.from(opfDoc.getElementsByTagName('item')).forEach((item) => {
-						const id = item.getAttribute('id');
-						const href = item.getAttribute('href');
-						const type = item.getAttribute('media-type') ?? '';
-						if (id && href && type.startsWith('image/')) {
-							imageItems.set(id, href);
-						}
-					});
-
-					// Spine: ordered chapter idrefs
-					const spineItems: string[] = [];
-					Array.from(opfDoc.getElementsByTagName('itemref')).forEach((ref) => {
-						const idref = ref.getAttribute('idref');
-						if (idref && manifestItems.has(idref)) spineItems.push(idref);
-					});
-					log('spine chapters:', spineItems.length);
-
-					// Create bibliography reference
-					const { generateCiteKey } = await import('$lib/utils/bibtex');
-					const citeKey = generateCiteKey(
-						authors.length ? authors : [{ first: '', last: 'unknown' }],
-						dateText
-					);
-
-					const { default: createDOMPurify } = await import('dompurify');
-
-					// Resolve S3 once for image uploads
-					const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS).catch(
-						() => null
-					);
-
-					// Normalize a relative path (resolve ".." segments)
-					const normalizePath = (p: string) => {
-						const parts = p.split('/');
-						const out: string[] = [];
-						for (const part of parts) {
-							if (part === '..') out.pop();
-							else if (part && part !== '.') out.push(part);
-						}
-						return out.join('/');
-					};
-
-					const imageExtMime: Record<string, string> = {
-						jpg: 'image/jpeg',
-						jpeg: 'image/jpeg',
-						png: 'image/png',
-						gif: 'image/gif',
-						svg: 'image/svg+xml',
-						webp: 'image/webp'
-					};
-
-					let resolvedRefId: string;
-
-					if (providedReferenceId) {
-						// User selected an existing reference — link it to the project and skip creation
-						resolvedRefId = providedReferenceId;
-						await ctx.withRLS((db) =>
-							db
-								.insert(projectReference)
-								.values({ projectId, referenceId: resolvedRefId })
-								.onConflictDoNothing()
-						);
-						log('using provided referenceId:', resolvedRefId);
-					} else {
-						// Auto-create reference from EPUB metadata
-						const refId = crypto.randomUUID();
-						await ctx.withRLS((db) =>
-							db
-								.insert(reference)
-								.values({
-									id: refId,
-									userId: ctx.user.id,
-									citeKey,
-									type: 'book',
-									title,
-									authors,
-									editors: [],
-									year: dateText,
-									url,
-									abstract: '',
-									journal: '',
-									booktitle: '',
-									publisher: '',
-									doi: '',
-									volume: '',
-									issue: '',
-									pages: '',
-									extra: {}
-								})
-								.onConflictDoNothing()
-						);
-
-						// Resolve actual ref id (may have been skipped due to conflict on citeKey)
-						const refs = await ctx.withRLS((db) =>
-							db
-								.select({ id: reference.id })
-								.from(reference)
-								.where(and(eq(reference.userId, ctx.user.id), eq(reference.citeKey, citeKey)))
-								.limit(1)
-						);
-						resolvedRefId = refs[0]?.id ?? refId;
-
-						await ctx.withRLS((db) =>
-							db
-								.insert(projectReference)
-								.values({ projectId, referenceId: resolvedRefId })
-								.onConflictDoNothing()
-						);
-						log('auto-created reference, citeKey:', citeKey, 'id:', resolvedRefId);
-					}
-
-					// Pre-load existing titles to disambiguate duplicates without retries
-					const existingTitleRows = await ctx.withRLS((db) =>
-						db
-							.select({ title: document.title })
-							.from(document)
-							.where(eq(document.projectId, projectId))
-					);
-					const takenTitles = new Set(existingTitleRows.map((r) => r.title));
-
-					function uniqueTitle(base: string): string {
-						if (!takenTitles.has(base)) {
-							takenTitles.add(base);
-							return base;
-						}
-						let n = 2;
-						while (takenTitles.has(`${base} (${n})`)) n++;
-						const t = `${base} (${n})`;
-						takenTitles.add(t);
-						return t;
-					}
-
-					// Import each chapter in its own transaction so one failure doesn't block the rest
-					for (let i = 0; i < spineItems.length; i++) {
-						const idref = spineItems[i];
-						const href = manifestItems.get(idref)!;
-						const filePath = opfBase + href;
-						const fileData = files[filePath] ?? files[href];
-						log(
-							`chapter ${i + 1}/${spineItems.length}: idref=${idref} href=${href} filePath=${filePath} found=${!!fileData}`
-						);
-						if (!fileData) continue;
-
-						const chapterHtml = decode(fileData);
-						const chapterDir = href.includes('/') ? href.slice(0, href.lastIndexOf('/') + 1) : '';
-
-						// Parse chapter DOM for title + image rewriting
-						const { document: chDoc, window: chWindow } = parseHTML(chapterHtml);
-
-						// Rewrite image srcs to S3 URLs
-						if (s3) {
-							const imgEls = Array.from(chDoc.querySelectorAll('img'));
-							log(`  chapter ${i + 1}: ${imgEls.length} images to rewrite`);
-							for (const img of imgEls) {
-								const src = img.getAttribute('src');
-								if (
-									!src ||
-									src.startsWith('data:') ||
-									src.startsWith('http://') ||
-									src.startsWith('https://')
-								)
-									continue;
-								const imgPath = normalizePath(opfBase + chapterDir + src);
-								const imgData = files[imgPath] ?? files[normalizePath(opfBase + src)] ?? files[src];
-								if (!imgData) {
-									log(`  image not found in zip: ${imgPath}`);
-									img.removeAttribute('src');
-									continue;
-								}
-								const ext = src.split('.').pop()?.toLowerCase() ?? 'jpg';
-								const mimeType = imageExtMime[ext] ?? 'image/jpeg';
-								const s3Key = `projects/${projectId}/epub-images/${crypto.randomUUID()}.${ext}`;
-								try {
-									const s3Url = await uploadFileWithConfig(
-										s3,
-										s3Key,
-										Buffer.from(imgData),
-										mimeType
-									);
-									img.setAttribute('src', s3Url);
-								} catch (e) {
-									log(`  image upload failed: ${e}`);
-									img.removeAttribute('src');
-								}
-							}
-						}
-
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						const purify = createDOMPurify(chWindow as any);
-						const htmlToSanitize = chDoc.documentElement?.outerHTML ?? chapterHtml;
-						const clean = purify.sanitize(htmlToSanitize, {
-							ADD_TAGS: ['figure', 'figcaption'],
-							ADD_ATTR: ['role']
-						});
-						const chapterTitle =
-							chDoc.querySelector('h1, h2')?.textContent?.trim() ||
-							chDoc.querySelector('title')?.textContent?.trim() ||
-							`${title} — Chapter ${i + 1}`;
-
-						const docTitle = uniqueTitle(chapterTitle.slice(0, 250));
-						const docId = crypto.randomUUID();
-						log(`  inserting chapter "${docTitle}"`);
-
-						await ctx
-							.withRLS((db) =>
-								db.insert(document).values({
-									id: docId,
-									projectId,
-									title: docTitle,
-									type: 'chapter',
-									ownerUserId: ctx.user.id,
-									generatedByAi: false,
-									isReadonly: true,
-									renderedHtml: clean,
-									sourceReferenceId: resolvedRefId
-								})
-							)
-							.catch((e) => log(`  failed chapter "${docTitle}": ${e.message}`));
-					}
-
-					// Done — own transaction so it always succeeds
-					await ctx.withRLS((db) =>
-						db.update(project).set({ isImporting: false }).where(eq(project.id, projectId))
-					);
-					log('done', spineItems.length, 'chapters processed');
-				} catch (err) {
-					console.error('[importEpub] failed:', err);
-					// Clear flag even on error so UI doesn't hang
-					await ctx
-						.withRLS((db) =>
-							db.update(project).set({ isImporting: false }).where(eq(project.id, projectId))
-						)
-						.catch(console.error);
-				}
-			})();
+			processEpubImport({
+				projectId,
+				userId: ctx.user.id,
+				withRLS: ctx.withRLS,
+				buffer,
+				referenceId,
+				sourceUrl: url
+			});
 
 			return { started: true };
 		})

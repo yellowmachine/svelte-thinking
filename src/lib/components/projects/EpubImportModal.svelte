@@ -72,19 +72,22 @@
 		epubImporting = true;
 		epubError = '';
 		try {
-			let url = epubUrl.trim();
 			if (hasFile) {
 				const fd = new FormData();
 				fd.append('file', epubFile!);
+				if (epubSelectedRef) fd.append('referenceId', epubSelectedRef.id);
 				const res = await fetch(`/api/projects/${projectId}/epub`, { method: 'POST', body: fd });
 				if (!res.ok) {
 					const body = await res.json().catch(() => ({}));
 					throw new Error(body.message ?? `Upload failed (${res.status})`);
 				}
-				const data2 = await res.json();
-				url = data2.url;
+			} else {
+				await trpc.projects.importEpub.mutate({
+					projectId,
+					url: epubUrl.trim(),
+					referenceId: epubSelectedRef?.id
+				});
 			}
-			await trpc.projects.importEpub.mutate({ projectId, url, referenceId: epubSelectedRef?.id });
 			resetState();
 			onclose();
 			pollInterval = setInterval(async () => {
