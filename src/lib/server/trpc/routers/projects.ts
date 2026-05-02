@@ -20,6 +20,7 @@ import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig, uploadFileWithConfig } from '$lib/server/storage';
+import { retrieveEphemeral } from '$lib/server/ephemeralStore';
 import {
 	isProjectOwner,
 	canRemoveCollaborator,
@@ -820,7 +821,7 @@ export const projectsRouter = router({
 		.input(
 			z.object({
 				projectId: z.string(),
-				url: z.string().url().max(2000),
+				url: z.union([z.string().url().max(2000), z.string().startsWith('eph://').max(50)]),
 				referenceId: z.string().optional()
 			})
 		)
@@ -838,16 +839,24 @@ export const projectsRouter = router({
 				try {
 					log('start', { projectId, url });
 
-					// Download EPUB
-					const res = await fetch(url, {
-						headers: {
-							'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
-						},
-						signal: AbortSignal.timeout(60_000)
-					});
-					if (!res.ok) throw new Error(`HTTP ${res.status}`);
-					const buffer = new Uint8Array(await res.arrayBuffer());
-					log('downloaded', buffer.byteLength, 'bytes');
+					// Load EPUB buffer
+					let buffer: Uint8Array;
+					if (url.startsWith('eph://')) {
+						const ephBuffer = retrieveEphemeral(url);
+						if (!ephBuffer) throw new Error('Ephemeral file not found or expired');
+						buffer = ephBuffer;
+						log('loaded from ephemeral store', buffer.byteLength, 'bytes');
+					} else {
+						const res = await fetch(url, {
+							headers: {
+								'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
+							},
+							signal: AbortSignal.timeout(60_000)
+						});
+						if (!res.ok) throw new Error(`HTTP ${res.status}`);
+						buffer = new Uint8Array(await res.arrayBuffer());
+						log('downloaded', buffer.byteLength, 'bytes');
+					}
 
 					// Unzip
 					const { unzipSync } = await import('fflate');
