@@ -1,7 +1,17 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
+	import Acknowledgements from '$lib/components/landing/Acknowledgements.svelte';
 	let { form, data }: { form: ActionData; data: PageData } = $props();
+
+	const acknowledgedPeople = [
+		{
+			name: 'César Rai',
+			url: 'https://gravatar.com/cesarrai',
+			description: 'Thriller, dark fiction, science fiction, dark fantasy, horror, cozy fantasy...',
+			avatarUrl: 'https://www.gravatar.com/avatar/ba5e4e2f8b5498e0d2b72c31e12fc8ee?s=128'
+		}
+	];
 </script>
 
 <div class="min-h-screen bg-paper-ui font-sans dark:bg-dark-paper-ui">
@@ -697,6 +707,9 @@ for the study design.</code
 			</p>
 		</div>
 	</section>
+
+	<!-- ── Acknowledgements ─────────────────────────────────────────────────── -->
+	<Acknowledgements people={acknowledgedPeople} />
 
 	<!-- ── Waitlist ──────────────────────────────────────────────────────────── -->
 	<section id="waitlist" class="border-t border-paper-border py-24 dark:border-dark-paper-border">
