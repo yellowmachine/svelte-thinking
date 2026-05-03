@@ -95,6 +95,28 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 	\$\$;
 
 	GRANT EXECUTE ON FUNCTION librarian.get_group_members(text) TO ${APP_DB_USER};
+
+	-- Helpers booleanos usados por las RLS policies de librarian para evitar
+	-- recursión auto-referencial en group_members.
+	CREATE OR REPLACE FUNCTION librarian.is_group_member(p_group_id text, p_user_id text)
+	RETURNS boolean LANGUAGE sql SECURITY DEFINER STABLE AS \$\$
+	    SELECT EXISTS (
+	        SELECT 1 FROM librarian.group_members
+	        WHERE group_id = p_group_id AND user_id = p_user_id
+	    )
+	\$\$;
+
+	CREATE OR REPLACE FUNCTION librarian.is_group_admin(p_group_id text, p_user_id text)
+	RETURNS boolean LANGUAGE sql SECURITY DEFINER STABLE AS \$\$
+	    SELECT EXISTS (
+	        SELECT 1 FROM librarian.group_members
+	        WHERE group_id = p_group_id AND user_id = p_user_id
+	          AND role IN ('owner', 'admin')
+	    )
+	\$\$;
+
+	GRANT EXECUTE ON FUNCTION librarian.is_group_member(text, text) TO ${APP_DB_USER};
+	GRANT EXECUTE ON FUNCTION librarian.is_group_admin(text, text) TO ${APP_DB_USER};
 	SET check_function_bodies = true;
 
 	ALTER ROLE ${APP_DB_USER} SET search_path = librarian, scholio, public;
