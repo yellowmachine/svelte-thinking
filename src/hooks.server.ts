@@ -98,7 +98,7 @@ const handleHeaders: Handle = async ({ event, resolve }) => {
 				"default-src 'self'",
 				"script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Vite HMR necesita eval
 				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-				"img-src 'self' data: blob: https://upload.wikimedia.org",
+				"img-src 'self' data: blob: https://upload.wikimedia.org https://www.gravatar.com",
 				"font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
 				`connect-src 'self' ws: wss: ${sentryIngest}`, // WebSocket de HMR + Sentry
 				"worker-src 'self' blob:", // 'self' for SW, blob: for Sentry Session Replay
@@ -108,7 +108,7 @@ const handleHeaders: Handle = async ({ event, resolve }) => {
 				"default-src 'self'",
 				"script-src 'self' 'unsafe-inline'", // SvelteKit necesita inline scripts para hydration
 				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-				"img-src 'self' data: blob: https://upload.wikimedia.org",
+				"img-src 'self' data: blob: https://upload.wikimedia.org https://www.gravatar.com",
 				"font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
 				`connect-src 'self' ${sentryIngest}`,
 				"worker-src 'self' blob:", // 'self' for SW, blob: for Sentry Session Replay
