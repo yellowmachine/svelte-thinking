@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { tag, projectTag } from '$lib/server/db/schemas/tags.schema';
@@ -7,6 +7,22 @@ import { tag, projectTag } from '$lib/server/db/schemas/tags.schema';
 export const tagsRouter = router({
 	list: protectedProcedure.query(({ ctx }) =>
 		ctx.withRLS((db) => db.select().from(tag).where(eq(tag.userId, ctx.user.id)))
+	),
+
+	listWithCount: protectedProcedure.query(({ ctx }) =>
+		ctx.withRLS((db) =>
+			db
+				.select({
+					id: tag.id,
+					name: tag.name,
+					projectCount: count(projectTag.projectId)
+				})
+				.from(tag)
+				.leftJoin(projectTag, eq(projectTag.tagId, tag.id))
+				.where(eq(tag.userId, ctx.user.id))
+				.groupBy(tag.id, tag.name)
+				.orderBy(tag.name)
+		)
 	),
 
 	listForProject: protectedProcedure
@@ -37,6 +53,30 @@ export const tagsRouter = router({
 			);
 			if (!rows[0]) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 			return rows[0];
+		}),
+
+	update: protectedProcedure
+		.input(z.object({ id: z.string(), name: z.string().min(1).max(50).trim() }))
+		.mutation(async ({ ctx, input }) => {
+			try {
+				const rows = await ctx.withRLS((db) =>
+					db
+						.update(tag)
+						.set({ name: input.name })
+						.where(and(eq(tag.id, input.id), eq(tag.userId, ctx.user.id)))
+						.returning()
+				);
+				if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+				return rows[0];
+			} catch (e: unknown) {
+				if ((e as { code?: string })?.code === '23505') {
+					throw new TRPCError({
+						code: 'CONFLICT',
+						message: 'A tag with that name already exists.'
+					});
+				}
+				throw e;
+			}
 		}),
 
 	delete: protectedProcedure

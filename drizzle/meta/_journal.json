@@ -8,6 +8,13 @@
       "when": 1777531149418,
       "tag": "0000_real_strong_guy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777820435671,
+      "tag": "0001_silky_mastermind",
+      "breakpoints": true
     }
   ]
 }
