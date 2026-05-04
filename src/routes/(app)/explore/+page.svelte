@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/stores';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { exploreTutorialSteps } from '$lib/tutorials/explore';
 
 	type Tab = 'projects' | 'researchers';
 
@@ -82,13 +85,21 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
-	<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Explore</h1>
+	<h1
+		data-tutorial="explore-title"
+		class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+	>
+		Explore
+	</h1>
 	<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 		Discover academic projects and collaborators.
 	</p>
 
 	<!-- Tabs -->
-	<div class="mt-6 flex gap-1 border-b border-paper-border dark:border-dark-paper-border">
+	<div
+		data-tutorial="explore-tabs"
+		class="mt-6 flex gap-1 border-b border-paper-border dark:border-dark-paper-border"
+	>
 		<button
 			onclick={() => switchTab('projects')}
 			class="px-4 py-2 font-sans text-sm font-medium transition-colors
@@ -110,7 +121,7 @@
 	</div>
 
 	<!-- Search bar -->
-	<div class="mt-5 flex gap-2">
+	<div data-tutorial="explore-search" class="mt-5 flex gap-2">
 		<input
 			type="search"
 			bind:value={query}
@@ -264,3 +275,9 @@
 		</div>
 	{/if}
 </div>
+
+<TutorialManager
+	slug="explore"
+	completedTutorials={($page.data.completedTutorials as string[]) ?? []}
+	steps={exploreTutorialSteps}
+/>

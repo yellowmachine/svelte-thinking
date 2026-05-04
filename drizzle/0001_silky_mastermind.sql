@@ -1,0 +1,1 @@
+CREATE POLICY "tag_update" ON "scholio"."tag" AS PERMISSIVE FOR UPDATE TO public USING ("scholio"."tag"."user_id" = current_setting('app.current_user_id', true)) WITH CHECK ("scholio"."tag"."user_id" = current_setting('app.current_user_id', true));

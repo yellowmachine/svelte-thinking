@@ -8,7 +8,7 @@
 	const rejected = $derived(data.entries.filter((e) => e.status === 'rejected'));
 
 	function formatDate(d: Date) {
-		return new Date(d).toLocaleDateString('es-ES', {
+		return new Date(d).toLocaleDateString('en-GB', {
 			day: 'numeric',
 			month: 'short',
 			hour: '2-digit',
@@ -20,16 +20,14 @@
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<h1 class="mb-2 font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Waitlist</h1>
 	<p class="mb-8 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-		{pending.length} pendientes · {approved.length} aprobados · {rejected.length} rechazados
+		{pending.length} pending · {approved.length} approved · {rejected.length} rejected
 	</p>
 
 	{#if pending.length === 0}
 		<div
 			class="rounded-xl border border-dashed border-paper-border py-10 text-center dark:border-dark-paper-border"
 		>
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin solicitudes pendientes.
-			</p>
+			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">No pending requests.</p>
 		</div>
 	{:else}
 		<div class="flex flex-col gap-3">
@@ -59,7 +57,7 @@
 									type="submit"
 									class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 								>
-									Rechazar
+									Reject
 								</button>
 							</form>
 						</div>
@@ -76,15 +74,15 @@
 							for="personalNote-{entry.id}"
 							class="mb-1.5 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 						>
-							✦ Nota personal <span class="text-ink-faint/60 dark:text-dark-ink-faint/60"
-								>(opcional — aparecerá en el correo como una tarjetita)</span
+							✦ Personal note <span class="text-ink-faint/60 dark:text-dark-ink-faint/60"
+								>(optional — will appear in the email as a little card)</span
 							>
 						</label>
 						<textarea
 							id="personalNote-{entry.id}"
 							name="personalNote"
 							rows="3"
-							placeholder="Escribe algo cálido y personal para esta persona…"
+							placeholder="Write something warm and personal for this person…"
 							class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-serif text-sm text-ink italic placeholder:text-ink-faint/50 placeholder:not-italic focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint/50"
 						></textarea>
 						<div class="mt-2 flex justify-end">
@@ -92,7 +90,7 @@
 								type="submit"
 								class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
 							>
-								Aprobar y enviar
+								Approve and send
 							</button>
 						</div>
 					</form>
@@ -103,7 +101,7 @@
 
 	{#if approved.length > 0}
 		<h2 class="mt-10 mb-3 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-			Aprobados
+			Approved
 		</h2>
 		<div class="flex flex-col gap-2">
 			{#each approved as entry (entry.id)}

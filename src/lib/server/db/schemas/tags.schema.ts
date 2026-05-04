@@ -18,6 +18,11 @@ export const tag = scholioSchema
 
 			pgPolicy('tag_select', { for: 'select', using: sql`${t.userId} = ${currentUserId}` }),
 			pgPolicy('tag_insert', { for: 'insert', withCheck: sql`${t.userId} = ${currentUserId}` }),
+			pgPolicy('tag_update', {
+				for: 'update',
+				using: sql`${t.userId} = ${currentUserId}`,
+				withCheck: sql`${t.userId} = ${currentUserId}`
+			}),
 			pgPolicy('tag_delete', { for: 'delete', using: sql`${t.userId} = ${currentUserId}` })
 		]
 	)

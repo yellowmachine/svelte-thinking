@@ -34,6 +34,10 @@ export const userProfile = scholioSchema
 			aiTaskConfig: text('ai_task_config'), // JSON stored as text
 			// UI theme preference: 'warm' | 'github' | 'solarized' | 'nord' | 'catppuccin' | 'gruvbox'
 			theme: text('theme'),
+			completedTutorials: text('completed_tutorials')
+				.array()
+				.notNull()
+				.default(sql`'{}'::text[]`),
 			createdAt: timestamp('created_at').notNull().defaultNow(),
 			updatedAt: timestamp('updated_at').notNull().defaultNow()
 		},
