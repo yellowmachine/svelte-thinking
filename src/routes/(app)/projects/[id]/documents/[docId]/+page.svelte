@@ -1724,7 +1724,7 @@
 								stroke-linecap="round"
 							/>
 						</svg>
-						Privado
+						Private
 					{/if}
 				</button>
 

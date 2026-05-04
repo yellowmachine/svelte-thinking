@@ -6,7 +6,7 @@
 
 	function formatDate(d: Date | null) {
 		if (!d || !browser) return '—';
-		return new Date(d).toLocaleString('es-ES', {
+		return new Date(d).toLocaleString('en-GB', {
 			day: 'numeric',
 			month: 'short',
 			hour: '2-digit',
@@ -23,10 +23,10 @@
 			>← Admin</a
 		>
 		<h1 class="mt-2 font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
-			Actividad reciente
+			Recent activity
 		</h1>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			{data.activeUsers.length} usuarios activos en los últimos {data.days} días
+			{data.activeUsers.length} active users in the last {data.days} days
 		</p>
 	</div>
 
@@ -35,7 +35,7 @@
 			class="rounded-xl border border-dashed border-paper-border py-10 text-center dark:border-dark-paper-border"
 		>
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin actividad en los últimos {data.days} días.
+				No activity in the last {data.days} days.
 			</p>
 		</div>
 	{:else}
@@ -49,7 +49,7 @@
 						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</p>
 					</div>
 					<div class="shrink-0 text-right">
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Último acceso</p>
+						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Last seen</p>
 						<p class="font-sans text-sm text-ink dark:text-dark-ink">{formatDate(u.lastSeen)}</p>
 					</div>
 				</div>

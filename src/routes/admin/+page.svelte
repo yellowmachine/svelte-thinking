@@ -7,7 +7,7 @@
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<h1 class="mb-2 font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Admin</h1>
 	<p class="mb-8 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-		Panel de administración de Scholio.
+		Scholio administration panel.
 	</p>
 
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -23,13 +23,13 @@
 			<p class="mt-1 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
 				{data.pendingWaitlist}
 				<span class="font-sans text-sm font-normal text-ink-muted dark:text-dark-ink-muted"
-					>pendientes</span
+					>pending</span
 				>
 			</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				Ver waitlist →
+				View waitlist →
 			</p>
 		</a>
 
@@ -40,18 +40,18 @@
 			<p
 				class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
 			>
-				Usuarios
+				Users
 			</p>
 			<p class="mt-1 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
 				{data.totalUsers}
 				<span class="font-sans text-sm font-normal text-ink-muted dark:text-dark-ink-muted"
-					>registrados</span
+					>registered</span
 				>
 			</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				Buscar usuarios →
+				Search users →
 			</p>
 		</a>
 
@@ -62,18 +62,18 @@
 			<p
 				class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
 			>
-				Actividad
+				Activity
 			</p>
 			<p class="mt-1 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
 				{data.recentlyActive}
 				<span class="font-sans text-sm font-normal text-ink-muted dark:text-dark-ink-muted"
-					>últimos {data.activityDays}d</span
+					>last {data.activityDays}d</span
 				>
 			</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				Ver actividad →
+				View activity →
 			</p>
 		</a>
 
@@ -87,12 +87,12 @@
 				Storage
 			</p>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Gestión de almacenamiento interno (S3).
+				Internal storage management (S3).
 			</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				Ver storage →
+				View storage →
 			</p>
 		</a>
 
@@ -106,7 +106,7 @@
 				Notifications
 			</p>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Banners informativos para todos los usuarios.
+				Informational banners for all users.
 			</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
