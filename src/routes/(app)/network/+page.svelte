@@ -2,6 +2,8 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { networkTutorialSteps } from '$lib/tutorials/network';
 
 	const roleLabel: Record<string, string> = {
 		author: 'Author',
@@ -44,9 +46,14 @@
 </script>
 
 <div class="mx-auto max-w-2xl px-6 py-10">
-	<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Network</h1>
+	<h1
+		data-tutorial="network-title"
+		class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+	>
+		Network
+	</h1>
 
-	<section class="mt-8">
+	<section data-tutorial="network-invitations" class="mt-8">
 		<h2
 			class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
 		>
@@ -113,6 +120,7 @@
 								{declining === inv.id ? 'Declining…' : 'Decline'}
 							</button>
 							<button
+								data-tutorial="network-accept"
 								onclick={() => accept(inv.token)}
 								disabled={accepting === inv.token || declining === inv.id}
 								class="rounded-lg bg-accent px-4 py-1.5 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
@@ -130,3 +138,9 @@
 		{/if}
 	</section>
 </div>
+
+<TutorialManager
+	slug="network"
+	completedTutorials={data.completedTutorials}
+	steps={networkTutorialSteps}
+/>

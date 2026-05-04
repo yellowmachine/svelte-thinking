@@ -15,7 +15,9 @@
 			| 'settings'
 			| 'project-review'
 			| 'project-search'
-			| 'project-issues';
+			| 'project-issues'
+			| 'explore'
+			| 'network';
 		completedTutorials: string[];
 		steps: DriveStep[];
 		minWidth?: number;

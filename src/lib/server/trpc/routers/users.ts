@@ -237,7 +237,9 @@ export const usersRouter = router({
 				'settings',
 				'project-review',
 				'project-search',
-				'project-issues'
+				'project-issues',
+				'explore',
+				'network'
 			])
 		)
 		.mutation(async ({ ctx, input: slug }) => {
