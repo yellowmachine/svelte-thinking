@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from 'svelte';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { documentTutorialSteps } from '$lib/tutorials/document';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { page } from '$app/state';
@@ -1209,6 +1211,7 @@
 		>
 			<!-- Row 1: breadcrumb -->
 			<div
+				data-tutorial="doc-breadcrumb"
 				class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm dark:border-dark-paper-border/50"
 			>
 				<button
@@ -1263,7 +1266,7 @@
 			</div>
 
 			<!-- Row 2: toolbar -->
-			<div class="flex items-center gap-2 overflow-x-auto px-4 py-2">
+			<div data-tutorial="doc-toolbar" class="flex items-center gap-2 overflow-x-auto px-4 py-2">
 				<!-- Reclaim writer (Delegate moved to project doc list) -->
 				{#if reclaimCap.kind === 'available'}
 					<button
@@ -1789,7 +1792,7 @@
 		{/snippet}
 
 		<!-- Main layout -->
-		<div class="flex min-h-0 flex-1 overflow-hidden">
+		<div data-tutorial="doc-editor-area" class="flex min-h-0 flex-1 overflow-hidden">
 			{#if viewMode === 'split'}
 				<!-- Split: editor left, preview right -->
 				<div class="relative flex flex-1 flex-col overflow-hidden">
@@ -2243,6 +2246,13 @@
 	</div>
 	<!-- end desktop editor wrapper -->
 {/if}
+
+<TutorialManager
+	slug="document"
+	completedTutorials={data.completedTutorials}
+	steps={documentTutorialSteps}
+	minWidth={640}
+/>
 
 <!-- Floating dropdown menus — rendered at root level to escape backdrop-filter containing block -->
 {#if showCiteStyleMenu}

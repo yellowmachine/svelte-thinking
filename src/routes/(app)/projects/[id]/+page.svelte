@@ -12,6 +12,8 @@
 	import UseTemplateModal from '$lib/components/projects/UseTemplateModal.svelte';
 	import SaveAsTemplateModal from '$lib/components/projects/SaveAsTemplateModal.svelte';
 	import TagManager from '$lib/components/projects/TagManager.svelte';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { projectTutorialSteps } from '$lib/tutorials/project';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 	import { offlineDb, type PendingCreate } from '$lib/offline.db';
@@ -475,6 +477,7 @@
 					/>
 				{:else}
 					<button
+						data-tutorial="project-title"
 						type="button"
 						onclick={() => startEdit('title')}
 						disabled={!data.isOwner}
@@ -676,7 +679,10 @@
 
 	<div class="grid gap-8 lg:grid-cols-3">
 		<!-- Documents section -->
-		<div class={docViewMode === 'grid' ? 'lg:col-span-3' : 'lg:col-span-2'}>
+		<div
+			data-tutorial="project-docs-section"
+			class={docViewMode === 'grid' ? 'lg:col-span-3' : 'lg:col-span-2'}
+		>
 			<div class="mb-4 flex items-center justify-between">
 				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
 				<div class="hidden items-center gap-2 sm:flex">
@@ -779,6 +785,7 @@
 							Generate draft
 						</button>
 						<button
+							data-tutorial="project-new-doc"
 							onclick={() => (showCreateDoc = !showCreateDoc)}
 							class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 						>
@@ -1394,32 +1401,40 @@
 		</div>
 
 		<!-- Sidebar -->
-		<ProjectSidebar
-			isOwner={data.isOwner}
-			{canEdit}
-			{canUploadS3}
-			{s3CtaType}
-			requirementCounts={data.requirementCounts}
-			collaborators={data.collaborators as {
-				id: string;
-				userId: string;
-				role: 'author' | 'coauthor' | 'reviewer' | 'commenter';
-				name: string;
-				email: string;
-			}[]}
-			{invitations}
-			project={data.project as {
-				id: string;
-				status: string;
-				citationStyle?: string | null;
-				doi?: string | null;
-				version?: string | null;
-				publishedAt?: Date | null;
-				isSearchable?: boolean;
-			}}
-		/>
+		<div data-tutorial="project-sidebar">
+			<ProjectSidebar
+				isOwner={data.isOwner}
+				{canEdit}
+				{canUploadS3}
+				{s3CtaType}
+				requirementCounts={data.requirementCounts}
+				collaborators={data.collaborators as {
+					id: string;
+					userId: string;
+					role: 'author' | 'coauthor' | 'reviewer' | 'commenter';
+					name: string;
+					email: string;
+				}[]}
+				{invitations}
+				project={data.project as {
+					id: string;
+					status: string;
+					citationStyle?: string | null;
+					doi?: string | null;
+					version?: string | null;
+					publishedAt?: Date | null;
+					isSearchable?: boolean;
+				}}
+			/>
+		</div>
 	</div>
 </div>
+
+<TutorialManager
+	slug="project"
+	completedTutorials={data.completedTutorials}
+	steps={projectTutorialSteps}
+/>
 
 <!-- Delete document (from list) -->
 <SafeDeleteDialog

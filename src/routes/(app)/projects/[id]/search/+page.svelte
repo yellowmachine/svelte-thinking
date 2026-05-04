@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { projectSearchTutorialSteps } from '$lib/tutorials/projectSearch';
 
 	let { data }: { data: PageData } = $props();
 </script>
@@ -30,7 +32,7 @@
 	</a>
 
 	<form method="GET" class="mb-8">
-		<div class="relative">
+		<div data-tutorial="project-search-input" class="relative">
 			<svg
 				width="15"
 				height="15"
@@ -67,7 +69,7 @@
 			{data.results.length === 1 ? 'document' : 'documents'} matching
 			<span class="font-medium text-ink dark:text-dark-ink">"{data.query}"</span>
 		</p>
-		<ul class="flex flex-col gap-3">
+		<ul data-tutorial="project-search-results" class="flex flex-col gap-3">
 			{#each data.results as result (result.document_id)}
 				<li>
 					<a
@@ -91,3 +93,9 @@
 		</ul>
 	{/if}
 </div>
+
+<TutorialManager
+	slug="project-search"
+	completedTutorials={data.completedTutorials}
+	steps={projectSearchTutorialSteps}
+/>

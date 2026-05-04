@@ -7,6 +7,8 @@
 	import AiSettingsTab from '$lib/components/settings/AiSettingsTab.svelte';
 	import SecurityTab from '$lib/components/settings/SecurityTab.svelte';
 	import StorageTab from '$lib/components/settings/StorageTab.svelte';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { settingsTutorialSteps } from '$lib/tutorials/settings';
 
 	let { data }: { data: PageData } = $props();
 
@@ -28,14 +30,22 @@
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<!-- Header -->
 	<div class="mb-8">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Settings</h1>
+		<h1
+			data-tutorial="settings-title"
+			class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
+		>
+			Settings
+		</h1>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 			Manage your account and preferences.
 		</p>
 	</div>
 
 	<!-- Tabs -->
-	<div class="mb-8 flex gap-1 border-b border-paper-border dark:border-dark-paper-border">
+	<div
+		data-tutorial="settings-tabs"
+		class="mb-8 flex gap-1 border-b border-paper-border dark:border-dark-paper-border"
+	>
 		<button
 			type="button"
 			onclick={() => (activeTab = 'profile')}
@@ -46,6 +56,7 @@
 			Perfil
 		</button>
 		<button
+			data-tutorial="settings-ai-tab"
 			type="button"
 			onclick={() => (activeTab = 'ai')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'ai'
@@ -133,3 +144,9 @@
 		<StorageTab />
 	{/if}
 </div>
+
+<TutorialManager
+	slug="settings"
+	completedTutorials={data.completedTutorials}
+	steps={settingsTutorialSteps}
+/>

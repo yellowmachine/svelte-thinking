@@ -2,6 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { projectReviewTutorialSteps } from '$lib/tutorials/projectReview';
 
 	let { data }: { data: PageData } = $props();
 
@@ -57,7 +59,12 @@
 			</svg>
 			{data.project.title}
 		</a>
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Open comments</h1>
+		<h1
+			data-tutorial="project-review-title"
+			class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
+		>
+			Open comments
+		</h1>
 		{#if data.documents.length === 0}
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				No open comment threads.
@@ -118,6 +125,7 @@
 					<div class="flex flex-col gap-3">
 						{#each doc.threads as thread (thread.id)}
 							<div
+								data-tutorial="project-review-thread"
 								class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
 							>
 								<!-- Thread anchor / label -->
@@ -191,6 +199,7 @@
 										</a>
 										{#if data.project.ownerId === data.currentUserId || thread.authorId === data.currentUserId}
 											<button
+												data-tutorial="project-review-resolve"
 												type="button"
 												onclick={() => resolveThread(thread.id)}
 												class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-green-900/20 dark:hover:text-green-400"
@@ -232,3 +241,9 @@
 		</div>
 	{/if}
 </div>
+
+<TutorialManager
+	slug="project-review"
+	completedTutorials={data.completedTutorials}
+	steps={projectReviewTutorialSteps}
+/>

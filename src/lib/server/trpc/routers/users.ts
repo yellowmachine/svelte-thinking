@@ -226,6 +226,33 @@ export const usersRouter = router({
 			return { ok: true };
 		}),
 
+	completeTutorial: protectedProcedure
+		.input(
+			z.enum([
+				'projects',
+				'project',
+				'document',
+				'bib',
+				'project-bib',
+				'settings',
+				'project-review',
+				'project-search',
+				'project-issues'
+			])
+		)
+		.mutation(async ({ ctx, input: slug }) => {
+			await ctx.withRLS((db) =>
+				db
+					.update(userProfile)
+					.set({
+						completedTutorials: sql`CASE WHEN ${slug} = ANY(completed_tutorials) THEN completed_tutorials ELSE array_append(completed_tutorials, ${slug}) END`,
+						updatedAt: new Date()
+					})
+					.where(eq(userProfile.userId, ctx.user.id))
+			);
+			return { ok: true };
+		}),
+
 	unlinkOrcid: protectedProcedure.mutation(async ({ ctx }) => {
 		await ctx.withRLS((db) =>
 			db

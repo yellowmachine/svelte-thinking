@@ -5,6 +5,9 @@
 	import { parseBibtexFile } from '$lib/utils/bibtex';
 	import type { PageData } from './$types';
 
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { bibTutorialSteps } from '$lib/tutorials/bib';
+
 	let { data }: { data: PageData } = $props();
 
 	let query = $state('');
@@ -125,7 +128,10 @@
 <div class="mx-auto max-w-4xl px-6 py-8">
 	<div class="mb-6 flex items-start justify-between gap-4">
 		<div>
-			<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+			<h1
+				data-tutorial="bib-title"
+				class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+			>
 				Global bibliography
 			</h1>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
@@ -133,6 +139,7 @@
 			</p>
 		</div>
 		<button
+			data-tutorial="bib-import"
 			onclick={() => {
 				showImport = true;
 				importRaw = '';
@@ -148,6 +155,7 @@
 	<!-- Search -->
 	<div class="mb-6">
 		<input
+			data-tutorial="bib-search"
 			type="search"
 			bind:value={query}
 			placeholder="Search by title, author, key, project…"
@@ -345,3 +353,5 @@
 		</div>
 	</div>
 {/if}
+
+<TutorialManager slug="bib" completedTutorials={data.completedTutorials} steps={bibTutorialSteps} />
