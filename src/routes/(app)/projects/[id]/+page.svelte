@@ -463,6 +463,7 @@
 					<input
 						{@attach focusEl}
 						type="text"
+						translate="no"
 						bind:value={editBuffer}
 						onblur={() => saveField('title')}
 						onkeydown={(e) => {
@@ -479,6 +480,7 @@
 					<button
 						data-tutorial="project-title"
 						type="button"
+						translate="no"
 						onclick={() => startEdit('title')}
 						disabled={!data.isOwner}
 						class="block text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink {data.isOwner
@@ -507,6 +509,7 @@
 				{:else if data.project.description || data.isOwner}
 					<button
 						type="button"
+						translate={data.project.description ? 'no' : 'yes'}
 						onclick={() => startEdit('description')}
 						disabled={!data.isOwner}
 						class="mt-2 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner
@@ -1044,6 +1047,7 @@
 									{/if}
 								</div>
 								<p
+									translate="no"
 									class="line-clamp-3 font-serif text-sm leading-snug font-medium text-ink dark:text-dark-ink"
 								>
 									{doc.title}
@@ -1374,6 +1378,7 @@
 									/>
 								</svg>
 								<span
+									translate="no"
 									class="min-w-0 flex-1 truncate font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
 									>{tmpl.title}</span
 								>

@@ -182,6 +182,7 @@
 				<section>
 					<div class="mb-3 flex items-center justify-between">
 						<h2
+							translate={group.projectId ? 'no' : 'yes'}
 							class="font-sans text-xs font-semibold tracking-wider text-ink-muted uppercase dark:text-dark-ink-muted"
 						>
 							{group.projectTitle}
@@ -200,16 +201,23 @@
 							<div class="px-4 py-3">
 								<div class="flex items-start justify-between gap-3">
 									<div class="min-w-0 flex-1">
-										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+										<p
+											translate="no"
+											class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+										>
 											{ref.title}
 										</p>
 										{#if ref.authors && ref.authors.length > 0}
-											<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+											<p
+												translate="no"
+												class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+											>
 												{authorString(ref.authors)}{ref.year ? ` (${ref.year})` : ''}
 											</p>
 										{/if}
 										{#if ref.journal || ref.booktitle}
 											<p
+												translate="no"
 												class="mt-0.5 font-sans text-xs text-ink-faint italic dark:text-dark-ink-faint"
 											>
 												{ref.journal ?? ref.booktitle}
@@ -222,7 +230,9 @@
 										>
 											{typeLabel(ref.type)}
 										</span>
-										<code class="font-mono text-[11px] text-accent">@{ref.citeKey}</code>
+										<code translate="no" class="font-mono text-[11px] text-accent"
+											>@{ref.citeKey}</code
+										>
 										{#if ref.externalHref}
 											<a
 												href={ref.externalHref}
