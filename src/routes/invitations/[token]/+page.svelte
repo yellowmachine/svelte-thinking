@@ -134,11 +134,17 @@
 				>
 					Collaboration invitation
 				</div>
-				<h1 class="mt-2 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+				<h1
+					translate="no"
+					class="mt-2 font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+				>
 					{data.invitation.projectTitle ?? 'Untitled project'}
 				</h1>
 				{#if data.invitation.projectDescription}
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<p
+						translate="no"
+						class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted"
+					>
 						{data.invitation.projectDescription}
 					</p>
 				{/if}

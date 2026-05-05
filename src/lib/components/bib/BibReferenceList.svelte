@@ -225,10 +225,16 @@
 
 				<!-- Content -->
 				<div class="min-w-0 flex-1">
-					<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+					<p
+						translate="no"
+						class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink"
+					>
 						{ref.title}
 					</p>
-					<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+					<p
+						translate="no"
+						class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+					>
 						{formatAuthors(ref)}{ref.year ? ' · ' + ref.year : ''}
 						{#if ref.journal}
 							· <em>{ref.journal}</em>
@@ -250,6 +256,7 @@
 					{/if}
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					<p
+						translate="no"
 						class="mt-1.5 font-sans text-[11px] leading-snug text-ink-faint dark:text-dark-ink-faint"
 					>
 						{@html renderInlineMarkdown(
@@ -304,6 +311,7 @@
 												</span>
 												{#if sn.notes}
 													<span
+														translate="no"
 														class="flex-1 font-sans text-[11px] leading-snug text-ink dark:text-dark-ink"
 														>{sn.notes}</span
 													>

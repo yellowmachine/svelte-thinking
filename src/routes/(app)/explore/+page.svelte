@@ -166,11 +166,17 @@
 						>
 							<div class="flex items-start justify-between gap-4">
 								<div class="min-w-0 flex-1">
-									<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+									<h2
+										translate="no"
+										class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
+									>
 										{proj.title}
 									</h2>
 									{#if proj.description}
-										<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+										<p
+											translate="no"
+											class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+										>
 											{proj.description}
 										</p>
 									{/if}
@@ -182,7 +188,10 @@
 											>
 												Abstract
 											</p>
-											<p class="line-clamp-4 font-sans text-sm text-ink dark:text-dark-ink">
+											<p
+												translate="no"
+												class="line-clamp-4 font-sans text-sm text-ink dark:text-dark-ink"
+											>
 												{proj.abstractContent}
 											</p>
 										</div>
@@ -197,7 +206,10 @@
 										>
 											{(proj.ownerDisplayName ?? proj.ownerName ?? '?').charAt(0).toUpperCase()}
 										</span>
-										<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+										<span
+											translate="no"
+											class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+										>
 											{proj.ownerDisplayName ?? proj.ownerName}
 											{#if proj.ownerInstitution}
 												· {proj.ownerInstitution}
@@ -248,16 +260,23 @@
 									{(r.display_name ?? r.name ?? '?').charAt(0).toUpperCase()}
 								</span>
 								<div class="min-w-0 flex-1">
-									<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">
+									<p
+										translate="no"
+										class="font-sans text-sm font-semibold text-ink dark:text-dark-ink"
+									>
 										{r.display_name ?? r.name}
 									</p>
 									{#if r.institution}
-										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+										<p
+											translate="no"
+											class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+										>
 											{r.institution}
 										</p>
 									{/if}
 									{#if r.bio}
 										<p
+											translate="no"
 											class="mt-1 line-clamp-2 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 										>
 											{r.bio}

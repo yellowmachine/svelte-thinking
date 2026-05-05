@@ -80,6 +80,7 @@
 		<div class="flex items-start justify-between gap-3">
 			<div class="flex min-w-0 items-center gap-2">
 				<h3
+					translate="no"
 					class="font-serif text-lg font-semibold text-ink group-hover:text-accent dark:text-dark-ink dark:group-hover:text-accent"
 				>
 					{title}
@@ -131,6 +132,7 @@
 
 		{#if description}
 			<p
+				translate="no"
 				class="mt-2 line-clamp-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted"
 			>
 				{description}

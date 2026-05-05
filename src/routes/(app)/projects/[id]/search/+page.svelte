@@ -76,10 +76,14 @@
 						href="/projects/{data.projectId}/documents/{result.document_id}"
 						class="block rounded-xl border border-paper-border bg-paper p-4 transition-colors hover:border-accent/40 hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/40 dark:hover:bg-dark-paper-ui"
 					>
-						<p class="mb-1.5 font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						<p
+							translate="no"
+							class="mb-1.5 font-sans text-sm font-medium text-ink dark:text-dark-ink"
+						>
 							{result.title}
 						</p>
 						<p
+							translate="no"
 							class="line-clamp-3 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
 						>
 							{result.text}

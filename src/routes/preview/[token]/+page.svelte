@@ -51,6 +51,7 @@
 			<span class="hidden h-4 w-px bg-paper-border sm:block dark:bg-dark-paper-border"></span>
 			<span class="hidden items-center gap-1.5 sm:flex">
 				<span
+					translate="no"
 					class="max-w-[180px] truncate font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
 				>
 					{data.document.title}
@@ -85,7 +86,7 @@
 <main class="mx-auto max-w-2xl px-6 py-12">
 	<!-- Document header -->
 	<div class="mb-8 border-b border-paper-border pb-6 dark:border-dark-paper-border">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+		<h1 translate="no" class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
 			{data.document.title}
 		</h1>
 		{#if data.version.changeDescription}

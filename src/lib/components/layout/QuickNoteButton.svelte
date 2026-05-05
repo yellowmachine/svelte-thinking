@@ -121,7 +121,7 @@
 								disabled={creating}
 								class="w-full px-4 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 							>
-								{p.title}
+								<span translate="no">{p.title}</span>
 							</button>
 						</li>
 					{/each}

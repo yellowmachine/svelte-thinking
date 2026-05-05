@@ -185,6 +185,7 @@
 
 					{#if s.anchorText}
 						<blockquote
+							translate="no"
 							class="mb-2 border-l-2 border-accent bg-accent/5 px-2.5 py-1.5 font-serif text-xs leading-relaxed text-ink-muted italic dark:text-dark-ink-muted"
 						>
 							"{s.anchorText}"
@@ -216,6 +217,7 @@
 						</div>
 					{:else if s.notes}
 						<p
+							translate="no"
 							class="font-sans text-xs leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink"
 						>
 							{s.notes}

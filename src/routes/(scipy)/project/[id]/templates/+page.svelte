@@ -270,7 +270,9 @@
 					>
 						<div>
 							<div class="flex items-center gap-2">
-								<span class="font-medium text-ink dark:text-dark-ink">{template.name}</span>
+								<span translate="no" class="font-medium text-ink dark:text-dark-ink"
+									>{template.name}</span
+								>
 								<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint"
 									>{template.type}</span
 								>
@@ -283,7 +285,7 @@
 								{/if}
 							</div>
 							{#if template.description}
-								<p class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">
+								<p translate="no" class="mt-1 text-sm text-ink-faint dark:text-dark-ink-faint">
 									{template.description}
 								</p>
 							{/if}

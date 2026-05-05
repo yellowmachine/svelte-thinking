@@ -295,7 +295,9 @@
 					{initials}
 				</a>
 				<div class="hidden sm:block">
-					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{user.name}</p>
+					<p translate="no" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						{user.name}
+					</p>
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{user.email}</p>
 				</div>
 			</div>
