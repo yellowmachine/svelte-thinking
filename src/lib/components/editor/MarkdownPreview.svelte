@@ -430,6 +430,7 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		bind:this={container}
+		translate="no"
 		class="prose-serif prose max-w-none dark:prose-invert"
 		style="overflow: visible;"
 		onmouseup={handleMouseUp}

@@ -125,7 +125,7 @@
 							onclick={() => startEdit(tag)}
 							class="flex-1 text-left font-sans text-sm text-ink hover:text-accent dark:text-dark-ink dark:hover:text-accent"
 						>
-							{tag.name}
+							<span translate="no">{tag.name}</span>
 						</button>
 						<span class="shrink-0 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 							{tag.projectCount === 1 ? '1 project' : `${tag.projectCount} projects`}

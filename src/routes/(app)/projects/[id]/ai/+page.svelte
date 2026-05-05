@@ -382,6 +382,7 @@
 									<!-- Bubble + pending actions for this message -->
 									<div class="flex max-w-[80%] flex-col">
 										<div
+											translate="no"
 											class="rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role ===
 											'user'
 												? 'rounded-tr-sm bg-accent text-white'
@@ -401,6 +402,7 @@
 												>
 												{#each msg.docsUsed as doc (doc.id)}
 													<a
+														translate="no"
 														href="/projects/{data.project.id}/documents/{doc.id}"
 														class="font-sans text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
 														>{doc.title}</a

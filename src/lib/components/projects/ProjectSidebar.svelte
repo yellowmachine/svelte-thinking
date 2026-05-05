@@ -703,12 +703,14 @@
 											</span>
 											<div class="min-w-0">
 												<p
+													translate="no"
 													class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink"
 												>
 													{u.displayName ?? u.name}
 												</p>
 												{#if u.institution}
 													<p
+														translate="no"
 														class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
 													>
 														{u.institution}

@@ -72,7 +72,9 @@
 				class="absolute top-full right-0 z-50 mt-1.5 w-44 rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 			>
 				<div class="border-b border-paper-border px-4 py-2.5 dark:border-dark-paper-border">
-					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{user.name}</p>
+					<p translate="no" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						{user.name}
+					</p>
 					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{user.email}</p>
 				</div>
 				<ul class="py-1">

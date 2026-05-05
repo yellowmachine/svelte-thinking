@@ -73,7 +73,7 @@
 						</svg>
 					</div>
 					<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
-						Welcome to {data.invitation.orgName ?? 'the organization'}!
+						Welcome to <span translate="no">{data.invitation.orgName ?? 'the organization'}</span>!
 					</h1>
 					<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 						Redirecting to your projects...
@@ -85,7 +85,9 @@
 						Already a member
 					</h1>
 					<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						You are already a member of {data.invitation.orgName ?? 'this organization'}.
+						You are already a member of <span translate="no"
+							>{data.invitation.orgName ?? 'this organization'}</span
+						>.
 					</p>
 					<button
 						onclick={() => navigate('/projects')}
@@ -130,7 +132,10 @@
 				>
 					Organization invitation
 				</div>
-				<h1 class="mt-2 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+				<h1
+					translate="no"
+					class="mt-2 font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+				>
 					{data.invitation.orgName ?? 'Organization'}
 				</h1>
 				{#if data.invitation.orgSlug}
