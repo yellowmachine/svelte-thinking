@@ -131,7 +131,7 @@
 		<div
 			class="grid gap-1 rounded-xl border border-paper-border bg-paper px-5 py-4 sm:grid-cols-2 dark:border-dark-paper-border dark:bg-dark-paper"
 		>
-			{#each [{ href: '#projects', label: 'Projects & workspaces' }, { href: '#bibliography', label: 'Bibliography' }, { href: '#editor', label: 'Documents & editor' }, { href: '#formatting', label: '↳ Basic formatting' }, { href: '#citations', label: '↳ Bibliographic citations' }, { href: '#math', label: '↳ Mathematics & formal logic' }, { href: '#wikilinks', label: '↳ Wikilinks' }, { href: '#autocomplete', label: '↳ [[ autocomplete' }, { href: '#footnotes', label: '↳ Footnotes' }, { href: '#callouts', label: '↳ Callout blocks' }, { href: '#photos', label: '↳ Photos' }, { href: '#charts', label: '↳ Vega-Lite charts' }, { href: '#export', label: '↳ Export' }, { href: '#versions', label: 'Version history' }, { href: '#ai', label: 'AI assistant' }, { href: '#collaboration', label: 'Collaboration' }, { href: '#explore', label: 'Explore' }, { href: '#settings', label: 'Settings' }, { href: '#tips', label: 'Tips' }] as item}
+			{#each [{ href: '#projects', label: 'Projects & workspaces' }, { href: '#bibliography', label: 'Bibliography' }, { href: '#editor', label: 'Documents & editor' }, { href: '#formatting', label: '↳ Basic formatting' }, { href: '#citations', label: '↳ Bibliographic citations' }, { href: '#math', label: '↳ Mathematics & formal logic' }, { href: '#wikilinks', label: '↳ Wikilinks' }, { href: '#autocomplete', label: '↳ [[ autocomplete' }, { href: '#footnotes', label: '↳ Footnotes' }, { href: '#callouts', label: '↳ Callout blocks' }, { href: '#photos', label: '↳ Photos' }, { href: '#charts', label: '↳ Vega-Lite charts' }, { href: '#export', label: '↳ Export' }, { href: '#versions', label: 'Version history' }, { href: '/help/ai', label: 'AI assistant →' }, { href: '#collaboration', label: 'Collaboration' }, { href: '#explore', label: 'Explore' }, { href: '#settings', label: 'Settings' }, { href: '#tips', label: 'Tips' }] as item}
 				<a
 					href={item.href}
 					class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline"
@@ -831,11 +831,23 @@
 	     AI ASSISTANT
 	     ═══════════════════════════════════════════════════════════════════════ -->
 	<section class="mb-10" id="ai">
-		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">AI assistant</h2>
-		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			The AI assistant in the <strong>AI</strong> tab of each project has access to your documents and
-			bibliography. It is not a generic chatbot — it works with your own content.
-		</p>
+		<div class="mb-4 flex items-start justify-between gap-4">
+			<div>
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+					AI assistant
+				</h2>
+				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					The AI assistant in the <strong>AI</strong> tab of each project has access to your documents
+					and bibliography. It is not a generic chatbot — it works with your own content.
+				</p>
+			</div>
+			<a
+				href="/help/ai"
+				class="shrink-0 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 font-sans text-xs font-semibold text-accent transition-colors hover:bg-accent/10 dark:border-accent/20 dark:bg-accent/5"
+			>
+				Full AI guide →
+			</a>
+		</div>
 		<div class="space-y-3">
 			<div
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
