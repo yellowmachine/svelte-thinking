@@ -217,7 +217,7 @@
 						t.id
 							? 'border-accent bg-accent text-white'
 							: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
-						>{t.name}</button
+						><span translate="no">{t.name}</span></button
 					>
 				{/each}
 			</div>

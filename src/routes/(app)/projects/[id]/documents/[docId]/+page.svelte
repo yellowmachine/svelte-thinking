@@ -1217,6 +1217,7 @@
 				class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm dark:border-dark-paper-border/50"
 			>
 				<button
+					translate="no"
 					onclick={() => (window.location.href = `/projects/${data.document.projectId}`)}
 					class="shrink-0 text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
@@ -1756,6 +1757,7 @@
 				{#if editingTitle}
 					<input
 						bind:this={titleInputEl}
+						translate="no"
 						bind:value={docTitle}
 						onblur={commitTitle}
 						onkeydown={onTitleKeydown}
@@ -1767,6 +1769,7 @@
 				{:else}
 					<button
 						type="button"
+						translate="no"
 						onclick={startEditTitle}
 						aria-label="Edit document title"
 						class="cursor-text text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink"

@@ -217,6 +217,7 @@
 				<!-- Cite key badge -->
 				<button
 					onclick={() => copyCiteKey(ref)}
+					translate="no"
 					title="Copiar como [@{ref.citeKey}]"
 					class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-2 py-0.5 font-mono text-xs font-medium text-accent transition-colors hover:bg-accent/10"
 				>
@@ -305,6 +306,7 @@
 										{#each subnotesByRef[ref.id] as sn (sn.id)}
 											<li class="flex items-start gap-2">
 												<span
+													translate="no"
 													class="mt-px shrink-0 rounded bg-paper-ui px-1.5 py-px font-mono text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
 												>
 													{sn.slug}
