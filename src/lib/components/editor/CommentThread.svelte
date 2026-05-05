@@ -135,6 +135,7 @@
 	<!-- Anchor text excerpt / paragraph badge -->
 	{#if comment.anchorText}
 		<p
+			translate="no"
 			class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
 		>
 			{comment.anchorText.slice(0, 80)}{comment.anchorText.length > 80 ? '…' : ''}
@@ -148,11 +149,11 @@
 	<!-- Main comment body -->
 	<div class="flex items-start justify-between gap-2">
 		<div class="min-w-0">
-			<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+			<p translate="no" class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
 				{comment.authorName}
 			</p>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">
+			<div translate="no" class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">
 				{@html renderMd(comment.content)}
 			</div>
 			<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
@@ -204,11 +205,14 @@
 		<div class="mt-3 space-y-2 border-t border-paper-border pt-2 dark:border-dark-paper-border">
 			{#each comment.replies as reply (reply.id)}
 				<div>
-					<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+					<p translate="no" class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
 						{reply.authorName}
 					</p>
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					<div class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">
+					<div
+						translate="no"
+						class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink"
+					>
 						{@html renderMd(reply.content)}
 					</div>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">

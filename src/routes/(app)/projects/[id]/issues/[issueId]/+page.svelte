@@ -276,7 +276,10 @@
 			/>
 		{:else}
 			<div class="flex items-start gap-2">
-				<h1 class="flex-1 font-sans text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+				<h1
+					translate="no"
+					class="flex-1 font-sans text-2xl font-semibold text-zinc-900 dark:text-zinc-100"
+				>
 					{savedTitle}
 				</h1>
 				{#if data.canEdit}

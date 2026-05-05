@@ -90,7 +90,9 @@
 			Edit
 		</a>
 		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-		<span class="font-serif font-semibold text-ink dark:text-dark-ink">{data.book.title}</span>
+		<span translate="no" class="font-serif font-semibold text-ink dark:text-dark-ink"
+			>{data.book.title}</span
+		>
 		{#if data.chapters.length > 0}
 			<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 				{data.chapters.length} chapter{data.chapters.length === 1 ? '' : 's'}
@@ -148,7 +150,7 @@
 								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 						>
 							<span class="mr-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">{i + 1}.</span>
-							{chapter.title}
+							<span translate="no">{chapter.title}</span>
 						</button>
 					{/each}
 				</nav>
@@ -159,7 +161,7 @@
 		<main class="flex-1 overflow-y-auto">
 			<div class="mx-auto max-w-2xl px-6 py-10">
 				<!-- Book title -->
-				<h1 class="mb-8 font-serif text-3xl font-bold text-ink dark:text-dark-ink">
+				<h1 translate="no" class="mb-8 font-serif text-3xl font-bold text-ink dark:text-dark-ink">
 					{data.book.title}
 				</h1>
 
@@ -190,7 +192,10 @@
 								>
 									Chapter {i + 1}
 								</p>
-								<h2 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+								<h2
+									translate="no"
+									class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+								>
 									{chapter.title}
 								</h2>
 							</div>

@@ -1188,7 +1188,9 @@
 						{data.projectTitle}
 					</button>
 					<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-					<span class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink"
+					<span
+						translate="no"
+						class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink"
 						>{data.document.title}</span
 					>
 				</div>
@@ -1221,7 +1223,9 @@
 					{data.projectTitle}
 				</button>
 				<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-				<span class="truncate font-medium text-ink dark:text-dark-ink">{docTitle}</span>
+				<span translate="no" class="truncate font-medium text-ink dark:text-dark-ink"
+					>{docTitle}</span
+				>
 
 				<!-- Writer badge -->
 				{#if currentWriterUserId !== null}

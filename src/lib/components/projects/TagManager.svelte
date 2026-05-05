@@ -74,7 +74,7 @@
 				<span
 					class="flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 font-sans text-xs font-medium text-accent dark:bg-accent/20"
 				>
-					{t.name}
+					<span translate="no">{t.name}</span>
 					<button
 						onclick={() => removeTag(t.id)}
 						class="ml-0.5 rounded-full text-accent/60 hover:text-accent"
@@ -110,7 +110,7 @@
 						type="button"
 						onclick={() => addTag(t)}
 						class="flex w-full items-center px-3 py-1.5 font-sans text-xs text-ink hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
-						>{t.name}</button
+						><span translate="no">{t.name}</span></button
 					>
 				{/each}
 				{#if inputValue.trim() && !filtered.some((t) => t.name.toLowerCase() === inputValue.toLowerCase())}

@@ -132,6 +132,7 @@
 								{#if thread.anchorContext && thread.anchorText}
 									<!-- Selection comment: paragraph with highlight -->
 									<p
+										translate="no"
 										class="mb-2 rounded-md border-l-2 border-amber-300 bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink dark:border-amber-600 dark:bg-dark-paper-ui dark:text-dark-ink"
 									>
 										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -140,6 +141,7 @@
 								{:else if thread.anchorContext && thread.paragraphNumber}
 									<!-- Paragraph comment: show the paragraph text -->
 									<p
+										translate="no"
 										class="mb-2 rounded-md border-l-2 border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-muted"
 									>
 										¶{thread.paragraphNumber} · {thread.anchorContext}
@@ -147,6 +149,7 @@
 								{:else if thread.anchorText}
 									<!-- Fallback: plain quoted selection (no context stored) -->
 									<p
+										translate="no"
 										class="mb-2 rounded-md border-l-2 border-amber-300 bg-paper-ui px-2.5 py-1.5 font-sans text-xs text-ink-muted italic dark:border-amber-600 dark:bg-dark-paper-ui dark:text-dark-ink-muted"
 									>
 										"{thread.anchorText}"

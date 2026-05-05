@@ -167,7 +167,7 @@
 			>
 				<path d="M15 18l-6-6 6-6" />
 			</svg>
-			{data.document.title}
+			<span translate="no">{data.document.title}</span>
 		</a>
 		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
 		<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Historial</span>

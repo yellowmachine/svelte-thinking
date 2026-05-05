@@ -198,7 +198,10 @@
 
 						<!-- Title + meta -->
 						<div class="min-w-0 flex-1">
-							<p class="truncate font-sans text-sm font-medium text-zinc-900 dark:text-zinc-100">
+							<p
+								translate="no"
+								class="truncate font-sans text-sm font-medium text-zinc-900 dark:text-zinc-100"
+							>
 								{iss.title}
 							</p>
 							<p class="mt-0.5 font-sans text-xs text-zinc-400 dark:text-zinc-500">
