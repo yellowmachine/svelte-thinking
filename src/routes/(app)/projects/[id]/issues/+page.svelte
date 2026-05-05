@@ -3,6 +3,8 @@
 	import { resolve } from '$app/paths';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { projectIssuesTutorialSteps } from '$lib/tutorials/projectIssues';
 
 	let { data }: { data: PageData } = $props();
 
@@ -97,9 +99,15 @@
 			>
 				← {data.project.title}
 			</a>
-			<h1 class="mt-1 font-sans text-xl font-semibold text-zinc-900 dark:text-zinc-100">Issues</h1>
+			<h1
+				data-tutorial="project-issues-title"
+				class="mt-1 font-sans text-xl font-semibold text-zinc-900 dark:text-zinc-100"
+			>
+				Issues
+			</h1>
 		</div>
 		<button
+			data-tutorial="project-issues-new"
 			type="button"
 			onclick={() => {
 				showCreate = true;
@@ -144,7 +152,10 @@
 	{/if}
 
 	<!-- Status tabs -->
-	<div class="mb-4 flex gap-1 border-b border-zinc-200 dark:border-zinc-700">
+	<div
+		data-tutorial="project-issues-tabs"
+		class="mb-4 flex gap-1 border-b border-zinc-200 dark:border-zinc-700"
+	>
 		{#each [['all', 'All'], ['open', 'Open'], ['in_progress', 'In progress'], ['closed', 'Closed']] as const as [val, label] (val)}
 			<button
 				type="button"
@@ -212,3 +223,9 @@
 		</ul>
 	{/if}
 </div>
+
+<TutorialManager
+	slug="project-issues"
+	completedTutorials={data.completedTutorials}
+	steps={projectIssuesTutorialSteps}
+/>

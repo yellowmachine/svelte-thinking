@@ -1,0 +1,1 @@
+ALTER TABLE "scholio"."user_profile" ADD COLUMN "completed_tutorials" text[] DEFAULT '{}'::text[] NOT NULL;

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from 'svelte';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { documentTutorialSteps } from '$lib/tutorials/document';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { page } from '$app/state';
@@ -1209,6 +1211,7 @@
 		>
 			<!-- Row 1: breadcrumb -->
 			<div
+				data-tutorial="doc-breadcrumb"
 				class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm dark:border-dark-paper-border/50"
 			>
 				<button
@@ -1263,7 +1266,7 @@
 			</div>
 
 			<!-- Row 2: toolbar -->
-			<div class="flex items-center gap-2 overflow-x-auto px-4 py-2">
+			<div data-tutorial="doc-toolbar" class="flex items-center gap-2 overflow-x-auto px-4 py-2">
 				<!-- Reclaim writer (Delegate moved to project doc list) -->
 				{#if reclaimCap.kind === 'available'}
 					<button
@@ -1487,6 +1490,7 @@
 						citeStyleMenuPos = { top: rect.bottom + 4, left: rect.left };
 						showCiteStyleMenu = !showCiteStyleMenu;
 					}}
+					title="Citation style — controls how @citeKey references render in preview"
 					class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					{CITATION_STYLE_LABELS[citationStyle]}
@@ -1503,6 +1507,7 @@
 
 				<button
 					onclick={toggleComments}
+					title="Toggle comment threads panel"
 					class="relative rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
 						? 'border-amber-400 bg-amber-400/10 text-amber-700 dark:text-amber-300'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
@@ -1520,7 +1525,7 @@
 				{#if viewMode !== 'preview'}
 					<button
 						onclick={toggleBib}
-						title="Panel de bibliografía"
+						title="Bibliography panel — insert citations from your project references"
 						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
 							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
@@ -1534,11 +1539,11 @@
 					<div
 						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
 						role="group"
-						aria-label="Modo de vista"
+						aria-label="View mode"
 					>
 						<button
 							onclick={() => setViewMode('editor')}
-							title="Solo editor"
+							title="Editor only"
 							class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
 								? 'bg-accent text-white'
 								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
@@ -1555,7 +1560,7 @@
 						</button>
 						<button
 							onclick={() => setViewMode('split')}
-							title="Editor y vista previa"
+							title="Editor and preview"
 							class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
 							'split'
 								? 'bg-accent text-white'
@@ -1585,7 +1590,7 @@
 						</button>
 						<button
 							onclick={() => setViewMode('preview')}
-							title="Solo vista previa"
+							title="Preview only"
 							class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
 								? 'bg-accent text-white'
 								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
@@ -1605,6 +1610,7 @@
 
 				<a
 					href="/projects/{data.document.projectId}/documents/{data.document.id}/history"
+					title="Version history — browse and restore past committed versions"
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					History
@@ -1669,6 +1675,7 @@
 						exportMenuPos = { top: rect.bottom + 4, left: rect.left };
 						showExport = !showExport;
 					}}
+					title="Export document — PDF, DOCX, Markdown, and more"
 					class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					Export
@@ -1721,7 +1728,7 @@
 								stroke-linecap="round"
 							/>
 						</svg>
-						Privado
+						Private
 					{/if}
 				</button>
 
@@ -1729,7 +1736,9 @@
 					<button
 						onclick={() => (showCommit = true)}
 						disabled={!canTriggerCommit(commitCap)}
-						title={commitCap.kind === 'blocked' ? commitCap.reason : undefined}
+						title={commitCap.kind === 'blocked'
+							? commitCap.reason
+							: 'Commit — save a named version and update the project timeline'}
 						class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 					>
 						Commit
@@ -1789,7 +1798,7 @@
 		{/snippet}
 
 		<!-- Main layout -->
-		<div class="flex min-h-0 flex-1 overflow-hidden">
+		<div data-tutorial="doc-editor-area" class="flex min-h-0 flex-1 overflow-hidden">
 			{#if viewMode === 'split'}
 				<!-- Split: editor left, preview right -->
 				<div class="relative flex flex-1 flex-col overflow-hidden">
@@ -2243,6 +2252,13 @@
 	</div>
 	<!-- end desktop editor wrapper -->
 {/if}
+
+<TutorialManager
+	slug="document"
+	completedTutorials={data.completedTutorials}
+	steps={documentTutorialSteps}
+	minWidth={640}
+/>
 
 <!-- Floating dropdown menus — rendered at root level to escape backdrop-filter containing block -->
 {#if showCiteStyleMenu}

@@ -14,6 +14,8 @@
 	import BibReferenceList from '$lib/components/bib/BibReferenceList.svelte';
 	import { goto } from '$app/navigation';
 	import { flash } from '$lib/stores/flash.svelte';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
+	import { projectBibTutorialSteps } from '$lib/tutorials/projectBib';
 
 	// ── Citation style ────────────────────────────────────────────────────────
 
@@ -126,7 +128,12 @@
 
 		<div class="flex items-center justify-between gap-4">
 			<div>
-				<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Bibliography</h1>
+				<h1
+					data-tutorial="project-bib-title"
+					class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+				>
+					Bibliography
+				</h1>
 				<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 					{references.length}
 					{references.length === 1 ? 'reference' : 'references'}
@@ -156,18 +163,21 @@
 					Search paper
 				</button>
 				<button
+					data-tutorial="project-bib-doi"
 					onclick={() => (panel = 'doi')}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					DOI lookup
 				</button>
 				<button
+					data-tutorial="project-bib-url"
 					onclick={() => (panel = 'url')}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					URL → AI
 				</button>
 				<button
+					data-tutorial="project-bib-import"
 					onclick={() => (panel = 'import')}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
@@ -189,6 +199,7 @@
 					</button>
 				{/if}
 				<button
+					data-tutorial="project-bib-new"
 					onclick={openNew}
 					class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 				>
@@ -400,6 +411,12 @@
 		}}
 	/>
 {/if}
+
+<TutorialManager
+	slug="project-bib"
+	completedTutorials={data.completedTutorials}
+	steps={projectBibTutorialSteps}
+/>
 
 <SafeDeleteDialog
 	open={!!refToDelete}

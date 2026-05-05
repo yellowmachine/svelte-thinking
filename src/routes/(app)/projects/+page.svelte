@@ -3,10 +3,12 @@
 	import { onMount } from 'svelte';
 	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { page } from '$app/state';
 	import { offlineDb } from '$lib/offline.db';
+	import { projectsTutorialSteps } from '$lib/tutorials/projects';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -145,7 +147,10 @@
 	<div class="mb-8 flex items-center justify-between">
 		<div>
 			<div class="flex items-center gap-2">
-				<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+				<h1
+					data-tutorial="projects-title"
+					class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
+				>
 					{isOrgWorkspace ? workspaceName : 'My projects'}
 				</h1>
 				{#if isOrgWorkspace}
@@ -168,6 +173,7 @@
 				onchange={handleImportFile}
 			/>
 			<button
+				data-tutorial="import-btn"
 				onclick={() => importFileInput?.click()}
 				disabled={importing}
 				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm font-medium text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
@@ -175,6 +181,7 @@
 				{importing ? 'Importing…' : 'Import'}
 			</button>
 			<button
+				data-tutorial="new-project-btn"
 				onclick={() => (showCreate = true)}
 				class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 			>
@@ -193,25 +200,33 @@
 
 	<!-- Tag filter -->
 	{#if data.allTags.length > 0}
-		<div class="mb-6 flex flex-wrap gap-2">
-			<button
-				onclick={() => (activeTagId = null)}
-				class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId ===
-				null
-					? 'border-accent bg-accent text-white'
-					: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
-				>All</button
-			>
-			{#each data.allTags as t (t.id)}
+		<div class="mb-6">
+			<div class="flex flex-wrap gap-2">
 				<button
-					onclick={() => (activeTagId = activeTagId === t.id ? null : t.id)}
+					onclick={() => (activeTagId = null)}
 					class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId ===
-					t.id
+					null
 						? 'border-accent bg-accent text-white'
 						: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
-					>{t.name}</button
+					>All</button
 				>
-			{/each}
+				{#each data.allTags as t (t.id)}
+					<button
+						onclick={() => (activeTagId = activeTagId === t.id ? null : t.id)}
+						class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId ===
+						t.id
+							? 'border-accent bg-accent text-white'
+							: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+						>{t.name}</button
+					>
+				{/each}
+			</div>
+			<a
+				href="/tags"
+				class="mt-2 inline-block font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+			>
+				Manage tags →
+			</a>
 		</div>
 	{/if}
 
@@ -381,6 +396,12 @@
 		{/if}
 	{/if}
 </div>
+
+<TutorialManager
+	slug="projects"
+	completedTutorials={data.completedTutorials}
+	steps={projectsTutorialSteps}
+/>
 
 <SafeDeleteDialog
 	open={deleteTarget !== null}
