@@ -3,8 +3,9 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
 	const rows = await db
 		.select({
 			id: projectInvitation.id,

@@ -23,6 +23,9 @@
 	let restoring = $state(false);
 	let restoredVersion = $state<number | null>(null);
 
+	let exportOpenId = $state<string | null>(null);
+	let exportMenuPos = $state({ top: 0, left: 0 });
+
 	// Shares: mapa versionId → share (reactivo para actualizaciones optimistas)
 	// untrack: sólo queremos el valor inicial del server load, lo gestionamos manualmente
 	let shares = $state<Record<string, { id: string; token: string; expiresAt: Date }>>(
@@ -257,6 +260,17 @@
 									</button>
 								{/if}
 
+								<button
+									onclick={(e) => {
+										const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+										exportMenuPos = { top: rect.bottom + 4, left: rect.left };
+										exportOpenId = exportOpenId === v.id ? null : v.id;
+									}}
+									class="rounded px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+								>
+									Export
+								</button>
+
 								{#if data.isOwner}
 									<div class="ml-auto flex items-center gap-1">
 										<!-- Botón copiar URL (gris = sin share, azul = con share activo) -->
@@ -398,3 +412,41 @@
 		</main>
 	</div>
 </div>
+
+{#if exportOpenId !== null}
+	<button
+		class="fixed inset-0 z-10"
+		onclick={() => (exportOpenId = null)}
+		aria-label="Close menu"
+		tabindex="-1"
+	></button>
+	<div
+		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
+	>
+		<a
+			href="/api/projects/{data.document.projectId}/documents/{data.document
+				.id}/export?format=latex&versionId={exportOpenId}"
+			onclick={() => (exportOpenId = null)}
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+		>
+			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
+		</a>
+		<a
+			href="/api/projects/{data.document.projectId}/documents/{data.document
+				.id}/export?format=typst&versionId={exportOpenId}"
+			onclick={() => (exportOpenId = null)}
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+		>
+			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
+		</a>
+		<a
+			href="/api/projects/{data.document.projectId}/documents/{data.document
+				.id}/export?format=pdf&versionId={exportOpenId}"
+			onclick={() => (exportOpenId = null)}
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+		>
+			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.pdf</span>PDF
+		</a>
+	</div>
+{/if}
