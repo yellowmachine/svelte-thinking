@@ -34,6 +34,7 @@
 	<div class="mx-auto flex max-w-6xl flex-col px-6 py-8">
 		<!-- Header -->
 		<div class="mb-6">
+			<!-- svelte-ignore a11y_invalid_attribute -->
 			<a href="#" class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted">
 				← Climate Policy Review
 			</a>

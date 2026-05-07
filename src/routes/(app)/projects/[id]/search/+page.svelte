@@ -47,6 +47,7 @@
 			>
 				<circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
 			</svg>
+			<!-- svelte-ignore a11y_autofocus -->
 			<input
 				type="search"
 				name="q"

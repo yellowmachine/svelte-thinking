@@ -129,6 +129,7 @@
 			}}
 			class="flex gap-2"
 		>
+			<!-- svelte-ignore a11y_autofocus -->
 			<input
 				bind:value={semanticQuery}
 				placeholder="Title, author or keywords…"

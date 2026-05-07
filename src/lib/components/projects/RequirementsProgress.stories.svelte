@@ -39,6 +39,7 @@
 	args={{ fulfilled: 2, total: 5, requiredFulfilled: 2, requiredTotal: 4 }}
 >
 	{#snippet template(args: any)}
+		<!-- svelte-ignore a11y_invalid_attribute -->
 		<a
 			href="#"
 			class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 font-sans text-sm text-gray-500 hover:bg-gray-50"
@@ -70,6 +71,7 @@
 	args={{ fulfilled: 5, total: 5, requiredFulfilled: 4, requiredTotal: 4 }}
 >
 	{#snippet template(args: any)}
+		<!-- svelte-ignore a11y_invalid_attribute -->
 		<a
 			href="#"
 			class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 font-sans text-sm text-gray-500 hover:bg-gray-50"

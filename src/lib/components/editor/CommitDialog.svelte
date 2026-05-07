@@ -47,13 +47,22 @@
 >
 	<div
 		class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="commit-dialog-title"
 	>
-		<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Create version</h2>
+		<h2
+			id="commit-dialog-title"
+			class="font-serif text-xl font-semibold text-ink dark:text-dark-ink"
+		>
+			Create version
+		</h2>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 			Describe the changes in this version.
 		</p>
 
 		<div class="mt-4 flex flex-col gap-3">
+			<!-- svelte-ignore a11y_autofocus -->
 			<textarea
 				bind:value={commitMessage}
 				rows={3}

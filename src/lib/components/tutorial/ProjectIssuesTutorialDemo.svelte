@@ -70,6 +70,7 @@
 		<!-- Header -->
 		<div class="mb-6 flex items-center justify-between gap-4">
 			<div>
+				<!-- svelte-ignore a11y_invalid_attribute -->
 				<a href="#" class="font-sans text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400">
 					← Climate Policy Review
 				</a>
@@ -113,6 +114,7 @@
 		<ul class="divide-y divide-zinc-100 dark:divide-zinc-800">
 			{#each filtered as iss (iss.id)}
 				<li>
+					<!-- svelte-ignore a11y_invalid_attribute -->
 					<a
 						href="#"
 						class="-mx-2 flex items-start gap-3 rounded-md px-2 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50"

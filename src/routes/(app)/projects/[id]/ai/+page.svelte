@@ -612,8 +612,11 @@
 
 							{#if showModelPicker}
 								<!-- Backdrop -->
-								<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-								<div class="fixed inset-0 z-10" onclick={() => (showModelPicker = false)}></div>
+								<div
+									class="fixed inset-0 z-10"
+									aria-hidden="true"
+									onclick={() => (showModelPicker = false)}
+								></div>
 								<!-- Popover -->
 								<div
 									class="absolute right-0 bottom-full z-20 mb-2 w-64 rounded-xl border border-paper-border bg-paper py-1.5 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"

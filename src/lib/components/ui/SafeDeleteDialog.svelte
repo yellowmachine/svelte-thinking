@@ -78,6 +78,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="safe-delete-title"
+			tabindex="-1"
 			onkeydown={handleKeydown}
 			class="w-full max-w-sm rounded-xl border border-red-200 bg-paper shadow-xl dark:border-red-900/40 dark:bg-dark-paper"
 		>

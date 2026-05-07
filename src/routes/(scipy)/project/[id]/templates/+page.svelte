@@ -125,8 +125,13 @@
 				</div>
 
 				<div>
-					<label class="block text-sm font-medium text-ink dark:text-dark-ink">Analysis type</label>
-					<div class="mt-2 flex gap-3">
+					<p
+						id="template-analysis-type-label"
+						class="block text-sm font-medium text-ink dark:text-dark-ink"
+					>
+						Analysis type
+					</p>
+					<div class="mt-2 flex gap-3" role="group" aria-labelledby="template-analysis-type-label">
 						<button
 							class="rounded-md border px-4 py-2 text-sm transition-colors"
 							class:border-ink={type === 'describe'}

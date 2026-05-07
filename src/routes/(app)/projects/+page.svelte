@@ -242,6 +242,7 @@
 					>
 						Title
 					</label>
+					<!-- svelte-ignore a11y_autofocus -->
 					<input
 						id="project-title"
 						type="text"

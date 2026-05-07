@@ -80,10 +80,6 @@
 		}
 	}
 
-	function handleBackdrop(e: MouseEvent) {
-		if (e.target === e.currentTarget) onclose();
-	}
-
 	const docTypeLabel: Record<string, string> = {
 		paper: 'Paper',
 		notes: 'Notes',
@@ -93,21 +89,27 @@
 	};
 </script>
 
-<!-- Backdrop -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-	onclick={handleBackdrop}
->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+	<button
+		class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+		onclick={onclose}
+		aria-label="Close dialog"
+		tabindex="-1"
+	></button>
 	<div
-		class="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+		class="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="generate-draft-title"
 	>
 		<!-- Header -->
 		<div
 			class="flex items-center justify-between border-b border-paper-border px-6 py-4 dark:border-dark-paper-border"
 		>
-			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+			<h2
+				id="generate-draft-title"
+				class="font-serif text-lg font-semibold text-ink dark:text-dark-ink"
+			>
 				Generate draft with AI
 			</h2>
 			<button

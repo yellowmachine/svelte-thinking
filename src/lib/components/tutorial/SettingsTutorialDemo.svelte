@@ -53,20 +53,26 @@
 				<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Profile</h2>
 				<div class="space-y-4">
 					<div>
-						<label class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
+						<label
+							for="demo-display-name"
+							class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
 							>Display name</label
 						>
 						<input
+							id="demo-display-name"
 							type="text"
 							value="Miguel Fernández"
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
+						<label
+							for="demo-institution"
+							class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
 							>Institution</label
 						>
 						<input
+							id="demo-institution"
 							type="text"
 							value="Universidad Complutense de Madrid"
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"

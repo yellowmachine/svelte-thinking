@@ -585,10 +585,13 @@
 						</p>
 						<div class="grid grid-cols-2 gap-3">
 							<div class="col-span-2">
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label
+									for="s3-endpoint"
+									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 									>Endpoint URL</label
 								>
 								<input
+									id="s3-endpoint"
 									bind:value={orgS3Endpoint}
 									type="url"
 									placeholder="https://…"
@@ -596,30 +599,39 @@
 								/>
 							</div>
 							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label
+									for="s3-bucket"
+									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 									>Bucket</label
 								>
 								<input
+									id="s3-bucket"
 									bind:value={orgS3Bucket}
 									placeholder="my-bucket"
 									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 								/>
 							</div>
 							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label
+									for="s3-region"
+									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 									>Region</label
 								>
 								<input
+									id="s3-region"
 									bind:value={orgS3Region}
 									placeholder="us-east-1"
 									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 								/>
 							</div>
 							<div class="col-span-2">
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label
+									for="s3-public-url"
+									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 									>Public URL (optional)</label
 								>
 								<input
+									id="s3-public-url"
 									bind:value={orgS3PublicUrl}
 									type="url"
 									placeholder="https://cdn.example.com"
@@ -627,20 +639,26 @@
 								/>
 							</div>
 							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label
+									for="s3-access-key"
+									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 									>Access Key ID</label
 								>
 								<input
+									id="s3-access-key"
 									bind:value={orgS3AccessKey}
 									autocomplete="off"
 									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 								/>
 							</div>
 							<div>
-								<label class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label
+									for="s3-secret-key"
+									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 									>Secret Access Key</label
 								>
 								<input
+									id="s3-secret-key"
 									bind:value={orgS3SecretKey}
 									type="password"
 									autocomplete="new-password"

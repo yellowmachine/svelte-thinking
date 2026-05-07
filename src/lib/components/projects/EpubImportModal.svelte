@@ -106,9 +106,9 @@
 	role="dialog"
 	aria-modal="true"
 >
-	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div
 		class="absolute inset-0"
+		aria-hidden="true"
 		onclick={() => {
 			resetState();
 			onclose();
