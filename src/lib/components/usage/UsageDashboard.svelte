@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteDate } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import { AI_TASKS, MODEL_SHORT_LABEL } from '$lib/ai-config';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -23,9 +24,9 @@
 	let preset = $state<Preset>('30d');
 
 	function presetDates(p: Preset): { from: Date; to: Date } {
-		const to = new Date();
+		const to = new SvelteDate();
 		to.setHours(23, 59, 59, 999);
-		const from = new Date();
+		const from = new SvelteDate();
 		from.setHours(0, 0, 0, 0);
 		if (p === '7d') from.setDate(from.getDate() - 6);
 		else if (p === '30d') from.setDate(from.getDate() - 29);
@@ -35,7 +36,7 @@
 
 	let customFrom = $state(
 		(() => {
-			const d = new Date();
+			const d = new SvelteDate();
 			d.setDate(d.getDate() - 29);
 			return d.toISOString().slice(0, 10);
 		})()

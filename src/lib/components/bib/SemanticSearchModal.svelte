@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import { generateCiteKey } from '$lib/utils/bibtex';
 
@@ -82,7 +83,7 @@
 			});
 			onadd(added);
 		} finally {
-			const next = new Set(semanticAdding);
+			const next = new SvelteSet(semanticAdding);
 			next.delete(result.paperId);
 			semanticAdding = next;
 		}

@@ -39,14 +39,15 @@
 			On this page
 		</p>
 		<div class="grid gap-1 sm:grid-cols-2">
+			<!-- eslint-disable svelte/no-navigation-without-resolve -->
 			{#each [{ href: '#architecture', label: 'Architecture' }, { href: '#setup', label: 'Setup & API key' }, { href: '#agent-tools', label: 'Agent tools (conversational)' }, { href: '#read-tools', label: '↳ Read tools' }, { href: '#write-tools', label: '↳ Write tools (with confirmation)' }, { href: '#editor-tools', label: 'Editor tools (inline)' }, { href: '#task-tools', label: 'Task-based features' }, { href: '#models', label: 'Supported models' }, { href: '#tips', label: 'Tips' }] as item (item.href)}
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a
 					href={item.href}
 					class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline"
 					>{item.label}</a
 				>
 			{/each}
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</div>
 	</div>
 

@@ -1,15 +1,10 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import type { PageData } from './$types';
 	import JupyterImportModal from '$lib/components/projects/JupyterImportModal.svelte';
 
 	let { data }: { data: PageData } = $props();
 
-	type Notebook = (typeof data.notebooks)[number];
-	let notebooks = $state<Notebook[]>(untrack(() => data.notebooks));
-	$effect(() => {
-		notebooks = data.notebooks;
-	});
+	let notebooks = $derived(data.notebooks);
 
 	let uploadingNotebook = $state(false);
 	let notebookError = $state('');

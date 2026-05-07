@@ -25,12 +25,7 @@
 		content: string;
 		docsUsed?: { id: string; title: string }[];
 	};
-	type Conversation = NonNullable<typeof data.conversations>[number];
-
-	let conversations = $state<Conversation[]>([]);
-	$effect(() => {
-		conversations = data.conversations ?? [];
-	});
+	let conversations = $derived(data.conversations ?? []);
 	let activeConvId = $state<string | null>(null);
 	let messages = $state<Message[]>([]);
 	let loadingConv = $state(false);

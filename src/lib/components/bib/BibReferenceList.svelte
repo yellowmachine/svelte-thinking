@@ -256,11 +256,11 @@
 							doi:{ref.doi}
 						</a>
 					{/if}
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					<p
 						translate="no"
 						class="mt-1.5 font-sans text-[11px] leading-snug text-ink-faint dark:text-dark-ink-faint"
 					>
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 						{@html renderInlineMarkdown(
 							formatFullCitation(ref as unknown as CiteRef, citationStyle, i + 1)
 						)}

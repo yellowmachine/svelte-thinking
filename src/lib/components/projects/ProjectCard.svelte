@@ -165,6 +165,7 @@
 				<div class="ml-auto flex items-center gap-1.5">
 					{#if openComments > 0}
 						{#if reviewHref}
+							<!-- eslint-disable svelte/no-navigation-without-resolve -->
 							<a
 								href={reviewHref}
 								onclick={(e) => e.stopPropagation()}
@@ -182,6 +183,7 @@
 								</svg>
 								{openComments}
 							</a>
+							<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						{:else}
 							<span
 								class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"

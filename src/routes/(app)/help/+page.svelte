@@ -105,6 +105,7 @@
 			Each type has its own help page with a full example and a one-click sample project.
 		</p>
 		<div class="grid gap-3 sm:grid-cols-2">
+			<!-- eslint-disable svelte/no-navigation-without-resolve -->
 			{#each [{ href: resolve('/help/notes'), label: 'Notes', tagline: 'Annotations, reading notes, and ideas in progress.' }, { href: resolve('/help/book'), label: 'Book', tagline: 'Multi-chapter document with cover page, TOC, and numbered chapters.' }] as item (item.href)}
 				<a
 					href={item.href}
@@ -119,6 +120,7 @@
 					>
 				</a>
 			{/each}
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</div>
 	</section>
 
@@ -132,14 +134,15 @@
 		<div
 			class="grid gap-1 rounded-xl border border-paper-border bg-paper px-5 py-4 sm:grid-cols-2 dark:border-dark-paper-border dark:bg-dark-paper"
 		>
+			<!-- eslint-disable svelte/no-navigation-without-resolve -->
 			{#each [{ href: '#projects', label: 'Projects & workspaces' }, { href: '#bibliography', label: 'Bibliography' }, { href: '#editor', label: 'Documents & editor' }, { href: '#formatting', label: '↳ Basic formatting' }, { href: '#citations', label: '↳ Bibliographic citations' }, { href: '#math', label: '↳ Mathematics & formal logic' }, { href: '#wikilinks', label: '↳ Wikilinks' }, { href: '#autocomplete', label: '↳ [[ autocomplete' }, { href: '#footnotes', label: '↳ Footnotes' }, { href: '#callouts', label: '↳ Callout blocks' }, { href: '#photos', label: '↳ Photos' }, { href: '#charts', label: '↳ Vega-Lite charts' }, { href: '#export', label: '↳ Export' }, { href: '#versions', label: 'Version history' }, { href: '/help/ai', label: 'AI assistant →' }, { href: '#collaboration', label: 'Collaboration' }, { href: '#explore', label: 'Explore' }, { href: '#settings', label: 'Settings' }, { href: '#tips', label: 'Tips' }] as item (item.href)}
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a
 					href={item.href}
 					class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline"
 					>{item.label}</a
 				>
 			{/each}
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</div>
 	</section>
 

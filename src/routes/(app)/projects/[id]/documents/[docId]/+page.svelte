@@ -1,6 +1,7 @@
 <script lang="ts">
 	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { onMount, onDestroy, untrack } from 'svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { documentTutorialSteps } from '$lib/tutorials/document';
 	import { beforeNavigate } from '$app/navigation';
@@ -282,7 +283,7 @@
 		await loadRefs();
 		if (!partial.trim()) return [];
 		const q = partial.toLowerCase();
-		const seen = new Set<string>();
+		const seen = new SvelteSet<string>();
 		for (const ref of projectRefs) {
 			for (const a of ref.authors) {
 				if (a.last.toLowerCase().startsWith(q)) seen.add(a.last);
@@ -340,7 +341,7 @@
 	// Same-project docs also indexed by UUID: [[doc:uuid|Title]] (book→chapter links)
 	// External context docs indexed by "title:hash": [[Introducción:a3f9b2c1]]
 	const docMap = $derived(() => {
-		const map = new Map<string, { id: string; projectId: string }>();
+		const map = new SvelteMap<string, { id: string; projectId: string }>();
 		for (const d of data.projectDocs) {
 			map.set(d.title, { id: d.id, projectId: d.projectId });
 			map.set(d.id, { id: d.id, projectId: d.projectId }); // UUID-keyed for [[doc:uuid|...]]
@@ -544,10 +545,7 @@
 		updatedAt: Date;
 	};
 	let docSubnotes = $state<Subnote[]>([]);
-	let sourceReference = $state(untrack(() => data.sourceReference));
-	$effect(() => {
-		sourceReference = data.sourceReference;
-	});
+	let sourceReference = $derived(data.sourceReference);
 
 	const sourceRefFull = $derived.by(() => {
 		const sr = sourceReference;
@@ -1898,6 +1896,7 @@
 							class="text-ink-light dark:text-dark-ink-light font-sans text-xs leading-relaxed"
 							translate="no"
 						>
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							{@html sourceRefCitation}
 						</p>
 					</div>

@@ -110,6 +110,7 @@
 		};
 	}
 
+	// eslint-disable-next-line svelte/prefer-writable-derived
 	let form = $state(
 		untrack(() => (mode === 'edit' && editingRef ? initFromRef(editingRef) : emptyForm()))
 	);

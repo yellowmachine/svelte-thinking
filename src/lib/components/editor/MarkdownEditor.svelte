@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import {
 		EditorView,
 		keymap,
@@ -441,7 +442,7 @@
 
 		// Check document-local persons first (instant, no AI cost)
 		const localRe = /\[\[person:([^\]]+)\]\]/g;
-		const seen = new Set<string>();
+		const seen = new SvelteSet<string>();
 		let m: RegExpExecArray | null;
 		while ((m = localRe.exec(value)) !== null) seen.add(m[1]);
 		const local = [...seen].filter((n) =>

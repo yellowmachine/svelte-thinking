@@ -64,5 +64,6 @@ word-break: break-word !important;
 </svelte:head>
 
 <div class="mx-auto max-w-4xl px-6 py-12 font-sans text-ink dark:text-dark-ink">
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html content}
 </div>

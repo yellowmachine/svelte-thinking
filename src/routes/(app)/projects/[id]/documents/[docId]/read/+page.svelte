@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import type { PageData } from './$types';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -19,7 +20,7 @@
 	}
 
 	const docMap = $derived(() => {
-		const map = new Map<string, { id: string; projectId: string }>();
+		const map = new SvelteMap<string, { id: string; projectId: string }>();
 		for (const d of data.projectDocs) {
 			map.set(d.title, { id: d.id, projectId: d.projectId });
 			map.set(d.id, { id: d.id, projectId: d.projectId });

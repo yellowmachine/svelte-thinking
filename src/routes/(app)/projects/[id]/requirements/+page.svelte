@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import RequirementItem from '$lib/components/projects/RequirementItem.svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -8,12 +7,7 @@
 	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
-	type Requirement = (typeof data.requirements)[number];
-
-	let requirements = $state<Requirement[]>(untrack(() => data.requirements));
-	$effect(() => {
-		requirements = data.requirements;
-	});
+	let requirements = $derived(data.requirements);
 	let documents = $derived(data.documents);
 
 	// ── Generate ──────────────────────────────────────────────────────────────

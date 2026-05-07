@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { marked } from 'marked';
 	import markedFootnote from 'marked-footnote';
 	import DOMPurify from 'dompurify';
@@ -74,8 +75,8 @@
 	// We pre-process math before marked so it doesn't interfere with markdown
 	// escaping. Placeholders are used to protect rendered HTML from marked.
 
-	function renderMath(src: string): { processed: string; mathBlocks: Map<string, string> } {
-		const mathBlocks = new Map<string, string>();
+	function renderMath(src: string): { processed: string; mathBlocks: SvelteMap<string, string> } {
+		const mathBlocks = new SvelteMap<string, string>();
 		let idx = 0;
 
 		// Display math: $$...$$
@@ -117,8 +118,11 @@
 
 	// ── Mermaid extractor ────────────────────────────────────────────────────
 
-	function extractDiagrams(src: string): { processed: string; diagrams: Map<string, string> } {
-		const diagrams = new Map<string, string>();
+	function extractDiagrams(src: string): {
+		processed: string;
+		diagrams: SvelteMap<string, string>;
+	} {
+		const diagrams = new SvelteMap<string, string>();
 		let idx = 0;
 
 		const processed = src.replace(/^```mermaid\n([\s\S]*?)^```/gm, (_match, code) => {
@@ -154,8 +158,8 @@
 
 	// ── Vega-lite extractor ───────────────────────────────────────────────────
 
-	function extractPlots(src: string): { processed: string; plots: Map<string, object> } {
-		const plots = new Map<string, object>();
+	function extractPlots(src: string): { processed: string; plots: SvelteMap<string, object> } {
+		const plots = new SvelteMap<string, object>();
 		let idx = 0;
 
 		const processed = src.replace(/^```vega-lite\n([\s\S]*?)^```/gm, (_match, json) => {

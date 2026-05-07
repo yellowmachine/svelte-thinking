@@ -1,6 +1,5 @@
 <script lang="ts">
 	/* eslint-disable @typescript-eslint/no-explicit-any */
-	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import { CITATION_STYLE_LABELS, type CitationStyle } from '$lib/utils/citations';
@@ -29,10 +28,7 @@
 
 	type Ref = (typeof data.references)[number];
 
-	let references = $state<Ref[]>(untrack(() => data.references));
-	$effect(() => {
-		references = data.references;
-	});
+	let references = $derived(data.references);
 	let searchQuery = $state('');
 
 	// Filtered list (client-side, instant)
