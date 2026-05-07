@@ -567,9 +567,10 @@
 	let docSubnotes = $state<Subnote[]>([]);
 	let sourceReference = $state(data.sourceReference);
 
-	const sourceRefFull = $derived(
-		sourceReference ? (projectRefs.find((r) => r.id === sourceReference.id) ?? null) : null
-	);
+	const sourceRefFull = $derived.by(() => {
+		const sr = sourceReference;
+		return sr ? (projectRefs.find((r) => r.id === sr.id) ?? null) : null;
+	});
 	const sourceRefCitation = $derived(
 		sourceRefFull
 			? formatFullCitation(sourceRefFull, citationStyle, 1)
