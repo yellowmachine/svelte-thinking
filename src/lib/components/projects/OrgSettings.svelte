@@ -298,8 +298,23 @@
 				type="button"
 				onclick={createOrg}
 				disabled={creating || !createName.trim()}
-				class="mt-2 w-full rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+				class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
 			>
+				{#if !creating}
+					<svg
+						width="12"
+						height="12"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.5"
+						stroke-linecap="round"
+						aria-hidden="true"
+					>
+						<line x1="12" y1="5" x2="12" y2="19" />
+						<line x1="5" y1="12" x2="19" y2="12" />
+					</svg>
+				{/if}
 				{creating ? 'Creating…' : 'Create'}
 			</button>
 		</div>
@@ -351,8 +366,23 @@
 										<button
 											type="button"
 											onclick={() => deleteKey(key.id)}
-											class="font-sans text-xs text-red-500 hover:text-red-700"
+											class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
 										>
+											<svg
+												width="11"
+												height="11"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<polyline points="3 6 5 6 21 6" />
+												<path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+												<path d="M10 11v6M14 11v6" />
+											</svg>
 											Delete
 										</button>
 									</div>
@@ -376,8 +406,23 @@
 								type="button"
 								onclick={addKey}
 								disabled={addingKey || !newKeyName.trim() || !newKeyValue.trim()}
-								class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:opacity-80 disabled:opacity-50"
+								class="flex items-center gap-1 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:opacity-80 disabled:opacity-50"
 							>
+								{#if !addingKey}
+									<svg
+										width="11"
+										height="11"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2.5"
+										stroke-linecap="round"
+										aria-hidden="true"
+									>
+										<line x1="12" y1="5" x2="12" y2="19" />
+										<line x1="5" y1="12" x2="19" y2="12" />
+									</svg>
+								{/if}
 								{addingKey ? 'Adding…' : 'Add'}
 							</button>
 						</div>
@@ -475,15 +520,45 @@
 										type="button"
 										onclick={testOrgS3}
 										disabled={orgS3Testing}
-										class="font-sans text-xs text-accent hover:underline disabled:opacity-50"
+										class="inline-flex items-center gap-1 font-sans text-xs text-accent hover:underline disabled:opacity-50"
 									>
+										{#if !orgS3Testing}
+											<svg
+												width="11"
+												height="11"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+											</svg>
+										{/if}
 										{orgS3Testing ? 'Testing…' : 'Test'}
 									</button>
 									<button
 										type="button"
 										onclick={removeOrgS3}
-										class="font-sans text-xs text-red-500 hover:text-red-700"
+										class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
 									>
+										<svg
+											width="11"
+											height="11"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<polyline points="3 6 5 6 21 6" />
+											<path d="M19 6l-1 14H6L5 6" />
+											<path d="M10 11v6M14 11v6" />
+										</svg>
 										Remove
 									</button>
 								</div>
@@ -581,8 +656,25 @@
 								!orgS3Bucket.trim() ||
 								!orgS3AccessKey.trim() ||
 								!orgS3SecretKey.trim()}
-							class="mt-3 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:opacity-80 disabled:opacity-50"
+							class="mt-3 flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:opacity-80 disabled:opacity-50"
 						>
+							{#if !orgS3Saving}
+								<svg
+									width="13"
+									height="13"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+									<polyline points="17 21 17 13 7 13 7 21" />
+									<polyline points="7 3 7 8 15 8" />
+								</svg>
+							{/if}
 							{orgS3Saving ? 'Saving…' : 'Save'}
 						</button>
 					</section>
@@ -611,8 +703,23 @@
 										<button
 											type="button"
 											onclick={() => removeMember(member.id)}
-											class="font-sans text-xs text-red-500 hover:text-red-700"
+											class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
 										>
+											<svg
+												width="11"
+												height="11"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+												<circle cx="8.5" cy="7" r="4" />
+												<line x1="23" y1="11" x2="17" y2="11" />
+											</svg>
 											Remove
 										</button>
 									{/if}
@@ -647,8 +754,26 @@
 								type="button"
 								onclick={sendInvite}
 								disabled={inviting || !inviteEmail}
-								class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:opacity-80 disabled:opacity-50"
+								class="flex items-center gap-1 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:opacity-80 disabled:opacity-50"
 							>
+								{#if !inviting}
+									<svg
+										width="12"
+										height="12"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<path
+											d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8a16 16 0 006 6l.36-.36a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"
+										/>
+										<path d="M19 1v6M16 4h6" />
+									</svg>
+								{/if}
 								{inviting ? 'Sending…' : 'Invite'}
 							</button>
 						</div>
@@ -669,8 +794,22 @@
 										<button
 											type="button"
 											onclick={() => cancelInvite(inv.id)}
-											class="font-sans text-xs text-ink-faint hover:text-red-500 dark:text-dark-ink-faint"
+											class="inline-flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-red-500 dark:text-dark-ink-faint"
 										>
+											<svg
+												width="11"
+												height="11"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<circle cx="12" cy="12" r="10" />
+												<path d="M15 9l-6 6M9 9l6 6" />
+											</svg>
 											Cancel
 										</button>
 									</div>

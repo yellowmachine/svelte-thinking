@@ -1290,8 +1290,22 @@
 						onclick={() => handleSetWriter(null)}
 						disabled={delegating}
 						title="Reclaim write access from {currentWriterName ?? currentWriterUserId}"
-						class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
+						class="flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polyline points="1 4 1 10 7 10" />
+							<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+						</svg>
 						Reclaim
 					</button>
 				{/if}
@@ -1302,8 +1316,23 @@
 						onclick={() => handleSetWriter(null)}
 						disabled={delegating}
 						title="Release write access — the project owner will regain control"
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+							<polyline points="16 17 21 12 16 7" />
+							<line x1="21" y1="12" x2="9" y2="12" />
+						</svg>
 						Release writer
 					</button>
 				{/if}
@@ -1317,8 +1346,23 @@
 							: saveCap.kind === 'blocked'
 								? saveCap.reason
 								: undefined}
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+							<polyline points="17 21 17 13 7 13 7 21" />
+							<polyline points="7 3 7 8 15 8" />
+						</svg>
 						{saveCap.kind === 'saving'
 							? 'Saving…'
 							: saveCap.kind === 'queued'
@@ -1525,14 +1569,29 @@
 				<button
 					onclick={toggleComments}
 					title="Toggle comment threads panel"
-					class="relative rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
+					class="relative flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
 						? 'border-amber-400 bg-amber-400/10 text-amber-700 dark:text-amber-300'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+						<line x1="8" y1="9" x2="16" y2="9" />
+						<line x1="8" y1="13" x2="13" y2="13" />
+					</svg>
 					Comments
 					{#if openCommentsCount > 0}
 						<span
-							class="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 font-sans text-xs font-semibold text-white"
+							class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 font-sans text-xs font-semibold text-white"
 						>
 							{openCommentsCount}
 						</span>
@@ -1543,10 +1602,24 @@
 					<button
 						onclick={toggleBib}
 						title="Bibliography panel — insert citations from your project references"
-						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
 							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+							<path d="M6.5 2H20v20l-7-4-7 4V2z" />
+						</svg>
 						Bib
 					</button>
 				{/if}
@@ -1628,8 +1701,22 @@
 				<a
 					href="/projects/{data.document.projectId}/documents/{data.document.id}/history"
 					title="Version history — browse and restore past committed versions"
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<circle cx="12" cy="12" r="10" />
+						<polyline points="12 6 12 12 16 14" />
+					</svg>
 					History
 				</a>
 
@@ -1649,10 +1736,25 @@
 						onclick={() => runSpellCheck()}
 						disabled={spellLoading}
 						title="Check spelling and grammar"
-						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
 							? 'border-accent bg-accent text-white'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polyline points="4 7 4 4 20 4 20 7" />
+							<line x1="9" y1="20" x2="15" y2="20" />
+							<line x1="12" y1="4" x2="12" y2="20" />
+						</svg>
 						{spellLoading ? 'Checking…' : 'Spell'}
 					</button>
 
@@ -1661,10 +1763,24 @@
 						onclick={() => runGrammarCheck()}
 						disabled={grammarLoading}
 						title="Grammar and style suggestions for non-native English writers"
-						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
 							? 'border-accent bg-accent text-white'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M12 20h9" />
+							<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+						</svg>
 						{grammarLoading ? 'Checking…' : 'Grammar'}
 					</button>
 
@@ -1756,8 +1872,24 @@
 						title={commitCap.kind === 'blocked'
 							? commitCap.reason
 							: 'Commit — save a named version and update the project timeline'}
-						class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+						class="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path
+								d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+							/>
+							<line x1="7" y1="7" x2="7.01" y2="7" />
+						</svg>
 						Commit
 					</button>
 				{/if}

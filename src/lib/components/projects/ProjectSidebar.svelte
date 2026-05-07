@@ -422,8 +422,23 @@
 			</p>
 			<button
 				onclick={() => (showLeaveProject = true)}
-				class="mt-4 w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
+				class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
 			>
+				<svg
+					width="12"
+					height="12"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+					<polyline points="16 17 21 12 16 7" />
+					<line x1="21" y1="12" x2="9" y2="12" />
+				</svg>
 				Leave project…
 			</button>
 		</div>
@@ -596,9 +611,22 @@
 			</div>
 			<button
 				onclick={() => (showContextPicker = true)}
-				class="shrink-0 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="flex shrink-0 items-center gap-1 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
-				+ Add
+				<svg
+					width="11"
+					height="11"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+					stroke-linecap="round"
+					aria-hidden="true"
+				>
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<line x1="5" y1="12" x2="19" y2="12" />
+				</svg>
+				Add
 			</button>
 		</div>
 
@@ -622,10 +650,22 @@
 						</div>
 						<button
 							onclick={() => removeContextLink(link.id)}
-							class="mt-0.5 shrink-0 font-sans text-[11px] text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+							class="mt-0.5 shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
 							title="Remove"
+							aria-label="Remove context link"
 						>
-							✕
+							<svg
+								width="12"
+								height="12"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								aria-hidden="true"
+							>
+								<path d="M18 6L6 18M6 6l12 12" />
+							</svg>
 						</button>
 					</div>
 				{/each}
