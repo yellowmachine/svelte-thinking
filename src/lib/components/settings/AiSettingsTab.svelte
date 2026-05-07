@@ -254,8 +254,23 @@
 					<button
 						type="button"
 						onclick={() => confirmDeleteKey(oauthKey!.id)}
-						class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+						class="inline-flex items-center gap-1 font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 					>
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+							<line x1="2" y1="2" x2="22" y2="22" />
+						</svg>
 						Disconnect
 					</button>
 				</div>
@@ -350,8 +365,24 @@
 								<button
 									type="button"
 									onclick={() => confirmDeleteKey(key.id)}
-									class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+									class="inline-flex items-center gap-1 font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 								>
+									<svg
+										width="12"
+										height="12"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<polyline points="3 6 5 6 21 6" />
+										<path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+										<path d="M10 11v6M14 11v6" />
+										<path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+									</svg>
 									Delete
 								</button>
 							</div>
@@ -364,9 +395,26 @@
 			<button
 				type="button"
 				onclick={() => (showManualKeyForm = !showManualKeyForm)}
-				class="mb-3 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+				class="mb-3 inline-flex items-center gap-1 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 			>
-				{showManualKeyForm ? 'Hide manual entry ↑' : 'Enter key manually ↓'}
+				{showManualKeyForm ? 'Hide manual entry' : 'Enter key manually'}
+				<svg
+					width="13"
+					height="13"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					{#if showManualKeyForm}
+						<polyline points="18 15 12 9 6 15" />
+					{:else}
+						<polyline points="6 9 12 15 18 9" />
+					{/if}
+				</svg>
 			</button>
 
 			{#if showManualKeyForm}
@@ -389,8 +437,25 @@
 							type="button"
 							onclick={handleAddKey}
 							disabled={!newKeyName.trim() || !newKeyValue.trim() || savingNewKey}
-							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+							class="flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 						>
+							{#if !savingNewKey}
+								<svg
+									width="13"
+									height="13"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+									<polyline points="17 21 17 13 7 13 7 21" />
+									<polyline points="7 3 7 8 15 8" />
+								</svg>
+							{/if}
 							{savingNewKey ? 'Saving...' : 'Save'}
 						</button>
 					</div>
@@ -532,15 +597,44 @@
 				<button
 					type="button"
 					onclick={() => (deletingKeyId = null)}
-					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M18 6L6 18M6 6l12 12" />
+					</svg>
 					Cancel
 				</button>
 				<button
 					type="button"
 					onclick={executeDeleteKey}
-					class="flex-1 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700"
+					class="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700"
 				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<polyline points="3 6 5 6 21 6" />
+						<path d="M19 6l-1 14H6L5 6" />
+						<path d="M10 11v6M14 11v6" />
+						<path d="M9 6V4h6v2" />
+					</svg>
 					Delete
 				</button>
 			</div>
