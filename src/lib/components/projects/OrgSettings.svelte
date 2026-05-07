@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import { AI_TASKS, MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
@@ -9,7 +10,7 @@
 	let { initialOrgs }: { initialOrgs: Org[] } = $props();
 
 	// ── State ────────────────────────────────────────────────────────────────
-	let orgs = $state<Org[]>(initialOrgs);
+	let orgs = $state<Org[]>(untrack(() => initialOrgs));
 	let selectedOrgId = $state<string | null>(orgs[0]?.id ?? null);
 
 	// Create org form

@@ -145,7 +145,7 @@
 
 	// View mode: editor | split | preview
 	type ViewMode = 'editor' | 'split' | 'preview';
-	const VIEW_MODE_KEY = `view-mode-${data.document?.id ?? ''}`;
+	const VIEW_MODE_KEY = untrack(() => `view-mode-${data.document?.id ?? ''}`);
 	const initialCanWrite = (() => {
 		const role = (data.collaborators.find((c) => c.userId === data.currentUserId)?.role ??
 			null) as CollaboratorRole | null;

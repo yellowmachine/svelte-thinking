@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
-	import { tick, onMount } from 'svelte';
+	import { tick, onMount, untrack } from 'svelte';
 	import { MODELS } from '$lib/ai-config';
 	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
 	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
@@ -33,7 +33,7 @@
 	}: Props = $props();
 
 	const toolCallingModels = MODELS.filter((m) => m.toolCalling);
-	let selectedModel = $state(defaultModel);
+	let selectedModel = $state(untrack(() => defaultModel));
 
 	type Message = {
 		role: 'user' | 'assistant' | 'system';
@@ -41,7 +41,7 @@
 		docsUsed?: { id: string; title: string }[];
 	};
 
-	const CONV_KEY = `ai-editor-conv-${documentId}`;
+	const CONV_KEY = untrack(() => `ai-editor-conv-${documentId}`);
 
 	const SHORTCUTS = [
 		{

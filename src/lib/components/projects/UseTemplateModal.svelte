@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 
 	let {
@@ -13,7 +14,7 @@
 		onclose: () => void;
 	} = $props();
 
-	let title = $state(initialTitle);
+	let title = $state(untrack(() => initialTitle));
 	let creating = $state(false);
 	let error = $state('');
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import QRCode from 'qrcode';
 
 	let {
@@ -17,7 +18,7 @@
 		| 'view-confirm'
 		| 'viewing';
 
-	let twoFaEnabled = $state(initialEnabled);
+	let twoFaEnabled = $state(untrack(() => initialEnabled));
 	let twoFaStep: TwoFaStep = $state('idle');
 	let twoFaPassword = $state('');
 	let twoFaCode = $state('');

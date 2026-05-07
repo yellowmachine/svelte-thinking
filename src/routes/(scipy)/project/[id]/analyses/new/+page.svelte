@@ -1,10 +1,11 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const tpl = data.template?.parameters as Record<string, unknown> | undefined;
+	const tpl = untrack(() => data.template?.parameters) as Record<string, unknown> | undefined;
 
 	let selectedDataset = $state(data.datasets[0]?.id ?? '');
 	let selectedType = $state<'describe' | 'ttest'>(

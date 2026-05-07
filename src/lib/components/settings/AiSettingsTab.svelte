@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import { MODEL_RECOMMENDATIONS, MODEL_SHORT_LABEL } from '$lib/ai-config';
@@ -42,7 +43,7 @@
 	let savingNewKey = $state(false);
 	let showManualKeyForm = $state(false);
 
-	let openrouterNotice = $state<'success' | 'error' | null>(openrouterStatus);
+	let openrouterNotice = $state<'success' | 'error' | null>(untrack(() => openrouterStatus));
 
 	let oauthKey = $derived(aiKeys.find((k) => k.source === 'openrouter_oauth') ?? null);
 

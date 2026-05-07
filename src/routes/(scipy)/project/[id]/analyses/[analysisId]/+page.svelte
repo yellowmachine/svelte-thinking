@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const { analysis } = data;
+	const { analysis } = untrack(() => data);
 	const result = analysis.result as Record<string, unknown> | null;
 	const params = analysis.parameters as Record<string, unknown>;
 

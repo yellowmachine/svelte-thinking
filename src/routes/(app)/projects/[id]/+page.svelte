@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { invalidateAll, goto } from '$app/navigation';
 	import { navigating } from '$app/state';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import DocumentItem from '$lib/components/documents/DocumentItem.svelte';
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
@@ -418,7 +418,7 @@
 
 	// ── Starter documents onboarding banner ──────────────────────────────────
 	const hasStarterDocs = $derived(documents.some((d) => d.generatedByAi));
-	const BANNER_KEY = `scholio:starter-banner-dismissed:${data.project.id}`;
+	const BANNER_KEY = untrack(() => `scholio:starter-banner-dismissed:${data.project.id}`);
 	let starterBannerDismissed = $state(false);
 
 	onMount(() => {
