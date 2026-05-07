@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import { formatBibtexFile } from '$lib/utils/bibtex';
@@ -27,7 +28,10 @@
 
 	type Ref = (typeof data.references)[number];
 
-	let references = $state<Ref[]>(data.references);
+	let references = $state<Ref[]>(untrack(() => data.references));
+	$effect(() => {
+		references = data.references;
+	});
 	let searchQuery = $state('');
 
 	// Filtered list (client-side, instant)

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
@@ -23,8 +24,8 @@
 	let unlinkGitHubError = $state('');
 	let unlinkingOrcid = $state(false);
 
-	let name = $state(user.name);
-	let email = $state(user.email);
+	let name = $state(untrack(() => user.name));
+	let email = $state(untrack(() => user.email));
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let confirmPassword = $state('');

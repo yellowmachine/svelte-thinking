@@ -7,9 +7,9 @@
 
 	const tpl = untrack(() => data.template?.parameters) as Record<string, unknown> | undefined;
 
-	let selectedDataset = $state(data.datasets[0]?.id ?? '');
+	let selectedDataset = $state(untrack(() => data.datasets[0]?.id ?? ''));
 	let selectedType = $state<'describe' | 'ttest'>(
-		(data.template?.type as 'describe' | 'ttest') ?? 'describe'
+		untrack(() => (data.template?.type as 'describe' | 'ttest') ?? 'describe')
 	);
 	let running = $state(false);
 	let runError = $state('');

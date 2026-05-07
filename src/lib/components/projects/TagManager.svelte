@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 
 	let {
@@ -6,7 +7,7 @@
 		initialTags
 	}: { projectId: string; initialTags: { id: string; name: string }[] } = $props();
 
-	let tags = $state([...initialTags]);
+	let tags = $state(untrack(() => [...initialTags]));
 	let allTags = $state<{ id: string; userId: string; name: string }[]>([]);
 	let inputValue = $state('');
 	let showDropdown = $state(false);

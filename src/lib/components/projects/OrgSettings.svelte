@@ -11,7 +11,7 @@
 
 	// ── State ────────────────────────────────────────────────────────────────
 	let orgs = $state<Org[]>(untrack(() => initialOrgs));
-	let selectedOrgId = $state<string | null>(orgs[0]?.id ?? null);
+	let selectedOrgId = $state<string | null>(untrack(() => orgs[0]?.id ?? null));
 
 	// Create org form
 	let createName = $state('');

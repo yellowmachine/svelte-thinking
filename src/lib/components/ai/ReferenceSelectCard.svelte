@@ -10,9 +10,11 @@
 		ondiscard: () => void;
 	};
 
+	import { untrack } from 'svelte';
+
 	let { references, projectId, onconfirm, ondiscard }: Props = $props();
 
-	let selected = $state<boolean[]>(references.map(() => true));
+	let selected = $state<boolean[]>(untrack(() => references.map(() => true)));
 	let status: 'idle' | 'loading' | 'done' | 'discarded' = $state('idle');
 	let addedCount = $state(0);
 

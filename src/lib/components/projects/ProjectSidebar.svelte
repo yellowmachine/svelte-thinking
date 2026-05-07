@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { invalidateAll, goto } from '$app/navigation';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import ContextPickerModal from '$lib/components/projects/ContextPickerModal.svelte';
@@ -162,7 +163,7 @@
 	});
 
 	// ── Searchable toggle ─────────────────────────────────────────────────────
-	let isSearchable = $state(project.isSearchable ?? false);
+	let isSearchable = $state(untrack(() => project.isSearchable ?? false));
 	let togglingSearchable = $state(false);
 
 	async function toggleSearchable() {

@@ -157,11 +157,13 @@
 		});
 	})();
 	let viewMode = $state<ViewMode>(
-		!initialCanWrite || data.forcePublished || data.document?.isReadonly
-			? 'preview'
-			: ((typeof localStorage !== 'undefined'
-					? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
-					: null) ?? 'editor')
+		untrack(() =>
+			!initialCanWrite || data.forcePublished || data.document?.isReadonly
+				? 'preview'
+				: ((typeof localStorage !== 'undefined'
+						? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
+						: null) ?? 'editor')
+		)
 	);
 	function setViewMode(m: ViewMode) {
 		viewMode = m;
@@ -565,7 +567,10 @@
 		updatedAt: Date;
 	};
 	let docSubnotes = $state<Subnote[]>([]);
-	let sourceReference = $state(data.sourceReference);
+	let sourceReference = $state(untrack(() => data.sourceReference));
+	$effect(() => {
+		sourceReference = data.sourceReference;
+	});
 
 	const sourceRefFull = $derived.by(() => {
 		const sr = sourceReference;
