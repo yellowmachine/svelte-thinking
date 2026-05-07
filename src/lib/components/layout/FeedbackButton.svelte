@@ -62,12 +62,18 @@
 
 		<div
 			class="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="feedback-dialog-title"
 		>
 			<div
 				class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border"
 			>
 				<div>
-					<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+					<h2
+						id="feedback-dialog-title"
+						class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
+					>
 						Leave feedback
 					</h2>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">

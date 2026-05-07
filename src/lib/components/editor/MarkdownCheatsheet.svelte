@@ -10,6 +10,9 @@
 
 <div
 	class="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col overflow-hidden bg-paper shadow-2xl dark:bg-dark-paper"
+	role="dialog"
+	aria-modal="true"
+	aria-label="Referencia de sintaxis"
 >
 	<div
 		class="flex shrink-0 items-center justify-between border-b border-paper-border px-6 py-4 dark:border-dark-paper-border"

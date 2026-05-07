@@ -1175,8 +1175,11 @@
 											</svg>
 										</button>
 										{#if docMenuOpenId === doc.id}
+											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<div
 												class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+												role="menu"
+												tabindex="-1"
 												onclick={(e) => e.stopPropagation()}
 											>
 												<a
@@ -1313,8 +1316,11 @@
 											</svg>
 										</button>
 										{#if docMenuOpenId === doc.id}
+											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<div
 												class="absolute top-full right-0 z-20 mt-1 w-36 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+												role="menu"
+												tabindex="-1"
 												onclick={(e) => e.stopPropagation()}
 											>
 												<button
