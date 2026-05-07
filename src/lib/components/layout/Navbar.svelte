@@ -6,6 +6,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { env } from '$env/dynamic/public';
+	import { resolve } from '$app/paths';
 	const PUBLIC_LIBRARIAN_URL = env.PUBLIC_LIBRARIAN_URL ?? '#';
 
 	async function handleLogout(e: SubmitEvent) {
@@ -47,7 +48,7 @@
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
 		<div class="flex items-center gap-2">
 			<a
-				href="/projects"
+				href={resolve('/projects')}
 				class="flex items-center gap-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink"
 			>
 				Scholio
@@ -104,7 +105,8 @@
 								onclick={() => {
 									workspaceStore.set({ id: null, name: 'Personal' });
 									workspaceOpen = false;
-									if (page.url.pathname.startsWith('/projects/')) goto('/projects?org=personal');
+									if (page.url.pathname.startsWith('/projects/'))
+										goto(resolve('/projects?org=personal'));
 								}}
 								class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore
 									.current.id === null
@@ -137,7 +139,8 @@
 									onclick={() => {
 										workspaceStore.set({ id: org.id, name: org.name });
 										workspaceOpen = false;
-										if (page.url.pathname.startsWith('/projects/')) goto(`/projects?org=${org.id}`);
+										if (page.url.pathname.startsWith('/projects/'))
+											goto(resolve(`/projects?org=${org.id}`));
 									}}
 									class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore
 										.current.id === org.id
@@ -177,25 +180,25 @@
 		<div class="flex items-center gap-4">
 			<nav class="hidden items-center gap-4 sm:flex">
 				<a
-					href="/projects"
+					href={resolve('/projects')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Projects
 				</a>
 				<a
-					href="/bib"
+					href={resolve('/bib')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Bibliography
 				</a>
 				<a
-					href="/explore"
+					href={resolve('/explore')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Explore
 				</a>
 				<a
-					href="/network"
+					href={resolve('/network')}
 					class="relative font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Network
@@ -208,7 +211,7 @@
 					{/if}
 				</a>
 				<a
-					href="/help"
+					href={resolve('/help')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Help
@@ -216,7 +219,7 @@
 				<a
 					href={PUBLIC_LIBRARIAN_URL}
 					target="_blank"
-					rel="noopener noreferrer"
+					rel="noopener noreferrer external"
 					class="flex items-center gap-1 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Librarian
@@ -290,7 +293,7 @@
 
 			<div class="flex items-center gap-2.5">
 				<a
-					href="/settings"
+					href={resolve('/settings')}
 					title="Settings"
 					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent font-sans text-xs font-semibold text-white transition-opacity hover:opacity-80"
 				>

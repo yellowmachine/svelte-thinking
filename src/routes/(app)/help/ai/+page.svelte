@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Callout from '$lib/components/ui/Callout.svelte';
+	import { resolve } from '$app/paths';
 </script>
 
 <svelte:head>
@@ -11,7 +12,7 @@
 	<nav
 		class="mb-6 flex items-center gap-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 	>
-		<a href="/help" class="text-accent underline-offset-2 hover:underline">Help</a>
+		<a href={resolve('/help')} class="text-accent underline-offset-2 hover:underline">Help</a>
 		<span>/</span>
 		<span class="text-ink-muted dark:text-dark-ink-muted">AI assistant</span>
 	</nav>
@@ -39,6 +40,7 @@
 		</p>
 		<div class="grid gap-1 sm:grid-cols-2">
 			{#each [{ href: '#architecture', label: 'Architecture' }, { href: '#setup', label: 'Setup & API key' }, { href: '#agent-tools', label: 'Agent tools (conversational)' }, { href: '#read-tools', label: '↳ Read tools' }, { href: '#write-tools', label: '↳ Write tools (with confirmation)' }, { href: '#editor-tools', label: 'Editor tools (inline)' }, { href: '#task-tools', label: 'Task-based features' }, { href: '#models', label: 'Supported models' }, { href: '#tips', label: 'Tips' }] as item (item.href)}
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a
 					href={item.href}
 					class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline"

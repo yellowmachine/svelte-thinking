@@ -4,6 +4,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 
+	import { resolve } from '$app/paths';
 	let {
 		user,
 		githubLinked,
@@ -315,7 +316,7 @@
 				</div>
 				<div class="flex items-center gap-3">
 					<a
-						href="/api/orcid/connect"
+						href={resolve('/api/orcid/connect')}
 						class="font-sans text-xs text-ink-muted underline hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 					>
 						Reconnect
@@ -336,7 +337,7 @@
 				</p>
 			{/if}
 			<a
-				href="/api/orcid/connect"
+				href={resolve('/api/orcid/connect')}
 				class="inline-flex items-center gap-2 rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true">

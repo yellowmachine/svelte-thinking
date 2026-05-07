@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 
 	// When the server returns twoFactor: true, show the TOTP step
@@ -103,7 +104,7 @@
 						>Password</label
 					>
 					<a
-						href="/forgot-password"
+						href={resolve('/forgot-password')}
 						tabindex="-1"
 						class="font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 						>Forgot password?</a

@@ -5,6 +5,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	type Requirement = (typeof data.requirements)[number];
@@ -116,7 +117,7 @@
 	<!-- Header -->
 	<div class="mb-8">
 		<a
-			href="/projects/{data.project.id}"
+			href={resolve(`/projects/${data.project.id}`)}
 			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">

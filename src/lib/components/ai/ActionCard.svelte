@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
-
 	type ConfirmableAction = Extract<PendingAction, { type: 'create_document' | 'create_issue' }>;
 
 	type Props = {
@@ -164,9 +163,9 @@
 		<div class="flex justify-end gap-2 px-4 pt-3 pb-3">
 			{#if status === 'done'}
 				<a
-					href="{base}/projects/{projectId}/{action.type === 'create_issue'
-						? 'issues'
-						: 'documents'}/{createdId}"
+					href={resolve(
+						`/projects/${projectId}/${action.type === 'create_issue' ? 'issues' : 'documents'}/${createdId}`
+					)}
 					class="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
 				>
 					{action.type === 'create_issue' ? 'Open issue' : 'Open document'}

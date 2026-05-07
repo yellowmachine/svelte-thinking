@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 
 	const token = $derived(form?.token ?? data.token);
@@ -24,7 +25,7 @@
 				Your password has been reset. You can now sign in.
 			</p>
 			<a
-				href="/login"
+				href={resolve('/login')}
 				class="mt-6 inline-block rounded-md bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 			>
 				Sign in

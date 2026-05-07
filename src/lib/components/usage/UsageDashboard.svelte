@@ -3,6 +3,7 @@
 	import { AI_TASKS, MODEL_SHORT_LABEL } from '$lib/ai-config';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 
+	import { resolve } from '$app/paths';
 	type Props =
 		| {
 				mode: 'personal';
@@ -164,7 +165,7 @@
 					<div class="mt-1 flex flex-wrap gap-2">
 						{#each props.ownedOrgs as org (org.id)}
 							<a
-								href="/usage/org/{org.id}"
+								href={resolve(`/usage/org/${org.id}`)}
 								class="font-sans text-xs text-accent underline decoration-dotted">{org.name} →</a
 							>
 						{/each}
@@ -172,7 +173,7 @@
 				{/if}
 			{:else}
 				<a
-					href="/usage"
+					href={resolve('/usage')}
 					class="mb-2 flex items-center gap-1 font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted"
 				>
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="none"
@@ -422,7 +423,7 @@
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
 									<a
-										href="/projects/{row.projectId}"
+										href={resolve(`/projects/${row.projectId}`)}
 										class="truncate font-sans text-sm text-ink hover:text-accent dark:text-dark-ink"
 									>
 										{row.title ?? row.projectId}

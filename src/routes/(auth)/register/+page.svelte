@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 
 	let password = $state('');
@@ -102,14 +103,14 @@
 		<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 			By signing up you agree to our
 			<a
-				href="/conduct"
+				href={resolve('/conduct')}
 				target="_blank"
 				class="underline underline-offset-2 hover:text-ink-muted dark:hover:text-dark-ink-muted"
 				>code of conduct</a
 			>
 			and
 			<a
-				href="/privacy"
+				href={resolve('/privacy')}
 				target="_blank"
 				class="underline underline-offset-2 hover:text-ink-muted dark:hover:text-dark-ink-muted"
 				>privacy policy</a

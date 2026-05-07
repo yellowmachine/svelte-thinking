@@ -1,5 +1,5 @@
 <script>
-	import { resolveRoute as resolve } from '$app/paths';
+	import { resolve, resolveRoute } from '$app/paths';
 	let { children } = $props();
 </script>
 

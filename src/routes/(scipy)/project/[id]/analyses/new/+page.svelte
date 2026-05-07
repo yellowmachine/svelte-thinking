@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	const tpl = untrack(() => data.template?.parameters) as Record<string, unknown> | undefined;
@@ -48,7 +49,7 @@
 
 		if (res.ok) {
 			const analysis = await res.json();
-			goto(`/project/${data.project.id}/analyses/${analysis.id}`);
+			goto(resolve(`/project/${data.project.id}/analyses/${analysis.id}`));
 		} else {
 			const body = await res.json().catch(() => ({}));
 			runError = body.message ?? 'Analysis failed';
@@ -60,7 +61,7 @@
 <div class="max-w-xl p-8">
 	<div>
 		<a
-			href="/project/{data.project.id}/analyses"
+			href={resolve(`/project/${data.project.id}/analyses`)}
 			class="text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 		>
 			← Analyses

@@ -28,7 +28,7 @@
 				<a
 					href={person.url}
 					target="_blank"
-					rel="noopener noreferrer"
+					rel="noopener noreferrer external"
 					class="group flex w-72 flex-col items-center rounded-xl border border-paper-border bg-paper p-8 text-center transition-shadow hover:shadow-md dark:border-dark-paper-border dark:bg-dark-paper"
 				>
 					{#if person.avatarUrl}

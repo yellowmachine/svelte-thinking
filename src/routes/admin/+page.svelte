@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	let { data } = $props();
 </script>
 
@@ -10,7 +11,7 @@
 
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		<a
-			href="/admin/waitlist"
+			href={resolve('/admin/waitlist')}
 			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
 		>
 			<p
@@ -32,7 +33,7 @@
 		</a>
 
 		<a
-			href="/admin/users"
+			href={resolve('/admin/users')}
 			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
 		>
 			<p
@@ -54,7 +55,7 @@
 		</a>
 
 		<a
-			href="/admin/activity"
+			href={resolve('/admin/activity')}
 			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
 		>
 			<p
@@ -76,7 +77,7 @@
 		</a>
 
 		<a
-			href="/admin/panics3"
+			href={resolve('/admin/panics3')}
 			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
 		>
 			<p
@@ -95,7 +96,7 @@
 		</a>
 
 		<a
-			href="/admin/notifications"
+			href={resolve('/admin/notifications')}
 			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
 		>
 			<p

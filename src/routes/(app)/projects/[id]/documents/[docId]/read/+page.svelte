@@ -3,6 +3,7 @@
 	import type { PageData } from './$types';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	let activeChapterId = $state<string | null>(null);
@@ -71,7 +72,7 @@
 		class="sticky top-0 z-10 flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-6 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 	>
 		<a
-			href="/projects/{data.book.projectId}/documents/{data.book.id}"
+			href={resolve(`/projects/${data.book.projectId}/documents/${data.book.id}`)}
 			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg

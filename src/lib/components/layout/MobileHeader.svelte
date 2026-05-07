@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { offlineDb } from '$lib/offline.db';
 
+	import { resolve } from '$app/paths';
 	let {
 		user
 	}: {
@@ -41,7 +42,7 @@
 	class="sticky top-0 z-10 flex items-center justify-between border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm sm:hidden dark:border-dark-paper-border dark:bg-dark-paper/95"
 >
 	<a
-		href="/projects"
+		href={resolve('/projects')}
 		class="flex items-center gap-2 font-serif text-lg font-semibold text-ink dark:text-dark-ink"
 	>
 		Scholio
@@ -82,7 +83,7 @@
 				<ul class="py-1">
 					<li>
 						<a
-							href="/settings"
+							href={resolve('/settings')}
 							class="block px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 						>
 							Settings

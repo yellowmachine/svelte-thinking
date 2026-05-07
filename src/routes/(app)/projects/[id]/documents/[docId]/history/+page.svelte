@@ -6,6 +6,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { untrack } from 'svelte';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	type PanelMode = 'preview' | 'diff' | 'summary';
@@ -154,7 +155,7 @@
 		class="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-paper-border bg-paper/95 px-6 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 	>
 		<a
-			href="/projects/{data.document.projectId}/documents/{data.document.id}"
+			href={resolve(`/projects/${data.document.projectId}/documents/${data.document.id}`)}
 			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg
@@ -425,24 +426,27 @@
 		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
 		<a
-			href="/api/projects/{data.document.projectId}/documents/{data.document
-				.id}/export?format=latex&versionId={exportOpenId}"
+			href={resolve(
+				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=latex&versionId=${exportOpenId}`
+			)}
 			onclick={() => (exportOpenId = null)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
 		</a>
 		<a
-			href="/api/projects/{data.document.projectId}/documents/{data.document
-				.id}/export?format=typst&versionId={exportOpenId}"
+			href={resolve(
+				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=typst&versionId=${exportOpenId}`
+			)}
 			onclick={() => (exportOpenId = null)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
 		</a>
 		<a
-			href="/api/projects/{data.document.projectId}/documents/{data.document
-				.id}/export?format=pdf&versionId={exportOpenId}"
+			href={resolve(
+				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=pdf&versionId=${exportOpenId}`
+			)}
 			onclick={() => (exportOpenId = null)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>

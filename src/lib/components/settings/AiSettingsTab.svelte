@@ -4,6 +4,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { MODEL_RECOMMENDATIONS, MODEL_SHORT_LABEL } from '$lib/ai-config';
 
+	import { resolve } from '$app/paths';
 	let {
 		openrouterStatus
 	}: {
@@ -173,7 +174,7 @@
 <div class="flex flex-col gap-6">
 	<div class="flex justify-end">
 		<a
-			href="/usage"
+			href={resolve('/usage')}
 			class="font-sans text-sm text-accent underline decoration-dotted hover:decoration-solid"
 			>View AI usage dashboard →</a
 		>
@@ -278,7 +279,7 @@
 			{:else}
 				<!-- Connect button -->
 				<a
-					href="/api/openrouter/connect"
+					href={resolve('/api/openrouter/connect')}
 					class="mb-4 flex w-full items-center justify-center gap-2.5 rounded-lg bg-accent px-4 py-3 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">

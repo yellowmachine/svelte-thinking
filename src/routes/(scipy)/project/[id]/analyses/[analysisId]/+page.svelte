@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	const { analysis } = untrack(() => data);
@@ -18,7 +19,7 @@
 <div class="max-w-2xl p-8">
 	<div>
 		<a
-			href="/project/{data.project.id}/analyses"
+			href={resolve(`/project/${data.project.id}/analyses`)}
 			class="text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 		>
 			← Analyses

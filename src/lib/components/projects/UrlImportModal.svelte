@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 
+	import { resolve } from '$app/paths';
 	type UrlAiResult = {
 		citeKey: string;
 		type: string;
@@ -176,7 +177,7 @@
 				});
 				reset();
 				onclose();
-				await goto(`/projects/${projectId}/documents/${docId}`);
+				await goto(resolve(`/projects/${projectId}/documents/${docId}`));
 			} else {
 				if (!urlImportUrl.trim() || !urlImportTitle.trim()) return;
 				const { docId } = await trpc.references.importDocumentFromUrl.mutate({
@@ -187,7 +188,7 @@
 				});
 				reset();
 				onclose();
-				await goto(`/projects/${projectId}/documents/${docId}`);
+				await goto(resolve(`/projects/${projectId}/documents/${docId}`));
 			}
 		} catch (e) {
 			urlImportError = e instanceof Error ? e.message : 'Import failed.';

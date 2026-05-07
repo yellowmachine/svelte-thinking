@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 </script>
 
@@ -10,7 +11,10 @@
 
 <main class="flex min-h-screen items-center justify-center bg-paper px-6 dark:bg-dark-paper">
 	<div class="w-full max-w-md">
-		<a href="/" class="mb-8 block font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+		<a
+			href={resolve('/')}
+			class="mb-8 block font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+		>
 			Scholio
 		</a>
 

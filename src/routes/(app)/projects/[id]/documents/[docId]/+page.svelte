@@ -48,6 +48,7 @@
 	import { isProjectOwner, canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	// untrack: read from props once without creating a reactive dependency
@@ -1345,7 +1346,9 @@
 
 				{#if data.document.type === 'book'}
 					<a
-						href="/projects/{data.document.projectId}/documents/{data.document.id}/read"
+						href={resolve(
+							`/projects/${data.document.projectId}/documents/${data.document.id}/read`
+						)}
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						<svg
@@ -1481,7 +1484,7 @@
 					</button>
 				{:else if aiCtaType === 'personal'}
 					<a
-						href="/settings?tab=ai"
+						href={resolve('/settings?tab=ai')}
 						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1496,7 +1499,7 @@
 					</a>
 				{:else if aiCtaType === 'org-owner'}
 					<a
-						href="/settings?tab=organizations"
+						href={resolve('/settings?tab=organizations')}
 						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1671,7 +1674,9 @@
 				{/if}
 
 				<a
-					href="/projects/{data.document.projectId}/documents/{data.document.id}/history"
+					href={resolve(
+						`/projects/${data.document.projectId}/documents/${data.document.id}/history`
+					)}
 					title="Version history — browse and restore past committed versions"
 					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
@@ -1693,7 +1698,7 @@
 				</a>
 
 				<a
-					href="/help"
+					href={resolve('/help')}
 					target="_blank"
 					rel="noopener noreferrer"
 					title="Syntax guide"
@@ -2188,7 +2193,7 @@
 					<div class="flex-1 overflow-y-auto p-2">
 						{#each backlinks as link (link.id)}
 							<a
-								href="/projects/{data.document.projectId}/documents/{link.id}"
+								href={resolve(`/projects/${data.document.projectId}/documents/${link.id}`)}
 								class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 							>
 								<svg
@@ -2462,25 +2467,29 @@
 		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
 		<a
-			href="/api/projects/{data.document?.projectId}/documents/{data.document
-				?.id}/export?format=latex"
+			href={resolve(
+				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=latex`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
 		</a>
 		<a
-			href="/api/projects/{data.document?.projectId}/documents/{data.document
-				?.id}/export?format=typst"
+			href={resolve(
+				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=typst`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
 		</a>
 		<a
-			href={data.document?.type === 'book'
-				? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`
-				: `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=pdf`}
+			href={resolve(
+				data.document?.type === 'book'
+					? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`
+					: `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=pdf`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Callout from '$lib/components/ui/Callout.svelte';
+	import { resolve } from '$app/paths';
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
@@ -104,7 +105,7 @@
 			Each type has its own help page with a full example and a one-click sample project.
 		</p>
 		<div class="grid gap-3 sm:grid-cols-2">
-			{#each [{ href: '/help/notes', label: 'Notes', tagline: 'Annotations, reading notes, and ideas in progress.' }, { href: '/help/book', label: 'Book', tagline: 'Multi-chapter document with cover page, TOC, and numbered chapters.' }] as item (item.href)}
+			{#each [{ href: resolve('/help/notes'), label: 'Notes', tagline: 'Annotations, reading notes, and ideas in progress.' }, { href: resolve('/help/book'), label: 'Book', tagline: 'Multi-chapter document with cover page, TOC, and numbered chapters.' }] as item (item.href)}
 				<a
 					href={item.href}
 					class="group flex flex-col gap-1 rounded-xl border border-paper-border bg-paper px-4 py-3 transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper"
@@ -132,6 +133,7 @@
 			class="grid gap-1 rounded-xl border border-paper-border bg-paper px-5 py-4 sm:grid-cols-2 dark:border-dark-paper-border dark:bg-dark-paper"
 		>
 			{#each [{ href: '#projects', label: 'Projects & workspaces' }, { href: '#bibliography', label: 'Bibliography' }, { href: '#editor', label: 'Documents & editor' }, { href: '#formatting', label: '↳ Basic formatting' }, { href: '#citations', label: '↳ Bibliographic citations' }, { href: '#math', label: '↳ Mathematics & formal logic' }, { href: '#wikilinks', label: '↳ Wikilinks' }, { href: '#autocomplete', label: '↳ [[ autocomplete' }, { href: '#footnotes', label: '↳ Footnotes' }, { href: '#callouts', label: '↳ Callout blocks' }, { href: '#photos', label: '↳ Photos' }, { href: '#charts', label: '↳ Vega-Lite charts' }, { href: '#export', label: '↳ Export' }, { href: '#versions', label: 'Version history' }, { href: '/help/ai', label: 'AI assistant →' }, { href: '#collaboration', label: 'Collaboration' }, { href: '#explore', label: 'Explore' }, { href: '#settings', label: 'Settings' }, { href: '#tips', label: 'Tips' }] as item (item.href)}
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 				<a
 					href={item.href}
 					class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline"
@@ -842,7 +844,7 @@
 				</p>
 			</div>
 			<a
-				href="/help/ai"
+				href={resolve('/help/ai')}
 				class="shrink-0 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 font-sans text-xs font-semibold text-accent transition-colors hover:bg-accent/10 dark:border-accent/20 dark:bg-accent/5"
 			>
 				Full AI guide →

@@ -7,6 +7,7 @@
 	import { TYPE_LABELS, type Author } from '$lib/utils/bibtex';
 	import { flash } from '$lib/stores/flash.svelte';
 
+	import { resolve } from '$app/paths';
 	type BibRef = {
 		id: string;
 		citeKey: string;
@@ -67,7 +68,7 @@
 				refId: ref.id,
 				projectId
 			});
-			await goto(`/projects/${projectId}/documents/${docId}`);
+			await goto(resolve(`/projects/${projectId}/documents/${docId}`));
 		} finally {
 			openingNotes = null;
 		}
@@ -501,7 +502,7 @@
 					{:else if ref.pdfKey}
 						<div class="flex items-center gap-0.5">
 							<a
-								href="/api/references/{ref.id}/pdf"
+								href={resolve(`/api/references/${ref.id}/pdf`)}
 								target="_blank"
 								rel="noopener noreferrer"
 								title="Open PDF"

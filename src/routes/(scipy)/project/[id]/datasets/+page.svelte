@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	let uploading = $state(false);
@@ -65,7 +66,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<a
-				href="/project/{data.project.id}"
+				href={resolve(`/project/${data.project.id}`)}
 				class="text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 			>
 				← {data.project.title}

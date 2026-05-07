@@ -8,6 +8,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PendingEditorAction, PendingAction } from '$lib/server/trpc/routers/ai';
 
+	import { resolve } from '$app/paths';
 	type Props = {
 		projectId: string;
 		documentId: string;
@@ -486,7 +487,7 @@
 		>
 			{#if error === 'NO_KEY'}
 				No AI key configured. <a
-					href="/settings?tab=ai"
+					href={resolve('/settings?tab=ai')}
 					class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a
 				> to add one.
 			{:else}

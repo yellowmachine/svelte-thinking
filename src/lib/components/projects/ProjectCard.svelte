@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { type ProjectStatus, PROJECT_STATUS_LABELS } from '$lib/domain/project';
-
 	let {
 		title,
 		description,

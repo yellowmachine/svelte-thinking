@@ -4,6 +4,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	const sample = $derived(data.sample);
@@ -19,7 +20,7 @@
 		errorMsg = '';
 		try {
 			const { projectId } = await trpc.projects.createFromSample.mutate(sample.slug);
-			await goto(`/projects/${projectId}`);
+			await goto(resolve(`/projects/${projectId}`));
 		} catch (e) {
 			errorMsg = e instanceof Error ? e.message : 'Something went wrong';
 			creating = false;
@@ -36,7 +37,7 @@
 	<nav
 		class="mb-6 flex items-center gap-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 	>
-		<a href="/help" class="text-accent underline-offset-2 hover:underline">Help</a>
+		<a href={resolve('/help')} class="text-accent underline-offset-2 hover:underline">Help</a>
 		<span>/</span>
 		<span>Document types</span>
 		<span>/</span>

@@ -18,6 +18,7 @@
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { projectBibTutorialSteps } from '$lib/tutorials/projectBib';
 
+	import { resolve } from '$app/paths';
 	// ── Citation style ────────────────────────────────────────────────────────
 
 	let citationStyle = $state<CitationStyle>('apa');
@@ -115,7 +116,7 @@
 	<!-- Header -->
 	<div class="mb-6">
 		<a
-			href="/projects/{data.project.id}"
+			href={resolve(`/projects/${data.project.id}`)}
 			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -354,7 +355,7 @@
 								title: result.title,
 								referenceId: newRef.id
 							})
-							.then(({ docId }) => goto(`/projects/${data.project.id}/documents/${docId}`))
+							.then(({ docId }) => goto(resolve(`/projects/${data.project.id}/documents/${docId}`)))
 							.catch((e) =>
 								flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error')
 							);
