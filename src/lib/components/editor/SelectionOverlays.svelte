@@ -587,10 +587,13 @@
 					: ''}»
 			</p>
 			{#if !sourceReference}
-				<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+				<label
+					for="subnote-ref"
+					class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 					>Referencia</label
 				>
 				<select
+					id="subnote-ref"
 					bind:value={subnoteRefId}
 					class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				>
@@ -604,19 +607,24 @@
 					Referencia: <span class="font-mono text-accent">@{sourceReference.citeKey}</span>
 				</p>
 			{/if}
-			<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+			<label
+				for="subnote-slug"
+				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 				>Slug <span class="text-ink-faint">(identificador único)</span></label
 			>
 			<input
+				id="subnote-slug"
 				bind:value={subnoteSlug}
 				type="text"
 				placeholder="p247-exchange"
 				class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
-			<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-				>Nota</label
+			<label
+				for="subnote-notes"
+				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Nota</label
 			>
 			<textarea
+				id="subnote-notes"
 				use:focusOnMount
 				bind:value={subnoteNotes}
 				rows={3}

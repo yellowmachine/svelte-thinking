@@ -219,6 +219,7 @@
 				Pega la URL de un artículo o página web.
 			</p>
 
+			<!-- svelte-ignore a11y_autofocus -->
 			<input
 				type="url"
 				bind:value={urlImportUrl}
@@ -373,10 +374,13 @@
 
 			<div class="space-y-3">
 				<div>
-					<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+					<label
+						for="url-edit-title"
+						class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 						>Título</label
 					>
 					<input
+						id="url-edit-title"
 						type="text"
 						bind:value={urlEditTitle}
 						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -384,20 +388,26 @@
 				</div>
 				<div class="grid grid-cols-2 gap-3">
 					<div>
-						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+						<label
+							for="url-edit-citekey"
+							class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 							>CiteKey</label
 						>
 						<input
+							id="url-edit-citekey"
 							type="text"
 							bind:value={urlEditCiteKey}
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+						<label
+							for="url-edit-year"
+							class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 							>Año</label
 						>
 						<input
+							id="url-edit-year"
 							type="text"
 							bind:value={urlEditYear}
 							placeholder="2024"
@@ -406,10 +416,12 @@
 					</div>
 				</div>
 				<div>
-					<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-						>Tipo</label
+					<label
+						for="url-edit-type"
+						class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Tipo</label
 					>
 					<select
+						id="url-edit-type"
 						bind:value={urlEditType}
 						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					>
@@ -419,10 +431,13 @@
 					</select>
 				</div>
 				<div>
-					<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+					<label
+						for="url-edit-authors"
+						class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 						>Autores <span class="text-ink-faint">(uno por línea: Apellido, Nombre)</span></label
 					>
 					<textarea
+						id="url-edit-authors"
 						bind:value={urlEditAuthors}
 						rows={3}
 						class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"

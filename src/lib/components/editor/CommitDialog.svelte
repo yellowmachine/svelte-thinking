@@ -62,6 +62,7 @@
 		</p>
 
 		<div class="mt-4 flex flex-col gap-3">
+			<!-- svelte-ignore a11y_autofocus -->
 			<textarea
 				bind:value={commitMessage}
 				rows={3}

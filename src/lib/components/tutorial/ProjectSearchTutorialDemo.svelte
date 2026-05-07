@@ -32,6 +32,7 @@
 
 <div class="min-h-screen bg-paper-ui dark:bg-dark-paper-ui">
 	<div class="mx-auto max-w-2xl px-4 py-10">
+		<!-- svelte-ignore a11y_invalid_attribute -->
 		<a href="#" class="mb-6 inline-flex items-center gap-1.5 font-sans text-sm text-ink-faint">
 			← Climate Policy Review
 		</a>
@@ -69,6 +70,7 @@
 		<ul data-tutorial="project-search-results" class="flex flex-col gap-3">
 			{#each mockResults as result (result.id)}
 				<li>
+					<!-- svelte-ignore a11y_invalid_attribute -->
 					<a
 						href="#"
 						class="block rounded-xl border border-paper-border bg-paper p-4 transition-colors hover:border-accent/40 hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/40 dark:hover:bg-dark-paper-ui"

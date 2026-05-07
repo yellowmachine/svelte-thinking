@@ -45,6 +45,7 @@
 	<div class="mx-auto max-w-3xl px-6 py-8">
 		<!-- Header -->
 		<div class="mb-8">
+			<!-- svelte-ignore a11y_invalid_attribute -->
 			<a href="#" class="mb-3 flex items-center gap-1.5 font-sans text-sm text-ink-muted">
 				← Climate Policy Review
 			</a>
@@ -64,6 +65,7 @@
 			{#each mockThreads as thread (thread.id)}
 				<section>
 					<div class="mb-3 flex items-center gap-2">
+						<!-- svelte-ignore a11y_invalid_attribute -->
 						<a
 							href="#"
 							class="font-serif text-lg font-semibold text-ink hover:text-accent dark:text-dark-ink"
