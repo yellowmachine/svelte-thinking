@@ -11,16 +11,26 @@ export const GET: RequestHandler = async (event) => {
 
 	const { docId, id: projectId } = event.params;
 	const format = event.url.searchParams.get('format');
+	const versionId = event.url.searchParams.get('versionId');
 
 	if (format !== 'latex' && format !== 'typst' && format !== 'pdf') {
 		error(400, 'El parámetro format debe ser latex, typst o pdf');
 	}
 
-	// Load document content (draft > current version)
+	// Load document content (specific version > draft > current version)
 	const docResult = (await event.locals.withRLS(async (db) => {
 		const docs = await db.select().from(document).where(eq(document.id, docId)).limit(1);
 		if (!docs[0]) return null;
 		const doc = docs[0];
+
+		if (versionId) {
+			const versions = await db
+				.select({ content: documentVersion.content })
+				.from(documentVersion)
+				.where(eq(documentVersion.id, versionId))
+				.limit(1);
+			return { title: doc.title, content: versions[0]?.content ?? '' };
+		}
 
 		if (doc.draftContent !== null) {
 			return { title: doc.title, content: doc.draftContent };
