@@ -14,7 +14,6 @@
 	}: {
 		data: {
 			invitation: {
-				id: string;
 				role: ProjectRole;
 				status: ProjectInvitationStatus;
 				expiresAt: Date;

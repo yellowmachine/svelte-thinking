@@ -26,7 +26,6 @@
 
 	type Project = {
 		id: string;
-		status: string;
 		citationStyle?: string | null;
 		doi?: string | null;
 		version?: string | null;
@@ -571,7 +570,7 @@
 							>Citation style</span
 						>
 						<div class="mt-1 flex flex-wrap gap-1.5">
-							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label]}
+							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
 								<button
 									type="button"
 									onclick={() =>

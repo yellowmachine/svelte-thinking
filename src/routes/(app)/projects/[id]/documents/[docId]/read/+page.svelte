@@ -141,7 +141,7 @@
 					Contents
 				</p>
 				<nav class="flex flex-col gap-0.5">
-					{#each data.chapters as chapter, i}
+					{#each data.chapters as chapter, i (chapter.id)}
 						<button
 							onclick={() => scrollToChapter(chapter.id)}
 							class="rounded px-2 py-1.5 text-left font-sans text-sm transition-colors
@@ -184,7 +184,7 @@
 					</p>
 				{:else}
 					<!-- Chapters -->
-					{#each data.chapters as chapter, i}
+					{#each data.chapters as chapter, i (chapter.id)}
 						<section id="chapter-{chapter.id}" class="mb-16 scroll-mt-20">
 							<div class="mb-6 border-b border-paper-border pb-4 dark:border-dark-paper-border">
 								<p

@@ -425,7 +425,7 @@
 						bind:value={urlEditType}
 						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					>
-						{#each REF_TYPES as t}
+						{#each REF_TYPES as t (t)}
 							<option value={t}>{t}</option>
 						{/each}
 					</select>

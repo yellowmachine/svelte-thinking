@@ -27,7 +27,14 @@ export default defineConfig(
 
 			// Rules downgraded to warn — pre-existing violations across the codebase.
 			// Fix gradually; errors block CI, warnings do not.
-			'@typescript-eslint/no-unused-vars': 'warn',
+			'@typescript-eslint/no-unused-vars': [
+				'warn',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					destructuredArrayIgnorePattern: '^_'
+				}
+			],
 			'@typescript-eslint/no-explicit-any': 'warn',
 			'@typescript-eslint/no-unused-expressions': 'warn',
 			'svelte/no-navigation-without-resolve': 'warn',

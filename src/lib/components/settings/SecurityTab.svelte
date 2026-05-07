@@ -399,7 +399,7 @@
 							</div>
 						</div>
 						<div class="mb-3 grid grid-cols-2 gap-1.5">
-							{#each twoFaBackupCodes as code}
+							{#each twoFaBackupCodes as code, i (i)}
 								<span
 									class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300"
 									>{code}</span
@@ -531,7 +531,7 @@
 							</div>
 						</div>
 						<div class="mb-3 grid grid-cols-2 gap-1.5">
-							{#each twoFaBackupCodes as code}
+							{#each twoFaBackupCodes as code, i (i)}
 								<span
 									class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300"
 									>{code}</span

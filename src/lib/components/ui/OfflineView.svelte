@@ -150,7 +150,7 @@
 
 		{#if loaded && groups.length > 0}
 			<div class="w-full max-w-sm text-left">
-				{#each groups as group}
+				{#each groups as group (group.url)}
 					<div class="mb-4">
 						<span
 							class="mb-1 block font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
@@ -158,7 +158,7 @@
 							{group.title}
 						</span>
 						<ul class="flex flex-col gap-1">
-							{#each group.documents as doc}
+							{#each group.documents as doc (doc.url)}
 								<li>
 									<button
 										type="button"

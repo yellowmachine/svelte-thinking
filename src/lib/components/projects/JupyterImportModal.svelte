@@ -346,7 +346,7 @@
 					>
 						root
 					</button>
-					{#each breadcrumbs as crumb, i}
+					{#each breadcrumbs as crumb, i (i)}
 						<svg class="h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="currentColor"
 							><path
 								fill-rule="evenodd"

@@ -326,7 +326,7 @@
 			<!-- Manual keys (non-OAuth) -->
 			{#if aiKeys.filter((k) => k.source === 'manual').length > 0}
 				<div class="mb-4 flex flex-col gap-2">
-					{#each aiKeys.filter((k) => k.source === 'manual') as key}
+					{#each aiKeys.filter((k) => k.source === 'manual') as key (key.id)}
 						<div
 							class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 						>
@@ -481,7 +481,7 @@
 				</p>
 
 				<div class="flex flex-col gap-4">
-					{#each aiTasks as task}
+					{#each aiTasks as task (task.id)}
 						{@const cfg = aiTaskConfig[task.id as AiTaskId]}
 						{@const enabledKeys = aiKeys.filter((k) => k.enabled)}
 						<div
@@ -541,7 +541,7 @@
 									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 								>
 									<option value="">— First active key —</option>
-									{#each enabledKeys as key}
+									{#each enabledKeys as key (key.id)}
 										<option value={key.id}>{key.name}</option>
 									{/each}
 								</select>
@@ -558,7 +558,7 @@
 									<option value=""
 										>— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option
 									>
-									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
+									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m (m.id)}
 										{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
 											task.id as 'agent' | 'draft' | 'review' | 'requirements'
 										)}

@@ -528,7 +528,7 @@ export const projectsRouter = router({
 					}>
 				)
 					.sort((a, b) => b.similarity - a.similarity)
-					// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 					.map(({ similarity: _s, ...rest }) => rest);
 			} else {
 				// Sin query: todos los proyectos buscables ordenados por título

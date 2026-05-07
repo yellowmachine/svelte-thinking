@@ -14,7 +14,6 @@
 		ontogglePicker
 	}: {
 		requirement: {
-			id: string;
 			name: string;
 			description: string | null;
 			required: boolean;

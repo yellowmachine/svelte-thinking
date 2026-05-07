@@ -59,7 +59,7 @@
 			What you can do
 		</h2>
 		<ul class="space-y-1.5">
-			{#each sample.features as feature}
+			{#each sample.features as feature, i (i)}
 				<li
 					class="flex items-start gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
 				>

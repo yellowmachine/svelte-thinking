@@ -162,7 +162,7 @@
 				<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">AI Usage</h1>
 				{#if props.ownedOrgs?.length}
 					<div class="mt-1 flex flex-wrap gap-2">
-						{#each props.ownedOrgs as org}
+						{#each props.ownedOrgs as org (org.id)}
 							<a
 								href="/usage/org/{org.id}"
 								class="font-sans text-xs text-accent underline decoration-dotted">{org.name} →</a
@@ -197,7 +197,7 @@
 
 		<!-- Date range controls -->
 		<div class="flex flex-wrap items-center gap-2">
-			{#each ['7d', '30d', '90d', 'custom'] as Preset[] as p}
+			{#each ['7d', '30d', '90d', 'custom'] as Preset[] as p (p)}
 				<button
 					type="button"
 					onclick={() => (preset = p)}
@@ -250,7 +250,7 @@
 	{:else if data}
 		<!-- KPI Cards -->
 		<div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-			{#each [{ label: 'Total cost', value: fmtEur(data.summary?.totalCostEur) }, { label: 'API calls', value: fmtNum(data.summary?.totalCalls) }, { label: 'Input tokens', value: fmtTokens(data.summary?.totalInputTokens) }, { label: 'Output tokens', value: fmtTokens(data.summary?.totalOutputTokens) }] as card}
+			{#each [{ label: 'Total cost', value: fmtEur(data.summary?.totalCostEur) }, { label: 'API calls', value: fmtNum(data.summary?.totalCalls) }, { label: 'Input tokens', value: fmtTokens(data.summary?.totalInputTokens) }, { label: 'Output tokens', value: fmtTokens(data.summary?.totalOutputTokens) }] as card (card.label)}
 				<div
 					class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
@@ -273,7 +273,7 @@
 				<div class="overflow-x-auto">
 					<svg viewBox="0 0 {CHART_W} {CHART_H}" class="w-full" style="min-width:320px">
 						<!-- Grid lines -->
-						{#each chartData.yTicks as tick}
+						{#each chartData.yTicks as tick, i (i)}
 							<line
 								x1={PAD.left}
 								y1={tick.y}
@@ -318,12 +318,12 @@
 						/>
 
 						<!-- Dots -->
-						{#each chartData.points as p}
+						{#each chartData.points as p, i (i)}
 							<circle cx={p.x} cy={p.y} r="2.5" fill="currentColor" class="text-accent" />
 						{/each}
 
 						<!-- X axis labels -->
-						{#each chartData.xTicks as t}
+						{#each chartData.xTicks as t (t.i)}
 							<text
 								x={chartData.points[t.i]?.x ?? 0}
 								y={CHART_H - 6}
@@ -349,7 +349,7 @@
 						Cost by task
 					</h2>
 					<div class="space-y-2.5">
-						{#each data.byTask as row}
+						{#each data.byTask as row (row.task)}
 							{@const pct = (Number(row.costEur) / maxOf(data.byTask)) * 100}
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
@@ -383,7 +383,7 @@
 						Cost by model
 					</h2>
 					<div class="space-y-2.5">
-						{#each data.byModel as row}
+						{#each data.byModel as row (row.model)}
 							{@const pct = (Number(row.costEur) / maxOf(data.byModel)) * 100}
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
@@ -417,7 +417,7 @@
 						Top projects
 					</h2>
 					<div class="space-y-2.5">
-						{#each data.byProject as row}
+						{#each data.byProject as row (row.projectId)}
 							{@const pct = (Number(row.costEur) / maxOf(data.byProject)) * 100}
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
@@ -456,7 +456,7 @@
 							Top users
 						</h2>
 						<div class="space-y-2.5">
-							{#each orgData.byUser as row}
+							{#each orgData.byUser as row (row.userId)}
 								{@const pct = (Number(row.costEur) / maxOf(orgData.byUser)) * 100}
 								<div>
 									<div class="mb-0.5 flex items-center justify-between gap-2">

@@ -277,7 +277,6 @@
 		return true;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	async function lookupNames(partial: string, _context: string): Promise<string[]> {
 		await loadRefs();
 		if (!partial.trim()) return [];
@@ -828,7 +827,6 @@
 		});
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function handlePreviewCommentClick(_id: string) {
 		showComments = true;
 	}
@@ -1768,7 +1766,7 @@
 							title="Spell check language"
 							class="cursor-pointer bg-paper font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper dark:text-dark-ink-muted"
 						>
-							{#each SPELL_LANGUAGES as lang}
+							{#each SPELL_LANGUAGES as lang (lang.code)}
 								<option value={lang.code}>{lang.label}</option>
 							{/each}
 						</select>

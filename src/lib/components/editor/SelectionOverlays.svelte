@@ -319,7 +319,7 @@
 					<div
 						class="absolute top-full left-0 z-30 mt-1 w-44 rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 					>
-						{#each Object.entries(reviewTypeLabels) as [type, label]}
+						{#each Object.entries(reviewTypeLabels) as [type, label] (type)}
 							<button
 								class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted block w-full px-3 py-2 text-left font-sans text-xs text-ink dark:text-dark-ink"
 								onclick={() => onreviewselection(type)}
@@ -448,7 +448,7 @@
 				</p>
 			{:else}
 				<div class="space-y-0.5 p-1.5">
-					{#each authorPopover.refs as ref}
+					{#each authorPopover.refs as ref (ref.citeKey)}
 						<button
 							onclick={() => {
 								onscrolltocite(ref.citeKey);
@@ -598,7 +598,7 @@
 					class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				>
 					<option value="">— elige referencia —</option>
-					{#each projectRefs as ref}
+					{#each projectRefs as ref (ref.id)}
 						<option value={ref.id ?? ''}>{ref.citeKey}</option>
 					{/each}
 				</select>

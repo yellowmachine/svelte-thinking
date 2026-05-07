@@ -53,7 +53,8 @@
 		commentRanges = [],
 		scrollToRange = null,
 		completions = undefined,
-		projectId = undefined
+		projectId = undefined,
+		spellLanguage: _spellLanguage = 'auto'
 	}: {
 		value?: string;
 		readonly?: boolean;

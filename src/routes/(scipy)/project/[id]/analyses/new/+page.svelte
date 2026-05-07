@@ -79,7 +79,7 @@
 				bind:value={selectedDataset}
 				class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 			>
-				{#each data.datasets as dataset}
+				{#each data.datasets as dataset (dataset.id)}
 					<option value={dataset.id}>{dataset.filename}</option>
 				{/each}
 			</select>

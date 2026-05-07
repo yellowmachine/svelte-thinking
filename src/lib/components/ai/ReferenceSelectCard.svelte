@@ -144,7 +144,7 @@
 		{#if status !== 'done'}
 			<!-- Reference list -->
 			<ul class="mx-4 mb-3 flex flex-col gap-1.5">
-				{#each references as ref, i}
+				{#each references as ref, i (i)}
 					<li>
 						<label
 							class="flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent/5 dark:hover:bg-accent/8"
