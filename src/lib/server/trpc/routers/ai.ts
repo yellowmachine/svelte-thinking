@@ -970,11 +970,6 @@ export async function resolveTaskKey(
 // Fixed USD→EUR rate for cost estimates (good enough for beta quotas)
 const USD_TO_EUR = 0.92;
 
-function startOfMonth(): Date {
-	const d = new Date();
-	return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-}
-
 // Fire-and-forget: inserts a usage record after each AI call
 export async function logUsage(
 	withRLS: WithRLS,

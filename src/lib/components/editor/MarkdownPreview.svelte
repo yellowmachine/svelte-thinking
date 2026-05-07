@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { marked, type RendererObject } from 'marked';
+	import { marked } from 'marked';
 	import markedFootnote from 'marked-footnote';
 	import DOMPurify from 'dompurify';
 	import katex from 'katex';
@@ -317,10 +317,10 @@
 	}
 
 	$effect(() => {
-		// Re-apply marks whenever parsed HTML or anchors change
-		const _html = parsed.html;
-		const _anchors = commentAnchors;
-		Promise.resolve().then(() => applyCommentMarks(_anchors));
+		// Re-apply marks whenever parsed HTML or anchors change — touch both to track reactivity
+		void parsed.html;
+		const anchors = commentAnchors;
+		Promise.resolve().then(() => applyCommentMarks(anchors));
 	});
 
 	// ── Selection handler ─────────────────────────────────────────────────────
@@ -360,8 +360,9 @@
 	}
 
 	$effect(() => {
-		const _html = parsed.html;
-		const _para = paragraphComments;
+		// Touch both reactive values to track changes
+		void parsed.html;
+		void paragraphComments;
 		Promise.resolve().then(() => applyParagraphMarkers());
 	});
 

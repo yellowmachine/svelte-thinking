@@ -1,15 +1,14 @@
 <script lang="ts">
+	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { onMount, onDestroy, untrack } from 'svelte';
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { documentTutorialSteps } from '$lib/tutorials/document';
-	import { goto, beforeNavigate } from '$app/navigation';
-	import Spinner from '$lib/components/ui/Spinner.svelte';
+	import { beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
-	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
 	import AnnotationsPanel from '$lib/components/editor/AnnotationsPanel.svelte';
 	import BibliographyPanel from '$lib/components/editor/BibliographyPanel.svelte';
@@ -29,11 +28,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { offlineDb } from '$lib/offline.db';
-	import {
-		findAnchor,
-		posToLine,
-		type CommentRange
-	} from '$lib/components/editor/commentsExtension';
+	import { findAnchor, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import {
 		CITATION_STYLE_LABELS,
 		formatFullCitation,
@@ -196,14 +191,6 @@
 	let previewRef = $state<PreviewRef>(null);
 	let splitPreviewRef = $state<PreviewRef>(null);
 
-	function extractDocumentPersons(): string[] {
-		const re = /\[\[person:([^\]]+)\]\]/g;
-		const seen = new Set<string>();
-		let m: RegExpExecArray | null;
-		while ((m = re.exec(content)) !== null) seen.add(m[1]);
-		return [...seen];
-	}
-
 	// Word-level ghost text state
 	let ghostWord: { from: number; name: string } | null = $state(null);
 
@@ -280,7 +267,7 @@
 
 	function onwordghosttab(): boolean {
 		if (!ghostWord || !editorEl) return false;
-		const { from, name } = ghostWord;
+		const { name } = ghostWord;
 		// 'from' is word start; cursor is somewhere inside the word (the typed prefix).
 		// insertMention replaces from..cursor with [[person:Name]], same behaviour as @@ flow.
 		const saved = ghostWord;
@@ -290,17 +277,7 @@
 		return true;
 	}
 
-	function isNoKeyError(e: unknown): boolean {
-		return !!(
-			e &&
-			typeof e === 'object' &&
-			'data' in e &&
-			(e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED'
-		);
-	}
-
-	const NO_KEY_MSG = 'No AI key configured. Go to Settings → AI to add one.';
-
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	async function lookupNames(partial: string, _context: string): Promise<string[]> {
 		await loadRefs();
 		if (!partial.trim()) return [];
@@ -594,15 +571,6 @@
 	// New comment form (triggered from floating button)
 	let showNewComment = $state(false);
 
-	// Citation explain popover
-	const CITE_SELECTION_RE = /^\[\[@([\w:._-]+)\]\]$/;
-
-	function selectedCiteKey(): string | null {
-		if (!currentSelection) return null;
-		const m = currentSelection.text.trim().match(CITE_SELECTION_RE);
-		return m ? m[1] : null;
-	}
-
 	// Author info popover
 	let authorPopover: {
 		name: string;
@@ -860,7 +828,8 @@
 		});
 	}
 
-	function handlePreviewCommentClick(id: string) {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	function handlePreviewCommentClick(_id: string) {
 		showComments = true;
 	}
 
@@ -994,7 +963,7 @@
 				suggestion: res.suggestion,
 				explanation: res.explanation
 			};
-		} catch (e) {
+		} catch {
 			selectionReview = null;
 		}
 	}

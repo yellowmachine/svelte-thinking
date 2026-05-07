@@ -53,7 +53,6 @@
 		commentRanges = [],
 		scrollToRange = null,
 		completions = undefined,
-		spellLanguage = 'en-US',
 		projectId = undefined
 	}: {
 		value?: string;

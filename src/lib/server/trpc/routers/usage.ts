@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, gte, lte, sql, sum, count } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { aiUsageLog } from '$lib/server/db/schemas/ai.schema';

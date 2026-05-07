@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { TRPCError } from '@trpc/server';
 import { createTestDb, createTestCaller, type TestDb } from '$lib/server/db/test-utils';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 

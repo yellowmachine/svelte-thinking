@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
 	type Props = {
 		open: boolean;
 		/** Short description of what is being acted on, e.g. "the document" or "the project" */

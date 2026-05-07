@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
-	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { generateCiteKey, TYPE_LABELS, ALL_TYPES } from '$lib/utils/bibtex';
 	import type { Author, ReferenceType } from '$lib/utils/bibtex';
 

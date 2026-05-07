@@ -11,7 +11,7 @@ import {
 	referenceSubnote
 } from '$lib/server/db/schemas/references.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
-import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
+import { document } from '$lib/server/db/schemas/documents.schema';
 import { parseBibtexFile, formatBibtexFile, generateCiteKey } from '$lib/utils/bibtex';
 import type { Author } from '$lib/utils/bibtex';
 import type { Db } from '$lib/server/db';
@@ -78,7 +78,6 @@ async function ensureUniqueCiteKey(
 	let key = base || 'ref';
 	let suffixCode = 'a'.charCodeAt(0);
 
-	// eslint-disable-next-line no-constant-condition
 	while (true) {
 		const conflicts = (await withRLS((db) =>
 			db
@@ -789,7 +788,9 @@ ${truncated}`;
 					) {
 						try {
 							a.setAttribute('href', new URL(href, base).href);
-						} catch {}
+						} catch {
+							// no-op: invalid URL, keep original href
+						}
 					}
 				}
 

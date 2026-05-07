@@ -19,7 +19,7 @@ import { project, projectCollaborator } from '$lib/server/db/schemas/projects.sc
 import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference } from '$lib/server/db/schemas/references.schema';
-import { user as authUser, session as authSession } from '$lib/server/db/auth.schema';
+import { user as authUser } from '$lib/server/db/auth.schema';
 import { deleteFileWithConfig } from '$lib/server/storage';
 
 export const DELETE: RequestHandler = async (event) => {

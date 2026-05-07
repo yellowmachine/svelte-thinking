@@ -1,4 +1,5 @@
 <script lang="ts">
+	/* eslint-disable no-irregular-whitespace */
 	const content = `<style>
   [data-custom-class='body'], [data-custom-class='body'] * {
           background: transparent !important;

@@ -25,8 +25,6 @@
 	>([]);
 	let keys = $state<{ id: string; name: string; enabled: boolean; createdAt: Date }[]>([]);
 	let taskConfig = $state<Record<string, { keyId: string; model: string }>>({});
-	let orgData = $state<{ ownerId: string } | null>(null);
-
 	let loadingDetail = $state(false);
 
 	// Invite form
@@ -77,7 +75,6 @@
 			members = m as typeof members;
 			invitations = inv as typeof invitations;
 			keys = k as typeof keys;
-			orgData = { ownerId: org.ownerId };
 			try {
 				taskConfig = org.aiTaskConfig ? JSON.parse(org.aiTaskConfig) : {};
 			} catch {

@@ -38,6 +38,7 @@
 	name="In context (button)"
 	args={{ fulfilled: 2, total: 5, requiredFulfilled: 2, requiredTotal: 4 }}
 >
+	<!-- eslint-disable-next-line @typescript-eslint/no-explicit-any -->
 	{#snippet template(args: any)}
 		<!-- svelte-ignore a11y_invalid_attribute -->
 		<a
@@ -70,6 +71,7 @@
 	name="In context (complete)"
 	args={{ fulfilled: 5, total: 5, requiredFulfilled: 4, requiredTotal: 4 }}
 >
+	<!-- eslint-disable-next-line @typescript-eslint/no-explicit-any -->
 	{#snippet template(args: any)}
 		<!-- svelte-ignore a11y_invalid_attribute -->
 		<a

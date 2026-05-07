@@ -11,7 +11,9 @@
 		e.preventDefault();
 		try {
 			await offlineDb.delete();
-		} catch {}
+		} catch {
+			// no-op: ignore errors during offline DB deletion before logout
+		}
 		(e.target as HTMLFormElement).submit();
 	}
 

@@ -1,7 +1,7 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { loginAsTestUser } from './helpers/login';
 import { TEST_USER } from './helpers/create-test-user';
-import { COLLABORATOR_USER, getCollaboratorUserId } from './helpers/create-collaborator';
+import { COLLABORATOR_USER } from './helpers/create-collaborator';
 import {
 	trpcMutate,
 	trpcQuery,
@@ -285,7 +285,6 @@ test.describe('Flujo 3a — Owner expulsa colaborador', () => {
 	let ownerCookie: string;
 	let collabCookie: string;
 	let projectId: string;
-	let collabUserId: string;
 	let ownerContext: BrowserContext;
 	let collabContext: BrowserContext;
 
@@ -293,8 +292,6 @@ test.describe('Flujo 3a — Owner expulsa colaborador', () => {
 		const totpSecret = readFileSync(SECRET_FILE, 'utf-8').trim();
 		ownerCookie = await loginViaApi(TEST_USER.email, TEST_USER.password, totpSecret);
 		collabCookie = await loginViaApiNo2FA(COLLABORATOR_USER.email, COLLABORATOR_USER.password);
-		collabUserId = await getCollaboratorUserId();
-
 		({ projectId } = await setupCollabProject(ownerCookie, collabCookie));
 
 		ownerContext = await browser.newContext();

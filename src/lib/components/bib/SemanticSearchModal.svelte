@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
-	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { generateCiteKey } from '$lib/utils/bibtex';
 
 	type SemanticResult = {

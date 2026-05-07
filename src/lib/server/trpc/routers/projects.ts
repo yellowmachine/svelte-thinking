@@ -1,14 +1,9 @@
 import { z } from 'zod';
-import { eq, and, asc, ilike, or, sql, isNotNull, count, ne } from 'drizzle-orm';
+import { eq, and, asc, or, sql, isNotNull, count, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
-import {
-	project,
-	projectCollaborator,
-	projectRoleEnum
-} from '$lib/server/db/schemas/projects.schema';
+import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
-import { documentChunk } from '$lib/server/db/schemas/documentChunks.schema';
 import { projectInterest } from '$lib/server/db/schemas/discover.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
@@ -533,6 +528,7 @@ export const projectsRouter = router({
 					}>
 				)
 					.sort((a, b) => b.similarity - a.similarity)
+					// eslint-disable-next-line @typescript-eslint/no-unused-vars
 					.map(({ similarity: _s, ...rest }) => rest);
 			} else {
 				// Sin query: todos los proyectos buscables ordenados por título
@@ -672,7 +668,7 @@ export const projectsRouter = router({
 		const docsToIndex: Array<{ docId: string; content: string }> = [];
 		const result = await ctx.withRLS(async (db) => {
 			// Create the project
-			const [created] = await db
+			await db
 				.insert(project)
 				.values({
 					id: projectId,

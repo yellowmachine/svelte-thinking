@@ -74,9 +74,9 @@
 	}
 
 	$effect(() => {
-		// Re-fetch when date range changes
-		dateRange.from;
-		dateRange.to;
+		// Re-fetch when date range changes — touch both to track reactivity
+		void dateRange.from;
+		void dateRange.to;
 		load();
 	});
 

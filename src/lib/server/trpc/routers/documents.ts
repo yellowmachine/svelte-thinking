@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, desc, asc, and, inArray, ne, sql } from 'drizzle-orm';
+import { eq, desc, asc, and, ne, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';

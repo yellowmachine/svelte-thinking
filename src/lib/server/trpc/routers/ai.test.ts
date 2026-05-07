@@ -8,8 +8,6 @@
 import { describe, it, expect, beforeAll, vi, afterEach } from 'vitest';
 import { createTestDb, createTestCaller, type TestDb } from '$lib/server/db/test-utils';
 import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
-import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
-import { project } from '$lib/server/db/schemas/projects.schema';
 import { documentChunk } from '$lib/server/db/schemas/documentChunks.schema';
 import { eq } from 'drizzle-orm';
 import { indexDocument } from '$lib/server/embeddings';
@@ -87,10 +85,12 @@ describe('indexDocument', () => {
 		// withRLS wrapper para indexDocument (mismo patrón que hooks.server.ts)
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
 			db.transaction(async (tx) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
 				return fn(tx as unknown as TestDb);
 			});
 
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		await withRLS((tx) => indexDocument(tx as any, documentId, projectId, content));
 
 		const chunks = await db
@@ -115,12 +115,14 @@ describe('indexDocument', () => {
 
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
 			db.transaction(async (tx) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
 				return fn(tx as unknown as TestDb);
 			});
 
 		await withRLS((tx) =>
 			indexDocument(
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				tx as any,
 				documentId,
 				projectId,
@@ -141,10 +143,12 @@ describe('indexDocument', () => {
 
 		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) =>
 			db.transaction(async (tx) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				await (tx as any).execute(`SELECT set_config('app.current_user_id', '${USER}', true)`);
 				return fn(tx as unknown as TestDb);
 			});
 
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		await withRLS((tx) => indexDocument(tx as any, documentId, projectId, ''));
 
 		const chunks = await db

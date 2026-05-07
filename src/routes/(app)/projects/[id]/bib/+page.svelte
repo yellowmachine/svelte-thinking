@@ -1,8 +1,8 @@
 <script lang="ts">
+	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
-	import { formatBibtexFile } from '$lib/utils/bibtex';
 	import { CITATION_STYLE_LABELS, type CitationStyle } from '$lib/utils/citations';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';

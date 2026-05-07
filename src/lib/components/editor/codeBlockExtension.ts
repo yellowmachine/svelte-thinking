@@ -5,8 +5,8 @@
  *    - Language selector (edits the info string in the markdown source)
  *    - "Open in…" button for supported languages
  */
-import { StateField, StateEffect } from '@codemirror/state';
-import { EditorView, ViewPlugin, showTooltip, type Tooltip } from '@codemirror/view';
+import { StateField } from '@codemirror/state';
+import { EditorView, showTooltip, type Tooltip } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 
