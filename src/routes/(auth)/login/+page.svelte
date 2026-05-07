@@ -104,6 +104,7 @@
 					>
 					<a
 						href="/forgot-password"
+						tabindex="-1"
 						class="font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 						>Forgot password?</a
 					>
