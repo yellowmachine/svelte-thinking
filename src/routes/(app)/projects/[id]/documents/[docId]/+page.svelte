@@ -1226,6 +1226,18 @@
 						Read-only
 					</span>
 				{/if}
+				{#if !data.document.isReadonly && isOwner}
+					<button
+						type="button"
+						onclick={async () => {
+							await trpc.documents.update.mutate({ id: data.document.id, isReadonly: true });
+							data.document = { ...data.document, isReadonly: true };
+						}}
+						class="shrink-0 font-sans text-[10px] text-ink-faint hover:text-ink hover:underline dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					>
+						Lock editing
+					</button>
+				{/if}
 				{#if data.document.isReadonly && isOwner}
 					<button
 						type="button"
