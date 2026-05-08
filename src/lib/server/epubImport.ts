@@ -5,6 +5,7 @@ import { reference, projectReference } from '$lib/server/db/schemas/references.s
 import { eq, and } from 'drizzle-orm';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { uploadFileWithConfig } from '$lib/server/storage';
+import { indexDocument } from '$lib/server/embeddings';
 
 type WithRLS = <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
 
@@ -283,7 +284,7 @@ export async function processEpubImport({
 				const docId = crypto.randomUUID();
 				log(`inserting book document "${docTitle}" with ${chapterSections.length} chapters`);
 
-				await withRLS((db) =>
+				const inserted = await withRLS((db) =>
 					db.insert(document).values({
 						id: docId,
 						projectId,
@@ -295,7 +296,20 @@ export async function processEpubImport({
 						renderedHtml: combinedHtml,
 						sourceReferenceId: resolvedRefId
 					})
-				).catch((e) => log(`failed to insert book document: ${e.message}`));
+				)
+					.then(() => true)
+					.catch((e) => {
+						log(`failed to insert book document: ${e.message}`);
+						return false;
+					});
+
+				if (inserted) {
+					const { document: combinedDoc } = parseHTML(combinedHtml);
+					const plainText = combinedDoc.querySelector('body')?.textContent?.trim() ?? '';
+					withRLS((db) => indexDocument(db, docId, projectId, plainText)).catch((err) =>
+						log(`indexDocument failed: ${err}`)
+					);
+				}
 			}
 
 			await withRLS((db) =>
