@@ -47,6 +47,7 @@
 		canTriggerCommit
 	} from '$lib/domain/document-capabilities';
 	import { isProjectOwner, canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
+	import DocSearchOverlay from '$lib/components/documents/DocSearchOverlay.svelte';
 	import type { PageData } from './$types';
 
 	import { resolve } from '$app/paths';
@@ -859,6 +860,7 @@
 
 	// ── Chat assistant ───────────────────────────────────────────────────────────
 	let showChat = $state(false);
+	let showDocSearch = $state(false);
 
 	function toggleChat() {
 		showChat = !showChat;
@@ -1007,7 +1009,17 @@
 	}
 
 	function onDocKeydown(e: KeyboardEvent) {
+		if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+			e.preventDefault();
+			showDocSearch = !showDocSearch;
+			return;
+		}
 		if (e.key === 'Escape') {
+			if (showDocSearch) {
+				showDocSearch = false;
+				e.stopPropagation();
+				return;
+			}
 			if (showFloating || showNewComment || showReviewTypeMenu) {
 				showFloating = false;
 				showNewComment = false;
@@ -2531,6 +2543,11 @@
 
 {#if showCheatsheet}
 	<MarkdownCheatsheet onclose={() => (showCheatsheet = false)} />
+{/if}
+
+<!-- ── In-document semantic search overlay (Ctrl/Cmd+F) ── -->
+{#if showDocSearch}
+	<DocSearchOverlay documentId={data.document.id} onclose={() => (showDocSearch = false)} />
 {/if}
 
 <!-- ── Writer lost modal ── -->
