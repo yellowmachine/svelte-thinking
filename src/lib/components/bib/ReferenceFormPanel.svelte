@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
-	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { generateCiteKey, TYPE_LABELS, ALL_TYPES } from '$lib/utils/bibtex';
 	import type { Author, ReferenceType } from '$lib/utils/bibtex';
 
@@ -110,7 +110,13 @@
 		};
 	}
 
-	let form = $state(mode === 'edit' && editingRef ? initFromRef(editingRef) : emptyForm());
+	// eslint-disable-next-line svelte/prefer-writable-derived
+	let form = $state(
+		untrack(() => (mode === 'edit' && editingRef ? initFromRef(editingRef) : emptyForm()))
+	);
+	$effect(() => {
+		form = mode === 'edit' && editingRef ? initFromRef(editingRef) : emptyForm();
+	});
 	let saving = $state(false);
 	let saveError = $state('');
 

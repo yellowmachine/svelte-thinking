@@ -113,36 +113,34 @@ Temas clave: financiación, metodología cualitativa, próximos pasos.`;
 
 <!-- En contexto: simulación de cómo aparece debajo de una burbuja del agente -->
 <Story name="In chat context" tags={['!test']}>
-	{#snippet children()}
-		<div class="flex flex-col gap-1">
-			<!-- Burbuja del agente -->
-			<div class="flex gap-3">
+	<div class="flex flex-col gap-1">
+		<!-- Burbuja del agente -->
+		<div class="flex gap-3">
+			<div
+				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper-border font-sans text-xs font-semibold text-ink-muted"
+			>
+				AI
+			</div>
+			<div class="flex max-w-[80%] flex-col">
 				<div
-					class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper-border font-sans text-xs font-semibold text-ink-muted"
+					class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink"
 				>
-					AI
+					He leído tu sección de Metodología y redactado un borrador de la Discusión basándome en
+					los resultados que describes. Aquí tienes la propuesta:
 				</div>
-				<div class="flex max-w-[80%] flex-col">
-					<div
-						class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink"
-					>
-						He leído tu sección de Metodología y redactado un borrador de la Discusión basándome en
-						los resultados que describes. Aquí tienes la propuesta:
-					</div>
-					<ActionCard
-						action={{
-							type: 'create_document',
-							title: 'Discusión',
-							docType: 'paper',
-							content: longContent,
-							requirementId: 'req-discussion'
-						}}
-						projectId="proj-123"
-						onconfirm={() => {}}
-						ondiscard={() => {}}
-					/>
-				</div>
+				<ActionCard
+					action={{
+						type: 'create_document',
+						title: 'Discusión',
+						docType: 'paper',
+						content: longContent,
+						requirementId: 'req-discussion'
+					}}
+					projectId="proj-123"
+					onconfirm={() => {}}
+					ondiscard={() => {}}
+				/>
 			</div>
 		</div>
-	{/snippet}
+	</div>
 </Story>

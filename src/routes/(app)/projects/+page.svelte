@@ -11,6 +11,7 @@
 	import { projectsTutorialSteps } from '$lib/tutorials/projects';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	onMount(() => {
@@ -82,7 +83,7 @@
 				description: newDescription.trim() || undefined,
 				orgId: workspaceStore.current.id ?? undefined
 			});
-			await goto(`/projects/${created.id}`);
+			await goto(resolve(`/projects/${created.id}`));
 		} catch (e) {
 			createError = e instanceof Error ? e.message : 'Error creating project';
 		} finally {
@@ -132,7 +133,7 @@
 				throw new Error(text || `Error ${res.status}`);
 			}
 			const { projectId } = await res.json();
-			await goto(`/projects/${projectId}`, { invalidateAll: true });
+			await goto(resolve(`/projects/${projectId}`), { invalidateAll: true });
 		} catch (e) {
 			importError = e instanceof Error ? e.message : 'Error al importar';
 		} finally {
@@ -222,7 +223,7 @@
 				{/each}
 			</div>
 			<a
-				href="/tags"
+				href={resolve('/tags')}
 				class="mt-2 inline-block font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
 			>
 				Manage tags →
@@ -242,6 +243,7 @@
 					>
 						Title
 					</label>
+					<!-- svelte-ignore a11y_autofocus -->
 					<input
 						id="project-title"
 						type="text"
@@ -359,7 +361,7 @@
 						updatedAt={proj.updatedAt}
 						scheduledDeleteAt={proj.scheduledDeleteAt}
 						hasActiveShares={activeShareSet.has(proj.id)}
-						reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
+						reviewHref={proj.openComments > 0 ? resolve(`/projects/${proj.id}/review`) : undefined}
 						onclick={() => (window.location.href = `/projects/${proj.id}`)}
 						ondelete={() => {
 							deleteTarget = { id: proj.id, title: proj.title };
@@ -387,7 +389,9 @@
 							openIssues={proj.openIssues}
 							updatedAt={proj.updatedAt}
 							scheduledDeleteAt={proj.scheduledDeleteAt}
-							reviewHref={proj.openComments > 0 ? `/projects/${proj.id}/review` : undefined}
+							reviewHref={proj.openComments > 0
+								? resolve(`/projects/${proj.id}/review`)
+								: undefined}
 							onclick={() => (window.location.href = `/projects/${proj.id}`)}
 						/>
 					{/each}

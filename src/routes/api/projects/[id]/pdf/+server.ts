@@ -84,7 +84,6 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	// Load document contents in one query
-	const docIds = fulfilledReqs.map((r) => r.fulfilledDocumentId!);
 	const docs = (await event.locals.withRLS((db) =>
 		db
 			.select({ id: document.id, title: document.title, draftContent: document.draftContent })

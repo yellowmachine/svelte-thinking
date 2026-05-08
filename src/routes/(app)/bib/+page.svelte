@@ -8,6 +8,7 @@
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { bibTutorialSteps } from '$lib/tutorials/bib';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	let query = $state('');
@@ -188,7 +189,10 @@
 							{group.projectTitle}
 						</h2>
 						{#if group.bibHref}
-							<a href={group.bibHref} class="font-sans text-xs text-accent hover:underline">
+							<a
+								href={resolve(`/projects/${group.projectId!}/bib`)}
+								class="font-sans text-xs text-accent hover:underline"
+							>
 								Ver en proyecto →
 							</a>
 						{/if}
@@ -237,7 +241,7 @@
 											<a
 												href={ref.externalHref}
 												target="_blank"
-												rel="noopener noreferrer"
+												rel="noopener noreferrer external"
 												class="font-sans text-xs text-accent hover:underline"
 											>
 												{ref.doi ? 'DOI' : 'URL'}

@@ -74,7 +74,6 @@
 
 	// ── Browser ──────────────────────────────────────────────────────────────
 	let selectedConn = $state<Connection | null>(null);
-	let browsePath = $state('');
 	let breadcrumbs = $state<{ name: string; path: string }[]>([]);
 	let contentsItems = $state<ContentsItem[]>([]);
 	let loadingContents = $state(false);
@@ -82,7 +81,6 @@
 
 	async function browseConnection(conn: Connection) {
 		selectedConn = conn;
-		browsePath = '';
 		breadcrumbs = [];
 		view = 'browse';
 		await loadContents('');
@@ -102,7 +100,6 @@
 			}
 			const data = (await res.json()) as { type: string; items?: ContentsItem[] };
 			contentsItems = data.items ?? [];
-			browsePath = path;
 		} catch (err) {
 			contentsError = err instanceof Error ? err.message : 'Could not load contents';
 		} finally {
@@ -349,7 +346,7 @@
 					>
 						root
 					</button>
-					{#each breadcrumbs as crumb, i}
+					{#each breadcrumbs as crumb, i (i)}
 						<svg class="h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="currentColor"
 							><path
 								fill-rule="evenodd"

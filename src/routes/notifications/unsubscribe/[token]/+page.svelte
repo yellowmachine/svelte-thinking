@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 </script>
 
@@ -16,7 +17,10 @@
 				You will no longer receive comment email notifications from this project.
 			</p>
 		{/if}
-		<a href="/projects" class="mt-6 inline-block font-sans text-sm text-accent hover:underline">
+		<a
+			href={resolve('/projects')}
+			class="mt-6 inline-block font-sans text-sm text-accent hover:underline"
+		>
 			Back to my projects
 		</a>
 	</div>

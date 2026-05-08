@@ -79,7 +79,7 @@
 		>
 			<p class="font-sans text-sm font-medium text-red-600 dark:text-red-400">Last sync errors:</p>
 			<ul class="mt-1 space-y-1">
-				{#each connectivity.syncErrors as err}
+				{#each connectivity.syncErrors as err, i (i)}
 					<li class="font-sans text-xs text-red-500 dark:text-red-400">
 						Document {err.documentId.slice(0, 8)}… — {err.message}
 					</li>

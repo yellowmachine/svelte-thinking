@@ -3,6 +3,7 @@
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { projectSearchTutorialSteps } from '$lib/tutorials/projectSearch';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 </script>
 
@@ -12,7 +13,7 @@
 
 <div class="mx-auto max-w-2xl px-4 py-10">
 	<a
-		href="/projects/{data.projectId}"
+		href={resolve(`/projects/${data.projectId}`)}
 		class="mb-6 inline-flex items-center gap-1.5 font-sans text-sm text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
 	>
 		<svg
@@ -47,6 +48,7 @@
 			>
 				<circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
 			</svg>
+			<!-- svelte-ignore a11y_autofocus -->
 			<input
 				type="search"
 				name="q"
@@ -73,7 +75,7 @@
 			{#each data.results as result (result.document_id)}
 				<li>
 					<a
-						href="/projects/{data.projectId}/documents/{result.document_id}"
+						href={resolve(`/projects/${data.projectId}/documents/${result.document_id}`)}
 						class="block rounded-xl border border-paper-border bg-paper p-4 transition-colors hover:border-accent/40 hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/40 dark:hover:bg-dark-paper-ui"
 					>
 						<p

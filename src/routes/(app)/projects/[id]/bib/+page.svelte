@@ -1,7 +1,7 @@
 <script lang="ts">
+	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
-	import { formatBibtexFile } from '$lib/utils/bibtex';
 	import { CITATION_STYLE_LABELS, type CitationStyle } from '$lib/utils/citations';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
@@ -17,6 +17,7 @@
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { projectBibTutorialSteps } from '$lib/tutorials/projectBib';
 
+	import { resolve } from '$app/paths';
 	// ── Citation style ────────────────────────────────────────────────────────
 
 	let citationStyle = $state<CitationStyle>('apa');
@@ -27,7 +28,7 @@
 
 	type Ref = (typeof data.references)[number];
 
-	let references = $state<Ref[]>(data.references);
+	let references = $derived(data.references);
 	let searchQuery = $state('');
 
 	// Filtered list (client-side, instant)
@@ -111,7 +112,7 @@
 	<!-- Header -->
 	<div class="mb-6">
 		<a
-			href="/projects/{data.project.id}"
+			href={resolve(`/projects/${data.project.id}`)}
 			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -350,7 +351,7 @@
 								title: result.title,
 								referenceId: newRef.id
 							})
-							.then(({ docId }) => goto(`/projects/${data.project.id}/documents/${docId}`))
+							.then(({ docId }) => goto(resolve(`/projects/${data.project.id}/documents/${docId}`)))
 							.catch((e) =>
 								flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error')
 							);

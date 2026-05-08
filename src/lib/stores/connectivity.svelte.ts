@@ -1,3 +1,4 @@
+import { SvelteMap } from 'svelte/reactivity';
 import { offlineDb } from '$lib/offline.db';
 import { trpc } from '$lib/utils/trpc';
 import { flash } from '$lib/stores/flash.svelte';
@@ -31,7 +32,7 @@ class ConnectivityStore {
 		this.syncState = 'syncing';
 
 		// Latest snapshot per document
-		const latestByDoc = new Map<string, (typeof pending)[0]>();
+		const latestByDoc = new SvelteMap<string, (typeof pending)[0]>();
 		for (const edit of pending) {
 			latestByDoc.set(edit.documentId, edit);
 		}

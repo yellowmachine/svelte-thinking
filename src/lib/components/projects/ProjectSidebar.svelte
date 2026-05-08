@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { invalidateAll, goto } from '$app/navigation';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import ContextPickerModal from '$lib/components/projects/ContextPickerModal.svelte';
@@ -7,6 +8,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { type CitationStyle, CITATION_STYLE_LABELS } from '$lib/utils/citations';
 
+	import { resolve } from '$app/paths';
 	type Collaborator = {
 		id: string;
 		userId: string;
@@ -25,7 +27,6 @@
 
 	type Project = {
 		id: string;
-		status: string;
 		citationStyle?: string | null;
 		doi?: string | null;
 		version?: string | null;
@@ -162,7 +163,7 @@
 	});
 
 	// ── Searchable toggle ─────────────────────────────────────────────────────
-	let isSearchable = $state(project.isSearchable ?? false);
+	let isSearchable = $state(untrack(() => project.isSearchable ?? false));
 	let togglingSearchable = $state(false);
 
 	async function toggleSearchable() {
@@ -205,7 +206,7 @@
 		leavingProject = true;
 		try {
 			await trpc.projects.leave.mutate(project.id);
-			await goto('/projects', { invalidateAll: true });
+			await goto(resolve('/projects'), { invalidateAll: true });
 		} catch (e: unknown) {
 			leavingProject = false;
 			showLeaveProject = false;
@@ -239,7 +240,7 @@
 	>
 		<div class="flex flex-col gap-1">
 			<a
-				href="/projects/{project.id}/ai"
+				href={resolve(`/projects/${project.id}/ai`)}
 				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
@@ -254,7 +255,7 @@
 				Assistant
 			</a>
 			<a
-				href="/projects/{project.id}/requirements"
+				href={resolve(`/projects/${project.id}/requirements`)}
 				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
@@ -281,7 +282,7 @@
 				/>
 			</a>
 			<a
-				href="/projects/{project.id}/issues"
+				href={resolve(`/projects/${project.id}/issues`)}
 				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -291,7 +292,7 @@
 				Issues
 			</a>
 			<a
-				href="/projects/{project.id}/bib"
+				href={resolve(`/projects/${project.id}/bib`)}
 				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
@@ -313,7 +314,7 @@
 			</a>
 			{#if canEdit && canUploadS3}
 				<a
-					href="/projects/{project.id}/photos"
+					href={resolve(`/projects/${project.id}/photos`)}
 					class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
@@ -336,7 +337,7 @@
 					Photos
 				</a>
 				<a
-					href="/projects/{project.id}/notebooks"
+					href={resolve(`/projects/${project.id}/notebooks`)}
 					class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -350,7 +351,7 @@
 				</a>
 			{:else if canEdit && s3CtaType === 'personal'}
 				<a
-					href="/settings?tab=storage"
+					href={resolve('/settings?tab=storage')}
 					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -374,7 +375,7 @@
 				</a>
 			{:else if canEdit && s3CtaType === 'org-owner'}
 				<a
-					href="/settings?tab=organizations"
+					href={resolve('/settings?tab=organizations')}
 					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -422,8 +423,23 @@
 			</p>
 			<button
 				onclick={() => (showLeaveProject = true)}
-				class="mt-4 w-full rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
+				class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
 			>
+				<svg
+					width="12"
+					height="12"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+					<polyline points="16 17 21 12 16 7" />
+					<line x1="21" y1="12" x2="9" y2="12" />
+				</svg>
 				Leave project…
 			</button>
 		</div>
@@ -555,7 +571,7 @@
 							>Citation style</span
 						>
 						<div class="mt-1 flex flex-wrap gap-1.5">
-							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label]}
+							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
 								<button
 									type="button"
 									onclick={() =>
@@ -596,9 +612,22 @@
 			</div>
 			<button
 				onclick={() => (showContextPicker = true)}
-				class="shrink-0 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="flex shrink-0 items-center gap-1 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
-				+ Add
+				<svg
+					width="11"
+					height="11"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+					stroke-linecap="round"
+					aria-hidden="true"
+				>
+					<line x1="12" y1="5" x2="12" y2="19" />
+					<line x1="5" y1="12" x2="19" y2="12" />
+				</svg>
+				Add
 			</button>
 		</div>
 
@@ -622,10 +651,22 @@
 						</div>
 						<button
 							onclick={() => removeContextLink(link.id)}
-							class="mt-0.5 shrink-0 font-sans text-[11px] text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+							class="mt-0.5 shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
 							title="Remove"
+							aria-label="Remove context link"
 						>
-							✕
+							<svg
+								width="12"
+								height="12"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								aria-hidden="true"
+							>
+								<path d="M18 6L6 18M6 6l12 12" />
+							</svg>
 						</button>
 					</div>
 				{/each}
@@ -693,7 +734,7 @@
 								{#each interestedUsers as u (u.id)}
 									<li>
 										<a
-											href="/u/{u.userId}"
+											href={resolve(`/u/${u.userId}`)}
 											class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 										>
 											<span

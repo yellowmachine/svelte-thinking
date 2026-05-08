@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
-	const { analysis } = data;
+	const { analysis } = untrack(() => data);
 	const result = analysis.result as Record<string, unknown> | null;
 	const params = analysis.parameters as Record<string, unknown>;
 
@@ -17,7 +19,7 @@
 <div class="max-w-2xl p-8">
 	<div>
 		<a
-			href="/project/{data.project.id}/analyses"
+			href={resolve(`/project/${data.project.id}/analyses`)}
 			class="text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 		>
 			← Analyses
@@ -45,16 +47,16 @@
 						class="border-b border-paper-border text-left text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
 					>
 						<th class="pr-4 pb-2 font-medium">Stat</th>
-						{#each Object.keys(result.data as object) as col}
+						{#each Object.keys(result.data as object) as col (col)}
 							<th class="pr-4 pb-2 font-mono font-medium">{col}</th>
 						{/each}
 					</tr>
 				</thead>
 				<tbody>
-					{#each ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'] as stat}
+					{#each ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'] as stat (stat)}
 						<tr class="border-b border-paper-border dark:border-dark-paper-border">
 							<td class="py-2 pr-4 text-ink-faint dark:text-dark-ink-faint">{stat}</td>
-							{#each Object.values(result.data as Record<string, Record<string, number>>) as col}
+							{#each Object.values(result.data as Record<string, Record<string, number>>) as col, i (i)}
 								<td class="py-2 pr-4 font-mono text-ink dark:text-dark-ink">{fmt(col[stat])}</td>
 							{/each}
 						</tr>
@@ -70,7 +72,7 @@
 			</div>
 			<table class="w-full text-sm">
 				<tbody>
-					{#each [['Statistic', d.statistic], ['p-value', d.p_value], ['Degrees of freedom', d.degrees_of_freedom], ["Cohen's d", d.cohens_d], ['CI low', (d.confidence_interval as number[])?.[0]], ['CI high', (d.confidence_interval as number[])?.[1]]] as [label, val]}
+					{#each [['Statistic', d.statistic], ['p-value', d.p_value], ['Degrees of freedom', d.degrees_of_freedom], ["Cohen's d", d.cohens_d], ['CI low', (d.confidence_interval as number[])?.[0]], ['CI high', (d.confidence_interval as number[])?.[1]]] as [label, val], i (i)}
 						<tr class="border-b border-paper-border dark:border-dark-paper-border">
 							<td class="py-2 text-ink-faint dark:text-dark-ink-faint">{label}</td>
 							<td class="py-2 font-mono text-ink dark:text-dark-ink">{fmt(val)}</td>

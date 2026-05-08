@@ -1,14 +1,16 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
-	const tpl = data.template?.parameters as Record<string, unknown> | undefined;
+	const tpl = untrack(() => data.template?.parameters) as Record<string, unknown> | undefined;
 
-	let selectedDataset = $state(data.datasets[0]?.id ?? '');
+	let selectedDataset = $state(untrack(() => data.datasets[0]?.id ?? ''));
 	let selectedType = $state<'describe' | 'ttest'>(
-		(data.template?.type as 'describe' | 'ttest') ?? 'describe'
+		untrack(() => (data.template?.type as 'describe' | 'ttest') ?? 'describe')
 	);
 	let running = $state(false);
 	let runError = $state('');
@@ -47,7 +49,7 @@
 
 		if (res.ok) {
 			const analysis = await res.json();
-			goto(`/project/${data.project.id}/analyses/${analysis.id}`);
+			goto(resolve(`/project/${data.project.id}/analyses/${analysis.id}`));
 		} else {
 			const body = await res.json().catch(() => ({}));
 			runError = body.message ?? 'Analysis failed';
@@ -59,7 +61,7 @@
 <div class="max-w-xl p-8">
 	<div>
 		<a
-			href="/project/{data.project.id}/analyses"
+			href={resolve(`/project/${data.project.id}/analyses`)}
 			class="text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 		>
 			← Analyses
@@ -78,7 +80,7 @@
 				bind:value={selectedDataset}
 				class="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 			>
-				{#each data.datasets as dataset}
+				{#each data.datasets as dataset (dataset.id)}
 					<option value={dataset.id}>{dataset.filename}</option>
 				{/each}
 			</select>
@@ -86,8 +88,10 @@
 
 		<!-- Type -->
 		<div>
-			<label class="block text-sm font-medium text-ink dark:text-dark-ink">Analysis type</label>
-			<div class="mt-2 flex gap-3">
+			<p id="analysis-type-label" class="block text-sm font-medium text-ink dark:text-dark-ink">
+				Analysis type
+			</p>
+			<div class="mt-2 flex gap-3" role="group" aria-labelledby="analysis-type-label">
 				<button
 					class="rounded-md border px-4 py-2 text-sm transition-colors"
 					class:border-ink={selectedType === 'describe'}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { DOCUMENT_TYPE_LABELS } from '$lib/domain/document';
 
+	import { resolve } from '$app/paths';
 	let {
 		requirement,
 		documents,
@@ -14,7 +15,6 @@
 		ontogglePicker
 	}: {
 		requirement: {
-			id: string;
 			name: string;
 			description: string | null;
 			required: boolean;
@@ -93,7 +93,7 @@
 			{#if isFulfilled}
 				<div class="mt-2 flex flex-wrap items-center gap-2">
 					<a
-						href="/projects/{projectId}/documents/{requirement.fulfilledDocumentId}"
+						href={resolve(`/projects/${projectId}/documents/${requirement.fulfilledDocumentId}`)}
 						class="flex items-center gap-1.5 rounded-md border border-green-200 bg-white px-2.5 py-1 font-sans text-xs font-medium text-green-700 transition-colors hover:bg-green-50 dark:border-green-900/40 dark:bg-dark-paper dark:text-green-400 dark:hover:bg-green-950/30"
 					>
 						<svg

@@ -17,7 +17,7 @@ export {
 	parseTaskConfig,
 	getDefaultModel
 } from '$lib/ai-config';
-import type { AiTask, AiTaskConfig } from '$lib/ai-config';
+import type { AiTask } from '$lib/ai-config';
 import { AI_TASKS, MODELS, parseTaskConfig } from '$lib/ai-config';
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { trpc } from '$lib/utils/trpc';
 
+	import { resolve } from '$app/paths';
 	type SelectionSnapshot = { text: string; from: number; to: number };
 
 	let {
@@ -170,8 +171,23 @@
 				<button
 					type="button"
 					onclick={captureSelection}
-					class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="flex items-center gap-1.5 rounded-lg border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
+					<svg
+						width="12"
+						height="12"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path
+							d="M8 2H6a2 2 0 00-2 2v2M16 2h2a2 2 0 012 2v2M22 16v2a2 2 0 01-2 2h-2M8 22H6a2 2 0 01-2-2v-2"
+						/>
+					</svg>
 					Capture selection
 				</button>
 				{#if capturedSelection}
@@ -206,6 +222,19 @@
 				<Spinner size="sm" class="text-white" />
 				Generating…
 			{:else}
+				<svg
+					width="12"
+					height="12"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+				</svg>
 				Generate
 			{/if}
 		</button>
@@ -216,7 +245,7 @@
 			>
 				{#if draftError === NO_KEY_MSG}
 					No AI key configured. <a
-						href="/settings?tab=ai"
+						href={resolve('/settings?tab=ai')}
 						class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a
 					> to add one.
 				{:else}
@@ -248,15 +277,40 @@
 					<button
 						type="button"
 						onclick={acceptDraft}
-						class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover"
+						class="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover"
 					>
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polyline points="20 6 9 17 4 12" />
+						</svg>
 						{draftMode === 'rewrite' ? 'Accept' : 'Insert at cursor'}
 					</button>
 					<button
 						type="button"
 						onclick={rejectDraft}
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 					>
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							aria-hidden="true"
+						>
+							<path d="M18 6L6 18M6 6l12 12" />
+						</svg>
 						Reject
 					</button>
 				</div>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 
+	import { resolve } from '$app/paths';
 	const ERROR_MESSAGES: Record<string, { title: string; description: string }> = {
 		"email_doesn't_match": {
 			title: 'Email mismatch',
@@ -29,7 +30,10 @@
 
 <main class="flex min-h-screen items-center justify-center bg-paper px-6 dark:bg-dark-paper">
 	<div class="w-full max-w-md">
-		<a href="/" class="mb-8 block font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+		<a
+			href={resolve('/')}
+			class="mb-8 block font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
+		>
 			Scholio
 		</a>
 
@@ -70,13 +74,13 @@
 
 			<div class="flex gap-3">
 				<a
-					href="/login"
+					href={resolve('/login')}
 					class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 				>
 					Back to login
 				</a>
 				<a
-					href="/"
+					href={resolve('/')}
 					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
 					Home

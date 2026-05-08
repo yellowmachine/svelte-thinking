@@ -319,7 +319,7 @@
 					<div
 						class="absolute top-full left-0 z-30 mt-1 w-44 rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
 					>
-						{#each Object.entries(reviewTypeLabels) as [type, label]}
+						{#each Object.entries(reviewTypeLabels) as [type, label] (type)}
 							<button
 								class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted block w-full px-3 py-2 text-left font-sans text-xs text-ink dark:text-dark-ink"
 								onclick={() => onreviewselection(type)}
@@ -448,7 +448,7 @@
 				</p>
 			{:else}
 				<div class="space-y-0.5 p-1.5">
-					{#each authorPopover.refs as ref}
+					{#each authorPopover.refs as ref (ref.citeKey)}
 						<button
 							onclick={() => {
 								onscrolltocite(ref.citeKey);
@@ -587,15 +587,18 @@
 					: ''}»
 			</p>
 			{#if !sourceReference}
-				<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+				<label
+					for="subnote-ref"
+					class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 					>Referencia</label
 				>
 				<select
+					id="subnote-ref"
 					bind:value={subnoteRefId}
 					class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				>
 					<option value="">— elige referencia —</option>
-					{#each projectRefs as ref}
+					{#each projectRefs as ref (ref.id)}
 						<option value={ref.id ?? ''}>{ref.citeKey}</option>
 					{/each}
 				</select>
@@ -604,19 +607,24 @@
 					Referencia: <span class="font-mono text-accent">@{sourceReference.citeKey}</span>
 				</p>
 			{/if}
-			<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+			<label
+				for="subnote-slug"
+				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 				>Slug <span class="text-ink-faint">(identificador único)</span></label
 			>
 			<input
+				id="subnote-slug"
 				bind:value={subnoteSlug}
 				type="text"
 				placeholder="p247-exchange"
 				class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
-			<label class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-				>Nota</label
+			<label
+				for="subnote-notes"
+				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Nota</label
 			>
 			<textarea
+				id="subnote-notes"
 				use:focusOnMount
 				bind:value={subnoteNotes}
 				rows={3}

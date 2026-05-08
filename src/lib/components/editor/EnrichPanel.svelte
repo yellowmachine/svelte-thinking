@@ -125,8 +125,21 @@
 			<button
 				type="button"
 				onclick={runEnrich}
-				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
+				<svg
+					width="12"
+					height="12"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					aria-hidden="true"
+				>
+					<circle cx="11" cy="11" r="8" />
+					<path d="M21 21l-4.35-4.35M11 8v6M8 11h6" />
+				</svg>
 				Analyse document
 			</button>
 		{:else if loadingEnrich}
@@ -144,8 +157,22 @@
 				<button
 					type="button"
 					onclick={applyAll}
-					class="rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-xs text-accent transition-colors hover:bg-accent/10"
+					class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-xs text-accent transition-colors hover:bg-accent/10"
 				>
+					<svg
+						width="12"
+						height="12"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M2 12l4 4L14 6" />
+						<path d="M8 12l4 4L22 6" />
+					</svg>
 					Apply all
 				</button>
 			{/if}
@@ -181,9 +208,23 @@
 								<button
 									type="button"
 									onclick={() => applyPerson(name)}
-									class="ml-2 shrink-0 font-sans text-[10px] text-accent hover:underline"
-									>Apply</button
+									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent hover:underline"
 								>
+									<svg
+										width="10"
+										height="10"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+									Apply
+								</button>
 							</div>
 						{/each}
 					</div>
@@ -229,9 +270,23 @@
 								<button
 									type="button"
 									onclick={() => applyRef(ref)}
-									class="ml-2 shrink-0 font-sans text-[10px] text-accent hover:underline"
-									>Apply</button
+									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent hover:underline"
 								>
+									<svg
+										width="10"
+										height="10"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+									Apply
+								</button>
 							</div>
 						{/each}
 					</div>
@@ -242,8 +297,22 @@
 				type="button"
 				onclick={runEnrich}
 				disabled={loadingEnrich}
-				class="mt-auto rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="mt-auto flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
+				<svg
+					width="12"
+					height="12"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<polyline points="23 4 23 10 17 10" />
+					<path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+				</svg>
 				Re-analyse
 			</button>
 		{/if}

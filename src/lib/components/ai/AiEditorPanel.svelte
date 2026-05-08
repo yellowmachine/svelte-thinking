@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
-	import { tick, onMount } from 'svelte';
+	import { tick, onMount, untrack } from 'svelte';
 	import { MODELS } from '$lib/ai-config';
 	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
 	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
@@ -8,6 +8,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import type { PendingEditorAction, PendingAction } from '$lib/server/trpc/routers/ai';
 
+	import { resolve } from '$app/paths';
 	type Props = {
 		projectId: string;
 		documentId: string;
@@ -33,7 +34,7 @@
 	}: Props = $props();
 
 	const toolCallingModels = MODELS.filter((m) => m.toolCalling);
-	let selectedModel = $state(defaultModel);
+	let selectedModel = $state(untrack(() => defaultModel));
 
 	type Message = {
 		role: 'user' | 'assistant' | 'system';
@@ -41,7 +42,7 @@
 		docsUsed?: { id: string; title: string }[];
 	};
 
-	const CONV_KEY = `ai-editor-conv-${documentId}`;
+	const CONV_KEY = untrack(() => `ai-editor-conv-${documentId}`);
 
 	const SHORTCUTS = [
 		{
@@ -378,7 +379,7 @@
 					>
 						Quick questions
 					</p>
-					{#each SHORTCUTS as s}
+					{#each SHORTCUTS as s, i (i)}
 						<button
 							type="button"
 							onclick={() => useShortcut(s.prompt)}
@@ -391,7 +392,7 @@
 			</div>
 		{:else}
 			<div class="flex flex-col gap-5">
-				{#each messages as msg, i}
+				{#each messages as msg, i (i)}
 					{#if msg.role === 'system'}
 						<div class="flex items-center gap-2">
 							<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
@@ -418,7 +419,7 @@
 							</div>
 							{#if msg.docsUsed && msg.docsUsed.length > 0}
 								<div class="flex flex-wrap gap-1 pl-1">
-									{#each msg.docsUsed as doc}
+									{#each msg.docsUsed as doc (doc.id)}
 										<span
 											class="rounded-full bg-accent/8 px-2 py-0.5 font-sans text-[10px] text-accent dark:bg-accent/12"
 										>
@@ -486,7 +487,7 @@
 		>
 			{#if error === 'NO_KEY'}
 				No AI key configured. <a
-					href="/settings?tab=ai"
+					href={resolve('/settings?tab=ai')}
 					class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a
 				> to add one.
 			{:else}

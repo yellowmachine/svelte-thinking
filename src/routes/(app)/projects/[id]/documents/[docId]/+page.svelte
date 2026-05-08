@@ -1,15 +1,15 @@
 <script lang="ts">
+	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { onMount, onDestroy, untrack } from 'svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { documentTutorialSteps } from '$lib/tutorials/document';
-	import { goto, beforeNavigate } from '$app/navigation';
-	import Spinner from '$lib/components/ui/Spinner.svelte';
+	import { beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
-	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
 	import AnnotationsPanel from '$lib/components/editor/AnnotationsPanel.svelte';
 	import BibliographyPanel from '$lib/components/editor/BibliographyPanel.svelte';
@@ -29,11 +29,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { offlineDb } from '$lib/offline.db';
-	import {
-		findAnchor,
-		posToLine,
-		type CommentRange
-	} from '$lib/components/editor/commentsExtension';
+	import { findAnchor, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import {
 		CITATION_STYLE_LABELS,
 		formatFullCitation,
@@ -53,6 +49,7 @@
 	import { isProjectOwner, canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	// untrack: read from props once without creating a reactive dependency
@@ -145,7 +142,7 @@
 
 	// View mode: editor | split | preview
 	type ViewMode = 'editor' | 'split' | 'preview';
-	const VIEW_MODE_KEY = `view-mode-${data.document?.id ?? ''}`;
+	const VIEW_MODE_KEY = untrack(() => `view-mode-${data.document?.id ?? ''}`);
 	const initialCanWrite = (() => {
 		const role = (data.collaborators.find((c) => c.userId === data.currentUserId)?.role ??
 			null) as CollaboratorRole | null;
@@ -157,11 +154,13 @@
 		});
 	})();
 	let viewMode = $state<ViewMode>(
-		!initialCanWrite || data.forcePublished || data.document?.isReadonly
-			? 'preview'
-			: ((typeof localStorage !== 'undefined'
-					? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
-					: null) ?? 'editor')
+		untrack(() =>
+			!initialCanWrite || data.forcePublished || data.document?.isReadonly
+				? 'preview'
+				: ((typeof localStorage !== 'undefined'
+						? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
+						: null) ?? 'editor')
+		)
 	);
 	function setViewMode(m: ViewMode) {
 		viewMode = m;
@@ -193,14 +192,6 @@
 	} | null;
 	let previewRef = $state<PreviewRef>(null);
 	let splitPreviewRef = $state<PreviewRef>(null);
-
-	function extractDocumentPersons(): string[] {
-		const re = /\[\[person:([^\]]+)\]\]/g;
-		const seen = new Set<string>();
-		let m: RegExpExecArray | null;
-		while ((m = re.exec(content)) !== null) seen.add(m[1]);
-		return [...seen];
-	}
 
 	// Word-level ghost text state
 	let ghostWord: { from: number; name: string } | null = $state(null);
@@ -278,7 +269,7 @@
 
 	function onwordghosttab(): boolean {
 		if (!ghostWord || !editorEl) return false;
-		const { from, name } = ghostWord;
+		const { name } = ghostWord;
 		// 'from' is word start; cursor is somewhere inside the word (the typed prefix).
 		// insertMention replaces from..cursor with [[person:Name]], same behaviour as @@ flow.
 		const saved = ghostWord;
@@ -288,22 +279,11 @@
 		return true;
 	}
 
-	function isNoKeyError(e: unknown): boolean {
-		return !!(
-			e &&
-			typeof e === 'object' &&
-			'data' in e &&
-			(e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED'
-		);
-	}
-
-	const NO_KEY_MSG = 'No AI key configured. Go to Settings → AI to add one.';
-
 	async function lookupNames(partial: string, _context: string): Promise<string[]> {
 		await loadRefs();
 		if (!partial.trim()) return [];
 		const q = partial.toLowerCase();
-		const seen = new Set<string>();
+		const seen = new SvelteSet<string>();
 		for (const ref of projectRefs) {
 			for (const a of ref.authors) {
 				if (a.last.toLowerCase().startsWith(q)) seen.add(a.last);
@@ -361,7 +341,7 @@
 	// Same-project docs also indexed by UUID: [[doc:uuid|Title]] (book→chapter links)
 	// External context docs indexed by "title:hash": [[Introducción:a3f9b2c1]]
 	const docMap = $derived(() => {
-		const map = new Map<string, { id: string; projectId: string }>();
+		const map = new SvelteMap<string, { id: string; projectId: string }>();
 		for (const d of data.projectDocs) {
 			map.set(d.title, { id: d.id, projectId: d.projectId });
 			map.set(d.id, { id: d.id, projectId: d.projectId }); // UUID-keyed for [[doc:uuid|...]]
@@ -565,7 +545,7 @@
 		updatedAt: Date;
 	};
 	let docSubnotes = $state<Subnote[]>([]);
-	let sourceReference = $state(data.sourceReference);
+	let sourceReference = $derived(data.sourceReference);
 
 	const sourceRefFull = $derived.by(() => {
 		const sr = sourceReference;
@@ -588,15 +568,6 @@
 
 	// New comment form (triggered from floating button)
 	let showNewComment = $state(false);
-
-	// Citation explain popover
-	const CITE_SELECTION_RE = /^\[\[@([\w:._-]+)\]\]$/;
-
-	function selectedCiteKey(): string | null {
-		if (!currentSelection) return null;
-		const m = currentSelection.text.trim().match(CITE_SELECTION_RE);
-		return m ? m[1] : null;
-	}
 
 	// Author info popover
 	let authorPopover: {
@@ -855,7 +826,7 @@
 		});
 	}
 
-	function handlePreviewCommentClick(id: string) {
+	function handlePreviewCommentClick(_id: string) {
 		showComments = true;
 	}
 
@@ -989,7 +960,7 @@
 				suggestion: res.suggestion,
 				explanation: res.explanation
 			};
-		} catch (e) {
+		} catch {
 			selectionReview = null;
 		}
 	}
@@ -1255,6 +1226,18 @@
 						Read-only
 					</span>
 				{/if}
+				{#if !data.document.isReadonly && isOwner}
+					<button
+						type="button"
+						onclick={async () => {
+							await trpc.documents.update.mutate({ id: data.document.id, isReadonly: true });
+							data.document = { ...data.document, isReadonly: true };
+						}}
+						class="shrink-0 font-sans text-[10px] text-ink-faint hover:text-ink hover:underline dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					>
+						Lock editing
+					</button>
+				{/if}
 				{#if data.document.isReadonly && isOwner}
 					<button
 						type="button"
@@ -1290,8 +1273,22 @@
 						onclick={() => handleSetWriter(null)}
 						disabled={delegating}
 						title="Reclaim write access from {currentWriterName ?? currentWriterUserId}"
-						class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
+						class="flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polyline points="1 4 1 10 7 10" />
+							<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+						</svg>
 						Reclaim
 					</button>
 				{/if}
@@ -1302,8 +1299,23 @@
 						onclick={() => handleSetWriter(null)}
 						disabled={delegating}
 						title="Release write access — the project owner will regain control"
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+							<polyline points="16 17 21 12 16 7" />
+							<line x1="21" y1="12" x2="9" y2="12" />
+						</svg>
 						Release writer
 					</button>
 				{/if}
@@ -1317,8 +1329,23 @@
 							: saveCap.kind === 'blocked'
 								? saveCap.reason
 								: undefined}
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+							<polyline points="17 21 17 13 7 13 7 21" />
+							<polyline points="7 3 7 8 15 8" />
+						</svg>
 						{saveCap.kind === 'saving'
 							? 'Saving…'
 							: saveCap.kind === 'queued'
@@ -1329,7 +1356,9 @@
 
 				{#if data.document.type === 'book'}
 					<a
-						href="/projects/{data.document.projectId}/documents/{data.document.id}/read"
+						href={resolve(
+							`/projects/${data.document.projectId}/documents/${data.document.id}/read`
+						)}
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						<svg
@@ -1465,7 +1494,7 @@
 					</button>
 				{:else if aiCtaType === 'personal'}
 					<a
-						href="/settings?tab=ai"
+						href={resolve('/settings?tab=ai')}
 						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1480,7 +1509,7 @@
 					</a>
 				{:else if aiCtaType === 'org-owner'}
 					<a
-						href="/settings?tab=organizations"
+						href={resolve('/settings?tab=organizations')}
 						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1525,14 +1554,29 @@
 				<button
 					onclick={toggleComments}
 					title="Toggle comment threads panel"
-					class="relative rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
+					class="relative flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
 						? 'border-amber-400 bg-amber-400/10 text-amber-700 dark:text-amber-300'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+						<line x1="8" y1="9" x2="16" y2="9" />
+						<line x1="8" y1="13" x2="13" y2="13" />
+					</svg>
 					Comments
 					{#if openCommentsCount > 0}
 						<span
-							class="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 font-sans text-xs font-semibold text-white"
+							class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 font-sans text-xs font-semibold text-white"
 						>
 							{openCommentsCount}
 						</span>
@@ -1543,10 +1587,24 @@
 					<button
 						onclick={toggleBib}
 						title="Bibliography panel — insert citations from your project references"
-						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
 							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+							<path d="M6.5 2H20v20l-7-4-7 4V2z" />
+						</svg>
 						Bib
 					</button>
 				{/if}
@@ -1626,15 +1684,31 @@
 				{/if}
 
 				<a
-					href="/projects/{data.document.projectId}/documents/{data.document.id}/history"
+					href={resolve(
+						`/projects/${data.document.projectId}/documents/${data.document.id}/history`
+					)}
 					title="Version history — browse and restore past committed versions"
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<circle cx="12" cy="12" r="10" />
+						<polyline points="12 6 12 12 16 14" />
+					</svg>
 					History
 				</a>
 
 				<a
-					href="/help"
+					href={resolve('/help')}
 					target="_blank"
 					rel="noopener noreferrer"
 					title="Syntax guide"
@@ -1649,10 +1723,25 @@
 						onclick={() => runSpellCheck()}
 						disabled={spellLoading}
 						title="Check spelling and grammar"
-						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
 							? 'border-accent bg-accent text-white'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polyline points="4 7 4 4 20 4 20 7" />
+							<line x1="9" y1="20" x2="15" y2="20" />
+							<line x1="12" y1="4" x2="12" y2="20" />
+						</svg>
 						{spellLoading ? 'Checking…' : 'Spell'}
 					</button>
 
@@ -1661,10 +1750,24 @@
 						onclick={() => runGrammarCheck()}
 						disabled={grammarLoading}
 						title="Grammar and style suggestions for non-native English writers"
-						class="rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
 							? 'border-accent bg-accent text-white'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M12 20h9" />
+							<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+						</svg>
 						{grammarLoading ? 'Checking…' : 'Grammar'}
 					</button>
 
@@ -1678,7 +1781,7 @@
 							title="Spell check language"
 							class="cursor-pointer bg-paper font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper dark:text-dark-ink-muted"
 						>
-							{#each SPELL_LANGUAGES as lang}
+							{#each SPELL_LANGUAGES as lang (lang.code)}
 								<option value={lang.code}>{lang.label}</option>
 							{/each}
 						</select>
@@ -1756,8 +1859,24 @@
 						title={commitCap.kind === 'blocked'
 							? commitCap.reason
 							: 'Commit — save a named version and update the project timeline'}
-						class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+						class="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path
+								d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+							/>
+							<line x1="7" y1="7" x2="7.01" y2="7" />
+						</svg>
 						Commit
 					</button>
 				{/if}
@@ -1789,6 +1908,7 @@
 							class="text-ink-light dark:text-dark-ink-light font-sans text-xs leading-relaxed"
 							translate="no"
 						>
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							{@html sourceRefCitation}
 						</p>
 					</div>
@@ -2084,7 +2204,7 @@
 					<div class="flex-1 overflow-y-auto p-2">
 						{#each backlinks as link (link.id)}
 							<a
-								href="/projects/{data.document.projectId}/documents/{link.id}"
+								href={resolve(`/projects/${data.document.projectId}/documents/${link.id}`)}
 								class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 							>
 								<svg
@@ -2358,25 +2478,29 @@
 		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
 		<a
-			href="/api/projects/{data.document?.projectId}/documents/{data.document
-				?.id}/export?format=latex"
+			href={resolve(
+				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=latex`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
 		</a>
 		<a
-			href="/api/projects/{data.document?.projectId}/documents/{data.document
-				?.id}/export?format=typst"
+			href={resolve(
+				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=typst`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
 		</a>
 		<a
-			href={data.document?.type === 'book'
-				? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`
-				: `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=pdf`}
+			href={resolve(
+				data.document?.type === 'book'
+					? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`
+					: `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=pdf`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>

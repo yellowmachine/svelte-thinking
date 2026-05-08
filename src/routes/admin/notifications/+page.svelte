@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { PageData, ActionData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	const fmt = new Intl.DateTimeFormat('es', {
@@ -34,7 +35,7 @@
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<div class="mb-8 flex items-center gap-3">
 		<a
-			href="/admin"
+			href={resolve('/admin')}
 			class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			← Admin

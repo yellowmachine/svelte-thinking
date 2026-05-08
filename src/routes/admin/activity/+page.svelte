@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data } = $props();
 
 	function formatDate(d: Date | null) {
@@ -18,7 +18,7 @@
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<div class="mb-8">
 		<a
-			href="/admin"
+			href={resolve('/admin')}
 			class="font-sans text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 			>← Admin</a
 		>

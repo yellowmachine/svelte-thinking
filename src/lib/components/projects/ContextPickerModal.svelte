@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 
 	type ContextLink = {
@@ -45,7 +46,7 @@
 	});
 
 	const availableByProject = $derived.by(() => {
-		const groups = new Map<string, { title: string; docs: AvailableDoc[] }>();
+		const groups = new SvelteMap<string, { title: string; docs: AvailableDoc[] }>();
 		const publicOthers: AvailableDoc[] = [];
 
 		for (const doc of filteredAvailable) {
@@ -87,11 +88,17 @@
 	<div
 		class="flex w-full max-w-md flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
 		style="max-height: 80vh"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="context-picker-title"
 	>
 		<div
 			class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border"
 		>
-			<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+			<h2
+				id="context-picker-title"
+				class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
+			>
 				Add external context
 			</h2>
 			<button

@@ -142,8 +142,6 @@ export const issuesRouter = router({
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
-			const authorName = sql<string>`(SELECT name FROM "user" WHERE "user".id = ${ctx.user.id})`;
-
 			const [created] = await ctx.withRLS((db) =>
 				db
 					.insert(issueComment)

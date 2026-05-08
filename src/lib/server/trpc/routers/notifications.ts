@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { and, eq, gt, lt, isNull, not, exists } from 'drizzle-orm';
+import { and, eq, gt, lt, not, exists } from 'drizzle-orm';
 import { router, protectedProcedure } from '../init';
 import { notification, notificationDismissal } from '$lib/server/db/schemas/notifications.schema';
 

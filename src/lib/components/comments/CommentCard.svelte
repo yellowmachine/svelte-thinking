@@ -81,16 +81,44 @@
 				{#if replyCount > 0}
 					<button
 						onclick={onreply}
-						class="text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 					>
+						<svg
+							width="11"
+							height="11"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polyline points="9 10 4 15 9 20" />
+							<path d="M20 4v7a4 4 0 01-4 4H4" />
+						</svg>
 						{replyCount}
 						{replyCount === 1 ? 'respuesta' : 'respuestas'}
 					</button>
 				{:else}
 					<button
 						onclick={onreply}
-						class="text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 					>
+						<svg
+							width="11"
+							height="11"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polyline points="9 10 4 15 9 20" />
+							<path d="M20 4v7a4 4 0 01-4 4H4" />
+						</svg>
 						Responder
 					</button>
 				{/if}
@@ -98,8 +126,22 @@
 				{#if status === 'open'}
 					<button
 						onclick={onresolve}
-						class="text-xs text-ink-faint transition-colors hover:text-green-600 dark:text-dark-ink-faint"
+						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-green-600 dark:text-dark-ink-faint"
 					>
+						<svg
+							width="11"
+							height="11"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+							<polyline points="22 4 12 14.01 9 11.01" />
+						</svg>
 						Resolver
 					</button>
 				{/if}

@@ -106,9 +106,9 @@
 	role="dialog"
 	aria-modal="true"
 >
-	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div
 		class="absolute inset-0"
+		aria-hidden="true"
 		onclick={() => {
 			resetState();
 			onclose();
@@ -119,7 +119,8 @@
 	>
 		<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import EPUB</h2>
 		<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Sube un fichero .epub o introduce una URL. Cada capítulo se importará como documento readonly.
+			Sube un fichero .epub o introduce una URL. Se creará un único documento readonly con todos los
+			capítulos.
 		</p>
 
 		<!-- Reference picker -->

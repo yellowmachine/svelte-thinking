@@ -10,6 +10,9 @@
 
 <div
 	class="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col overflow-hidden bg-paper shadow-2xl dark:bg-dark-paper"
+	role="dialog"
+	aria-modal="true"
+	aria-label="Referencia de sintaxis"
 >
 	<div
 		class="flex shrink-0 items-center justify-between border-b border-paper-border px-6 py-4 dark:border-dark-paper-border"
@@ -38,7 +41,7 @@
 			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formato</p>
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [['# Title', 'Heading 1'], ['## Section', 'Heading 2'], ['**negrita**', 'Negrita'], ['*cursiva*', 'Cursiva'], ['`code`', 'Inline code'], ['> cita', 'Bloque de cita'], ['- elemento', 'Lista'], ['1. elemento', 'Lista numerada'], ['[texto](url)', 'Enlace'], ['---', 'Separador']] as item}
+					{#each [['# Title', 'Heading 1'], ['## Section', 'Heading 2'], ['**negrita**', 'Negrita'], ['*cursiva*', 'Cursiva'], ['`code`', 'Inline code'], ['> cita', 'Bloque de cita'], ['- elemento', 'Lista'], ['1. elemento', 'Lista numerada'], ['[texto](url)', 'Enlace'], ['---', 'Separador']] as item, i (i)}
 						<tr>
 							<td class="py-1.5 pr-4 font-mono text-xs text-accent">{item[0]}</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">{item[1]}</td>
@@ -87,7 +90,7 @@
 			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formal logic</p>
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [['$\\neg p$', '¬p', 'Negation'], ['$p \\land q$', 'p ∧ q', 'Conjunction'], ['$p \\lor q$', 'p ∨ q', 'Disjunction'], ['$p \\rightarrow q$', 'p → q', 'Implication'], ['$p \\leftrightarrow q$', 'p ↔ q', 'Bicondicional'], ['$\\forall x$', '∀x', 'Universal'], ['$\\exists x$', '∃x', 'Existencial'], ['$\\therefore$', '∴', 'Por tanto'], ['$\\bot$ / $\\top$', '⊥ / ⊤', 'Contradiction / Tautology']] as item}
+					{#each [['$\\neg p$', '¬p', 'Negation'], ['$p \\land q$', 'p ∧ q', 'Conjunction'], ['$p \\lor q$', 'p ∨ q', 'Disjunction'], ['$p \\rightarrow q$', 'p → q', 'Implication'], ['$p \\leftrightarrow q$', 'p ↔ q', 'Bicondicional'], ['$\\forall x$', '∀x', 'Universal'], ['$\\exists x$', '∃x', 'Existencial'], ['$\\therefore$', '∴', 'Por tanto'], ['$\\bot$ / $\\top$', '⊥ / ⊤', 'Contradiction / Tautology']] as item, i (i)}
 						<tr>
 							<td class="py-1.5 pr-3 font-mono text-xs text-accent">{item[0]}</td>
 							<td class="py-1.5 pr-4 text-ink dark:text-dark-ink">{item[1]}</td>
@@ -118,7 +121,7 @@
 			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Atajos de teclado</p>
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [['Ctrl+S', 'Save draft'], ['Ctrl+/', 'This reference'], ['Esc', 'Close panels']] as item}
+					{#each [['Ctrl+S', 'Save draft'], ['Ctrl+/', 'This reference'], ['Esc', 'Close panels']] as item, i (i)}
 						<tr>
 							<td class="py-1.5 pr-4">
 								<kbd

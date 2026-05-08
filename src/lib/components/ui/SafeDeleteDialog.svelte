@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
 	type Props = {
 		open: boolean;
 		/** Short description of what is being acted on, e.g. "the document" or "the project" */
@@ -78,6 +76,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="safe-delete-title"
+			tabindex="-1"
 			onkeydown={handleKeydown}
 			class="w-full max-w-sm rounded-xl border border-red-200 bg-paper shadow-xl dark:border-red-900/40 dark:bg-dark-paper"
 		>
@@ -138,7 +137,7 @@
 						To confirm, type these three characters:
 					</p>
 					<div class="mb-3 flex justify-center gap-3">
-						{#each code.split('') as char}
+						{#each code.split('') as char, i (i)}
 							<span
 								class="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-red-300 bg-red-50 font-mono text-xl font-bold tracking-widest text-red-700 dark:border-red-700/50 dark:bg-red-900/20 dark:text-red-300"
 							>

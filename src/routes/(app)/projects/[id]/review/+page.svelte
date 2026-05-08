@@ -5,11 +5,13 @@
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { projectReviewTutorialSteps } from '$lib/tutorials/projectReview';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	async function resolveThread(commentId: string) {
 		await trpc.comments.resolve.mutate(commentId);
 		// Refresh
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto('', { invalidateAll: true });
 	}
 
@@ -44,7 +46,7 @@
 	<!-- Header -->
 	<div class="mb-8">
 		<a
-			href="/projects/{data.project.id}"
+			href={resolve(`/projects/${data.project.id}`)}
 			class="mb-3 flex items-center gap-1.5 font-sans text-sm text-ink-muted hover:text-accent dark:text-dark-ink-muted"
 		>
 			<svg
@@ -110,7 +112,7 @@
 					<!-- Document heading -->
 					<div class="mb-3 flex items-center gap-2">
 						<a
-							href="/projects/{data.project.id}/documents/{doc.documentId}"
+							href={resolve(`/projects/${data.project.id}/documents/${doc.documentId}`)}
 							class="font-serif text-lg font-semibold text-ink hover:text-accent dark:text-dark-ink"
 						>
 							{doc.documentTitle}
@@ -179,8 +181,9 @@
 
 									<div class="flex shrink-0 items-center gap-1.5">
 										<a
-											href="/projects/{data.project
-												.id}/documents/{doc.documentId}?commentId={thread.id}"
+											href={resolve(
+												`/projects/${data.project.id}/documents/${doc.documentId}?commentId=${thread.id}`
+											)}
 											class="rounded-md border border-paper-border px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
 											title="View in document"
 										>

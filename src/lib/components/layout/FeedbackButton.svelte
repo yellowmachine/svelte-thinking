@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 
+	import { resolve } from '$app/paths';
 	let open = $state(false);
 	let message = $state('');
 	let showName = $state(false);
@@ -62,12 +63,18 @@
 
 		<div
 			class="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="feedback-dialog-title"
 		>
 			<div
 				class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border"
 			>
 				<div>
-					<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+					<h2
+						id="feedback-dialog-title"
+						class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
+					>
 						Leave feedback
 					</h2>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
@@ -127,7 +134,7 @@
 					>
 						<p class="font-sans text-xs text-amber-700 dark:text-amber-400">
 							Feedback is public and visible at <a
-								href="/feedback"
+								href={resolve('/feedback')}
 								class="underline hover:no-underline">/feedback</a
 							>.
 						</p>

@@ -45,21 +45,6 @@
 		}
 	}
 
-	async function selectVersion(versionId: string) {
-		if (selectedVersionId === versionId) {
-			selectedVersionId = null;
-			compareDiff = null;
-			return;
-		}
-		selectedVersionId = versionId;
-		loadingCompare = true;
-		try {
-			compareDiff = await trpc.documents.versionDiff.query({ documentId, versionId });
-		} finally {
-			loadingCompare = false;
-		}
-	}
-
 	async function restoreVersion(versionId: string) {
 		if (!compareDiff) return;
 		await trpc.documents.restoreVersion.mutate({ documentId, versionId });

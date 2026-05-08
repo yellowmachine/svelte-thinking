@@ -1,5 +1,5 @@
 <script>
-	import { resolveRoute as resolve } from '$app/paths';
+	import { resolve } from '$app/paths';
 	let { children } = $props();
 </script>
 
@@ -32,12 +32,14 @@
 			>
 				Sign in
 			</a>
+			<!-- eslint-disable svelte/no-navigation-without-resolve -->
 			<a
 				href={resolve('/') + '#waitlist'}
 				class="rounded-lg bg-accent px-4 py-1.5 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90"
 			>
 				Beta access
 			</a>
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</div>
 	</div>
 </header>

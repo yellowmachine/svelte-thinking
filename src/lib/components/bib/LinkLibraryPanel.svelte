@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import type { Author } from '$lib/utils/bibtex';
 
@@ -97,12 +97,12 @@
 				(p) => p.id !== projectId
 			);
 			const projectRefIds = new Set(linkedRefs.map((r) => r.id));
-			const projectIdsMap = new Map<string, string[]>();
+			const projectIdsMap = new SvelteMap<string, string[]>();
 			for (const r of all) {
 				if (!projectIdsMap.has(r.id)) projectIdsMap.set(r.id, []);
 				if (r.projectId) projectIdsMap.get(r.id)!.push(r.projectId);
 			}
-			const seen = new Set<string>();
+			const seen = new SvelteSet<string>();
 			llRefs = all
 				.filter((r) => {
 					if (projectRefIds.has(r.id) || seen.has(r.id)) return false;

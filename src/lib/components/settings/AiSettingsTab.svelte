@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import { MODEL_RECOMMENDATIONS, MODEL_SHORT_LABEL } from '$lib/ai-config';
 
+	import { resolve } from '$app/paths';
 	let {
 		openrouterStatus
 	}: {
@@ -42,7 +44,7 @@
 	let savingNewKey = $state(false);
 	let showManualKeyForm = $state(false);
 
-	let openrouterNotice = $state<'success' | 'error' | null>(openrouterStatus);
+	let openrouterNotice = $state<'success' | 'error' | null>(untrack(() => openrouterStatus));
 
 	let oauthKey = $derived(aiKeys.find((k) => k.source === 'openrouter_oauth') ?? null);
 
@@ -172,7 +174,7 @@
 <div class="flex flex-col gap-6">
 	<div class="flex justify-end">
 		<a
-			href="/usage"
+			href={resolve('/usage')}
 			class="font-sans text-sm text-accent underline decoration-dotted hover:decoration-solid"
 			>View AI usage dashboard →</a
 		>
@@ -254,15 +256,30 @@
 					<button
 						type="button"
 						onclick={() => confirmDeleteKey(oauthKey!.id)}
-						class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+						class="inline-flex items-center gap-1 font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 					>
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+							<line x1="2" y1="2" x2="22" y2="22" />
+						</svg>
 						Disconnect
 					</button>
 				</div>
 			{:else}
 				<!-- Connect button -->
 				<a
-					href="/api/openrouter/connect"
+					href={resolve('/api/openrouter/connect')}
 					class="mb-4 flex w-full items-center justify-center gap-2.5 rounded-lg bg-accent px-4 py-3 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -310,7 +327,7 @@
 			<!-- Manual keys (non-OAuth) -->
 			{#if aiKeys.filter((k) => k.source === 'manual').length > 0}
 				<div class="mb-4 flex flex-col gap-2">
-					{#each aiKeys.filter((k) => k.source === 'manual') as key}
+					{#each aiKeys.filter((k) => k.source === 'manual') as key (key.id)}
 						<div
 							class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 						>
@@ -350,8 +367,24 @@
 								<button
 									type="button"
 									onclick={() => confirmDeleteKey(key.id)}
-									class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+									class="inline-flex items-center gap-1 font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 								>
+									<svg
+										width="12"
+										height="12"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<polyline points="3 6 5 6 21 6" />
+										<path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+										<path d="M10 11v6M14 11v6" />
+										<path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+									</svg>
 									Delete
 								</button>
 							</div>
@@ -364,9 +397,26 @@
 			<button
 				type="button"
 				onclick={() => (showManualKeyForm = !showManualKeyForm)}
-				class="mb-3 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+				class="mb-3 inline-flex items-center gap-1 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 			>
-				{showManualKeyForm ? 'Hide manual entry ↑' : 'Enter key manually ↓'}
+				{showManualKeyForm ? 'Hide manual entry' : 'Enter key manually'}
+				<svg
+					width="13"
+					height="13"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					{#if showManualKeyForm}
+						<polyline points="18 15 12 9 6 15" />
+					{:else}
+						<polyline points="6 9 12 15 18 9" />
+					{/if}
+				</svg>
 			</button>
 
 			{#if showManualKeyForm}
@@ -389,8 +439,25 @@
 							type="button"
 							onclick={handleAddKey}
 							disabled={!newKeyName.trim() || !newKeyValue.trim() || savingNewKey}
-							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+							class="flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 						>
+							{#if !savingNewKey}
+								<svg
+									width="13"
+									height="13"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+									<polyline points="17 21 17 13 7 13 7 21" />
+									<polyline points="7 3 7 8 15 8" />
+								</svg>
+							{/if}
 							{savingNewKey ? 'Saving...' : 'Save'}
 						</button>
 					</div>
@@ -415,7 +482,7 @@
 				</p>
 
 				<div class="flex flex-col gap-4">
-					{#each aiTasks as task}
+					{#each aiTasks as task (task.id)}
 						{@const cfg = aiTaskConfig[task.id as AiTaskId]}
 						{@const enabledKeys = aiKeys.filter((k) => k.enabled)}
 						<div
@@ -475,7 +542,7 @@
 									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 								>
 									<option value="">— First active key —</option>
-									{#each enabledKeys as key}
+									{#each enabledKeys as key (key.id)}
 										<option value={key.id}>{key.name}</option>
 									{/each}
 								</select>
@@ -492,7 +559,7 @@
 									<option value=""
 										>— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option
 									>
-									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
+									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m (m.id)}
 										{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
 											task.id as 'agent' | 'draft' | 'review' | 'requirements'
 										)}
@@ -532,15 +599,44 @@
 				<button
 					type="button"
 					onclick={() => (deletingKeyId = null)}
-					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M18 6L6 18M6 6l12 12" />
+					</svg>
 					Cancel
 				</button>
 				<button
 					type="button"
 					onclick={executeDeleteKey}
-					class="flex-1 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700"
+					class="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700"
 				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<polyline points="3 6 5 6 21 6" />
+						<path d="M19 6l-1 14H6L5 6" />
+						<path d="M10 11v6M14 11v6" />
+						<path d="M9 6V4h6v2" />
+					</svg>
 					Delete
 				</button>
 			</div>

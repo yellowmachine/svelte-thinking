@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, ne, asc, isNull, or } from 'drizzle-orm';
+import { eq, and, ne, asc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';

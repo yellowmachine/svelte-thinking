@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { trpc } from '$lib/utils/trpc';
 
+	import { resolve } from '$app/paths';
 	type Project = { id: string; title: string };
 	type Sheet = 'note' | 'photo' | null;
 
@@ -119,7 +120,7 @@
 	<div class="flex items-center">
 		<!-- Proyectos -->
 		<a
-			href="/projects"
+			href={resolve('/projects')}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onProjects
 				? 'text-accent'
 				: 'text-ink-muted dark:text-dark-ink-muted'}"
@@ -142,7 +143,7 @@
 
 		<!-- Explore -->
 		<a
-			href="/explore"
+			href={resolve('/explore')}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onExplore
 				? 'text-accent'
 				: 'text-ink-muted dark:text-dark-ink-muted'}"

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { resolveRoute } from '$app/paths';
 	import type { PageData } from './$types';
-
 	let { data }: { data: PageData } = $props();
 </script>
 
@@ -19,6 +18,7 @@
 		<ul class="space-y-8">
 			{#each data.posts as post (post.slug)}
 				<li>
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 					<a href={resolveRoute('/blog/[slug]', { slug: post.slug })} class="group block">
 						<time class="text-muted-foreground mb-1 block text-sm">
 							{new Date(post.date).toLocaleDateString('es-ES', {

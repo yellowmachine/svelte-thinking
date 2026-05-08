@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Callout from '$lib/components/ui/Callout.svelte';
+	import { resolve } from '$app/paths';
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
@@ -30,7 +31,7 @@
 
 		<!-- 5-step workflow -->
 		<div class="mb-6 grid gap-3 sm:grid-cols-5">
-			{#each [{ n: '1', label: 'Create a project', sub: 'Projects → New project' }, { n: '2', label: 'Add documents', sub: 'Write in Markdown' }, { n: '3', label: 'Build bibliography', sub: 'Project → Bib tab' }, { n: '4', label: 'Cite & link', sub: '[[@key]]  [[Title]]' }, { n: '5', label: 'Commit & export', sub: 'Version saved · PDF / LaTeX' }] as step}
+			{#each [{ n: '1', label: 'Create a project', sub: 'Projects → New project' }, { n: '2', label: 'Add documents', sub: 'Write in Markdown' }, { n: '3', label: 'Build bibliography', sub: 'Project → Bib tab' }, { n: '4', label: 'Cite & link', sub: '[[@key]]  [[Title]]' }, { n: '5', label: 'Commit & export', sub: 'Version saved · PDF / LaTeX' }] as step (step.n)}
 				<div
 					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper px-3 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
@@ -56,7 +57,7 @@
 			</div>
 			<div class="grid sm:grid-cols-2">
 				<div class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [{ write: '**bold**  *italic*', result: 'bold / italic' }, { write: '# Title  ## Section', result: 'headings' }, { write: '> text', result: 'block quote' }, { write: '- item  1. item', result: 'lists' }, { write: '[[@darwin1859]]', result: 'bibliographic citation' }] as row}
+					{#each [{ write: '**bold**  *italic*', result: 'bold / italic' }, { write: '# Title  ## Section', result: 'headings' }, { write: '> text', result: 'block quote' }, { write: '- item  1. item', result: 'lists' }, { write: '[[@darwin1859]]', result: 'bibliographic citation' }] as row (row.write)}
 						<div class="flex items-center gap-3 px-4 py-2.5">
 							<code
 								class="shrink-0 rounded bg-paper-ui px-1.5 py-0.5 font-mono text-[11px] text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -71,7 +72,7 @@
 				<div
 					class="divide-y divide-paper-border border-t border-paper-border sm:border-t-0 sm:border-l dark:divide-dark-paper-border dark:border-dark-paper-border"
 				>
-					{#each [{ write: '$E=mc^2$  $$...$$', result: 'inline / block math' }, { write: '[[Title]]', result: 'wikilink to a document' }, { write: '[[doc:  [[#  [[^  [[!  [[p', result: '[[  autocomplete triggers' }, { write: '[^1]  [^1]: note', result: 'footnote mark / definition' }, { write: '```vega-lite', result: 'interactive chart' }] as row}
+					{#each [{ write: '$E=mc^2$  $$...$$', result: 'inline / block math' }, { write: '[[Title]]', result: 'wikilink to a document' }, { write: '[[doc:  [[#  [[^  [[!  [[p', result: '[[  autocomplete triggers' }, { write: '[^1]  [^1]: note', result: 'footnote mark / definition' }, { write: '```vega-lite', result: 'interactive chart' }] as row (row.write)}
 						<div class="flex items-center gap-3 px-4 py-2.5">
 							<code
 								class="shrink-0 rounded bg-paper-ui px-1.5 py-0.5 font-mono text-[11px] text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -104,7 +105,8 @@
 			Each type has its own help page with a full example and a one-click sample project.
 		</p>
 		<div class="grid gap-3 sm:grid-cols-2">
-			{#each [{ href: '/help/notes', label: 'Notes', tagline: 'Annotations, reading notes, and ideas in progress.' }, { href: '/help/book', label: 'Book', tagline: 'Multi-chapter document with cover page, TOC, and numbered chapters.' }] as item}
+			<!-- eslint-disable svelte/no-navigation-without-resolve -->
+			{#each [{ href: resolve('/help/notes'), label: 'Notes', tagline: 'Annotations, reading notes, and ideas in progress.' }, { href: resolve('/help/book'), label: 'Book', tagline: 'Multi-chapter document with cover page, TOC, and numbered chapters.' }] as item (item.href)}
 				<a
 					href={item.href}
 					class="group flex flex-col gap-1 rounded-xl border border-paper-border bg-paper px-4 py-3 transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper"
@@ -118,6 +120,7 @@
 					>
 				</a>
 			{/each}
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</div>
 	</section>
 
@@ -131,13 +134,15 @@
 		<div
 			class="grid gap-1 rounded-xl border border-paper-border bg-paper px-5 py-4 sm:grid-cols-2 dark:border-dark-paper-border dark:bg-dark-paper"
 		>
-			{#each [{ href: '#projects', label: 'Projects & workspaces' }, { href: '#bibliography', label: 'Bibliography' }, { href: '#editor', label: 'Documents & editor' }, { href: '#formatting', label: '↳ Basic formatting' }, { href: '#citations', label: '↳ Bibliographic citations' }, { href: '#math', label: '↳ Mathematics & formal logic' }, { href: '#wikilinks', label: '↳ Wikilinks' }, { href: '#autocomplete', label: '↳ [[ autocomplete' }, { href: '#footnotes', label: '↳ Footnotes' }, { href: '#callouts', label: '↳ Callout blocks' }, { href: '#photos', label: '↳ Photos' }, { href: '#charts', label: '↳ Vega-Lite charts' }, { href: '#export', label: '↳ Export' }, { href: '#versions', label: 'Version history' }, { href: '/help/ai', label: 'AI assistant →' }, { href: '#collaboration', label: 'Collaboration' }, { href: '#explore', label: 'Explore' }, { href: '#settings', label: 'Settings' }, { href: '#tips', label: 'Tips' }] as item}
+			<!-- eslint-disable svelte/no-navigation-without-resolve -->
+			{#each [{ href: '#projects', label: 'Projects & workspaces' }, { href: '#bibliography', label: 'Bibliography' }, { href: '#editor', label: 'Documents & editor' }, { href: '#formatting', label: '↳ Basic formatting' }, { href: '#citations', label: '↳ Bibliographic citations' }, { href: '#math', label: '↳ Mathematics & formal logic' }, { href: '#wikilinks', label: '↳ Wikilinks' }, { href: '#autocomplete', label: '↳ [[ autocomplete' }, { href: '#footnotes', label: '↳ Footnotes' }, { href: '#callouts', label: '↳ Callout blocks' }, { href: '#photos', label: '↳ Photos' }, { href: '#charts', label: '↳ Vega-Lite charts' }, { href: '#export', label: '↳ Export' }, { href: '#versions', label: 'Version history' }, { href: '/help/ai', label: 'AI assistant →' }, { href: '#collaboration', label: 'Collaboration' }, { href: '#explore', label: 'Explore' }, { href: '#settings', label: 'Settings' }, { href: '#tips', label: 'Tips' }] as item (item.href)}
 				<a
 					href={item.href}
 					class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline"
 					>{item.label}</a
 				>
 			{/each}
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</div>
 	</section>
 
@@ -485,7 +490,7 @@
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [{ write: '$\\neg p$', sym: '¬p', name: 'Negation' }, { write: '$p \\land q$', sym: 'p ∧ q', name: 'Conjunction' }, { write: '$p \\lor q$', sym: 'p ∨ q', name: 'Disjunction' }, { write: '$p \\rightarrow q$', sym: 'p → q', name: 'Implication' }, { write: '$p \\leftrightarrow q$', sym: 'p ↔ q', name: 'Biconditional' }, { write: '$\\forall x$', sym: '∀x', name: 'Universal quantifier' }, { write: '$\\exists x$', sym: '∃x', name: 'Existential quantifier' }, { write: '$\\therefore$', sym: '∴', name: 'Therefore' }, { write: '$\\bot$', sym: '⊥', name: 'Contradiction' }, { write: '$\\top$', sym: '⊤', name: 'Tautology' }, { write: '$x \\in A$', sym: 'x ∈ A', name: 'Membership' }, { write: '$A \\subseteq B$', sym: 'A ⊆ B', name: 'Subset' }] as row}
+					{#each [{ write: '$\\neg p$', sym: '¬p', name: 'Negation' }, { write: '$p \\land q$', sym: 'p ∧ q', name: 'Conjunction' }, { write: '$p \\lor q$', sym: 'p ∨ q', name: 'Disjunction' }, { write: '$p \\rightarrow q$', sym: 'p → q', name: 'Implication' }, { write: '$p \\leftrightarrow q$', sym: 'p ↔ q', name: 'Biconditional' }, { write: '$\\forall x$', sym: '∀x', name: 'Universal quantifier' }, { write: '$\\exists x$', sym: '∃x', name: 'Existential quantifier' }, { write: '$\\therefore$', sym: '∴', name: 'Therefore' }, { write: '$\\bot$', sym: '⊥', name: 'Contradiction' }, { write: '$\\top$', sym: '⊤', name: 'Tautology' }, { write: '$x \\in A$', sym: 'x ∈ A', name: 'Membership' }, { write: '$A \\subseteq B$', sym: 'A ⊆ B', name: 'Subset' }] as row (row.write)}
 						<tr>
 							<td class="px-4 py-2.5"
 								><code
@@ -550,7 +555,7 @@
 			by a prefix to open a specific autocomplete panel.
 		</p>
 		<div class="space-y-3">
-			{#each [{ trigger: '[[doc:', example: '[[doc:Introduction → [[doc:<id>|Introduction]]', desc: 'Search a document in the project by title.' }, { trigger: '[[@', example: '[[@darwin1859]]', desc: 'Insert a bibliographic citation. Autocompletes from project references.' }, { trigger: '[[#', example: '[[#Methodology]]', desc: 'Internal anchor link to a heading in the current document.' }, { trigger: '[[^', example: '[[^]] → inserts [^1] + definition at end', desc: 'Insert a numbered footnote with its definition added automatically.' }, { trigger: '[[p', example: '[[pKarl → [[person:Karl Barth]]', desc: 'Search a person by name using AI. Renders with a dotted underline; hover shows a brief author card (dates, field, origin).' }, { trigger: '[[index:persons]]', example: '[[index:persons]] → onomastic index', desc: 'Type this tag anywhere in the document to insert an auto-generated alphabetical index of all [[person:Name]] tags used in that document, with links back to their first occurrence.' }, { trigger: '[[!', example: '[[!whiteboard → ![caption](/api/photos/…)', desc: 'Search project photos by filename or description. Selecting one embeds the image with a permanent proxy URL.' }] as item}
+			{#each [{ trigger: '[[doc:', example: '[[doc:Introduction → [[doc:<id>|Introduction]]', desc: 'Search a document in the project by title.' }, { trigger: '[[@', example: '[[@darwin1859]]', desc: 'Insert a bibliographic citation. Autocompletes from project references.' }, { trigger: '[[#', example: '[[#Methodology]]', desc: 'Internal anchor link to a heading in the current document.' }, { trigger: '[[^', example: '[[^]] → inserts [^1] + definition at end', desc: 'Insert a numbered footnote with its definition added automatically.' }, { trigger: '[[p', example: '[[pKarl → [[person:Karl Barth]]', desc: 'Search a person by name using AI. Renders with a dotted underline; hover shows a brief author card (dates, field, origin).' }, { trigger: '[[index:persons]]', example: '[[index:persons]] → onomastic index', desc: 'Type this tag anywhere in the document to insert an auto-generated alphabetical index of all [[person:Name]] tags used in that document, with links back to their first occurrence.' }, { trigger: '[[!', example: '[[!whiteboard → ![caption](/api/photos/…)', desc: 'Search project photos by filename or description. Selecting one embeds the image with a permanent proxy URL.' }] as item (item.trigger)}
 				<div
 					class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 				>
@@ -614,7 +619,7 @@
 			precautions — the same way technical books mark margin notes.
 		</p>
 		<div class="space-y-3">
-			{#each [{ type: 'note', label: 'Nota', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40', border: 'border-blue-200 dark:border-blue-800' }, { type: 'warning', label: 'Atención', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40', border: 'border-amber-200 dark:border-amber-800' }, { type: 'tip', label: 'Consejo', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/40', border: 'border-green-200 dark:border-green-800' }, { type: 'caution', label: 'Precaución', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/40', border: 'border-red-200 dark:border-red-800' }] as item}
+			{#each [{ type: 'note', label: 'Nota', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40', border: 'border-blue-200 dark:border-blue-800' }, { type: 'warning', label: 'Atención', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40', border: 'border-amber-200 dark:border-amber-800' }, { type: 'tip', label: 'Consejo', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/40', border: 'border-green-200 dark:border-green-800' }, { type: 'caution', label: 'Precaución', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/40', border: 'border-red-200 dark:border-red-800' }] as item (item.type)}
 				<div
 					class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 				>
@@ -842,7 +847,7 @@
 				</p>
 			</div>
 			<a
-				href="/help/ai"
+				href={resolve('/help/ai')}
 				class="shrink-0 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 font-sans text-xs font-semibold text-accent transition-colors hover:bg-accent/10 dark:border-accent/20 dark:bg-accent/5"
 			>
 				Full AI guide →

@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import type { PageData } from './$types';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	let activeChapterId = $state<string | null>(null);
@@ -18,7 +20,7 @@
 	}
 
 	const docMap = $derived(() => {
-		const map = new Map<string, { id: string; projectId: string }>();
+		const map = new SvelteMap<string, { id: string; projectId: string }>();
 		for (const d of data.projectDocs) {
 			map.set(d.title, { id: d.id, projectId: d.projectId });
 			map.set(d.id, { id: d.id, projectId: d.projectId });
@@ -71,7 +73,7 @@
 		class="sticky top-0 z-10 flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-6 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
 	>
 		<a
-			href="/projects/{data.book.projectId}/documents/{data.book.id}"
+			href={resolve(`/projects/${data.book.projectId}/documents/${data.book.id}`)}
 			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg
@@ -141,7 +143,7 @@
 					Contents
 				</p>
 				<nav class="flex flex-col gap-0.5">
-					{#each data.chapters as chapter, i}
+					{#each data.chapters as chapter, i (chapter.id)}
 						<button
 							onclick={() => scrollToChapter(chapter.id)}
 							class="rounded px-2 py-1.5 text-left font-sans text-sm transition-colors
@@ -184,7 +186,7 @@
 					</p>
 				{:else}
 					<!-- Chapters -->
-					{#each data.chapters as chapter, i}
+					{#each data.chapters as chapter, i (chapter.id)}
 						<section id="chapter-{chapter.id}" class="mb-16 scroll-mt-20">
 							<div class="mb-6 border-b border-paper-border pb-4 dark:border-dark-paper-border">
 								<p

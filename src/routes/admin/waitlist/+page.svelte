@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { PageData } from './$types';
-
 	let { data } = $props();
 
 	const pending = $derived(data.entries.filter((e) => e.status === 'pending'));

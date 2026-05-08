@@ -9,9 +9,9 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "husky",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold warning",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "prettier --check . && eslint .",
+		"lint": "prettier --check . && eslint . --max-warnings 0",
 		"format": "prettier --write .",
 		"test:unit": "vitest --project server",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
@@ -36,7 +36,7 @@
 	"lint-staged": {
 		"*.{ts,js,svelte}": [
 			"prettier --check",
-			"eslint"
+			"eslint --max-warnings 0"
 		],
 		"*.{json,yml,yaml,md,css}": [
 			"prettier --check"
