@@ -7,7 +7,7 @@
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
 	import UrlImportModal from '$lib/components/projects/UrlImportModal.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
-	import EpubImportModal from '$lib/components/projects/EpubImportModal.svelte';
+	import TextImportModal from '$lib/components/projects/TextImportModal.svelte';
 	import ProjectSidebar from '$lib/components/projects/ProjectSidebar.svelte';
 	import UseTemplateModal from '$lib/components/projects/UseTemplateModal.svelte';
 	import SaveAsTemplateModal from '$lib/components/projects/SaveAsTemplateModal.svelte';
@@ -586,7 +586,7 @@
 						onclick={() => {
 							showEpubModal = true;
 						}}
-						title="Import EPUB book"
+						title="Import book text"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						<svg
@@ -604,7 +604,7 @@
 								d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
 							/>
 						</svg>
-						EPUB
+						Book
 					</button>
 				{/if}
 				<a
@@ -656,15 +656,6 @@
 		</div>
 	{/if}
 
-	{#if data.project.isImporting}
-		<div
-			class="mb-4 flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-ink dark:text-dark-ink"
-		>
-			<Spinner size="sm" />
-			<span>Importando capítulos del EPUB… Los documentos aparecerán en breve.</span>
-		</div>
-	{/if}
-
 	{#if showUrlModal}
 		<UrlImportModal
 			projectId={data.project.id}
@@ -674,11 +665,7 @@
 	{/if}
 
 	{#if showEpubModal}
-		<EpubImportModal
-			projectId={data.project.id}
-			isImporting={data.project.isImporting ?? false}
-			onclose={() => (showEpubModal = false)}
-		/>
+		<TextImportModal projectId={data.project.id} onclose={() => (showEpubModal = false)} />
 	{/if}
 
 	<div class="grid gap-8 lg:grid-cols-3">

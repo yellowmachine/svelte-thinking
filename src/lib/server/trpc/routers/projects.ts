@@ -15,7 +15,6 @@ import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { deleteFileWithConfig } from '$lib/server/storage';
-import { processEpubImport } from '$lib/server/epubImport';
 import {
 	isProjectOwner,
 	canRemoveCollaborator,
@@ -813,33 +812,37 @@ export const projectsRouter = router({
 		return result;
 	}),
 
-	importEpub: protectedProcedure
+	importText: protectedProcedure
 		.input(
 			z.object({
 				projectId: z.string(),
-				url: z.string().url().max(2000),
+				title: z.string().min(1).max(250),
+				text: z.string().min(1).max(5_000_000),
 				referenceId: z.string().optional()
 			})
 		)
 		.mutation(async ({ ctx, input }) => {
-			const { projectId, url, referenceId } = input;
+			const { projectId, title, text, referenceId } = input;
+			const docId = crypto.randomUUID();
 
-			const res = await fetch(url, {
-				headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)' },
-				signal: AbortSignal.timeout(60_000)
-			});
-			if (!res.ok) throw new TRPCError({ code: 'BAD_REQUEST', message: `HTTP ${res.status}` });
-			const buffer = new Uint8Array(await res.arrayBuffer());
+			await ctx.withRLS((db) =>
+				db.insert(document).values({
+					id: docId,
+					projectId,
+					title,
+					type: 'book',
+					ownerUserId: ctx.user.id,
+					generatedByAi: false,
+					isReadonly: true,
+					draftContent: text,
+					sourceReferenceId: referenceId ?? null
+				})
+			);
 
-			processEpubImport({
-				projectId,
-				userId: ctx.user.id,
-				withRLS: ctx.withRLS,
-				buffer,
-				referenceId,
-				sourceUrl: url
-			});
+			ctx
+				.withRLS((db) => indexDocument(db, docId, projectId, text))
+				.catch((err) => console.error('[embeddings] indexDocument failed:', err));
 
-			return { started: true };
+			return { documentId: docId };
 		})
 });

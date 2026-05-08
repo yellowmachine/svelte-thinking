@@ -8,7 +8,7 @@ import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { notificationPreference } from '$lib/server/db/schemas/users.schema';
 import { extractWikilinks } from '$lib/utils/wikilinks';
-import { indexDocument } from '$lib/server/embeddings';
+import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
 import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { sendCommitNotification } from '$lib/server/email';
@@ -787,5 +787,24 @@ export const documentsRouter = router({
 
 				return { document: updated, restoredFromVersion: source[0].versionNumber };
 			});
+		}),
+
+	searchInDocument: protectedProcedure
+		.input(z.object({ documentId: z.string(), query: z.string().min(1).max(500) }))
+		.query(async ({ ctx, input }) => {
+			if (!env.OPENAI_API_KEY) return [];
+			const queryVec = await embedQuery(input.query);
+			const vecLiteral = `[${queryVec.join(',')}]`;
+			const rows = (await ctx.withRLS((db) =>
+				db.execute(sql`
+					SELECT dc.text, dc.chunk_index,
+					       1 - (dc.embedding <=> ${vecLiteral}::vector) AS similarity
+					FROM scholio.document_chunk dc
+					WHERE dc.document_id = ${input.documentId}
+					ORDER BY dc.embedding <=> ${vecLiteral}::vector
+					LIMIT 8
+				`)
+			)) as unknown as { text: string; chunk_index: number; similarity: number }[];
+			return rows;
 		})
 });
