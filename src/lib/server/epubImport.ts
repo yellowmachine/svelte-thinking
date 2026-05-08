@@ -204,6 +204,8 @@ export async function processEpubImport({
 				return t;
 			}
 
+			const chapterSections: string[] = [];
+
 			for (let i = 0; i < spineItems.length; i++) {
 				const idref = spineItems[i];
 				const href = manifestItems.get(idref)!;
@@ -256,34 +258,50 @@ export async function processEpubImport({
 					ADD_TAGS: ['figure', 'figcaption'],
 					ADD_ATTR: ['role']
 				});
+
+				const { document: cleanDoc } = parseHTML(clean);
+				const bodyContent = cleanDoc.querySelector('body')?.innerHTML?.trim() ?? '';
+				if (!bodyContent) continue;
+
 				const chapterTitle =
 					chDoc.querySelector('h1, h2')?.textContent?.trim() ||
 					chDoc.querySelector('title')?.textContent?.trim() ||
-					`${title} — Chapter ${i + 1}`;
+					`Chapter ${i + 1}`;
 
-				const docTitle = uniqueTitle(chapterTitle.slice(0, 250));
+				const hasHeading = !!cleanDoc.querySelector('body h1, body h2');
+				const sectionHtml = hasHeading
+					? `<section>${bodyContent}</section>`
+					: `<section><h2>${chapterTitle}</h2>${bodyContent}</section>`;
+
+				chapterSections.push(sectionHtml);
+				log(`  collected chapter "${chapterTitle}"`);
+			}
+
+			if (chapterSections.length > 0) {
+				const combinedHtml = `<html><body>${chapterSections.join('\n')}</body></html>`;
+				const docTitle = uniqueTitle(title.slice(0, 250));
 				const docId = crypto.randomUUID();
-				log(`  inserting chapter "${docTitle}"`);
+				log(`inserting book document "${docTitle}" with ${chapterSections.length} chapters`);
 
 				await withRLS((db) =>
 					db.insert(document).values({
 						id: docId,
 						projectId,
 						title: docTitle,
-						type: 'chapter',
+						type: 'book',
 						ownerUserId: userId,
 						generatedByAi: false,
 						isReadonly: true,
-						renderedHtml: clean,
+						renderedHtml: combinedHtml,
 						sourceReferenceId: resolvedRefId
 					})
-				).catch((e) => log(`  failed chapter "${docTitle}": ${e.message}`));
+				).catch((e) => log(`failed to insert book document: ${e.message}`));
 			}
 
 			await withRLS((db) =>
 				db.update(project).set({ isImporting: false }).where(eq(project.id, projectId))
 			);
-			log('done', spineItems.length, 'chapters processed');
+			log('done', chapterSections.length, 'chapters merged into 1 document');
 		} catch (err) {
 			console.error('[importEpub] failed:', err);
 			await withRLS((db) =>

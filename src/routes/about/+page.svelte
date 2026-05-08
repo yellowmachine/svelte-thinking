@@ -1,3 +1,7 @@
+<script>
+	import { resolve } from '$app/paths';
+</script>
+
 <div class="min-h-screen bg-paper-ui font-sans dark:bg-dark-paper-ui">
 	<!-- ── Nav ──────────────────────────────────────────────────────────────── -->
 	<header
@@ -5,7 +9,7 @@
 	>
 		<div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
 			<div class="flex items-center gap-2">
-				<a href="/" class="flex items-center gap-2">
+				<a href={resolve('/')} class="flex items-center gap-2">
 					<div class="flex h-7 w-7 items-center justify-center rounded bg-accent">
 						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 							<path
@@ -26,19 +30,19 @@
 			</div>
 			<div class="flex items-center gap-4">
 				<a
-					href="/blog"
+					href={resolve('/blog')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Blog
 				</a>
 				<a
-					href="/login"
+					href={resolve('/login')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Sign in
 				</a>
 				<a
-					href="/#waitlist"
+					href={resolve('/#waitlist')}
 					class="rounded-lg bg-accent px-4 py-1.5 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90"
 				>
 					Beta access
@@ -153,7 +157,7 @@
 
 		<div class="mt-12 text-center">
 			<a
-				href="/#waitlist"
+				href={resolve('/#waitlist')}
 				class="rounded-lg bg-accent px-6 py-3 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90"
 			>
 				Request beta access
@@ -167,7 +171,7 @@
 			class="mx-auto max-w-5xl px-6 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 		>
 			© 2026 Scholio · <a
-				href="/conduct"
+				href={resolve('/conduct')}
 				class="hover:text-ink-muted dark:hover:text-dark-ink-muted">Code of conduct</a
 			>
 			·

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 
 	type ContextLink = {
@@ -45,7 +46,7 @@
 	});
 
 	const availableByProject = $derived.by(() => {
-		const groups = new Map<string, { title: string; docs: AvailableDoc[] }>();
+		const groups = new SvelteMap<string, { title: string; docs: AvailableDoc[] }>();
 		const publicOthers: AvailableDoc[] = [];
 
 		for (const doc of filteredAvailable) {

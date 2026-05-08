@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 </script>
 
@@ -9,7 +10,7 @@
 
 	<div class="mt-8 grid gap-4 sm:grid-cols-3">
 		<a
-			href="/project/{data.project.id}/datasets"
+			href={resolve(`/project/${data.project.id}/datasets`)}
 			class="rounded-lg border border-paper-border p-6 hover:border-ink-faint dark:border-dark-paper-border dark:hover:border-dark-ink-faint"
 		>
 			<h2 class="font-medium text-ink dark:text-dark-ink">Datasets</h2>
@@ -20,7 +21,7 @@
 		</a>
 
 		<a
-			href="/project/{data.project.id}/analyses"
+			href={resolve(`/project/${data.project.id}/analyses`)}
 			class="rounded-lg border border-paper-border p-6 hover:border-ink-faint dark:border-dark-paper-border dark:hover:border-dark-ink-faint"
 		>
 			<h2 class="font-medium text-ink dark:text-dark-ink">Analyses</h2>
@@ -30,7 +31,7 @@
 		</a>
 
 		<a
-			href="/project/{data.project.id}/templates"
+			href={resolve(`/project/${data.project.id}/templates`)}
 			class="rounded-lg border border-paper-border p-6 hover:border-ink-faint dark:border-dark-paper-border dark:hover:border-dark-ink-faint"
 		>
 			<h2 class="font-medium text-ink dark:text-dark-ink">Templates</h2>

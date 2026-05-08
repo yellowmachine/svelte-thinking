@@ -2,6 +2,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { trpc } from '$lib/utils/trpc';
 
+	import { resolve } from '$app/paths';
 	type SelectionSnapshot = { text: string; from: number; to: number };
 
 	let {
@@ -244,7 +245,7 @@
 			>
 				{#if draftError === NO_KEY_MSG}
 					No AI key configured. <a
-						href="/settings?tab=ai"
+						href={resolve('/settings?tab=ai')}
 						class="underline underline-offset-2 hover:opacity-80">Go to Settings → AI</a
 					> to add one.
 				{:else}

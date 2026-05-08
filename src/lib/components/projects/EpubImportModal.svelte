@@ -119,7 +119,8 @@
 	>
 		<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import EPUB</h2>
 		<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Sube un fichero .epub o introduce una URL. Cada capítulo se importará como documento readonly.
+			Sube un fichero .epub o introduce una URL. Se creará un único documento readonly con todos los
+			capítulos.
 		</p>
 
 		<!-- Reference picker -->

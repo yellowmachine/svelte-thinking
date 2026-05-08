@@ -4,8 +4,7 @@
 
 	let { data }: { data: PageData } = $props();
 
-	type Notebook = (typeof data.notebooks)[number];
-	let notebooks = $state<Notebook[]>(data.notebooks);
+	let notebooks = $derived(data.notebooks);
 
 	let uploadingNotebook = $state(false);
 	let notebookError = $state('');

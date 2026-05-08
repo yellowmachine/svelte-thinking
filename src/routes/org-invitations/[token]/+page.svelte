@@ -13,10 +13,8 @@
 	}: {
 		data: {
 			invitation: {
-				id: string;
 				status: OrgInvitationStatus;
 				expiresAt: Date;
-				orgId: string;
 				orgName: string | null;
 				invitedEmail: string;
 				orgSlug: string | null;

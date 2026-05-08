@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 
@@ -12,7 +13,7 @@
 		onclose: () => void;
 	} = $props();
 
-	let title = $state(initialTitle);
+	let title = $state(untrack(() => initialTitle));
 	let saving = $state(false);
 	let error = $state('');
 

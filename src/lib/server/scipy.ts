@@ -45,7 +45,6 @@ function formatFromMime(mimeType: string): string {
 export function datasetRef(dataset: { key: string; mimeType: string }): DatasetRef {
 	// key format: projects/{projectId}/datasets/{uuid}/{filename}
 	// MinIO bucket is the first segment before the first slash
-	const parts = dataset.key.split('/');
 	const bucket = 'scholio-datasets';
 	const object_key = dataset.key;
 	return { bucket, object_key, format: formatFromMime(dataset.mimeType) };

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 
+	import { resolve } from '$app/paths';
 	let open = $state(false);
 	let message = $state('');
 	let showName = $state(false);
@@ -133,7 +134,7 @@
 					>
 						<p class="font-sans text-xs text-amber-700 dark:text-amber-400">
 							Feedback is public and visible at <a
-								href="/feedback"
+								href={resolve('/feedback')}
 								class="underline hover:no-underline">/feedback</a
 							>.
 						</p>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 
+	import { resolve } from '$app/paths';
 	type UrlResult = {
 		citeKey: string;
 		type: string;
@@ -104,7 +105,7 @@
 						This feature requires an AI model. Configure your API key to extract metadata from URLs.
 					</p>
 					<a
-						href="/settings#ai"
+						href={resolve('/settings#ai')}
 						class="self-start rounded-md bg-accent px-3 py-2 font-sans text-xs font-semibold text-white transition-colors hover:bg-accent-hover"
 					>
 						Go to Settings → AI Assistant

@@ -152,8 +152,8 @@
 			<p translate="no" class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
 				{comment.authorName}
 			</p>
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 			<div translate="no" class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				{@html renderMd(comment.content)}
 			</div>
 			<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
@@ -208,11 +208,11 @@
 					<p translate="no" class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
 						{reply.authorName}
 					</p>
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					<div
 						translate="no"
 						class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink"
 					>
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 						{@html renderMd(reply.content)}
 					</div>
 					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">

@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
 	import Acknowledgements from '$lib/components/landing/Acknowledgements.svelte';
+	import { resolve } from '$app/paths';
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 
 	const acknowledgedPeople = [
@@ -39,19 +40,19 @@
 			</div>
 			<div class="flex items-center gap-4">
 				<a
-					href="/about"
+					href={resolve('/about')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					About
 				</a>
 				<a
-					href="/blog"
+					href={resolve('/blog')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Blog
 				</a>
 				<a
-					href="/login"
+					href={resolve('/login')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>
 					Sign in
@@ -90,7 +91,7 @@
 				Request beta access
 			</a>
 			<a
-				href="/login"
+				href={resolve('/login')}
 				class="rounded-lg border border-paper-border px-6 py-3 font-sans text-sm text-ink-muted transition-colors hover:bg-paper hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper"
 			>
 				I already have an account
@@ -796,13 +797,13 @@ for the study design.</code
 			</div>
 			<div class="flex items-center gap-4">
 				<a
-					href="/conduct"
+					href={resolve('/conduct')}
 					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
 				>
 					Code of conduct
 				</a>
 				<a
-					href="/privacy"
+					href={resolve('/privacy')}
 					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
 				>
 					Privacy policy
@@ -814,7 +815,7 @@ for the study design.</code
 					contact@scholio.review
 				</a>
 				<a
-					href="/login"
+					href={resolve('/login')}
 					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
 				>
 					Sign in
@@ -822,7 +823,7 @@ for the study design.</code
 			</div>
 			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 				AI features powered by <a
-					href="/help#ai"
+					href={resolve('/help#ai')}
 					class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
 					>OpenRouter</a
 				> · optional

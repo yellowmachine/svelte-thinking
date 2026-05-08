@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { invalidateAll, goto } from '$app/navigation';
 	import { navigating } from '$app/state';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import DocumentItem from '$lib/components/documents/DocumentItem.svelte';
 	import GenerateDraftModal from '$lib/components/projects/GenerateDraftModal.svelte';
@@ -21,6 +21,7 @@
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	onMount(() => {
@@ -257,7 +258,7 @@
 				title: newDocTitle.trim(),
 				type: newDocType
 			});
-			await goto(`/projects/${data.project.id}/documents/${doc.id}`);
+			await goto(resolve(`/projects/${data.project.id}/documents/${doc.id}`));
 		} catch (e) {
 			createDocError = e instanceof Error ? e.message : 'Error creating document';
 			creatingDoc = false;
@@ -275,7 +276,7 @@
 				type: 'notes',
 				isPrivate: true
 			});
-			await goto(`/projects/${data.project.id}/documents/${doc.id}`);
+			await goto(resolve(`/projects/${data.project.id}/documents/${doc.id}`));
 		} catch {
 			creatingPrivateNote = false;
 		}
@@ -418,7 +419,7 @@
 
 	// ── Starter documents onboarding banner ──────────────────────────────────
 	const hasStarterDocs = $derived(documents.some((d) => d.generatedByAi));
-	const BANNER_KEY = `scholio:starter-banner-dismissed:${data.project.id}`;
+	const BANNER_KEY = untrack(() => `scholio:starter-banner-dismissed:${data.project.id}`);
 	let starterBannerDismissed = $state(false);
 
 	onMount(() => {
@@ -524,7 +525,7 @@
 			</div>
 			<div class="hidden shrink-0 items-center gap-2 sm:flex">
 				<a
-					href="/projects/{data.project.id}/ai"
+					href={resolve(`/projects/${data.project.id}/ai`)}
 					class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent transition-colors hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -540,7 +541,7 @@
 				</a>
 				{#if data.openComments > 0}
 					<a
-						href="/projects/{data.project.id}/review"
+						href={resolve(`/projects/${data.project.id}/review`)}
 						class="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
 						title="View open comments"
 					>
@@ -607,7 +608,7 @@
 					</button>
 				{/if}
 				<a
-					href="/api/projects/{data.project.id}/export"
+					href={resolve(`/api/projects/${data.project.id}/export`)}
 					download
 					title="Export project as ZIP"
 					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
@@ -1008,7 +1009,7 @@
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
 						{#each normalDocsFiltered as doc (doc.id)}
 							<button
-								onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
+								onclick={() => goto(resolve(`/projects/${data.project.id}/documents/${doc.id}`))}
 								class="group relative flex flex-col gap-2 rounded-xl border border-paper-border bg-paper p-4 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/30 dark:hover:bg-dark-paper-ui"
 							>
 								<!-- Type icon / badge -->
@@ -1075,7 +1076,8 @@
 										title={doc.title}
 										type={doc.type as DocumentType}
 										badge={doc.generatedByAi ? 'Example · Delete anytime' : getDocumentBadge(doc)}
-										onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
+										onclick={() =>
+											goto(resolve(`/projects/${data.project.id}/documents/${doc.id}`))}
 									/>
 								</div>
 								{#if data.isOwner && activeShareDocSet.has(doc.id)}
@@ -1133,7 +1135,7 @@
 								{/if}
 								{#if (data.openCommentsByDoc[doc.id] ?? 0) > 0}
 									<a
-										href="/projects/{data.project.id}/review#doc-{doc.id}"
+										href={resolve(`/projects/${data.project.id}/review#doc-${doc.id}`)}
 										onclick={(e) => e.stopPropagation()}
 										class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
 										title="View open comments"
@@ -1183,7 +1185,7 @@
 												onclick={(e) => e.stopPropagation()}
 											>
 												<a
-													href="/projects/{data.project.id}/documents/{doc.id}/history"
+													href={resolve(`/projects/${data.project.id}/documents/${doc.id}/history`)}
 													onclick={() => (docMenuOpenId = null)}
 													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 												>
@@ -1191,7 +1193,9 @@
 												</a>
 												{#if canEdit}
 													<a
-														href="/projects/{data.project.id}/documents/{doc.id}?published"
+														href={resolve(
+															`/projects/${data.project.id}/documents/${doc.id}?published`
+														)}
 														onclick={() => (docMenuOpenId = null)}
 														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 													>
@@ -1277,7 +1281,8 @@
 										<DocumentItem
 											title={doc.title}
 											type={doc.type as DocumentType}
-											onclick={() => goto(`/projects/${data.project.id}/documents/${doc.id}`)}
+											onclick={() =>
+												goto(resolve(`/projects/${data.project.id}/documents/${doc.id}`))}
 										/>
 									</div>
 									{#if navigatingToDocId === doc.id}
@@ -1398,7 +1403,7 @@
 										</button>
 									{/if}
 									<a
-										href="/projects/{data.project.id}/documents/{tmpl.id}"
+										href={resolve(`/projects/${data.project.id}/documents/${tmpl.id}`)}
 										class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 									>
 										Edit

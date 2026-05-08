@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { offlineDb, type OfflineIndexEntry } from '$lib/offline.db';
 
 	interface ProjectGroup {
@@ -15,14 +16,14 @@
 	onMount(async () => {
 		const all = await offlineDb.offlineIndex.toArray();
 
-		const projectMap = new Map<string, OfflineIndexEntry>();
+		const projectMap = new SvelteMap<string, OfflineIndexEntry>();
 		for (const entry of all) {
 			if (entry.type === 'project') projectMap.set(entry.url, entry);
 		}
 
 		const documents = all.filter((e) => e.type === 'document');
 
-		const byProject = new Map<string, OfflineIndexEntry[]>();
+		const byProject = new SvelteMap<string, OfflineIndexEntry[]>();
 		for (const doc of documents) {
 			const projectUrl = doc.projectId ? `/projects/${doc.projectId}` : null;
 			const key = projectUrl ?? '__unknown__';
@@ -150,7 +151,7 @@
 
 		{#if loaded && groups.length > 0}
 			<div class="w-full max-w-sm text-left">
-				{#each groups as group}
+				{#each groups as group (group.url)}
 					<div class="mb-4">
 						<span
 							class="mb-1 block font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
@@ -158,7 +159,7 @@
 							{group.title}
 						</span>
 						<ul class="flex flex-col gap-1">
-							{#each group.documents as doc}
+							{#each group.documents as doc (doc.url)}
 								<li>
 									<button
 										type="button"

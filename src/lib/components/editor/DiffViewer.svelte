@@ -82,6 +82,7 @@
 
 		<!-- Diff rows -->
 		<div class="divide-y divide-paper-border font-mono text-xs dark:divide-dark-paper-border">
+			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 			{#each { length: maxLines } as _, i (i)}
 				{@const oldLine = oldLines[i]}
 				{@const newLine = newLines[i]}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	type Props = {
 		status?: number;
 	};
@@ -96,7 +97,7 @@
 
 		<!-- Action -->
 		<a
-			href="/projects"
+			href={resolve('/projects')}
 			class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper dark:hover:text-dark-ink"
 		>
 			Back to home

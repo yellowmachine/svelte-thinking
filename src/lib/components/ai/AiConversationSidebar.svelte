@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 
+	import { resolve } from '$app/paths';
 	type Conversation = {
 		id: string;
 		title?: string | null;
@@ -66,7 +67,7 @@
 		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
 	>
 		<a
-			href="/projects/{projectId}"
+			href={resolve(`/projects/${projectId}`)}
 			class="flex items-center gap-1.5 font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">

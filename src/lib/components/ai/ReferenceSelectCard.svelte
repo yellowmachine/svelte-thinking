@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
+	import { untrack } from 'svelte';
 	import type { ProposedReference } from '$lib/server/trpc/routers/ai';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 
@@ -9,10 +10,9 @@
 		onconfirm: (count: number) => void;
 		ondiscard: () => void;
 	};
-
 	let { references, projectId, onconfirm, ondiscard }: Props = $props();
 
-	let selected = $state<boolean[]>(references.map(() => true));
+	let selected = $state<boolean[]>(untrack(() => references.map(() => true)));
 	let status: 'idle' | 'loading' | 'done' | 'discarded' = $state('idle');
 	let addedCount = $state(0);
 
@@ -142,7 +142,7 @@
 		{#if status !== 'done'}
 			<!-- Reference list -->
 			<ul class="mx-4 mb-3 flex flex-col gap-1.5">
-				{#each references as ref, i}
+				{#each references as ref, i (i)}
 					<li>
 						<label
 							class="flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent/5 dark:hover:bg-accent/8"
@@ -178,7 +178,7 @@
 		<div class="flex justify-end gap-2 px-4 pt-1 pb-3">
 			{#if status === 'done'}
 				<a
-					href="{base}/projects/{projectId}/bib"
+					href={resolve(`/projects/${projectId}/bib`)}
 					class="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
 				>
 					Open bibliography

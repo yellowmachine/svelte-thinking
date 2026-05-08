@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { invalidateAll, goto } from '$app/navigation';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
 	import ContextPickerModal from '$lib/components/projects/ContextPickerModal.svelte';
@@ -7,6 +8,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { type CitationStyle, CITATION_STYLE_LABELS } from '$lib/utils/citations';
 
+	import { resolve } from '$app/paths';
 	type Collaborator = {
 		id: string;
 		userId: string;
@@ -25,7 +27,6 @@
 
 	type Project = {
 		id: string;
-		status: string;
 		citationStyle?: string | null;
 		doi?: string | null;
 		version?: string | null;
@@ -162,7 +163,7 @@
 	});
 
 	// ── Searchable toggle ─────────────────────────────────────────────────────
-	let isSearchable = $state(project.isSearchable ?? false);
+	let isSearchable = $state(untrack(() => project.isSearchable ?? false));
 	let togglingSearchable = $state(false);
 
 	async function toggleSearchable() {
@@ -205,7 +206,7 @@
 		leavingProject = true;
 		try {
 			await trpc.projects.leave.mutate(project.id);
-			await goto('/projects', { invalidateAll: true });
+			await goto(resolve('/projects'), { invalidateAll: true });
 		} catch (e: unknown) {
 			leavingProject = false;
 			showLeaveProject = false;
@@ -239,7 +240,7 @@
 	>
 		<div class="flex flex-col gap-1">
 			<a
-				href="/projects/{project.id}/ai"
+				href={resolve(`/projects/${project.id}/ai`)}
 				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
@@ -254,7 +255,7 @@
 				Assistant
 			</a>
 			<a
-				href="/projects/{project.id}/requirements"
+				href={resolve(`/projects/${project.id}/requirements`)}
 				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
@@ -281,7 +282,7 @@
 				/>
 			</a>
 			<a
-				href="/projects/{project.id}/issues"
+				href={resolve(`/projects/${project.id}/issues`)}
 				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -291,7 +292,7 @@
 				Issues
 			</a>
 			<a
-				href="/projects/{project.id}/bib"
+				href={resolve(`/projects/${project.id}/bib`)}
 				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
@@ -313,7 +314,7 @@
 			</a>
 			{#if canEdit && canUploadS3}
 				<a
-					href="/projects/{project.id}/photos"
+					href={resolve(`/projects/${project.id}/photos`)}
 					class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
@@ -336,7 +337,7 @@
 					Photos
 				</a>
 				<a
-					href="/projects/{project.id}/notebooks"
+					href={resolve(`/projects/${project.id}/notebooks`)}
 					class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -350,7 +351,7 @@
 				</a>
 			{:else if canEdit && s3CtaType === 'personal'}
 				<a
-					href="/settings?tab=storage"
+					href={resolve('/settings?tab=storage')}
 					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -374,7 +375,7 @@
 				</a>
 			{:else if canEdit && s3CtaType === 'org-owner'}
 				<a
-					href="/settings?tab=organizations"
+					href={resolve('/settings?tab=organizations')}
 					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -570,7 +571,7 @@
 							>Citation style</span
 						>
 						<div class="mt-1 flex flex-wrap gap-1.5">
-							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label]}
+							{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
 								<button
 									type="button"
 									onclick={() =>
@@ -733,7 +734,7 @@
 								{#each interestedUsers as u (u.id)}
 									<li>
 										<a
-											href="/u/{u.userId}"
+											href={resolve(`/u/${u.userId}`)}
 											class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 										>
 											<span

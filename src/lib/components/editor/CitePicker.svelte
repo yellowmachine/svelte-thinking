@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CiteRef } from '$lib/utils/citations';
 
+	import { resolve } from '$app/paths';
 	let {
 		refs,
 		refsLoaded,
@@ -87,7 +88,7 @@
 						Sin referencias en este proyecto.
 					</p>
 					<a
-						href="/projects/{projectId}/bib"
+						href={resolve(`/projects/${projectId}/bib`)}
 						class="mt-1 block font-sans text-xs text-accent hover:underline"
 					>
 						Go to Bibliography →

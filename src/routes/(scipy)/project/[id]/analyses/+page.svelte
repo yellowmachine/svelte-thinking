@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	const statusColors = {
@@ -23,7 +24,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<a
-				href="/project/{data.project.id}"
+				href={resolve(`/project/${data.project.id}`)}
 				class="text-sm text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 			>
 				← {data.project.title}
@@ -32,7 +33,7 @@
 		</div>
 
 		<a
-			href="/project/{data.project.id}/analyses/new"
+			href={resolve(`/project/${data.project.id}/analyses/new`)}
 			class="rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper hover:opacity-90 dark:bg-dark-ink dark:text-dark-paper"
 		>
 			New analysis
@@ -67,7 +68,7 @@
 							<td class="py-3 text-right">
 								{#if analysis.status === 'completed'}
 									<a
-										href="/project/{data.project.id}/analyses/{analysis.id}"
+										href={resolve(`/project/${data.project.id}/analyses/${analysis.id}`)}
 										class="text-xs text-ink-faint underline decoration-dotted hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 									>
 										View

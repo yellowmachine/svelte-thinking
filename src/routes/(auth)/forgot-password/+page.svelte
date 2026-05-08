@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { ActionData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { form }: { form: ActionData } = $props();
 </script>
 
@@ -26,7 +27,10 @@
 			<p class="mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 				Can't find it? Check your spam folder.
 			</p>
-			<a href="/login" class="mt-6 inline-block font-sans text-sm text-accent hover:underline">
+			<a
+				href={resolve('/login')}
+				class="mt-6 inline-block font-sans text-sm text-accent hover:underline"
+			>
 				Back to sign in
 			</a>
 		</div>
@@ -68,7 +72,7 @@
 		</form>
 
 		<a
-			href="/login"
+			href={resolve('/login')}
 			class="mt-6 block text-center font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 		>
 			Back to sign in

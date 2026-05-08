@@ -1,4 +1,4 @@
-import { text, timestamp, uniqueIndex, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { text, uniqueIndex, index, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 
@@ -7,7 +7,7 @@ const currentUserId = sql`current_setting('app.current_user_id', true)`;
 export const tag = scholioSchema
 	.table(
 		'tag',
-		(t) => ({
+		(_t) => ({
 			id: text('id').primaryKey(),
 			userId: text('user_id').notNull(),
 			name: text('name').notNull()
@@ -31,7 +31,7 @@ export const tag = scholioSchema
 export const projectTag = scholioSchema
 	.table(
 		'project_tag',
-		(t) => ({
+		(_t) => ({
 			projectId: text('project_id').notNull(),
 			tagId: text('tag_id').notNull()
 		}),

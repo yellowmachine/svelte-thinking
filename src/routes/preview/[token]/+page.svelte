@@ -3,6 +3,7 @@
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	const fmt = new Intl.DateTimeFormat('es', {
@@ -35,7 +36,7 @@
 	<div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
 		<!-- Logo + versión badge -->
 		<div class="flex items-center gap-3">
-			<a href="/" class="flex items-center gap-2 transition-opacity hover:opacity-80">
+			<a href={resolve('/')} class="flex items-center gap-2 transition-opacity hover:opacity-80">
 				<div class="flex h-7 w-7 items-center justify-center rounded bg-accent">
 					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 						<path
@@ -67,13 +68,13 @@
 		<!-- CTAs -->
 		<div class="flex items-center gap-2">
 			<a
-				href="/auth/login"
+				href={resolve('/login')}
 				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				Sign in
 			</a>
 			<a
-				href="/#waitlist"
+				href={resolve('/#waitlist')}
 				class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90"
 			>
 				Join beta
@@ -126,13 +127,13 @@
 		</p>
 		<div class="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
 			<a
-				href="/#waitlist"
+				href={resolve('/#waitlist')}
 				class="rounded-lg bg-accent px-5 py-2 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90"
 			>
 				Join the beta
 			</a>
 			<a
-				href="/auth/login"
+				href={resolve('/login')}
 				class="rounded-lg border border-paper-border px-5 py-2 font-sans text-sm font-medium text-ink-muted transition-colors hover:bg-paper dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper"
 			>
 				Sign in

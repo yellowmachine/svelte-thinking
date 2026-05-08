@@ -1,4 +1,4 @@
-import { text, timestamp, jsonb, pgPolicy, pgEnum, index } from 'drizzle-orm/pg-core';
+import { text, timestamp, jsonb, pgPolicy, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 import { project } from './projects.schema';

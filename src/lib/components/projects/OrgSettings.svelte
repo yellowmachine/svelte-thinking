@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import { AI_TASKS, MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
@@ -9,8 +10,8 @@
 	let { initialOrgs }: { initialOrgs: Org[] } = $props();
 
 	// ── State ────────────────────────────────────────────────────────────────
-	let orgs = $state<Org[]>(initialOrgs);
-	let selectedOrgId = $state<string | null>(orgs[0]?.id ?? null);
+	let orgs = $state<Org[]>(untrack(() => initialOrgs));
+	let selectedOrgId = $state<string | null>(untrack(() => orgs[0]?.id ?? null));
 
 	// Create org form
 	let createName = $state('');
@@ -24,8 +25,6 @@
 	>([]);
 	let keys = $state<{ id: string; name: string; enabled: boolean; createdAt: Date }[]>([]);
 	let taskConfig = $state<Record<string, { keyId: string; model: string }>>({});
-	let orgData = $state<{ ownerId: string } | null>(null);
-
 	let loadingDetail = $state(false);
 
 	// Invite form
@@ -76,7 +75,6 @@
 			members = m as typeof members;
 			invitations = inv as typeof invitations;
 			keys = k as typeof keys;
-			orgData = { ownerId: org.ownerId };
 			try {
 				taskConfig = org.aiTaskConfig ? JSON.parse(org.aiTaskConfig) : {};
 			} catch {

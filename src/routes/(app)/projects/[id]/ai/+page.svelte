@@ -12,6 +12,7 @@
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	onMount(() => {
@@ -24,12 +25,7 @@
 		content: string;
 		docsUsed?: { id: string; title: string }[];
 	};
-	type Conversation = NonNullable<typeof data.conversations>[number];
-
-	let conversations = $state<Conversation[]>([]);
-	$effect(() => {
-		conversations = data.conversations ?? [];
-	});
+	let conversations = $derived(data.conversations ?? []);
 	let activeConvId = $state<string | null>(null);
 	let messages = $state<Message[]>([]);
 	let loadingConv = $state(false);
@@ -403,7 +399,7 @@
 												{#each msg.docsUsed as doc (doc.id)}
 													<a
 														translate="no"
-														href="/projects/{data.project.id}/documents/{doc.id}"
+														href={resolve(`/projects/${data.project.id}/documents/${doc.id}`)}
 														class="font-sans text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
 														>{doc.title}</a
 													>

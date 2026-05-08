@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 
+	import { resolve } from '$app/paths';
 	type UrlAiResult = {
 		citeKey: string;
 		type: string;
@@ -176,7 +177,7 @@
 				});
 				reset();
 				onclose();
-				await goto(`/projects/${projectId}/documents/${docId}`);
+				await goto(resolve(`/projects/${projectId}/documents/${docId}`));
 			} else {
 				if (!urlImportUrl.trim() || !urlImportTitle.trim()) return;
 				const { docId } = await trpc.references.importDocumentFromUrl.mutate({
@@ -187,7 +188,7 @@
 				});
 				reset();
 				onclose();
-				await goto(`/projects/${projectId}/documents/${docId}`);
+				await goto(resolve(`/projects/${projectId}/documents/${docId}`));
 			}
 		} catch (e) {
 			urlImportError = e instanceof Error ? e.message : 'Import failed.';
@@ -425,7 +426,7 @@
 						bind:value={urlEditType}
 						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					>
-						{#each REF_TYPES as t}
+						{#each REF_TYPES as t (t)}
 							<option value={t}>{t}</option>
 						{/each}
 					</select>

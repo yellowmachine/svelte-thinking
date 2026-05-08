@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { projectNotebook } from '$lib/server/db/schemas/notebooks.schema';
 
 export const DELETE: RequestHandler = async (event) => {

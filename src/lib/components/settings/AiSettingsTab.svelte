@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import { MODEL_RECOMMENDATIONS, MODEL_SHORT_LABEL } from '$lib/ai-config';
 
+	import { resolve } from '$app/paths';
 	let {
 		openrouterStatus
 	}: {
@@ -42,7 +44,7 @@
 	let savingNewKey = $state(false);
 	let showManualKeyForm = $state(false);
 
-	let openrouterNotice = $state<'success' | 'error' | null>(openrouterStatus);
+	let openrouterNotice = $state<'success' | 'error' | null>(untrack(() => openrouterStatus));
 
 	let oauthKey = $derived(aiKeys.find((k) => k.source === 'openrouter_oauth') ?? null);
 
@@ -172,7 +174,7 @@
 <div class="flex flex-col gap-6">
 	<div class="flex justify-end">
 		<a
-			href="/usage"
+			href={resolve('/usage')}
 			class="font-sans text-sm text-accent underline decoration-dotted hover:decoration-solid"
 			>View AI usage dashboard →</a
 		>
@@ -277,7 +279,7 @@
 			{:else}
 				<!-- Connect button -->
 				<a
-					href="/api/openrouter/connect"
+					href={resolve('/api/openrouter/connect')}
 					class="mb-4 flex w-full items-center justify-center gap-2.5 rounded-lg bg-accent px-4 py-3 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -325,7 +327,7 @@
 			<!-- Manual keys (non-OAuth) -->
 			{#if aiKeys.filter((k) => k.source === 'manual').length > 0}
 				<div class="mb-4 flex flex-col gap-2">
-					{#each aiKeys.filter((k) => k.source === 'manual') as key}
+					{#each aiKeys.filter((k) => k.source === 'manual') as key (key.id)}
 						<div
 							class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 						>
@@ -480,7 +482,7 @@
 				</p>
 
 				<div class="flex flex-col gap-4">
-					{#each aiTasks as task}
+					{#each aiTasks as task (task.id)}
 						{@const cfg = aiTaskConfig[task.id as AiTaskId]}
 						{@const enabledKeys = aiKeys.filter((k) => k.enabled)}
 						<div
@@ -540,7 +542,7 @@
 									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 								>
 									<option value="">— First active key —</option>
-									{#each enabledKeys as key}
+									{#each enabledKeys as key (key.id)}
 										<option value={key.id}>{key.name}</option>
 									{/each}
 								</select>
@@ -557,7 +559,7 @@
 									<option value=""
 										>— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option
 									>
-									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m}
+									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m (m.id)}
 										{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
 											task.id as 'agent' | 'draft' | 'review' | 'requirements'
 										)}

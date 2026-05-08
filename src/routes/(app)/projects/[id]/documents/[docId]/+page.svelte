@@ -1,15 +1,15 @@
 <script lang="ts">
+	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { onMount, onDestroy, untrack } from 'svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { documentTutorialSteps } from '$lib/tutorials/document';
-	import { goto, beforeNavigate } from '$app/navigation';
-	import Spinner from '$lib/components/ui/Spinner.svelte';
+	import { beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
-	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
 	import AnnotationsPanel from '$lib/components/editor/AnnotationsPanel.svelte';
 	import BibliographyPanel from '$lib/components/editor/BibliographyPanel.svelte';
@@ -29,11 +29,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { offlineDb } from '$lib/offline.db';
-	import {
-		findAnchor,
-		posToLine,
-		type CommentRange
-	} from '$lib/components/editor/commentsExtension';
+	import { findAnchor, type CommentRange } from '$lib/components/editor/commentsExtension';
 	import {
 		CITATION_STYLE_LABELS,
 		formatFullCitation,
@@ -53,6 +49,7 @@
 	import { isProjectOwner, canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 	import type { PageData } from './$types';
 
+	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
 	// untrack: read from props once without creating a reactive dependency
@@ -145,7 +142,7 @@
 
 	// View mode: editor | split | preview
 	type ViewMode = 'editor' | 'split' | 'preview';
-	const VIEW_MODE_KEY = `view-mode-${data.document?.id ?? ''}`;
+	const VIEW_MODE_KEY = untrack(() => `view-mode-${data.document?.id ?? ''}`);
 	const initialCanWrite = (() => {
 		const role = (data.collaborators.find((c) => c.userId === data.currentUserId)?.role ??
 			null) as CollaboratorRole | null;
@@ -157,11 +154,13 @@
 		});
 	})();
 	let viewMode = $state<ViewMode>(
-		!initialCanWrite || data.forcePublished || data.document?.isReadonly
-			? 'preview'
-			: ((typeof localStorage !== 'undefined'
-					? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
-					: null) ?? 'editor')
+		untrack(() =>
+			!initialCanWrite || data.forcePublished || data.document?.isReadonly
+				? 'preview'
+				: ((typeof localStorage !== 'undefined'
+						? (localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null)
+						: null) ?? 'editor')
+		)
 	);
 	function setViewMode(m: ViewMode) {
 		viewMode = m;
@@ -193,14 +192,6 @@
 	} | null;
 	let previewRef = $state<PreviewRef>(null);
 	let splitPreviewRef = $state<PreviewRef>(null);
-
-	function extractDocumentPersons(): string[] {
-		const re = /\[\[person:([^\]]+)\]\]/g;
-		const seen = new Set<string>();
-		let m: RegExpExecArray | null;
-		while ((m = re.exec(content)) !== null) seen.add(m[1]);
-		return [...seen];
-	}
 
 	// Word-level ghost text state
 	let ghostWord: { from: number; name: string } | null = $state(null);
@@ -278,7 +269,7 @@
 
 	function onwordghosttab(): boolean {
 		if (!ghostWord || !editorEl) return false;
-		const { from, name } = ghostWord;
+		const { name } = ghostWord;
 		// 'from' is word start; cursor is somewhere inside the word (the typed prefix).
 		// insertMention replaces from..cursor with [[person:Name]], same behaviour as @@ flow.
 		const saved = ghostWord;
@@ -288,22 +279,11 @@
 		return true;
 	}
 
-	function isNoKeyError(e: unknown): boolean {
-		return !!(
-			e &&
-			typeof e === 'object' &&
-			'data' in e &&
-			(e as { data?: { code?: string } }).data?.code === 'PRECONDITION_FAILED'
-		);
-	}
-
-	const NO_KEY_MSG = 'No AI key configured. Go to Settings → AI to add one.';
-
 	async function lookupNames(partial: string, _context: string): Promise<string[]> {
 		await loadRefs();
 		if (!partial.trim()) return [];
 		const q = partial.toLowerCase();
-		const seen = new Set<string>();
+		const seen = new SvelteSet<string>();
 		for (const ref of projectRefs) {
 			for (const a of ref.authors) {
 				if (a.last.toLowerCase().startsWith(q)) seen.add(a.last);
@@ -361,7 +341,7 @@
 	// Same-project docs also indexed by UUID: [[doc:uuid|Title]] (book→chapter links)
 	// External context docs indexed by "title:hash": [[Introducción:a3f9b2c1]]
 	const docMap = $derived(() => {
-		const map = new Map<string, { id: string; projectId: string }>();
+		const map = new SvelteMap<string, { id: string; projectId: string }>();
 		for (const d of data.projectDocs) {
 			map.set(d.title, { id: d.id, projectId: d.projectId });
 			map.set(d.id, { id: d.id, projectId: d.projectId }); // UUID-keyed for [[doc:uuid|...]]
@@ -565,7 +545,7 @@
 		updatedAt: Date;
 	};
 	let docSubnotes = $state<Subnote[]>([]);
-	let sourceReference = $state(data.sourceReference);
+	let sourceReference = $derived(data.sourceReference);
 
 	const sourceRefFull = $derived.by(() => {
 		const sr = sourceReference;
@@ -588,15 +568,6 @@
 
 	// New comment form (triggered from floating button)
 	let showNewComment = $state(false);
-
-	// Citation explain popover
-	const CITE_SELECTION_RE = /^\[\[@([\w:._-]+)\]\]$/;
-
-	function selectedCiteKey(): string | null {
-		if (!currentSelection) return null;
-		const m = currentSelection.text.trim().match(CITE_SELECTION_RE);
-		return m ? m[1] : null;
-	}
 
 	// Author info popover
 	let authorPopover: {
@@ -855,7 +826,7 @@
 		});
 	}
 
-	function handlePreviewCommentClick(id: string) {
+	function handlePreviewCommentClick(_id: string) {
 		showComments = true;
 	}
 
@@ -989,7 +960,7 @@
 				suggestion: res.suggestion,
 				explanation: res.explanation
 			};
-		} catch (e) {
+		} catch {
 			selectionReview = null;
 		}
 	}
@@ -1255,6 +1226,18 @@
 						Read-only
 					</span>
 				{/if}
+				{#if !data.document.isReadonly && isOwner}
+					<button
+						type="button"
+						onclick={async () => {
+							await trpc.documents.update.mutate({ id: data.document.id, isReadonly: true });
+							data.document = { ...data.document, isReadonly: true };
+						}}
+						class="shrink-0 font-sans text-[10px] text-ink-faint hover:text-ink hover:underline dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					>
+						Lock editing
+					</button>
+				{/if}
 				{#if data.document.isReadonly && isOwner}
 					<button
 						type="button"
@@ -1373,7 +1356,9 @@
 
 				{#if data.document.type === 'book'}
 					<a
-						href="/projects/{data.document.projectId}/documents/{data.document.id}/read"
+						href={resolve(
+							`/projects/${data.document.projectId}/documents/${data.document.id}/read`
+						)}
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						<svg
@@ -1509,7 +1494,7 @@
 					</button>
 				{:else if aiCtaType === 'personal'}
 					<a
-						href="/settings?tab=ai"
+						href={resolve('/settings?tab=ai')}
 						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1524,7 +1509,7 @@
 					</a>
 				{:else if aiCtaType === 'org-owner'}
 					<a
-						href="/settings?tab=organizations"
+						href={resolve('/settings?tab=organizations')}
 						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1699,7 +1684,9 @@
 				{/if}
 
 				<a
-					href="/projects/{data.document.projectId}/documents/{data.document.id}/history"
+					href={resolve(
+						`/projects/${data.document.projectId}/documents/${data.document.id}/history`
+					)}
 					title="Version history — browse and restore past committed versions"
 					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
@@ -1721,7 +1708,7 @@
 				</a>
 
 				<a
-					href="/help"
+					href={resolve('/help')}
 					target="_blank"
 					rel="noopener noreferrer"
 					title="Syntax guide"
@@ -1794,7 +1781,7 @@
 							title="Spell check language"
 							class="cursor-pointer bg-paper font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper dark:text-dark-ink-muted"
 						>
-							{#each SPELL_LANGUAGES as lang}
+							{#each SPELL_LANGUAGES as lang (lang.code)}
 								<option value={lang.code}>{lang.label}</option>
 							{/each}
 						</select>
@@ -1921,6 +1908,7 @@
 							class="text-ink-light dark:text-dark-ink-light font-sans text-xs leading-relaxed"
 							translate="no"
 						>
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							{@html sourceRefCitation}
 						</p>
 					</div>
@@ -2216,7 +2204,7 @@
 					<div class="flex-1 overflow-y-auto p-2">
 						{#each backlinks as link (link.id)}
 							<a
-								href="/projects/{data.document.projectId}/documents/{link.id}"
+								href={resolve(`/projects/${data.document.projectId}/documents/${link.id}`)}
 								class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 							>
 								<svg
@@ -2490,25 +2478,29 @@
 		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
 		<a
-			href="/api/projects/{data.document?.projectId}/documents/{data.document
-				?.id}/export?format=latex"
+			href={resolve(
+				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=latex`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
 		</a>
 		<a
-			href="/api/projects/{data.document?.projectId}/documents/{data.document
-				?.id}/export?format=typst"
+			href={resolve(
+				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=typst`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
 		</a>
 		<a
-			href={data.document?.type === 'book'
-				? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`
-				: `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=pdf`}
+			href={resolve(
+				data.document?.type === 'book'
+					? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`
+					: `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=pdf`
+			)}
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
