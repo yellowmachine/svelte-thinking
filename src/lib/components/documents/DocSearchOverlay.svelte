@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 
 	let {
@@ -84,7 +85,7 @@
 				bind:value={query}
 				{onkeydown}
 				type="text"
-				placeholder="Search in this document…"
+				placeholder="Semantic search in this document…"
 				class="min-w-0 flex-1 bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
 			/>
 			{#if loading}
@@ -108,9 +109,11 @@
 					<li>
 						<button
 							type="button"
-							onclick={() => {
-								scrollToChunk(result.text);
+							onclick={async () => {
+								const text = result.text;
 								onclose();
+								await tick();
+								scrollToChunk(text);
 							}}
 							class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 						>
