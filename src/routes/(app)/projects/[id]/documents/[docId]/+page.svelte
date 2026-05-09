@@ -2775,7 +2775,11 @@
 
 <!-- ── In-document semantic search overlay (Ctrl/Cmd+F) ── -->
 {#if showDocSearch}
-	<DocSearchOverlay documentId={data.document.id} onclose={() => (showDocSearch = false)} />
+	<DocSearchOverlay
+		documentId={data.document.id}
+		{content}
+		onclose={() => (showDocSearch = false)}
+	/>
 {/if}
 
 <!-- ── Writer lost modal ── -->
