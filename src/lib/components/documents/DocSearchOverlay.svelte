@@ -4,9 +4,11 @@
 
 	let {
 		documentId,
+		content,
 		onclose
 	}: {
 		documentId: string;
+		content: string;
 		onclose: () => void;
 	} = $props();
 
@@ -37,25 +39,8 @@
 		}
 	}
 
-	function norm(s: string) {
-		return s.replace(/\s+/g, ' ').trim().toLowerCase();
-	}
-
-	function findMatch(root: Element, selector: string, needle: string): HTMLElement | null {
-		const blocks = root.querySelectorAll(selector);
-		for (const len of [50, 30, 15]) {
-			const prefix = norm(needle.slice(0, len));
-			if (!prefix) continue;
-			for (const block of blocks) {
-				if (norm(block.textContent ?? '').includes(prefix)) return block as HTMLElement;
-			}
-		}
-		return null;
-	}
-
 	function scrollTo(el: HTMLElement) {
-		// Walk ancestors to find the actual scrollable container rather than relying
-		// on scrollIntoView, which can mis-target in nested flex layouts.
+		// Walk ancestors to find the actual scrollable container.
 		let node: HTMLElement | null = el.parentElement;
 		while (node) {
 			const s = window.getComputedStyle(node);
@@ -87,45 +72,48 @@
 		);
 	}
 
-	function scrollToChunk(text: string) {
-		const needle = text.trim().toLowerCase();
+	function scrollToChunk(chunkIndex: number, chunkText: string) {
+		// Mirrors embeddings.ts chunkText(): split on blank lines, drop short segments.
+		// chunk_index is the position in the filtered list.
+		const allParas = content
+			.split(/\n\n+/)
+			.map((s) => s.trim())
+			.filter(Boolean);
+		const indexedParas = allParas.filter((s) => s.length > 40);
+		const chunkPara = indexedParas[chunkIndex] ?? chunkText.trim();
 
-		// Preview / split mode: content is rendered inside .prose
+		// Find which position this paragraph occupies in the full (unfiltered) list.
+		const paraIndex = allParas.indexOf(chunkPara);
+		const targetIndex = paraIndex === -1 ? chunkIndex : paraIndex;
+
+		// Preview / split mode: direct children of .prose map 1:1 to raw paragraphs.
+		// Use :scope > to get only top-level blocks (a list block = one <ul>, not many <li>).
 		const prose = document.querySelector('.prose');
-		console.debug('[search] prose found:', !!prose);
 		if (prose) {
-			const blocks = prose.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td');
-			console.debug('[search] blocks found:', blocks.length);
-			console.debug('[search] needle (norm 50):', norm(needle.slice(0, 50)));
-			if (blocks.length > 0)
-				console.debug(
-					'[search] first block (norm):',
-					norm(blocks[0].textContent ?? '').slice(0, 80)
-				);
-			const el = findMatch(prose, 'p, h1, h2, h3, h4, h5, h6, li, blockquote, td', needle);
-			console.debug(
-				'[search] match found:',
-				!!el,
-				el?.tagName,
-				norm(el?.textContent ?? '').slice(0, 60)
-			);
-			if (el) {
-				scrollTo(el);
-				flash(el);
+			const blocks = Array.from(
+				prose.querySelectorAll(
+					':scope > p, :scope > h1, :scope > h2, :scope > h3, :scope > h4,' +
+						' :scope > h5, :scope > h6, :scope > blockquote, :scope > pre,' +
+						' :scope > ul, :scope > ol, :scope > table'
+				)
+			) as HTMLElement[];
+			if (blocks.length > 0) {
+				const target = blocks[Math.min(targetIndex, blocks.length - 1)];
+				scrollTo(target);
+				flash(target);
 				return;
 			}
 		}
 
-		// Editor mode: CodeMirror renders each line as .cm-line inside .cm-content.
-		// The cm-scroller has overflow:visible so the parent overflow-y-auto div scrolls.
+		// Editor mode fallback: text search in visible CodeMirror lines.
 		const cmContent = document.querySelector('.cm-content');
-		console.debug('[search] cmContent found:', !!cmContent);
 		if (cmContent) {
-			const el = findMatch(cmContent, '.cm-line', needle);
-			console.debug('[search] cm match found:', !!el);
-			if (el) {
-				scrollTo(el);
-				return;
+			const needle = chunkPara.slice(0, 40).toLowerCase();
+			for (const line of cmContent.querySelectorAll('.cm-line')) {
+				if ((line.textContent?.toLowerCase() ?? '').includes(needle)) {
+					scrollTo(line as HTMLElement);
+					return;
+				}
 			}
 		}
 	}
@@ -190,10 +178,11 @@
 						<button
 							type="button"
 							onclick={async () => {
-								const text = result.text;
+								const idx = result.chunk_index;
+								const txt = result.text;
 								onclose();
 								await tick();
-								requestAnimationFrame(() => scrollToChunk(text));
+								requestAnimationFrame(() => scrollToChunk(idx, txt));
 							}}
 							class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 						>
