@@ -16,6 +16,7 @@
 	let titleTouched = $state(false);
 	let importing = $state(false);
 	let error = $state('');
+	let copyrightConsent = $state(false);
 	let refSearch = $state('');
 	let refResults = $state<{ id: string; citeKey: string; title: string; year: string }[]>([]);
 	let refLoading = $state(false);
@@ -197,6 +198,19 @@
 				></textarea>
 			</div>
 
+			<!-- Copyright consent -->
+			<label class="mb-4 flex cursor-pointer items-start gap-2.5">
+				<input
+					type="checkbox"
+					bind:checked={copyrightConsent}
+					class="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+				/>
+				<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+					I confirm that I have the right to process this content on this platform. I am solely
+					responsible for compliance with applicable copyright law.
+				</span>
+			</label>
+
 			{#if error}
 				<p class="mb-3 font-sans text-xs text-red-500">{error}</p>
 			{/if}
@@ -213,7 +227,7 @@
 			</button>
 			<button
 				onclick={doImport}
-				disabled={importing || !title.trim() || !text.trim()}
+				disabled={importing || !title.trim() || !text.trim() || !copyrightConsent}
 				class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 			>
 				{#if importing}<Spinner size="sm" />{/if}

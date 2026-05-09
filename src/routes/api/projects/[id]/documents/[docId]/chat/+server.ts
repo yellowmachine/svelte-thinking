@@ -40,12 +40,14 @@ export const POST: RequestHandler = async (event) => {
 
 	const [doc] = (await withRLS((db) =>
 		db
-			.select({ id: document.id })
+			.select({ id: document.id, type: document.type })
 			.from(document)
 			.where(and(eq(document.id, documentId), eq(document.projectId, projectId)))
 			.limit(1)
-	)) as { id: string }[];
+	)) as { id: string; type: string }[];
 	if (!doc) error(404, 'Document not found');
+
+	const effectiveContent = doc.type === 'book' ? '' : documentContent;
 
 	let convId = inputConvId;
 	if (!convId) {
@@ -113,7 +115,7 @@ export const POST: RequestHandler = async (event) => {
 		try {
 			const result = await runEditorAgentLoopSSE(
 				documentTitle,
-				documentContent,
+				effectiveContent,
 				history,
 				message,
 				editorApiKey,
