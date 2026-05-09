@@ -67,15 +67,13 @@ describe('indexDocument', () => {
 			vi.fn().mockResolvedValue({
 				ok: true,
 				json: async () => ({
-					data: [
-						{ embedding: fakeEmbedding(1), index: 0 },
-						{ embedding: fakeEmbedding(2), index: 1 },
-						{ embedding: fakeEmbedding(3), index: 2 }
-					]
+					data: [{ embedding: fakeEmbedding(1), index: 0 }]
 				})
 			})
 		);
 
+		// Three short paragraphs — well under the 512-token chunk limit, so they
+		// are combined into a single chunk by the token-based chunking strategy.
 		const content = [
 			'La metodología empleada sigue un enfoque cuantitativo basado en encuestas estructuradas.',
 			'Los resultados muestran una correlación significativa entre las variables analizadas (p < 0.05).',
@@ -98,7 +96,7 @@ describe('indexDocument', () => {
 			.from(documentChunk)
 			.where(eq(documentChunk.documentId, documentId));
 
-		expect(chunks.length).toBe(3);
+		expect(chunks.length).toBe(1);
 		expect(chunks[0].chunkIndex).toBe(0);
 		expect(chunks[0].text).toContain('metodología');
 		expect(chunks[0].embedding).toHaveLength(1536);
