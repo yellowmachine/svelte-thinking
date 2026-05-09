@@ -6,11 +6,51 @@ import { eq } from 'drizzle-orm';
 
 const EMBED_MODEL = 'text-embedding-3-small';
 
+const CHUNK_TOKENS = 512;
+const OVERLAP_TOKENS = 64;
+const CHARS_PER_TOKEN = 4;
+
+function estimateTokens(text: string): number {
+	return Math.ceil(text.length / CHARS_PER_TOKEN);
+}
+
 function chunkText(text: string): string[] {
-	return text
+	const paragraphs = text
 		.split(/\n\n+/)
 		.map((s) => s.trim())
 		.filter((s) => s.length > 40);
+
+	const chunks: string[] = [];
+	let current: string[] = [];
+	let currentTokens = 0;
+
+	for (const para of paragraphs) {
+		const paraTokens = estimateTokens(para);
+
+		if (currentTokens + paraTokens > CHUNK_TOKENS && current.length > 0) {
+			chunks.push(current.join('\n\n'));
+
+			// carry over trailing paragraphs that fit within the overlap budget
+			const overlap: string[] = [];
+			let overlapTokens = 0;
+			for (let i = current.length - 1; i >= 0; i--) {
+				const t = estimateTokens(current[i]);
+				if (overlapTokens + t > OVERLAP_TOKENS) break;
+				overlap.unshift(current[i]);
+				overlapTokens += t;
+			}
+
+			current = [...overlap, para];
+			currentTokens = overlapTokens + paraTokens;
+		} else {
+			current.push(para);
+			currentTokens += paraTokens;
+		}
+	}
+
+	if (current.length > 0) chunks.push(current.join('\n\n'));
+
+	return chunks;
 }
 
 export async function embedQuery(text: string): Promise<number[]> {
