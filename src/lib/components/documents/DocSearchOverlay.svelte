@@ -37,22 +37,78 @@
 		}
 	}
 
-	function scrollToChunk(text: string) {
-		const needle = text.trim().toLowerCase();
-		// Scope to the rendered prose container to avoid false matches in toolbar/sidebar.
-		// Falls back to body (e.g. editor-only mode where .prose isn't present).
-		const root = document.querySelector('.prose') ?? document.body;
-		const blocks = root.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td');
-		// Try progressively shorter prefixes — text nodes can be split by inline elements
-		// so we need textContent on block elements which concatenates all descendants.
+	function norm(s: string) {
+		return s.replace(/\s+/g, ' ').trim().toLowerCase();
+	}
+
+	function findMatch(root: Element, selector: string, needle: string): HTMLElement | null {
+		const blocks = root.querySelectorAll(selector);
 		for (const len of [50, 30, 15]) {
-			const prefix = needle.slice(0, len);
+			const prefix = norm(needle.slice(0, len));
 			if (!prefix) continue;
 			for (const block of blocks) {
-				if ((block.textContent?.toLowerCase() ?? '').includes(prefix)) {
-					block.scrollIntoView({ behavior: 'smooth', block: 'center' });
-					return;
-				}
+				if (norm(block.textContent ?? '').includes(prefix)) return block as HTMLElement;
+			}
+		}
+		return null;
+	}
+
+	function scrollTo(el: HTMLElement) {
+		// Walk ancestors to find the actual scrollable container rather than relying
+		// on scrollIntoView, which can mis-target in nested flex layouts.
+		let node: HTMLElement | null = el.parentElement;
+		while (node) {
+			const s = window.getComputedStyle(node);
+			if (
+				(s.overflowY === 'auto' || s.overflowY === 'scroll') &&
+				node.scrollHeight > node.clientHeight
+			) {
+				const er = el.getBoundingClientRect();
+				const nr = node.getBoundingClientRect();
+				node.scrollTo({
+					top: node.scrollTop + er.top - nr.top - nr.height / 2 + er.height / 2,
+					behavior: 'smooth'
+				});
+				return;
+			}
+			node = node.parentElement;
+		}
+		el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	}
+
+	function flash(el: HTMLElement) {
+		el.animate(
+			[
+				{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
+				{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
+				{ backgroundColor: 'rgb(253 224 71 / 0)' }
+			],
+			{ duration: 2000, easing: 'ease-out' }
+		);
+	}
+
+	function scrollToChunk(text: string) {
+		const needle = text.trim().toLowerCase();
+
+		// Preview / split mode: content is rendered inside .prose
+		const prose = document.querySelector('.prose');
+		if (prose) {
+			const el = findMatch(prose, 'p, h1, h2, h3, h4, h5, h6, li, blockquote, td', needle);
+			if (el) {
+				scrollTo(el);
+				flash(el);
+				return;
+			}
+		}
+
+		// Editor mode: CodeMirror renders each line as .cm-line inside .cm-content.
+		// The cm-scroller has overflow:visible so the parent overflow-y-auto div scrolls.
+		const cmContent = document.querySelector('.cm-content');
+		if (cmContent) {
+			const el = findMatch(cmContent, '.cm-line', needle);
+			if (el) {
+				scrollTo(el);
+				return;
 			}
 		}
 	}
@@ -120,7 +176,7 @@
 								const text = result.text;
 								onclose();
 								await tick();
-								scrollToChunk(text);
+								requestAnimationFrame(() => scrollToChunk(text));
 							}}
 							class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 						>
