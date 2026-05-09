@@ -547,6 +547,8 @@
 	};
 	let docSubnotes = $state<Subnote[]>([]);
 	let sourceReference = $derived(data.sourceReference);
+	let showTitleRefPicker = $state(false);
+	let titlePickerRefId = $state('');
 
 	const sourceRefFull = $derived.by(() => {
 		const sr = sourceReference;
@@ -565,6 +567,28 @@
 		docSubnotes = (await trpc.references.listSubnotes.query({
 			referenceId: sourceReference.id
 		})) as Subnote[];
+	}
+
+	async function handleTitleRefAssign() {
+		if (!titlePickerRefId) return;
+		await trpc.documents.setSourceReference.mutate({
+			documentId: data.document.id,
+			referenceId: titlePickerRefId
+		});
+		const ref = projectRefs.find((r) => r.id === titlePickerRefId);
+		if (ref) sourceReference = { id: ref.id!, citeKey: ref.citeKey };
+		await loadDocSubnotes();
+		showTitleRefPicker = false;
+		titlePickerRefId = '';
+	}
+
+	async function handleTitleRefUnlink() {
+		await trpc.documents.setSourceReference.mutate({
+			documentId: data.document.id,
+			referenceId: null
+		});
+		sourceReference = null;
+		docSubnotes = [];
 	}
 
 	// New comment form (triggered from floating button)
@@ -1800,6 +1824,24 @@
 					</div>
 				{/if}
 
+				<!-- Semantic search button -->
+				<button
+					onclick={() => (showDocSearch = !showDocSearch)}
+					title="Buscar en el documento (Ctrl+F)"
+					aria-pressed={showDocSearch}
+					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showDocSearch
+						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+				>
+					<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path
+							fill-rule="evenodd"
+							d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+				</button>
+
 				<!-- Export dropdown trigger only — menu rendered at root level to escape backdrop-filter -->
 				<button
 					onclick={(e) => {
@@ -1899,7 +1941,7 @@
 			<div class="mb-6">
 				{#if sourceRefCitation}
 					<div
-						class="mb-3 flex items-start gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+						class="mb-1 flex items-start gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 					>
 						<svg
 							width="12"
@@ -1917,12 +1959,127 @@
 							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
 						</svg>
 						<p
-							class="text-ink-light dark:text-dark-ink-light font-sans text-xs leading-relaxed"
+							class="text-ink-light dark:text-dark-ink-light min-w-0 flex-1 font-sans text-xs leading-relaxed"
 							translate="no"
 						>
 							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							{@html sourceRefCitation}
 						</p>
+						<div class="flex shrink-0 items-center gap-0.5">
+							<button
+								type="button"
+								title="Cambiar referencia"
+								onclick={() => {
+									loadRefs();
+									titlePickerRefId = sourceReference?.id ?? '';
+									showTitleRefPicker = true;
+								}}
+								class="rounded p-1 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+							>
+								<svg
+									width="12"
+									height="12"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+									<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+								</svg>
+							</button>
+							<button
+								type="button"
+								title="Desenlazar referencia"
+								onclick={handleTitleRefUnlink}
+								class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+							>
+								<svg
+									width="12"
+									height="12"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<path
+										d="M18.84 12.25l1.72-1.71h-.02a5.004 5.004 0 00-.12-7.07 5.006 5.006 0 00-6.95 0l-1.72 1.71"
+									/>
+									<path
+										d="M5.17 11.75l-1.71 1.71a5.004 5.004 0 00.12 7.07 5.006 5.006 0 006.95 0l1.71-1.71"
+									/>
+									<line x1="8" y1="2" x2="8" y2="5" />
+									<line x1="2" y1="8" x2="5" y2="8" />
+									<line x1="16" y1="19" x2="16" y2="22" />
+									<line x1="19" y1="16" x2="22" y2="16" />
+								</svg>
+							</button>
+						</div>
+					</div>
+				{:else}
+					<button
+						type="button"
+						onclick={() => {
+							loadRefs();
+							titlePickerRefId = '';
+							showTitleRefPicker = true;
+						}}
+						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-accent dark:hover:text-accent"
+					>
+						<svg
+							width="11"
+							height="11"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+						</svg>
+						Enlazar referencia bibliográfica
+					</button>
+				{/if}
+				{#if showTitleRefPicker}
+					<div
+						class="mb-3 flex items-center gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+					>
+						<select
+							bind:value={titlePickerRefId}
+							class="min-w-0 flex-1 rounded border border-paper-border bg-paper px-2 py-1 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+						>
+							<option value="">— elige referencia —</option>
+							{#each projectRefs as ref (ref.id ?? ref.citeKey)}
+								<option value={ref.id ?? ''}>{ref.citeKey}</option>
+							{/each}
+						</select>
+						<button
+							type="button"
+							onclick={handleTitleRefAssign}
+							disabled={!titlePickerRefId}
+							class="shrink-0 rounded bg-accent px-2.5 py-1 font-sans text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+						>
+							Asignar
+						</button>
+						<button
+							type="button"
+							onclick={() => {
+								showTitleRefPicker = false;
+								titlePickerRefId = '';
+							}}
+							class="shrink-0 font-sans text-xs text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						>
+							Cancelar
+						</button>
 					</div>
 				{/if}
 				{#if editingTitle}
