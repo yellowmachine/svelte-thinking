@@ -1891,6 +1891,32 @@
 					</svg>
 				</button>
 
+				<!-- Syntax reference (Ctrl+/) -->
+				<button
+					onclick={() => (showCheatsheet = !showCheatsheet)}
+					title="Syntax reference (Ctrl+/)"
+					aria-pressed={showCheatsheet}
+					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showCheatsheet
+						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+				>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<circle cx="12" cy="12" r="10" />
+						<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+						<path d="M12 17h.01" />
+					</svg>
+				</button>
+
 				<!-- Export dropdown trigger only — menu rendered at root level to escape backdrop-filter -->
 				<button
 					onclick={(e) => {
