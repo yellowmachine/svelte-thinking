@@ -1467,37 +1467,39 @@
 					</button>
 
 					<!-- Review button -->
-					<button
-						type="button"
-						onclick={toggleReview}
-						title="Review document against project requirements"
-						class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
-							? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-					>
-						<span class="flex items-center gap-1.5">
-							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M9 11l3 3L22 4"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-								<path
-									d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
-							Review
-						</span>
-						{#if taskModel('review')}
-							<span class="text-[10px] opacity-50">{taskModel('review')}</span>
-						{/if}
-					</button>
+					{#if !data.document.isReadonly}
+						<button
+							type="button"
+							onclick={toggleReview}
+							title="Review document against project requirements"
+							class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
+								? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
+								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+						>
+							<span class="flex items-center gap-1.5">
+								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path
+										d="M9 11l3 3L22 4"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+									<path
+										d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									/>
+								</svg>
+								Review
+							</span>
+							{#if taskModel('review')}
+								<span class="text-[10px] opacity-50">{taskModel('review')}</span>
+							{/if}
+						</button>
+					{/if}
 
 					<!-- Draft assistant button -->
 					{#if !data.document.isReadonly && viewMode !== 'preview'}
@@ -1535,27 +1537,29 @@
 					{/if}
 
 					<!-- Enrich button -->
-					<button
-						type="button"
-						onclick={toggleEnrich}
-						title="Find untagged persons and informal citations"
-						class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
-							? 'border-accent/40 bg-accent/5 text-accent dark:border-accent/30'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-					>
-						<span class="flex items-center gap-1.5">
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5" />
-								<path
-									d="M21 21l-4.35-4.35M11 8v6M8 11h6"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-							Enrich
-						</span>
-					</button>
+					{#if !data.document.isReadonly}
+						<button
+							type="button"
+							onclick={toggleEnrich}
+							title="Find untagged persons and informal citations"
+							class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
+								? 'border-accent/40 bg-accent/5 text-accent dark:border-accent/30'
+								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+						>
+							<span class="flex items-center gap-1.5">
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5" />
+									<path
+										d="M21 21l-4.35-4.35M11 8v6M8 11h6"
+										stroke="currentColor"
+										stroke-width="1.5"
+										stroke-linecap="round"
+									/>
+								</svg>
+								Enrich
+							</span>
+						</button>
+					{/if}
 				{:else if aiCtaType === 'personal'}
 					<a
 						href={resolve('/settings?tab=ai')}
