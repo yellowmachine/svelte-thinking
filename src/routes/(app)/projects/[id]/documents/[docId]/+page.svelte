@@ -48,7 +48,6 @@
 	} from '$lib/domain/document-capabilities';
 	import { isProjectOwner, canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
 	import DocSearchOverlay from '$lib/components/documents/DocSearchOverlay.svelte';
-	import DocTextSearchOverlay from '$lib/components/documents/DocTextSearchOverlay.svelte';
 	import type { PageData } from './$types';
 
 	import { resolve } from '$app/paths';
@@ -898,22 +897,10 @@
 
 	// ── Chat assistant ───────────────────────────────────────────────────────────
 	let showChat = $state(false);
-	let showDocSearch = $state(false);
-	let showTextSearch = $state(false);
+	let showSearch = $state(false);
+	let searchTab = $state<'text' | 'semantic'>('text');
 
-	function handleDocSearchScrollTo(chunkIndex: number, chunkText: string) {
-		const allParas = content
-			.split(/\n\n+/)
-			.map((s) => s.trim())
-			.filter(Boolean);
-		const indexedParas = allParas.filter((s) => s.length > 40);
-		const chunkPara = indexedParas[chunkIndex] ?? chunkText.trim();
-		const paraIndex = allParas.indexOf(chunkPara);
-		const targetIndex = paraIndex === -1 ? chunkIndex : paraIndex;
-		(previewRef ?? splitPreviewRef)?.scrollToBlock(targetIndex);
-	}
-
-	function handleTextSearchScrollTo(blockIndex: number) {
+	function handleSearchScrollTo(blockIndex: number) {
 		(previewRef ?? splitPreviewRef)?.scrollToBlock(blockIndex);
 	}
 
@@ -1066,24 +1053,19 @@
 	function onDocKeydown(e: KeyboardEvent) {
 		if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'f') {
 			e.preventDefault();
-			showTextSearch = !showTextSearch;
-			showDocSearch = false;
+			searchTab = 'text';
+			showSearch = true;
 			return;
 		}
 		if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'f') {
 			e.preventDefault();
-			showDocSearch = !showDocSearch;
-			showTextSearch = false;
+			searchTab = 'semantic';
+			showSearch = true;
 			return;
 		}
 		if (e.key === 'Escape') {
-			if (showTextSearch) {
-				showTextSearch = false;
-				e.stopPropagation();
-				return;
-			}
-			if (showDocSearch) {
-				showDocSearch = false;
+			if (showSearch) {
+				showSearch = false;
 				e.stopPropagation();
 				return;
 			}
@@ -1870,12 +1852,13 @@
 				<!-- Text find button (Ctrl+F) -->
 				<button
 					onclick={() => {
-						showTextSearch = !showTextSearch;
-						showDocSearch = false;
+						searchTab = 'text';
+						showSearch = true;
 					}}
 					title="Find in document (Ctrl+F)"
-					aria-pressed={showTextSearch}
-					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showTextSearch
+					aria-pressed={showSearch && searchTab === 'text'}
+					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showSearch &&
+					searchTab === 'text'
 						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
@@ -1891,16 +1874,16 @@
 				<!-- Semantic search button (Ctrl+Shift+F) -->
 				<button
 					onclick={() => {
-						showDocSearch = !showDocSearch;
-						showTextSearch = false;
+						searchTab = 'semantic';
+						showSearch = true;
 					}}
 					title="Semantic search (Ctrl+Shift+F)"
-					aria-pressed={showDocSearch}
-					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showDocSearch
+					aria-pressed={showSearch && searchTab === 'semantic'}
+					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showSearch &&
+					searchTab === 'semantic'
 						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
-					<!-- sparkles icon = AI/semantic (Heroicons solid) -->
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 						<path
 							d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
@@ -2827,23 +2810,18 @@
 	<MarkdownCheatsheet onclose={() => (showCheatsheet = false)} />
 {/if}
 
-<!-- ── In-document text find bar (Ctrl+F) ── -->
-{#if showTextSearch}
-	<DocTextSearchOverlay
-		{content}
-		onclose={() => (showTextSearch = false)}
-		onscrollto={handleTextSearchScrollTo}
-	/>
-{/if}
-
-<!-- ── In-document semantic search overlay (Ctrl+Shift+F) ── -->
-{#if showDocSearch}
-	<DocSearchOverlay
-		documentId={data.document.id}
-		onclose={() => (showDocSearch = false)}
-		onscrollto={handleDocSearchScrollTo}
-	/>
-{/if}
+<!-- ── In-document search (Ctrl+F = find, Ctrl+Shift+F = semantic) ── -->
+{#key searchTab}
+	{#if showSearch}
+		<DocSearchOverlay
+			documentId={data.document.id}
+			{content}
+			initialTab={searchTab}
+			onclose={() => (showSearch = false)}
+			onscrollto={handleSearchScrollTo}
+		/>
+	{/if}
+{/key}
 
 <!-- ── Writer lost modal ── -->
 {#if writerLostContent !== null}
