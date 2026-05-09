@@ -376,26 +376,87 @@
 		return paragraphs[n - 1]?.textContent?.trim() ?? '';
 	}
 
-	export function scrollToBlock(index: number) {
-		if (!container) return;
-		const blocks = Array.from(
-			container.querySelectorAll(
-				':scope > p, :scope > h1, :scope > h2, :scope > h3, :scope > h4,' +
-					' :scope > h5, :scope > h6, :scope > blockquote, :scope > pre,' +
-					' :scope > ul, :scope > ol, :scope > table'
-			)
-		);
-		const target = blocks[Math.min(index, blocks.length - 1)] as HTMLElement | undefined;
-		if (!target) return;
-		target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-		target.animate(
+	const BLOCK_SELECTOR =
+		':scope > p, :scope > h1, :scope > h2, :scope > h3, :scope > h4,' +
+		' :scope > h5, :scope > h6, :scope > blockquote, :scope > pre,' +
+		' :scope > ul, :scope > ol, :scope > table';
+
+	function getBlock(index: number): HTMLElement | undefined {
+		if (!container) return undefined;
+		const blocks = Array.from(container.querySelectorAll(BLOCK_SELECTOR));
+		return blocks[Math.min(index, blocks.length - 1)] as HTMLElement | undefined;
+	}
+
+	function flashElement(el: HTMLElement, alpha = 0.45, duration = 2000) {
+		el.animate(
 			[
-				{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
-				{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
+				{ backgroundColor: `rgb(253 224 71 / ${alpha})` },
+				{ backgroundColor: `rgb(253 224 71 / ${alpha})` },
 				{ backgroundColor: 'rgb(253 224 71 / 0)' }
 			],
-			{ duration: 2000, easing: 'ease-out' }
+			{ duration, easing: 'ease-out' }
 		);
+	}
+
+	function clearTextFindMarks() {
+		container?.querySelectorAll('mark.text-find-highlight').forEach((mark) => {
+			const parent = mark.parentNode;
+			if (!parent) return;
+			while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+			parent.removeChild(mark);
+			parent.normalize();
+		});
+	}
+
+	function highlightTextInBlock(block: HTMLElement, query: string): HTMLElement | null {
+		const lower = query.toLowerCase();
+		const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+		let node: Text | null;
+		while ((node = walker.nextNode() as Text | null)) {
+			const text = node.nodeValue ?? '';
+			const idx = text.toLowerCase().indexOf(lower);
+			if (idx === -1) continue;
+			const mark = document.createElement('mark');
+			mark.className = 'text-find-highlight';
+			mark.style.cssText =
+				'background:transparent;border-radius:2px;outline:2px solid transparent;';
+			mark.textContent = text.slice(idx, idx + query.length);
+			const parent = node.parentNode!;
+			const next = node.nextSibling;
+			parent.removeChild(node);
+			if (idx > 0) parent.insertBefore(document.createTextNode(text.slice(0, idx)), next);
+			parent.insertBefore(mark, next);
+			if (idx + query.length < text.length)
+				parent.insertBefore(document.createTextNode(text.slice(idx + query.length)), next);
+			return mark;
+		}
+		return null;
+	}
+
+	export function scrollToBlock(index: number) {
+		const target = getBlock(index);
+		if (!target) return;
+		target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		flashElement(target);
+	}
+
+	export function scrollToText(index: number, query: string) {
+		const block = getBlock(index);
+		if (!block) return;
+		clearTextFindMarks();
+		const mark = highlightTextInBlock(block, query);
+		const target = mark ?? block;
+		target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		flashElement(target, mark ? 0.8 : 0.45, mark ? 1500 : 2000);
+		if (mark) {
+			setTimeout(() => {
+				const parent = mark.parentNode;
+				if (!parent) return;
+				while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+				parent.removeChild(mark);
+				parent.normalize();
+			}, 1600);
+		}
 	}
 
 	export function scrollToComment(commentId: string, paragraphNumber: number | null) {
