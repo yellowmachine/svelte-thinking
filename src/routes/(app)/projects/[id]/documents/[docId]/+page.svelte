@@ -1839,7 +1839,7 @@
 				<!-- Semantic search button -->
 				<button
 					onclick={() => (showDocSearch = !showDocSearch)}
-					title="Buscar en el documento (Ctrl+F)"
+					title="Search in document (Ctrl+F)"
 					aria-pressed={showDocSearch}
 					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showDocSearch
 						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
@@ -1980,7 +1980,7 @@
 						<div class="flex shrink-0 items-center gap-0.5">
 							<button
 								type="button"
-								title="Cambiar referencia"
+								title="Change reference"
 								onclick={() => {
 									loadRefs();
 									titlePickerRefId = sourceReference?.id ?? '';
@@ -2006,7 +2006,7 @@
 							</button>
 							<button
 								type="button"
-								title="Desenlazar referencia"
+								title="Unlink reference"
 								onclick={handleTitleRefUnlink}
 								class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
 							>
@@ -2060,7 +2060,7 @@
 							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
 							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
 						</svg>
-						Enlazar referencia bibliográfica
+						Link bibliographic reference
 					</button>
 				{/if}
 				{#if showTitleRefPicker}
@@ -2072,7 +2072,7 @@
 								{@attach (node) => node.focus()}
 								type="text"
 								bind:value={titlePickerSearch}
-								placeholder="Buscar por citeKey, título o autor…"
+								placeholder="Search by citeKey, title or author…"
 								class="min-w-0 flex-1 bg-transparent font-sans text-xs text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
 								onkeydown={(e) => {
 									if (e.key === 'Escape') {
@@ -2095,7 +2095,7 @@
 									titlePickerSearch = '';
 									titlePickerRefId = '';
 								}}
-								aria-label="Cancelar"
+								aria-label="Cancel"
 								class="shrink-0 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 							>
 								<svg
@@ -2148,7 +2148,7 @@
 							<div
 								class="absolute top-full right-0 left-0 z-20 rounded-b border border-t-0 border-paper-border bg-paper px-3 py-2 font-sans text-xs text-ink-faint shadow-lg dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-faint"
 							>
-								Sin resultados
+								No results
 							</div>
 						{/if}
 					</div>
