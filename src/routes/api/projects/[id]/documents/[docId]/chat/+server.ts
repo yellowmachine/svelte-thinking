@@ -47,10 +47,7 @@ export const POST: RequestHandler = async (event) => {
 	)) as { id: string; type: string }[];
 	if (!doc) error(404, 'Document not found');
 
-	const effectiveContent =
-		doc.type === 'book'
-			? '[SYSTEM NOTE: This document is an imported book. Its content is not available to you for copyright reasons. When the user asks questions about the book or asks you to read it, clearly explain that you cannot access the content of imported books and suggest they copy relevant passages directly into the chat.]'
-			: documentContent;
+	const effectiveContent = doc.type === 'book' ? '' : documentContent;
 
 	let convId = inputConvId;
 	if (!convId) {
