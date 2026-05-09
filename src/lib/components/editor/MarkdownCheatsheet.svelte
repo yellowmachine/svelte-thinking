@@ -12,18 +12,16 @@
 	class="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col overflow-hidden bg-paper shadow-2xl dark:bg-dark-paper"
 	role="dialog"
 	aria-modal="true"
-	aria-label="Referencia de sintaxis"
+	aria-label="Syntax reference"
 >
 	<div
 		class="flex shrink-0 items-center justify-between border-b border-paper-border px-6 py-4 dark:border-dark-paper-border"
 	>
-		<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-			Referencia de sintaxis
-		</p>
+		<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Syntax reference</p>
 		<button
 			onclick={onclose}
 			class="rounded p-1 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-			aria-label="Cerrar"
+			aria-label="Close"
 		>
 			<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 				<path
@@ -38,10 +36,10 @@
 
 	<div class="flex-1 space-y-6 overflow-y-auto px-6 py-5 font-sans text-sm">
 		<div>
-			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formato</p>
+			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formatting</p>
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [['# Title', 'Heading 1'], ['## Section', 'Heading 2'], ['**negrita**', 'Negrita'], ['*cursiva*', 'Cursiva'], ['`code`', 'Inline code'], ['> cita', 'Bloque de cita'], ['- elemento', 'Lista'], ['1. elemento', 'Lista numerada'], ['[texto](url)', 'Enlace'], ['---', 'Separador']] as item, i (i)}
+					{#each [['# Title', 'Heading 1'], ['## Section', 'Heading 2'], ['**bold**', 'Bold'], ['*italic*', 'Italic'], ['`code`', 'Inline code'], ['> quote', 'Blockquote'], ['- item', 'List'], ['1. item', 'Numbered list'], ['[text](url)', 'Link'], ['---', 'Horizontal rule']] as item, i (i)}
 						<tr>
 							<td class="py-1.5 pr-4 font-mono text-xs text-accent">{item[0]}</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">{item[1]}</td>
@@ -80,7 +78,7 @@
 					</tr>
 					<tr>
 						<td class="py-1.5 pr-4 font-mono text-xs text-accent">$$...$$</td>
-						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Bloque centrado</td>
+						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Centered block</td>
 					</tr>
 				</tbody>
 			</table>
@@ -90,7 +88,7 @@
 			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formal logic</p>
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [['$\\neg p$', '¬p', 'Negation'], ['$p \\land q$', 'p ∧ q', 'Conjunction'], ['$p \\lor q$', 'p ∨ q', 'Disjunction'], ['$p \\rightarrow q$', 'p → q', 'Implication'], ['$p \\leftrightarrow q$', 'p ↔ q', 'Bicondicional'], ['$\\forall x$', '∀x', 'Universal'], ['$\\exists x$', '∃x', 'Existencial'], ['$\\therefore$', '∴', 'Por tanto'], ['$\\bot$ / $\\top$', '⊥ / ⊤', 'Contradiction / Tautology']] as item, i (i)}
+					{#each [['$\\neg p$', '¬p', 'Negation'], ['$p \\land q$', 'p ∧ q', 'Conjunction'], ['$p \\lor q$', 'p ∨ q', 'Disjunction'], ['$p \\rightarrow q$', 'p → q', 'Implication'], ['$p \\leftrightarrow q$', 'p ↔ q', 'Biconditional'], ['$\\forall x$', '∀x', 'Universal'], ['$\\exists x$', '∃x', 'Existential'], ['$\\therefore$', '∴', 'Therefore'], ['$\\bot$ / $\\top$', '⊥ / ⊤', 'Contradiction / Tautology']] as item, i (i)}
 						<tr>
 							<td class="py-1.5 pr-3 font-mono text-xs text-accent">{item[0]}</td>
 							<td class="py-1.5 pr-4 text-ink dark:text-dark-ink">{item[1]}</td>
@@ -118,10 +116,10 @@
 		</div>
 
 		<div>
-			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Atajos de teclado</p>
+			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Keyboard shortcuts</p>
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [['Ctrl+S', 'Save draft'], ['Ctrl+/', 'This reference'], ['Esc', 'Close panels']] as item, i (i)}
+					{#each [['Ctrl+S', 'Save draft'], ['Ctrl+/', 'Syntax reference'], ['Ctrl+F', 'Find in document'], ['Ctrl+Shift+F', 'Semantic search'], ['Esc', 'Close panels']] as item, i (i)}
 						<tr>
 							<td class="py-1.5 pr-4">
 								<kbd
