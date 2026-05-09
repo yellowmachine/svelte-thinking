@@ -38,14 +38,21 @@
 	}
 
 	function scrollToChunk(text: string) {
-		const needle = text.slice(0, 60).trim().toLowerCase();
-		const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-		let node: Text | null;
-		while ((node = walker.nextNode() as Text | null)) {
-			const content = node.textContent?.toLowerCase() ?? '';
-			if (content.includes(needle.slice(0, 40))) {
-				node.parentElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-				return;
+		const needle = text.trim().toLowerCase();
+		// Scope to the rendered prose container to avoid false matches in toolbar/sidebar.
+		// Falls back to body (e.g. editor-only mode where .prose isn't present).
+		const root = document.querySelector('.prose') ?? document.body;
+		const blocks = root.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td');
+		// Try progressively shorter prefixes — text nodes can be split by inline elements
+		// so we need textContent on block elements which concatenates all descendants.
+		for (const len of [50, 30, 15]) {
+			const prefix = needle.slice(0, len);
+			if (!prefix) continue;
+			for (const block of blocks) {
+				if ((block.textContent?.toLowerCase() ?? '').includes(prefix)) {
+					block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					return;
+				}
 			}
 		}
 	}
