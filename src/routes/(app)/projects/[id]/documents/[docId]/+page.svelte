@@ -190,6 +190,7 @@
 	type PreviewRef = {
 		scrollToComment: (id: string, paragraphNumber: number | null) => void;
 		scrollToBlock: (index: number) => void;
+		scrollToText: (index: number, query: string) => void;
 		getParagraphText: (n: number) => string;
 	} | null;
 	let previewRef = $state<PreviewRef>(null);
@@ -900,8 +901,10 @@
 	let showSearch = $state(false);
 	let searchTab = $state<'text' | 'semantic'>('text');
 
-	function handleSearchScrollTo(blockIndex: number) {
-		(previewRef ?? splitPreviewRef)?.scrollToBlock(blockIndex);
+	function handleSearchScrollTo(blockIndex: number, searchText?: string) {
+		const ref = previewRef ?? splitPreviewRef;
+		if (searchText) ref?.scrollToText(blockIndex, searchText);
+		else ref?.scrollToBlock(blockIndex);
 	}
 
 	function toggleChat() {

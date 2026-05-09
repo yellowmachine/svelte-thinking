@@ -13,7 +13,7 @@
 		content: string;
 		initialTab?: 'text' | 'semantic';
 		onclose: () => void;
-		onscrollto: (blockIndex: number) => void;
+		onscrollto: (blockIndex: number, searchText?: string) => void;
 	} = $props();
 
 	let activeTab = $state<'text' | 'semantic'>(untrack(() => initialTab));
@@ -45,21 +45,21 @@
 	function onTextInput() {
 		currentMatch = 0;
 		const m = textMatches;
-		if (m.length > 0) onscrollto(m[0]);
+		if (m.length > 0) onscrollto(m[0], textQuery.trim());
 	}
 
 	function nextMatch() {
 		if (!textMatches.length) return;
 		const n = (currentMatch + 1) % textMatches.length;
 		currentMatch = n;
-		onscrollto(textMatches[n]);
+		onscrollto(textMatches[n], textQuery.trim());
 	}
 
 	function prevMatch() {
 		if (!textMatches.length) return;
 		const p = (currentMatch - 1 + textMatches.length) % textMatches.length;
 		currentMatch = p;
-		onscrollto(textMatches[p]);
+		onscrollto(textMatches[p], textQuery.trim());
 	}
 
 	function onTextKeydown(e: KeyboardEvent) {
