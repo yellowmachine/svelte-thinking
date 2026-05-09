@@ -549,6 +549,17 @@
 	let sourceReference = $derived(data.sourceReference);
 	let showTitleRefPicker = $state(false);
 	let titlePickerRefId = $state('');
+	let titlePickerSearch = $state('');
+	const filteredTitleRefs = $derived.by(() => {
+		const q = titlePickerSearch.toLowerCase().trim();
+		if (!q) return projectRefs;
+		return projectRefs.filter(
+			(r) =>
+				r.citeKey.toLowerCase().includes(q) ||
+				r.title.toLowerCase().includes(q) ||
+				r.authors.some((a) => `${a.last} ${a.first ?? ''}`.toLowerCase().includes(q))
+		);
+	});
 
 	const sourceRefFull = $derived.by(() => {
 		const sr = sourceReference;
@@ -580,6 +591,7 @@
 		await loadDocSubnotes();
 		showTitleRefPicker = false;
 		titlePickerRefId = '';
+		titlePickerSearch = '';
 	}
 
 	async function handleTitleRefUnlink() {
@@ -1972,6 +1984,7 @@
 								onclick={() => {
 									loadRefs();
 									titlePickerRefId = sourceReference?.id ?? '';
+									titlePickerSearch = sourceReference?.citeKey ?? '';
 									showTitleRefPicker = true;
 								}}
 								class="rounded p-1 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
@@ -2028,6 +2041,7 @@
 						onclick={() => {
 							loadRefs();
 							titlePickerRefId = '';
+							titlePickerSearch = '';
 							showTitleRefPicker = true;
 						}}
 						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-accent dark:hover:text-accent"
@@ -2050,36 +2064,93 @@
 					</button>
 				{/if}
 				{#if showTitleRefPicker}
-					<div
-						class="mb-3 flex items-center gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-					>
-						<select
-							bind:value={titlePickerRefId}
-							class="min-w-0 flex-1 rounded border border-paper-border bg-paper px-2 py-1 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+					<div class="relative mb-3">
+						<div
+							class="flex items-center gap-2 rounded border border-accent bg-paper-ui px-3 py-2 dark:bg-dark-paper-ui"
 						>
-							<option value="">— elige referencia —</option>
-							{#each projectRefs as ref (ref.id ?? ref.citeKey)}
-								<option value={ref.id ?? ''}>{ref.citeKey}</option>
-							{/each}
-						</select>
-						<button
-							type="button"
-							onclick={handleTitleRefAssign}
-							disabled={!titlePickerRefId}
-							class="shrink-0 rounded bg-accent px-2.5 py-1 font-sans text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
-						>
-							Asignar
-						</button>
-						<button
-							type="button"
-							onclick={() => {
-								showTitleRefPicker = false;
-								titlePickerRefId = '';
-							}}
-							class="shrink-0 font-sans text-xs text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-						>
-							Cancelar
-						</button>
+							<input
+								{@attach (node) => node.focus()}
+								type="text"
+								bind:value={titlePickerSearch}
+								placeholder="Buscar por citeKey, título o autor…"
+								class="min-w-0 flex-1 bg-transparent font-sans text-xs text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+								onkeydown={(e) => {
+									if (e.key === 'Escape') {
+										showTitleRefPicker = false;
+										titlePickerSearch = '';
+										titlePickerRefId = '';
+									} else if (e.key === 'Enter') {
+										const first = filteredTitleRefs[0];
+										if (first?.id) {
+											titlePickerRefId = first.id;
+											handleTitleRefAssign();
+										}
+									}
+								}}
+							/>
+							<button
+								type="button"
+								onclick={() => {
+									showTitleRefPicker = false;
+									titlePickerSearch = '';
+									titlePickerRefId = '';
+								}}
+								aria-label="Cancelar"
+								class="shrink-0 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+							>
+								<svg
+									width="12"
+									height="12"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<line x1="18" y1="6" x2="6" y2="18" />
+									<line x1="6" y1="6" x2="18" y2="18" />
+								</svg>
+							</button>
+						</div>
+						{#if filteredTitleRefs.length > 0}
+							<ul
+								class="absolute top-full right-0 left-0 z-20 max-h-56 overflow-y-auto rounded-b border border-t-0 border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+							>
+								{#each filteredTitleRefs as ref (ref.id ?? ref.citeKey)}
+									<li>
+										<button
+											type="button"
+											onclick={() => {
+												titlePickerRefId = ref.id ?? '';
+												handleTitleRefAssign();
+											}}
+											class="flex w-full items-baseline gap-2 px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+										>
+											<span class="shrink-0 font-mono text-[11px] font-medium text-accent"
+												>@{ref.citeKey}</span
+											>
+											<span class="min-w-0 truncate font-sans text-xs text-ink dark:text-dark-ink"
+												>{ref.title}</span
+											>
+											{#if ref.year}
+												<span
+													class="shrink-0 font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
+													>{ref.year}</span
+												>
+											{/if}
+										</button>
+									</li>
+								{/each}
+							</ul>
+						{:else if titlePickerSearch.trim()}
+							<div
+								class="absolute top-full right-0 left-0 z-20 rounded-b border border-t-0 border-paper-border bg-paper px-3 py-2 font-sans text-xs text-ink-faint shadow-lg dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-faint"
+							>
+								Sin resultados
+							</div>
+						{/if}
 					</div>
 				{/if}
 				{#if editingTitle}
