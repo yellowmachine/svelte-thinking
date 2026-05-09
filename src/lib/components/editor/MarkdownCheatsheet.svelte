@@ -35,16 +35,48 @@
 	</div>
 
 	<div class="flex-1 space-y-6 overflow-y-auto px-6 py-5 font-sans text-sm">
+		<p class="text-xs text-ink-muted dark:text-dark-ink-muted">
+			Documents are formatted with
+			<a
+				href="https://www.markdownguide.org/basic-syntax/"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="text-accent underline underline-offset-2 hover:text-accent-hover">Markdown</a
+			>. Use the left pane to write and the right pane to preview. Save with
+			<kbd
+				class="rounded border border-paper-border bg-paper-ui px-1 py-0.5 font-mono text-[10px] text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				>Ctrl+S</kbd
+			>.
+		</p>
+
 		<div>
 			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formatting</p>
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [['# Title', 'Heading 1'], ['## Section', 'Heading 2'], ['**bold**', 'Bold'], ['*italic*', 'Italic'], ['`code`', 'Inline code'], ['> quote', 'Blockquote'], ['- item', 'List'], ['1. item', 'Numbered list'], ['[text](url)', 'Link'], ['---', 'Horizontal rule']] as item, i (i)}
+					{#each [['# Title', 'Heading 1 — creates document structure'], ['## Section', 'Heading 2'], ['**bold**', 'Bold'], ['*italic*', 'Italic'], ['`code`', 'Inline code'], ['> quote', 'Blockquote'], ['- item', 'Unordered list'], ['1. item', 'Numbered list'], ['[text](url)', 'Hyperlink'], ['---', 'Horizontal rule (visible separator)']] as item, i (i)}
 						<tr>
 							<td class="py-1.5 pr-4 font-mono text-xs text-accent">{item[0]}</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">{item[1]}</td>
 						</tr>
 					{/each}
+				</tbody>
+			</table>
+		</div>
+
+		<div>
+			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Footnotes</p>
+			<table class="w-full">
+				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
+					<tr>
+						<td class="py-1.5 pr-4 font-mono text-xs text-accent">text[^1]</td>
+						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Footnote marker in text</td>
+					</tr>
+					<tr>
+						<td class="py-1.5 pr-4 font-mono text-xs text-accent">[^1]: Note text</td>
+						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted"
+							>Footnote definition (at end of document)</td
+						>
+					</tr>
 				</tbody>
 			</table>
 		</div>
@@ -64,43 +96,16 @@
 				</tbody>
 			</table>
 			<p class="mt-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">
-				Type <span class="font-mono">[[@</span> to autocomplete.
+				Type <span class="font-mono">[[@</span> to autocomplete from your bibliography.
 			</p>
 		</div>
 
 		<div>
-			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Mathematics (KaTeX)</p>
-			<table class="w-full">
-				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					<tr>
-						<td class="py-1.5 pr-4 font-mono text-xs text-accent">$E = mc^2$</td>
-						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Inline</td>
-					</tr>
-					<tr>
-						<td class="py-1.5 pr-4 font-mono text-xs text-accent">$$...$$</td>
-						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Centered block</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-
-		<div>
-			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Formal logic</p>
-			<table class="w-full">
-				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [['$\\neg p$', '¬p', 'Negation'], ['$p \\land q$', 'p ∧ q', 'Conjunction'], ['$p \\lor q$', 'p ∨ q', 'Disjunction'], ['$p \\rightarrow q$', 'p → q', 'Implication'], ['$p \\leftrightarrow q$', 'p ↔ q', 'Biconditional'], ['$\\forall x$', '∀x', 'Universal'], ['$\\exists x$', '∃x', 'Existential'], ['$\\therefore$', '∴', 'Therefore'], ['$\\bot$ / $\\top$', '⊥ / ⊤', 'Contradiction / Tautology']] as item, i (i)}
-						<tr>
-							<td class="py-1.5 pr-3 font-mono text-xs text-accent">{item[0]}</td>
-							<td class="py-1.5 pr-4 text-ink dark:text-dark-ink">{item[1]}</td>
-							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">{item[2]}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-
-		<div>
 			<p class="mb-2 font-medium text-ink dark:text-dark-ink">Wikilinks</p>
+			<p class="mb-2 text-xs text-ink-muted dark:text-dark-ink-muted">
+				Link to other documents in your project — they will be highlighted and clickable in the
+				preview.
+			</p>
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 					<tr>

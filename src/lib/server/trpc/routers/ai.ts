@@ -1342,6 +1342,27 @@ const EDITOR_TOOLS = [
 	}
 ] as const;
 
+const BOOK_TOOL = {
+	type: 'function' as const,
+	function: {
+		name: 'search_in_book',
+		description:
+			'Search for relevant passages in this book using semantic similarity. ' +
+			"Use this whenever you need to find information in the book to answer the user's question. " +
+			'Returns the most relevant excerpts.',
+		parameters: {
+			type: 'object',
+			properties: {
+				query: {
+					type: 'string',
+					description: 'The search query describing what you are looking for'
+				}
+			},
+			required: ['query']
+		}
+	}
+};
+
 const EDITOR_SYSTEM_PROMPT = `You are Scholio's document editor assistant. Your role is to help the user edit and improve the document they are currently working on.
 
 The full current content of the document is provided below. When the user asks you to make a change, use the replace_text or insert_after tools to propose it. The user will see a before/after preview and can accept or reject each change.
@@ -2048,7 +2069,11 @@ export async function runEditorAgentLoopSSE(
 	inputTokens: number;
 	outputTokens: number;
 }> {
-	const systemPrompt = `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
+	const isBook = !documentContent;
+	const systemPrompt = isBook
+		? `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\nThis document is an imported book. You do not have direct access to its full content. Use the search_in_book tool to find relevant passages before answering the user's question.`
+		: `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
+	const activeTools = isBook ? ([...EDITOR_TOOLS, BOOK_TOOL] as const) : EDITOR_TOOLS;
 	const messages: OAMessage[] = [
 		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
 		{ role: 'user', content: userMessage }
@@ -2075,7 +2100,7 @@ export async function runEditorAgentLoopSSE(
 				model,
 				max_tokens: 2048,
 				messages: [{ role: 'system', content: systemPrompt }, ...messages],
-				tools: EDITOR_TOOLS,
+				tools: activeTools,
 				tool_choice: 'auto',
 				stream: true,
 				stream_options: { include_usage: true }
@@ -2307,6 +2332,45 @@ export async function runEditorAgentLoopSSE(
 							tool_call_id: tc.id,
 							content: 'Use the Enrich button in the toolbar for person and reference tagging.'
 						};
+					}
+					if (tc.function.name === 'search_in_book') {
+						const query = ((args.query as string) ?? '').trim();
+						if (!query)
+							return {
+								role: 'tool' as const,
+								tool_call_id: tc.id,
+								content: 'Error: missing required parameter query.'
+							};
+						try {
+							const queryVec = await embedQuery(query);
+							const vecLiteral = `[${queryVec.join(',')}]`;
+							const rows = (await toolCtx.withRLS((db) =>
+								(db as Db).execute(sql`
+									SELECT dc.text, dc.chunk_index,
+									       1 - (dc.embedding <=> ${vecLiteral}::vector) AS similarity
+									FROM scholio.document_chunk dc
+									WHERE dc.document_id = ${toolCtx.documentId}
+									ORDER BY dc.embedding <=> ${vecLiteral}::vector
+									LIMIT 6
+								`)
+							)) as unknown as { text: string; chunk_index: number; similarity: number }[];
+							if (!rows.length)
+								return {
+									role: 'tool' as const,
+									tool_call_id: tc.id,
+									content: 'No results found for that query in the book.'
+								};
+							const output = rows
+								.map((r) => `[${Math.round(r.similarity * 100)}%] ${r.text.trim()}`)
+								.join('\n\n---\n\n');
+							return { role: 'tool' as const, tool_call_id: tc.id, content: output };
+						} catch {
+							return {
+								role: 'tool' as const,
+								tool_call_id: tc.id,
+								content: 'Search failed. The book may not be indexed yet.'
+							};
+						}
 					}
 
 					return {
