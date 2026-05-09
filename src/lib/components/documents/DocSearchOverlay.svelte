@@ -92,8 +92,23 @@
 
 		// Preview / split mode: content is rendered inside .prose
 		const prose = document.querySelector('.prose');
+		console.debug('[search] prose found:', !!prose);
 		if (prose) {
+			const blocks = prose.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td');
+			console.debug('[search] blocks found:', blocks.length);
+			console.debug('[search] needle (norm 50):', norm(needle.slice(0, 50)));
+			if (blocks.length > 0)
+				console.debug(
+					'[search] first block (norm):',
+					norm(blocks[0].textContent ?? '').slice(0, 80)
+				);
 			const el = findMatch(prose, 'p, h1, h2, h3, h4, h5, h6, li, blockquote, td', needle);
+			console.debug(
+				'[search] match found:',
+				!!el,
+				el?.tagName,
+				norm(el?.textContent ?? '').slice(0, 60)
+			);
 			if (el) {
 				scrollTo(el);
 				flash(el);
@@ -104,8 +119,10 @@
 		// Editor mode: CodeMirror renders each line as .cm-line inside .cm-content.
 		// The cm-scroller has overflow:visible so the parent overflow-y-auto div scrolls.
 		const cmContent = document.querySelector('.cm-content');
+		console.debug('[search] cmContent found:', !!cmContent);
 		if (cmContent) {
 			const el = findMatch(cmContent, '.cm-line', needle);
+			console.debug('[search] cm match found:', !!el);
 			if (el) {
 				scrollTo(el);
 				return;
