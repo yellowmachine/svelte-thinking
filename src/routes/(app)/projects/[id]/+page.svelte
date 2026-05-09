@@ -1171,6 +1171,15 @@
 												tabindex="-1"
 												onclick={(e) => e.stopPropagation()}
 											>
+												{#if doc.type === 'book'}
+													<a
+														href={resolve(`/projects/${data.project.id}/documents/${doc.id}/read`)}
+														onclick={() => (docMenuOpenId = null)}
+														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+													>
+														Read
+													</a>
+												{/if}
 												<a
 													href={resolve(`/projects/${data.project.id}/documents/${doc.id}/history`)}
 													onclick={() => (docMenuOpenId = null)}
