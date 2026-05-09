@@ -37,13 +37,17 @@
 		}
 	}
 
+	function norm(s: string) {
+		return s.replace(/\s+/g, ' ').trim().toLowerCase();
+	}
+
 	function findMatch(root: Element, selector: string, needle: string): HTMLElement | null {
 		const blocks = root.querySelectorAll(selector);
 		for (const len of [50, 30, 15]) {
-			const prefix = needle.slice(0, len);
+			const prefix = norm(needle.slice(0, len));
 			if (!prefix) continue;
 			for (const block of blocks) {
-				if ((block.textContent?.toLowerCase() ?? '').includes(prefix)) return block as HTMLElement;
+				if (norm(block.textContent ?? '').includes(prefix)) return block as HTMLElement;
 			}
 		}
 		return null;
