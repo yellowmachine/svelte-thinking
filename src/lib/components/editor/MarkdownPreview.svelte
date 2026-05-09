@@ -376,6 +376,28 @@
 		return paragraphs[n - 1]?.textContent?.trim() ?? '';
 	}
 
+	export function scrollToBlock(index: number) {
+		if (!container) return;
+		const blocks = Array.from(
+			container.querySelectorAll(
+				':scope > p, :scope > h1, :scope > h2, :scope > h3, :scope > h4,' +
+					' :scope > h5, :scope > h6, :scope > blockquote, :scope > pre,' +
+					' :scope > ul, :scope > ol, :scope > table'
+			)
+		);
+		const target = blocks[Math.min(index, blocks.length - 1)] as HTMLElement | undefined;
+		if (!target) return;
+		target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		target.animate(
+			[
+				{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
+				{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
+				{ backgroundColor: 'rgb(253 224 71 / 0)' }
+			],
+			{ duration: 2000, easing: 'ease-out' }
+		);
+	}
+
 	export function scrollToComment(commentId: string, paragraphNumber: number | null) {
 		if (!container) return;
 		let target: Element | null = null;
