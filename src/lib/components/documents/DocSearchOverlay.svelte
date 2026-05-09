@@ -21,6 +21,7 @@
 	// ── Text search ───────────────────────────────────────────────────────────
 	let textQuery = $state('');
 	let currentMatch = $state(0);
+	let listMode = $state(false);
 
 	function normalize(s: string) {
 		return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -60,6 +61,22 @@
 		const p = (currentMatch - 1 + textMatches.length) % textMatches.length;
 		currentMatch = p;
 		onscrollto(textMatches[p], textQuery.trim());
+	}
+
+	function getSnippet(paraIndex: number): { before: string; match: string; after: string } {
+		const para = allParas[paraIndex] ?? '';
+		const q = textQuery.trim();
+		if (!q) return { before: para.slice(0, 120), match: '', after: '' };
+		const idx = para.toLowerCase().indexOf(q.toLowerCase());
+		if (idx === -1) return { before: para.slice(0, 120), match: '', after: '' };
+		const CTX = 65;
+		const start = Math.max(0, idx - CTX);
+		const end = Math.min(para.length, idx + q.length + CTX);
+		return {
+			before: (start > 0 ? '…' : '') + para.slice(start, idx),
+			match: para.slice(idx, idx + q.length),
+			after: para.slice(idx + q.length, end) + (end < para.length ? '…' : '')
+		};
 	}
 
 	function onTextKeydown(e: KeyboardEvent) {
@@ -179,37 +196,96 @@
 							: `${currentMatch + 1} / ${textMatches.length}`}
 					{/if}
 				</span>
+				{#if !listMode}
+					<button
+						type="button"
+						onclick={prevMatch}
+						disabled={textMatches.length === 0}
+						title="Previous (Shift+Enter)"
+						class="rounded p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-30 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					>
+						<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+							<path
+								fill-rule="evenodd"
+								d="M7.47 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8 4.81 4.28 8.53a.75.75 0 0 1-1.06-1.06l4.25-4.25Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</button>
+					<button
+						type="button"
+						onclick={nextMatch}
+						disabled={textMatches.length === 0}
+						title="Next (Enter)"
+						class="rounded p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-30 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					>
+						<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+							<path
+								fill-rule="evenodd"
+								d="M8.53 12.78a.75.75 0 0 1-1.06 0L3.22 8.53a.75.75 0 0 1 1.06-1.06L8 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</button>
+				{/if}
+				<!-- list view toggle -->
 				<button
 					type="button"
-					onclick={prevMatch}
-					disabled={textMatches.length === 0}
-					title="Previous (Shift+Enter)"
-					class="rounded p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-30 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					onclick={() => (listMode = !listMode)}
+					title="Toggle list view"
+					class="rounded p-1 transition-colors {listMode
+						? 'text-accent'
+						: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
 				>
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 						<path
 							fill-rule="evenodd"
-							d="M7.47 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8 4.81 4.28 8.53a.75.75 0 0 1-1.06-1.06l4.25-4.25Z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-				</button>
-				<button
-					type="button"
-					onclick={nextMatch}
-					disabled={textMatches.length === 0}
-					title="Next (Enter)"
-					class="rounded p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-30 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
-				>
-					<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-						<path
-							fill-rule="evenodd"
-							d="M8.53 12.78a.75.75 0 0 1-1.06 0L3.22 8.53a.75.75 0 0 1 1.06-1.06L8 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25Z"
+							d="M2 4a1 1 0 0 1 1-1h10a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1Zm0 4a1 1 0 0 1 1-1h10a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1Zm0 4a1 1 0 0 1 1-1h10a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1Z"
 							clip-rule="evenodd"
 						/>
 					</svg>
 				</button>
 			</div>
+
+			<!-- list of matches with context -->
+			{#if listMode && textQuery.trim()}
+				{#if textMatches.length > 0}
+					<ul
+						class="max-h-64 overflow-y-auto border-t border-paper-border py-1 dark:border-dark-paper-border"
+					>
+						{#each textMatches as blockIdx, i (blockIdx)}
+							{@const snippet = getSnippet(blockIdx)}
+							<li>
+								<button
+									type="button"
+									onclick={() => {
+										currentMatch = i;
+										onscrollto(blockIdx, textQuery.trim());
+									}}
+									class="w-full px-4 py-2 text-left transition-colors {currentMatch === i
+										? 'bg-accent/8 dark:bg-accent/12'
+										: 'hover:bg-paper-ui dark:hover:bg-dark-paper-ui'}"
+								>
+									<p
+										class="font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
+									>
+										{snippet.before}<mark
+											class="rounded-sm bg-accent/25 px-0.5 font-medium text-ink not-italic dark:text-dark-ink"
+											>{snippet.match}</mark
+										>{snippet.after}
+									</p>
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p
+						class="border-t border-paper-border px-4 py-3 font-sans text-sm text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
+					>
+						No results found.
+					</p>
+				{/if}
+			{/if}
 		{/if}
 
 		<!-- ── Semantic tab ── -->
