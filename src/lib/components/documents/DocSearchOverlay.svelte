@@ -51,6 +51,14 @@
 			for (const block of blocks) {
 				if ((block.textContent?.toLowerCase() ?? '').includes(prefix)) {
 					block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					(block as HTMLElement).animate(
+						[
+							{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
+							{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
+							{ backgroundColor: 'rgb(253 224 71 / 0)' }
+						],
+						{ duration: 2000, easing: 'ease-out' }
+					);
 					return;
 				}
 			}
