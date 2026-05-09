@@ -839,10 +839,6 @@ export const projectsRouter = router({
 				})
 			);
 
-			ctx
-				.withRLS((db) => indexDocument(db, docId, projectId, text))
-				.catch((err) => console.error('[embeddings] indexDocument failed:', err));
-
 			return { documentId: docId };
 		})
 });

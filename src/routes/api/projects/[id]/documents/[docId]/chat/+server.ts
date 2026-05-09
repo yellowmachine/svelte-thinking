@@ -40,12 +40,17 @@ export const POST: RequestHandler = async (event) => {
 
 	const [doc] = (await withRLS((db) =>
 		db
-			.select({ id: document.id })
+			.select({ id: document.id, type: document.type })
 			.from(document)
 			.where(and(eq(document.id, documentId), eq(document.projectId, projectId)))
 			.limit(1)
-	)) as { id: string }[];
+	)) as { id: string; type: string }[];
 	if (!doc) error(404, 'Document not found');
+
+	const effectiveContent =
+		doc.type === 'book'
+			? '[SYSTEM NOTE: This document is an imported book. Its content is not available to you for copyright reasons. When the user asks questions about the book or asks you to read it, clearly explain that you cannot access the content of imported books and suggest they copy relevant passages directly into the chat.]'
+			: documentContent;
 
 	let convId = inputConvId;
 	if (!convId) {
@@ -113,7 +118,7 @@ export const POST: RequestHandler = async (event) => {
 		try {
 			const result = await runEditorAgentLoopSSE(
 				documentTitle,
-				documentContent,
+				effectiveContent,
 				history,
 				message,
 				editorApiKey,
