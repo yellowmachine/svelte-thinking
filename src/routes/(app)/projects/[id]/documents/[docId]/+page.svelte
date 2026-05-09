@@ -189,6 +189,7 @@
 
 	type PreviewRef = {
 		scrollToComment: (id: string, paragraphNumber: number | null) => void;
+		scrollToBlock: (index: number) => void;
 		getParagraphText: (n: number) => string;
 	} | null;
 	let previewRef = $state<PreviewRef>(null);
@@ -897,6 +898,18 @@
 	// ── Chat assistant ───────────────────────────────────────────────────────────
 	let showChat = $state(false);
 	let showDocSearch = $state(false);
+
+	function handleDocSearchScrollTo(chunkIndex: number, chunkText: string) {
+		const allParas = content
+			.split(/\n\n+/)
+			.map((s) => s.trim())
+			.filter(Boolean);
+		const indexedParas = allParas.filter((s) => s.length > 40);
+		const chunkPara = indexedParas[chunkIndex] ?? chunkText.trim();
+		const paraIndex = allParas.indexOf(chunkPara);
+		const targetIndex = paraIndex === -1 ? chunkIndex : paraIndex;
+		(previewRef ?? splitPreviewRef)?.scrollToBlock(targetIndex);
+	}
 
 	function toggleChat() {
 		showChat = !showChat;
@@ -2777,8 +2790,8 @@
 {#if showDocSearch}
 	<DocSearchOverlay
 		documentId={data.document.id}
-		{content}
 		onclose={() => (showDocSearch = false)}
+		onscrollto={handleDocSearchScrollTo}
 	/>
 {/if}
 

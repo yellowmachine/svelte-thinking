@@ -1,15 +1,14 @@
 <script lang="ts">
-	import { tick } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 
 	let {
 		documentId,
-		content,
-		onclose
+		onclose,
+		onscrollto
 	}: {
 		documentId: string;
-		content: string;
 		onclose: () => void;
+		onscrollto: (chunkIndex: number, chunkText: string) => void;
 	} = $props();
 
 	let query = $state('');
@@ -36,85 +35,6 @@
 			onclose();
 		} else if (e.key === 'Enter') {
 			search();
-		}
-	}
-
-	function scrollTo(el: HTMLElement) {
-		// Walk ancestors to find the actual scrollable container.
-		let node: HTMLElement | null = el.parentElement;
-		while (node) {
-			const s = window.getComputedStyle(node);
-			if (
-				(s.overflowY === 'auto' || s.overflowY === 'scroll') &&
-				node.scrollHeight > node.clientHeight
-			) {
-				const er = el.getBoundingClientRect();
-				const nr = node.getBoundingClientRect();
-				node.scrollTo({
-					top: node.scrollTop + er.top - nr.top - nr.height / 2 + er.height / 2,
-					behavior: 'smooth'
-				});
-				return;
-			}
-			node = node.parentElement;
-		}
-		el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-	}
-
-	function flash(el: HTMLElement) {
-		el.animate(
-			[
-				{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
-				{ backgroundColor: 'rgb(253 224 71 / 0.45)' },
-				{ backgroundColor: 'rgb(253 224 71 / 0)' }
-			],
-			{ duration: 2000, easing: 'ease-out' }
-		);
-	}
-
-	function scrollToChunk(chunkIndex: number, chunkText: string) {
-		// Mirrors embeddings.ts chunkText(): split on blank lines, drop short segments.
-		// chunk_index is the position in the filtered list.
-		const allParas = content
-			.split(/\n\n+/)
-			.map((s) => s.trim())
-			.filter(Boolean);
-		const indexedParas = allParas.filter((s) => s.length > 40);
-		const chunkPara = indexedParas[chunkIndex] ?? chunkText.trim();
-
-		// Find which position this paragraph occupies in the full (unfiltered) list.
-		const paraIndex = allParas.indexOf(chunkPara);
-		const targetIndex = paraIndex === -1 ? chunkIndex : paraIndex;
-
-		// Preview / split mode: direct children of .prose map 1:1 to raw paragraphs.
-		// Use :scope > to get only top-level blocks (a list block = one <ul>, not many <li>).
-		const prose = document.querySelector('.prose');
-		if (prose) {
-			const blocks = Array.from(
-				prose.querySelectorAll(
-					':scope > p, :scope > h1, :scope > h2, :scope > h3, :scope > h4,' +
-						' :scope > h5, :scope > h6, :scope > blockquote, :scope > pre,' +
-						' :scope > ul, :scope > ol, :scope > table'
-				)
-			) as HTMLElement[];
-			if (blocks.length > 0) {
-				const target = blocks[Math.min(targetIndex, blocks.length - 1)];
-				scrollTo(target);
-				flash(target);
-				return;
-			}
-		}
-
-		// Editor mode fallback: text search in visible CodeMirror lines.
-		const cmContent = document.querySelector('.cm-content');
-		if (cmContent) {
-			const needle = chunkPara.slice(0, 40).toLowerCase();
-			for (const line of cmContent.querySelectorAll('.cm-line')) {
-				if ((line.textContent?.toLowerCase() ?? '').includes(needle)) {
-					scrollTo(line as HTMLElement);
-					return;
-				}
-			}
 		}
 	}
 </script>
@@ -177,12 +97,9 @@
 					<li>
 						<button
 							type="button"
-							onclick={async () => {
-								const idx = result.chunk_index;
-								const txt = result.text;
+							onclick={() => {
 								onclose();
-								await tick();
-								requestAnimationFrame(() => scrollToChunk(idx, txt));
+								onscrollto(result.chunk_index, result.text);
 							}}
 							class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 						>
