@@ -880,6 +880,8 @@
 	// Export dropdown
 	let showExport = $state(false);
 	let exportMenuPos = $state({ top: 0, left: 0 });
+	let showSpellMenu = $state(false);
+	let spellMenuPos = $state({ top: 0, left: 0 });
 
 	// ── AI task model labels (from layout data) ──────────────────────────────────
 	const aiTaskConfig = $derived(data.aiTaskConfig ?? {});
@@ -1814,14 +1816,19 @@
 				</a>
 
 				{#if !data.document.isReadonly}
-					<!-- Spell check button -->
+					<!-- Spell / Grammar dropdown -->
 					<button
-						onclick={() => runSpellCheck()}
-						disabled={spellLoading}
-						title="Check spelling and grammar"
-						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
-							? 'border-accent bg-accent text-white'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
+						onclick={(e) => {
+							e.stopPropagation();
+							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+							spellMenuPos = { top: rect.bottom + 4, left: rect.left };
+							showSpellMenu = !showSpellMenu;
+						}}
+						title="Spell check and grammar"
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel ||
+						showGrammarPanel
+							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 					>
 						<svg
 							width="13"
@@ -1838,50 +1845,17 @@
 							<line x1="9" y1="20" x2="15" y2="20" />
 							<line x1="12" y1="4" x2="12" y2="20" />
 						</svg>
-						{spellLoading ? 'Checking…' : 'Spell'}
-					</button>
-
-					<!-- Grammar assistant button -->
-					<button
-						onclick={() => runGrammarCheck()}
-						disabled={grammarLoading}
-						title="Grammar and style suggestions for non-native English writers"
-						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
-							? 'border-accent bg-accent text-white'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
-					>
+						Spell
 						<svg
-							width="13"
-							height="13"
+							width="10"
+							height="10"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
+							stroke-width="2.5"
+							aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg
 						>
-							<path d="M12 20h9" />
-							<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-						</svg>
-						{grammarLoading ? 'Checking…' : 'Grammar'}
 					</button>
-
-					<!-- Spell language selector -->
-					<div
-						class="flex items-center gap-1 rounded-md border border-paper-border px-2 py-1.5 dark:border-dark-paper-border"
-					>
-						<select
-							value={spellLanguage}
-							onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
-							title="Spell check language"
-							class="cursor-pointer bg-paper font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper dark:text-dark-ink-muted"
-						>
-							{#each SPELL_LANGUAGES as lang (lang.code)}
-								<option value={lang.code}>{lang.label}</option>
-							{/each}
-						</select>
-					</div>
 				{/if}
 
 				<!-- Text find button (Ctrl+F) -->
@@ -2864,8 +2838,92 @@
 	}}
 	onclick={() => {
 		showCiteStyleMenu = false;
+		showSpellMenu = false;
 	}}
 />
+
+{#if showSpellMenu}
+	<button
+		class="fixed inset-0 z-10"
+		onclick={() => (showSpellMenu = false)}
+		aria-label="Close menu"
+		tabindex="-1"
+	></button>
+	<div
+		class="fixed z-20 w-52 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		style="top: {spellMenuPos.top}px; left: {spellMenuPos.left}px;"
+	>
+		<button
+			onclick={() => {
+				runSpellCheck();
+				showSpellMenu = false;
+			}}
+			disabled={spellLoading}
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showSpellPanel
+				? 'text-accent'
+				: 'text-ink-muted dark:text-dark-ink-muted'}"
+		>
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<polyline points="4 7 4 4 20 4 20 7" />
+				<line x1="9" y1="20" x2="15" y2="20" />
+				<line x1="12" y1="4" x2="12" y2="20" />
+			</svg>
+			{spellLoading ? 'Checking…' : 'Spell check'}
+		</button>
+		<button
+			onclick={() => {
+				runGrammarCheck();
+				showSpellMenu = false;
+			}}
+			disabled={grammarLoading}
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showGrammarPanel
+				? 'text-accent'
+				: 'text-ink-muted dark:text-dark-ink-muted'}"
+		>
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<path d="M12 20h9" />
+				<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+			</svg>
+			{grammarLoading ? 'Checking…' : 'Grammar'}
+		</button>
+		<div class="border-t border-paper-border px-4 py-2 dark:border-dark-paper-border">
+			<label
+				for="spell-lang"
+				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Language</label
+			>
+			<select
+				id="spell-lang"
+				value={spellLanguage}
+				onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
+				class="w-full cursor-pointer rounded bg-paper-ui px-1.5 py-1 font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+			>
+				{#each SPELL_LANGUAGES as lang (lang.code)}
+					<option value={lang.code}>{lang.label}</option>
+				{/each}
+			</select>
+		</div>
+	</div>
+{/if}
 
 {#if showCheatsheet}
 	<MarkdownCheatsheet onclose={() => (showCheatsheet = false)} />
