@@ -517,6 +517,8 @@
 	let showComments = $state(false);
 	let currentCommentId = $state<string | null>(null);
 
+	let showAnnotations = $state(false);
+
 	// ── Bibliography panel ────────────────────────────────────────────────────
 	let showBib = $state(false);
 	let bibFilter = $state('');
@@ -878,6 +880,8 @@
 	// Export dropdown
 	let showExport = $state(false);
 	let exportMenuPos = $state({ top: 0, left: 0 });
+	let showSpellMenu = $state(false);
+	let spellMenuPos = $state({ top: 0, left: 0 });
 
 	// ── AI task model labels (from layout data) ──────────────────────────────────
 	const aiTaskConfig = $derived(data.aiTaskConfig ?? {});
@@ -1418,6 +1422,80 @@
 					</button>
 				{/if}
 
+				<!-- View mode selector -->
+				{#if canWrite && !data.forcePublished}
+					<div
+						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
+						role="group"
+						aria-label="View mode"
+					>
+						<button
+							onclick={() => setViewMode('editor')}
+							title="Editor only"
+							class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'editor'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M4 6h16M4 10h10M4 14h12M4 18h8"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+						</button>
+						<button
+							onclick={() => setViewMode('split')}
+							title="Editor and preview"
+							class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
+							'split'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'split'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<rect
+									x="2"
+									y="3"
+									width="9"
+									height="18"
+									rx="1"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+								<rect
+									x="13"
+									y="3"
+									width="9"
+									height="18"
+									rx="1"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+							</svg>
+						</button>
+						<button
+							onclick={() => setViewMode('preview')}
+							title="Preview only"
+							class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'preview'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+								<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5" />
+							</svg>
+						</button>
+					</div>
+				{/if}
+
 				{#if data.document.type === 'book'}
 					<a
 						href={resolve(
@@ -1677,79 +1755,31 @@
 					</button>
 				{/if}
 
-				<!-- View mode selector (hidden for non-writers and published view) -->
-				{#if canWrite && !data.forcePublished}
-					<div
-						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-						role="group"
-						aria-label="View mode"
+				<button
+					onclick={() => (showAnnotations = !showAnnotations)}
+					title="Toggle subnotes panel"
+					class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showAnnotations
+						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
 					>
-						<button
-							onclick={() => setViewMode('editor')}
-							title="Editor only"
-							class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'editor'}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M4 6h16M4 10h10M4 14h12M4 18h8"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						</button>
-						<button
-							onclick={() => setViewMode('split')}
-							title="Editor and preview"
-							class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
-							'split'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'split'}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<rect
-									x="2"
-									y="3"
-									width="9"
-									height="18"
-									rx="1"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-								<rect
-									x="13"
-									y="3"
-									width="9"
-									height="18"
-									rx="1"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-							</svg>
-						</button>
-						<button
-							onclick={() => setViewMode('preview')}
-							title="Preview only"
-							class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'preview'}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-								<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5" />
-							</svg>
-						</button>
-					</div>
-				{/if}
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+						<polyline points="14 2 14 8 20 8" />
+						<line x1="16" y1="13" x2="8" y2="13" />
+						<line x1="16" y1="17" x2="8" y2="17" />
+					</svg>
+					Subnotes
+				</button>
 
 				<a
 					href={resolve(
@@ -1786,14 +1816,19 @@
 				</a>
 
 				{#if !data.document.isReadonly}
-					<!-- Spell check button -->
+					<!-- Spell / Grammar dropdown -->
 					<button
-						onclick={() => runSpellCheck()}
-						disabled={spellLoading}
-						title="Check spelling and grammar"
-						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel
-							? 'border-accent bg-accent text-white'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
+						onclick={(e) => {
+							e.stopPropagation();
+							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+							spellMenuPos = { top: rect.bottom + 4, left: rect.left };
+							showSpellMenu = !showSpellMenu;
+						}}
+						title="Spell check and grammar"
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel ||
+						showGrammarPanel
+							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 					>
 						<svg
 							width="13"
@@ -1810,50 +1845,17 @@
 							<line x1="9" y1="20" x2="15" y2="20" />
 							<line x1="12" y1="4" x2="12" y2="20" />
 						</svg>
-						{spellLoading ? 'Checking…' : 'Spell'}
-					</button>
-
-					<!-- Grammar assistant button -->
-					<button
-						onclick={() => runGrammarCheck()}
-						disabled={grammarLoading}
-						title="Grammar and style suggestions for non-native English writers"
-						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showGrammarPanel
-							? 'border-accent bg-accent text-white'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'} disabled:opacity-40"
-					>
+						Spell
 						<svg
-							width="13"
-							height="13"
+							width="10"
+							height="10"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
+							stroke-width="2.5"
+							aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg
 						>
-							<path d="M12 20h9" />
-							<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-						</svg>
-						{grammarLoading ? 'Checking…' : 'Grammar'}
 					</button>
-
-					<!-- Spell language selector -->
-					<div
-						class="flex items-center gap-1 rounded-md border border-paper-border px-2 py-1.5 dark:border-dark-paper-border"
-					>
-						<select
-							value={spellLanguage}
-							onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
-							title="Spell check language"
-							class="cursor-pointer bg-paper font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper dark:text-dark-ink-muted"
-						>
-							{#each SPELL_LANGUAGES as lang (lang.code)}
-								<option value={lang.code}>{lang.label}</option>
-							{/each}
-						</select>
-					</div>
 				{/if}
 
 				<!-- Text find button (Ctrl+F) -->
@@ -2460,8 +2462,8 @@
 				/>
 			{/if}
 
-			<!-- Annotations panel (subnotes for source-reference docs) -->
-			{#if data.document.isReadonly}
+			<!-- Annotations panel (subnotes) -->
+			{#if showAnnotations}
 				<AnnotationsPanel
 					subnotes={docSubnotes}
 					{sourceReference}
@@ -2836,8 +2838,92 @@
 	}}
 	onclick={() => {
 		showCiteStyleMenu = false;
+		showSpellMenu = false;
 	}}
 />
+
+{#if showSpellMenu}
+	<button
+		class="fixed inset-0 z-10"
+		onclick={() => (showSpellMenu = false)}
+		aria-label="Close menu"
+		tabindex="-1"
+	></button>
+	<div
+		class="fixed z-20 w-52 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		style="top: {spellMenuPos.top}px; left: {spellMenuPos.left}px;"
+	>
+		<button
+			onclick={() => {
+				runSpellCheck();
+				showSpellMenu = false;
+			}}
+			disabled={spellLoading}
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showSpellPanel
+				? 'text-accent'
+				: 'text-ink-muted dark:text-dark-ink-muted'}"
+		>
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<polyline points="4 7 4 4 20 4 20 7" />
+				<line x1="9" y1="20" x2="15" y2="20" />
+				<line x1="12" y1="4" x2="12" y2="20" />
+			</svg>
+			{spellLoading ? 'Checking…' : 'Spell check'}
+		</button>
+		<button
+			onclick={() => {
+				runGrammarCheck();
+				showSpellMenu = false;
+			}}
+			disabled={grammarLoading}
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showGrammarPanel
+				? 'text-accent'
+				: 'text-ink-muted dark:text-dark-ink-muted'}"
+		>
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<path d="M12 20h9" />
+				<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+			</svg>
+			{grammarLoading ? 'Checking…' : 'Grammar'}
+		</button>
+		<div class="border-t border-paper-border px-4 py-2 dark:border-dark-paper-border">
+			<label
+				for="spell-lang"
+				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Language</label
+			>
+			<select
+				id="spell-lang"
+				value={spellLanguage}
+				onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
+				class="w-full cursor-pointer rounded bg-paper-ui px-1.5 py-1 font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+			>
+				{#each SPELL_LANGUAGES as lang (lang.code)}
+					<option value={lang.code}>{lang.label}</option>
+				{/each}
+			</select>
+		</div>
+	</div>
+{/if}
 
 {#if showCheatsheet}
 	<MarkdownCheatsheet onclose={() => (showCheatsheet = false)} />
