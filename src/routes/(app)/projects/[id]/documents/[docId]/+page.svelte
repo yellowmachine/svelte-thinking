@@ -517,6 +517,8 @@
 	let showComments = $state(false);
 	let currentCommentId = $state<string | null>(null);
 
+	let showAnnotations = $state(false);
+
 	// ── Bibliography panel ────────────────────────────────────────────────────
 	let showBib = $state(false);
 	let bibFilter = $state('');
@@ -1418,6 +1420,80 @@
 					</button>
 				{/if}
 
+				<!-- View mode selector -->
+				{#if canWrite && !data.forcePublished}
+					<div
+						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
+						role="group"
+						aria-label="View mode"
+					>
+						<button
+							onclick={() => setViewMode('editor')}
+							title="Editor only"
+							class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'editor'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M4 6h16M4 10h10M4 14h12M4 18h8"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+						</button>
+						<button
+							onclick={() => setViewMode('split')}
+							title="Editor and preview"
+							class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
+							'split'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'split'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<rect
+									x="2"
+									y="3"
+									width="9"
+									height="18"
+									rx="1"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+								<rect
+									x="13"
+									y="3"
+									width="9"
+									height="18"
+									rx="1"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+							</svg>
+						</button>
+						<button
+							onclick={() => setViewMode('preview')}
+							title="Preview only"
+							class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
+								? 'bg-accent text-white'
+								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							aria-pressed={viewMode === 'preview'}
+						>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+								<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5" />
+							</svg>
+						</button>
+					</div>
+				{/if}
+
 				{#if data.document.type === 'book'}
 					<a
 						href={resolve(
@@ -1677,79 +1753,31 @@
 					</button>
 				{/if}
 
-				<!-- View mode selector (hidden for non-writers and published view) -->
-				{#if canWrite && !data.forcePublished}
-					<div
-						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-						role="group"
-						aria-label="View mode"
+				<button
+					onclick={() => (showAnnotations = !showAnnotations)}
+					title="Toggle subnotes panel"
+					class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showAnnotations
+						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+				>
+					<svg
+						width="13"
+						height="13"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
 					>
-						<button
-							onclick={() => setViewMode('editor')}
-							title="Editor only"
-							class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'editor'}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M4 6h16M4 10h10M4 14h12M4 18h8"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						</button>
-						<button
-							onclick={() => setViewMode('split')}
-							title="Editor and preview"
-							class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
-							'split'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'split'}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<rect
-									x="2"
-									y="3"
-									width="9"
-									height="18"
-									rx="1"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-								<rect
-									x="13"
-									y="3"
-									width="9"
-									height="18"
-									rx="1"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-							</svg>
-						</button>
-						<button
-							onclick={() => setViewMode('preview')}
-							title="Preview only"
-							class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'preview'}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-								<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5" />
-							</svg>
-						</button>
-					</div>
-				{/if}
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+						<polyline points="14 2 14 8 20 8" />
+						<line x1="16" y1="13" x2="8" y2="13" />
+						<line x1="16" y1="17" x2="8" y2="17" />
+					</svg>
+					Subnotes
+				</button>
 
 				<a
 					href={resolve(
@@ -2460,8 +2488,8 @@
 				/>
 			{/if}
 
-			<!-- Annotations panel (subnotes for source-reference docs) -->
-			{#if data.document.isReadonly}
+			<!-- Annotations panel (subnotes) -->
+			{#if showAnnotations}
 				<AnnotationsPanel
 					subnotes={docSubnotes}
 					{sourceReference}
