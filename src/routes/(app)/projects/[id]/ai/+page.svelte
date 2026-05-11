@@ -24,6 +24,7 @@
 		role: 'user' | 'assistant' | 'system';
 		content: string;
 		docsUsed?: { id: string; title: string }[];
+		broken?: boolean;
 	};
 	let conversations = $derived(data.conversations ?? []);
 	let activeConvId = $state<string | null>(null);
@@ -33,6 +34,7 @@
 	let input = $state('');
 	let sending = $state(false);
 	let sendError = $state<string | null>(null);
+	let retryText = $state<string | null>(null);
 	let thinkingHint = $state('Thinking…');
 	let streamingMsgId = $state<string | null>(null);
 	let abortController = $state<AbortController | null>(null);
@@ -78,11 +80,13 @@
 		input = '';
 	}
 
-	async function send() {
-		const text = input.trim();
+	async function send(overrideText?: string) {
+		const text = (overrideText ?? input).trim();
 		if (!text || sending) return;
 
-		input = '';
+		retryText = null;
+		messages = messages.filter((m) => !m.broken);
+		if (!overrideText) input = '';
 		sending = true;
 		sendError = null;
 		pendingActions = [];
@@ -187,12 +191,18 @@
 					} else if (evt.type === 'error') {
 						const kind = evt.kind as string;
 						const msg = evt.message as string;
-						messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
-						streamingMsgId = null;
 						if (kind === 'system') {
+							messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
+							streamingMsgId = null;
 							messages = [...messages, { id: crypto.randomUUID(), role: 'system', content: msg }];
 							scrollToBottom();
+						} else if (localStreamId) {
+							messages = messages.map((m) => (m.id === localStreamId ? { ...m, broken: true } : m));
+							streamingMsgId = null;
+							retryText = text;
 						} else {
+							messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
+							streamingMsgId = null;
 							sendError = msg;
 						}
 					}
@@ -201,6 +211,10 @@
 		} catch (e) {
 			if (e instanceof Error && e.name === 'AbortError') {
 				// User stopped — keep whatever was streamed, just stop loading
+			} else if (localStreamId) {
+				messages = messages.map((m) => (m.id === localStreamId ? { ...m, broken: true } : m));
+				streamingMsgId = null;
+				retryText = text;
 			} else {
 				messages = messages.filter((m) => m.id !== localStreamId && m.id !== tempUserId);
 				streamingMsgId = null;
@@ -243,6 +257,17 @@
 			e.preventDefault();
 			send();
 		}
+	}
+
+	async function retry() {
+		if (!retryText) return;
+		const text = retryText;
+		retryText = null;
+		const brokenIdx = messages.findIndex((m) => m.broken);
+		if (brokenIdx !== -1) {
+			messages = messages.filter((_, i) => i !== brokenIdx && i !== brokenIdx - 1);
+		}
+		await send(text);
 	}
 
 	// ── Agent model selector ─────────────────────────────────────────────────
@@ -382,7 +407,7 @@
 											class="rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role ===
 											'user'
 												? 'rounded-tr-sm bg-accent text-white'
-												: 'chat-prose rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'}"
+												: `chat-prose rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink${msg.broken ? ' opacity-50' : ''}`}"
 										>
 											{#if msg.role === 'assistant'}
 												<!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -391,7 +416,19 @@
 												{msg.content}
 											{/if}
 										</div>
-										{#if msg.role === 'assistant' && msg.docsUsed?.length}
+										{#if msg.broken}
+											<div class="mt-1 flex items-center gap-2 px-1">
+												<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+													>Response interrupted</span
+												>
+												<button
+													type="button"
+													onclick={retry}
+													class="font-sans text-xs text-accent underline decoration-dotted hover:decoration-solid"
+													>Retry</button
+												>
+											</div>
+										{:else if msg.role === 'assistant' && msg.docsUsed?.length}
 											<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
 												<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
 													>Sources:</span
@@ -406,7 +443,7 @@
 												{/each}
 											</div>
 										{/if}
-										{#if msg.id === lastAssistantMsgId && pendingActions.length > 0}
+										{#if msg.id === lastAssistantMsgId && pendingActions.length > 0 && !msg.broken}
 											{#each pendingActions as action, i (i)}
 												{#if action.type === 'propose_references'}
 													<ReferenceSelectCard
@@ -549,7 +586,7 @@
 						{:else}
 							<button
 								type="button"
-								onclick={send}
+								onclick={() => send()}
 								disabled={!input.trim()}
 								aria-label="Enviar"
 								class="shrink-0 rounded-lg bg-accent p-2 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"

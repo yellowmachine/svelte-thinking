@@ -40,6 +40,7 @@
 		role: 'user' | 'assistant' | 'system';
 		content: string;
 		docsUsed?: { id: string; title: string }[];
+		broken?: boolean;
 	};
 
 	const CONV_KEY = untrack(() => `ai-editor-conv-${documentId}`);
@@ -78,6 +79,7 @@
 	let messages = $state<Message[]>([]);
 	let conversationId = $state<string | undefined>(undefined);
 	let input = $state('');
+	let retryText = $state<string | null>(null);
 	let loading = $state(false);
 	let loadingHint = $state('Thinking…');
 	let error = $state('');
@@ -137,12 +139,14 @@
 		input = prompt;
 	}
 
-	async function send() {
-		const text = input.trim();
+	async function send(overrideText?: string) {
+		const text = (overrideText ?? input).trim();
 		if (!text || loading) return;
 
+		retryText = null;
+		messages = messages.filter((m) => !m.broken);
 		messages = [...messages, { role: 'user', content: text }];
-		input = '';
+		if (!overrideText) input = '';
 		loading = true;
 		loadingHint = 'Thinking…';
 		error = '';
@@ -231,6 +235,9 @@
 							messages = [...messages, { role: 'system', content: msg }];
 							assistantIdx = -1;
 							await scrollToBottom();
+						} else if (assistantIdx !== -1) {
+							messages = messages.map((m, i) => (i === assistantIdx ? { ...m, broken: true } : m));
+							retryText = text;
 						} else {
 							error = msg;
 						}
@@ -245,13 +252,11 @@
 		} catch (e: unknown) {
 			if (e instanceof Error && e.name === 'AbortError') {
 				// User stopped — keep whatever was streamed
+			} else if (assistantIdx !== -1) {
+				messages = messages.map((m, i) => (i === assistantIdx ? { ...m, broken: true } : m));
+				retryText = text;
 			} else {
-				if (assistantIdx === -1) {
-					messages = messages.slice(0, -1);
-				} else {
-					messages = messages.filter((_, i) => i !== assistantIdx);
-					messages = messages.slice(0, -1);
-				}
+				messages = messages.slice(0, -1);
 				error = e instanceof Error ? e.message : 'Request failed';
 			}
 		} finally {
@@ -265,6 +270,17 @@
 			e.preventDefault();
 			send();
 		}
+	}
+
+	async function retry() {
+		if (!retryText) return;
+		const text = retryText;
+		retryText = null;
+		const brokenIdx = messages.findIndex((m) => m.broken);
+		if (brokenIdx !== -1) {
+			messages = messages.filter((_, i) => i !== brokenIdx && i !== brokenIdx - 1);
+		}
+		await send(text);
 	}
 
 	function clearConversation() {
@@ -412,12 +428,26 @@
 					{:else}
 						<div class="flex flex-col gap-1.5">
 							<div
-								class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
+								class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink dark:bg-dark-paper-ui dark:text-dark-ink {msg.broken
+									? 'opacity-50'
+									: ''}"
 								style="white-space: pre-wrap;"
 							>
 								{msg.content}
 							</div>
-							{#if msg.docsUsed && msg.docsUsed.length > 0}
+							{#if msg.broken}
+								<div class="flex items-center gap-2 pl-1">
+									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+										>Response interrupted</span
+									>
+									<button
+										type="button"
+										onclick={retry}
+										class="font-sans text-xs text-accent underline decoration-dotted hover:decoration-solid"
+										>Retry</button
+									>
+								</div>
+							{:else if msg.docsUsed && msg.docsUsed.length > 0}
 								<div class="flex flex-wrap gap-1 pl-1">
 									{#each msg.docsUsed as doc (doc.id)}
 										<span
@@ -429,7 +459,7 @@
 								</div>
 							{/if}
 							<!-- Editor action cards — shown only after the last assistant message -->
-							{#if i === messages.length - 1 && pendingEditorActions.length > 0}
+							{#if i === messages.length - 1 && pendingEditorActions.length > 0 && !msg.broken}
 								{#each pendingEditorActions as action, j (j)}
 									<EditorActionCard
 										{action}
@@ -443,7 +473,7 @@
 									/>
 								{/each}
 							{/if}
-							{#if i === messages.length - 1 && pendingActions.length > 0}
+							{#if i === messages.length - 1 && pendingActions.length > 0 && !msg.broken}
 								{#each pendingActions as action, j (j)}
 									{#if action.type === 'propose_references'}
 										<ReferenceSelectCard
@@ -523,7 +553,7 @@
 			{:else}
 				<button
 					type="button"
-					onclick={send}
+					onclick={() => send()}
 					disabled={!input.trim()}
 					class="shrink-0 rounded-lg bg-accent p-1.5 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 					aria-label="Send"
