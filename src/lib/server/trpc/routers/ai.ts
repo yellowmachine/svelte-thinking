@@ -98,6 +98,64 @@ async function throwProviderError(res: Response): Promise<never> {
 	throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message });
 }
 
+export function isNetworkError(e: unknown): boolean {
+	if (!(e instanceof Error)) return false;
+	const cause = (e as Error & { cause?: { message?: string } }).cause;
+	const text = (e.message + ' ' + (cause?.message ?? '')).toLowerCase();
+	return (
+		text.includes('input stream') ||
+		text.includes('fetch failed') ||
+		text.includes('socket') ||
+		text.includes('econnreset') ||
+		text.includes('connection reset') ||
+		text.includes('network error') ||
+		text.includes('failed to fetch')
+	);
+}
+
+async function openRouterStreamCall(
+	apiKey: string,
+	extraHeaders: Record<string, string>,
+	body: object,
+	onTextDelta: (chunk: string) => void,
+	onToolStart: ((name: string) => void) | undefined,
+	signal: AbortSignal | undefined
+): Promise<Awaited<ReturnType<typeof parseStreamingResponse>>> {
+	const MAX_RETRIES = 2;
+	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+		let textStreamed = false;
+		try {
+			const res = await fetch(OPENROUTER_URL, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${apiKey}`,
+					'Content-Type': 'application/json',
+					...extraHeaders
+				},
+				body: JSON.stringify(body),
+				signal
+			});
+			if (!res.ok) await throwProviderError(res);
+			return await parseStreamingResponse(
+				res,
+				(chunk) => {
+					textStreamed = true;
+					onTextDelta(chunk);
+				},
+				onToolStart,
+				signal
+			);
+		} catch (e) {
+			if (!textStreamed && isNetworkError(e) && attempt < MAX_RETRIES && !signal?.aborted) {
+				await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+				continue;
+			}
+			throw e;
+		}
+	}
+	throw new Error('unreachable');
+}
+
 // ---------------------------------------------------------------------------
 // Project index  (~400 tokens, metadata only — no document content)
 // ---------------------------------------------------------------------------
@@ -1918,29 +1976,19 @@ export async function runAgentLoopSSE(
 
 	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
 		if (signal?.aborted) break;
-		const res = await fetch(OPENROUTER_URL, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				'Content-Type': 'application/json',
-				...extraHeaders
-			},
-			body: JSON.stringify({
-				model,
-				max_tokens: 2048,
-				messages: [{ role: 'system', content: systemPrompt }, ...messages],
-				tools: TOOLS,
-				tool_choice: 'auto',
-				stream: true,
-				stream_options: { include_usage: true }
-			}),
-			signal
-		});
-		if (!res.ok) await throwProviderError(res);
-
 		const { content, toolCalls, inputTokens, outputTokens, finishReason } =
-			await parseStreamingResponse(
-				res,
+			await openRouterStreamCall(
+				apiKey,
+				extraHeaders,
+				{
+					model,
+					max_tokens: 2048,
+					messages: [{ role: 'system', content: systemPrompt }, ...messages],
+					tools: TOOLS,
+					tool_choice: 'auto',
+					stream: true,
+					stream_options: { include_usage: true }
+				},
 				(chunk) => write({ type: 'text_delta', content: chunk }),
 				(name) => write({ type: 'tool_start', name }),
 				signal
@@ -2089,29 +2137,19 @@ export async function runEditorAgentLoopSSE(
 
 	for (let i = 0; i < 4; i++) {
 		if (signal?.aborted) break;
-		const res = await fetch(OPENROUTER_URL, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				'Content-Type': 'application/json',
-				...extraHeaders
-			},
-			body: JSON.stringify({
-				model,
-				max_tokens: 2048,
-				messages: [{ role: 'system', content: systemPrompt }, ...messages],
-				tools: activeTools,
-				tool_choice: 'auto',
-				stream: true,
-				stream_options: { include_usage: true }
-			}),
-			signal
-		});
-		if (!res.ok) await throwProviderError(res);
-
 		const { content, toolCalls, inputTokens, outputTokens, finishReason } =
-			await parseStreamingResponse(
-				res,
+			await openRouterStreamCall(
+				apiKey,
+				extraHeaders,
+				{
+					model,
+					max_tokens: 2048,
+					messages: [{ role: 'system', content: systemPrompt }, ...messages],
+					tools: activeTools,
+					tool_choice: 'auto',
+					stream: true,
+					stream_options: { include_usage: true }
+				},
 				(chunk) => write({ type: 'text_delta', content: chunk }),
 				(name) => write({ type: 'tool_start', name }),
 				signal

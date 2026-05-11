@@ -5,7 +5,12 @@ import type { RequestHandler } from './$types';
 import { db as rawDb } from '$lib/server/db';
 import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
 import { document } from '$lib/server/db/schemas/documents.schema';
-import { runEditorAgentLoopSSE, resolveTaskKey, logUsage } from '$lib/server/trpc/routers/ai';
+import {
+	runEditorAgentLoopSSE,
+	resolveTaskKey,
+	logUsage,
+	isNetworkError
+} from '$lib/server/trpc/routers/ai';
 import type { WithRLS } from '$lib/server/trpc/routers/ai';
 
 const bodySchema = z.object({
@@ -170,12 +175,16 @@ export const POST: RequestHandler = async (event) => {
 			});
 		} catch (e) {
 			if (e instanceof Error && e.name === 'AbortError') return;
-			const msg = e instanceof Error ? e.message : 'Unknown error';
 			const isPreCondition =
 				e &&
 				typeof e === 'object' &&
 				'code' in e &&
 				(e as { code: string }).code === 'PRECONDITION_FAILED';
+			const msg = isNetworkError(e)
+				? 'The connection was interrupted. Please try again.'
+				: e instanceof Error
+					? e.message
+					: 'Unknown error';
 			send({ type: 'error', message: msg, kind: isPreCondition ? 'system' : 'banner' });
 		} finally {
 			await writer.close().catch(() => {});
