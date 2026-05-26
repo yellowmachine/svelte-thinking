@@ -26,6 +26,7 @@
 	import MarkdownCheatsheet from '$lib/components/editor/MarkdownCheatsheet.svelte';
 	import WriterLostModal from '$lib/components/editor/WriterLostModal.svelte';
 	import NewVersionBanner from '$lib/components/editor/NewVersionBanner.svelte';
+	import DraftConflictModal from '$lib/components/editor/DraftConflictModal.svelte';
 	import SelectionOverlays from '$lib/components/editor/SelectionOverlays.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
@@ -198,6 +199,39 @@
 	}
 
 	function handleVersionDismiss() {
+		newerVersion = null;
+		versionPollDismissed = true;
+	}
+
+	// ── Draft conflict modal ──────────────────────────────────────────────────────
+	let draftConflictRemoteContent = $state<string | null>(null);
+	let resolvingConflict = $state(false);
+
+	async function handleResolveConflict() {
+		resolvingConflict = true;
+		try {
+			const remote = await trpc.documents.withContent.query(data.document.id);
+			draftConflictRemoteContent = remote.content;
+		} catch {
+			// Si falla la carga del draft remoto, fallback a recarga normal
+			window.location.reload();
+		} finally {
+			resolvingConflict = false;
+		}
+	}
+
+	function handleConflictKeepLocal() {
+		draftConflictRemoteContent = null;
+		newerVersion = null;
+		versionPollDismissed = true;
+	}
+
+	function handleConflictKeepRemote() {
+		if (draftConflictRemoteContent === null) return;
+		// Reemplazamos el contenido del editor con el del servidor
+		content = draftConflictRemoteContent;
+		lastSavedContent = draftConflictRemoteContent;
+		draftConflictRemoteContent = null;
 		newerVersion = null;
 		versionPollDismissed = true;
 	}
@@ -2354,6 +2388,7 @@
 				committerName={newerVersion.committerName}
 				hasDirtyContent={isDirty}
 				onupdate={handleVersionUpdate}
+				onresolve={resolvingConflict ? undefined : handleResolveConflict}
 				ondismiss={handleVersionDismiss}
 			/>
 		{/if}
@@ -3031,5 +3066,16 @@
 		content={writerLostContent}
 		documentId={data.document.id}
 		onclose={() => (writerLostContent = null)}
+	/>
+{/if}
+
+<!-- ── Draft conflict modal ── -->
+{#if draftConflictRemoteContent !== null}
+	<DraftConflictModal
+		localContent={content}
+		remoteContent={draftConflictRemoteContent}
+		onkeepmyself={handleConflictKeepLocal}
+		onkeepremote={handleConflictKeepRemote}
+		onclose={handleConflictKeepLocal}
 	/>
 {/if}

@@ -5,6 +5,7 @@
 		committerName,
 		hasDirtyContent,
 		onupdate,
+		onresolve,
 		ondismiss
 	}: {
 		type: 'commit' | 'draft';
@@ -12,8 +13,13 @@
 		committerName: string | null;
 		hasDirtyContent: boolean;
 		onupdate: () => void;
+		/** Solo para type='draft' con cambios locales: abre el modal de diff en lugar de recargar */
+		onresolve?: () => void;
 		ondismiss: () => void;
 	} = $props();
+
+	// Cuando hay conflicto real (draft externo + cambios locales), mostramos "Resolver"
+	const showResolve = $derived(type === 'draft' && hasDirtyContent && onresolve != null);
 </script>
 
 <div
@@ -61,13 +67,23 @@
 	</p>
 
 	<div class="flex shrink-0 items-center gap-2">
-		<button
-			type="button"
-			onclick={onupdate}
-			class="rounded-md bg-amber-600 px-3 py-1 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 dark:bg-amber-500"
-		>
-			Actualizar
-		</button>
+		{#if showResolve}
+			<button
+				type="button"
+				onclick={onresolve}
+				class="rounded-md bg-amber-600 px-3 py-1 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 dark:bg-amber-500"
+			>
+				Resolver conflicto
+			</button>
+		{:else}
+			<button
+				type="button"
+				onclick={onupdate}
+				class="rounded-md bg-amber-600 px-3 py-1 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 dark:bg-amber-500"
+			>
+				Actualizar
+			</button>
+		{/if}
 		<button
 			type="button"
 			onclick={ondismiss}
