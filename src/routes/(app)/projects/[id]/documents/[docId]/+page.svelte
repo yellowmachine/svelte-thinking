@@ -142,12 +142,19 @@
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
-	// ── Version polling ───────────────────────────────────────────────────────────
-	// Capturamos el versionId al cargar la página; si cambia en el servidor (nuevo commit)
-	// mostramos un banner sin interrumpir la edición.
+	// ── Version / draft polling ───────────────────────────────────────────────────
+	// Baselines capturados al cargar la página (con untrack para evitar dependencia reactiva).
+	// - initialVersionId: detecta nuevos commits de cualquier sesión.
+	// - initialDraftUpdatedAt: detecta drafts guardados desde otro dispositivo.
 	const initialVersionId = untrack(() => data.document?.currentVersionId ?? null);
+	const initialDraftUpdatedAt = untrack(() => data.document?.updatedAt ?? null);
+
+	// updatedAt exacto devuelto por el servidor en mi último saveDraft exitoso.
+	// null = aún no he guardado nada en esta sesión.
+	let lastOwnSaveAt = $state<Date | null>(null);
+
 	let newerVersion = $state<{
-		currentVersionId: string;
+		type: 'commit' | 'draft';
 		versionNumber: number | null;
 		committerName: string | null;
 	} | null>(null);
@@ -160,11 +167,25 @@
 		if (versionPollDismissed || newerVersion !== null) return;
 		try {
 			const status = await trpc.documents.versionStatus.query(data.document.id);
+
+			// 1. Prioridad: nuevo commit
 			if (status.currentVersionId !== null && status.currentVersionId !== initialVersionId) {
 				newerVersion = {
-					currentVersionId: status.currentVersionId,
+					type: 'commit',
 					versionNumber: status.versionNumber,
 					committerName: status.committerName
+				};
+				return;
+			}
+
+			// 2. Draft externo: updatedAt del servidor es más reciente que mi último guardado
+			// (o que el momento de carga si aún no he guardado nada)
+			const baseline = lastOwnSaveAt ?? initialDraftUpdatedAt;
+			if (baseline !== null && status.draftUpdatedAt > baseline) {
+				newerVersion = {
+					type: 'draft',
+					versionNumber: null,
+					committerName: null
 				};
 			}
 		} catch {
@@ -719,8 +740,14 @@
 		saveStatus = 'saving';
 		console.log(`[offline] save: saving online (doc ${data.document.id})`);
 		try {
-			await trpc.documents.saveDraft.mutate({ documentId: data.document.id, content });
+			const saved = await trpc.documents.saveDraft.mutate({
+				documentId: data.document.id,
+				content
+			});
 			lastSavedContent = content;
+			lastOwnSaveAt = saved.updatedAt;
+			// Si hay un banner de draft externo activo, lo descartamos: acabamos de sincronizar
+			if (newerVersion?.type === 'draft') newerVersion = null;
 			saveStatus = 'saved';
 			console.log(`[offline] save: ✓ saved online (doc ${data.document.id})`);
 			setTimeout(() => {
@@ -2322,6 +2349,7 @@
 
 		{#if newerVersion !== null}
 			<NewVersionBanner
+				type={newerVersion.type}
 				versionNumber={newerVersion.versionNumber}
 				committerName={newerVersion.committerName}
 				hasDirtyContent={isDirty}

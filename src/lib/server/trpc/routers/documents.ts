@@ -184,8 +184,8 @@ export const documentsRouter = router({
 		return rows[0];
 	}),
 
-	// Consulta ligera para polling de versión. Solo devuelve metadatos del commit actual,
-	// sin contenido. Usado para detectar nuevas versiones sin recargar la página.
+	// Consulta ligera para polling de versión y draft. Solo devuelve metadatos sin contenido.
+	// Usado para detectar nuevas versiones (commit) o borradores externos (draft desde otro dispositivo).
 	versionStatus: protectedProcedure.input(z.string()).query(async ({ ctx, input: documentId }) => {
 		const rows = await ctx.withRLS((db) =>
 			db
@@ -195,7 +195,9 @@ export const documentsRouter = router({
 					committedAt: documentVersion.createdAt,
 					committerName: sql<
 						string | null
-					>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+					>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`,
+					// updatedAt cambia en cada saveDraft o commit — sirve para detectar drafts externos
+					draftUpdatedAt: document.updatedAt
 				})
 				.from(document)
 				.leftJoin(documentVersion, eq(documentVersion.id, document.currentVersionId))
@@ -208,7 +210,8 @@ export const documentsRouter = router({
 			currentVersionId: row.currentVersionId ?? null,
 			versionNumber: row.versionNumber ?? null,
 			committedAt: row.committedAt ?? null,
-			committerName: row.committerName ?? null
+			committerName: row.committerName ?? null,
+			draftUpdatedAt: row.draftUpdatedAt
 		};
 	}),
 

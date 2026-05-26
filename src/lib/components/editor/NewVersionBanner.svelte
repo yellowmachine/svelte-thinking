@@ -1,11 +1,13 @@
 <script lang="ts">
 	let {
+		type,
 		versionNumber,
 		committerName,
 		hasDirtyContent,
 		onupdate,
 		ondismiss
 	}: {
+		type: 'commit' | 'draft';
 		versionNumber: number | null;
 		committerName: string | null;
 		hasDirtyContent: boolean;
@@ -38,11 +40,19 @@
 	</svg>
 
 	<p class="min-w-0 flex-1 font-sans text-sm text-amber-800 dark:text-amber-200">
-		<span class="font-medium">
-			Nueva versión disponible{versionNumber != null ? ` (v${versionNumber})` : ''}{committerName
-				? ` · por ${committerName}`
-				: ''}.
-		</span>
+		{#if type === 'commit'}
+			<span class="font-medium">
+				Nueva versión disponible{versionNumber != null ? ` (v${versionNumber})` : ''}{committerName
+					? ` · por ${committerName}`
+					: ''}.
+			</span>
+		{:else}
+			<span class="font-medium">
+				Hay un borrador más reciente{committerName
+					? ` guardado por ${committerName}`
+					: ' guardado desde otro dispositivo'}.
+			</span>
+		{/if}
 		{#if hasDirtyContent}
 			<span class="ml-1 text-amber-700 dark:text-amber-300">
 				Tienes cambios sin guardar que se perderán al actualizar.
