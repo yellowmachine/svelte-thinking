@@ -27,6 +27,7 @@
 	import WriterLostModal from '$lib/components/editor/WriterLostModal.svelte';
 	import NewVersionBanner from '$lib/components/editor/NewVersionBanner.svelte';
 	import DraftConflictModal from '$lib/components/editor/DraftConflictModal.svelte';
+	import StashPanel from '$lib/components/editor/StashPanel.svelte';
 	import SelectionOverlays from '$lib/components/editor/SelectionOverlays.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
@@ -220,7 +221,14 @@
 		}
 	}
 
+	/** Cierra el modal sin tomar una decisión — el banner de conflicto sigue visible */
+	function handleConflictClose() {
+		draftConflictRemoteContent = null;
+	}
+
 	function handleConflictKeepLocal() {
+		// Descartamos el remoto → lo guardamos en el stash
+		if (draftConflictRemoteContent !== null) openStash(draftConflictRemoteContent);
 		draftConflictRemoteContent = null;
 		newerVersion = null;
 		versionPollDismissed = true;
@@ -228,12 +236,32 @@
 
 	function handleConflictKeepRemote() {
 		if (draftConflictRemoteContent === null) return;
+		// Descartamos el local → lo guardamos en el stash
+		openStash(content);
 		// Reemplazamos el contenido del editor con el del servidor
 		content = draftConflictRemoteContent;
 		lastSavedContent = draftConflictRemoteContent;
 		draftConflictRemoteContent = null;
 		newerVersion = null;
 		versionPollDismissed = true;
+	}
+
+	// ── Stash panel ───────────────────────────────────────────────────────────────
+	// sessionStorage keyado por documento: persiste recargas accidentales, se limpia al cerrar pestaña.
+	const STASH_KEY = untrack(() => `stash-${data.document?.id ?? ''}`);
+	let showStash = $state(false);
+	let stashContent = $state<string | null>(null);
+
+	function openStash(discarded: string) {
+		stashContent = discarded;
+		showStash = true;
+		sessionStorage.setItem(STASH_KEY, discarded);
+	}
+
+	function closeStash() {
+		showStash = false;
+		stashContent = null;
+		sessionStorage.removeItem(STASH_KEY);
 	}
 
 	// View mode: editor | split | preview
@@ -1280,6 +1308,13 @@
 		});
 
 		loadDocSubnotes();
+
+		// Restaurar stash si quedó guardado de una sesión de edición anterior (recarga accidental)
+		const saved = sessionStorage.getItem(STASH_KEY);
+		if (saved) {
+			stashContent = saved;
+			showStash = true;
+		}
 
 		// Polling de versión: comprueba cada 60s si hay un nuevo commit en el servidor.
 		// Se pausa si la pestaña está oculta, offline, o el usuario ya descartó el banner.
@@ -2815,6 +2850,15 @@
 					}}
 				/>
 			{/if}
+
+			<!-- Stash panel (contenido descartado al resolver conflicto de draft) -->
+			{#if showStash && stashContent !== null}
+				<StashPanel
+					content={stashContent}
+					projectId={data.document.projectId}
+					onclose={closeStash}
+				/>
+			{/if}
 		</div>
 
 		<!-- Cite picker modal -->
@@ -3076,6 +3120,6 @@
 		remoteContent={draftConflictRemoteContent}
 		onkeepmyself={handleConflictKeepLocal}
 		onkeepremote={handleConflictKeepRemote}
-		onclose={handleConflictKeepLocal}
+		onclose={handleConflictClose}
 	/>
 {/if}
