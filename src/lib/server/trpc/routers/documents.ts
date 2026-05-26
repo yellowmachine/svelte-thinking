@@ -184,6 +184,34 @@ export const documentsRouter = router({
 		return rows[0];
 	}),
 
+	// Consulta ligera para polling de versión. Solo devuelve metadatos del commit actual,
+	// sin contenido. Usado para detectar nuevas versiones sin recargar la página.
+	versionStatus: protectedProcedure.input(z.string()).query(async ({ ctx, input: documentId }) => {
+		const rows = await ctx.withRLS((db) =>
+			db
+				.select({
+					currentVersionId: document.currentVersionId,
+					versionNumber: documentVersion.versionNumber,
+					committedAt: documentVersion.createdAt,
+					committerName: sql<
+						string | null
+					>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+				})
+				.from(document)
+				.leftJoin(documentVersion, eq(documentVersion.id, document.currentVersionId))
+				.where(eq(document.id, documentId))
+				.limit(1)
+		);
+		if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+		const row = rows[0];
+		return {
+			currentVersionId: row.currentVersionId ?? null,
+			versionNumber: row.versionNumber ?? null,
+			committedAt: row.committedAt ?? null,
+			committerName: row.committerName ?? null
+		};
+	}),
+
 	create: protectedProcedure
 		.input(
 			z.object({

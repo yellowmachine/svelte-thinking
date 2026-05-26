@@ -25,6 +25,7 @@
 	import EnrichPanel from '$lib/components/editor/EnrichPanel.svelte';
 	import MarkdownCheatsheet from '$lib/components/editor/MarkdownCheatsheet.svelte';
 	import WriterLostModal from '$lib/components/editor/WriterLostModal.svelte';
+	import NewVersionBanner from '$lib/components/editor/NewVersionBanner.svelte';
 	import SelectionOverlays from '$lib/components/editor/SelectionOverlays.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
@@ -140,6 +141,45 @@
 	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state('idle');
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// ── Version polling ───────────────────────────────────────────────────────────
+	// Capturamos el versionId al cargar la página; si cambia en el servidor (nuevo commit)
+	// mostramos un banner sin interrumpir la edición.
+	const initialVersionId = untrack(() => data.document?.currentVersionId ?? null);
+	let newerVersion = $state<{
+		currentVersionId: string;
+		versionNumber: number | null;
+		committerName: string | null;
+	} | null>(null);
+	let versionPollTimer: ReturnType<typeof setInterval> | null = null;
+	let versionPollDismissed = $state(false);
+
+	async function checkForNewerVersion() {
+		if (!onlineStore.online) return;
+		if (globalThis.document?.hidden) return;
+		if (versionPollDismissed || newerVersion !== null) return;
+		try {
+			const status = await trpc.documents.versionStatus.query(data.document.id);
+			if (status.currentVersionId !== null && status.currentVersionId !== initialVersionId) {
+				newerVersion = {
+					currentVersionId: status.currentVersionId,
+					versionNumber: status.versionNumber,
+					committerName: status.committerName
+				};
+			}
+		} catch {
+			// Ignoramos errores silenciosamente — el polling se reintentará
+		}
+	}
+
+	function handleVersionUpdate() {
+		window.location.reload();
+	}
+
+	function handleVersionDismiss() {
+		newerVersion = null;
+		versionPollDismissed = true;
+	}
 
 	// View mode: editor | split | preview
 	type ViewMode = 'editor' | 'split' | 'preview';
@@ -1165,6 +1205,7 @@
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (floatingDebounce) clearTimeout(floatingDebounce);
+		if (versionPollTimer) clearInterval(versionPollTimer);
 	});
 
 	onMount(() => {
@@ -1178,6 +1219,10 @@
 		});
 
 		loadDocSubnotes();
+
+		// Polling de versión: comprueba cada 60s si hay un nuevo commit en el servidor.
+		// Se pausa si la pestaña está oculta, offline, o el usuario ya descartó el banner.
+		versionPollTimer = setInterval(checkForNewerVersion, 60_000);
 
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
@@ -2274,6 +2319,16 @@
 				{/if}
 			</div>
 		{/snippet}
+
+		{#if newerVersion !== null}
+			<NewVersionBanner
+				versionNumber={newerVersion.versionNumber}
+				committerName={newerVersion.committerName}
+				hasDirtyContent={isDirty}
+				onupdate={handleVersionUpdate}
+				ondismiss={handleVersionDismiss}
+			/>
+		{/if}
 
 		<!-- Main layout -->
 		<div data-tutorial="doc-editor-area" class="flex min-h-0 flex-1 overflow-hidden">
