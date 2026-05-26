@@ -25,6 +25,9 @@
 	import EnrichPanel from '$lib/components/editor/EnrichPanel.svelte';
 	import MarkdownCheatsheet from '$lib/components/editor/MarkdownCheatsheet.svelte';
 	import WriterLostModal from '$lib/components/editor/WriterLostModal.svelte';
+	import NewVersionBanner from '$lib/components/editor/NewVersionBanner.svelte';
+	import DraftConflictModal from '$lib/components/editor/DraftConflictModal.svelte';
+	import StashPanel from '$lib/components/editor/StashPanel.svelte';
 	import SelectionOverlays from '$lib/components/editor/SelectionOverlays.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { onlineStore } from '$lib/stores/online.svelte';
@@ -140,6 +143,126 @@
 	let saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error' | 'offline' = $state('idle');
 
 	let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// ── Version / draft polling ───────────────────────────────────────────────────
+	// Baselines capturados al cargar la página (con untrack para evitar dependencia reactiva).
+	// - initialVersionId: detecta nuevos commits de cualquier sesión.
+	// - initialDraftUpdatedAt: detecta drafts guardados desde otro dispositivo.
+	const initialVersionId = untrack(() => data.document?.currentVersionId ?? null);
+	const initialDraftUpdatedAt = untrack(() => data.document?.updatedAt ?? null);
+
+	// updatedAt exacto devuelto por el servidor en mi último saveDraft exitoso.
+	// null = aún no he guardado nada en esta sesión.
+	let lastOwnSaveAt = $state<Date | null>(null);
+
+	let newerVersion = $state<{
+		type: 'commit' | 'draft';
+		versionNumber: number | null;
+		committerName: string | null;
+	} | null>(null);
+	let versionPollTimer: ReturnType<typeof setInterval> | null = null;
+	let versionPollDismissed = $state(false);
+
+	async function checkForNewerVersion() {
+		if (!onlineStore.online) return;
+		if (globalThis.document?.hidden) return;
+		if (versionPollDismissed || newerVersion !== null) return;
+		try {
+			const status = await trpc.documents.versionStatus.query(data.document.id);
+
+			// 1. Prioridad: nuevo commit
+			if (status.currentVersionId !== null && status.currentVersionId !== initialVersionId) {
+				newerVersion = {
+					type: 'commit',
+					versionNumber: status.versionNumber,
+					committerName: status.committerName
+				};
+				return;
+			}
+
+			// 2. Draft externo: updatedAt del servidor es más reciente que mi último guardado
+			// (o que el momento de carga si aún no he guardado nada)
+			const baseline = lastOwnSaveAt ?? initialDraftUpdatedAt;
+			if (baseline !== null && status.draftUpdatedAt > baseline) {
+				newerVersion = {
+					type: 'draft',
+					versionNumber: null,
+					committerName: null
+				};
+			}
+		} catch {
+			// Ignoramos errores silenciosamente — el polling se reintentará
+		}
+	}
+
+	function handleVersionUpdate() {
+		window.location.reload();
+	}
+
+	function handleVersionDismiss() {
+		newerVersion = null;
+		versionPollDismissed = true;
+	}
+
+	// ── Draft conflict modal ──────────────────────────────────────────────────────
+	let draftConflictRemoteContent = $state<string | null>(null);
+	let resolvingConflict = $state(false);
+
+	async function handleResolveConflict() {
+		resolvingConflict = true;
+		try {
+			const remote = await trpc.documents.withContent.query(data.document.id);
+			draftConflictRemoteContent = remote.content;
+		} catch {
+			// Si falla la carga del draft remoto, fallback a recarga normal
+			window.location.reload();
+		} finally {
+			resolvingConflict = false;
+		}
+	}
+
+	/** Cierra el modal sin tomar una decisión — el banner de conflicto sigue visible */
+	function handleConflictClose() {
+		draftConflictRemoteContent = null;
+	}
+
+	function handleConflictKeepLocal() {
+		// Descartamos el remoto → lo guardamos en el stash
+		if (draftConflictRemoteContent !== null) openStash(draftConflictRemoteContent);
+		draftConflictRemoteContent = null;
+		newerVersion = null;
+		versionPollDismissed = true;
+	}
+
+	function handleConflictKeepRemote() {
+		if (draftConflictRemoteContent === null) return;
+		// Descartamos el local → lo guardamos en el stash
+		openStash(content);
+		// Reemplazamos el contenido del editor con el del servidor
+		content = draftConflictRemoteContent;
+		lastSavedContent = draftConflictRemoteContent;
+		draftConflictRemoteContent = null;
+		newerVersion = null;
+		versionPollDismissed = true;
+	}
+
+	// ── Stash panel ───────────────────────────────────────────────────────────────
+	// sessionStorage keyado por documento: persiste recargas accidentales, se limpia al cerrar pestaña.
+	const STASH_KEY = untrack(() => `stash-${data.document?.id ?? ''}`);
+	let showStash = $state(false);
+	let stashContent = $state<string | null>(null);
+
+	function openStash(discarded: string) {
+		stashContent = discarded;
+		showStash = true;
+		sessionStorage.setItem(STASH_KEY, discarded);
+	}
+
+	function closeStash() {
+		showStash = false;
+		stashContent = null;
+		sessionStorage.removeItem(STASH_KEY);
+	}
 
 	// View mode: editor | split | preview
 	type ViewMode = 'editor' | 'split' | 'preview';
@@ -679,8 +802,14 @@
 		saveStatus = 'saving';
 		console.log(`[offline] save: saving online (doc ${data.document.id})`);
 		try {
-			await trpc.documents.saveDraft.mutate({ documentId: data.document.id, content });
+			const saved = await trpc.documents.saveDraft.mutate({
+				documentId: data.document.id,
+				content
+			});
 			lastSavedContent = content;
+			lastOwnSaveAt = saved.updatedAt;
+			// Si hay un banner de draft externo activo, lo descartamos: acabamos de sincronizar
+			if (newerVersion?.type === 'draft') newerVersion = null;
 			saveStatus = 'saved';
 			console.log(`[offline] save: ✓ saved online (doc ${data.document.id})`);
 			setTimeout(() => {
@@ -1165,6 +1294,7 @@
 	onDestroy(() => {
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (floatingDebounce) clearTimeout(floatingDebounce);
+		if (versionPollTimer) clearInterval(versionPollTimer);
 	});
 
 	onMount(() => {
@@ -1178,6 +1308,17 @@
 		});
 
 		loadDocSubnotes();
+
+		// Restaurar stash si quedó guardado de una sesión de edición anterior (recarga accidental)
+		const saved = sessionStorage.getItem(STASH_KEY);
+		if (saved) {
+			stashContent = saved;
+			showStash = true;
+		}
+
+		// Polling de versión: comprueba cada 60s si hay un nuevo commit en el servidor.
+		// Se pausa si la pestaña está oculta, offline, o el usuario ya descartó el banner.
+		versionPollTimer = setInterval(checkForNewerVersion, 60_000);
 
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
@@ -2275,6 +2416,18 @@
 			</div>
 		{/snippet}
 
+		{#if newerVersion !== null}
+			<NewVersionBanner
+				type={newerVersion.type}
+				versionNumber={newerVersion.versionNumber}
+				committerName={newerVersion.committerName}
+				hasDirtyContent={isDirty}
+				onupdate={handleVersionUpdate}
+				onresolve={resolvingConflict ? undefined : handleResolveConflict}
+				ondismiss={handleVersionDismiss}
+			/>
+		{/if}
+
 		<!-- Main layout -->
 		<div data-tutorial="doc-editor-area" class="flex min-h-0 flex-1 overflow-hidden">
 			{#if viewMode === 'split'}
@@ -2697,6 +2850,15 @@
 					}}
 				/>
 			{/if}
+
+			<!-- Stash panel (contenido descartado al resolver conflicto de draft) -->
+			{#if showStash && stashContent !== null}
+				<StashPanel
+					content={stashContent}
+					projectId={data.document.projectId}
+					onclose={closeStash}
+				/>
+			{/if}
 		</div>
 
 		<!-- Cite picker modal -->
@@ -2948,5 +3110,16 @@
 		content={writerLostContent}
 		documentId={data.document.id}
 		onclose={() => (writerLostContent = null)}
+	/>
+{/if}
+
+<!-- ── Draft conflict modal ── -->
+{#if draftConflictRemoteContent !== null}
+	<DraftConflictModal
+		localContent={content}
+		remoteContent={draftConflictRemoteContent}
+		onkeepmyself={handleConflictKeepLocal}
+		onkeepremote={handleConflictKeepRemote}
+		onclose={handleConflictClose}
 	/>
 {/if}
