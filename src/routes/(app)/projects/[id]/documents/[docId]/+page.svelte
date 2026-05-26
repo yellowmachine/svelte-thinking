@@ -784,6 +784,10 @@
 
 	async function doSaveDraft() {
 		if (!isDirty) return;
+		// Si hay un conflicto de draft activo, suspendemos el auto-save: guardar ahora
+		// sobreescribiría el borrador remoto en el servidor antes de que el usuario pueda
+		// verlo en el modal de resolución, perdiendo el contenido de la otra sesión.
+		if (newerVersion?.type === 'draft') return;
 
 		if (!onlineStore.online) {
 			await offlineDb.pendingEdits.add({
@@ -808,8 +812,6 @@
 			});
 			lastSavedContent = content;
 			lastOwnSaveAt = saved.updatedAt;
-			// Si hay un banner de draft externo activo, lo descartamos: acabamos de sincronizar
-			if (newerVersion?.type === 'draft') newerVersion = null;
 			saveStatus = 'saved';
 			console.log(`[offline] save: ✓ saved online (doc ${data.document.id})`);
 			setTimeout(() => {
@@ -1532,12 +1534,14 @@
 				{#if !data.document.isReadonly}
 					<button
 						onclick={doSaveDraft}
-						disabled={!isDirty || !canTriggerSave(saveCap)}
-						title={saveCap.kind === 'queued'
-							? saveCap.hint
-							: saveCap.kind === 'blocked'
-								? saveCap.reason
-								: undefined}
+						disabled={!isDirty || !canTriggerSave(saveCap) || newerVersion?.type === 'draft'}
+						title={newerVersion?.type === 'draft'
+							? 'Resuelve el conflicto de borrador antes de guardar'
+							: saveCap.kind === 'queued'
+								? saveCap.hint
+								: saveCap.kind === 'blocked'
+									? saveCap.reason
+									: undefined}
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
 						<svg
