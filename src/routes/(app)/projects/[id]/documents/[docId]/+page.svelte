@@ -161,6 +161,7 @@
 		committerName: string | null;
 	} | null>(null);
 	let versionPollTimer: ReturnType<typeof setInterval> | null = null;
+	let visibilityChangeHandler: (() => void) | null = null;
 	let versionPollDismissed = $state(false);
 
 	async function checkForNewerVersion() {
@@ -1297,6 +1298,8 @@
 		if (autoSaveTimer) clearTimeout(autoSaveTimer);
 		if (floatingDebounce) clearTimeout(floatingDebounce);
 		if (versionPollTimer) clearInterval(versionPollTimer);
+		if (visibilityChangeHandler)
+			globalThis.document.removeEventListener('visibilitychange', visibilityChangeHandler);
 	});
 
 	onMount(() => {
@@ -1321,6 +1324,13 @@
 		// Polling de versión: comprueba cada 60s si hay un nuevo commit en el servidor.
 		// Se pausa si la pestaña está oculta, offline, o el usuario ya descartó el banner.
 		versionPollTimer = setInterval(checkForNewerVersion, 60_000);
+
+		// Al volver a la pestaña después de tenerla en segundo plano, comprobamos de inmediato
+		// sin esperar al próximo tick del intervalo.
+		visibilityChangeHandler = () => {
+			if (!globalThis.document.hidden) checkForNewerVersion();
+		};
+		globalThis.document.addEventListener('visibilitychange', visibilityChangeHandler);
 
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
