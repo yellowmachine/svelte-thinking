@@ -2164,6 +2164,18 @@
 					</button>
 				{/if}
 			</div>
+
+			{#if newerVersion !== null}
+				<NewVersionBanner
+					type={newerVersion.type}
+					versionNumber={newerVersion.versionNumber}
+					committerName={newerVersion.committerName}
+					hasDirtyContent={isDirty}
+					onupdate={handleVersionUpdate}
+					onresolve={resolvingConflict ? undefined : handleResolveConflict}
+					ondismiss={handleVersionDismiss}
+				/>
+			{/if}
 		</div>
 
 		{#snippet editableTitle()}
@@ -2419,18 +2431,6 @@
 				{/if}
 			</div>
 		{/snippet}
-
-		{#if newerVersion !== null}
-			<NewVersionBanner
-				type={newerVersion.type}
-				versionNumber={newerVersion.versionNumber}
-				committerName={newerVersion.committerName}
-				hasDirtyContent={isDirty}
-				onupdate={handleVersionUpdate}
-				onresolve={resolvingConflict ? undefined : handleResolveConflict}
-				ondismiss={handleVersionDismiss}
-			/>
-		{/if}
 
 		<!-- Main layout -->
 		<div data-tutorial="doc-editor-area" class="flex min-h-0 flex-1 overflow-hidden">
