@@ -2867,11 +2867,7 @@
 
 			<!-- Stash panel (contenido descartado al resolver conflicto de draft) -->
 			{#if showStash && stashContent !== null}
-				<StashPanel
-					content={stashContent}
-					projectId={data.document.projectId}
-					onclose={closeStash}
-				/>
+				<StashPanel content={stashContent} onclose={closeStash} />
 			{/if}
 		</div>
 

@@ -1,13 +1,9 @@
 <script lang="ts">
-	import MarkdownPreview from './MarkdownPreview.svelte';
-
 	let {
 		content,
-		projectId,
 		onclose
 	}: {
 		content: string;
-		projectId: string;
 		onclose: () => void;
 	} = $props();
 
@@ -122,10 +118,9 @@
 		</p>
 	</div>
 
-	<!-- Contenido renderizado -->
+	<!-- Contenido como texto plano: tamaño y peso normales, adecuado para cherry-pick -->
 	<div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-		<div class="prose-stash">
-			<MarkdownPreview {content} {projectId} />
-		</div>
+		<pre
+			class="font-sans text-sm leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink">{content}</pre>
 	</div>
 </div>
