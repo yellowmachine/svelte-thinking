@@ -259,7 +259,13 @@
 		sessionStorage.setItem(STASH_KEY, discarded);
 	}
 
+	/** Solo oculta el panel; el contenido sigue en estado y sessionStorage para poder reabrirlo */
 	function closeStash() {
+		showStash = false;
+	}
+
+	/** Borra el contenido definitivamente */
+	function clearStash() {
 		showStash = false;
 		stashContent = null;
 		sessionStorage.removeItem(STASH_KEY);
@@ -1960,6 +1966,34 @@
 					History
 				</a>
 
+				{#if stashContent !== null}
+					<button
+						type="button"
+						onclick={() => (showStash = !showStash)}
+						title="Stash — contenido descartado al resolver un conflicto de borrador"
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showStash
+							? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-300'
+							: 'border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-700/50 dark:text-amber-400 dark:hover:bg-amber-900/20'}"
+					>
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<polygon points="12 2 2 7 12 12 22 7 12 2" />
+							<polyline points="2 17 12 22 22 17" />
+							<polyline points="2 12 12 17 22 12" />
+						</svg>
+						Stash
+					</button>
+				{/if}
+
 				<a
 					href={resolve('/help')}
 					target="_blank"
@@ -2867,7 +2901,7 @@
 
 			<!-- Stash panel (contenido descartado al resolver conflicto de draft) -->
 			{#if showStash && stashContent !== null}
-				<StashPanel content={stashContent} onclose={closeStash} />
+				<StashPanel content={stashContent} onclose={closeStash} onclear={clearStash} />
 			{/if}
 		</div>
 

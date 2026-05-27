@@ -1,10 +1,12 @@
 <script lang="ts">
 	let {
 		content,
-		onclose
+		onclose,
+		onclear
 	}: {
 		content: string;
 		onclose: () => void;
+		onclear: () => void;
 	} = $props();
 
 	let copied = $state(false);
@@ -45,6 +47,32 @@
 		</div>
 
 		<div class="flex items-center gap-1">
+			<!-- Limpiar stash -->
+			<button
+				type="button"
+				onclick={onclear}
+				title="Limpiar stash"
+				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+			>
+				<svg
+					width="13"
+					height="13"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<polyline points="3 6 5 6 21 6" />
+					<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+					<path d="M10 11v6" />
+					<path d="M14 11v6" />
+					<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+				</svg>
+			</button>
+
 			<!-- Copiar todo -->
 			<button
 				type="button"
