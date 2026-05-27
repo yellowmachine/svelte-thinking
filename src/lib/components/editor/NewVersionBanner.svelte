@@ -23,7 +23,7 @@
 </script>
 
 <div
-	class="flex items-center gap-3 border-b border-amber-200 bg-amber-50 px-6 py-2.5 dark:border-amber-700/40 dark:bg-amber-900/20"
+	class="flex items-center gap-3 bg-amber-50 px-6 py-2.5 dark:bg-amber-900/20"
 	role="status"
 	aria-live="polite"
 >
