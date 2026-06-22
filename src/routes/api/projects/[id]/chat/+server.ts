@@ -96,6 +96,7 @@ export const POST: RequestHandler = async (event) => {
 	const savedConvId = convId;
 
 	(async () => {
+		const heartbeat = setInterval(() => send({ type: 'ping' }), 15000);
 		try {
 			const result = await runAgentLoopSSE(
 				systemPrompt,
@@ -164,6 +165,7 @@ export const POST: RequestHandler = async (event) => {
 					: 'Unknown error';
 			send({ type: 'error', message: msg, kind: isPreCondition ? 'system' : 'banner' });
 		} finally {
+			clearInterval(heartbeat);
 			await writer.close().catch(() => {});
 		}
 	})();
