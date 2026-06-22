@@ -147,9 +147,20 @@ async function openRouterStreamCall(
 			);
 		} catch (e) {
 			if (!textStreamed && isNetworkError(e) && attempt < MAX_RETRIES && !signal?.aborted) {
+				console.warn(
+					'[openRouterStreamCall] network error, retrying (attempt %d):',
+					attempt + 1,
+					e instanceof Error ? e.message : e
+				);
 				await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
 				continue;
 			}
+			console.error(
+				'[openRouterStreamCall] stream failed (attempt %d, textStreamed=%s):',
+				attempt,
+				textStreamed,
+				e instanceof Error ? { name: e.name, message: e.message, stack: e.stack } : e
+			);
 			throw e;
 		}
 	}
