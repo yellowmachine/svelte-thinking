@@ -150,6 +150,13 @@ export const POST: RequestHandler = async (event) => {
 				typeof e === 'object' &&
 				'code' in e &&
 				(e as { code: string }).code === 'PRECONDITION_FAILED';
+			if (!isPreCondition) {
+				console.error('[ai/project-chat] error in agent loop:', {
+					projectId,
+					model: effectiveModel,
+					error: e instanceof Error ? { name: e.name, message: e.message, stack: e.stack } : e
+				});
+			}
 			const msg = isNetworkError(e)
 				? 'The connection was interrupted. Please try again.'
 				: e instanceof Error
