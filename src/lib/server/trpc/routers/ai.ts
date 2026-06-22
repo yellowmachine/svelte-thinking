@@ -147,9 +147,20 @@ async function openRouterStreamCall(
 			);
 		} catch (e) {
 			if (!textStreamed && isNetworkError(e) && attempt < MAX_RETRIES && !signal?.aborted) {
+				console.warn(
+					'[openRouterStreamCall] network error, retrying (attempt %d):',
+					attempt + 1,
+					e instanceof Error ? e.message : e
+				);
 				await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
 				continue;
 			}
+			console.error(
+				'[openRouterStreamCall] stream failed (attempt %d, textStreamed=%s):',
+				attempt,
+				textStreamed,
+				e instanceof Error ? { name: e.name, message: e.message, stack: e.stack } : e
+			);
 			throw e;
 		}
 	}
@@ -1473,7 +1484,86 @@ stateDiagram-v2
   [*] --> Idle
   Idle --> Running : start
   Running --> Idle : stop
-\`\`\``;
+\`\`\`
+
+## Document syntax — special elements
+
+This document format supports several special elements beyond standard Markdown. When the user asks for any of these (even vaguely), ask for the missing details and then use the correct syntax via insert_after or replace_text.
+
+### Epigraphs
+
+Use this syntax to insert a styled epigraph (quote block at the start of a section or document):
+
+\`\`\`
+> [!epigraph]
+> "Quote text here"
+> — Author Name
+> Source or work title (optional)
+\`\`\`
+
+If the user says "add an epigraph" without specifying the quote or author, ask for: the quote text, the author, and optionally the source. Do not use a plain blockquote — always use the [!epigraph] syntax.
+
+### Callout blocks
+
+Use callout blocks to highlight important content. Four types are supported:
+
+\`\`\`
+> [!note]
+> Content of the note.
+
+> [!warning]
+> Content of the warning.
+
+> [!tip]
+> Content of the tip.
+
+> [!caution]
+> Content of the caution.
+\`\`\`
+
+If the user asks for a "note", "warning", "tip", or "caution" block, ask for the content if not provided.
+
+### Bibliography citations
+
+To cite a reference inline, use: \`[[@citeKey]]\`
+
+Before inserting a citation, call list_references to find the correct citeKey. If the user names an author or work, match it to the bibliography and use the right citeKey. If no matching reference exists, tell the user and offer to propose adding it via propose_references.
+
+### Person tags
+
+To tag a person mentioned in the text (for the onomastic index), use: \`[[person:Full Name]]\`
+
+Example: \`[[person:Thomas Aquinas]]\`
+
+When the user asks to "tag" or "mark" a person, wrap their name in this syntax using replace_text.
+
+### Document links
+
+To link to another document in the project by title: \`[[Document Title]]\`
+To link to a section heading within the document: \`[[#Section Heading]]\`
+
+### Onomastic index
+
+To insert a persons index placeholder (renders as a full index of all tagged persons): \`[[index:persons]]\`
+
+### Mathematical formulas
+
+Inline LaTeX: \`$formula$\` — e.g. \`$E = mc^2$\`
+Block LaTeX: \`$$formula$$\` — renders as a centered display equation.
+
+### Footnotes
+
+Standard Markdown footnotes are supported:
+
+\`\`\`
+Text with a footnote.[^1]
+
+[^1]: Footnote content here.
+\`\`\`
+
+---
+
+**Key rule for all special elements:** if the user's request is ambiguous (e.g. "add an epigraph" with no quote), ask for the missing details in a single, concise question before calling any tool. Never insert a placeholder or empty element.`;
 
 type EditorToolContext = {
 	spellApiKey: string;
