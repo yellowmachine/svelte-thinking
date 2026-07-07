@@ -168,6 +168,9 @@
 		if (!onlineStore.online) return;
 		if (globalThis.document?.hidden) return;
 		if (versionPollDismissed || newerVersion !== null) return;
+		// Skip while we are saving: the server's updatedAt will change but lastOwnSaveAt
+		// hasn't been updated yet, which would produce a false-positive conflict banner.
+		if (saveStatus === 'saving') return;
 		try {
 			const status = await trpc.documents.versionStatus.query(data.document.id);
 
