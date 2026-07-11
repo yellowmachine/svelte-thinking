@@ -11,6 +11,7 @@
  *   scholio:s3:user:{userId}                       User S3 config     (TTL 10 min)
  *   scholio:s3:org:{orgId}                         Org S3 config      (TTL 10 min)
  *   scholio:photo:presign:{photoId}                Photo presigned URL (TTL 55 min)
+ *   scholio:model-catalog                          Resolved OpenRouter model catalog (TTL 5 days)
  */
 
 import Redis from 'ioredis';
@@ -24,7 +25,8 @@ export const TTL = {
 	taskKey: 5 * 60, // 5 min — decrypted AI key + model
 	s3Config: 10 * 60, // 10 min — decrypted S3 credentials
 	photoPresign: 55 * 60, // 55 min — presigned URL (valid for 60 min)
-	projectIndex: 60 // 60 s  — project index for AI agent
+	projectIndex: 60, // 60 s  — project index for AI agent
+	modelCatalog: 5 * 24 * 60 * 60 // 5 days — resolved OpenRouter model catalog
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -37,7 +39,8 @@ export const CACHE_KEY = {
 	userS3: (userId: string) => `scholio:s3:user:${userId}`,
 	orgS3: (orgId: string) => `scholio:s3:org:${orgId}`,
 	photoPresign: (photoId: string) => `scholio:photo:presign:${photoId}`,
-	projectIndex: (projectId: string) => `scholio:project-index:${projectId}`
+	projectIndex: (projectId: string) => `scholio:project-index:${projectId}`,
+	modelCatalog: () => 'scholio:model-catalog'
 } as const;
 
 // ---------------------------------------------------------------------------

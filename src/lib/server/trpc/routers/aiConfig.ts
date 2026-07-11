@@ -4,44 +4,30 @@ import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { encryptSecret } from '$lib/server/kms';
-import { fetchOpenRouterPrices, getValidOpenRouterModelIds } from '$lib/server/openrouter';
+import {
+	getValidOpenRouterModelIds,
+	getModelCatalog,
+	getDefaultModelId
+} from '$lib/server/openrouter';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type { AiTask, TaskConfig, AiTaskConfig } from '$lib/ai-config';
-export {
-	AI_TASKS,
-	MODELS,
-	TOOL_CALLING_MODELS,
-	parseTaskConfig,
-	getDefaultModel
-} from '$lib/ai-config';
+export { AI_TASKS, MODEL_FAMILIES, MODEL_RECOMMENDATIONS, parseTaskConfig } from '$lib/ai-config';
 import type { AiTask } from '$lib/ai-config';
-import { AI_TASKS, MODELS, parseTaskConfig } from '$lib/ai-config';
-
-function formatPrice(pricePerToken: number): string {
-	const perMillion = pricePerToken * 1_000_000;
-	if (perMillion === 0) return 'free';
-	if (perMillion < 0.01) return `$${(perMillion * 1000).toFixed(2)}/1B`;
-	if (perMillion < 1) return `$${perMillion.toFixed(3)}/1M`;
-	return `$${perMillion.toFixed(2)}/1M`;
-}
+import { AI_TASKS, parseTaskConfig } from '$lib/ai-config';
 
 // ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
 export const aiConfigRouter = router({
-	// Returns model list with live pricing from OpenRouter (cached 1h)
+	// Returns the resolved model catalog (family -> current OpenRouter id),
+	// cached 5 days in Redis — see getModelCatalog in $lib/server/openrouter.
 	getModels: protectedProcedure.query(async () => {
-		const prices = await fetchOpenRouterPrices();
-		return MODELS.map((m) => {
-			const p = prices[m.id];
-			const pricing = p ? `${formatPrice(p.input)} in · ${formatPrice(p.output)} out` : null;
-			return { ...m, pricing };
-		});
+		return getModelCatalog();
 	}),
 
 	// List all keys for the current user (no key material returned)
@@ -82,7 +68,10 @@ export const aiConfigRouter = router({
 		)) as { aiTaskConfig: string | null }[];
 
 		const taskConfig = parseTaskConfig(rows[0]?.aiTaskConfig ?? null);
-		const validModelIds = await getValidOpenRouterModelIds();
+		const [validModelIds, defaultModelIdEntries] = await Promise.all([
+			getValidOpenRouterModelIds(),
+			Promise.all(AI_TASKS.map(async (t) => [t.id, await getDefaultModelId(t.id)] as const))
+		]);
 		const obsoleteModels = validModelIds
 			? [...new Set(Object.values(taskConfig).map((c) => c.model))].filter(
 					(m) => !validModelIds.has(m)
@@ -91,8 +80,8 @@ export const aiConfigRouter = router({
 
 		return {
 			taskConfig,
-			models: MODELS,
 			tasks: AI_TASKS,
+			defaultModelIds: Object.fromEntries(defaultModelIdEntries) as Record<AiTask, string>,
 			obsoleteModels
 		};
 	}),

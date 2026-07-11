@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { tick, onMount, untrack } from 'svelte';
-	import { MODELS } from '$lib/ai-config';
+	type ResolvedModel = { id: string; shortLabel: string; toolCalling: boolean };
 	import EditorActionCard from '$lib/components/ai/EditorActionCard.svelte';
 	import ReferenceSelectCard from '$lib/components/ai/ReferenceSelectCard.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
@@ -33,7 +33,7 @@
 		defaultModel = ''
 	}: Props = $props();
 
-	const toolCallingModels = MODELS.filter((m) => m.toolCalling);
+	let toolCallingModels = $state<ResolvedModel[]>([]);
 	let selectedModel = $state(untrack(() => defaultModel));
 
 	type Message = {
@@ -93,6 +93,12 @@
 
 	onMount(() => {
 		fetch(`/api/projects/${projectId}/warm-index`, { method: 'POST' }).catch(() => {});
+		trpc.aiConfig.getModels
+			.query()
+			.then((models) => {
+				toolCallingModels = (models as ResolvedModel[]).filter((m) => m.toolCalling);
+			})
+			.catch(() => {});
 	});
 
 	let showClearDialog = $state(false);

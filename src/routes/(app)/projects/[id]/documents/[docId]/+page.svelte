@@ -39,7 +39,7 @@
 		type CitationStyle,
 		type CiteRef
 	} from '$lib/utils/citations';
-	import { MODEL_SHORT_LABEL } from '$lib/ai-config';
+	import { formatModelSlug } from '$lib/ai-config';
 	import { SPELL_LANGUAGES } from '$lib/spell-languages';
 	import {
 		getSaveDraftCapability,
@@ -1038,7 +1038,7 @@
 	);
 	function taskModel(task: 'agent' | 'draft' | 'review') {
 		const modelId = aiTaskConfig[task]?.model;
-		return modelId ? (MODEL_SHORT_LABEL[modelId] ?? modelId.split('/').pop() ?? '') : null;
+		return modelId ? formatModelSlug(modelId) : null;
 	}
 
 	// ── Chat assistant ───────────────────────────────────────────────────────────

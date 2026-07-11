@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { SvelteDate } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
-	import { AI_TASKS, MODEL_SHORT_LABEL } from '$lib/ai-config';
+	import { AI_TASKS, formatModelSlug } from '$lib/ai-config';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 
 	import { resolve } from '$app/paths';
@@ -108,7 +108,7 @@
 	}
 
 	function modelLabel(model: string): string {
-		return MODEL_SHORT_LABEL[model] ?? model.split('/')[1] ?? model;
+		return formatModelSlug(model);
 	}
 
 	// ── SVG line chart ────────────────────────────────────────────────────────

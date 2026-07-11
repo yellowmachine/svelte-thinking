@@ -10,10 +10,12 @@
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import type { PageData } from './$types';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
-	import { MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
+	import { MODEL_RECOMMENDATIONS, formatModelSlug } from '$lib/ai-config';
 
 	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
+
+	type ResolvedModel = { id: string; familyKey: string; shortLabel: string; toolCalling: boolean };
 
 	onMount(() => {
 		fetch(`/api/projects/${data.project.id}/warm-index`, { method: 'POST' }).catch(() => {});
@@ -272,18 +274,16 @@
 
 	// ── Agent model selector ─────────────────────────────────────────────────
 	// Models available for the agent task: must support tool calling
-	const agentModels = MODELS.filter(
-		(m) => m.toolCalling && (MODEL_RECOMMENDATIONS[m.id]?.includes('agent') ?? true)
-	);
+	let agentModels = $state<ResolvedModel[]>([]);
 
 	// Configured model (from user Settings) — used as default
-	let configuredModel = $state<string>('anthropic/claude-sonnet-4.6');
+	let configuredModel = $state<string>('');
 	// Per-conversation override chosen in this session
 	let modelOverride = $state<string | null>(null);
 
 	const activeModel = $derived(modelOverride ?? configuredModel);
 	const activeModelLabel = $derived(
-		MODELS.find((m) => m.id === activeModel)?.shortLabel ?? activeModel
+		agentModels.find((m) => m.id === activeModel)?.shortLabel ?? formatModelSlug(activeModel)
 	);
 	const isOverridden = $derived(modelOverride !== null && modelOverride !== configuredModel);
 
@@ -291,11 +291,20 @@
 
 	async function loadAiConfig() {
 		try {
-			const taskData = await trpc.aiConfig.getTaskConfig.query();
+			const [taskData, models] = await Promise.all([
+				trpc.aiConfig.getTaskConfig.query(),
+				trpc.aiConfig.getModels.query()
+			]);
+			agentModels = (models as ResolvedModel[]).filter(
+				(m) => m.toolCalling && (MODEL_RECOMMENDATIONS[m.familyKey]?.includes('agent') ?? true)
+			);
 			const agentCfg = (taskData.taskConfig as Record<string, { keyId: string; model: string }>)[
 				'agent'
 			];
-			if (agentCfg?.model) configuredModel = agentCfg.model;
+			configuredModel =
+				agentCfg?.model ??
+				(taskData.defaultModelIds as Record<string, string>)['agent'] ??
+				configuredModel;
 		} catch {
 			// non-critical
 		}
@@ -703,8 +712,8 @@
 												}}
 												class="w-full rounded py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 											>
-												Reset to default ({MODELS.find((m) => m.id === configuredModel)
-													?.shortLabel ?? configuredModel})
+												Reset to default ({agentModels.find((m) => m.id === configuredModel)
+													?.shortLabel ?? formatModelSlug(configuredModel)})
 											</button>
 										</div>
 									{/if}
