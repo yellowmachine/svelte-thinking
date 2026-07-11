@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { encryptSecret } from '$lib/server/kms';
+import { fetchOpenRouterPrices, getValidOpenRouterModelIds } from '$lib/server/openrouter';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,51 +20,6 @@ export {
 } from '$lib/ai-config';
 import type { AiTask } from '$lib/ai-config';
 import { AI_TASKS, MODELS, parseTaskConfig } from '$lib/ai-config';
-
-// ---------------------------------------------------------------------------
-// OpenRouter pricing (fetched at runtime, cached in memory for 1 hour)
-// ---------------------------------------------------------------------------
-
-interface PricingCache {
-	fetchedAt: number;
-	prices: Record<string, { input: number; output: number }>;
-}
-
-let pricingCache: PricingCache | null = null;
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-export async function fetchOpenRouterPrices(): Promise<
-	Record<string, { input: number; output: number }>
-> {
-	if (pricingCache && Date.now() - pricingCache.fetchedAt < CACHE_TTL_MS) {
-		return pricingCache.prices;
-	}
-
-	try {
-		const res = await fetch('https://openrouter.ai/api/v1/models', {
-			headers: { 'User-Agent': 'Scholio/1.0' }
-		});
-		if (!res.ok) return pricingCache?.prices ?? {};
-
-		const data = (await res.json()) as {
-			data: { id: string; pricing?: { prompt?: string; completion?: string } }[];
-		};
-
-		const prices: Record<string, { input: number; output: number }> = {};
-		for (const model of data.data) {
-			const input = parseFloat(model.pricing?.prompt ?? '0');
-			const output = parseFloat(model.pricing?.completion ?? '0');
-			if (!isNaN(input) && !isNaN(output)) {
-				prices[model.id] = { input, output };
-			}
-		}
-
-		pricingCache = { fetchedAt: Date.now(), prices };
-		return prices;
-	} catch {
-		return pricingCache?.prices ?? {};
-	}
-}
 
 function formatPrice(pricePerToken: number): string {
 	const perMillion = pricePerToken * 1_000_000;
@@ -125,10 +81,19 @@ export const aiConfigRouter = router({
 				.limit(1)
 		)) as { aiTaskConfig: string | null }[];
 
+		const taskConfig = parseTaskConfig(rows[0]?.aiTaskConfig ?? null);
+		const validModelIds = await getValidOpenRouterModelIds();
+		const obsoleteModels = validModelIds
+			? [...new Set(Object.values(taskConfig).map((c) => c.model))].filter(
+					(m) => !validModelIds.has(m)
+				)
+			: [];
+
 		return {
-			taskConfig: parseTaskConfig(rows[0]?.aiTaskConfig ?? null),
+			taskConfig,
 			models: MODELS,
-			tasks: AI_TASKS
+			tasks: AI_TASKS,
+			obsoleteModels
 		};
 	}),
 

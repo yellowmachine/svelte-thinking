@@ -92,7 +92,7 @@ export const POST: RequestHandler = async (event) => {
 		{ apiKey: grammarApiKey, model: grammarModel }
 	] = await Promise.all([
 		resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId),
-		resolveTaskKey(withRLS, rawDb, user.id, 'spell', projectId, 'anthropic/claude-haiku-4-5').catch(
+		resolveTaskKey(withRLS, rawDb, user.id, 'spell', projectId, 'anthropic/claude-haiku-4.5').catch(
 			() => resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId)
 		),
 		resolveTaskKey(
@@ -101,7 +101,7 @@ export const POST: RequestHandler = async (event) => {
 			user.id,
 			'grammar',
 			projectId,
-			'anthropic/claude-haiku-4-5'
+			'anthropic/claude-haiku-4.5'
 		).catch(() => resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId))
 	]);
 	const effectiveModel = !resolvedOrgId && modelOverride ? modelOverride : resolvedModel;
