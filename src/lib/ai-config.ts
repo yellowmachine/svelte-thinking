@@ -29,14 +29,14 @@ export const AI_TASKS: {
 		label: 'Agent (chat)',
 		description: 'Conversational assistant with tool use',
 		hint: 'Needs tool calling support. A capable model like Sonnet or GPT-4o works best — it reasons, searches, and takes actions across your project.',
-		defaultModel: 'anthropic/claude-sonnet-4-6'
+		defaultModel: 'anthropic/claude-sonnet-4.6'
 	},
 	{
 		id: 'draft',
 		label: 'Draft',
 		description: 'Generate document drafts and sections',
 		hint: 'Benefits from a high-quality, long-context model. Gemini 2.5 Pro or Claude Sonnet handle long documents well.',
-		defaultModel: 'anthropic/claude-sonnet-4-6'
+		defaultModel: 'anthropic/claude-sonnet-4.6'
 	},
 	{
 		id: 'review',
@@ -50,50 +50,50 @@ export const AI_TASKS: {
 		label: 'Requirements',
 		description: 'Generate project requirements',
 		hint: 'Needs structured output and logical thinking. Gemini Flash or DeepSeek V3 offer a good speed/quality balance.',
-		defaultModel: 'google/gemini-2.5-flash-preview'
+		defaultModel: 'google/gemini-2.5-flash'
 	},
 	{
 		id: 'bibliography',
 		label: 'Bibliography',
 		description: 'Extract bibliographic metadata from a URL',
 		hint: 'Simple extraction task — a fast, cheap model like Haiku is more than enough.',
-		defaultModel: 'anthropic/claude-haiku-4-5'
+		defaultModel: 'anthropic/claude-haiku-4.5'
 	},
 	{
 		id: 'spell',
 		label: 'Spell check',
 		description: 'On-demand spelling and grammar correction',
 		hint: 'Lightweight task. Any fast model works well; no need for a large or expensive one.',
-		defaultModel: 'anthropic/claude-haiku-4-5'
+		defaultModel: 'anthropic/claude-haiku-4.5'
 	},
 	{
 		id: 'grammar',
 		label: 'Grammar assistant',
 		description: 'Grammar and style suggestions for non-native English writers',
 		hint: 'Lightweight task. Haiku or Gemini Flash are ideal — fast and accurate enough for grammar corrections.',
-		defaultModel: 'anthropic/claude-haiku-4-5'
+		defaultModel: 'anthropic/claude-haiku-4.5'
 	},
 	{
 		id: 'summary',
 		label: 'Document summary',
 		description: 'AI summary generated on each commit for the project chat agent',
 		hint: 'Runs once per commit in the background. A fast, cheap model like Haiku is ideal — the summary is short and factual.',
-		defaultModel: 'anthropic/claude-haiku-4-5'
+		defaultModel: 'anthropic/claude-haiku-4.5'
 	}
 ];
 
 export function getDefaultModel(task: AiTask): string {
-	return AI_TASKS.find((t) => t.id === task)?.defaultModel ?? 'anthropic/claude-haiku-4-5';
+	return AI_TASKS.find((t) => t.id === task)?.defaultModel ?? 'anthropic/claude-haiku-4.5';
 }
 
 // Tasks for which each model is recommended (empty = no specific recommendation)
 // TODO issue #18: move to DB table so models can be added without redeploy
 export const MODEL_RECOMMENDATIONS: Record<string, AiTask[]> = {
-	'anthropic/claude-opus-4-5': ['agent', 'draft'],
-	'anthropic/claude-sonnet-4-6': ['agent', 'draft', 'review'],
-	'anthropic/claude-haiku-4-5': ['bibliography', 'spell', 'grammar', 'summary'],
+	'anthropic/claude-opus-4.5': ['agent', 'draft'],
+	'anthropic/claude-sonnet-4.6': ['agent', 'draft', 'review'],
+	'anthropic/claude-haiku-4.5': ['bibliography', 'spell', 'grammar', 'summary'],
 	'google/gemini-2.5-pro-preview': ['draft', 'review'],
-	'google/gemini-2.5-flash-preview': ['requirements', 'summary'],
+	'google/gemini-2.5-flash': ['requirements', 'summary'],
 	'openai/gpt-4o': ['agent', 'draft'],
 	'openai/o3-mini': ['review'],
 	'deepseek/deepseek-r1': ['review', 'requirements'],
@@ -103,19 +103,19 @@ export const MODEL_RECOMMENDATIONS: Record<string, AiTask[]> = {
 export const MODELS: { id: string; label: string; shortLabel: string; toolCalling: boolean }[] = [
 	// Anthropic
 	{
-		id: 'anthropic/claude-opus-4-5',
+		id: 'anthropic/claude-opus-4.5',
 		label: 'Claude Opus 4 (best quality)',
 		shortLabel: 'Opus 4',
 		toolCalling: true
 	},
 	{
-		id: 'anthropic/claude-sonnet-4-6',
+		id: 'anthropic/claude-sonnet-4.6',
 		label: 'Claude Sonnet 4.6',
 		shortLabel: 'Sonnet 4.6',
 		toolCalling: true
 	},
 	{
-		id: 'anthropic/claude-haiku-4-5',
+		id: 'anthropic/claude-haiku-4.5',
 		label: 'Claude Haiku 4.5 (fast)',
 		shortLabel: 'Haiku 4.5',
 		toolCalling: true
@@ -128,7 +128,7 @@ export const MODELS: { id: string; label: string; shortLabel: string; toolCallin
 		toolCalling: true
 	},
 	{
-		id: 'google/gemini-2.5-flash-preview',
+		id: 'google/gemini-2.5-flash',
 		label: 'Gemini 2.5 Flash (fast)',
 		shortLabel: 'Gemini 2.5 Flash',
 		toolCalling: true

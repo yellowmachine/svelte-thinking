@@ -277,7 +277,7 @@
 	);
 
 	// Configured model (from user Settings) — used as default
-	let configuredModel = $state<string>('anthropic/claude-sonnet-4-6');
+	let configuredModel = $state<string>('anthropic/claude-sonnet-4.6');
 	// Per-conversation override chosen in this session
 	let modelOverride = $state<string | null>(null);
 
