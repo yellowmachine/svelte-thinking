@@ -17,7 +17,8 @@ import {
 	organizationApiKey
 } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
-import { type AiTask, getDefaultModel, parseTaskConfig, fetchOpenRouterPrices } from './aiConfig';
+import { type AiTask, getDefaultModel, parseTaskConfig } from './aiConfig';
+import { fetchOpenRouterPrices } from '$lib/server/openrouter';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { SUMMARY_MIN_CHARS } from '$lib/server/documentSummary';
 import type { Db } from '$lib/server/db';
