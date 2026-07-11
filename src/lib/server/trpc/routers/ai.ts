@@ -17,8 +17,8 @@ import {
 	organizationApiKey
 } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
-import { type AiTask, getDefaultModel, parseTaskConfig } from './aiConfig';
-import { fetchOpenRouterPrices } from '$lib/server/openrouter';
+import { type AiTask, parseTaskConfig } from './aiConfig';
+import { fetchOpenRouterPrices, getDefaultModelId } from '$lib/server/openrouter';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { SUMMARY_MIN_CHARS } from '$lib/server/documentSummary';
 import type { Db } from '$lib/server/db';
@@ -894,7 +894,7 @@ export async function resolveTaskKey(
 	userId: string,
 	task: AiTask,
 	projectId?: string,
-	fallbackModel: string = getDefaultModel(task)
+	fallbackModel?: string
 ): Promise<{ apiKey: string; model: string; resolvedOrgId?: string }> {
 	const cacheKey = CACHE_KEY.taskKey(userId, task, projectId ?? '');
 	const cached = await cacheGet<{ apiKey: string; model: string; resolvedOrgId?: string }>(
@@ -970,7 +970,7 @@ export async function resolveTaskKey(
 						message: 'Error decrypting org API key.'
 					});
 				}
-				const model = orgTaskEntry?.model ?? fallbackModel;
+				const model = orgTaskEntry?.model ?? fallbackModel ?? (await getDefaultModelId(task));
 				const result = { apiKey, model, resolvedOrgId: orgId };
 				await cacheSet(cacheKey, result, TTL.taskKey);
 				return result;
@@ -1032,7 +1032,7 @@ export async function resolveTaskKey(
 		});
 	}
 
-	const model = taskEntry?.model ?? fallbackModel;
+	const model = taskEntry?.model ?? fallbackModel ?? (await getDefaultModelId(task));
 	const result = { apiKey, model };
 	await cacheSet(cacheKey, result, TTL.taskKey);
 	return result;
@@ -3060,8 +3060,7 @@ export const aiRouter = router({
 					ctx.db as Db,
 					userId,
 					'spell',
-					input.projectId,
-					'anthropic/claude-haiku-4.5'
+					input.projectId
 				).catch(() =>
 					resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
 				),
@@ -3070,8 +3069,7 @@ export const aiRouter = router({
 					ctx.db as Db,
 					userId,
 					'grammar',
-					input.projectId,
-					'anthropic/claude-haiku-4.5'
+					input.projectId
 				).catch(() =>
 					resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
 				)
@@ -3938,8 +3936,7 @@ Rules:
 				ctx.db,
 				userId,
 				'grammar',
-				input.projectId,
-				'anthropic/claude-haiku-4.5'
+				input.projectId
 			);
 
 			const prompt = `You are an expert English academic writing assistant helping non-native English speakers improve their writing.
@@ -4050,8 +4047,7 @@ ${input.text}`;
 				ctx.db,
 				userId,
 				'spell',
-				input.projectId,
-				'anthropic/claude-haiku-4.5'
+				input.projectId
 			);
 
 			// Fetch user allowlist (words previously rejected)

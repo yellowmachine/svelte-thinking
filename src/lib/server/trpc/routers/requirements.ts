@@ -7,7 +7,8 @@ import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
-import { parseTaskConfig, getDefaultModel } from './aiConfig';
+import { parseTaskConfig } from './aiConfig';
+import { getDefaultModelId } from '$lib/server/openrouter';
 import { coerceTemplate, canManageRequirements, type TemplateType } from '$lib/domain/requirements';
 import type { Db } from '$lib/server/db';
 
@@ -114,7 +115,7 @@ async function generateRequirementsFromAI(
 		});
 	}
 
-	const model = taskEntry?.model ?? getDefaultModel('requirements');
+	const model = taskEntry?.model ?? (await getDefaultModelId('requirements'));
 
 	const extraHeaders = {
 		'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
