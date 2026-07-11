@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
-	import { MODEL_RECOMMENDATIONS, MODEL_SHORT_LABEL } from '$lib/ai-config';
+	import { MODEL_RECOMMENDATIONS, formatModelSlug } from '$lib/ai-config';
 
 	import { resolve } from '$app/paths';
 	let {
@@ -26,14 +26,20 @@
 		label: string;
 		description: string;
 		hint: string;
-		defaultModel: string;
 	};
-	type AiModel = { id: string; label: string; toolCalling: boolean; pricing: string | null };
+	type AiModel = {
+		id: string;
+		familyKey: string;
+		label: string;
+		toolCalling: boolean;
+		pricing: string | null;
+	};
 
 	let aiKeys = $state<AiKey[]>([]);
 	let aiTaskConfig = $state<Partial<Record<AiTaskId, TaskConfig>>>({});
 	let aiModels = $state<AiModel[]>([]);
 	let aiTasks = $state<AiTaskDef[]>([]);
+	let aiDefaultModelIds = $state<Partial<Record<AiTaskId, string>>>({});
 	let aiObsoleteModels = $state<string[]>([]);
 	let loadingAi = $state(false);
 	let aiLoaded = $state(false);
@@ -77,6 +83,7 @@
 			aiTaskConfig = taskData.taskConfig as Partial<Record<AiTaskId, TaskConfig>>;
 			aiModels = models as AiModel[];
 			aiTasks = taskData.tasks as AiTaskDef[];
+			aiDefaultModelIds = taskData.defaultModelIds as Partial<Record<AiTaskId, string>>;
 			aiObsoleteModels = taskData.obsoleteModels;
 		} catch {
 			aiError = 'Could not load assistant configuration.';
@@ -562,13 +569,13 @@
 									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 								>
 									<option value=""
-										>— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option
+										>— Default ({formatModelSlug(aiDefaultModelIds[task.id as AiTaskId] ?? '')}) —</option
 									>
 									{#if cfg?.model && !aiModels.find((m) => m.id === cfg.model)}
 										<option value={cfg.model}>{cfg.model} (unavailable)</option>
 									{/if}
 									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m (m.id)}
-										{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
+										{@const isRec = MODEL_RECOMMENDATIONS[m.familyKey]?.includes(
 											task.id as 'agent' | 'draft' | 'review' | 'requirements'
 										)}
 										<option value={m.id}

@@ -2,10 +2,17 @@
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
-	import { AI_TASKS, MODELS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
+	import { AI_TASKS, MODEL_RECOMMENDATIONS } from '$lib/ai-config';
 	import { type OrgInvitationStatus, isInvitationPending } from '$lib/domain/invitation';
 
 	type Org = { id: string; name: string; slug: string; role: string };
+	type AiModel = {
+		id: string;
+		familyKey: string;
+		label: string;
+		toolCalling: boolean;
+		pricing: string | null;
+	};
 
 	let { initialOrgs }: { initialOrgs: Org[] } = $props();
 
@@ -26,6 +33,8 @@
 	let keys = $state<{ id: string; name: string; enabled: boolean; createdAt: Date }[]>([]);
 	let taskConfig = $state<Record<string, { keyId: string; model: string }>>({});
 	let loadingDetail = $state(false);
+	let aiModels = $state<AiModel[]>([]);
+	let aiModelsLoaded = $state(false);
 
 	// Invite form
 	let inviteEmail = $state('');
@@ -106,6 +115,13 @@
 
 	$effect(() => {
 		if (selectedOrgId) loadDetail(selectedOrgId);
+	});
+
+	$effect(() => {
+		if (!aiModelsLoaded) {
+			aiModelsLoaded = true;
+			trpc.aiConfig.getModels.query().then((m) => (aiModels = m as AiModel[]));
+		}
 	});
 
 	// ── Actions ───────────────────────────────────────────────────────────────
@@ -452,7 +468,7 @@
 											value={current?.keyId ?? ''}
 											onchange={(e) => {
 												const keyId = (e.target as HTMLSelectElement).value;
-												const model = current?.model ?? MODELS[0].id;
+												const model = current?.model ?? aiModels[0]?.id ?? '';
 												if (keyId) setTask(task.id, keyId, model);
 											}}
 											class="rounded-md border border-paper-border bg-paper px-2 py-1 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
@@ -472,8 +488,8 @@
 											class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
 										>
 											<option value="">— model —</option>
-											{#each MODELS as model (model.id)}
-												{@const isRec = MODEL_RECOMMENDATIONS[model.id]?.includes(task.id)}
+											{#each aiModels as model (model.id)}
+												{@const isRec = MODEL_RECOMMENDATIONS[model.familyKey]?.includes(task.id)}
 												<option value={model.id}>{isRec ? '★ ' : ''}{model.label}</option>
 											{/each}
 										</select>
