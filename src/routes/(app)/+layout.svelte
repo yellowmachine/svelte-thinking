@@ -9,6 +9,8 @@
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import { trpc } from '$lib/utils/trpc';
+	import { resolve } from '$app/paths';
+	import { AI_TASKS } from '$lib/ai-config';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
@@ -16,6 +18,10 @@
 	// Dismissed IDs managed client-side; initial list comes from server (already filtered).
 	let dismissed = $state<Set<string>>(new Set());
 	let visibleNotifications = $derived(data.activeNotifications.filter((n) => !dismissed.has(n.id)));
+
+	function taskLabel(taskId: string): string {
+		return AI_TASKS.find((t) => t.id === taskId)?.label ?? taskId;
+	}
 
 	async function dismiss(id: string) {
 		dismissed = new Set([...dismissed, id]);
@@ -45,6 +51,41 @@
 	</div>
 	<!-- Mobile header -->
 	<MobileHeader user={data.user} />
+
+	<!-- Obsolete AI model banner (persistent until the user fixes the config) -->
+	{#if data.obsoleteAiTasks.length > 0}
+		<div
+			class="flex shrink-0 items-start gap-3 border-b border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/50 dark:bg-red-900/20"
+		>
+			<svg
+				class="mt-0.5 shrink-0 text-red-600 dark:text-red-400"
+				width="15"
+				height="15"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<circle cx="12" cy="12" r="10" />
+				<line x1="12" y1="8" x2="12" y2="12" />
+				<line x1="12" y1="16" x2="12.01" y2="16" />
+			</svg>
+			<p class="flex-1 font-sans text-sm text-red-900 dark:text-red-200">
+				{#if data.obsoleteAiTasks.length === 1}
+					The AI model configured for "{taskLabel(data.obsoleteAiTasks[0].task)}" is no longer
+					available on OpenRouter.
+				{:else}
+					{data.obsoleteAiTasks.length} AI models you configured are no longer available on OpenRouter.
+				{/if}
+				<a href="{resolve('/settings')}?tab=ai" class="font-medium underline"
+					>Review in Settings →</a
+				>
+			</p>
+		</div>
+	{/if}
 
 	<!-- Notification banners -->
 	{#each visibleNotifications as n (n.id)}

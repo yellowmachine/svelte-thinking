@@ -17,7 +17,8 @@ import {
 	organizationApiKey
 } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
-import { type AiTask, getDefaultModel, parseTaskConfig, fetchOpenRouterPrices } from './aiConfig';
+import { type AiTask, getDefaultModel, parseTaskConfig } from './aiConfig';
+import { fetchOpenRouterPrices } from '$lib/server/openrouter';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { SUMMARY_MIN_CHARS } from '$lib/server/documentSummary';
 import type { Db } from '$lib/server/db';
@@ -3060,7 +3061,7 @@ export const aiRouter = router({
 					userId,
 					'spell',
 					input.projectId,
-					'anthropic/claude-haiku-4-5'
+					'anthropic/claude-haiku-4.5'
 				).catch(() =>
 					resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
 				),
@@ -3070,7 +3071,7 @@ export const aiRouter = router({
 					userId,
 					'grammar',
 					input.projectId,
-					'anthropic/claude-haiku-4-5'
+					'anthropic/claude-haiku-4.5'
 				).catch(() =>
 					resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
 				)
@@ -3938,7 +3939,7 @@ Rules:
 				userId,
 				'grammar',
 				input.projectId,
-				'anthropic/claude-haiku-4-5'
+				'anthropic/claude-haiku-4.5'
 			);
 
 			const prompt = `You are an expert English academic writing assistant helping non-native English speakers improve their writing.
@@ -4050,7 +4051,7 @@ ${input.text}`;
 				userId,
 				'spell',
 				input.projectId,
-				'anthropic/claude-haiku-4-5'
+				'anthropic/claude-haiku-4.5'
 			);
 
 			// Fetch user allowlist (words previously rejected)

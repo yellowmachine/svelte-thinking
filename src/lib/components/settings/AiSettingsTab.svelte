@@ -34,6 +34,7 @@
 	let aiTaskConfig = $state<Partial<Record<AiTaskId, TaskConfig>>>({});
 	let aiModels = $state<AiModel[]>([]);
 	let aiTasks = $state<AiTaskDef[]>([]);
+	let aiObsoleteModels = $state<string[]>([]);
 	let loadingAi = $state(false);
 	let aiLoaded = $state(false);
 	let aiError = $state('');
@@ -76,6 +77,7 @@
 			aiTaskConfig = taskData.taskConfig as Partial<Record<AiTaskId, TaskConfig>>;
 			aiModels = models as AiModel[];
 			aiTasks = taskData.tasks as AiTaskDef[];
+			aiObsoleteModels = taskData.obsoleteModels;
 		} catch {
 			aiError = 'Could not load assistant configuration.';
 		} finally {
@@ -485,8 +487,11 @@
 					{#each aiTasks as task (task.id)}
 						{@const cfg = aiTaskConfig[task.id as AiTaskId]}
 						{@const enabledKeys = aiKeys.filter((k) => k.enabled)}
+						{@const isObsolete = !!cfg?.model && aiObsoleteModels.includes(cfg.model)}
 						<div
-							class="rounded-lg border border-paper-border bg-paper-ui px-4 py-4 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+							class="rounded-lg border px-4 py-4 {isObsolete
+								? 'border-red-300 dark:border-red-700'
+								: 'border-paper-border dark:border-dark-paper-border'} bg-paper-ui dark:bg-dark-paper-ui"
 						>
 							<div class="mb-3 flex items-center justify-between">
 								<div>
@@ -559,6 +564,9 @@
 									<option value=""
 										>— Default ({MODEL_SHORT_LABEL[task.defaultModel] ?? task.defaultModel}) —</option
 									>
+									{#if cfg?.model && !aiModels.find((m) => m.id === cfg.model)}
+										<option value={cfg.model}>{cfg.model} (unavailable)</option>
+									{/if}
 									{#each task.id === 'agent' ? aiModels.filter((m) => m.toolCalling) : aiModels as m (m.id)}
 										{@const isRec = MODEL_RECOMMENDATIONS[m.id]?.includes(
 											task.id as 'agent' | 'draft' | 'review' | 'requirements'
@@ -569,7 +577,11 @@
 									{/each}
 								</select>
 							</div>
-							{#if task.id === 'agent' && cfg?.model && !aiModels.find((m) => m.id === cfg.model)?.toolCalling}
+							{#if isObsolete}
+								<p class="mt-2 font-sans text-xs text-red-600 dark:text-red-400">
+									⚠ This model is no longer available on OpenRouter. Choose another model.
+								</p>
+							{:else if task.id === 'agent' && cfg?.model && !aiModels.find((m) => m.id === cfg.model)?.toolCalling}
 								<p class="mt-2 font-sans text-xs text-amber-600 dark:text-amber-400">
 									⚠ This model may not support tool calling required by the agent.
 								</p>
