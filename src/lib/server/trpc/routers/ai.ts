@@ -73,7 +73,8 @@ export type PendingAction =
 // Editor agent actions — proposed edits on the currently open document.
 export type PendingEditorAction =
 	| { type: 'replace_text'; anchorText: string; replacement: string; explanation: string }
-	| { type: 'insert_after'; anchorText: string; content: string; explanation: string };
+	| { type: 'insert_after'; anchorText: string; content: string; explanation: string }
+	| { type: 'insert_index'; kind: 'toc' | 'persons'; explanation: string };
 
 // ---------------------------------------------------------------------------
 // Error helper
@@ -1348,6 +1349,33 @@ const EDITOR_TOOLS = [
 	{
 		type: 'function' as const,
 		function: {
+			name: 'insert_index',
+			description:
+				'Insert a table of contents or an onomastic (persons) index into the document. ' +
+				'Use this — not insert_after — whenever the user asks in plain language to add an ' +
+				'index/table of contents (e.g. "add me the index", "añádeme el índice") or an onomastic/' +
+				'persons index (e.g. "añádeme el índice onomástico"), even if they never mention the ' +
+				'special [[index:toc]] / [[index:persons]] syntax themselves. ' +
+				'"toc" inserts a table of contents built from the document headings, placed at the top. ' +
+				'"persons" inserts a sorted index of every [[person:Name]] tag in the document, placed at ' +
+				'the end. The user will see a preview and can accept or reject it.',
+			parameters: {
+				type: 'object',
+				properties: {
+					kind: {
+						type: 'string',
+						enum: ['toc', 'persons'],
+						description: '"toc" for a table of contents, "persons" for the onomastic index'
+					},
+					explanation: { type: 'string', description: 'One-sentence description of the addition' }
+				},
+				required: ['kind', 'explanation']
+			}
+		}
+	},
+	{
+		type: 'function' as const,
+		function: {
 			name: 'propose_references',
 			description:
 				'Propose a list of bibliography references for the user to review and selectively add to the project. ' +
@@ -1553,9 +1581,16 @@ When the user asks to "tag" or "mark" a person, wrap their name in this syntax u
 To link to another document in the project by title: \`[[Document Title]]\`
 To link to a section heading within the document: \`[[#Section Heading]]\`
 
-### Onomastic index
+### Table of contents and onomastic index
 
-To insert a persons index placeholder (renders as a full index of all tagged persons): \`[[index:persons]]\`
+Table of contents (renders a linked list of the document's own headings, placed at the top): \`[[index:toc]]\`
+Onomastic index (renders a full index of all tagged persons, placed at the end): \`[[index:persons]]\`
+
+Always use the \`insert_index\` tool for these two, never \`insert_after\` — it places each at the
+right spot (top for the table of contents, end for the onomastic index) with no risk of a wrong or
+malformed tag. This matters especially for non-technical users who ask in plain language ("add me
+the index", "añádeme el índice", "añádeme el índice onomástico") without ever mentioning the
+bracket syntax themselves — recognize that request and call \`insert_index\` directly.
 
 ### Mathematical formulas
 
@@ -1686,6 +1721,20 @@ async function runEditorAgentLoop(
 							role: 'tool' as const,
 							tool_call_id: tc.id,
 							content: 'Insertion proposed. The user will see a preview.'
+						};
+					}
+
+					if (tc.function.name === 'insert_index') {
+						const kind = args.kind === 'persons' ? 'persons' : 'toc';
+						pendingEditorActions.push({
+							type: 'insert_index',
+							kind,
+							explanation: (args.explanation as string) ?? ''
+						});
+						return {
+							role: 'tool' as const,
+							tool_call_id: tc.id,
+							content: 'Index insertion proposed. The user will see a preview.'
 						};
 					}
 
@@ -2294,6 +2343,19 @@ export async function runEditorAgentLoopSSE(
 							role: 'tool' as const,
 							tool_call_id: tc.id,
 							content: 'Insertion proposed. The user will see a preview.'
+						};
+					}
+					if (tc.function.name === 'insert_index') {
+						const kind = args.kind === 'persons' ? 'persons' : 'toc';
+						pendingEditorActions.push({
+							type: 'insert_index',
+							kind,
+							explanation: (args.explanation as string) ?? ''
+						});
+						return {
+							role: 'tool' as const,
+							tool_call_id: tc.id,
+							content: 'Index insertion proposed. The user will see a preview.'
 						};
 					}
 					if (tc.function.name === 'propose_references') {
