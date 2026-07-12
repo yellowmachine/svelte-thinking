@@ -11,7 +11,12 @@ export const load: PageServerLoad = async (event) => {
 	const user = event.locals.user!;
 
 	const [profile] = await db
-		.select({ orcid: userProfile.orcid, orcidVerified: userProfile.orcidVerified })
+		.select({
+			orcid: userProfile.orcid,
+			orcidVerified: userProfile.orcidVerified,
+			displayName: userProfile.displayName,
+			bio: userProfile.bio
+		})
 		.from(userProfile)
 		.where(eq(userProfile.userId, user.id))
 		.limit(1);
@@ -34,6 +39,8 @@ export const load: PageServerLoad = async (event) => {
 		},
 		orcid: profile?.orcid ?? null,
 		orcidVerified: profile?.orcidVerified ?? false,
+		displayName: profile?.displayName ?? null,
+		bio: profile?.bio ?? null,
 		orcidStatus:
 			orcidStatus === 'connected' ? 'connected' : orcidStatus === 'error' ? 'error' : null,
 		openrouterStatus:
