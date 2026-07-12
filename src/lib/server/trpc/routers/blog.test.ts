@@ -56,6 +56,21 @@ describe('blog.setHandle', () => {
 			code: 'FORBIDDEN'
 		});
 	});
+
+	it('rejects a reserved handle that collides with a real app route', async () => {
+		const { caller } = await seedUserWithDocument('handle-reserved');
+		await expect(caller.blog.setHandle({ handle: 'admin' })).rejects.toMatchObject({
+			code: 'BAD_REQUEST'
+		});
+	});
+});
+
+describe('blog.checkHandleAvailable', () => {
+	it('flags a reserved handle as unavailable, distinct from taken/invalid', async () => {
+		const { caller } = await seedUserWithDocument('handle-check-reserved');
+		const result = await caller.blog.checkHandleAvailable({ handle: 'settings' });
+		expect(result).toEqual({ available: false, reason: 'reserved' });
+	});
 });
 
 describe('blog.publish', () => {
