@@ -4,6 +4,7 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { blogPost } from '$lib/server/db/schemas/blog.schema';
+import { excerptWithTruncation } from '$lib/server/blogExcerpt';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const handle = params.handle.toLowerCase();
@@ -23,15 +24,21 @@ export const load: PageServerLoad = async ({ params }) => {
 	if (!profileRows[0]) error(404, 'Este blog no existe');
 	const author = profileRows[0];
 
-	const posts = await db
+	const postRows = await db
 		.select({
 			slug: blogPost.slug,
 			title: blogPost.title,
+			renderedHtml: blogPost.renderedHtml,
 			publishedAt: blogPost.publishedAt
 		})
 		.from(blogPost)
 		.where(eq(blogPost.userId, author.userId))
 		.orderBy(desc(blogPost.publishedAt));
+
+	const posts = postRows.map(({ renderedHtml, ...post }) => {
+		const { text: excerpt, truncated } = excerptWithTruncation(renderedHtml, 200);
+		return { ...post, excerpt, truncated };
+	});
 
 	return { author, posts };
 };

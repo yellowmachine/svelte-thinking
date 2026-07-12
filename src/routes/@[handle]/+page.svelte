@@ -84,6 +84,11 @@
 						<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 							{fmt.format(new Date(post.publishedAt))}
 						</p>
+						{#if post.excerpt}
+							<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+								{post.excerpt}{post.truncated ? '…' : ''}
+							</p>
+						{/if}
 					</a>
 				</li>
 			{/each}
