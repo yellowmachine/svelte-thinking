@@ -76,6 +76,15 @@ const handleHeaders: Handle = async ({ event, resolve }) => {
 
 	const headers = new Headers(response.headers);
 
+	// El framework no siempre declara el charset en la cabecera HTTP (solo vía
+	// <meta charset> dentro del HTML). Los navegadores hacen sniffing y no lo
+	// notan, pero clientes no-navegador más estrictos (scrapers, servicios de
+	// "leer más tarde") pueden asumir Latin-1 por defecto y corromper cualquier
+	// acento/ñ/¿¡ — declararlo explícito aquí lo evita.
+	if (!contentType.includes('charset')) {
+		headers.set('Content-Type', 'text/html; charset=utf-8');
+	}
+
 	// Evita que el navegador "adivine" el MIME type
 	headers.set('X-Content-Type-Options', 'nosniff');
 
