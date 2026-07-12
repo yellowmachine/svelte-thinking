@@ -57,7 +57,11 @@ export const blogRouter = router({
 		return ctx.withRLS(async (db) => {
 			const [profileRows, posts] = await Promise.all([
 				db
-					.select({ handle: userProfile.handle })
+					.select({
+						handle: userProfile.handle,
+						displayName: userProfile.displayName,
+						bio: userProfile.bio
+					})
 					.from(userProfile)
 					.where(eq(userProfile.userId, ctx.user.id))
 					.limit(1),
@@ -77,7 +81,12 @@ export const blogRouter = router({
 					.where(eq(blogPost.userId, ctx.user.id))
 			]);
 
-			return { handle: profileRows[0]?.handle ?? null, posts };
+			return {
+				handle: profileRows[0]?.handle ?? null,
+				displayName: profileRows[0]?.displayName ?? null,
+				bio: profileRows[0]?.bio ?? null,
+				posts
+			};
 		});
 	}),
 
