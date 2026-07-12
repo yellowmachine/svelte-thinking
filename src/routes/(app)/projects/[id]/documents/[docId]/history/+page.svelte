@@ -36,6 +36,13 @@
 	let revokingShareId = $state<string | null>(null);
 	let copiedVersionId = $state<string | null>(null);
 
+	// Blog posts: mapa versionId → post publicado (reactivo)
+	let blogPosts = $state<Record<string, { id: string; slug: string }>>(
+		untrack(() => ({ ...data.blogPostByVersionId }))
+	);
+	let publishingVersionId = $state<string | null>(null);
+	let unpublishingBlogId = $state<string | null>(null);
+
 	const fmt = new Intl.DateTimeFormat('es', {
 		day: 'numeric',
 		month: 'short',
@@ -93,6 +100,35 @@
 			shares = next;
 		} finally {
 			revokingShareId = null;
+		}
+	}
+
+	async function publishToBlog(v: Version) {
+		if (!data.userHandle) {
+			alert('Configura tu blog en Ajustes → Blog antes de publicar.');
+			return;
+		}
+		publishingVersionId = v.id;
+		try {
+			const result = await trpc.blog.publish.mutate({ versionId: v.id });
+			blogPosts = { ...blogPosts, [v.id]: { id: result.id, slug: result.slug } };
+		} finally {
+			publishingVersionId = null;
+		}
+	}
+
+	async function unpublishFromBlog(v: Version) {
+		const post = blogPosts[v.id];
+		if (!post?.id) return;
+		if (!confirm('¿Despublicar esta versión del blog? La URL pública dejará de funcionar.')) return;
+		unpublishingBlogId = post.id;
+		try {
+			await trpc.blog.unpublish.mutate({ postId: post.id });
+			const next = { ...blogPosts };
+			delete next[v.id];
+			blogPosts = next;
+		} finally {
+			unpublishingBlogId = null;
 		}
 	}
 
@@ -348,6 +384,67 @@
 													<circle cx="12" cy="12" r="10" />
 													<line x1="8" y1="12" x2="16" y2="12" />
 												</svg>
+											</button>
+										{/if}
+
+										<!-- Publicar / despublicar en el blog -->
+										{#if blogPosts[v.id]}
+											<button
+												onclick={() => unpublishFromBlog(v)}
+												disabled={unpublishingBlogId === blogPosts[v.id]?.id}
+												title="Publicado en el blog · click para despublicar"
+												class="flex h-6 w-6 items-center justify-center rounded text-accent transition-colors hover:bg-accent/10 disabled:opacity-40"
+												aria-label="Despublicar del blog"
+											>
+												{#if unpublishingBlogId === blogPosts[v.id]?.id}
+													<Spinner size="sm" />
+												{:else}
+													<svg
+														width="13"
+														height="13"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														aria-hidden="true"
+													>
+														<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+														<path
+															d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+														/>
+													</svg>
+												{/if}
+											</button>
+										{:else}
+											<button
+												onclick={() => publishToBlog(v)}
+												disabled={publishingVersionId === v.id}
+												title="Publicar esta versión en tu blog"
+												class="flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+												aria-label="Publicar en el blog"
+											>
+												{#if publishingVersionId === v.id}
+													<Spinner size="sm" />
+												{:else}
+													<svg
+														width="13"
+														height="13"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														aria-hidden="true"
+													>
+														<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+														<path
+															d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+														/>
+													</svg>
+												{/if}
 											</button>
 										{/if}
 									</div>

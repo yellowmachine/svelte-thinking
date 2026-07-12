@@ -2,13 +2,22 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import { marked } from 'marked';
 	import markedFootnote from 'marked-footnote';
+	import { gfmHeadingId, getHeadingList } from 'marked-gfm-heading-id';
 	import DOMPurify from 'dompurify';
 	import katex from 'katex';
+	import '$lib/styles/prose-content.css';
 
 	marked.use(markedFootnote());
+	marked.use(gfmHeadingId());
 	import { trpc } from '$lib/utils/trpc';
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
-	import { processWikilinks, processPersonsAndIndex, stripFrontmatter } from '$lib/utils/wikilinks';
+	import {
+		processWikilinks,
+		processPersonsAndIndex,
+		protectTocPlaceholder,
+		restoreToc,
+		stripFrontmatter
+	} from '$lib/utils/wikilinks';
 	import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
 	import { extractCallouts, restoreCallouts } from '$lib/utils/callouts';
 	import { einkStore } from '$lib/stores/eink.svelte';
@@ -195,9 +204,11 @@
 				? processWikilinks(withMathPlaceholders, wikilinkMap)
 				: withMathPlaceholders;
 		const withPersons = processPersonsAndIndex(withWikilinks);
-		const withCitations = refs.size > 0 ? processCitations(withPersons, refs, style) : withPersons;
+		const withToc = protectTocPlaceholder(withPersons);
+		const withCitations = refs.size > 0 ? processCitations(withToc, refs, style) : withToc;
 		const rawHtml = marked.parse(withCitations) as string;
-		const restored = restoreMath(rawHtml, mathBlocks);
+		const withHeadingToc = restoreToc(rawHtml, getHeadingList());
+		const restored = restoreMath(withHeadingToc, mathBlocks);
 		const withEpigraphs = restoreEpigraphs(restored, epigraphs);
 		const withCallouts = restoreCallouts(withEpigraphs, callouts);
 		const html =
@@ -529,15 +540,6 @@
 </div>
 
 <style>
-	.prose :global(img) {
-		max-width: 100%;
-		max-height: 600px;
-		height: auto;
-		border-radius: 0.375rem;
-		display: block;
-		margin: 1rem auto;
-	}
-
 	.prose :global([data-vega-id]) {
 		margin: 1.5rem 0;
 	}
@@ -550,129 +552,6 @@
 	.prose :global(.vega-embed svg) {
 		max-width: 100%;
 		height: auto;
-	}
-
-	/* Display math: centered block */
-	.prose :global(.katex-display) {
-		margin: 1.5rem 0;
-		overflow-x: auto;
-		overflow-y: hidden;
-	}
-
-	.prose :global(.math-error) {
-		color: red;
-		font-family: monospace;
-		font-size: 0.875em;
-	}
-
-	.prose :global(.wikilink-unresolved) {
-		color: var(--color-ink-faint, #a89880);
-		font-style: italic;
-		cursor: help;
-	}
-
-	.prose :global(.mention-person) {
-		border-bottom: 1px dotted var(--color-ink-faint, #a89880);
-	}
-
-	.prose :global(.persons-index) {
-		margin-top: 2rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--color-paper-border, #e8e2da);
-	}
-
-	.prose :global(.persons-index ol) {
-		padding-left: 1.25rem;
-		columns: 2;
-		gap: 1rem;
-	}
-
-	.prose :global(.persons-index li) {
-		margin-bottom: 0.25rem;
-		font-size: 0.875em;
-		break-inside: avoid;
-	}
-
-	.prose :global(.persons-index a) {
-		color: var(--color-ink-muted, #57534e);
-		text-decoration: none;
-	}
-
-	.prose :global(.persons-index a:hover) {
-		color: var(--color-ink, #1c1917);
-		text-decoration: underline;
-		text-underline-offset: 2px;
-	}
-
-	/* Notas al pie */
-	.prose :global(.footnotes) {
-		margin-top: 3rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--color-paper-border, #e8e2da);
-		font-size: 0.875em;
-		color: var(--color-ink-muted, #57534e);
-	}
-
-	.prose :global(.footnotes ol) {
-		padding-left: 1.25rem;
-	}
-
-	.prose :global(.footnotes li) {
-		margin-bottom: 0.25rem;
-	}
-
-	.prose :global(a[data-footnote-ref]) {
-		font-size: 0.75em;
-		vertical-align: super;
-		line-height: 0;
-		text-decoration: none;
-		color: var(--color-accent, #7c5c3e);
-		font-weight: 600;
-	}
-
-	.prose :global(a[data-footnote-backref]) {
-		text-decoration: none;
-		color: var(--color-ink-faint, #a8a29e);
-		margin-left: 0.25rem;
-	}
-
-	.prose :global(a[data-footnote-backref]:hover) {
-		color: var(--color-accent, #7c5c3e);
-	}
-
-	/* Epigraphs */
-	.prose :global(.epigraph-block) {
-		margin: 2rem 0;
-		padding: 1.5rem;
-		border-left: 4px solid var(--color-accent, #7c5c3e);
-		background: var(--color-paper-ui, #ede8df);
-		font-style: italic;
-	}
-
-	.prose :global(.epigraph-block blockquote) {
-		margin: 0;
-		padding: 0;
-	}
-
-	.prose :global(.epigraph-block blockquote p) {
-		margin: 0 0 0.5rem 0;
-	}
-
-	.prose :global(.epigraph-block figcaption) {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		font-size: 0.9rem;
-		font-style: normal;
-		color: var(--color-ink-muted, #7a6a58);
-	}
-
-	.prose :global(.epigraph-author) {
-		font-weight: 500;
-	}
-
-	.prose :global(.epigraph-source) {
-		font-size: 0.85rem;
 	}
 
 	/* Paragraph markers */
@@ -768,84 +647,5 @@
 	.prose :global(p.comment-highlight) {
 		animation: comment-highlight-fade 1.8s ease-out forwards;
 		border-radius: 3px;
-	}
-
-	/* Callout blocks */
-	.prose :global(.callout) {
-		margin: 1.5rem 0;
-		padding: 0.875rem 1rem;
-		border-radius: 0.375rem;
-		border-left-width: 3px;
-		border-left-style: solid;
-		font-family: var(--font-sans, sans-serif);
-		font-size: 0.9em;
-	}
-
-	.prose :global(.callout-header) {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-		font-weight: 600;
-		margin-bottom: 0.35rem;
-	}
-
-	.prose :global(.callout-body) {
-		color: var(--color-ink-muted, #57534e);
-		line-height: 1.6;
-		white-space: pre-wrap;
-	}
-
-	/* note — blue/neutral */
-	.prose :global(.callout-note) {
-		background: oklch(0.96 0.02 240 / 0.6);
-		border-left-color: oklch(0.6 0.1 240);
-		color: oklch(0.35 0.08 240);
-	}
-	.prose :global(.callout-note .callout-header) {
-		color: oklch(0.45 0.1 240);
-	}
-
-	/* warning — amber */
-	.prose :global(.callout-warning) {
-		background: oklch(0.97 0.05 80 / 0.6);
-		border-left-color: oklch(0.72 0.14 70);
-		color: oklch(0.4 0.08 70);
-	}
-	.prose :global(.callout-warning .callout-header) {
-		color: oklch(0.5 0.14 70);
-	}
-
-	/* tip — green */
-	.prose :global(.callout-tip) {
-		background: oklch(0.96 0.04 150 / 0.6);
-		border-left-color: oklch(0.58 0.12 150);
-		color: oklch(0.35 0.08 150);
-	}
-	.prose :global(.callout-tip .callout-header) {
-		color: oklch(0.45 0.12 150);
-	}
-
-	/* caution — red/orange */
-	.prose :global(.callout-caution) {
-		background: oklch(0.97 0.04 25 / 0.6);
-		border-left-color: oklch(0.6 0.15 25);
-		color: oklch(0.38 0.08 25);
-	}
-	.prose :global(.callout-caution .callout-header) {
-		color: oklch(0.48 0.15 25);
-	}
-
-	/* Dark mode adjustments */
-	:global(.dark) .prose :global(.callout-note) {
-		background: oklch(0.25 0.04 240 / 0.5);
-	}
-	:global(.dark) .prose :global(.callout-warning) {
-		background: oklch(0.25 0.05 70 / 0.5);
-	}
-	:global(.dark) .prose :global(.callout-tip) {
-		background: oklch(0.25 0.04 150 / 0.5);
-	}
-	:global(.dark) .prose :global(.callout-caution) {
-		background: oklch(0.25 0.05 25 / 0.5);
 	}
 </style>
