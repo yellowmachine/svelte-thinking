@@ -122,8 +122,6 @@
 			orcidVerified={data.orcidVerified}
 			orcidStatus={data.orcidStatus as 'connected' | 'error' | null}
 			isAdmin={data.isAdmin}
-			displayName={data.displayName}
-			bio={data.bio}
 		/>
 	{:else if activeTab === 'ai'}
 		<AiSettingsTab openrouterStatus={data.openrouterStatus as 'success' | 'error' | null} />

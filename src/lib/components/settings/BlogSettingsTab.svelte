@@ -17,6 +17,29 @@
 	let handle = $state<string | null>(null);
 	let posts = $state<Post[]>([]);
 
+	let publicDisplayName = $state('');
+	let publicBio = $state('');
+	let savingPublicProfile = $state(false);
+	let publicProfileError = $state('');
+	let publicProfileSuccess = $state(false);
+
+	async function savePublicProfile() {
+		publicProfileError = '';
+		publicProfileSuccess = false;
+		savingPublicProfile = true;
+		try {
+			await trpc.users.updateProfile.mutate({
+				displayName: publicDisplayName.trim() || undefined,
+				bio: publicBio.trim() || null
+			});
+			publicProfileSuccess = true;
+		} catch (e) {
+			publicProfileError = e instanceof Error ? e.message : 'Error al guardar el perfil público.';
+		} finally {
+			savingPublicProfile = false;
+		}
+	}
+
 	let handleInput = $state('');
 	let checking = $state(false);
 	let availability = $state<'available' | 'taken' | 'invalid' | 'reserved' | null>(null);
@@ -36,6 +59,8 @@
 			const data = await trpc.blog.getMine.query();
 			handle = data.handle;
 			posts = data.posts as Post[];
+			publicDisplayName = data.displayName ?? '';
+			publicBio = data.bio ?? '';
 		} finally {
 			loading = false;
 			loaded = true;
@@ -180,6 +205,69 @@
 					{/if}
 				</div>
 			{/if}
+		</section>
+
+		<section
+			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+		>
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+				Perfil público
+			</h2>
+			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Se muestra en la portada de tu blog (<code class="font-mono">/@handle</code>).
+			</p>
+
+			<div class="flex flex-col gap-4">
+				<div class="flex flex-col gap-1.5">
+					<label
+						for="public-display-name"
+						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+					>
+						Nombre público
+					</label>
+					<input
+						id="public-display-name"
+						type="text"
+						maxlength="100"
+						bind:value={publicDisplayName}
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<label for="public-bio" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						Bio
+					</label>
+					<textarea
+						id="public-bio"
+						rows="3"
+						maxlength="500"
+						bind:value={publicBio}
+						placeholder="Una breve descripción sobre ti…"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					></textarea>
+				</div>
+
+				{#if publicProfileError}
+					<p class="font-sans text-sm text-red-600 dark:text-red-400">{publicProfileError}</p>
+				{/if}
+				{#if publicProfileSuccess}
+					<p class="font-sans text-sm text-green-600 dark:text-green-400">
+						Perfil público actualizado.
+					</p>
+				{/if}
+
+				<div class="flex justify-end">
+					<button
+						type="button"
+						onclick={savePublicProfile}
+						disabled={savingPublicProfile}
+						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+					>
+						{savingPublicProfile ? 'Guardando…' : 'Save changes'}
+					</button>
+				</div>
+			</div>
 		</section>
 
 		{#if handle}
