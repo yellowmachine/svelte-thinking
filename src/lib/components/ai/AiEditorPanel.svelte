@@ -73,6 +73,7 @@
 		find_untagged: 'Scanning for untagged items…',
 		replace_text: 'Preparing edit…',
 		insert_after: 'Preparing insertion…',
+		insert_index: 'Preparing index…',
 		propose_references: 'Searching bibliography…'
 	};
 

@@ -17,11 +17,29 @@
 		return text.length > PREVIEW_LIMIT ? text.slice(0, PREVIEW_LIMIT) + '…' : text;
 	}
 
-	const originalText = $derived(
-		action.type === 'replace_text' ? action.anchorText : action.anchorText
+	const showDiff = $derived(action.type === 'replace_text' || action.type === 'insert_after');
+	const originalText = $derived(action.type === 'replace_text' ? action.anchorText : '');
+	const newText = $derived(
+		action.type === 'replace_text'
+			? action.replacement
+			: action.type === 'insert_after'
+				? action.content
+				: ''
 	);
-	const newText = $derived(action.type === 'replace_text' ? action.replacement : action.content);
-	const label = $derived(action.type === 'replace_text' ? 'Replace' : 'Insert');
+	const label = $derived(
+		action.type === 'replace_text'
+			? 'Replace'
+			: action.type === 'insert_index'
+				? 'Insert index'
+				: 'Insert'
+	);
+	const indexDescription = $derived(
+		action.type === 'insert_index'
+			? action.kind === 'toc'
+				? 'Table of contents, inserted at the top of the document.'
+				: 'Onomastic index, inserted at the end of the document.'
+			: ''
+	);
 
 	function confirm() {
 		if (status !== 'idle') return;
@@ -54,7 +72,7 @@
 				{action.explanation}
 			</p>
 
-			{#if status === 'idle'}
+			{#if status === 'idle' && showDiff}
 				<!-- Diff preview -->
 				<div class="mt-2.5 space-y-1.5">
 					<div class="rounded-lg bg-red-50 px-2.5 py-2 dark:bg-red-950/30">
@@ -79,6 +97,12 @@
 							{truncate(newText)}
 						</p>
 					</div>
+				</div>
+			{:else if status === 'idle' && action.type === 'insert_index'}
+				<div class="mt-2.5 rounded-lg bg-green-50 px-2.5 py-2 dark:bg-green-950/30">
+					<p class="font-sans text-xs leading-relaxed text-green-800 dark:text-green-200">
+						{indexDescription}
+					</p>
 				</div>
 			{/if}
 		</div>

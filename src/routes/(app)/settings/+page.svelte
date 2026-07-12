@@ -7,6 +7,7 @@
 	import AiSettingsTab from '$lib/components/settings/AiSettingsTab.svelte';
 	import SecurityTab from '$lib/components/settings/SecurityTab.svelte';
 	import StorageTab from '$lib/components/settings/StorageTab.svelte';
+	import BlogSettingsTab from '$lib/components/settings/BlogSettingsTab.svelte';
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { settingsTutorialSteps } from '$lib/tutorials/settings';
 
@@ -18,7 +19,8 @@
 		'security',
 		'appearance',
 		'organizations',
-		'storage'
+		'storage',
+		'blog'
 	] as const;
 	type Tab = (typeof VALID_TABS)[number];
 	const initialTab = $page.url.searchParams.get('tab');
@@ -101,6 +103,15 @@
 		>
 			Storage
 		</button>
+		<button
+			type="button"
+			onclick={() => (activeTab = 'blog')}
+			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'blog'
+				? 'border-b-2 border-accent font-medium text-accent'
+				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+		>
+			Blog
+		</button>
 	</div>
 
 	{#if activeTab === 'profile'}
@@ -142,6 +153,8 @@
 		</div>
 	{:else if activeTab === 'storage'}
 		<StorageTab />
+	{:else if activeTab === 'blog'}
+		<BlogSettingsTab />
 	{/if}
 </div>
 

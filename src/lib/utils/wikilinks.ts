@@ -1,5 +1,7 @@
 // ── Wikilink utilities ────────────────────────────────────────────────────
 
+import GithubSlugger from 'github-slugger';
+
 /** Strip YAML frontmatter (--- ... ---) from the start of a markdown string. */
 export function stripFrontmatter(markdown: string): string {
 	return markdown.replace(/^---\r?\n[\s\S]*?\n---[ \t]*(\r?\n|$)/, '');
@@ -48,12 +50,15 @@ const INDEX_PERSONS_RE = /\[\[index:persons\]\]/g;
 // Matches [[Title]] — no doc: prefix, no pipe, no #, no @, no person:, no index:
 const TITLE_LINK_RE = /\[\[(?!doc:|person:|index:|@|#)([^\]|]+)\]\]/g;
 
+// Same algorithm marked-gfm-heading-id uses (github-slugger under the hood), so
+// [[#Heading]] anchors match the real heading id — a hand-rolled regex here
+// previously stripped accented characters (e.g. "Introducción" → "introduccin")
+// while the real id keeps them ("introducción"), silently breaking any link to
+// an accented heading. Note: unlike the real per-document slugger, this doesn't
+// track a running list of already-seen slugs, so it still won't disambiguate
+// two headings that share the exact same title (rare, unlike the accent case).
 function headingAnchor(text: string): string {
-	return text
-		.trim()
-		.toLowerCase()
-		.replace(/\s+/g, '-')
-		.replace(/[^\w-]/g, '');
+	return new GithubSlugger().slug(text.trim().toLowerCase());
 }
 
 /** Extract all link targets from a markdown string.
@@ -118,6 +123,38 @@ function _processPersonsAndIndex(markdown: string): string {
 	const indexHtml = `<nav class="persons-index"><ol>${listItems}</ol></nav>`;
 
 	return withPersons.replace(INDEX_PERSONS_RE, indexHtml);
+}
+
+// Matches [[index:toc]] — table of contents placeholder
+const INDEX_TOC_RE = /\[\[index:toc\]\]/g;
+
+/**
+ * Replace [[index:toc]] with an HTML-comment placeholder. Unlike [[index:persons]],
+ * this can't be resolved in the same pre-parse pass — the real heading ids only
+ * exist after marked.parse() runs (see restoreToc). Call before marked.parse().
+ */
+export function protectTocPlaceholder(markdown: string): string {
+	return withCodeProtection(markdown, (md) => md.replace(INDEX_TOC_RE, '<!--toc-->'));
+}
+
+export interface TocHeading {
+	level: number;
+	id: string;
+	text: string;
+}
+
+/**
+ * Restore <!--toc--> placeholder(s) with a generated table of contents, built
+ * from marked-gfm-heading-id's getHeadingList() output. Call after
+ * marked.parse() (which populates the heading list as a side effect).
+ */
+export function restoreToc(html: string, headings: TocHeading[]): string {
+	if (!html.includes('<!--toc-->')) return html;
+	const items = headings
+		.map((h) => `<li class="toc-level-${h.level}"><a href="#${h.id}">${h.text}</a></li>`)
+		.join('');
+	const tocHtml = `<nav class="toc"><ul>${items}</ul></nav>`;
+	return html.split('<!--toc-->').join(tocHtml);
 }
 
 /**

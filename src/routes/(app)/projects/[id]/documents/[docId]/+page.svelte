@@ -2825,6 +2825,11 @@
 										'\n\n' +
 										action.content +
 										content.slice(idx + action.anchorText.length);
+							} else if (action.type === 'insert_index') {
+								content =
+									action.kind === 'toc'
+										? `[[index:toc]]\n\n${content}`
+										: `${content}\n\n[[index:persons]]`;
 							}
 						}}
 						onClose={toggleChat}
