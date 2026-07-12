@@ -13,6 +13,42 @@ import type { CiteRef, CitationStyle } from '$lib/utils/citations';
 
 const HANDLE_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/; // 3-30 chars
 
+// Top-level route segments of the app (see src/routes/) — blocked so nobody
+// can register e.g. @admin or @login and be confused for an official page.
+const RESERVED_HANDLES = new Set([
+	'about',
+	'admin',
+	'api',
+	'bib',
+	'blog',
+	'check-email',
+	'conduct',
+	'demo',
+	'explore',
+	'feedback',
+	'forgot-password',
+	'help',
+	'invitations',
+	'login',
+	'logout',
+	'network',
+	'no-access',
+	'notifications',
+	'offline',
+	'org-invitations',
+	'preview',
+	'privacy',
+	'project',
+	'projects',
+	'register',
+	'reset-password',
+	'settings',
+	'sync-log',
+	'tags',
+	'usage',
+	'verify-email'
+]);
+
 export const blogRouter = router({
 	// Own handle + list of published posts, for Settings → Blog.
 	// Includes the originating project/document/version so the author can trace
@@ -50,6 +86,7 @@ export const blogRouter = router({
 		.query(async ({ ctx, input }) => {
 			const handle = input.handle.toLowerCase();
 			if (!HANDLE_RE.test(handle)) return { available: false, reason: 'invalid' as const };
+			if (RESERVED_HANDLES.has(handle)) return { available: false, reason: 'reserved' as const };
 
 			return ctx.withRLS(async (db) => {
 				const existing = await db
@@ -86,6 +123,10 @@ export const blogRouter = router({
 						code: 'BAD_REQUEST',
 						message: 'El handle debe tener entre 3 y 30 caracteres: letras, números y guiones.'
 					});
+				}
+
+				if (RESERVED_HANDLES.has(handle)) {
+					throw new TRPCError({ code: 'BAD_REQUEST', message: 'Ese handle está reservado.' });
 				}
 
 				const existing = await db

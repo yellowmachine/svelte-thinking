@@ -11,7 +11,9 @@
 		orcid,
 		orcidVerified,
 		orcidStatus,
-		isAdmin
+		isAdmin,
+		displayName,
+		bio
 	}: {
 		user: { name: string; email: string };
 		githubLinked: boolean;
@@ -19,7 +21,33 @@
 		orcidVerified: boolean;
 		orcidStatus: 'connected' | 'error' | null;
 		isAdmin: boolean;
+		displayName: string | null;
+		bio: string | null;
 	} = $props();
+
+	let publicDisplayName = $state(untrack(() => displayName ?? ''));
+	let publicBio = $state(untrack(() => bio ?? ''));
+	let savingPublicProfile = $state(false);
+	let publicProfileError = $state('');
+	let publicProfileSuccess = $state(false);
+
+	async function savePublicProfile() {
+		publicProfileError = '';
+		publicProfileSuccess = false;
+		savingPublicProfile = true;
+		try {
+			await trpc.users.updateProfile.mutate({
+				displayName: publicDisplayName.trim() || undefined,
+				bio: publicBio.trim() || null
+			});
+			publicProfileSuccess = true;
+			await invalidateAll();
+		} catch (e) {
+			publicProfileError = e instanceof Error ? e.message : 'Error al guardar el perfil público.';
+		} finally {
+			savingPublicProfile = false;
+		}
+	}
 
 	let unlinkingGitHub = $state(false);
 	let unlinkGitHubError = $state('');
@@ -145,6 +173,72 @@
 					class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white opacity-50"
 				>
 					Save changes
+				</button>
+			</div>
+		</div>
+	</section>
+
+	<!-- Public profile (shown on your blog home at /@handle) -->
+	<section
+		class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+	>
+		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+			Perfil público
+		</h2>
+		<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			Se muestra en la portada de tu blog (<code class="font-mono">/@handle</code>) si tienes uno
+			configurado.
+		</p>
+
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-col gap-1.5">
+				<label
+					for="public-display-name"
+					class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
+				>
+					Nombre público
+				</label>
+				<input
+					id="public-display-name"
+					type="text"
+					maxlength="100"
+					bind:value={publicDisplayName}
+					placeholder={user.name}
+					class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				/>
+			</div>
+
+			<div class="flex flex-col gap-1.5">
+				<label for="public-bio" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+					Bio
+				</label>
+				<textarea
+					id="public-bio"
+					rows="3"
+					maxlength="500"
+					bind:value={publicBio}
+					placeholder="Una breve descripción sobre ti…"
+					class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				></textarea>
+			</div>
+
+			{#if publicProfileError}
+				<p class="font-sans text-sm text-red-600 dark:text-red-400">{publicProfileError}</p>
+			{/if}
+			{#if publicProfileSuccess}
+				<p class="font-sans text-sm text-green-600 dark:text-green-400">
+					Perfil público actualizado.
+				</p>
+			{/if}
+
+			<div class="flex justify-end">
+				<button
+					type="button"
+					onclick={savePublicProfile}
+					disabled={savingPublicProfile}
+					class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+				>
+					{savingPublicProfile ? 'Guardando…' : 'Save changes'}
 				</button>
 			</div>
 		</div>
