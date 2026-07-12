@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { blogPost } from '$lib/server/db/schemas/blog.schema';
+import { excerptFromHtml } from '$lib/server/blogExcerpt';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const handle = params.handle.toLowerCase();
@@ -35,11 +36,8 @@ export const load: PageServerLoad = async ({ params }) => {
 	const post = postRows[0];
 
 	const description =
-		post.renderedHtml
-			.replace(/<[^>]+>/g, ' ')
-			.replace(/\s+/g, ' ')
-			.trim()
-			.slice(0, 160) || `${post.title} — publicado por @${author.handle} en Scholio.`;
+		excerptFromHtml(post.renderedHtml, 160) ||
+		`${post.title} — publicado por @${author.handle} en Scholio.`;
 
 	return { author, post, description };
 };
