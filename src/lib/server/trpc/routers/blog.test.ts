@@ -97,6 +97,21 @@ describe('blog.publish', () => {
 		expect(typeof rows[0].content).toBe('string');
 	});
 
+	it('rejects an explicit slug collision with a clear error instead of silently renaming', async () => {
+		const { caller, projectId, versionId } = await seedUserWithDocument('publish-slug-conflict');
+		await caller.blog.setHandle({ handle: 'slug-conflict-blog' });
+		await caller.blog.publish({ versionId, slug: 'my-chosen-slug' });
+
+		const doc2 = await caller.documents.create({
+			projectId,
+			title: 'Otro documento',
+			type: 'paper'
+		});
+		await expect(
+			caller.blog.publish({ versionId: doc2.currentVersionId!, slug: 'my-chosen-slug' })
+		).rejects.toMatchObject({ code: 'CONFLICT' });
+	});
+
 	it('is idempotent for the same version', async () => {
 		const { caller, versionId } = await seedUserWithDocument('publish-idempotent');
 		await caller.blog.setHandle({ handle: 'idempotent-blog' });

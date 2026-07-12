@@ -6,6 +6,7 @@
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import InfoDialog from '$lib/components/ui/InfoDialog.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
+	import PublishToBlogDialog from '$lib/components/editor/PublishToBlogDialog.svelte';
 	import { untrack } from 'svelte';
 
 	import { resolve } from '$app/paths';
@@ -42,10 +43,10 @@
 	let blogPosts = $state<Record<string, { id: string; slug: string }>>(
 		untrack(() => ({ ...data.blogPostByVersionId }))
 	);
-	let publishingVersionId = $state<string | null>(null);
 	let unpublishingBlogId = $state<string | null>(null);
 	let showNoHandleDialog = $state(false);
 	let versionToUnpublish = $state<Version | null>(null);
+	let versionToPublish = $state<Version | null>(null);
 
 	const fmt = new Intl.DateTimeFormat('es', {
 		day: 'numeric',
@@ -107,18 +108,18 @@
 		}
 	}
 
-	async function publishToBlog(v: Version) {
+	function publishToBlog(v: Version) {
 		if (!data.userHandle) {
 			showNoHandleDialog = true;
 			return;
 		}
-		publishingVersionId = v.id;
-		try {
-			const result = await trpc.blog.publish.mutate({ versionId: v.id });
-			blogPosts = { ...blogPosts, [v.id]: { id: result.id, slug: result.slug } };
-		} finally {
-			publishingVersionId = null;
-		}
+		versionToPublish = v;
+	}
+
+	function onPublished(result: { id: string; slug: string }) {
+		if (!versionToPublish) return;
+		blogPosts = { ...blogPosts, [versionToPublish.id]: { id: result.id, slug: result.slug } };
+		versionToPublish = null;
 	}
 
 	function confirmUnpublishFromBlog(v: Version) {
@@ -430,31 +431,26 @@
 										{:else}
 											<button
 												onclick={() => publishToBlog(v)}
-												disabled={publishingVersionId === v.id}
 												title="Publicar esta versión en tu blog"
 												class="flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
 												aria-label="Publicar en el blog"
 											>
-												{#if publishingVersionId === v.id}
-													<Spinner size="sm" />
-												{:else}
-													<svg
-														width="13"
-														height="13"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														aria-hidden="true"
-													>
-														<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-														<path
-															d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-														/>
-													</svg>
-												{/if}
+												<svg
+													width="13"
+													height="13"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													aria-hidden="true"
+												>
+													<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+													<path
+														d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+													/>
+												</svg>
 											</button>
 										{/if}
 									</div>
@@ -582,3 +578,13 @@
 	onconfirm={unpublishFromBlog}
 	oncancel={() => (versionToUnpublish = null)}
 />
+
+{#if versionToPublish && data.userHandle}
+	<PublishToBlogDialog
+		title={data.document.title}
+		handle={data.userHandle}
+		versionId={versionToPublish.id}
+		onpublished={onPublished}
+		onclose={() => (versionToPublish = null)}
+	/>
+{/if}

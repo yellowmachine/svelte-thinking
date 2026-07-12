@@ -231,10 +231,22 @@ export const blogRouter = router({
 
 				const base = slugify(input.slug ?? doc.title) || 'post';
 				let slug = base;
-				let n = 2;
-				while (taken.has(slug)) {
-					slug = `${base}-${n}`;
-					n++;
+				if (input.slug) {
+					// User explicitly chose this slug — a collision should be a clear
+					// error, not a silent "-2" rename behind their back.
+					if (taken.has(slug)) {
+						throw new TRPCError({
+							code: 'CONFLICT',
+							message: 'Ya tienes una publicación con esa URL. Elige otra.'
+						});
+					}
+				} else {
+					// Derived from the document title — dedupe automatically.
+					let n = 2;
+					while (taken.has(slug)) {
+						slug = `${base}-${n}`;
+						n++;
+					}
 				}
 
 				// Resolve citations against the document's project bibliography, same
