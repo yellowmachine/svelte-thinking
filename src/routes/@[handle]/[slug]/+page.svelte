@@ -26,6 +26,10 @@
 	<meta property="og:type" content="article" />
 	<meta property="og:title" content={data.post.title} />
 	<meta property="og:description" content={data.description} />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={data.post.title} />
+	<meta name="twitter:description" content={data.description} />
 	<link rel="canonical" href={canonicalUrl} />
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.39/dist/katex.min.css" />
 	<link rel="icon" href={favicon} />
