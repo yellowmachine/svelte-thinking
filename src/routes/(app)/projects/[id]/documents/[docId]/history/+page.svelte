@@ -4,6 +4,8 @@
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
+	import InfoDialog from '$lib/components/ui/InfoDialog.svelte';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import { untrack } from 'svelte';
 
 	import { resolve } from '$app/paths';
@@ -42,6 +44,8 @@
 	);
 	let publishingVersionId = $state<string | null>(null);
 	let unpublishingBlogId = $state<string | null>(null);
+	let showNoHandleDialog = $state(false);
+	let versionToUnpublish = $state<Version | null>(null);
 
 	const fmt = new Intl.DateTimeFormat('es', {
 		day: 'numeric',
@@ -105,7 +109,7 @@
 
 	async function publishToBlog(v: Version) {
 		if (!data.userHandle) {
-			alert('Configura tu blog en Ajustes → Blog antes de publicar.');
+			showNoHandleDialog = true;
 			return;
 		}
 		publishingVersionId = v.id;
@@ -117,10 +121,15 @@
 		}
 	}
 
-	async function unpublishFromBlog(v: Version) {
+	function confirmUnpublishFromBlog(v: Version) {
+		versionToUnpublish = v;
+	}
+
+	async function unpublishFromBlog() {
+		const v = versionToUnpublish;
+		if (!v) return;
 		const post = blogPosts[v.id];
 		if (!post?.id) return;
-		if (!confirm('¿Despublicar esta versión del blog? La URL pública dejará de funcionar.')) return;
 		unpublishingBlogId = post.id;
 		try {
 			await trpc.blog.unpublish.mutate({ postId: post.id });
@@ -129,6 +138,7 @@
 			blogPosts = next;
 		} finally {
 			unpublishingBlogId = null;
+			versionToUnpublish = null;
 		}
 	}
 
@@ -390,7 +400,7 @@
 										<!-- Publicar / despublicar en el blog -->
 										{#if blogPosts[v.id]}
 											<button
-												onclick={() => unpublishFromBlog(v)}
+												onclick={() => confirmUnpublishFromBlog(v)}
 												disabled={unpublishingBlogId === blogPosts[v.id]?.id}
 												title="Publicado en el blog · click para despublicar"
 												class="flex h-6 w-6 items-center justify-center rounded text-accent transition-colors hover:bg-accent/10 disabled:opacity-40"
@@ -551,3 +561,24 @@
 		</a>
 	</div>
 {/if}
+
+<InfoDialog
+	open={showNoHandleDialog}
+	title="Configura tu blog primero"
+	message="Necesitas elegir un handle en Ajustes → Blog antes de poder publicar."
+	actionLabel="Ir a Ajustes"
+	actionHref={resolve('/settings?tab=blog')}
+	oncancel={() => (showNoHandleDialog = false)}
+/>
+
+<SafeDeleteDialog
+	open={!!versionToUnpublish}
+	title="Despublicar del blog"
+	label="esta versión del blog"
+	confirmLabel="Despublicar"
+	warning="La URL pública dejará de funcionar. Puedes volver a publicarla cuando quieras."
+	deleting={unpublishingBlogId === blogPosts[versionToUnpublish?.id ?? '']?.id}
+	requireCode={false}
+	onconfirm={unpublishFromBlog}
+	oncancel={() => (versionToUnpublish = null)}
+/>

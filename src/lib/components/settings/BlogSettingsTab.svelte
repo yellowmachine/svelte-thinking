@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { resolve } from '$app/paths';
+	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 
 	type Post = {
 		id: string;
@@ -46,6 +47,7 @@
 	let saving = $state(false);
 	let error = $state('');
 	let unpublishingId = $state<string | null>(null);
+	let postToUnpublish = $state<Post | null>(null);
 
 	let checkTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -98,14 +100,16 @@
 		}
 	}
 
-	async function unpublish(post: Post) {
-		if (!confirm(`¿Despublicar "${post.title}"? La URL pública dejará de funcionar.`)) return;
+	async function unpublish() {
+		const post = postToUnpublish;
+		if (!post) return;
 		unpublishingId = post.id;
 		try {
 			await trpc.blog.unpublish.mutate({ postId: post.id });
 			posts = posts.filter((p) => p.id !== post.id);
 		} finally {
 			unpublishingId = null;
+			postToUnpublish = null;
 		}
 	}
 
@@ -314,7 +318,7 @@
 								</div>
 								<button
 									type="button"
-									onclick={() => unpublish(post)}
+									onclick={() => (postToUnpublish = post)}
 									disabled={unpublishingId === post.id}
 									class="shrink-0 font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
 								>
@@ -328,3 +332,15 @@
 		{/if}
 	{/if}
 </div>
+
+<SafeDeleteDialog
+	open={!!postToUnpublish}
+	title="Despublicar publicación"
+	label={postToUnpublish?.title ?? ''}
+	confirmLabel="Despublicar"
+	warning="La URL pública dejará de funcionar. Puedes volver a publicarla cuando quieras."
+	deleting={unpublishingId === postToUnpublish?.id}
+	requireCode={false}
+	onconfirm={unpublish}
+	oncancel={() => (postToUnpublish = null)}
+/>
