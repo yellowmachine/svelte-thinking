@@ -1,9 +1,15 @@
 import { marked } from 'marked';
 import markedFootnote from 'marked-footnote';
-import { gfmHeadingId } from 'marked-gfm-heading-id';
+import { gfmHeadingId, getHeadingList } from 'marked-gfm-heading-id';
 import katex from 'katex';
 import { parseHTML } from 'linkedom';
-import { stripFrontmatter, processWikilinks, processPersonsAndIndex } from '$lib/utils/wikilinks';
+import {
+	stripFrontmatter,
+	processWikilinks,
+	processPersonsAndIndex,
+	protectTocPlaceholder,
+	restoreToc
+} from '$lib/utils/wikilinks';
 import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
 import { extractCallouts, restoreCallouts } from '$lib/utils/callouts';
@@ -59,12 +65,14 @@ export async function renderMarkdownToHtml(
 	const withWikilinks =
 		docMap.size > 0 ? processWikilinks(withEpigraphPlaceholders, docMap) : withEpigraphPlaceholders;
 	const withPersons = processPersonsAndIndex(withWikilinks);
+	const withToc = protectTocPlaceholder(withPersons);
 	const withCitations =
-		references.size > 0 ? processCitations(withPersons, references, citationStyle) : withPersons;
+		references.size > 0 ? processCitations(withToc, references, citationStyle) : withToc;
 
 	let html = marked.parse(withCitations) as string;
 
 	// Restore placeholders
+	html = restoreToc(html, getHeadingList()); // getHeadingList() is populated by the marked.parse() call above
 	html = html.replace(
 		/<!--math:(math-(?:block|inline)-\d+)-->/g,
 		(_, id) => mathBlocks.get(id) ?? ''

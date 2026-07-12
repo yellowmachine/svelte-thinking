@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import favicon from '$lib/assets/favicon.svg';
+	import '$lib/styles/prose-content.css';
 
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
