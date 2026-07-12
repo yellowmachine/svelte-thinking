@@ -27,6 +27,9 @@ export const userProfile = scholioSchema
 			displayName: text('display_name'),
 			bio: text('bio'),
 			institution: text('institution'),
+			// Public blog URL segment: /@{handle}. null = blogging not enabled.
+			// Locked once the user has published a first blog post — see blogRouter.setHandle.
+			handle: text('handle').unique(),
 			orcid: text('orcid'),
 			orcidVerified: boolean('orcid_verified').notNull().default(false),
 			profileEmbedding: vector1536('profile_embedding'),
@@ -59,6 +62,13 @@ export const userProfile = scholioSchema
 			pgPolicy('user_profile_admin', {
 				for: 'all',
 				using: sql`current_setting('app.is_admin', true) = 'true'`
+			}),
+
+			// Opt-in public read for the personal blog (/@{handle}): once a user sets a
+			// handle, their displayName/bio become readable by anonymous visitors too.
+			pgPolicy('user_profile_public_read', {
+				for: 'select',
+				using: sql`${t.handle} IS NOT NULL`
 			})
 		]
 	)
