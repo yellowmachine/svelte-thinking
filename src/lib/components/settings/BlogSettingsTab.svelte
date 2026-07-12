@@ -19,7 +19,7 @@
 
 	let handleInput = $state('');
 	let checking = $state(false);
-	let availability = $state<'available' | 'taken' | 'invalid' | null>(null);
+	let availability = $state<'available' | 'taken' | 'invalid' | 'reserved' | null>(null);
 	let saving = $state(false);
 	let error = $state('');
 	let unpublishingId = $state<string | null>(null);
@@ -169,6 +169,10 @@
 					{:else if availability === 'invalid'}
 						<p class="font-sans text-xs text-red-600 dark:text-red-400">
 							3-30 caracteres: letras, números y guiones.
+						</p>
+					{:else if availability === 'reserved'}
+						<p class="font-sans text-xs text-red-600 dark:text-red-400">
+							Ese handle está reservado.
 						</p>
 					{/if}
 					{#if error}
