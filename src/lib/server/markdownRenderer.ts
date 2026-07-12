@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import markedFootnote from 'marked-footnote';
+import { gfmHeadingId } from 'marked-gfm-heading-id';
 import katex from 'katex';
 import { parseHTML } from 'linkedom';
 import { stripFrontmatter, processWikilinks, processPersonsAndIndex } from '$lib/utils/wikilinks';
@@ -8,6 +9,7 @@ import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epig
 import { extractCallouts, restoreCallouts } from '$lib/utils/callouts';
 
 marked.use(markedFootnote());
+marked.use(gfmHeadingId());
 
 export async function renderMarkdownToHtml(
 	content: string,

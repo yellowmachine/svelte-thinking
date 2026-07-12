@@ -2,10 +2,12 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import { marked } from 'marked';
 	import markedFootnote from 'marked-footnote';
+	import { gfmHeadingId } from 'marked-gfm-heading-id';
 	import DOMPurify from 'dompurify';
 	import katex from 'katex';
 
 	marked.use(markedFootnote());
+	marked.use(gfmHeadingId());
 	import { trpc } from '$lib/utils/trpc';
 	import { processCitations, type CitationStyle, type CiteRef } from '$lib/utils/citations';
 	import { processWikilinks, processPersonsAndIndex, stripFrontmatter } from '$lib/utils/wikilinks';
