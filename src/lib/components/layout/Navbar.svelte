@@ -198,6 +198,12 @@
 					Explore
 				</a>
 				<a
+					href={resolve('/posts')}
+					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+				>
+					Blog
+				</a>
+				<a
 					href={resolve('/network')}
 					class="relative font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>

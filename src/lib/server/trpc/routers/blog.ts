@@ -36,6 +36,7 @@ const RESERVED_HANDLES = new Set([
 	'notifications',
 	'offline',
 	'org-invitations',
+	'posts',
 	'preview',
 	'privacy',
 	'project',
