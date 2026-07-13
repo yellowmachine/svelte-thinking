@@ -48,7 +48,14 @@ export const load: PageServerLoad = async (event) => {
 				versionNumber: documentVersion.versionNumber,
 				slug: blogPost.slug,
 				title: blogPost.title,
-				publishedAt: blogPost.publishedAt
+				publishedAt: blogPost.publishedAt,
+				commentsEnabled: blogPost.commentsEnabled,
+				commentsVisible: blogPost.commentsVisible,
+				pendingCommentCount: sql<number>`(
+					SELECT count(*) FROM scholio.blog_post_comment
+					WHERE blog_post_comment.blog_post_id = ${blogPost.id}
+					AND blog_post_comment.status = 'pending'
+				)`
 			})
 			.from(blogPost)
 			.innerJoin(document, eq(document.id, blogPost.documentId))

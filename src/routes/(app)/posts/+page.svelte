@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { resolve } from '$app/paths';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteSet, SvelteMap } from 'svelte/reactivity';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import type { PageData } from './$types';
 
@@ -13,7 +13,88 @@
 	let unpublishingId = $state<string | null>(null);
 	let postToUnpublish = $state<Post | null>(null);
 
-	const posts = $derived(data.posts.filter((p) => !unpublishedIds.has(p.id)));
+	let commentsEnabledOverrides = new SvelteMap<string, boolean>();
+	let commentsVisibleOverrides = new SvelteMap<string, boolean>();
+
+	const posts = $derived(
+		data.posts
+			.filter((p) => !unpublishedIds.has(p.id))
+			.map((p) => ({
+				...p,
+				commentsEnabled: commentsEnabledOverrides.get(p.id) ?? p.commentsEnabled,
+				commentsVisible: commentsVisibleOverrides.get(p.id) ?? p.commentsVisible
+			}))
+	);
+
+	type ModerationComment = Awaited<
+		ReturnType<typeof trpc.blogComments.listForModeration.query>
+	>[number];
+
+	let expandedPostId = $state<string | null>(null);
+	let moderationComments = $state<ModerationComment[]>([]);
+	let moderationLoading = $state(false);
+	let togglingPostId = $state<string | null>(null);
+	let commentActionId = $state<string | null>(null);
+
+	async function toggleModeration(post: Post) {
+		if (expandedPostId === post.id) {
+			expandedPostId = null;
+			return;
+		}
+		expandedPostId = post.id;
+		moderationLoading = true;
+		try {
+			moderationComments = await trpc.blogComments.listForModeration.query(post.id);
+		} finally {
+			moderationLoading = false;
+		}
+	}
+
+	async function setCommentsEnabled(post: Post, enabled: boolean) {
+		togglingPostId = post.id;
+		try {
+			await trpc.blog.setCommentsEnabled.mutate({ postId: post.id, enabled });
+			commentsEnabledOverrides.set(post.id, enabled);
+		} finally {
+			togglingPostId = null;
+		}
+	}
+
+	async function setCommentsVisible(post: Post, visible: boolean) {
+		togglingPostId = post.id;
+		try {
+			await trpc.blog.setCommentsVisible.mutate({ postId: post.id, visible });
+			commentsVisibleOverrides.set(post.id, visible);
+		} finally {
+			togglingPostId = null;
+		}
+	}
+
+	async function moderate(comment: ModerationComment, status: 'approved' | 'hidden') {
+		commentActionId = comment.id;
+		try {
+			await trpc.blogComments.moderate.mutate({ commentId: comment.id, status });
+			comment.status = status;
+		} finally {
+			commentActionId = null;
+		}
+	}
+
+	async function deleteComment(comment: ModerationComment) {
+		commentActionId = comment.id;
+		try {
+			await trpc.blogComments.delete.mutate(comment.id);
+			moderationComments = moderationComments.filter((c) => c.id !== comment.id);
+		} finally {
+			commentActionId = null;
+		}
+	}
+
+	const statusLabel: Record<string, string> = {
+		pending: 'Pendiente',
+		approved: 'Aprobado',
+		hidden: 'Oculto'
+	};
 
 	const dateFmt = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', year: 'numeric' });
 	const monthFmt = new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' });
@@ -73,38 +154,158 @@
 				{:else}
 					<div class="flex flex-col gap-2">
 						{#each posts as post (post.id)}
+							{@const pendingCount =
+								expandedPostId === post.id
+									? moderationComments.filter((c) => c.status === 'pending').length
+									: post.pendingCommentCount}
 							<div
-								class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+								class="rounded-lg border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
 							>
-								<div class="min-w-0 flex-1">
-									<a
-										href={resolve('/@[handle]/[slug]', { handle: data.handle, slug: post.slug })}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="truncate font-sans text-sm font-medium text-ink hover:underline dark:text-dark-ink"
-									>
-										{post.title}
-									</a>
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										{dateFmt.format(new Date(post.publishedAt))} · originado en
+								<div class="flex items-center justify-between gap-3 px-4 py-3">
+									<div class="min-w-0 flex-1">
 										<a
-											href={resolve(
-												`/projects/${post.projectId}/documents/${post.documentId}/history`
-											)}
-											class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
+											href={resolve('/@[handle]/[slug]', { handle: data.handle, slug: post.slug })}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="truncate font-sans text-sm font-medium text-ink hover:underline dark:text-dark-ink"
 										>
-											v{post.versionNumber}
+											{post.title}
 										</a>
-									</p>
+										<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+											{dateFmt.format(new Date(post.publishedAt))} · originado en
+											<a
+												href={resolve(
+													`/projects/${post.projectId}/documents/${post.documentId}/history`
+												)}
+												class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
+											>
+												v{post.versionNumber}
+											</a>
+										</p>
+									</div>
+									<button
+										type="button"
+										onclick={() => toggleModeration(post)}
+										class="shrink-0 font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+									>
+										Comentarios{pendingCount > 0
+											? ` (${pendingCount} pendiente${pendingCount === 1 ? '' : 's'})`
+											: ''}
+									</button>
+									<button
+										type="button"
+										onclick={() => (postToUnpublish = post)}
+										disabled={unpublishingId === post.id}
+										class="shrink-0 font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+									>
+										{unpublishingId === post.id ? 'Despublicando...' : 'Despublicar'}
+									</button>
 								</div>
-								<button
-									type="button"
-									onclick={() => (postToUnpublish = post)}
-									disabled={unpublishingId === post.id}
-									class="shrink-0 font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
-								>
-									{unpublishingId === post.id ? 'Despublicando...' : 'Despublicar'}
-								</button>
+
+								{#if expandedPostId === post.id}
+									<div class="border-t border-paper-border px-4 py-3 dark:border-dark-paper-border">
+										<div class="flex flex-wrap items-center gap-4">
+											<label
+												class="flex items-center gap-2 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+											>
+												<input
+													type="checkbox"
+													checked={post.commentsEnabled}
+													disabled={togglingPostId === post.id}
+													onchange={(e) => setCommentsEnabled(post, e.currentTarget.checked)}
+													class="rounded"
+												/>
+												Permitir comentarios nuevos
+											</label>
+											<label
+												class="flex items-center gap-2 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+											>
+												<input
+													type="checkbox"
+													checked={post.commentsVisible}
+													disabled={togglingPostId === post.id}
+													onchange={(e) => setCommentsVisible(post, e.currentTarget.checked)}
+													class="rounded"
+												/>
+												Mostrar comentarios publicados
+											</label>
+										</div>
+
+										{#if moderationLoading}
+											<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+												Cargando comentarios...
+											</p>
+										{:else if moderationComments.length === 0}
+											<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+												Todavía no hay comentarios en esta publicación.
+											</p>
+										{:else}
+											<ul class="mt-3 flex flex-col gap-3">
+												{#each moderationComments as comment (comment.id)}
+													<li
+														class="rounded-md border border-paper-border p-3 dark:border-dark-paper-border"
+													>
+														<div class="flex flex-wrap items-center gap-2">
+															<span
+																class="font-sans text-xs font-medium text-ink dark:text-dark-ink"
+															>
+																{statusLabel[comment.status]}
+															</span>
+															{#if comment.aiFlagged}
+																<span
+																	class="rounded bg-amber-100 px-1.5 py-0.5 font-sans text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+																	title={comment.aiReason ?? ''}
+																>
+																	Marcado por IA
+																</span>
+															{/if}
+															<span
+																class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+															>
+																{dateFmt.format(new Date(comment.createdAt))}
+															</span>
+														</div>
+														<p
+															class="mt-1 font-sans text-sm whitespace-pre-wrap text-ink-muted dark:text-dark-ink-muted"
+														>
+															{comment.content}
+														</p>
+														<div class="mt-2 flex gap-3">
+															{#if comment.status !== 'approved'}
+																<button
+																	type="button"
+																	disabled={commentActionId === comment.id}
+																	onclick={() => moderate(comment, 'approved')}
+																	class="font-sans text-xs text-emerald-600 hover:text-emerald-700 disabled:opacity-50 dark:text-emerald-400 dark:hover:text-emerald-300"
+																>
+																	Aprobar
+																</button>
+															{/if}
+															{#if comment.status !== 'hidden'}
+																<button
+																	type="button"
+																	disabled={commentActionId === comment.id}
+																	onclick={() => moderate(comment, 'hidden')}
+																	class="font-sans text-xs text-ink-muted hover:text-ink disabled:opacity-50 dark:text-dark-ink-muted dark:hover:text-dark-ink"
+																>
+																	Ocultar
+																</button>
+															{/if}
+															<button
+																type="button"
+																disabled={commentActionId === comment.id}
+																onclick={() => deleteComment(comment)}
+																class="font-sans text-xs text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+															>
+																Eliminar
+															</button>
+														</div>
+													</li>
+												{/each}
+											</ul>
+										{/if}
+									</div>
+								{/if}
 							</div>
 						{/each}
 					</div>

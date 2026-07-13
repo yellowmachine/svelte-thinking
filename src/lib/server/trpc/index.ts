@@ -23,6 +23,7 @@ import { notificationsRouter } from './routers/notifications';
 import { issuesRouter } from './routers/issues';
 import { tagsRouter } from './routers/tags';
 import { blogRouter } from './routers/blog';
+import { blogCommentsRouter } from './routers/blogComments';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -48,7 +49,8 @@ export const appRouter = router({
 	notifications: notificationsRouter,
 	issues: issuesRouter,
 	tags: tagsRouter,
-	blog: blogRouter
+	blog: blogRouter,
+	blogComments: blogCommentsRouter
 });
 
 export type AppRouter = typeof appRouter;
