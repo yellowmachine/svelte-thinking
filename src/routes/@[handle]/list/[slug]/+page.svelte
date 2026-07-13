@@ -1,26 +1,31 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import favicon from '$lib/assets/favicon.svg';
-
 	import { resolve } from '$app/paths';
+	import { page } from '$app/stores';
+
 	let { data }: { data: PageData } = $props();
 
 	const fmt = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', year: 'numeric' });
-
-	const title = $derived(`${data.author.displayName ?? '@' + data.author.handle} — Blog`);
-	const description = $derived(
-		data.author.bio?.slice(0, 160) ?? `Artículos de @${data.author.handle} en Scholio.`
-	);
+	const canonicalUrl = $derived($page.url.origin + $page.url.pathname);
 </script>
 
 <svelte:head>
-	<title>{title}</title>
-	<meta name="description" content={description} />
+	<title>{data.aggregator.title} — @{data.curator.handle}</title>
+	<meta name="description" content={data.description} />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content={data.aggregator.title} />
+	<meta property="og:description" content={data.description} />
+	<meta property="og:url" content={canonicalUrl} />
+	<link rel="canonical" href={canonicalUrl} />
 	<link
 		rel="alternate"
 		type="application/rss+xml"
-		{title}
-		href={`/@${data.author.handle}/rss.xml`}
+		title={data.aggregator.title}
+		href={resolve('/@[handle]/list/[slug]/rss.xml', {
+			handle: data.curator.handle ?? '',
+			slug: data.aggregator.slug
+		})}
 	/>
 	<link rel="icon" href={favicon} />
 </svelte:head>
@@ -56,19 +61,26 @@
 
 <main class="mx-auto max-w-2xl px-6 py-12">
 	<div class="mb-10 border-b border-paper-border pb-6 dark:border-dark-paper-border">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
-			{data.author.displayName ?? `@${data.author.handle}`}
+		<a
+			href={resolve('/@[handle]', { handle: data.curator.handle ?? '' })}
+			class="font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+		>
+			Lista de @{data.curator.handle}
+		</a>
+		<h1 class="mt-2 font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+			{data.aggregator.title}
 		</h1>
-		<p class="mt-1 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-			@{data.author.handle}
-		</p>
-		{#if data.author.bio}
+		{#if data.aggregator.description}
 			<p class="mt-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				{data.author.bio}
+				{data.aggregator.description}
 			</p>
 		{/if}
+
 		<a
-			href={resolve('/@[handle]/rss.xml', { handle: data.author.handle ?? '' })}
+			href={resolve('/@[handle]/list/[slug]/rss.xml', {
+				handle: data.curator.handle ?? '',
+				slug: data.aggregator.slug
+			})}
 			title="Feed RSS"
 			class="mt-3 flex w-fit items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 		>
@@ -89,19 +101,32 @@
 			</svg>
 			RSS
 		</a>
+
+		{#if data.items.length > 0}
+			<div class="mt-4 flex flex-wrap gap-2">
+				{#each data.items as item (item.handle)}
+					<a
+						href={resolve('/@[handle]', { handle: item.handle ?? '' })}
+						class="rounded-full border border-paper-border px-3 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					>
+						{item.displayName ?? `@${item.handle}`}
+					</a>
+				{/each}
+			</div>
+		{/if}
 	</div>
 
 	{#if data.posts.length === 0}
 		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-			Todavía no hay publicaciones.
+			Todavía no hay publicaciones en los blogs de esta lista.
 		</p>
 	{:else}
 		<ul class="flex flex-col gap-6">
-			{#each data.posts as post (post.slug)}
+			{#each data.posts as post (post.authorHandle + '/' + post.slug)}
 				<li>
 					<a
 						href={resolve('/@[handle]/[slug]', {
-							handle: data.author.handle ?? '',
+							handle: post.authorHandle ?? '',
 							slug: post.slug
 						})}
 						class="block rounded-lg border border-paper-border p-5 transition-colors hover:border-accent dark:border-dark-paper-border"
@@ -110,7 +135,9 @@
 							{post.title}
 						</h2>
 						<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							{fmt.format(new Date(post.publishedAt))}
+							{post.authorDisplayName ?? `@${post.authorHandle}`} · {fmt.format(
+								new Date(post.publishedAt)
+							)}
 						</p>
 						{#if post.excerpt}
 							<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">

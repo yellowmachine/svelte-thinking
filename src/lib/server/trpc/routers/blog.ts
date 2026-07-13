@@ -163,7 +163,13 @@ export const blogRouter = router({
 		}),
 
 	publish: protectedProcedure
-		.input(z.object({ versionId: z.string(), slug: z.string().optional() }))
+		.input(
+			z.object({
+				versionId: z.string(),
+				slug: z.string().optional(),
+				commentsEnabled: z.boolean().default(false)
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
 			return ctx.withRLS(async (db) => {
 				const versionRows = await db
@@ -286,7 +292,8 @@ export const blogRouter = router({
 					renderedHtml,
 					content: version.content,
 					refsJson: refRows.length > 0 ? JSON.stringify(refRows.map((r) => r.ref)) : null,
-					publishedAt: new Date()
+					publishedAt: new Date(),
+					commentsEnabled: input.commentsEnabled
 				});
 
 				return { id, slug, url: `/@${handle}/${slug}` };
@@ -313,5 +320,37 @@ export const blogRouter = router({
 				await db.delete(blogPost).where(eq(blogPost.id, input.postId));
 				return { ok: true };
 			});
+		}),
+
+	// Toggle whether new comments can be posted. Blocking comments (false) does
+	// not by itself hide comments already published — see setCommentsVisible.
+	setCommentsEnabled: protectedProcedure
+		.input(z.object({ postId: z.string(), enabled: z.boolean() }))
+		.mutation(async ({ ctx, input }) => {
+			const rows = await ctx.withRLS((db) =>
+				db
+					.update(blogPost)
+					.set({ commentsEnabled: input.enabled })
+					.where(eq(blogPost.id, input.postId))
+					.returning({ id: blogPost.id })
+			);
+			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+			return { commentsEnabled: input.enabled };
+		}),
+
+	// Show/hide already-approved comments from the public page, independent of
+	// whether new comments are currently accepted.
+	setCommentsVisible: protectedProcedure
+		.input(z.object({ postId: z.string(), visible: z.boolean() }))
+		.mutation(async ({ ctx, input }) => {
+			const rows = await ctx.withRLS((db) =>
+				db
+					.update(blogPost)
+					.set({ commentsVisible: input.visible })
+					.where(eq(blogPost.id, input.postId))
+					.returning({ id: blogPost.id })
+			);
+			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+			return { commentsVisible: input.visible };
 		})
 });

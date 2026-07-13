@@ -8,7 +8,8 @@ export type AiTask =
 	| 'bibliography'
 	| 'spell'
 	| 'grammar'
-	| 'summary';
+	| 'summary'
+	| 'moderate';
 
 export interface TaskConfig {
 	keyId: string;
@@ -78,6 +79,13 @@ export const AI_TASKS: {
 		label: 'Document summary',
 		description: 'AI summary generated on each commit for the project chat agent',
 		hint: 'Runs once per commit in the background. A fast, cheap model like Haiku is ideal — the summary is short and factual.',
+		defaultFamily: 'claude-haiku'
+	},
+	{
+		id: 'moderate',
+		label: 'Blog comment moderation',
+		description: 'Optional pre-check that flags spam/abuse on comments to your blog posts',
+		hint: 'Only flags for your review — never auto-approves or auto-blocks. A fast, cheap model like Haiku is plenty.',
 		defaultFamily: 'claude-haiku'
 	}
 ];
@@ -172,7 +180,7 @@ export const MODEL_FAMILIES: { key: string; pattern: RegExp; label: string; shor
 export const MODEL_RECOMMENDATIONS: Record<string, AiTask[]> = {
 	'claude-opus': ['agent', 'draft'],
 	'claude-sonnet': ['agent', 'draft', 'review'],
-	'claude-haiku': ['bibliography', 'spell', 'grammar', 'summary'],
+	'claude-haiku': ['bibliography', 'spell', 'grammar', 'summary', 'moderate'],
 	'gemini-pro': ['draft', 'review'],
 	'gemini-flash': ['requirements', 'summary'],
 	'gpt-4o': ['agent', 'draft'],
