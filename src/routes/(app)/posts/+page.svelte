@@ -119,11 +119,19 @@
 </script>
 
 <div class="mx-auto max-w-5xl px-6 py-10">
-	<div class="mb-8">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Blog</h1>
-		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Gestiona las publicaciones de tu blog.
-		</p>
+	<div class="mb-8 flex items-start justify-between gap-4">
+		<div>
+			<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Blog</h1>
+			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				Gestiona las publicaciones de tu blog.
+			</p>
+		</div>
+		<a
+			href={resolve('/lists')}
+			class="shrink-0 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+		>
+			Tus listas →
+		</a>
 	</div>
 
 	{#if !data.handle}

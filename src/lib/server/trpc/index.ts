@@ -24,6 +24,7 @@ import { issuesRouter } from './routers/issues';
 import { tagsRouter } from './routers/tags';
 import { blogRouter } from './routers/blog';
 import { blogCommentsRouter } from './routers/blogComments';
+import { blogAggregatorsRouter } from './routers/blogAggregators';
 
 export const appRouter = router({
 	health: healthRouter,
@@ -50,7 +51,8 @@ export const appRouter = router({
 	issues: issuesRouter,
 	tags: tagsRouter,
 	blog: blogRouter,
-	blogComments: blogCommentsRouter
+	blogComments: blogCommentsRouter,
+	blogAggregators: blogAggregatorsRouter
 });
 
 export type AppRouter = typeof appRouter;

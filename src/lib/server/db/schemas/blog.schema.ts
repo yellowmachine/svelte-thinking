@@ -150,3 +150,69 @@ export const blogPostComment = scholioSchema
 		]
 	)
 	.enableRLS();
+
+// A public, curated list of other users' blogs — /@{curatorHandle}/list/{slug}.
+// Always public (no private variant): the point is discovery, so there is no
+// RLS gate on reading, only on who may edit the list.
+export const blogAggregator = scholioSchema
+	.table(
+		'blog_aggregator',
+		{
+			id: text('id').primaryKey(),
+			userId: text('user_id').notNull(), // curator
+			slug: text('slug').notNull(),
+			title: text('title').notNull(),
+			description: text('description'),
+			createdAt: timestamp('created_at').notNull().defaultNow(),
+			updatedAt: timestamp('updated_at').notNull().defaultNow()
+		},
+		(t) => [
+			uniqueIndex('blog_aggregator_user_slug_idx').on(t.userId, t.slug),
+			index('blog_aggregator_user_idx').on(t.userId),
+
+			pgPolicy('blog_aggregator_public_read', {
+				for: 'select',
+				using: sql`true`
+			}),
+			pgPolicy('blog_aggregator_owner_write', {
+				for: 'all',
+				using: sql`${t.userId} = ${currentUserId}`
+			})
+		]
+	)
+	.enableRLS();
+
+// One followed blog inside an aggregator. targetUserId is whichever user's
+// blog_post rows get pulled into the aggregator's merged feed.
+export const blogAggregatorItem = scholioSchema
+	.table(
+		'blog_aggregator_item',
+		{
+			id: text('id').primaryKey(),
+			aggregatorId: text('aggregator_id')
+				.notNull()
+				.references(() => blogAggregator.id, { onDelete: 'cascade' }),
+			targetUserId: text('target_user_id').notNull(),
+			addedAt: timestamp('added_at').notNull().defaultNow()
+		},
+		(t) => [
+			uniqueIndex('blog_aggregator_item_unique_idx').on(t.aggregatorId, t.targetUserId),
+			index('blog_aggregator_item_aggregator_idx').on(t.aggregatorId),
+
+			pgPolicy('blog_aggregator_item_public_read', {
+				for: 'select',
+				using: sql`true`
+			}),
+			// Only the aggregator's curator can add/remove blogs from it
+			pgPolicy('blog_aggregator_item_owner_write', {
+				for: 'all',
+				using: sql`
+					EXISTS (
+						SELECT 1 FROM scholio.blog_aggregator
+						WHERE blog_aggregator.id = ${t.aggregatorId} AND blog_aggregator.user_id = ${currentUserId}
+					)
+				`
+			})
+		]
+	)
+	.enableRLS();
