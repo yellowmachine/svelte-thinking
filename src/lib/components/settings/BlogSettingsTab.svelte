@@ -1,22 +1,11 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { resolve } from '$app/paths';
-	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
-
-	type Post = {
-		id: string;
-		documentId: string;
-		projectId: string;
-		versionNumber: number;
-		slug: string;
-		title: string;
-		publishedAt: Date;
-	};
 
 	let loading = $state(false);
 	let loaded = $state(false);
 	let handle = $state<string | null>(null);
-	let posts = $state<Post[]>([]);
+	let hasPosts = $state(false);
 
 	let publicDisplayName = $state('');
 	let publicBio = $state('');
@@ -46,21 +35,18 @@
 	let availability = $state<'available' | 'taken' | 'invalid' | 'reserved' | null>(null);
 	let saving = $state(false);
 	let error = $state('');
-	let unpublishingId = $state<string | null>(null);
-	let postToUnpublish = $state<Post | null>(null);
 
 	let checkTimer: ReturnType<typeof setTimeout> | undefined;
 
-	const fmt = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', year: 'numeric' });
-	const canEditHandle = $derived(!handle && posts.length === 0);
-	const locked = $derived(!!handle && posts.length > 0);
+	const canEditHandle = $derived(!handle && !hasPosts);
+	const locked = $derived(!!handle && hasPosts);
 
 	async function load() {
 		loading = true;
 		try {
 			const data = await trpc.blog.getMine.query();
 			handle = data.handle;
-			posts = data.posts as Post[];
+			hasPosts = data.posts.length > 0;
 			publicDisplayName = data.displayName ?? '';
 			publicBio = data.bio ?? '';
 		} finally {
@@ -97,19 +83,6 @@
 			error = e instanceof Error ? e.message : 'Error al guardar el handle.';
 		} finally {
 			saving = false;
-		}
-	}
-
-	async function unpublish() {
-		const post = postToUnpublish;
-		if (!post) return;
-		unpublishingId = post.id;
-		try {
-			await trpc.blog.unpublish.mutate({ postId: post.id });
-			posts = posts.filter((p) => p.id !== post.id);
-		} finally {
-			unpublishingId = null;
-			postToUnpublish = null;
 		}
 	}
 
@@ -281,66 +254,13 @@
 				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
 					Publicaciones
 				</h2>
-				<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Se publican desde el historial de versiones de cada documento.
+				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Gestiona tus publicaciones en <a
+						href={resolve('/posts')}
+						class="underline hover:text-ink dark:hover:text-dark-ink">/posts →</a
+					>
 				</p>
-
-				{#if posts.length === 0}
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						Todavía no has publicado nada.
-					</p>
-				{:else}
-					<div class="flex flex-col gap-2">
-						{#each posts as post (post.id)}
-							<div
-								class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-							>
-								<div class="min-w-0 flex-1">
-									<a
-										href={resolve('/@[handle]/[slug]', { handle: handle ?? '', slug: post.slug })}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="truncate font-sans text-sm font-medium text-ink hover:underline dark:text-dark-ink"
-									>
-										{post.title}
-									</a>
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										{fmt.format(new Date(post.publishedAt))} · originado en
-										<a
-											href={resolve(
-												`/projects/${post.projectId}/documents/${post.documentId}/history`
-											)}
-											class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
-										>
-											v{post.versionNumber}
-										</a>
-									</p>
-								</div>
-								<button
-									type="button"
-									onclick={() => (postToUnpublish = post)}
-									disabled={unpublishingId === post.id}
-									class="shrink-0 font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
-								>
-									{unpublishingId === post.id ? 'Despublicando...' : 'Despublicar'}
-								</button>
-							</div>
-						{/each}
-					</div>
-				{/if}
 			</section>
 		{/if}
 	{/if}
 </div>
-
-<SafeDeleteDialog
-	open={!!postToUnpublish}
-	title="Despublicar publicación"
-	label={postToUnpublish?.title ?? ''}
-	confirmLabel="Despublicar"
-	warning="La URL pública dejará de funcionar. Puedes volver a publicarla cuando quieras."
-	deleting={unpublishingId === postToUnpublish?.id}
-	requireCode={false}
-	onconfirm={unpublish}
-	oncancel={() => (postToUnpublish = null)}
-/>

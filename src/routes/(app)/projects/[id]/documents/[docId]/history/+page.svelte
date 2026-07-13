@@ -27,8 +27,9 @@
 	let restoring = $state(false);
 	let restoredVersion = $state<number | null>(null);
 
-	let exportOpenId = $state<string | null>(null);
-	let exportMenuPos = $state({ top: 0, left: 0 });
+	let actionsOpenId = $state<string | null>(null);
+	let actionsMenuPos = $state({ top: 0, left: 0 });
+	const actionsVersion = $derived(data.versions.find((v) => v.id === actionsOpenId) ?? null);
 
 	// Shares: mapa versionId → share (reactivo para actualizaciones optimistas)
 	// untrack: sólo queremos el valor inicial del server load, lo gestionamos manualmente
@@ -298,163 +299,30 @@
 										Summary
 									</button>
 								{/if}
-								{#if data.canWrite}
-									<button
-										onclick={() => restoreVersion(v)}
-										disabled={restoring}
-										class="rounded px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:text-accent disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-accent"
-									>
-										Restore
-									</button>
-								{/if}
-
 								<button
 									onclick={(e) => {
 										const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-										exportMenuPos = { top: rect.bottom + 4, left: rect.left };
-										exportOpenId = exportOpenId === v.id ? null : v.id;
+										actionsMenuPos = { top: rect.bottom + 4, left: rect.left };
+										actionsOpenId = actionsOpenId === v.id ? null : v.id;
 									}}
-									class="rounded px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+									title="Más acciones"
+									aria-label="Más acciones"
+									class="ml-auto flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
 								>
-									Export
+									<svg
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="currentColor"
+										aria-hidden="true"
+									>
+										<circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle
+											cx="19"
+											cy="12"
+											r="2"
+										/>
+									</svg>
 								</button>
-
-								{#if data.isOwner}
-									<div class="ml-auto flex items-center gap-1">
-										<!-- Botón copiar URL (gris = sin share, azul = con share activo) -->
-										<button
-											onclick={() => copyOrCreateShare(v)}
-											disabled={sharingVersionId === v.id}
-											title={shares[v.id]
-												? `URL activa · expira ${fmtExpiry.format(new Date(shares[v.id].expiresAt))}\nClick para copiar`
-												: 'Crear URL pública para esta versión'}
-											class="flex h-6 w-6 items-center justify-center rounded transition-colors disabled:opacity-40
-												{shares[v.id]
-												? 'text-accent hover:bg-accent/10'
-												: 'text-ink-faint hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui'}"
-											aria-label={shares[v.id] ? 'Copiar URL pública' : 'Crear URL pública'}
-										>
-											{#if copiedVersionId === v.id}
-												<!-- Check de confirmación -->
-												<svg
-													width="13"
-													height="13"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													aria-hidden="true"
-												>
-													<polyline points="20 6 9 17 4 12" />
-												</svg>
-											{:else if sharingVersionId === v.id}
-												<Spinner size="sm" />
-											{:else}
-												<!-- Clipboard -->
-												<svg
-													width="13"
-													height="13"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													aria-hidden="true"
-												>
-													<rect x="9" y="2" width="6" height="4" rx="1" />
-													<path
-														d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-													/>
-												</svg>
-											{/if}
-										</button>
-
-										<!-- Botón revocar (solo si hay share activo) -->
-										{#if shares[v.id]}
-											<button
-												onclick={() => revokeShare(v)}
-												disabled={revokingShareId === shares[v.id]?.id}
-												title="Revocar URL pública"
-												class="flex h-6 w-6 items-center justify-center rounded text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-900/20"
-												aria-label="Revocar URL pública"
-											>
-												<svg
-													width="12"
-													height="12"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													aria-hidden="true"
-												>
-													<circle cx="12" cy="12" r="10" />
-													<line x1="8" y1="12" x2="16" y2="12" />
-												</svg>
-											</button>
-										{/if}
-
-										<!-- Publicar / despublicar en el blog -->
-										{#if blogPosts[v.id]}
-											<button
-												onclick={() => confirmUnpublishFromBlog(v)}
-												disabled={unpublishingBlogId === blogPosts[v.id]?.id}
-												title="Publicado en el blog · click para despublicar"
-												class="flex h-6 w-6 items-center justify-center rounded text-accent transition-colors hover:bg-accent/10 disabled:opacity-40"
-												aria-label="Despublicar del blog"
-											>
-												{#if unpublishingBlogId === blogPosts[v.id]?.id}
-													<Spinner size="sm" />
-												{:else}
-													<svg
-														width="13"
-														height="13"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														aria-hidden="true"
-													>
-														<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-														<path
-															d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-														/>
-													</svg>
-												{/if}
-											</button>
-										{:else}
-											<button
-												onclick={() => publishToBlog(v)}
-												title="Publicar esta versión en tu blog"
-												class="flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
-												aria-label="Publicar en el blog"
-											>
-												<svg
-													width="13"
-													height="13"
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													aria-hidden="true"
-												>
-													<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-													<path
-														d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-													/>
-												</svg>
-											</button>
-										{/if}
-									</div>
-								{/if}
 							</div>
 						</li>
 					{/each}
@@ -517,44 +385,185 @@
 	</div>
 </div>
 
-{#if exportOpenId !== null}
+{#if actionsVersion !== null}
+	{@const v = actionsVersion}
 	<button
 		class="fixed inset-0 z-10"
-		onclick={() => (exportOpenId = null)}
+		onclick={() => (actionsOpenId = null)}
 		aria-label="Close menu"
 		tabindex="-1"
 	></button>
 	<div
-		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
+		class="fixed z-20 w-60 overflow-hidden rounded-xl border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		style="top: {actionsMenuPos.top}px; left: {actionsMenuPos.left}px;"
 	>
+		{#if data.canWrite}
+			<button
+				type="button"
+				onclick={() => {
+					actionsOpenId = null;
+					restoreVersion(v);
+				}}
+				disabled={restoring}
+				class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			>
+				Restore as draft
+			</button>
+			<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
+		{/if}
+
 		<a
 			href={resolve(
-				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=latex&versionId=${exportOpenId}`
+				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=latex&versionId=${v.id}`
 			)}
-			onclick={() => (exportOpenId = null)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			onclick={() => (actionsOpenId = null)}
+			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
 		</a>
 		<a
 			href={resolve(
-				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=typst&versionId=${exportOpenId}`
+				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=typst&versionId=${v.id}`
 			)}
-			onclick={() => (exportOpenId = null)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			onclick={() => (actionsOpenId = null)}
+			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
 		</a>
 		<a
 			href={resolve(
-				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=pdf&versionId=${exportOpenId}`
+				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=pdf&versionId=${v.id}`
 			)}
-			onclick={() => (exportOpenId = null)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			onclick={() => (actionsOpenId = null)}
+			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.pdf</span>PDF
 		</a>
+
+		{#if data.isOwner}
+			<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
+
+			<button
+				type="button"
+				onclick={() => copyOrCreateShare(v)}
+				disabled={sharingVersionId === v.id}
+				class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			>
+				{#if sharingVersionId === v.id}
+					<Spinner size="sm" />
+				{:else}
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+						class="shrink-0"
+					>
+						<rect x="9" y="2" width="6" height="4" rx="1" />
+						<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+					</svg>
+				{/if}
+				{#if copiedVersionId === v.id}
+					Copiada ✓
+				{:else if shares[v.id]}
+					Copiar URL pública
+				{:else}
+					Crear URL pública
+				{/if}
+			</button>
+			{#if shares[v.id]}
+				<p class="px-4 pb-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					Expira {fmtExpiry.format(new Date(shares[v.id].expiresAt))}
+				</p>
+				<button
+					type="button"
+					onclick={() => {
+						actionsOpenId = null;
+						revokeShare(v);
+					}}
+					disabled={revokingShareId === shares[v.id]?.id}
+					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-red-500 transition-colors hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-900/20"
+				>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+						class="shrink-0"
+					>
+						<circle cx="12" cy="12" r="10" /><line x1="8" y1="12" x2="16" y2="12" />
+					</svg>
+					Revocar URL pública
+				</button>
+			{/if}
+
+			<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
+
+			{#if blogPosts[v.id]}
+				<button
+					type="button"
+					onclick={() => {
+						actionsOpenId = null;
+						confirmUnpublishFromBlog(v);
+					}}
+					disabled={unpublishingBlogId === blogPosts[v.id]?.id}
+					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-accent transition-colors hover:bg-accent/10 disabled:opacity-40"
+				>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+						class="shrink-0"
+					>
+						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+					</svg>
+					Despublicar del blog
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={() => {
+						actionsOpenId = null;
+						publishToBlog(v);
+					}}
+					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+						class="shrink-0"
+					>
+						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+					</svg>
+					Publicar en el blog
+				</button>
+			{/if}
+		{/if}
 	</div>
 {/if}
 
