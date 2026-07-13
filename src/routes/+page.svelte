@@ -52,6 +52,12 @@
 					Blog
 				</a>
 				<a
+					href={resolve('/blogs')}
+					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+				>
+					Blogs
+				</a>
+				<a
 					href={resolve('/login')}
 					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
 				>

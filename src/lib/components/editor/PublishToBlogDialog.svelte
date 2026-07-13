@@ -18,6 +18,7 @@
 	} = $props();
 
 	let slugInput = $state(untrack(() => slugify(title)));
+	let commentsEnabled = $state(false);
 	let publishing = $state(false);
 	let error = $state('');
 
@@ -27,7 +28,11 @@
 		publishing = true;
 		error = '';
 		try {
-			const result = await trpc.blog.publish.mutate({ versionId, slug: previewSlug });
+			const result = await trpc.blog.publish.mutate({
+				versionId,
+				slug: previewSlug,
+				commentsEnabled
+			});
 			onpublished(result);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Error al publicar.';
@@ -79,6 +84,11 @@
 					/@{handle}/{previewSlug}
 				</p>
 			</div>
+
+			<label class="flex items-center gap-2 font-sans text-sm text-ink dark:text-dark-ink">
+				<input type="checkbox" bind:checked={commentsEnabled} class="rounded" />
+				Permitir comentarios en esta publicación
+			</label>
 
 			{#if error}
 				<p class="font-sans text-sm text-red-600 dark:text-red-400">{error}</p>
