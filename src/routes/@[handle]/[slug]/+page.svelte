@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import favicon from '$lib/assets/favicon.svg';
 	import '$lib/styles/prose-content.css';
 
 	import { resolve } from '$app/paths';
@@ -32,7 +31,6 @@
 	<meta name="twitter:description" content={data.description} />
 	<link rel="canonical" href={canonicalUrl} />
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.39/dist/katex.min.css" />
-	<link rel="icon" href={favicon} />
 </svelte:head>
 
 <header
