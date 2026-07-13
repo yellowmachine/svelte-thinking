@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import favicon from '$lib/assets/favicon.svg';
 	import '$lib/styles/prose-content.css';
 
 	import { resolve } from '$app/paths';
@@ -11,9 +10,6 @@
 	const canonicalUrl = $derived($page.url.origin + $page.url.pathname);
 	const pdfUrl = $derived(
 		resolve('/@[handle]/[slug]/pdf', { handle: data.author.handle ?? '', slug: data.post.slug })
-	);
-	const instapaperUrl = $derived(
-		`https://www.instapaper.com/hello2?url=${encodeURIComponent(canonicalUrl)}&title=${encodeURIComponent(data.post.title)}`
 	);
 	const twitterUrl = $derived(
 		`https://twitter.com/intent/tweet?url=${encodeURIComponent(canonicalUrl)}&text=${encodeURIComponent(data.post.title)}`
@@ -32,7 +28,6 @@
 	<meta name="twitter:description" content={data.description} />
 	<link rel="canonical" href={canonicalUrl} />
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.39/dist/katex.min.css" />
-	<link rel="icon" href={favicon} />
 </svelte:head>
 
 <header
@@ -74,8 +69,8 @@
 				{fmt.format(new Date(data.post.publishedAt))}
 			</p>
 			<div class="flex items-center gap-3">
-				<!-- pdfUrl already goes through resolve() (see script block); instapaperUrl/twitterUrl
-				     are genuinely external — the lint rule can't be satisfied for either case here -->
+				<!-- pdfUrl already goes through resolve() (see script block); twitterUrl
+				     is genuinely external — the lint rule can't be satisfied for it -->
 				<!-- eslint-disable svelte/no-navigation-without-resolve -->
 				<a
 					href={pdfUrl}
@@ -99,29 +94,6 @@
 						<line x1="12" y1="15" x2="12" y2="3" />
 					</svg>
 					PDF
-				</a>
-				<a
-					href={instapaperUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					title="Guardar en Instapaper"
-					aria-label="Guardar en Instapaper"
-					class="flex items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-					</svg>
-					Instapaper
 				</a>
 				<a
 					href={twitterUrl}

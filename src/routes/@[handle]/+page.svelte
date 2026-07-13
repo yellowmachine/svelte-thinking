@@ -61,6 +61,28 @@
 				{data.author.bio}
 			</p>
 		{/if}
+		<a
+			href={resolve('/@[handle]/rss.xml', { handle: data.author.handle ?? '' })}
+			title="Feed RSS"
+			class="mt-3 flex w-fit items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+		>
+			<svg
+				width="14"
+				height="14"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<path d="M4 11a9 9 0 0 1 9 9" />
+				<path d="M4 4a16 16 0 0 1 16 16" />
+				<circle cx="5" cy="19" r="1" />
+			</svg>
+			RSS
+		</a>
 	</div>
 
 	{#if data.posts.length === 0}

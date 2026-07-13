@@ -4,6 +4,7 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { blogPost } from '$lib/server/db/schemas/blog.schema';
+import { excerptFromHtml } from '$lib/server/blogExcerpt';
 
 function escapeXml(s: string): string {
 	return s
@@ -47,11 +48,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 	const items = posts
 		.map((post) => {
 			const link = `${blogUrl}/${post.slug}`;
-			const description = post.renderedHtml
-				.replace(/<[^>]+>/g, ' ')
-				.replace(/\s+/g, ' ')
-				.trim()
-				.slice(0, 300);
+			const description = excerptFromHtml(post.renderedHtml, 300);
 			return `
 	<item>
 		<title>${escapeXml(post.title)}</title>
