@@ -86,6 +86,12 @@
 		</a>
 		<div class="flex items-center gap-2">
 			<a
+				href={resolve('/blogs')}
+				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+			>
+				Blogs
+			</a>
+			<a
 				href={resolve('/login')}
 				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
