@@ -401,8 +401,8 @@
 			<button
 				type="button"
 				onclick={() => {
-					actionsOpenId = null;
 					restoreVersion(v);
+					actionsOpenId = null;
 				}}
 				disabled={restoring}
 				class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
@@ -483,8 +483,8 @@
 				<button
 					type="button"
 					onclick={() => {
-						actionsOpenId = null;
 						revokeShare(v);
+						actionsOpenId = null;
 					}}
 					disabled={revokingShareId === shares[v.id]?.id}
 					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-red-500 transition-colors hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-900/20"
@@ -513,8 +513,8 @@
 				<button
 					type="button"
 					onclick={() => {
-						actionsOpenId = null;
 						confirmUnpublishFromBlog(v);
+						actionsOpenId = null;
 					}}
 					disabled={unpublishingBlogId === blogPosts[v.id]?.id}
 					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-accent transition-colors hover:bg-accent/10 disabled:opacity-40"
@@ -540,8 +540,8 @@
 				<button
 					type="button"
 					onclick={() => {
-						actionsOpenId = null;
 						publishToBlog(v);
+						actionsOpenId = null;
 					}}
 					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
