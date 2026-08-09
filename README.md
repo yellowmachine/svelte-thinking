@@ -241,9 +241,8 @@ No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-ne
 1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.app.yml`
 2. Este stack despliega también `redis`, `typst`, `rustfs` (storage S3-compatible) y `backup` junto con la app — `scholio` y `typst` hacen `pull` de GHCR, `redis`/`rustfs` usan imagen oficial, `backup` se construye localmente desde `backup-service/Dockerfile` y sube los dumps a `rustfs` por API S3
 3. En **Environment Variables**, añade todas las variables del checklist de abajo
-4. Activa **"Pull always"** en las opciones de deploy (ver nota abajo)
-5. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
-6. Deploy
+4. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
+5. Deploy
 
 > **Nota sobre el disco de `rustfs`**: `rustfs` monta `/rustfsdata:/data`, así que el servidor
 > necesita el disco de datos montado en `/rustfsdata` **antes** del primer deploy (por ejemplo, un
@@ -265,17 +264,21 @@ Las variables `PUBLIC_*` (Sentry client DSN) van también aquí — Dokploy las 
 >
 > El host es `postgres` (nombre del servicio en el compose de Postgres), no `localhost`.
 
-### Migraciones (paso manual)
+### Migraciones (automáticas)
 
-El entrypoint de producción (`scripts/entrypoint.sh`) no migra automáticamente. Tras el primer deploy, entra a la terminal del contenedor `scholio` desde Dokploy (o `docker exec`) y ejecuta:
+`scripts/entrypoint.sh` ejecuta `bun scripts/migrate.mjs` antes de arrancar el servidor — corre las migraciones de Drizzle pendientes y sembra el usuario admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`) si aún no existe. Es idempotente, así que corre sin problema en cada arranque/redeploy del contenedor `scholio`, no solo en el primero.
+
+Usa `MIGRATION_DATABASE_URL` (superusuario, con permisos de `CREATE TABLE`) en vez de `DATABASE_URL` (rol de la app, sin esos permisos).
+
+Si necesitas lanzarlas a mano (por ejemplo para depurar), entra a la terminal del contenedor desde Dokploy (o `docker exec`) y ejecuta el mismo comando:
 
 ```bash
 bun scripts/migrate.mjs
 ```
 
-### ⚠️ "Pull always" — por qué está activado
+### ⚠️ `pull_policy: always` — por qué está en el compose
 
-Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen cacheada en lugar de descargar la nueva. Para garantizar que cada deploy recoge la imagen actualizada, la opción **"Pull always"** debe estar activada.
+Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen cacheada en lugar de descargar la nueva. En vez de depender del toggle "Pull always" de la UI de Dokploy (fácil de olvidar si se recrea la app), `scholio` y `typst` en `docker-compose.prod.app.yml` llevan `pull_policy: always` — un campo nativo del Compose Spec (Docker Compose v2.10+) que fuerza el `pull` antes de levantar el servicio, queda versionado y no depende de un ajuste manual en la UI.
 
 **Consecuencia**: cada deploy descarga la imagen completa, lo que acumula capas antiguas en `/var/lib/docker/overlay2`. Sin limpieza periódica, el disco se llena (incidente real: 75 GB llenos en producción). Ver sección de mantenimiento abajo.
 
@@ -285,7 +288,7 @@ Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen ca
 
 ### Limpieza de imágenes Docker (cron semanal)
 
-Con "Pull always" activo las imágenes antiguas se acumulan. Hay un cron configurado en el servidor que limpia automáticamente cada domingo a las 3:00:
+Con `pull_policy: always` las imágenes antiguas se acumulan en cada deploy. Hay un cron configurado en el servidor que limpia automáticamente cada domingo a las 3:00:
 
 ```
 0 3 * * 0 docker image prune -af >> /var/log/docker-prune.log 2>&1
@@ -330,29 +333,29 @@ docker system prune -af
 
 Todas están documentadas en `.env.example`. Lista revisada contra el uso real en `src/` (`env.*` de `$env/dynamic/private`), no contra versiones anteriores de este documento:
 
-| Variable                                        | Descripción                                                                          |          En `docker-compose.prod.app.yml`          |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------ | :------------------------------------------------: |
-| `ORIGIN`                                        | Dominio público de la app (URLs de retorno, cookies)                                 |                         ✅                         |
-| `BETTER_AUTH_SECRET`                            | Secreto de sesión (generar con `openssl rand -base64 32`)                            |                         ✅                         |
-| `ADMIN_EMAIL`                                   | Email con acceso a `/admin`                                                          |                         ✅                         |
-| `DATABASE_URL`                                  | Conexión a PostgreSQL (rol app, con RLS)                                             |                         ✅                         |
-| `REDIS_URL`                                     | Conexión a Redis (cache/rate limiting)                                               |                         ✅                         |
-| `TYPST_SERVICE_URL`                             | URL interna del servicio de generación de PDF                                        |                         ✅                         |
-| `STORAGE_ENDPOINT`                              | Endpoint S3-compatible                                                               |                         ✅                         |
-| `STORAGE_ACCESS_KEY`                            | Access key del storage                                                               |                         ✅                         |
-| `STORAGE_SECRET_KEY`                            | Secret key del storage                                                               |                         ✅                         |
-| `STORAGE_PUBLIC_URL`                            | URL pública desde la que el navegador descarga los ficheros                          |                         ✅                         |
-| `GITHUB_CLIENT_ID/SECRET`                       | OAuth de GitHub                                                                      |                         ✅                         |
-| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID                                                                       |                         ✅                         |
-| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                         |                         ✅                         |
-| `KMS_MASTER_KEY`                                | Clave para cifrar API keys de usuario (BYOK)                                         |                         ✅                         |
-| `PUBLIC_LIBRARIAN_URL`                          | URL de la app hermana, expuesta al navegador                                         |                         ✅                         |
-| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                   |                         ✅                         |
-| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                        |                         ✅                         |
-| `SENTRY_DSN`                                    | DSN de Sentry en servidor (`sentry.server.config.ts`)                                |                         ✅                         |
-| `MIGRATION_DATABASE_URL`                        | Conexión superusuario, solo para `bun scripts/migrate.mjs` (paso manual, ver arriba) |                         ✅                         |
-| `ADMIN_PASSWORD`                                | Password del admin, seed en la migración                                             |                         ✅                         |
-| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente — **build-time**, no runtime                                | se hornea en la imagen de GHCR, no en este compose |
+| Variable                                        | Descripción                                                                     |          En `docker-compose.prod.app.yml`          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------- | :------------------------------------------------: |
+| `ORIGIN`                                        | Dominio público de la app (URLs de retorno, cookies)                            |                         ✅                         |
+| `BETTER_AUTH_SECRET`                            | Secreto de sesión (generar con `openssl rand -base64 32`)                       |                         ✅                         |
+| `ADMIN_EMAIL`                                   | Email con acceso a `/admin`                                                     |                         ✅                         |
+| `DATABASE_URL`                                  | Conexión a PostgreSQL (rol app, con RLS)                                        |                         ✅                         |
+| `REDIS_URL`                                     | Conexión a Redis (cache/rate limiting)                                          |                         ✅                         |
+| `TYPST_SERVICE_URL`                             | URL interna del servicio de generación de PDF                                   |                         ✅                         |
+| `STORAGE_ENDPOINT`                              | Endpoint S3-compatible                                                          |                         ✅                         |
+| `STORAGE_ACCESS_KEY`                            | Access key del storage                                                          |                         ✅                         |
+| `STORAGE_SECRET_KEY`                            | Secret key del storage                                                          |                         ✅                         |
+| `STORAGE_PUBLIC_URL`                            | URL pública desde la que el navegador descarga los ficheros                     |                         ✅                         |
+| `GITHUB_CLIENT_ID/SECRET`                       | OAuth de GitHub                                                                 |                         ✅                         |
+| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID                                                                  |                         ✅                         |
+| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                    |                         ✅                         |
+| `KMS_MASTER_KEY`                                | Clave para cifrar API keys de usuario (BYOK)                                    |                         ✅                         |
+| `PUBLIC_LIBRARIAN_URL`                          | URL de la app hermana, expuesta al navegador                                    |                         ✅                         |
+| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                              |                         ✅                         |
+| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                   |                         ✅                         |
+| `SENTRY_DSN`                                    | DSN de Sentry en servidor (`sentry.server.config.ts`)                           |                         ✅                         |
+| `MIGRATION_DATABASE_URL`                        | Conexión superusuario, la usa `scripts/migrate.mjs` en el arranque (ver arriba) |                         ✅                         |
+| `ADMIN_PASSWORD`                                | Password del admin, seed en la migración                                        |                         ✅                         |
+| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente — **build-time**, no runtime                           | se hornea en la imagen de GHCR, no en este compose |
 
 `STORAGE_BUCKET` sigue en el compose pero no lo lee ningún sitio de `src/` actualmente — no rompe nada, pero es una variable muerta.
 
@@ -386,7 +389,6 @@ Antes de abrir acceso a usuarios reales:
 - [ ] Registrar el endpoint de webhook en Stripe: `POST https://tu-dominio.com/api/stripe/webhook`
   - Eventos a escuchar: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
 - [ ] Crear el proyecto en Sentry y copiar el DSN (servidor y cliente)
-- [ ] Ejecutar `bun run db:migrate` en el entorno de producción
 - [ ] Verificar que el bucket de MinIO es accesible públicamente para `GET` (la política se aplica automáticamente en el primer upload)
 - [ ] Configurar el `ORIGIN` con el dominio real (necesario para las URLs de retorno de Stripe)
 
