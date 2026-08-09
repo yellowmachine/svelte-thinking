@@ -349,7 +349,6 @@ Todas están documentadas en `.env.example`. Lista revisada contra el uso real e
 | `PUBLIC_LIBRARIAN_URL`                          | URL de la app hermana, expuesta al navegador                                         |                         ✅                         |
 | `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                   |                         ✅                         |
 | `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                        |                         ✅                         |
-| `OPENROUTER_APP_KEY`                            | Conexión OpenRouter para el asistente IA (`api/openrouter/connect`)                  |                         ✅                         |
 | `SENTRY_DSN`                                    | DSN de Sentry en servidor (`sentry.server.config.ts`)                                |                         ✅                         |
 | `MIGRATION_DATABASE_URL`                        | Conexión superusuario, solo para `bun scripts/migrate.mjs` (paso manual, ver arriba) |                         ✅                         |
 | `ADMIN_PASSWORD`                                | Password del admin, seed en la migración                                             |                         ✅                         |
@@ -357,9 +356,11 @@ Todas están documentadas en `.env.example`. Lista revisada contra el uso real e
 
 `STORAGE_BUCKET` sigue en el compose pero no lo lee ningún sitio de `src/` actualmente — no rompe nada, pero es una variable muerta.
 
+`OPENROUTER_APP_KEY` sigue en el compose pero no la lee ningún sitio de `src/` — la única referencia es una línea comentada en `api/openrouter/callback/+server.ts`, que ni siquiera importa `env`. Es otra variable muerta.
+
 `SCIPY_SERVICE_URL` se quitó del compose y sigue leyéndose desde `src/lib/server/scipy.ts` — confirmado como código muerto (la ruta `(scipy)` no está en uso), así que no hace falta reintroducirla.
 
-No hay ni rastro en el código de `ANTHROPIC_API_KEY`, `STRIPE_*`, `AWS_KMS_KEY_ID`/`AWS_REGION`, `LANGUAGETOOL_URL`, `COOKIE_DOMAIN` ni `TRUSTED_ORIGINS` — la tabla anterior de este README las listaba como imprescindibles, pero no corresponden a ninguna lectura de `env.*` en `src/`. El asistente IA usa OpenRouter (`OPENROUTER_APP_KEY`), no la SDK de Anthropic directa, y no hay integración de Stripe en el código actual.
+No hay ni rastro en el código de `ANTHROPIC_API_KEY`, `STRIPE_*`, `AWS_KMS_KEY_ID`/`AWS_REGION`, `LANGUAGETOOL_URL`, `COOKIE_DOMAIN` ni `TRUSTED_ORIGINS` — la tabla anterior de este README las listaba como imprescindibles, pero no corresponden a ninguna lectura de `env.*` en `src/`. El asistente IA usa OpenRouter, pero el intercambio code→key no autentica la app (no hay `OPENROUTER_APP_KEY` real en uso), y no hay integración de Stripe en el código actual.
 
 ### Variables de los servicios auxiliares del stack
 
