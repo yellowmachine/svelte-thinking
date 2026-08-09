@@ -201,11 +201,39 @@ bun run dev
 - **Servidor**: Hetzner — 75 GB disco, 2 GB RAM
 - **PaaS**: [Dokploy](https://dokploy.com) self-hosted — gestiona deploys, SSL (Traefik), env vars y reverse proxy
 - **Dashboard Dokploy**: `dokploy.scholio.review`
+- **Imágenes**: `.github/workflows/build-ghcr.yml` construye y publica en GHCR en cada push a `main`:
+  - `ghcr.io/yellowmachine/svelte-thinking:latest` — app
+  - `ghcr.io/yellowmachine/scholio-typst:latest` — typst (solo si cambió `typst-service/**`, o con `workflow_dispatch`)
+
+  Dokploy hace `pull` de estas imágenes, no construye desde el `Dockerfile`. Si el paquete de GHCR es privado, hay que configurar credenciales de registry en Dokploy (usuario + token con scope `read:packages`).
+- Fly.io está deshabilitado (`fly.toml` y el job `deploy-fly` quedaron comentados) — el despliegue va solo por Dokploy.
+
+Postgres vive en su propio stack de Dokploy, separado del de la app, para poder compartir la misma base de datos con otras apps (p. ej. `librarian`) sin acoplar su ciclo de vida al de ninguna de ellas.
+
+### Red compartida `scholio-network`
+
+Ambos stacks (`docker-compose.prod.postgres.yml` y `docker-compose.prod.app.yml`) declaran `scholio-network` como `external: true`. Compose **nunca crea** una red marcada como external — debe existir ya en el servidor antes del primer deploy de cualquiera de los dos stacks:
+
+```bash
+docker network create scholio-network
+```
+
+Si no existe, el deploy falla con `network scholio-network declared as external, but could not be found`. `dokploy-network` no hace falta crearla, la gestiona Dokploy.
+
+Dokploy no tiene una opción de UI para crear redes custom ([issue abierto](https://github.com/Dokploy/dokploy/issues/3670)), pero no hace falta SSH aparte: el mismo comando se puede ejecutar desde la terminal del servidor integrada en el dashboard — **Settings → Web Server → Terminal**.
+
+### Configurar Postgres en Dokploy
+
+1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.postgres.yml`
+2. Environment Variables: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `APP_DB_USER`, `APP_DB_PASSWORD`
+3. Deploy
+
+No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-network` como `postgres:5432`. `scripts/init.sh` crea el rol de la app y los schemas `scholio`/`librarian` al arrancar por primera vez.
 
 ### Configurar la aplicación en Dokploy
 
-1. **New Application → Docker Compose**
-2. Apunta al repositorio Git
+1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.app.yml`
+2. Este stack despliega también `redis`, `typst`, `rustfs` (storage S3-compatible) y `backup` junto con la app — `scholio` y `typst` hacen `pull` de GHCR, `redis`/`rustfs` usan imagen oficial, `backup` se construye localmente desde `backup-service/Dockerfile` y sube los dumps a `rustfs` por API S3
 3. En **Environment Variables**, añade todas las variables del checklist de abajo
 4. Activa **"Pull always"** en las opciones de deploy (ver nota abajo)
 5. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
@@ -217,14 +245,22 @@ Copia todas las variables del `.env.example` en la sección **Environment Variab
 Las variables `PUBLIC_*` (Sentry client DSN) van también aquí — Dokploy las inyecta en build time.
 
 > **Nota sobre `DATABASE_URL` y `MIGRATION_DATABASE_URL`**: apuntan al servicio `postgres`
-> interno del compose. Ejemplo:
+> del stack de Postgres, alcanzable por nombre gracias a `scholio-network`. Ejemplo:
 >
 > ```
 > DATABASE_URL=postgres://scholarly_app:TU_PASSWORD@postgres:5432/scholarly
 > MIGRATION_DATABASE_URL=postgres://scholarly:TU_PASSWORD@postgres:5432/scholarly
 > ```
 >
-> El host es `postgres` (nombre del servicio en el compose), no `localhost`.
+> El host es `postgres` (nombre del servicio en el compose de Postgres), no `localhost`.
+
+### Migraciones (paso manual)
+
+El entrypoint de producción (`scripts/entrypoint.sh`) no migra automáticamente. Tras el primer deploy, entra a la terminal del contenedor `scholio` desde Dokploy (o `docker exec`) y ejecuta:
+
+```bash
+bun scripts/migrate.mjs
+```
 
 ### ⚠️ "Pull always" — por qué está activado
 
@@ -281,23 +317,51 @@ docker system prune -af
 
 ## Variables de entorno necesarias
 
-Todas están documentadas en `.env.example`. Las imprescindibles para producción:
+Todas están documentadas en `.env.example`. Lista revisada contra el uso real en `src/` (`env.*` de `$env/dynamic/private`), no contra versiones anteriores de este documento:
 
-| Variable                    | Descripción                                                   |
-| --------------------------- | ------------------------------------------------------------- |
-| `DATABASE_URL`              | Conexión a PostgreSQL (rol app, con RLS)                      |
-| `MIGRATION_DATABASE_URL`    | Conexión a PostgreSQL (superusuario, solo migraciones)        |
-| `BETTER_AUTH_SECRET`        | Secreto para sesiones (generar con `openssl rand -base64 32`) |
-| `ANTHROPIC_API_KEY`         | API key de Anthropic para el asistente IA                     |
-| `STORAGE_ENDPOINT`          | Endpoint MinIO / S3                                           |
-| `STORAGE_ACCESS_KEY`        | Access key de MinIO / S3                                      |
-| `STORAGE_SECRET_KEY`        | Secret key de MinIO / S3                                      |
-| `STRIPE_SECRET_KEY`         | API key secreta de Stripe                                     |
-| `STRIPE_WEBHOOK_SECRET`     | Secreto del webhook de Stripe                                 |
-| `STRIPE_PRICE_PRO_MONTHLY`  | Price ID del plan Pro en Stripe                               |
-| `STRIPE_PRICE_TEAM_MONTHLY` | Price ID del plan Team en Stripe                              |
-| `SENTRY_DSN`                | DSN de Sentry (servidor)                                      |
-| `PUBLIC_SENTRY_DSN`         | DSN de Sentry (cliente, se expone al navegador)               |
+| Variable              | Descripción                                                    | En `docker-compose.prod.app.yml` |
+| ---------------------- | --------------------------------------------------------------- | :-------------------------------: |
+| `ORIGIN`               | Dominio público de la app (URLs de retorno, cookies)             | ✅ |
+| `BETTER_AUTH_SECRET`   | Secreto de sesión (generar con `openssl rand -base64 32`)        | ✅ |
+| `ADMIN_EMAIL`          | Email con acceso a `/admin`                                      | ✅ |
+| `DATABASE_URL`         | Conexión a PostgreSQL (rol app, con RLS)                         | ✅ |
+| `REDIS_URL`            | Conexión a Redis (cache/rate limiting)                           | ✅ |
+| `TYPST_SERVICE_URL`    | URL interna del servicio de generación de PDF                    | ✅ |
+| `STORAGE_ENDPOINT`     | Endpoint S3-compatible                                           | ✅ |
+| `STORAGE_ACCESS_KEY`   | Access key del storage                                           | ✅ |
+| `STORAGE_SECRET_KEY`   | Secret key del storage                                           | ✅ |
+| `STORAGE_PUBLIC_URL`   | URL pública desde la que el navegador descarga los ficheros      | ✅ |
+| `GITHUB_CLIENT_ID/SECRET` | OAuth de GitHub                                                | ✅ |
+| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL` | OAuth de ORCID                            | ✅ |
+| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                | ✅ |
+| `KMS_MASTER_KEY`       | Clave para cifrar API keys de usuario (BYOK)                     | ✅ |
+| `PUBLIC_LIBRARIAN_URL` | URL de la app hermana, expuesta al navegador                     | ✅ |
+| `SLACK_WEBHOOK_URL`    | Notificaciones internas (opcional)                                | ✅ |
+| `OPENAI_API_KEY`       | Embeddings (`text-embedding-3-small`) para búsqueda semántica     | ✅ |
+| `OPENROUTER_APP_KEY`   | Conexión OpenRouter para el asistente IA (`api/openrouter/connect`) | ✅ |
+| `SENTRY_DSN`           | DSN de Sentry en servidor (`sentry.server.config.ts`)             | ✅ |
+| `MIGRATION_DATABASE_URL` | Conexión superusuario, solo para `bun scripts/migrate.mjs` (paso manual, ver arriba) | ✅ |
+| `ADMIN_PASSWORD`       | Password del admin, seed en la migración                         | ✅ |
+| `PUBLIC_SENTRY_DSN`    | DSN de Sentry en cliente — **build-time**, no runtime             | se hornea en la imagen de GHCR, no en este compose |
+
+`STORAGE_BUCKET` sigue en el compose pero no lo lee ningún sitio de `src/` actualmente — no rompe nada, pero es una variable muerta.
+
+`SCIPY_SERVICE_URL` se quitó del compose y sigue leyéndose desde `src/lib/server/scipy.ts` — confirmado como código muerto (la ruta `(scipy)` no está en uso), así que no hace falta reintroducirla.
+
+No hay ni rastro en el código de `ANTHROPIC_API_KEY`, `STRIPE_*`, `AWS_KMS_KEY_ID`/`AWS_REGION`, `LANGUAGETOOL_URL`, `COOKIE_DOMAIN` ni `TRUSTED_ORIGINS` — la tabla anterior de este README las listaba como imprescindibles, pero no corresponden a ninguna lectura de `env.*` en `src/`. El asistente IA usa OpenRouter (`OPENROUTER_APP_KEY`), no la SDK de Anthropic directa, y no hay integración de Stripe en el código actual.
+
+### Variables de los servicios auxiliares del stack
+
+No las lee la app (`src/`), pero las necesitan los otros servicios de `docker-compose.prod.app.yml`:
+
+| Variable                              | Servicio | Descripción                                                        |
+| -------------------------------------- | -------- | ------------------------------------------------------------------- |
+| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | `rustfs`, `backup` | Credenciales del storage S3-compatible; `backup` las reutiliza para autenticar la subida |
+| `R2_BUCKET`                            | `backup` | Bucket destino del dump (por defecto `scholio-backups`, dentro de `rustfs`) |
+| `R2_ENDPOINT`                          | `backup` | Endpoint S3 destino (por defecto `http://rustfs:9000`, el propio `rustfs` del stack) |
+| `BACKUP_RETENTION_DAYS`                | `backup` | Días que se conservan los dumps antes de borrarse (por defecto 30) |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `backup` | Mismas credenciales que el stack de Postgres, para poder hacer `pg_dump` |
+| `POSTGRES_HOST`                        | `backup` | Host de Postgres alcanzable en `scholio-network` (por defecto `postgres`) |
 
 ---
 
