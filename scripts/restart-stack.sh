@@ -12,7 +12,7 @@ HEALTH_INTERVAL=5                        # seconds between retries
 log() { echo "[restart-stack] $(date '+%Y-%m-%d %H:%M:%S') $*"; }
 
 log "Running docker compose up -d in ${REPO_DIR} ..."
-docker compose -f "${REPO_DIR}/docker-compose.prod.yml" up -d
+docker compose -f "${REPO_DIR}/docker-compose.prod.app.yml" up -d
 log "Stack started. Waiting for ${HEALTH_URL} ..."
 
 elapsed=0
