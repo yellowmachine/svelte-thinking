@@ -206,6 +206,7 @@ bun run dev
   - `ghcr.io/yellowmachine/scholio-typst:latest` — typst (solo si cambió `typst-service/**`, o con `workflow_dispatch`)
 
   Dokploy hace `pull` de estas imágenes, no construye desde el `Dockerfile`. Si el paquete de GHCR es privado, hay que configurar credenciales de registry en Dokploy (usuario + token con scope `read:packages`).
+
 - Fly.io está deshabilitado (`fly.toml` y el job `deploy-fly` quedaron comentados) — el despliegue va solo por Dokploy.
 
 Postgres vive en su propio stack de Dokploy, separado del de la app, para poder compartir la misma base de datos con otras apps (p. ej. `librarian`) sin acoplar su ciclo de vida al de ninguna de ellas.
@@ -319,30 +320,30 @@ docker system prune -af
 
 Todas están documentadas en `.env.example`. Lista revisada contra el uso real en `src/` (`env.*` de `$env/dynamic/private`), no contra versiones anteriores de este documento:
 
-| Variable              | Descripción                                                    | En `docker-compose.prod.app.yml` |
-| ---------------------- | --------------------------------------------------------------- | :-------------------------------: |
-| `ORIGIN`               | Dominio público de la app (URLs de retorno, cookies)             | ✅ |
-| `BETTER_AUTH_SECRET`   | Secreto de sesión (generar con `openssl rand -base64 32`)        | ✅ |
-| `ADMIN_EMAIL`          | Email con acceso a `/admin`                                      | ✅ |
-| `DATABASE_URL`         | Conexión a PostgreSQL (rol app, con RLS)                         | ✅ |
-| `REDIS_URL`            | Conexión a Redis (cache/rate limiting)                           | ✅ |
-| `TYPST_SERVICE_URL`    | URL interna del servicio de generación de PDF                    | ✅ |
-| `STORAGE_ENDPOINT`     | Endpoint S3-compatible                                           | ✅ |
-| `STORAGE_ACCESS_KEY`   | Access key del storage                                           | ✅ |
-| `STORAGE_SECRET_KEY`   | Secret key del storage                                           | ✅ |
-| `STORAGE_PUBLIC_URL`   | URL pública desde la que el navegador descarga los ficheros      | ✅ |
-| `GITHUB_CLIENT_ID/SECRET` | OAuth de GitHub                                                | ✅ |
-| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL` | OAuth de ORCID                            | ✅ |
-| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                | ✅ |
-| `KMS_MASTER_KEY`       | Clave para cifrar API keys de usuario (BYOK)                     | ✅ |
-| `PUBLIC_LIBRARIAN_URL` | URL de la app hermana, expuesta al navegador                     | ✅ |
-| `SLACK_WEBHOOK_URL`    | Notificaciones internas (opcional)                                | ✅ |
-| `OPENAI_API_KEY`       | Embeddings (`text-embedding-3-small`) para búsqueda semántica     | ✅ |
-| `OPENROUTER_APP_KEY`   | Conexión OpenRouter para el asistente IA (`api/openrouter/connect`) | ✅ |
-| `SENTRY_DSN`           | DSN de Sentry en servidor (`sentry.server.config.ts`)             | ✅ |
-| `MIGRATION_DATABASE_URL` | Conexión superusuario, solo para `bun scripts/migrate.mjs` (paso manual, ver arriba) | ✅ |
-| `ADMIN_PASSWORD`       | Password del admin, seed en la migración                         | ✅ |
-| `PUBLIC_SENTRY_DSN`    | DSN de Sentry en cliente — **build-time**, no runtime             | se hornea en la imagen de GHCR, no en este compose |
+| Variable                                        | Descripción                                                                          |          En `docker-compose.prod.app.yml`          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------ | :------------------------------------------------: |
+| `ORIGIN`                                        | Dominio público de la app (URLs de retorno, cookies)                                 |                         ✅                         |
+| `BETTER_AUTH_SECRET`                            | Secreto de sesión (generar con `openssl rand -base64 32`)                            |                         ✅                         |
+| `ADMIN_EMAIL`                                   | Email con acceso a `/admin`                                                          |                         ✅                         |
+| `DATABASE_URL`                                  | Conexión a PostgreSQL (rol app, con RLS)                                             |                         ✅                         |
+| `REDIS_URL`                                     | Conexión a Redis (cache/rate limiting)                                               |                         ✅                         |
+| `TYPST_SERVICE_URL`                             | URL interna del servicio de generación de PDF                                        |                         ✅                         |
+| `STORAGE_ENDPOINT`                              | Endpoint S3-compatible                                                               |                         ✅                         |
+| `STORAGE_ACCESS_KEY`                            | Access key del storage                                                               |                         ✅                         |
+| `STORAGE_SECRET_KEY`                            | Secret key del storage                                                               |                         ✅                         |
+| `STORAGE_PUBLIC_URL`                            | URL pública desde la que el navegador descarga los ficheros                          |                         ✅                         |
+| `GITHUB_CLIENT_ID/SECRET`                       | OAuth de GitHub                                                                      |                         ✅                         |
+| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID                                                                       |                         ✅                         |
+| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                         |                         ✅                         |
+| `KMS_MASTER_KEY`                                | Clave para cifrar API keys de usuario (BYOK)                                         |                         ✅                         |
+| `PUBLIC_LIBRARIAN_URL`                          | URL de la app hermana, expuesta al navegador                                         |                         ✅                         |
+| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                   |                         ✅                         |
+| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                        |                         ✅                         |
+| `OPENROUTER_APP_KEY`                            | Conexión OpenRouter para el asistente IA (`api/openrouter/connect`)                  |                         ✅                         |
+| `SENTRY_DSN`                                    | DSN de Sentry en servidor (`sentry.server.config.ts`)                                |                         ✅                         |
+| `MIGRATION_DATABASE_URL`                        | Conexión superusuario, solo para `bun scripts/migrate.mjs` (paso manual, ver arriba) |                         ✅                         |
+| `ADMIN_PASSWORD`                                | Password del admin, seed en la migración                                             |                         ✅                         |
+| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente — **build-time**, no runtime                                | se hornea en la imagen de GHCR, no en este compose |
 
 `STORAGE_BUCKET` sigue en el compose pero no lo lee ningún sitio de `src/` actualmente — no rompe nada, pero es una variable muerta.
 
@@ -354,14 +355,14 @@ No hay ni rastro en el código de `ANTHROPIC_API_KEY`, `STRIPE_*`, `AWS_KMS_KEY_
 
 No las lee la app (`src/`), pero las necesitan los otros servicios de `docker-compose.prod.app.yml`:
 
-| Variable                              | Servicio | Descripción                                                        |
-| -------------------------------------- | -------- | ------------------------------------------------------------------- |
-| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | `rustfs`, `backup` | Credenciales del storage S3-compatible; `backup` las reutiliza para autenticar la subida |
-| `R2_BUCKET`                            | `backup` | Bucket destino del dump (por defecto `scholio-backups`, dentro de `rustfs`) |
-| `R2_ENDPOINT`                          | `backup` | Endpoint S3 destino (por defecto `http://rustfs:9000`, el propio `rustfs` del stack) |
-| `BACKUP_RETENTION_DAYS`                | `backup` | Días que se conservan los dumps antes de borrarse (por defecto 30) |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `backup` | Mismas credenciales que el stack de Postgres, para poder hacer `pg_dump` |
-| `POSTGRES_HOST`                        | `backup` | Host de Postgres alcanzable en `scholio-network` (por defecto `postgres`) |
+| Variable                                              | Servicio           | Descripción                                                                              |
+| ----------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------- |
+| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY`             | `rustfs`, `backup` | Credenciales del storage S3-compatible; `backup` las reutiliza para autenticar la subida |
+| `R2_BUCKET`                                           | `backup`           | Bucket destino del dump (por defecto `scholio-backups`, dentro de `rustfs`)              |
+| `R2_ENDPOINT`                                         | `backup`           | Endpoint S3 destino (por defecto `http://rustfs:9000`, el propio `rustfs` del stack)     |
+| `BACKUP_RETENTION_DAYS`                               | `backup`           | Días que se conservan los dumps antes de borrarse (por defecto 30)                       |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `backup`           | Mismas credenciales que el stack de Postgres, para poder hacer `pg_dump`                 |
+| `POSTGRES_HOST`                                       | `backup`           | Host de Postgres alcanzable en `scholio-network` (por defecto `postgres`)                |
 
 ---
 
