@@ -16,9 +16,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    ports:
-      - '5432:5432'
+    networks:
+      - scholio-network
 
 volumes:
   postgres_prod_data:
     name: scholio_postgres_prod
+
+networks:
+  scholio-network:
+    external: true
