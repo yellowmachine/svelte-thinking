@@ -1,26 +1,30 @@
-# Fly.io app config — typst rendering service (interno)
-# Antes de usar:
-#   fly apps create <nombre> --org <org>
-#   fly ips allocate-v6 --private --app <nombre>   ← habilita Flycast
-# Desde scholio: TYPST_SERVICE_URL=http://<nombre>.flycast
-app = 'scholio-typst'
-primary_region = 'cdg'
-
-# Sin acceso público — solo accesible internamente vía Flycast
-[http_service]
-  internal_port = 3100
-  force_https = false
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-
-  [[http_service.checks]]
-    grace_period = '15s'
-    interval = '15s'
-    method = 'GET'
-    path = '/health'
-    timeout = '3s'
-
-[[vm]]
-  size = 'shared-cpu-1x'
-  memory = '256mb'
+# Fly.io deshabilitado — typst se despliega ahora en Dokploy
+# (ver .forgejo/workflows/deploy.yml y docker-compose.prod.app.yml).
+# Se deja comentado por si se necesita retomar Fly.io en el futuro.
+#
+# # Fly.io app config — typst rendering service (interno)
+# # Antes de usar:
+# #   fly apps create <nombre> --org <org>
+# #   fly ips allocate-v6 --private --app <nombre>   ← habilita Flycast
+# # Desde scholio: TYPST_SERVICE_URL=http://<nombre>.flycast
+# app = 'scholio-typst'
+# primary_region = 'cdg'
+#
+# # Sin acceso público — solo accesible internamente vía Flycast
+# [http_service]
+#   internal_port = 3100
+#   force_https = false
+#   auto_stop_machines = 'stop'
+#   auto_start_machines = true
+#   min_machines_running = 0
+#
+#   [[http_service.checks]]
+#     grace_period = '15s'
+#     interval = '15s'
+#     method = 'GET'
+#     path = '/health'
+#     timeout = '3s'
+#
+# [[vm]]
+#   size = 'shared-cpu-1x'
+#   memory = '256mb'
