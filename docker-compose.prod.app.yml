@@ -1,6 +1,7 @@
 services:
   scholio:
     image: ghcr.io/yellowmachine/svelte-thinking:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       redis:
@@ -84,6 +85,7 @@ services:
 
   typst:
     image: ghcr.io/yellowmachine/scholio-typst:latest
+    pull_policy: always
     restart: unless-stopped
     networks:
       - scholio-network

@@ -241,9 +241,8 @@ No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-ne
 1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.app.yml`
 2. Este stack despliega también `redis`, `typst`, `rustfs` (storage S3-compatible) y `backup` junto con la app — `scholio` y `typst` hacen `pull` de GHCR, `redis`/`rustfs` usan imagen oficial, `backup` se construye localmente desde `backup-service/Dockerfile` y sube los dumps a `rustfs` por API S3
 3. En **Environment Variables**, añade todas las variables del checklist de abajo
-4. Activa **"Pull always"** en las opciones de deploy (ver nota abajo)
-5. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
-6. Deploy
+4. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
+5. Deploy
 
 > **Nota sobre el disco de `rustfs`**: `rustfs` monta `/rustfsdata:/data`, así que el servidor
 > necesita el disco de datos montado en `/rustfsdata` **antes** del primer deploy (por ejemplo, un
@@ -273,9 +272,9 @@ El entrypoint de producción (`scripts/entrypoint.sh`) no migra automáticamente
 bun scripts/migrate.mjs
 ```
 
-### ⚠️ "Pull always" — por qué está activado
+### ⚠️ `pull_policy: always` — por qué está en el compose
 
-Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen cacheada en lugar de descargar la nueva. Para garantizar que cada deploy recoge la imagen actualizada, la opción **"Pull always"** debe estar activada.
+Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen cacheada en lugar de descargar la nueva. En vez de depender del toggle "Pull always" de la UI de Dokploy (fácil de olvidar si se recrea la app), `scholio` y `typst` en `docker-compose.prod.app.yml` llevan `pull_policy: always` — un campo nativo del Compose Spec (Docker Compose v2.10+) que fuerza el `pull` antes de levantar el servicio, queda versionado y no depende de un ajuste manual en la UI.
 
 **Consecuencia**: cada deploy descarga la imagen completa, lo que acumula capas antiguas en `/var/lib/docker/overlay2`. Sin limpieza periódica, el disco se llena (incidente real: 75 GB llenos en producción). Ver sección de mantenimiento abajo.
 
@@ -285,7 +284,7 @@ Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen ca
 
 ### Limpieza de imágenes Docker (cron semanal)
 
-Con "Pull always" activo las imágenes antiguas se acumulan. Hay un cron configurado en el servidor que limpia automáticamente cada domingo a las 3:00:
+Con `pull_policy: always` las imágenes antiguas se acumulan en cada deploy. Hay un cron configurado en el servidor que limpia automáticamente cada domingo a las 3:00:
 
 ```
 0 3 * * 0 docker image prune -af >> /var/log/docker-prune.log 2>&1
