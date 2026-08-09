@@ -221,7 +221,12 @@ docker network create scholio-network
 
 Si no existe, el deploy falla con `network scholio-network declared as external, but could not be found`. `dokploy-network` no hace falta crearla, la gestiona Dokploy.
 
-Dokploy no tiene una opción de UI para crear redes custom ([issue abierto](https://github.com/Dokploy/dokploy/issues/3670)), pero no hace falta SSH aparte: el mismo comando se puede ejecutar desde la terminal del servidor integrada en el dashboard — **Settings → Web Server → Terminal**.
+Dokploy no tiene una opción de UI para crear redes custom ([issue abierto](https://github.com/Dokploy/dokploy/issues/3670)). Algunas versiones exponen una terminal del servidor en el dashboard (ligada a la feature de *Remote Servers*), pero no está garantizado que aparezca para el servidor local en el que corre el propio Dokploy — la vía fiable es SSH directo al servidor:
+
+```bash
+ssh usuario@tu-servidor
+docker network create scholio-network
+```
 
 ### Configurar Postgres en Dokploy
 
