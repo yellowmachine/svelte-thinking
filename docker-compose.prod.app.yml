@@ -118,7 +118,7 @@ services:
     security_opt:
       - 'no-new-privileges:true'
     environment:
-      RUSTFS_VOLUMES: /data/rustfs{0..3}
+      RUSTFS_VOLUMES: /data # single physical disk, no erasure coding
       RUSTFS_ADDRESS: 0.0.0.0:9000
       RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
       RUSTFS_CONSOLE_ENABLE: 'true'
