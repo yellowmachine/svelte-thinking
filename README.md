@@ -221,7 +221,7 @@ docker network create scholio-network
 
 Si no existe, el deploy falla con `network scholio-network declared as external, but could not be found`. `dokploy-network` no hace falta crearla, la gestiona Dokploy.
 
-Dokploy no tiene una opción de UI para crear redes custom ([issue abierto](https://github.com/Dokploy/dokploy/issues/3670)). Algunas versiones exponen una terminal del servidor en el dashboard (ligada a la feature de *Remote Servers*), pero no está garantizado que aparezca para el servidor local en el que corre el propio Dokploy — la vía fiable es SSH directo al servidor:
+Dokploy no tiene una opción de UI para crear redes custom ([issue abierto](https://github.com/Dokploy/dokploy/issues/3670)). Algunas versiones exponen una terminal del servidor en el dashboard (ligada a la feature de _Remote Servers_), pero no está garantizado que aparezca para el servidor local en el que corre el propio Dokploy — la vía fiable es SSH directo al servidor:
 
 ```bash
 ssh usuario@tu-servidor
@@ -244,6 +244,11 @@ No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-ne
 4. Activa **"Pull always"** en las opciones de deploy (ver nota abajo)
 5. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
 6. Deploy
+
+> **Nota sobre el disco de `rustfs`**: `rustfs` monta `/rustfsdata:/data`, así que el servidor
+> necesita el disco de datos montado en `/rustfsdata` **antes** del primer deploy (por ejemplo, un
+> volumen adicional de Hetzner). Si el punto de montaje no existe, Docker crea un directorio vacío
+> en el disco raíz y `rustfs` escribe ahí en lugar de en el disco dedicado.
 
 ### Variables de entorno en Dokploy
 
