@@ -131,7 +131,7 @@ services:
       - '9000:9000' # S3 API
       - '9001:9001' # Console
     volumes:
-      - /backup:/data
+      - /rustfsdata:/data
       - rustfs_logs:/app/logs
     healthcheck:
       test:

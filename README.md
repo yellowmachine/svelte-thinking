@@ -221,7 +221,12 @@ docker network create scholio-network
 
 Si no existe, el deploy falla con `network scholio-network declared as external, but could not be found`. `dokploy-network` no hace falta crearla, la gestiona Dokploy.
 
-Dokploy no tiene una opción de UI para crear redes custom ([issue abierto](https://github.com/Dokploy/dokploy/issues/3670)), pero no hace falta SSH aparte: el mismo comando se puede ejecutar desde la terminal del servidor integrada en el dashboard — **Settings → Web Server → Terminal**.
+Dokploy no tiene una opción de UI para crear redes custom ([issue abierto](https://github.com/Dokploy/dokploy/issues/3670)). Algunas versiones exponen una terminal del servidor en el dashboard (ligada a la feature de _Remote Servers_), pero no está garantizado que aparezca para el servidor local en el que corre el propio Dokploy — la vía fiable es SSH directo al servidor:
+
+```bash
+ssh usuario@tu-servidor
+docker network create scholio-network
+```
 
 ### Configurar Postgres en Dokploy
 
@@ -239,6 +244,11 @@ No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-ne
 4. Activa **"Pull always"** en las opciones de deploy (ver nota abajo)
 5. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
 6. Deploy
+
+> **Nota sobre el disco de `rustfs`**: `rustfs` monta `/rustfsdata:/data`, así que el servidor
+> necesita el disco de datos montado en `/rustfsdata` **antes** del primer deploy (por ejemplo, un
+> volumen adicional de Hetzner). Si el punto de montaje no existe, Docker crea un directorio vacío
+> en el disco raíz y `rustfs` escribe ahí en lugar de en el disco dedicado.
 
 ### Variables de entorno en Dokploy
 
@@ -339,7 +349,6 @@ Todas están documentadas en `.env.example`. Lista revisada contra el uso real e
 | `PUBLIC_LIBRARIAN_URL`                          | URL de la app hermana, expuesta al navegador                                         |                         ✅                         |
 | `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                   |                         ✅                         |
 | `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                        |                         ✅                         |
-| `OPENROUTER_APP_KEY`                            | Conexión OpenRouter para el asistente IA (`api/openrouter/connect`)                  |                         ✅                         |
 | `SENTRY_DSN`                                    | DSN de Sentry en servidor (`sentry.server.config.ts`)                                |                         ✅                         |
 | `MIGRATION_DATABASE_URL`                        | Conexión superusuario, solo para `bun scripts/migrate.mjs` (paso manual, ver arriba) |                         ✅                         |
 | `ADMIN_PASSWORD`                                | Password del admin, seed en la migración                                             |                         ✅                         |
@@ -347,9 +356,11 @@ Todas están documentadas en `.env.example`. Lista revisada contra el uso real e
 
 `STORAGE_BUCKET` sigue en el compose pero no lo lee ningún sitio de `src/` actualmente — no rompe nada, pero es una variable muerta.
 
+`OPENROUTER_APP_KEY` sigue en el compose pero no la lee ningún sitio de `src/` — la única referencia es una línea comentada en `api/openrouter/callback/+server.ts`, que ni siquiera importa `env`. Es otra variable muerta.
+
 `SCIPY_SERVICE_URL` se quitó del compose y sigue leyéndose desde `src/lib/server/scipy.ts` — confirmado como código muerto (la ruta `(scipy)` no está en uso), así que no hace falta reintroducirla.
 
-No hay ni rastro en el código de `ANTHROPIC_API_KEY`, `STRIPE_*`, `AWS_KMS_KEY_ID`/`AWS_REGION`, `LANGUAGETOOL_URL`, `COOKIE_DOMAIN` ni `TRUSTED_ORIGINS` — la tabla anterior de este README las listaba como imprescindibles, pero no corresponden a ninguna lectura de `env.*` en `src/`. El asistente IA usa OpenRouter (`OPENROUTER_APP_KEY`), no la SDK de Anthropic directa, y no hay integración de Stripe en el código actual.
+No hay ni rastro en el código de `ANTHROPIC_API_KEY`, `STRIPE_*`, `AWS_KMS_KEY_ID`/`AWS_REGION`, `LANGUAGETOOL_URL`, `COOKIE_DOMAIN` ni `TRUSTED_ORIGINS` — la tabla anterior de este README las listaba como imprescindibles, pero no corresponden a ninguna lectura de `env.*` en `src/`. El asistente IA usa OpenRouter, pero el intercambio code→key no autentica la app (no hay `OPENROUTER_APP_KEY` real en uso), y no hay integración de Stripe en el código actual.
 
 ### Variables de los servicios auxiliares del stack
 
