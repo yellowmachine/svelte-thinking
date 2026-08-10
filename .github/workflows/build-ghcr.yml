@@ -115,8 +115,7 @@ jobs:
       - name: Trigger Dokploy deploy
         run: |
           curl --silent --show-error --fail \
-            -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}" \
-            -H "x-api-key: ${{ secrets.DOKPLOY_WEBHOOK_TOKEN }}"
+            -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
 
       - name: Notify Slack on successful deploy
         run: |
