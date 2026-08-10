@@ -49,8 +49,8 @@ echo "[backup] Upload complete"
 # Retention: delete backups older than RETENTION days
 echo "[backup] Pruning backups older than ${RETENTION} days"
 
-CUTOFF=$(date -u -d "${RETENTION} days ago" +"%Y-%m-%dT%H-%M-%SZ" 2>/dev/null \
-  || date -u -v-${RETENTION}d +"%Y-%m-%dT%H-%M-%SZ")  # macOS fallback (unused in prod)
+CUTOFF_EPOCH=$(( $(date -u +%s) - RETENTION * 86400 ))
+CUTOFF=$(date -u -d "@${CUTOFF_EPOCH}" +"%Y-%m-%dT%H-%M-%SZ")
 
 AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}" \
 AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}" \
