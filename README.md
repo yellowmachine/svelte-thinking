@@ -209,8 +209,8 @@ bun run dev
 
 - **Deploy automático**: el job `deploy-dokploy` de `build-ghcr.yml` llama al webhook de Dokploy justo después de que `build-app` (y `build-typst`, si corrió) terminen en éxito — así Dokploy hace `pull` de la imagen recién publicada y redeploya sin intervención manual. Requiere un secret en **Settings → Secrets and variables → Actions** del repo de GitHub:
 
-  | Secret               | Dónde se obtiene                                                                                   |
-  | -------------------- | --------------------------------------------------------------------------------------------------- |
+  | Secret                | Dónde se obtiene                                                                                                                                                                                      |
+  | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
   | `DOKPLOY_WEBHOOK_URL` | Dashboard Dokploy → aplicación `scholio` → **General** → **Deployments** → botón "Copy Webhook" — el token va incrustado en la propia URL (`/api/deploy/compose/<id>`), no hace falta cabecera aparte |
 
   Si el webhook falla (URL mal puesta, Dokploy caído), el `curl --fail` hace fallar el job y no se manda la notificación de Slack de éxito — así no queda la falsa impresión de que se desplegó.
