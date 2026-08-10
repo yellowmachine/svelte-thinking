@@ -103,8 +103,28 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Deploy a Fly.io deshabilitado — la app se despliega ahora en Dokploy
-  # (ver .forgejo/workflows/deploy.yml y docker-compose.prod.app.yml).
+  deploy-dokploy:
+    needs: [build-app, build-typst]
+    if: |
+      always() &&
+      needs.build-app.result == 'success' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dokploy deploy
+        run: |
+          curl --silent --show-error --fail \
+            -X POST "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
+
+      - name: Notify Slack on successful deploy
+        run: |
+          curl --silent --show-error -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\":\"✅ *Deployed to production* · \`${{ github.ref_name }}\` @ \`${{ github.sha }}\`\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Ver en GitHub Actions>\"}"
+
+  # Deploy a Fly.io deshabilitado — la app se despliega ahora en Dokploy vía
+  # el job deploy-dokploy de arriba.
   # Se deja comentado por si se necesita retomar Fly.io en el futuro.
   # deploy-fly:
   #   needs: [build-app, build-typst]

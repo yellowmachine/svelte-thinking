@@ -207,6 +207,14 @@ bun run dev
 
   Dokploy hace `pull` de estas imágenes, no construye desde el `Dockerfile`. Si el paquete de GHCR es privado, hay que configurar credenciales de registry en Dokploy (usuario + token con scope `read:packages`).
 
+- **Deploy automático**: el job `deploy-dokploy` de `build-ghcr.yml` llama al webhook de Dokploy justo después de que `build-app` (y `build-typst`, si corrió) terminen en éxito — así Dokploy hace `pull` de la imagen recién publicada y redeploya sin intervención manual. Requiere un secret en **Settings → Secrets and variables → Actions** del repo de GitHub:
+
+  | Secret                | Dónde se obtiene                                                                                                                                                                                      |
+  | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `DOKPLOY_WEBHOOK_URL` | Dashboard Dokploy → aplicación `scholio` → **General** → **Deployments** → botón "Copy Webhook" — el token va incrustado en la propia URL (`/api/deploy/compose/<id>`), no hace falta cabecera aparte |
+
+  Si el webhook falla (URL mal puesta, Dokploy caído), el `curl --fail` hace fallar el job y no se manda la notificación de Slack de éxito — así no queda la falsa impresión de que se desplegó.
+
 - Fly.io está deshabilitado (`fly.toml` y el job `deploy-fly` quedaron comentados) — el despliegue va solo por Dokploy.
 
 Postgres vive en su propio stack de Dokploy, separado del de la app, para poder compartir la misma base de datos con otras apps (p. ej. `librarian`) sin acoplar su ciclo de vida al de ninguna de ellas.
@@ -248,6 +256,19 @@ No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-ne
 > necesita el disco de datos montado en `/rustfsdata` **antes** del primer deploy (por ejemplo, un
 > volumen adicional de Hetzner). Si el punto de montaje no existe, Docker crea un directorio vacío
 > en el disco raíz y `rustfs` escribe ahí en lugar de en el disco dedicado.
+
+> **Nota sobre el bucket de `rustfs`**: `rustfs` no crea buckets automáticamente. Tras el primer
+> deploy hay que crear a mano el bucket `scholio-backups` (o el que tenga `R2_BUCKET`) una vez,
+> desde la consola de `rustfs` en el puerto `9001`, o por CLI:
+>
+> ```bash
+> docker exec $(docker ps -qf name=backup) sh -c \
+>   'AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+>    aws s3 mb "s3://$R2_BUCKET" --endpoint-url "$R2_ENDPOINT" --region auto'
+> ```
+>
+> Sin esto, `backup.sh` corre igualmente (dump y `pg_dump` funcionan) pero la subida falla con
+> `NoSuchBucket`, y el trap de error dispara la notificación de Slack como si hubiera fallado todo.
 
 ### Variables de entorno en Dokploy
 
