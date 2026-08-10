@@ -249,6 +249,19 @@ No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-ne
 > volumen adicional de Hetzner). Si el punto de montaje no existe, Docker crea un directorio vacío
 > en el disco raíz y `rustfs` escribe ahí en lugar de en el disco dedicado.
 
+> **Nota sobre el bucket de `rustfs`**: `rustfs` no crea buckets automáticamente. Tras el primer
+> deploy hay que crear a mano el bucket `scholio-backups` (o el que tenga `R2_BUCKET`) una vez,
+> desde la consola de `rustfs` en el puerto `9001`, o por CLI:
+>
+> ```bash
+> docker exec $(docker ps -qf name=backup) sh -c \
+>   'AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+>    aws s3 mb "s3://$R2_BUCKET" --endpoint-url "$R2_ENDPOINT" --region auto'
+> ```
+>
+> Sin esto, `backup.sh` corre igualmente (dump y `pg_dump` funcionan) pero la subida falla con
+> `NoSuchBucket`, y el trap de error dispara la notificación de Slack como si hubiera fallado todo.
+
 ### Variables de entorno en Dokploy
 
 Copia todas las variables del `.env.example` en la sección **Environment Variables** de Dokploy.
