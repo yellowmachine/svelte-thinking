@@ -31,8 +31,11 @@
 			? 'Replace'
 			: action.type === 'insert_index'
 				? 'Insert index'
-				: 'Insert'
+				: action.type === 'set_diagram_code'
+					? 'Update diagram'
+					: 'Insert'
 	);
+	const diagramCode = $derived(action.type === 'set_diagram_code' ? action.code : '');
 	const indexDescription = $derived(
 		action.type === 'insert_index'
 			? action.kind === 'toc'
@@ -102,6 +105,14 @@
 				<div class="mt-2.5 rounded-lg bg-green-50 px-2.5 py-2 dark:bg-green-950/30">
 					<p class="font-sans text-xs leading-relaxed text-green-800 dark:text-green-200">
 						{indexDescription}
+					</p>
+				</div>
+			{:else if status === 'idle' && action.type === 'set_diagram_code'}
+				<div class="mt-2.5 rounded-lg bg-green-50 px-2.5 py-2 dark:bg-green-950/30">
+					<p
+						class="font-mono text-xs leading-relaxed whitespace-pre-wrap text-green-800 dark:text-green-200"
+					>
+						{truncate(diagramCode)}
 					</p>
 				</div>
 			{/if}

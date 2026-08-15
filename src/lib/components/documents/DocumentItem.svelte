@@ -23,7 +23,8 @@
 		supplementary: 'M6 3v8M3 6h8',
 		book: 'M3 3h7v9H3zM10 3h1v9h-1',
 		chapter: 'M3 4h8M3 7h7M3 10h5',
-		reading_note: 'M2 4h9v9H2zM7 7h2M7 9h1M13 4l-2 9'
+		reading_note: 'M2 4h9v9H2zM7 7h2M7 9h1M13 4l-2 9',
+		diagram: 'M3 2h3v3H3zM7 8h3v3H7zM4.5 5v2.5h3.5'
 	};
 </script>
 

@@ -67,6 +67,7 @@ export default defineConfig({
 		...(isDev ? [devtoolsJson()] : [])
 	],
 	server: { port: 5174, host: true, allowedHosts: ['scholio-dev.local'] },
+	ssr: { noExternal: ['zod'] },
 	test: {
 		expect: {
 			requireAssertions: true

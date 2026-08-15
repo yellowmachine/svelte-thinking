@@ -19,7 +19,8 @@ export const documentTypeEnum = scholioSchema.enum('document_type', [
 	'supplementary',
 	'book',
 	'chapter',
-	'reading_note'
+	'reading_note',
+	'diagram'
 ]);
 
 export const document = scholioSchema
