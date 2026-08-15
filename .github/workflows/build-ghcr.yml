@@ -136,7 +136,7 @@ jobs:
           echo "Waiting for $image:latest to resolve to $target"
           for i in $(seq 1 30); do
             current=$(docker buildx imagetools inspect "$image:latest" 2>/dev/null \
-              | awk '/^Name:/ { sub(/.*@/, "", $2); print $2 }')
+              | awk '/^Digest:/ { print $2; exit }')
             if [ "$current" = "$target" ]; then
               echo "Matched after $i attempt(s): $current"
               exit 0
