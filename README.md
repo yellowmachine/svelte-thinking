@@ -179,18 +179,28 @@ Las soluciones contemporáneas al problema se discuten en
 # 1. Instalar dependencias
 bun install
 
-# 2. Levantar PostgreSQL + MinIO (compose de dev, puertos locales)
+# 2. Instalar los git hooks (pre-commit con lint-staged) — el "prepare"
+#    de package.json debería hacerlo solo tras el install, pero conviene
+#    confirmarlo a mano: si `git config core.hooksPath` no imprime nada,
+#    ejecuta esto.
+bun run prepare
+
+# 3. Levantar PostgreSQL + MinIO (compose de dev, puertos locales)
 docker compose -f docker-compose.dev.yml up -d
 
-# 3. Copiar variables de entorno y rellenar las necesarias
+# 4. Copiar variables de entorno y rellenar las necesarias
 cp .env.example .env
 
-# 4. Aplicar migraciones
+# 5. Aplicar migraciones
 bun run db:migrate
 
-# 5. Arrancar el servidor de desarrollo
+# 6. Arrancar el servidor de desarrollo
 bun run dev
 ```
+
+> **Nota**: si `bun run prepare` no deja `.git/hooks` funcionando (`git config core.hooksPath`
+> vacío tras el install), los commits pasarán sin pasar por `lint-staged` en local — el `bun run lint`
+> de CI seguirá pillando problemas de formato, pero solo al abrir el PR en vez de en el commit.
 
 ---
 

@@ -10,6 +10,8 @@
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
 	import MarkdownEditor from '$lib/components/editor/MarkdownEditor.svelte';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
+	import DiagramWorkspace from '$lib/components/editor/DiagramWorkspace.svelte';
+	import MermaidPreview from '$lib/components/editor/MermaidPreview.svelte';
 	import AiEditorPanel from '$lib/components/ai/AiEditorPanel.svelte';
 	import AnnotationsPanel from '$lib/components/editor/AnnotationsPanel.svelte';
 	import BibliographyPanel from '$lib/components/editor/BibliographyPanel.svelte';
@@ -1408,10 +1410,12 @@
 					>
 				</div>
 				<div class="pb-safe flex-1 overflow-y-auto px-4 py-6">
-					{#if content.trim()}
-						<MarkdownPreview {content} projectId={data.document.projectId} docMap={docMap()} />
-					{:else}
+					{#if !content.trim()}
 						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Empty document.</p>
+					{:else if data.document.type === 'diagram'}
+						<MermaidPreview code={content} />
+					{:else}
+						<MarkdownPreview {content} projectId={data.document.projectId} docMap={docMap()} />
 					{/if}
 				</div>
 			</div>
@@ -2481,7 +2485,20 @@
 
 		<!-- Main layout -->
 		<div data-tutorial="doc-editor-area" class="flex min-h-0 flex-1 overflow-hidden">
-			{#if viewMode === 'split'}
+			{#if data.document.type === 'diagram'}
+				<div class="relative flex flex-1 flex-col overflow-hidden">
+					<div class="border-b border-paper-border px-6 pt-10 pb-4 dark:border-dark-paper-border">
+						<div class="mx-auto w-full max-w-4xl">
+							{@render editableTitle()}
+						</div>
+					</div>
+					<DiagramWorkspace
+						bind:value={content}
+						readonly={!canWrite}
+						ondocchange={handleDocChange}
+					/>
+				</div>
+			{:else if viewMode === 'split'}
 				<!-- Split: editor left, preview right -->
 				<div class="relative flex flex-1 flex-col overflow-hidden">
 					<div class="border-b border-paper-border px-6 pt-10 pb-4 dark:border-dark-paper-border">
@@ -2830,6 +2847,8 @@
 									action.kind === 'toc'
 										? `[[index:toc]]\n\n${content}`
 										: `${content}\n\n[[index:persons]]`;
+							} else if (action.type === 'set_diagram_code') {
+								content = action.code;
 							}
 						}}
 						onClose={toggleChat}

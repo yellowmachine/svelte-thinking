@@ -74,7 +74,8 @@ export type PendingAction =
 export type PendingEditorAction =
 	| { type: 'replace_text'; anchorText: string; replacement: string; explanation: string }
 	| { type: 'insert_after'; anchorText: string; content: string; explanation: string }
-	| { type: 'insert_index'; kind: 'toc' | 'persons'; explanation: string };
+	| { type: 'insert_index'; kind: 'toc' | 'persons'; explanation: string }
+	| { type: 'set_diagram_code'; code: string; explanation: string };
 
 // ---------------------------------------------------------------------------
 // Error helper
@@ -1376,6 +1377,28 @@ const EDITOR_TOOLS = [
 	{
 		type: 'function' as const,
 		function: {
+			name: 'set_diagram_code',
+			description:
+				'Propose a full replacement of the Mermaid diagram source code. Use this whenever the ' +
+				'user asks to create, modify, fix, or extend the diagram — always send the complete new ' +
+				'Mermaid code, not a partial fragment or diff. The user will see a preview of the new ' +
+				'diagram and can accept or reject it before it replaces the current code.',
+			parameters: {
+				type: 'object',
+				properties: {
+					code: { type: 'string', description: 'Complete Mermaid diagram source code' },
+					explanation: {
+						type: 'string',
+						description: 'One-sentence description of what changed or was created'
+					}
+				},
+				required: ['code', 'explanation']
+			}
+		}
+	},
+	{
+		type: 'function' as const,
+		function: {
 			name: 'propose_references',
 			description:
 				'Propose a list of bibliography references for the user to review and selectively add to the project. ' +
@@ -1735,6 +1758,19 @@ async function runEditorAgentLoop(
 							role: 'tool' as const,
 							tool_call_id: tc.id,
 							content: 'Index insertion proposed. The user will see a preview.'
+						};
+					}
+
+					if (tc.function.name === 'set_diagram_code') {
+						pendingEditorActions.push({
+							type: 'set_diagram_code',
+							code: (args.code as string) ?? '',
+							explanation: (args.explanation as string) ?? ''
+						});
+						return {
+							role: 'tool' as const,
+							tool_call_id: tc.id,
+							content: 'Diagram update proposed. The user will see a preview.'
 						};
 					}
 
@@ -2356,6 +2392,18 @@ export async function runEditorAgentLoopSSE(
 							role: 'tool' as const,
 							tool_call_id: tc.id,
 							content: 'Index insertion proposed. The user will see a preview.'
+						};
+					}
+					if (tc.function.name === 'set_diagram_code') {
+						pendingEditorActions.push({
+							type: 'set_diagram_code',
+							code: (args.code as string) ?? '',
+							explanation: (args.explanation as string) ?? ''
+						});
+						return {
+							role: 'tool' as const,
+							tool_call_id: tc.id,
+							content: 'Diagram update proposed. The user will see a preview.'
 						};
 					}
 					if (tc.function.name === 'propose_references') {

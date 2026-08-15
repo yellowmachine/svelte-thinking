@@ -13,7 +13,8 @@ export const DOCUMENT_TYPES = [
 	'supplementary',
 	'book',
 	'chapter',
-	'reading_note'
+	'reading_note',
+	'diagram'
 ] as const;
 
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
@@ -34,7 +35,8 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 	supplementary: 'Supplementary',
 	book: 'Book',
 	chapter: 'Chapter',
-	reading_note: 'Reading Note'
+	reading_note: 'Reading Note',
+	diagram: 'Diagram'
 };
 
 // ---------------------------------------------------------------------------

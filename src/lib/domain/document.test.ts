@@ -16,7 +16,8 @@ describe('DOCUMENT_TYPES', () => {
 			'supplementary',
 			'book',
 			'chapter',
-			'reading_note'
+			'reading_note',
+			'diagram'
 		];
 		expect([...DOCUMENT_TYPES]).toEqual(expected);
 	});

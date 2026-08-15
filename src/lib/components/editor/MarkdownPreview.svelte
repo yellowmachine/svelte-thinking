@@ -19,6 +19,7 @@
 		stripFrontmatter
 	} from '$lib/utils/wikilinks';
 	import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
+	import { renderMermaidToSvg } from '$lib/utils/mermaidRender';
 	import { extractCallouts, restoreCallouts } from '$lib/utils/callouts';
 	import { einkStore } from '$lib/stores/eink.svelte';
 	import { untrack } from 'svelte';
@@ -146,19 +147,11 @@
 	async function renderDiagrams(diagrams: Map<string, string>) {
 		if (!container || diagrams.size === 0) return;
 
-		const { default: mermaid } = await import('mermaid');
-		mermaid.initialize({
-			startOnLoad: false,
-			theme: 'neutral',
-			fontFamily: '"Source Serif 4", Georgia, serif'
-		});
-
 		for (const [id, code] of diagrams) {
 			const el = container.querySelector(`[data-mermaid-id="${id}"]`);
 			if (!el) continue;
 			try {
-				const { svg } = await mermaid.render(`mermaid-svg-${id}`, code);
-				el.innerHTML = svg;
+				el.innerHTML = await renderMermaidToSvg(code);
 			} catch (e) {
 				el.textContent = `Mermaid error: ${e}`;
 			}

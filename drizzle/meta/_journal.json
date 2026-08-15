@@ -50,6 +50,13 @@
       "when": 1783951040981,
       "tag": "0006_luxuriant_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786773163100,
+      "tag": "0007_acoustic_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

@@ -228,6 +228,11 @@
 			value: 'chapter' as const,
 			label: 'Chapter',
 			description: 'A book chapter, referenced from a book document.'
+		},
+		{
+			value: 'diagram' as const,
+			label: 'Diagram',
+			description: 'A Mermaid diagram with a dedicated code + preview + AI editor.'
 		}
 	];
 
