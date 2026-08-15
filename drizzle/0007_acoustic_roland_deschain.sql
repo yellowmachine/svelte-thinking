@@ -1,0 +1,1 @@
+ALTER TYPE "scholio"."document_type" ADD VALUE 'diagram';

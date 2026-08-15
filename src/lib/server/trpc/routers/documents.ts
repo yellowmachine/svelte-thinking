@@ -136,9 +136,14 @@ year:
 
 `;
 
+const DIAGRAM_TEMPLATE = `graph TD
+    A[Start] --> B[End]
+`;
+
 function initialContent(type: (typeof documentTypeValues)[number]): string {
 	if (type === 'book') return BOOK_TEMPLATE;
 	if (type === 'reading_note') return READING_NOTE_TEMPLATE;
+	if (type === 'diagram') return DIAGRAM_TEMPLATE;
 	return '';
 }
 

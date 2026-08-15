@@ -74,6 +74,7 @@
 		replace_text: 'Preparing edit…',
 		insert_after: 'Preparing insertion…',
 		insert_index: 'Preparing index…',
+		set_diagram_code: 'Drawing diagram…',
 		propose_references: 'Searching bibliography…'
 	};
 
