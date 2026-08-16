@@ -21,6 +21,7 @@ services:
       # Internal services (scholio-network)
       REDIS_URL: ${REDIS_URL}
       TYPST_SERVICE_URL: ${TYPST_SERVICE_URL}
+      KROKI_URL: ${KROKI_URL}
       # Storage (S3-compatible, external)
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT}
       STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
@@ -85,6 +86,24 @@ services:
 
   typst:
     image: ghcr.io/yellowmachine/scholio-typst:latest
+    pull_policy: always
+    restart: unless-stopped
+    networks:
+      - scholio-network
+
+  kroki:
+    image: yuzutech/kroki:latest
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      - KROKI_MERMAID_HOST=kroki-mermaid
+    networks:
+      - scholio-network
+
+  # Mermaid needs a headless-browser companion — not bundled in the main
+  # kroki image, which only handles diagram types renderable in-JVM.
+  kroki-mermaid:
+    image: yuzutech/kroki-mermaid:latest
     pull_policy: always
     restart: unless-stopped
     networks:

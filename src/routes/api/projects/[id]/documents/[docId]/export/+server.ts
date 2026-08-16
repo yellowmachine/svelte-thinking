@@ -1,10 +1,67 @@
 import { error } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { eq } from 'drizzle-orm';
+import type { RequestHandler, RequestEvent } from './$types';
+import { eq, inArray } from 'drizzle-orm';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
-import { toLatex, toTypst, serializeBib, type RefData } from '$lib/utils/export';
+import {
+	toLatex,
+	toTypst,
+	serializeBib,
+	type RefData,
+	type DiagramSvgMap
+} from '$lib/utils/export';
 import { compileToPdf } from '$lib/server/typst';
+import { DIAGRAM_LINK_RE } from '$lib/utils/wikilinks';
+import { renderMermaidToSvgServer } from '$lib/server/kroki';
+
+/**
+ * Resolves [[diagram:uuid|Title]] tokens referenced in `content` to rendered
+ * SVGs, for embedding real diagrams in the PDF export. A diagram that no
+ * longer exists, or that fails to render, is simply left out of the map —
+ * `toTypst` falls back to its text placeholder for anything missing here.
+ */
+async function resolveDiagramSvgs(event: RequestEvent, content: string): Promise<DiagramSvgMap> {
+	const ids = [...new Set([...content.matchAll(DIAGRAM_LINK_RE)].map((m) => m[1]))];
+	if (ids.length === 0) return new Map();
+
+	const rows = (await event.locals.withRLS(async (db) => {
+		const docs = await db.select().from(document).where(inArray(document.id, ids));
+
+		const versionIds = docs
+			.filter((d) => d.draftContent === null && d.currentVersionId)
+			.map((d) => d.currentVersionId as string);
+		const versions = versionIds.length
+			? await db
+					.select({ id: documentVersion.id, content: documentVersion.content })
+					.from(documentVersion)
+					.where(inArray(documentVersion.id, versionIds))
+			: [];
+		const versionContent = new Map(versions.map((v) => [v.id, v.content]));
+
+		return docs.map((d) => ({
+			id: d.id,
+			title: d.title,
+			content:
+				d.draftContent ?? (d.currentVersionId ? (versionContent.get(d.currentVersionId) ?? '') : '')
+		}));
+	})) as { id: string; title: string; content: string }[];
+
+	const rendered = await Promise.allSettled(
+		rows.map(async (r) => ({
+			id: r.id,
+			title: r.title,
+			svg: await renderMermaidToSvgServer(r.content)
+		}))
+	);
+
+	const diagrams: DiagramSvgMap = new Map();
+	for (const result of rendered) {
+		if (result.status === 'fulfilled') {
+			diagrams.set(result.value.id, { svg: result.value.svg, title: result.value.title });
+		}
+	}
+	return diagrams;
+}
 
 export const GET: RequestHandler = async (event) => {
 	if (!event.locals.user) error(401, 'No autenticado');
@@ -74,7 +131,7 @@ export const GET: RequestHandler = async (event) => {
 			}
 		});
 	} else if (format === 'typst') {
-		const typ = toTypst(docResult.content, docResult.title, refs);
+		const { typst: typ } = toTypst(docResult.content, docResult.title, refs);
 		return new Response(typ, {
 			headers: {
 				'Content-Type': 'text/plain; charset=utf-8',
@@ -82,12 +139,18 @@ export const GET: RequestHandler = async (event) => {
 			}
 		});
 	} else {
-		const typ = toTypst(docResult.content, docResult.title, refs);
+		const diagrams = await resolveDiagramSvgs(event, docResult.content);
+		const { typst: typ, diagramFiles } = toTypst(
+			docResult.content,
+			docResult.title,
+			refs,
+			diagrams
+		);
 		const bib = serializeBib(refs);
-		const files = bib ? { 'refs.bib': bib } : undefined;
+		const files = { ...(bib ? { 'refs.bib': bib } : {}), ...diagramFiles };
 		let pdf: Uint8Array;
 		try {
-			pdf = await compileToPdf(typ, undefined, files);
+			pdf = await compileToPdf(typ, undefined, Object.keys(files).length ? files : undefined);
 		} catch (e) {
 			error(500, `Error compilando PDF: ${e instanceof Error ? e.message : e}`);
 		}
