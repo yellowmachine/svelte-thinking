@@ -3069,6 +3069,7 @@
 			href={resolve(
 				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=latex`
 			)}
+			download
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
@@ -3078,6 +3079,7 @@
 			href={resolve(
 				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=typst`
 			)}
+			download
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
@@ -3089,6 +3091,7 @@
 					? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`
 					: `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=pdf`
 			)}
+			download
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
