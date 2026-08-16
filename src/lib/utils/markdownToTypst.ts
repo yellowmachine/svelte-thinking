@@ -160,7 +160,18 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	// 6b. [[index:persons]] → placeholder resolved in step 8 with collected names
 	src = src.replace(/\[\[index:persons\]\]/g, '%%PERSONS_INDEX%%');
 
-	// 6c. Generic wikilinks [[Title]] / [[Title:hash]] → plain text
+	// 6c. Diagram embeds [[diagram:uuid|Title]] → text placeholder.
+	//     No server-side Mermaid rendering here, so the diagram itself can't be
+	//     embedded in the export — just note where it belongs. Uses the same
+	//     %%PLACEHOLDER%% protection as images/persons so inlineToTypst (step 7)
+	//     doesn't re-escape the generated Typst syntax.
+	const diagramPlaceholders: string[] = [];
+	src = src.replace(/\[\[diagram:[a-f0-9-]{36}\|([^\]]+)\]\]/g, (_m, title: string) => {
+		diagramPlaceholders.push(`#quote(block: true)[Diagrama: ${escapeTypstName(title.trim())}]`);
+		return `%%DIAG${diagramPlaceholders.length - 1}%%`;
+	});
+
+	// 6d. Generic wikilinks [[Title]] / [[Title:hash]] → plain text
 	src = src.replace(/\[\[([^\]|]+?)(?:[:|][^\]]+)?\]\]/g, '$1');
 
 	// ── 7. Block-level transforms ─────────────────────────────────────────────
@@ -231,6 +242,7 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	result = result.replace(/%%CALLOUT(\d+)%%/g, (_m, i) => calloutBlocks[parseInt(i)]);
 	result = result.replace(/%%EPIGRAPH(\d+)%%/g, (_m, i) => epigraphs[parseInt(i)]);
 	result = result.replace(/%%PP(\d+)%%/g, (_m, i) => personPlaceholders[parseInt(i)]);
+	result = result.replace(/%%DIAG(\d+)%%/g, (_m, i) => diagramPlaceholders[parseInt(i)]);
 	result = result.replace(/%%PERSONS_INDEX%%/g, () => generatePersonsIndex(personNames));
 
 	return result;

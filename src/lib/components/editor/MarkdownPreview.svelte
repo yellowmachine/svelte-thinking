@@ -16,7 +16,8 @@
 		processPersonsAndIndex,
 		protectTocPlaceholder,
 		restoreToc,
-		stripFrontmatter
+		stripFrontmatter,
+		DIAGRAM_LINK_RE
 	} from '$lib/utils/wikilinks';
 	import { extractEpigraphsForProcessing, restoreEpigraphs } from '$lib/utils/epigraphs';
 	import { renderMermaidToSvg } from '$lib/utils/mermaidRender';
@@ -158,6 +159,51 @@
 		}
 	}
 
+	// ── Diagram embed extractor ──────────────────────────────────────────────
+	// Handles [[diagram:uuid|Title]] — an embed of another document's Mermaid
+	// content (as opposed to ```mermaid fenced blocks, which live inline).
+
+	function extractDiagramEmbeds(src: string): {
+		processed: string;
+		embeds: SvelteMap<string, { docId: string; title: string }>;
+	} {
+		const embeds = new SvelteMap<string, { docId: string; title: string }>();
+		let idx = 0;
+
+		const processed = src.replace(DIAGRAM_LINK_RE, (_match, uuid: string, title: string) => {
+			const id = `diagram-embed-${idx++}`;
+			embeds.set(id, { docId: uuid.trim(), title: title.trim() });
+			return `<figure class="diagram-embed"><figcaption>${title.trim()}</figcaption><div data-diagram-embed-id="${id}"></div></figure>`;
+		});
+
+		return { processed, embeds };
+	}
+
+	// Cache rendered SVGs by source document id so the same diagram referenced
+	// more than once (or re-rendered on an unrelated reactive update) doesn't
+	// re-fetch/re-render every time.
+	const diagramEmbedCache = new SvelteMap<string, string>();
+
+	async function renderDiagramEmbeds(embeds: Map<string, { docId: string; title: string }>) {
+		if (!container || embeds.size === 0) return;
+
+		for (const [id, { docId, title }] of embeds) {
+			const el = container.querySelector(`[data-diagram-embed-id="${id}"]`);
+			if (!el) continue;
+			try {
+				let svg = diagramEmbedCache.get(docId);
+				if (!svg) {
+					const doc = await trpc.documents.withContent.query(docId);
+					svg = await renderMermaidToSvg(doc.content);
+					diagramEmbedCache.set(docId, svg);
+				}
+				el.innerHTML = svg;
+			} catch {
+				el.textContent = `No se pudo cargar el diagrama "${title}"`;
+			}
+		}
+	}
+
 	// ── Vega-lite extractor ───────────────────────────────────────────────────
 
 	function extractPlots(src: string): { processed: string; plots: SvelteMap<string, object> } {
@@ -184,9 +230,15 @@
 		refs: Map<string, CiteRef>,
 		style: CitationStyle,
 		wikilinkMap: Map<string, { id: string; projectId: string }>
-	): { html: string; plots: Map<string, object>; diagrams: Map<string, string> } {
+	): {
+		html: string;
+		plots: Map<string, object>;
+		diagrams: Map<string, string>;
+		diagramEmbeds: Map<string, { docId: string; title: string }>;
+	} {
 		src = stripFrontmatter(src);
-		const { processed: withDiagramPlaceholders, diagrams } = extractDiagrams(src);
+		const { processed: withEmbedPlaceholders, embeds: diagramEmbeds } = extractDiagramEmbeds(src);
+		const { processed: withDiagramPlaceholders, diagrams } = extractDiagrams(withEmbedPlaceholders);
 		const { processed: withPlaceholders, plots } = extractPlots(withDiagramPlaceholders);
 		const { processed: withCalloutPlaceholders, callouts } = extractCallouts(withPlaceholders);
 		const { processed: withEpigraphPlaceholders, epigraphs } =
@@ -208,10 +260,10 @@
 			typeof DOMPurify.sanitize === 'function'
 				? DOMPurify.sanitize(withCallouts, {
 						ADD_TAGS: ['math', 'figure', 'figcaption'],
-						ADD_ATTR: ['data-vega-id', 'data-mermaid-id', 'role']
+						ADD_ATTR: ['data-vega-id', 'data-mermaid-id', 'data-diagram-embed-id', 'role']
 					})
 				: withCallouts;
-		return { html, plots, diagrams };
+		return { html, plots, diagrams, diagramEmbeds };
 	}
 
 	// ── Dataset $ref resolution ───────────────────────────────────────────────
@@ -268,7 +320,8 @@
 			? {
 					html: preRenderedHtml,
 					plots: new Map<string, object>(),
-					diagrams: new Map<string, string>()
+					diagrams: new Map<string, string>(),
+					diagramEmbeds: new Map<string, { docId: string; title: string }>()
 				}
 			: parseMarkdown(snapshot, refsMap, citationStyle, docMap)
 	);
@@ -281,6 +334,11 @@
 	$effect(() => {
 		const { diagrams } = parsed;
 		Promise.resolve().then(() => renderDiagrams(diagrams));
+	});
+
+	$effect(() => {
+		const { diagramEmbeds } = parsed;
+		Promise.resolve().then(() => renderDiagramEmbeds(diagramEmbeds));
 	});
 
 	// ── Comment anchor highlighting ───────────────────────────────────────────

@@ -219,11 +219,21 @@ bun run dev
 
 - **Deploy automático**: el job `deploy-dokploy` de `build-ghcr.yml` llama al webhook de Dokploy justo después de que `build-app` (y `build-typst`, si corrió) terminen en éxito — así Dokploy hace `pull` de la imagen recién publicada y redeploya sin intervención manual. Requiere un secret en **Settings → Secrets and variables → Actions** del repo de GitHub:
 
-  | Secret                | Dónde se obtiene                                                                                                                                                                                      |
-  | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | `DOKPLOY_WEBHOOK_URL` | Dashboard Dokploy → aplicación `scholio` → **General** → **Deployments** → botón "Copy Webhook" — el token va incrustado en la propia URL (`/api/deploy/compose/<id>`), no hace falta cabecera aparte |
+  | Secret                | Dónde se obtiene                                                                                |
+  | --------------------- | ----------------------------------------------------------------------------------------------- |
+  | `DOKPLOY_WEBHOOK_URL` | Dashboard Dokploy → aplicación `scholio` → **General** → **Deployments** → botón "Copy Webhook" |
 
-  Si el webhook falla (URL mal puesta, Dokploy caído), el `curl --fail` hace fallar el job y no se manda la notificación de Slack de éxito — así no queda la falsa impresión de que se desplegó.
+  Antes de llamar al webhook, el job espera (`docker buildx imagetools inspect`, hasta 30×5s) a que el tag `:latest` en GHCR resuelva al digest que se acaba de publicar — sin esto, `pull_policy: always` puede tirar de la imagen anterior si Dokploy pulla justo antes de que el tag propague.
+
+  ⚠️ **El endpoint del webhook es el mismo que usa el trigger nativo de Dokploy por push de GitHub** (`/api/deploy/compose/<refreshToken>`, ver [código fuente](https://github.com/Dokploy/dokploy/blob/main/apps/dokploy/pages/api/deploy/compose/%5BrefreshToken%5D.ts)). Solo cuenta como deploy real si la petición lleva la cabecera `x-github-event` y un `ref` en el body que coincida con la rama configurada en Dokploy — si no, responde `301 "Branch Not Match"` sin desplegar nada, y como no es un código ≥400 pasa desapercibido para un `curl --fail` normal (así estuvo meses en silencio). Por eso el `curl` de este job manda:
+
+  ```
+  -H "x-github-event: push" -d '{"ref": "refs/heads/main", "commits": []}'
+  ```
+
+  y valida explícitamente `HTTP 200` en vez de confiar en `curl --fail`. También requiere el toggle **Auto Deploy** activo en el tab **General** de la app en Dokploy — desactivarlo devuelve `400 "Automatic deployments are disabled for this compose"` y bloquea el webhook igual que al trigger nativo (es el mismo flag para los dos, no hay forma de separarlos).
+
+  Como el trigger nativo de Dokploy también dispara en cuanto detecta el push (antes de que termine el build de la imagen), es normal ver **dos deploys por cada push a `main`**: uno prematuro (puede coger la imagen vieja) y el de este job, que siempre llega después de confirmar que la imagen está lista. Con `pull_policy: always`, el segundo vuelve a hacer `pull` y queda como estado final — no hace falta desactivar el trigger nativo.
 
 - Fly.io está deshabilitado (`fly.toml` y el job `deploy-fly` quedaron comentados) — el despliegue va solo por Dokploy.
 

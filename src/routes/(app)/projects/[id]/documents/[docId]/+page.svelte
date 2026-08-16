@@ -23,6 +23,7 @@
 	import VersionHistoryPanel from '$lib/components/editor/VersionHistoryPanel.svelte';
 	import CommitDialog from '$lib/components/editor/CommitDialog.svelte';
 	import CitePicker from '$lib/components/editor/CitePicker.svelte';
+	import DiagramInsertModal from '$lib/components/editor/DiagramInsertModal.svelte';
 	import DraftPanel from '$lib/components/editor/DraftPanel.svelte';
 	import EnrichPanel from '$lib/components/editor/EnrichPanel.svelte';
 	import MarkdownCheatsheet from '$lib/components/editor/MarkdownCheatsheet.svelte';
@@ -310,6 +311,7 @@
 	let projectRefs = $state<CiteRef[]>([]);
 	let refsLoaded = $state(false);
 	let showCitePicker = $state(false);
+	let showDiagramPicker = $state(false);
 	let showCiteStyleMenu = $state(false);
 	let citeStyleMenuPos = $state({ top: 0, left: 0 });
 	let editorEl: {
@@ -1689,6 +1691,33 @@
 					</a>
 				{/if}
 
+				<!-- Insert diagram -->
+				{#if !data.document.isReadonly && data.document.type !== 'diagram' && data.projectDocs.some((d) => d.type === 'diagram')}
+					<button
+						type="button"
+						onclick={() => (showDiagramPicker = true)}
+						title="Insert an embedded diagram"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<rect x="3" y="3" width="7" height="7" rx="1" />
+							<rect x="14" y="14" width="7" height="7" rx="1" />
+							<path d="M10 6.5h4a3.5 3.5 0 0 1 3.5 3.5v4" />
+						</svg>
+						Diagram
+					</button>
+				{/if}
+
 				<!-- AI buttons or CTA -->
 				{#if aiCtaType === 'ok'}
 					<!-- Chat assistant button -->
@@ -2946,6 +2975,20 @@
 			/>
 		{/if}
 
+		<!-- Diagram insert modal -->
+		{#if showDiagramPicker}
+			<DiagramInsertModal
+				docs={data.projectDocs
+					.filter((d) => d.type === 'diagram')
+					.map((d) => ({ id: d.id, title: d.title }))}
+				onclose={() => (showDiagramPicker = false)}
+				oninsert={(token) => {
+					editorEl?.insertAtCursor(token);
+					showDiagramPicker = false;
+				}}
+			/>
+		{/if}
+
 		<!-- Commit dialog -->
 		{#if showCommit}
 			<CommitDialog
@@ -3026,6 +3069,7 @@
 			href={resolve(
 				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=latex`
 			)}
+			download
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
@@ -3035,6 +3079,7 @@
 			href={resolve(
 				`/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=typst`
 			)}
+			download
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
@@ -3046,6 +3091,7 @@
 					? `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/book-export`
 					: `/api/projects/${data.document?.projectId}/documents/${data.document?.id}/export?format=pdf`
 			)}
+			download
 			onclick={() => (showExport = false)}
 			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 		>
