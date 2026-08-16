@@ -41,6 +41,9 @@ export function withCodeProtection(text: string, fn: (s: string) => string): str
 
 // Matches [[doc:uuid|Title]]
 const UUID_LINK_RE = /\[\[doc:([a-f0-9-]{36})\|([^\]]+)\]\]/g;
+// Matches [[diagram:uuid|Title]] — embedded diagram, resolved separately by
+// MarkdownPreview (rendered inline as SVG), not by processWikilinks.
+export const DIAGRAM_LINK_RE = /\[\[diagram:([a-f0-9-]{36})\|([^\]]+)\]\]/g;
 // Matches [[#Heading]] — internal section anchor
 const HEADING_LINK_RE = /\[\[#([^\]]+)\]\]/g;
 // Matches [[person:Name]] — named person mention
@@ -69,6 +72,13 @@ export function extractWikilinks(markdown: string): { uuids: string[]; titles: s
 	const titles = new Set<string>();
 
 	for (const match of markdown.matchAll(UUID_LINK_RE)) {
+		const uuid = match[1].trim();
+		if (uuid) uuids.add(uuid);
+	}
+
+	// Diagram embeds also reference a document by UUID — index them the same
+	// way so commit-time backlinks stay accurate.
+	for (const match of markdown.matchAll(DIAGRAM_LINK_RE)) {
 		const uuid = match[1].trim();
 		if (uuid) uuids.add(uuid);
 	}
