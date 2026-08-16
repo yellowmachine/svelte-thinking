@@ -208,8 +208,10 @@
 }
 
 .prose .diagram-embed svg {
+	display: block;
 	max-width: 100%;
 	height: auto;
+	margin: 0 auto;
 }
 
 /* Callout blocks */
