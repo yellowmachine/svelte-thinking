@@ -193,7 +193,13 @@ ${bibCmd}
 
 // ─── Typst ────────────────────────────────────────────────────────────────────
 
-function mdToTypst(md: string): string {
+/** Diagram document uuid → its Mermaid source already rendered to an SVG string. */
+export type DiagramSvgMap = Map<string, { svg: string; title: string }>;
+
+function mdToTypst(
+	md: string,
+	diagrams?: DiagramSvgMap
+): { body: string; diagramFiles: Record<string, string> } {
 	let t = md.replace(/^---\r?\n[\s\S]*?\n---[ \t]*(\r?\n|$)/, '');
 
 	// Protect display math $$...$$ → Typst display: $ ... $
@@ -218,13 +224,22 @@ function mdToTypst(md: string): string {
 			.join(' ')
 	);
 
-	// Diagram embeds [[diagram:uuid|Title]] → text placeholder. No server-side
-	// Mermaid rendering here, so the diagram itself can't be embedded — protect
-	// it from the generic wikilink rule below, which would otherwise take the
-	// "diagram" prefix (everything before the first ":") as the title.
+	// Diagram embeds [[diagram:uuid|Title]] → an embedded image when the caller
+	// already resolved the Mermaid source to an SVG (see `diagrams`), otherwise
+	// a text placeholder. Either way, protect the result from the generic
+	// wikilink rule below, which would otherwise take the "diagram" prefix
+	// (everything before the first ":") as the title.
 	const diagramPlaceholdersTypst: string[] = [];
-	t = t.replace(/\[\[diagram:[a-f0-9-]{36}\|([^\]]+)\]\]/g, (_m, title: string) => {
-		diagramPlaceholdersTypst.push(`#quote(block: true)[Diagrama: ${title.trim()}]`);
+	const diagramFiles: Record<string, string> = {};
+	t = t.replace(/\[\[diagram:([a-f0-9-]{36})\|([^\]]+)\]\]/g, (_m, uuid: string, title: string) => {
+		const resolved = diagrams?.get(uuid);
+		if (resolved) {
+			const filename = `diagram-${uuid.slice(0, 8)}.svg`;
+			diagramFiles[filename] = resolved.svg;
+			diagramPlaceholdersTypst.push(`#figure(image("${filename}"), caption: [${title.trim()}])`);
+		} else {
+			diagramPlaceholdersTypst.push(`#quote(block: true)[Diagrama: ${title.trim()}]`);
+		}
 		return `%%DIAG${diagramPlaceholdersTypst.length - 1}%%`;
 	});
 
@@ -251,17 +266,22 @@ function mdToTypst(md: string): string {
 	t = t.replace(/%%IM(\d+)%%/g, (_, i) => inlineMath[parseInt(i)]);
 	t = t.replace(/%%DIAG(\d+)%%/g, (_, i) => diagramPlaceholdersTypst[parseInt(i)]);
 
-	return t;
+	return { body: t, diagramFiles };
 }
 
-export function toTypst(content: string, docTitle: string, refs: RefData[]): string {
-	const body = mdToTypst(content);
+export function toTypst(
+	content: string,
+	docTitle: string,
+	refs: RefData[],
+	diagrams?: DiagramSvgMap
+): { typst: string; diagramFiles: Record<string, string> } {
+	const { body, diagramFiles } = mdToTypst(content, diagrams);
 	const bib = serializeBib(refs);
 	const bibSection = bib.trim() ? `\n#bibliography("refs.bib")\n` : '';
 
 	const escapedTitle = docTitle.replace(/"/g, '\\"');
 
-	return `#set document(title: "${escapedTitle}")
+	const typst = `#set document(title: "${escapedTitle}")
 #set page(paper: "a4", margin: (x: 2.5cm, y: 3cm))
 #set text(font: "New Computer Modern", size: 11pt)
 #set par(justify: true)
@@ -275,4 +295,6 @@ export function toTypst(content: string, docTitle: string, refs: RefData[]): str
 
 ${body.trim()}
 ${bibSection}`;
+
+	return { typst, diagramFiles };
 }
