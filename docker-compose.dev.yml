@@ -26,6 +26,22 @@ services:
     ports:
       - '3100:3100'
 
+  kroki:
+    image: yuzutech/kroki:latest
+    restart: unless-stopped
+    environment:
+      - KROKI_MERMAID_HOST=kroki-mermaid
+    ports:
+      - '8005:8000'
+    depends_on:
+      - kroki-mermaid
+
+  # Mermaid needs a headless-browser companion — not bundled in the main
+  # kroki image, which only handles diagram types renderable in-JVM.
+  kroki-mermaid:
+    image: yuzutech/kroki-mermaid:latest
+    restart: unless-stopped
+
   embed:
     build:
       context: ./embed-service

@@ -382,6 +382,7 @@ Todas están documentadas en `.env.example`. Lista revisada contra el uso real e
 | `DATABASE_URL`                                  | Conexión a PostgreSQL (rol app, con RLS)                                        |                         ✅                         |
 | `REDIS_URL`                                     | Conexión a Redis (cache/rate limiting)                                          |                         ✅                         |
 | `TYPST_SERVICE_URL`                             | URL interna del servicio de generación de PDF                                   |                         ✅                         |
+| `KROKI_URL`                                     | URL interna del servicio Kroki (renderiza diagramas Mermaid a SVG para el PDF)  |                         ✅                         |
 | `STORAGE_ENDPOINT`                              | Endpoint S3-compatible                                                          |                         ✅                         |
 | `STORAGE_ACCESS_KEY`                            | Access key del storage                                                          |                         ✅                         |
 | `STORAGE_SECRET_KEY`                            | Secret key del storage                                                          |                         ✅                         |
