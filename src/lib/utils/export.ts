@@ -114,6 +114,16 @@ function mdToLatex(md: string): string {
 		return `\\cite{${cleaned}}`;
 	});
 
+	// Diagram embeds [[diagram:uuid|Title]] → text placeholder. No server-side
+	// Mermaid rendering here, so the diagram itself can't be embedded — protect
+	// it from the generic wikilink rule below, which would otherwise take the
+	// "diagram" prefix (everything before the first ":") as the title.
+	const diagramPlaceholdersLatex: string[] = [];
+	t = t.replace(/\[\[diagram:[a-f0-9-]{36}\|([^\]]+)\]\]/g, (_m, title: string) => {
+		diagramPlaceholdersLatex.push(`\\fbox{Diagrama: ${title.trim()}}`);
+		return `%%DIAG${diagramPlaceholdersLatex.length - 1}%%`;
+	});
+
 	// Wikilinks → plain title
 	t = t.replace(/\[\[([^\]]+)\]\]/g, (_, c) => (c.includes(':') ? c.split(':')[0] : c));
 
@@ -143,6 +153,7 @@ function mdToLatex(md: string): string {
 	t = t.replace(/%%CB(\d+)%%/g, (_, i) => codeBlocks[parseInt(i)]);
 	t = t.replace(/%%DM(\d+)%%/g, (_, i) => displayMath[parseInt(i)]);
 	t = t.replace(/%%IM(\d+)%%/g, (_, i) => inlineMath[parseInt(i)]);
+	t = t.replace(/%%DIAG(\d+)%%/g, (_, i) => diagramPlaceholdersLatex[parseInt(i)]);
 
 	return t;
 }
@@ -207,6 +218,16 @@ function mdToTypst(md: string): string {
 			.join(' ')
 	);
 
+	// Diagram embeds [[diagram:uuid|Title]] → text placeholder. No server-side
+	// Mermaid rendering here, so the diagram itself can't be embedded — protect
+	// it from the generic wikilink rule below, which would otherwise take the
+	// "diagram" prefix (everything before the first ":") as the title.
+	const diagramPlaceholdersTypst: string[] = [];
+	t = t.replace(/\[\[diagram:[a-f0-9-]{36}\|([^\]]+)\]\]/g, (_m, title: string) => {
+		diagramPlaceholdersTypst.push(`#quote(block: true)[Diagrama: ${title.trim()}]`);
+		return `%%DIAG${diagramPlaceholdersTypst.length - 1}%%`;
+	});
+
 	// Wikilinks → plain title
 	t = t.replace(/\[\[([^\]]+)\]\]/g, (_, c) => (c.includes(':') ? c.split(':')[0] : c));
 
@@ -228,6 +249,7 @@ function mdToTypst(md: string): string {
 	// Restore math
 	t = t.replace(/%%DM(\d+)%%/g, (_, i) => displayMath[parseInt(i)]);
 	t = t.replace(/%%IM(\d+)%%/g, (_, i) => inlineMath[parseInt(i)]);
+	t = t.replace(/%%DIAG(\d+)%%/g, (_, i) => diagramPlaceholdersTypst[parseInt(i)]);
 
 	return t;
 }
