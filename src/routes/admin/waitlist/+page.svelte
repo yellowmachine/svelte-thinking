@@ -104,17 +104,35 @@
 		<div class="flex flex-col gap-2">
 			{#each approved as entry (entry.id)}
 				<div
-					class="flex items-center justify-between rounded-lg border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+					class="rounded-lg border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
-					<div>
-						<span class="font-sans text-sm text-ink dark:text-dark-ink">{entry.name ?? '—'}</span>
-						<span class="ml-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-							>{entry.email}</span
+					<div class="flex items-center justify-between">
+						<div>
+							<span class="font-sans text-sm text-ink dark:text-dark-ink">{entry.name ?? '—'}</span>
+							<span class="ml-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+								>{entry.email}</span
+							>
+						</div>
+						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+							>{formatDate(entry.createdAt)}</span
 						>
 					</div>
-					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-						>{formatDate(entry.createdAt)}</span
-					>
+					{#if entry.registrationUrl}
+						<p
+							class="mt-1 font-mono text-xs break-all text-ink-faint select-all dark:text-dark-ink-faint"
+						>
+							{entry.registrationUrl}
+							{#if entry.tokenExpiresAt && new Date(entry.tokenExpiresAt) < new Date()}
+								<span class="ml-1 font-sans text-red-600 select-none dark:text-red-400"
+									>(expired)</span
+								>
+							{/if}
+						</p>
+					{:else}
+						<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							Link used — registered
+						</p>
+					{/if}
 				</div>
 			{/each}
 		</div>
