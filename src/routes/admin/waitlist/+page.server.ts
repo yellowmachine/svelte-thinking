@@ -7,8 +7,17 @@ import { env } from '$env/dynamic/private';
 import { sendWaitlistApprovalEmail } from '$lib/server/email';
 import { notifySlack } from '$lib/server/slack';
 
+function registrationUrl(token: string) {
+	const origin = env.ORIGIN ?? 'http://localhost:3000';
+	return `${origin}/register?token=${token}`;
+}
+
 export const load: PageServerLoad = async () => {
-	const entries = await db.select().from(waitlist).orderBy(desc(waitlist.createdAt));
+	const rows = await db.select().from(waitlist).orderBy(desc(waitlist.createdAt));
+	const entries = rows.map(({ registrationToken, ...entry }) => ({
+		...entry,
+		registrationUrl: registrationToken ? registrationUrl(registrationToken) : null
+	}));
 	return { entries };
 };
 
@@ -30,11 +39,10 @@ export const actions: Actions = {
 		if (!rows[0]) return fail(404, { error: 'Entry not found' });
 
 		const personalNote = data.get('personalNote')?.toString().trim() || undefined;
-		const origin = env.ORIGIN ?? 'http://localhost:3000';
 		await sendWaitlistApprovalEmail({
 			to: rows[0].email,
 			name: rows[0].name ?? 'Researcher',
-			registrationUrl: `${origin}/register?token=${token}`,
+			registrationUrl: registrationUrl(token),
 			personalNote
 		});
 
