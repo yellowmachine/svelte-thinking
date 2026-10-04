@@ -272,10 +272,10 @@ No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-ne
 4. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
 5. Deploy
 
-> **Nota sobre el disco de `rustfs`**: `rustfs` monta `/rustfsdata:/data`, así que el servidor
-> necesita el disco de datos montado en `/rustfsdata` **antes** del primer deploy (por ejemplo, un
-> volumen adicional de Hetzner). Si el punto de montaje no existe, Docker crea un directorio vacío
-> en el disco raíz y `rustfs` escribe ahí en lugar de en el disco dedicado.
+> **Nota sobre el almacenamiento de `rustfs`**: `rustfs` guarda sus datos en el volumen con nombre
+> `scholio_rustfs_data`, en el disco raíz del servidor — el mismo disco que Postgres. Los backups
+> que hay ahí no sobreviven a la pérdida del servidor, así que deben copiarse también a un S3
+> externo (p. ej. desde los backups de volúmenes de Dokploy).
 
 > **Nota sobre el bucket de `rustfs`**: `rustfs` no crea buckets automáticamente. Tras el primer
 > deploy hay que crear a mano el bucket `scholio-backups` (o el que tenga `R2_BUCKET`) una vez,
