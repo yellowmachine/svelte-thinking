@@ -267,28 +267,13 @@ No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-ne
 ### Configurar la aplicación en Dokploy
 
 1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.app.yml`
-2. Este stack despliega también `redis`, `typst`, `rustfs` (storage S3-compatible) y `backup` junto con la app — `scholio` y `typst` hacen `pull` de GHCR, `redis`/`rustfs` usan imagen oficial, `backup` se construye localmente desde `backup-service/Dockerfile` y sube los dumps a `rustfs` por API S3
+2. Este stack despliega también `redis`, `typst`, `kroki`, `kroki-mermaid` y `rustfs` (storage S3-compatible) junto con la app — `scholio` y `typst` hacen `pull` de GHCR, el resto usa imagen oficial
 3. En **Environment Variables**, añade todas las variables del checklist de abajo
 4. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
 5. Deploy
 
-> **Nota sobre el almacenamiento de `rustfs`**: `rustfs` guarda sus datos en el volumen con nombre
-> `scholio_rustfs_data`, en el disco raíz del servidor — el mismo disco que Postgres. Los backups
-> que hay ahí no sobreviven a la pérdida del servidor, así que deben copiarse también a un S3
-> externo (p. ej. desde los backups de volúmenes de Dokploy).
-
-> **Nota sobre el bucket de `rustfs`**: `rustfs` no crea buckets automáticamente. Tras el primer
-> deploy hay que crear a mano el bucket `scholio-backups` (o el que tenga `R2_BUCKET`) una vez,
-> desde la consola de `rustfs` en el puerto `9001`, o por CLI:
->
-> ```bash
-> docker exec $(docker ps -qf name=backup) sh -c \
->   'AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
->    aws s3 mb "s3://$R2_BUCKET" --endpoint-url "$R2_ENDPOINT" --region auto'
-> ```
->
-> Sin esto, `backup.sh` corre igualmente (dump y `pg_dump` funcionan) pero la subida falla con
-> `NoSuchBucket`, y el trap de error dispara la notificación de Slack como si hubiera fallado todo.
+> **Backups de Postgres**: no forman parte de este stack. Se hacen fuera, contra un S3 externo,
+> para que sobrevivan a la pérdida del servidor.
 
 ### Variables de entorno en Dokploy
 
@@ -411,14 +396,9 @@ No hay ni rastro en el código de `ANTHROPIC_API_KEY`, `STRIPE_*`, `AWS_KMS_KEY_
 
 No las lee la app (`src/`), pero las necesitan los otros servicios de `docker-compose.prod.app.yml`:
 
-| Variable                                              | Servicio           | Descripción                                                                              |
-| ----------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------- |
-| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY`             | `rustfs`, `backup` | Credenciales del storage S3-compatible; `backup` las reutiliza para autenticar la subida |
-| `R2_BUCKET`                                           | `backup`           | Bucket destino del dump (por defecto `scholio-backups`, dentro de `rustfs`)              |
-| `R2_ENDPOINT`                                         | `backup`           | Endpoint S3 destino (por defecto `http://rustfs:9000`, el propio `rustfs` del stack)     |
-| `BACKUP_RETENTION_DAYS`                               | `backup`           | Días que se conservan los dumps antes de borrarse (por defecto 30)                       |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `backup`           | Mismas credenciales que el stack de Postgres, para poder hacer `pg_dump`                 |
-| `POSTGRES_HOST`                                       | `backup`           | Host de Postgres alcanzable en `scholio-network` (por defecto `postgres`)                |
+| Variable                                  | Servicio | Descripción                            |
+| ----------------------------------------- | -------- | -------------------------------------- |
+| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | `rustfs` | Credenciales del storage S3-compatible |
 
 ---
 

@@ -26,6 +26,10 @@ function getTransporter(): Transporter | null {
 		host: env.SMTP_HOST,
 		port: Number(env.SMTP_PORT ?? 587),
 		secure: env.SMTP_SECURE === 'true',
+		// Fallar rápido en vez de colgar la petición (defaults de nodemailer: 2–10 min)
+		connectionTimeout: 10_000,
+		greetingTimeout: 10_000,
+		socketTimeout: 20_000,
 		auth: {
 			user: env.SMTP_USER,
 			pass: env.SMTP_PASS

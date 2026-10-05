@@ -119,9 +119,6 @@ services:
     networks:
       - internal
 
-  # backup:  ← pendiente configurar antes del self-hosted (ver scripts/backup.sh)
-  #   Requiere: R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
-
 networks:
   internal:
     driver: bridge

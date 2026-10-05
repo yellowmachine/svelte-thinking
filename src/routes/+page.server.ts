@@ -57,7 +57,10 @@ export const actions: Actions = {
 		});
 
 		notifySlack({ type: 'waitlist_signup', name: name || email, email });
-		await sendWaitlistWelcomeEmail({ to: email, name: name || 'there' });
+		// No bloquear la respuesta: el registro ya está guardado aunque falle el SMTP.
+		sendWaitlistWelcomeEmail({ to: email, name: name || 'there' }).catch((err) =>
+			console.error(`[waitlist] Welcome email to ${email} failed:`, err)
+		);
 		return { success: true, email };
 	}
 };
