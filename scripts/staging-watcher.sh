@@ -3,7 +3,7 @@
 #
 # Mirrors .github/workflows/build-ghcr.yml path-filter logic:
 #   - app image       → always rebuilds on any change
-#   - typst/scipy/embed/backup → only when their service dir changes
+#   - typst/scipy/embed → only when their service dir changes
 #
 # Setup:
 #   1. chmod +x /opt/scholio/scripts/staging-watcher.sh
@@ -89,14 +89,12 @@ log "Pulled staging."
 changed_typst=false
 changed_scipy=false
 changed_embed=false
-changed_backup=false
 
 while IFS= read -r f; do
   case "$f" in
     typst-service/*)  changed_typst=true ;;
     scipy-service/*)  changed_scipy=true ;;
     embed-service/*)  changed_embed=true ;;
-    backup-service/*) changed_backup=true ;;
   esac
 done <<< "$CHANGED_FILES"
 
@@ -148,19 +146,6 @@ if $changed_embed; then
   fi
 else
   log "Skipping build-embed (no changes in embed-service/)."
-fi
-
-# ── build-backup ──────────────────────────────────────────────────────────────
-if $changed_backup; then
-  log "--- build-backup (backup-service/ changed) ---"
-  if docker_build "scholio-backup:latest" "${REPO_DIR}" "${REPO_DIR}/backup-service/Dockerfile"; then
-    :
-  else
-    log "ERROR: build-backup failed"
-    BUILD_FAILED=true
-  fi
-else
-  log "Skipping build-backup (no changes in backup-service/)."
 fi
 
 # ── Notify ────────────────────────────────────────────────────────────────────
