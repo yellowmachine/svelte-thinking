@@ -10,8 +10,8 @@ declare global {
 			user?: User;
 			session?: Session;
 			/**
-			 * true si el usuario autenticado tiene user_profile en scholio.
-			 * false si existe en public.user (e.g. usuario de Librarian) pero no en Scholio.
+			 * true si el usuario autenticado tiene user_profile en scholio. Toda cuenta
+			 * nueva lo tiene (databaseHooks.user.create.after en auth-options.ts).
 			 */
 			hasScholioProfile: boolean;
 			/**

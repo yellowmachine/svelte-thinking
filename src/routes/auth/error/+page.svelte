@@ -11,7 +11,17 @@
 		account_not_linked: {
 			title: 'Account not linked',
 			description:
-				'This social account is not linked to any Scholio account. Try logging in with your email and password first, then link your social account from settings.'
+				'There is already a Scholio account with this email, but Seilide has not verified it, so they were not linked. Verify your email in Seilide and try again, or sign in with your password.'
+		},
+		email_not_verified: {
+			title: 'Email not verified',
+			description:
+				'Seilide has not verified your email yet. Verify it in Seilide and try signing in again.'
+		},
+		not_on_waitlist: {
+			title: 'No access yet',
+			description:
+				'Scholio is in private beta. Request access from the home page and we will email you when you are in.'
 		},
 		default: {
 			title: 'Authentication error',

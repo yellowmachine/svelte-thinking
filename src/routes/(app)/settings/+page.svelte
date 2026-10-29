@@ -117,7 +117,6 @@
 	{#if activeTab === 'profile'}
 		<ProfileTab
 			user={data.user}
-			githubLinked={data.githubLinked}
 			orcid={data.orcid}
 			orcidVerified={data.orcidVerified}
 			orcidStatus={data.orcidStatus as 'connected' | 'error' | null}

@@ -1,10 +1,9 @@
 import { fail, redirect, error } from '@sveltejs/kit';
-import { eq, and, gt, sql } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { waitlist } from '$lib/server/db/schemas/waitlist.schema';
-import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { user } from '$lib/server/db/auth.schema';
 import { APIError } from 'better-auth/api';
 
@@ -70,36 +69,8 @@ export const actions: Actions = {
 					e.message?.toLowerCase().includes('email');
 
 				if (isEmailTaken) {
-					// El usuario ya existe en public.user (cuenta de Librarian u otra app).
-					// Creamos el user_profile en scholio si no existe y le pedimos que haga login.
-					const existingUser = await db
-						.select({ id: user.id })
-						.from(user)
-						.where(eq(user.email, email))
-						.limit(1);
-
-					if (existingUser[0]) {
-						const existingProfile = await db
-							.select({ id: userProfile.id })
-							.from(userProfile)
-							.where(eq(userProfile.userId, existingUser[0].id))
-							.limit(1);
-
-						if (!existingProfile[0]) {
-							await db.transaction(async (tx) => {
-								await tx.execute(
-									sql`SELECT set_config('app.current_user_id', ${existingUser[0].id}, true)`
-								);
-								await tx.insert(userProfile).values({
-									id: crypto.randomUUID(),
-									userId: existingUser[0].id,
-									displayName: name
-								});
-							});
-						}
-					}
-
-					// Invalidar el token igualmente para que no se reutilice
+					// Ya tiene cuenta (p. ej. entró antes con Seilide): que inicie sesión.
+					// Invalidar el token igualmente para que no se reutilice.
 					await db
 						.update(waitlist)
 						.set({ registrationToken: null, tokenExpiresAt: null })
@@ -113,16 +84,9 @@ export const actions: Actions = {
 			return fail(500, { message: 'Error inesperado' });
 		}
 
-		await db.transaction(async (tx) => {
-			await tx.execute(sql`SELECT set_config('app.current_user_id', ${userId}, true)`);
-			await tx.insert(userProfile).values({
-				id: crypto.randomUUID(),
-				userId,
-				displayName: name
-			});
-			// Email was validated by admin approval — mark as verified immediately
-			await tx.update(user).set({ emailVerified: true }).where(eq(user.id, userId));
-		});
+		// El perfil de Scholio lo crea databaseHooks.user.create.after (auth-options.ts).
+		// Email was validated by admin approval — mark as verified immediately
+		await db.update(user).set({ emailVerified: true }).where(eq(user.id, userId));
 
 		// Invalidate token so it can't be reused
 		await db
@@ -135,17 +99,5 @@ export const actions: Actions = {
 		await auth.api.signInEmail({ body: { email, password } });
 
 		redirect(302, '/projects');
-	},
-
-	signInSocial: async (event) => {
-		const data = await event.request.formData();
-		const provider = data.get('provider')?.toString() ?? 'github';
-
-		const result = await auth.api.signInSocial({
-			body: { provider: provider as 'github', callbackURL: '/projects' }
-		});
-
-		if (result?.url) redirect(302, result.url);
-		return fail(400, { message: 'Error al iniciar sesión con GitHub' });
 	}
 };

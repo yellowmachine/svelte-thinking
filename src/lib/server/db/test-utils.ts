@@ -28,7 +28,7 @@ export async function createTestDb(): Promise<TestDb> {
 	// Run all Drizzle migrations (as superuser)
 	await migrate(db, { migrationsFolder: './drizzle' });
 
-	// Create a non-superuser role that mirrors the production `scholarly_app` role.
+	// Create a non-superuser role that mirrors the production `scholio_app` role.
 	// RLS applies to this role (not to the superuser).
 	await db.execute(sql`CREATE ROLE app_user`);
 	await db.execute(sql`GRANT USAGE ON SCHEMA public TO app_user`);

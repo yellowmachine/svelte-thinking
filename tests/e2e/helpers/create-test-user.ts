@@ -4,7 +4,7 @@ import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const BASE_URL = 'http://localhost:5175';
-const TEST_DB_URL = 'postgres://scholarly:scholarly_test@localhost:5434/scholio_test';
+const TEST_DB_URL = 'postgres://scholio:scholio_test@localhost:5434/scholio_test';
 const SECRET_FILE = join(import.meta.dirname, '../.totp-secret');
 
 export const TEST_USER = {

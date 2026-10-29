@@ -39,7 +39,7 @@ export const actions: Actions = {
 			id: crypto.randomUUID(),
 			email,
 			name: name || null,
-			message: 'Usuario de Librarian solicitando acceso a Scholio'
+			message: 'Solicitud desde /no-access'
 		});
 
 		return { ok: true };

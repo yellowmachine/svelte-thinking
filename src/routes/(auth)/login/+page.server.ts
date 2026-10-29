@@ -1,13 +1,14 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { auth } from '$lib/server/auth';
+import { auth, seilide } from '$lib/server/auth';
 import { APIError } from 'better-auth/api';
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) redirect(302, '/projects');
 	return {
 		welcome: event.url.searchParams.get('welcome') === '1',
-		prefillEmail: event.url.searchParams.get('email') ?? null
+		prefillEmail: event.url.searchParams.get('email') ?? null,
+		seilide: seilide !== null
 	};
 };
 
@@ -70,16 +71,15 @@ export const actions: Actions = {
 		redirect(302, redirectTo);
 	},
 
-	signInSocial: async (event) => {
-		const data = await event.request.formData();
-		const provider = data.get('provider')?.toString() ?? 'github';
+	signInSeilide: async (event) => {
+		if (!seilide) return fail(404, { message: 'Seilide sign-in is not configured' });
 		const redirectTo = event.url.searchParams.get('redirect') ?? '/projects';
 
-		const result = await auth.api.signInSocial({
-			body: { provider: provider as 'github', callbackURL: redirectTo }
+		const result = await auth.api.signInWithOAuth2({
+			body: { providerId: 'seilide', callbackURL: redirectTo }
 		});
 
 		if (result?.url) redirect(302, result.url);
-		return fail(400, { message: 'Error al iniciar sesión con GitHub' });
+		return fail(400, { message: 'Error al iniciar sesión con Seilide' });
 	}
 };

@@ -1,7 +1,7 @@
 import postgres from 'postgres';
 
 const BASE_URL = 'http://localhost:5175';
-const TEST_DB_URL = 'postgres://scholarly:scholarly_test@localhost:5434/scholio_test';
+const TEST_DB_URL = 'postgres://scholio:scholio_test@localhost:5434/scholio_test';
 
 export const COLLABORATOR_USER = {
 	email: 'collab@scholio.test',

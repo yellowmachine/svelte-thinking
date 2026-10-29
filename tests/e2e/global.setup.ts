@@ -9,8 +9,10 @@ export default async function globalSetup() {
 		stdio: 'inherit',
 		env: {
 			...process.env,
-			DATABASE_URL: 'postgres://scholarly_app:scholarly_app_test@localhost:5434/scholio_test',
-			MIGRATION_DATABASE_URL: 'postgres://scholarly:scholarly_test@localhost:5434/scholio_test'
+			DATABASE_URL: 'postgres://scholio_app:scholio_app_test@localhost:5434/scholio_test',
+			MIGRATION_DATABASE_URL: 'postgres://scholio:scholio_test@localhost:5434/scholio_test',
+			APP_DB_USER: 'scholio_app',
+			APP_DB_PASSWORD: 'scholio_app_test'
 		}
 	});
 }

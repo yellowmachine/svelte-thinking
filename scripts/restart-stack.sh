@@ -1,6 +1,6 @@
 #!/bin/bash
 # restart-stack.sh — Restart the scholio prod docker compose stack and wait for health.
-# Called by both scholio and librarian staging watchers after a successful build.
+# Called by the staging watcher after a successful build.
 
 set -euo pipefail
 

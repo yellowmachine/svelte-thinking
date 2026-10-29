@@ -1,8 +1,18 @@
 #!/usr/bin/env node
 /**
- * Ejecuta las migraciones de Drizzle antes de arrancar la app.
- * Corre como MIGRATION_DATABASE_URL (superuser) para tener permisos de CREATE TABLE.
- * El archivo se ejecuta desde el entrypoint.sh antes de iniciar el servidor.
+ * Levanta la base de datos y aplica las migraciones de Drizzle. Lo ejecuta
+ * entrypoint.sh antes de arrancar la app, y `bun run db:migrate` en dev/test.
+ *
+ * Corre como MIGRATION_DATABASE_URL (el dueño de la base, superuser en el
+ * Postgres del compose) y es idempotente, así que sirve igual sobre una base
+ * vacía que en cada redeploy:
+ *
+ * 1. Prepara lo que las migraciones dan por hecho: la extensión pgvector, el
+ *    schema `scholio` y el rol de la app (APP_DB_USER/APP_DB_PASSWORD), que no
+ *    es superuser ni dueño de las tablas para que RLS se le aplique siempre.
+ * 2. Aplica las migraciones (tablas de Better Auth en public, el resto en scholio).
+ * 3. Da al rol de la app permisos sobre lo que haya creado.
+ * 4. Siembra el admin (ADMIN_EMAIL/ADMIN_PASSWORD) si están definidos.
  */
 
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -16,19 +26,79 @@ if (!url) {
 	process.exit(1);
 }
 
-const client = postgres(url, { max: 1 });
-const db = drizzle(client);
+const appUser = process.env.APP_DB_USER ?? 'scholio_app';
+const appPassword = process.env.APP_DB_PASSWORD;
+if (!/^[a-z_][a-z0-9_]*$/.test(appUser)) {
+	console.error(`Error: APP_DB_USER "${appUser}" no es un nombre de rol válido`);
+	process.exit(1);
+}
 
+const client = postgres(url, {
+	max: 1,
+	// Las tablas de Better Auth van sin schema en las migraciones: que caigan en public.
+	connection: { search_path: 'public,scholio' },
+	onnotice: () => {}
+});
+
+/** Literal SQL entre comillas simples, para lo que no admite parámetros (CREATE ROLE). */
+const literal = (value) => `'${value.replaceAll("'", "''")}'`;
+
+// ── 1. Lo previo a las migraciones ──────────────────────────────────────────
+await client`CREATE EXTENSION IF NOT EXISTS vector`;
+await client`CREATE SCHEMA IF NOT EXISTS scholio`;
+
+const [{ exists: roleExisted }] =
+	await client`SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${appUser}) AS exists`;
+if (!roleExisted && appPassword) {
+	console.log(`Creando el rol "${appUser}"...`);
+	await client.unsafe(`CREATE ROLE "${appUser}" WITH LOGIN PASSWORD ${literal(appPassword)}`);
+}
+// Sin rol ni contraseña para crearlo, se migra igual pero sin permisos: la app
+// no podrá conectarse como ese rol hasta que exista.
+const hasAppRole = roleExisted || !!appPassword;
+if (!hasAppRole)
+	console.warn(`Aviso: el rol "${appUser}" no existe y falta APP_DB_PASSWORD; no se crea`);
+
+const [{ db: dbName }] = await client`SELECT current_database() AS db`;
+if (hasAppRole) {
+	await client.unsafe(`GRANT CONNECT ON DATABASE "${dbName}" TO "${appUser}"`);
+	await client.unsafe(`ALTER ROLE "${appUser}" SET search_path = scholio, public`);
+}
+for (const schema of hasAppRole ? ['public', 'scholio'] : []) {
+	await client.unsafe(`GRANT USAGE ON SCHEMA ${schema} TO "${appUser}"`);
+	await client.unsafe(
+		`ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "${appUser}"`
+	);
+	await client.unsafe(
+		`ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO "${appUser}"`
+	);
+	await client.unsafe(
+		`ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT EXECUTE ON FUNCTIONS TO "${appUser}"`
+	);
+}
+
+// ── 2. Migraciones ──────────────────────────────────────────────────────────
 try {
 	console.log('Ejecutando migraciones...');
-	await migrate(db, { migrationsFolder: './drizzle' });
+	await migrate(drizzle(client), { migrationsFolder: './drizzle' });
 	console.log('Migraciones completadas.');
 } catch (err) {
 	console.error('Error en migraciones:', err);
 	process.exit(1);
 }
 
-// ── Admin seed ──────────────────────────────────────────────────────────────
+// ── 3. Permisos sobre lo ya creado ──────────────────────────────────────────
+// Los default privileges solo cubren lo que cree este mismo rol; esto cubre el resto.
+for (const schema of hasAppRole ? ['public', 'scholio'] : []) {
+	await client.unsafe(
+		`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${schema} TO "${appUser}"`
+	);
+	await client.unsafe(
+		`GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA ${schema} TO "${appUser}"`
+	);
+}
+
+// ── 4. Admin seed ───────────────────────────────────────────────────────────
 const adminEmail = process.env.ADMIN_EMAIL;
 const adminPassword = process.env.ADMIN_PASSWORD;
 
