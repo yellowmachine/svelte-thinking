@@ -235,6 +235,13 @@ Salen tres líneas para el `.env` (o las variables de Dokploy): `SEILIDE_URL`, `
 - Una vez enlazada, la persona se reconoce por el `sub` de Seilide (`account.account_id`), nunca por
   el email.
 
+**Sin Seilide de verdad**, `bun run test:built` (`tests/built/run.sh`) compila la app, levanta un
+Postgres vacío y desechable, lo migra, arranca un Seilide falso (`tests/built/fake-seilide.ts`) y
+comprueba sobre la app compilada el rechazo CSRF, el login con contraseña y con Seilide (cuenta nueva,
+email sin verificar, no enlazar y enlazar). Lo para todo al terminar. Necesita Docker y los puertos
+5444, 5446 y 5447 libres (`DB_PORT`, `FAKE_SEILIDE_PORT`, `APP_PORT` para cambiarlos);
+`SKIP_BUILD=1` reutiliza el `build/` que haya.
+
 **Probarlo de punta a punta** necesita que Seilide pueda volver por `https`: se usa el túnel de
 Cloudflare `scholio-dev.scholio.review` → `localhost:5176` y un cliente de pruebas en Seilide con la
 vuelta `https://scholio-dev.scholio.review/api/auth/oauth2/callback/seilide`.
