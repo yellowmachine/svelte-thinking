@@ -1,5 +1,5 @@
 # Fly.io deshabilitado — typst se despliega ahora en Dokploy
-# (ver .forgejo/workflows/deploy.yml y docker-compose.prod.app.yml).
+# (ver docker-compose.prod.yml).
 # Se deja comentado por si se necesita retomar Fly.io en el futuro.
 #
 # # Fly.io app config — typst rendering service (interno)

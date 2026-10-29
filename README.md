@@ -311,9 +311,6 @@ las tablas.
   stacks nunca comparten volumen por accidente.
 - **Sin puertos al host**: Traefik llega por `dokploy-network` (app en el 3000, rustfs en el 9000).
 
-`docker-compose.prod.app.yml` y `docker-compose.prod.postgres.yml` son del despliegue anterior (base
-`scholarly`, compartida con Librarian). Se quedan solo mientras ese despliegue siga vivo; luego se borran.
-
 ### Configurar la aplicación en Dokploy
 
 1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.yml`
