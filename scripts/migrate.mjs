@@ -10,6 +10,7 @@
  * 1. Prepara lo que las migraciones dan por hecho: la extensión pgvector, el
  *    schema `scholio` y el rol de la app (APP_DB_USER/APP_DB_PASSWORD), que no
  *    es superuser ni dueño de las tablas para que RLS se le aplique siempre.
+ *    Sin APP_DB_PASSWORD no arranca.
  * 2. Aplica las migraciones (tablas de Better Auth en public, el resto en scholio).
  * 3. Da al rol de la app permisos sobre lo que haya creado.
  * 4. Siembra el admin (ADMIN_EMAIL/ADMIN_PASSWORD) si están definidos.
@@ -32,6 +33,12 @@ if (!/^[a-z_][a-z0-9_]*$/.test(appUser)) {
 	console.error(`Error: APP_DB_USER "${appUser}" no es un nombre de rol válido`);
 	process.exit(1);
 }
+// Sin ella no se puede crear el rol con el que se conecta la app: mejor no
+// arrancar que arrancar sin poder leer la base.
+if (!appPassword) {
+	console.error('Error: APP_DB_PASSWORD no definida (la contraseña del rol de la app)');
+	process.exit(1);
+}
 
 const client = postgres(url, {
 	max: 1,
@@ -49,22 +56,15 @@ await client`CREATE SCHEMA IF NOT EXISTS scholio`;
 
 const [{ exists: roleExisted }] =
 	await client`SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${appUser}) AS exists`;
-if (!roleExisted && appPassword) {
+if (!roleExisted) {
 	console.log(`Creando el rol "${appUser}"...`);
 	await client.unsafe(`CREATE ROLE "${appUser}" WITH LOGIN PASSWORD ${literal(appPassword)}`);
 }
-// Sin rol ni contraseña para crearlo, se migra igual pero sin permisos: la app
-// no podrá conectarse como ese rol hasta que exista.
-const hasAppRole = roleExisted || !!appPassword;
-if (!hasAppRole)
-	console.warn(`Aviso: el rol "${appUser}" no existe y falta APP_DB_PASSWORD; no se crea`);
 
 const [{ db: dbName }] = await client`SELECT current_database() AS db`;
-if (hasAppRole) {
-	await client.unsafe(`GRANT CONNECT ON DATABASE "${dbName}" TO "${appUser}"`);
-	await client.unsafe(`ALTER ROLE "${appUser}" SET search_path = scholio, public`);
-}
-for (const schema of hasAppRole ? ['public', 'scholio'] : []) {
+await client.unsafe(`GRANT CONNECT ON DATABASE "${dbName}" TO "${appUser}"`);
+await client.unsafe(`ALTER ROLE "${appUser}" SET search_path = scholio, public`);
+for (const schema of ['public', 'scholio']) {
 	await client.unsafe(`GRANT USAGE ON SCHEMA ${schema} TO "${appUser}"`);
 	await client.unsafe(
 		`ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "${appUser}"`
@@ -89,7 +89,7 @@ try {
 
 // ── 3. Permisos sobre lo ya creado ──────────────────────────────────────────
 // Los default privileges solo cubren lo que cree este mismo rol; esto cubre el resto.
-for (const schema of hasAppRole ? ['public', 'scholio'] : []) {
+for (const schema of ['public', 'scholio']) {
 	await client.unsafe(
 		`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${schema} TO "${appUser}"`
 	);

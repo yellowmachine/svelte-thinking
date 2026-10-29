@@ -200,7 +200,10 @@ bun run dev
 pgvector, el schema `scholio` y el rol de la app (`APP_DB_USER`/`APP_DB_PASSWORD`, sin superuser ni
 dueño de las tablas, para que RLS se le aplique siempre), aplica las migraciones de Drizzle, da
 permisos al rol y siembra el admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`). Es idempotente. No hay
-`init.sh`: el Postgres arranca vacío y todo lo hace este script.
+`init.sh`: el Postgres arranca vacío y todo lo hace este script. **Sin `APP_DB_PASSWORD` no arranca**
+(ni la app tampoco): mejor un despliegue en rojo que una app levantada que no puede leer la base. Si
+el rol ya existe, no le cambia la contraseña (`ALTER ROLE scholio_app PASSWORD '…'` en el contenedor
+`db`).
 
 > **Nota**: si `bun run prepare` no deja `.git/hooks` funcionando (`git config core.hooksPath`
 > vacío tras el install), los commits pasarán sin pasar por `lint-staged` en local — el `bun run lint`
@@ -399,7 +402,7 @@ Todas están documentadas en `.env.example`. Las que hay que poner en Dokploy pa
 | `ORIGIN`                                        | `https://scholio.review` (URLs de retorno, cookies)                                |
 | `BETTER_AUTH_SECRET`                            | Secreto de sesión (`openssl rand -base64 32`)                                      |
 | `POSTGRES_PASSWORD`                             | Contraseña del dueño de la base (`scholio`), la usan las migraciones               |
-| `APP_DB_PASSWORD`                               | Contraseña del rol de la app (`scholio_app`, con RLS); `migrate.mjs` crea el rol   |
+| `APP_DB_PASSWORD`                               | Contraseña del rol de la app (`scholio_app`, con RLS); sin ella no arranca         |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD`                | Admin con acceso a `/admin`, sembrado al arrancar                                  |
 | `SEILIDE_URL/CLIENT_ID/CLIENT_SECRET`           | «Entrar con Seilide» (opcional: sin las tres no sale el botón)                     |
 | `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY`       | Credenciales de rustfs; la app las usa también para subir                          |
