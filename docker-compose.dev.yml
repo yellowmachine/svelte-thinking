@@ -6,13 +6,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-scholio}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scholio_dev}
       POSTGRES_DB: ${POSTGRES_DB:-scholio}
-      APP_DB_USER: ${APP_DB_USER:-scholio_app}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-scholio_app_dev}
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
-      - ./scripts/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-scholio}']
       interval: 5s

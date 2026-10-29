@@ -32,13 +32,12 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 - Filtros antes de llamar a la IA: mínimo 100 palabras en el documento y mínimo 30 palabras de diferencia respecto a la última consulta (sin coste innecesario)
 - Modelo: Claude Haiku 4.5 (Anthropic)
 
-### Cuenta y facturación
+### Cuenta y acceso
 
-- Registro e inicio de sesión con email/contraseña y GitHub OAuth
-- Página de ajustes con pestañas de perfil y plan
-- Planes Free / Pro (9 €/mes) / Team (29 €/mes) con Stripe Checkout
-- Portal de cliente Stripe para gestionar o cancelar suscripción
-- Sincronización de plan vía webhooks de Stripe
+- Acceso por lista de espera: quien se apunta y el admin aprueba recibe un enlace de registro con email/contraseña
+- «Entrar con Seilide» (la cuenta de la nube de JellyCartoon, OpenID Connect): entra directamente, sin lista de espera — ver [Entrar con Seilide](#entrar-con-seilide)
+- Verificación en dos pasos (TOTP)
+- Sin planes ni pagos: todas las cuentas son iguales
 
 ### Observabilidad
 
@@ -157,10 +156,9 @@ Las soluciones contemporáneas al problema se discuten en
 | Frontend      | SvelteKit 5, Svelte 5 (runes), TailwindCSS           |
 | API           | tRPC v11 con procedimientos protegidos               |
 | Base de datos | PostgreSQL con Row-Level Security (RLS), Drizzle ORM |
-| Auth          | Better Auth (email + GitHub OAuth)                   |
+| Auth          | Better Auth (email + Seilide, OpenID Connect)        |
 | Storage       | MinIO (S3-compatible)                                |
 | IA            | Anthropic SDK — Claude Haiku 4.5                     |
-| Pagos         | Stripe (Checkout + Customer Portal + Webhooks)       |
 | Errores       | Sentry                                               |
 | Runtime       | Bun                                                  |
 
@@ -173,7 +171,7 @@ Las soluciones contemporáneas al problema se discuten en
 - [Bun](https://bun.sh) >= 1.0
 - [Docker](https://www.docker.com)
 
-### Puesta en marcha
+### Puesta en marcha (desde cero)
 
 ```sh
 # 1. Instalar dependencias
@@ -185,22 +183,84 @@ bun install
 #    ejecuta esto.
 bun run prepare
 
-# 3. Levantar PostgreSQL + MinIO (compose de dev, puertos locales)
-docker compose -f docker-compose.dev.yml up -d
-
-# 4. Copiar variables de entorno y rellenar las necesarias
+# 3. Copiar variables de entorno y rellenar las necesarias
 cp .env.example .env
 
-# 5. Aplicar migraciones
+# 4. Levantar PostgreSQL (vacío) y los servicios auxiliares
+docker compose -f docker-compose.dev.yml up -d
+
+# 5. Preparar la base y aplicar migraciones
 bun run db:migrate
 
 # 6. Arrancar el servidor de desarrollo
 bun run dev
 ```
 
+`bun run db:migrate` (`scripts/migrate.mjs`) levanta una base vacía de una vez: crea la extensión
+pgvector, el schema `scholio` y el rol de la app (`APP_DB_USER`/`APP_DB_PASSWORD`, sin superuser ni
+dueño de las tablas, para que RLS se le aplique siempre), aplica las migraciones de Drizzle, da
+permisos al rol y siembra el admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`). Es idempotente. No hay
+`init.sh`: el Postgres arranca vacío y todo lo hace este script.
+
 > **Nota**: si `bun run prepare` no deja `.git/hooks` funcionando (`git config core.hooksPath`
 > vacío tras el install), los commits pasarán sin pasar por `lint-staged` en local — el `bun run lint`
 > de CI seguirá pillando problemas de formato, pero solo al abrir el PR en vez de en el commit.
+
+### Entrar con Seilide
+
+Seilide es la cuenta de la nube de JellyCartoon, un proveedor OpenID Connect hecho con Better Auth.
+Scholio lo usa con el plugin `genericOAuth` (providerId `seilide`, PKCE, `client_secret_basic`,
+scopes `openid profile email`; ni `family` ni `offline_access`). Está en `src/lib/server/auth-options.ts`.
+
+**Crear el cliente.** El administrador de Seilide lo crea en `<SEILIDE_URL>/admin/apps`:
+
+- **Sin** marcar «para familias», confidencial (`client_secret_basic`), sin pantalla de consentimiento
+- URL de vuelta: `<ORIGIN>/api/auth/oauth2/callback/seilide` — en producción
+  `https://scholio.review/api/auth/oauth2/callback/seilide`
+
+Salen tres líneas para el `.env` (o las variables de Dokploy): `SEILIDE_URL`, `SEILIDE_CLIENT_ID` y
+`SEILIDE_CLIENT_SECRET`. **Sin las tres, el botón no sale** y la ruta de Seilide no existe.
+`SEILIDE_URL` hoy es `https://nube.scholio.review`; será `https://seilide.app`.
+
+**Cuentas.**
+
+- Quien entra por primera vez con Seilide tiene su cuenta (y su perfil de Scholio) al momento, **sin
+  pasar por la lista de espera**. Empieza igual que cualquier cuenta: no hay planes.
+- Si ya había una cuenta con ese email, se enlaza — **solo** si Seilide dice `email_verified: true`.
+  Seilide no está en `trustedProviders` a propósito: con él, Better Auth enlazaría aunque el email no
+  estuviera verificado. Si no está verificado, ni se crea cuenta ni se enlaza
+  (`/auth/error?error=email_not_verified` o `account_not_linked`).
+- Si se enlaza a una cuenta cuyo email nunca se verificó, se borra su contraseña: así nadie que la
+  hubiera creado con el email de otro sigue entrando en ella.
+- Una vez enlazada, la persona se reconoce por el `sub` de Seilide (`account.account_id`), nunca por
+  el email.
+
+**Sin Seilide de verdad**, `bun run test:built` (`tests/built/run.sh`) compila la app, levanta un
+Postgres vacío y desechable, lo migra, arranca un Seilide falso (`tests/built/fake-seilide.ts`) y
+comprueba sobre la app compilada el rechazo CSRF, el login con contraseña y con Seilide (cuenta nueva,
+email sin verificar, no enlazar y enlazar). Lo para todo al terminar. Necesita Docker y los puertos
+5444, 5446 y 5447 libres (`DB_PORT`, `FAKE_SEILIDE_PORT`, `APP_PORT` para cambiarlos);
+`SKIP_BUILD=1` reutiliza el `build/` que haya.
+
+**Probarlo de punta a punta** necesita que Seilide pueda volver por `https`: se usa el túnel de
+Cloudflare `scholio-dev.scholio.review` → `localhost:5176` y un cliente de pruebas en Seilide con la
+vuelta `https://scholio-dev.scholio.review/api/auth/oauth2/callback/seilide`.
+
+```sh
+bun run tunnel          # en una terminal: el túnel (~/.cloudflared/scholio-dev.yml)
+bun run preview:tunnel  # en otra: la app compilada con ORIGIN=https://scholio-dev.scholio.review
+```
+
+Usa `preview:tunnel` (la app compilada) y no `dev:tunnel` para probar formularios y POSTs: la
+comprobación CSRF de SvelteKit no actúa en `vite dev`.
+
+### Librarian
+
+Librarian es una app independiente, con su propia base de datos y su propio login. En Scholio ya no
+queda nada que las una: ni sesión compartida entre subdominios (`crossSubDomainCookies`, la cookie con
+`Domain=scholio.review`), ni el schema `librarian`, ni `PUBLIC_LIBRARIAN_URL`.
+`src/lib/no-librarian.test.ts` lo comprueba. Las cookies de Scholio llevan el prefijo `scholio.` para
+no confundirse con las que quedaran de antes en el navegador.
 
 ---
 
@@ -237,62 +297,40 @@ bun run dev
 
 - Fly.io está deshabilitado (`fly.toml` y el job `deploy-fly` quedaron comentados) — el despliegue va solo por Dokploy.
 
-Postgres vive en su propio stack de Dokploy, separado del de la app, para poder compartir la misma base de datos con otras apps (p. ej. `librarian`) sin acoplar su ciclo de vida al de ninguna de ellas.
+### Un solo stack: `docker-compose.prod.yml`
 
-### Red compartida `scholio-network`
+El despliegue es **un único stack de Dokploy** (Docker Compose apuntando a `docker-compose.prod.yml`) con
+la app, su Postgres (`db`), `redis`, `typst`, `kroki`, `kroki-mermaid` y `rustfs`. Su Postgres es solo
+suyo y arranca vacío: `scripts/migrate.mjs`, al arrancar la app, crea el rol `scholio_app`, el schema y
+las tablas.
 
-Ambos stacks (`docker-compose.prod.postgres.yml` y `docker-compose.prod.app.yml`) declaran `scholio-network` como `external: true`. Compose **nunca crea** una red marcada como external — debe existir ya en el servidor antes del primer deploy de cualquiera de los dos stacks:
+- **Sin redes externas propias**: los servicios se hablan por la red por defecto del stack; solo
+  `scholio` y `rustfs` están además en `dokploy-network`, para que Traefik les dé dominio. Ya no existe
+  `scholio-network`.
+- **Volúmenes sin `name:` fijo**: Compose les antepone el nombre del proyecto de Dokploy, así que dos
+  stacks nunca comparten volumen por accidente.
+- **Sin puertos al host**: Traefik llega por `dokploy-network` (app en el 3000, rustfs en el 9000).
 
-```bash
-docker network create scholio-network
-```
-
-Si no existe, el deploy falla con `network scholio-network declared as external, but could not be found`. `dokploy-network` no hace falta crearla, la gestiona Dokploy.
-
-Dokploy no tiene una opción de UI para crear redes custom ([issue abierto](https://github.com/Dokploy/dokploy/issues/3670)). Algunas versiones exponen una terminal del servidor en el dashboard (ligada a la feature de _Remote Servers_), pero no está garantizado que aparezca para el servidor local en el que corre el propio Dokploy — la vía fiable es SSH directo al servidor:
-
-```bash
-ssh usuario@tu-servidor
-docker network create scholio-network
-```
-
-### Configurar Postgres en Dokploy
-
-1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.postgres.yml`
-2. Environment Variables: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `APP_DB_USER`, `APP_DB_PASSWORD`
-3. Deploy
-
-No publica el puerto `5432` al host — solo es alcanzable dentro de `scholio-network` como `postgres:5432`. `scripts/init.sh` crea el rol de la app y los schemas `scholio`/`librarian` al arrancar por primera vez.
+`docker-compose.prod.app.yml` y `docker-compose.prod.postgres.yml` son del despliegue anterior (base
+`scholarly`, compartida con Librarian). Se quedan solo mientras ese despliegue siga vivo; luego se borran.
 
 ### Configurar la aplicación en Dokploy
 
-1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.app.yml`
-2. Este stack despliega también `redis`, `typst`, `kroki`, `kroki-mermaid` y `rustfs` (storage S3-compatible) junto con la app — `scholio` y `typst` hacen `pull` de GHCR, el resto usa imagen oficial
-3. En **Environment Variables**, añade todas las variables del checklist de abajo
-4. Configura el dominio y activa SSL (Traefik + Let's Encrypt automático)
-5. Deploy
+1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.yml`
+2. En **Environment Variables**, las de la tabla de abajo
+3. Dominios (Traefik + Let's Encrypt): `scholio.review` → servicio `scholio`, puerto 3000; el de
+   `STORAGE_PUBLIC_URL` → servicio `rustfs`, puerto 9000
+4. Deploy
+
+El bucket (`STORAGE_BUCKET`, por defecto `scholio`) y su política de lectura pública los crea la app en
+la primera subida (`ensureBucket` en `src/lib/server/storage.ts`).
 
 > **Backups de Postgres**: no forman parte de este stack. Se hacen fuera, contra un S3 externo,
 > para que sobrevivan a la pérdida del servidor.
 
-### Variables de entorno en Dokploy
-
-Copia todas las variables del `.env.example` en la sección **Environment Variables** de Dokploy.
-Las variables `PUBLIC_*` (Sentry client DSN) van también aquí — Dokploy las inyecta en build time.
-
-> **Nota sobre `DATABASE_URL` y `MIGRATION_DATABASE_URL`**: apuntan al servicio `postgres`
-> del stack de Postgres, alcanzable por nombre gracias a `scholio-network`. Ejemplo:
->
-> ```
-> DATABASE_URL=postgres://scholarly_app:TU_PASSWORD@postgres:5432/scholarly
-> MIGRATION_DATABASE_URL=postgres://scholarly:TU_PASSWORD@postgres:5432/scholarly
-> ```
->
-> El host es `postgres` (nombre del servicio en el compose de Postgres), no `localhost`.
-
 ### Migraciones (automáticas)
 
-`scripts/entrypoint.sh` ejecuta `bun scripts/migrate.mjs` antes de arrancar el servidor — corre las migraciones de Drizzle pendientes y sembra el usuario admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`) si aún no existe. Es idempotente, así que corre sin problema en cada arranque/redeploy del contenedor `scholio`, no solo en el primero.
+`scripts/entrypoint.sh` ejecuta `bun scripts/migrate.mjs` antes de arrancar el servidor — prepara la base (extensión, schema, rol de la app y sus permisos), corre las migraciones de Drizzle pendientes y siembra el usuario admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`) si aún no existe. Es idempotente, así que corre sin problema en cada arranque/redeploy del contenedor `scholio`, no solo en el primero.
 
 Usa `MIGRATION_DATABASE_URL` (superusuario, con permisos de `CREATE TABLE`) en vez de `DATABASE_URL` (rol de la app, sin esos permisos).
 
@@ -304,7 +342,7 @@ bun scripts/migrate.mjs
 
 ### ⚠️ `pull_policy: always` — por qué está en el compose
 
-Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen cacheada en lugar de descargar la nueva. En vez de depender del toggle "Pull always" de la UI de Dokploy (fácil de olvidar si se recrea la app), `scholio` y `typst` en `docker-compose.prod.app.yml` llevan `pull_policy: always` — un campo nativo del Compose Spec (Docker Compose v2.10+) que fuerza el `pull` antes de levantar el servicio, queda versionado y no depende de un ajuste manual en la UI.
+Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen cacheada en lugar de descargar la nueva. En vez de depender del toggle "Pull always" de la UI de Dokploy (fácil de olvidar si se recrea la app), `scholio` y `typst` en `docker-compose.prod.yml` llevan `pull_policy: always` — un campo nativo del Compose Spec (Docker Compose v2.10+) que fuerza el `pull` antes de levantar el servicio, queda versionado y no depende de un ajuste manual en la UI.
 
 **Consecuencia**: cada deploy descarga la imagen completa, lo que acumula capas antiguas en `/var/lib/docker/overlay2`. Sin limpieza periódica, el disco se llena (incidente real: 75 GB llenos en producción). Ver sección de mantenimiento abajo.
 
@@ -357,48 +395,32 @@ docker system prune -af
 
 ## Variables de entorno necesarias
 
-Todas están documentadas en `.env.example`. Lista revisada contra el uso real en `src/` (`env.*` de `$env/dynamic/private`), no contra versiones anteriores de este documento:
+Todas están documentadas en `.env.example`. Las que hay que poner en Dokploy para `docker-compose.prod.yml`:
 
-| Variable                                        | Descripción                                                                     |          En `docker-compose.prod.app.yml`          |
-| ----------------------------------------------- | ------------------------------------------------------------------------------- | :------------------------------------------------: |
-| `ORIGIN`                                        | Dominio público de la app (URLs de retorno, cookies)                            |                         ✅                         |
-| `BETTER_AUTH_SECRET`                            | Secreto de sesión (generar con `openssl rand -base64 32`)                       |                         ✅                         |
-| `ADMIN_EMAIL`                                   | Email con acceso a `/admin`                                                     |                         ✅                         |
-| `DATABASE_URL`                                  | Conexión a PostgreSQL (rol app, con RLS)                                        |                         ✅                         |
-| `REDIS_URL`                                     | Conexión a Redis (cache/rate limiting)                                          |                         ✅                         |
-| `TYPST_SERVICE_URL`                             | URL interna del servicio de generación de PDF                                   |                         ✅                         |
-| `KROKI_URL`                                     | URL interna del servicio Kroki (renderiza diagramas Mermaid a SVG para el PDF)  |                         ✅                         |
-| `STORAGE_ENDPOINT`                              | Endpoint S3-compatible                                                          |                         ✅                         |
-| `STORAGE_ACCESS_KEY`                            | Access key del storage                                                          |                         ✅                         |
-| `STORAGE_SECRET_KEY`                            | Secret key del storage                                                          |                         ✅                         |
-| `STORAGE_PUBLIC_URL`                            | URL pública desde la que el navegador descarga los ficheros                     |                         ✅                         |
-| `GITHUB_CLIENT_ID/SECRET`                       | OAuth de GitHub                                                                 |                         ✅                         |
-| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID                                                                  |                         ✅                         |
-| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                    |                         ✅                         |
-| `KMS_MASTER_KEY`                                | Clave para cifrar API keys de usuario (BYOK)                                    |                         ✅                         |
-| `PUBLIC_LIBRARIAN_URL`                          | URL de la app hermana, expuesta al navegador                                    |                         ✅                         |
-| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                              |                         ✅                         |
-| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                   |                         ✅                         |
-| `SENTRY_DSN`                                    | DSN de Sentry en servidor (`sentry.server.config.ts`)                           |                         ✅                         |
-| `MIGRATION_DATABASE_URL`                        | Conexión superusuario, la usa `scripts/migrate.mjs` en el arranque (ver arriba) |                         ✅                         |
-| `ADMIN_PASSWORD`                                | Password del admin, seed en la migración                                        |                         ✅                         |
-| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente — **build-time**, no runtime                           | se hornea en la imagen de GHCR, no en este compose |
+| Variable                                        | Descripción                                                                        |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `ORIGIN`                                        | `https://scholio.review` (URLs de retorno, cookies)                                |
+| `BETTER_AUTH_SECRET`                            | Secreto de sesión (`openssl rand -base64 32`)                                      |
+| `POSTGRES_PASSWORD`                             | Contraseña del dueño de la base (`scholio`), la usan las migraciones               |
+| `APP_DB_PASSWORD`                               | Contraseña del rol de la app (`scholio_app`, con RLS); `migrate.mjs` crea el rol   |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                | Admin con acceso a `/admin`, sembrado al arrancar                                  |
+| `SEILIDE_URL/CLIENT_ID/CLIENT_SECRET`           | «Entrar con Seilide» (opcional: sin las tres no sale el botón)                     |
+| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY`       | Credenciales de rustfs; la app las usa también para subir                          |
+| `STORAGE_PUBLIC_URL`                            | URL pública desde la que el navegador descarga los ficheros (el dominio de rustfs) |
+| `STORAGE_BUCKET`                                | Opcional, por defecto `scholio`                                                    |
+| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID (opcional)                                                          |
+| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                       |
+| `KMS_MASTER_KEY`                                | Cifra las API keys de usuario (BYOK); cambiarla las pierde                         |
+| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                      |
+| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                 |
+| `SENTRY_DSN`                                    | DSN de Sentry en servidor (opcional)                                               |
+| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente — **build-time**, se hornea en la imagen de GHCR          |
 
-`STORAGE_BUCKET` sigue en el compose pero no lo lee ningún sitio de `src/` actualmente — no rompe nada, pero es una variable muerta.
+Ya no existen `GITHUB_CLIENT_ID/SECRET` (sin login con GitHub), `PUBLIC_LIBRARIAN_URL` ni nada de
+Stripe.
 
-`OPENROUTER_APP_KEY` sigue en el compose pero no la lee ningún sitio de `src/` — la única referencia es una línea comentada en `api/openrouter/callback/+server.ts`, que ni siquiera importa `env`. Es otra variable muerta.
-
-`SCIPY_SERVICE_URL` se quitó del compose y sigue leyéndose desde `src/lib/server/scipy.ts` — confirmado como código muerto (la ruta `(scipy)` no está en uso), así que no hace falta reintroducirla.
-
-No hay ni rastro en el código de `ANTHROPIC_API_KEY`, `STRIPE_*`, `AWS_KMS_KEY_ID`/`AWS_REGION`, `LANGUAGETOOL_URL`, `COOKIE_DOMAIN` ni `TRUSTED_ORIGINS` — la tabla anterior de este README las listaba como imprescindibles, pero no corresponden a ninguna lectura de `env.*` en `src/`. El asistente IA usa OpenRouter, pero el intercambio code→key no autentica la app (no hay `OPENROUTER_APP_KEY` real en uso), y no hay integración de Stripe en el código actual.
-
-### Variables de los servicios auxiliares del stack
-
-No las lee la app (`src/`), pero las necesitan los otros servicios de `docker-compose.prod.app.yml`:
-
-| Variable                                  | Servicio | Descripción                            |
-| ----------------------------------------- | -------- | -------------------------------------- |
-| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY` | `rustfs` | Credenciales del storage S3-compatible |
+`SCIPY_SERVICE_URL` se sigue leyendo desde `src/lib/server/scipy.ts`, pero es código muerto (la ruta
+`(scipy)` no está en uso).
 
 ---
 
@@ -407,12 +429,9 @@ No las lee la app (`src/`), pero las necesitan los otros servicios de `docker-co
 Antes de abrir acceso a usuarios reales:
 
 - [ ] Rellenar todas las variables de entorno de producción (ver tabla anterior)
-- [ ] Crear los productos **Pro** y **Team** en el dashboard de Stripe y copiar sus `price_id`
-- [ ] Registrar el endpoint de webhook en Stripe: `POST https://tu-dominio.com/api/stripe/webhook`
-  - Eventos a escuchar: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- [ ] Crear el cliente de Scholio en Seilide (ver [Entrar con Seilide](#entrar-con-seilide))
 - [ ] Crear el proyecto en Sentry y copiar el DSN (servidor y cliente)
-- [ ] Verificar que el bucket de MinIO es accesible públicamente para `GET` (la política se aplica automáticamente en el primer upload)
-- [ ] Configurar el `ORIGIN` con el dominio real (necesario para las URLs de retorno de Stripe)
+- [ ] Verificar que el bucket es accesible públicamente para `GET` (la política se aplica automáticamente en el primer upload)
 
 ---
 
@@ -426,7 +445,7 @@ Antes de abrir acceso a usuarios reales:
 
 ### Infraestructura y operaciones
 
-- **Panel de administración** — sin métricas de uso ni gestión de usuarios desde la propia app; por ahora se gestiona desde los dashboards de Stripe y Sentry
+- **Panel de administración** — sin métricas de uso ni gestión de usuarios desde la propia app; por ahora se gestiona desde el dashboard de Sentry
 - **Rate limiting en IA** — sugerencias inline limitadas a 30/día por usuario; chat y borradores requieren BYOK (OpenRouter)
 - **Soft delete** para proyectos y documentos — el borrado actual es definitivo; anotado para implementar antes de escalar
 
@@ -434,7 +453,6 @@ Antes de abrir acceso a usuarios reales:
 
 - **Sugerencias de referencias externas** — el asistente podría enlazar fuentes de Semantic Scholar u OpenLibrary relevantes al contexto del documento (feature 1 del roadmap IA)
 - **Exportación PDF** — pendiente; exportación a LaTeX (`.tex`) y Typst (`.typ`) ya implementada
-- **SSO / SAML** — anunciado en el plan Team, pendiente de implementación
 - **Transferencia de propiedad de proyectos** — esquema de base de datos preparado, sin UI ni endpoint
 - **Eliminación de cuenta** — botón presente en zona de peligro, sin acción conectada
 
