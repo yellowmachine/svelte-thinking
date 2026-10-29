@@ -1,9 +1,5 @@
 # Despliegue de Scholio desde cero: un solo stack de Dokploy con su propia base
 # de datos, sin redes externas aparte de dokploy-network (la de Traefik).
-#
-# Sustituye a docker-compose.prod.app.yml + docker-compose.prod.postgres.yml,
-# que siguen en el repo solo mientras viva el despliegue anterior (base
-# `scholarly`). Cuando se apague, se borran.
 services:
   scholio:
     image: ghcr.io/yellowmachine/svelte-thinking:latest

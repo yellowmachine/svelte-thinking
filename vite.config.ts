@@ -34,27 +34,9 @@ export default defineConfig({
 						strategies: 'injectManifest',
 						srcDir: 'src',
 						filename: 'sw.ts',
-						manifest: {
-							name: 'Scholio',
-							short_name: 'Scholio',
-							description: 'Escritura académica colaborativa',
-							theme_color: '#2C1E14',
-							background_color: '#F5F0E8',
-							display: 'standalone',
-							scope: '/',
-							start_url: '/projects',
-							icons: [
-								{ src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-								{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-								{ src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-								{
-									src: 'maskable-icon-512x512.png',
-									sizes: '512x512',
-									type: 'image/png',
-									purpose: 'maskable'
-								}
-							]
-						},
+						// The manifest lives in static/manifest.webmanifest so the app is installable
+						// even without the SW; don't let the plugin emit a second one.
+						manifest: false,
 						injectManifest: {
 							// html excluded — no hash in filename, must always revalidate from network.
 							// /offline is the exception: precached so setCatchHandler can serve it when offline.

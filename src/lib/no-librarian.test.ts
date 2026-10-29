@@ -5,14 +5,8 @@ import { readFileSync } from 'node:fs';
 // Librarian es una app independiente, con su propia base y su propio login:
 // en Scholio no queda nada que la una (sesión compartida, schema, URLs).
 
-// Fuera de la búsqueda: el README (que cuenta que ya no hay nada) y los compose
-// del despliegue anterior, que se borran cuando se apague (ver docker-compose.prod.yml).
-const IGNORED = new Set([
-	'README.md',
-	'docker-compose.prod.app.yml',
-	'docker-compose.prod.postgres.yml',
-	'src/lib/no-librarian.test.ts'
-]);
+// Fuera de la búsqueda: el README, que cuenta que ya no hay nada.
+const IGNORED = new Set(['README.md', 'src/lib/no-librarian.test.ts']);
 
 const trackedFiles = () =>
 	execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
