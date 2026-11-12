@@ -156,7 +156,7 @@
 				>Claude Code</a
 			>
 			· AI assistant powered by
-			<span class="font-medium">Claude Haiku 4.5</span> (Anthropic)
+			<span class="font-medium">Claude</span> (Anthropic)
 		</p>
 	</footer>
 	<!-- Mobile bottom nav -->
