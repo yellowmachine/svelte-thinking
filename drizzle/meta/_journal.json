@@ -71,6 +71,13 @@
       "when": 1794475231296,
       "tag": "0009_drop_ai_cost_eur",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794476027379,
+      "tag": "0010_ai_spend_banner",
+      "breakpoints": true
     }
   ]
 }

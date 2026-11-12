@@ -5,6 +5,7 @@
 	import MobileNav from '$lib/components/layout/MobileNav.svelte';
 	import FeedbackButton from '$lib/components/layout/FeedbackButton.svelte';
 	import ConnectivityBanner from '$lib/components/ui/ConnectivityBanner.svelte';
+	import AiSpendBanner from '$lib/components/layout/AiSpendBanner.svelte';
 	import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onlineStore } from '$lib/stores/online.svelte';
@@ -51,6 +52,11 @@
 	</div>
 	<!-- Mobile header -->
 	<MobileHeader user={data.user} />
+
+	<!-- AI spending line, if the user turned it on in Settings → AI -->
+	{#if data.showAiSpendBanner}
+		<AiSpendBanner />
+	{/if}
 
 	<!-- Obsolete AI model banner (persistent until the user fixes the config) -->
 	{#if data.obsoleteAiTasks.length > 0}

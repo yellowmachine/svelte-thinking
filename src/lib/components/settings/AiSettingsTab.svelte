@@ -5,6 +5,7 @@
 	import { MODEL_RECOMMENDATIONS, formatModelSlug } from '$lib/ai-config';
 
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	let {
 		openrouterStatus
 	}: {
@@ -56,6 +57,22 @@
 	let oauthKey = $derived(aiKeys.find((k) => k.source === 'openrouter_oauth') ?? null);
 
 	let togglingKey = $state<Record<string, boolean>>({});
+
+	// The spending line under the navbar: a layout setting, so it comes with the layout's data.
+	const showSpendBanner = $derived(Boolean(page.data.showAiSpendBanner));
+	let savingSpendBanner = $state(false);
+
+	async function toggleSpendBanner() {
+		savingSpendBanner = true;
+		try {
+			await trpc.users.setShowAiSpendBanner.mutate(!showSpendBanner);
+			await invalidateAll();
+		} catch {
+			aiError = 'Could not save the spending banner setting.';
+		} finally {
+			savingSpendBanner = false;
+		}
+	}
 	let deletingKeyId = $state<string | null>(null);
 
 	let savingTask = $state<Record<AiTaskId, boolean>>({
@@ -206,6 +223,40 @@
 	{#if loadingAi}
 		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
 	{:else}
+		<!-- ── Spending banner ── -->
+		<section
+			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
+		>
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+						Spending banner
+					</h2>
+					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+						Show a line under the navbar with what you have spent on AI with your own key this month
+						and this week, and what the last call cost. It updates after each AI action.
+					</p>
+				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={showSpendBanner}
+					aria-label="Show the AI spending banner"
+					onclick={toggleSpendBanner}
+					disabled={savingSpendBanner}
+					class="relative mt-1 inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 {showSpendBanner
+						? 'bg-accent'
+						: 'bg-paper-border dark:bg-dark-paper-border'}"
+				>
+					<span
+						class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 {showSpendBanner
+							? 'translate-x-4'
+							: 'translate-x-0'}"
+					></span>
+				</button>
+			</div>
+		</section>
+
 		<!-- ── Section 1: API Keys ── -->
 		<section
 			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
