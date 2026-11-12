@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, asc, or, sql, isNotNull, count, ne } from 'drizzle-orm';
+import { eq, and, asc, or, sql, count, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
@@ -12,10 +12,8 @@ import { embedQuery, indexDocument } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
 import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
 import { logUsage } from '$lib/server/aiUsage';
-import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
-import { resolveProjectS3Config } from '$lib/server/s3Storage';
-import { deleteFileWithConfig } from '$lib/server/storage';
+import { deleteProjectNow } from '$lib/server/projectDeletion';
 import {
 	isProjectOwner,
 	canRemoveCollaborator,
@@ -252,43 +250,9 @@ export const projectsRouter = router({
 		const hasCollaborators = collabRows.length > 0;
 
 		if (!hasCollaborators) {
-			// No collaborators — delete immediately via executeDeletion logic
-			const [photoKeys, pdfKeys] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({ key: projectPhoto.key })
-						.from(projectPhoto)
-						.where(eq(projectPhoto.projectId, projectId))
-				),
-				ctx.withRLS((db) =>
-					db
-						.select({ key: reference.pdfKey })
-						.from(reference)
-						.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-						.where(and(eq(projectReference.projectId, projectId), isNotNull(reference.pdfKey)))
-				)
-			]);
-
-			const rows = await ctx.withRLS((db) =>
-				db
-					.delete(project)
-					.where(and(eq(project.id, projectId), eq(project.ownerId, ctx.user.id)))
-					.returning({ id: project.id, title: project.title })
-			);
-			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-
-			const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS).catch(
-				() => null
-			);
-			if (s3) {
-				const keys = [
-					...photoKeys.map((r) => r.key),
-					...pdfKeys.flatMap((r) => (r.key ? [r.key] : []))
-				];
-				await Promise.allSettled(keys.map((key) => deleteFileWithConfig(s3, key)));
-			}
-
-			return { ...rows[0], scheduledDeleteAt: null, immediate: true };
+			const deleted = await deleteProjectNow(ctx.withRLS, projectId, ctx.user.id);
+			if (!deleted) throw new TRPCError({ code: 'NOT_FOUND' });
+			return { ...deleted, scheduledDeleteAt: null, immediate: true };
 		}
 
 		// Has collaborators — schedule deletion in 7 days
@@ -318,43 +282,6 @@ export const projectsRouter = router({
 			);
 
 			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			return rows[0];
-		}),
-
-	// Execute the actual cascade deletion — called lazily on load or from admin
-	executeDeletion: protectedProcedure
-		.input(z.string())
-		.mutation(async ({ ctx, input: projectId }) => {
-			const [photoKeys, pdfKeys] = await Promise.all([
-				ctx.withRLS((db) =>
-					db
-						.select({ key: projectPhoto.key })
-						.from(projectPhoto)
-						.where(eq(projectPhoto.projectId, projectId))
-				),
-				ctx.withRLS((db) =>
-					db
-						.select({ key: reference.pdfKey })
-						.from(reference)
-						.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-						.where(and(eq(projectReference.projectId, projectId), isNotNull(reference.pdfKey)))
-				)
-			]);
-
-			const rows = await ctx.withRLS((db) =>
-				db.delete(project).where(eq(project.id, projectId)).returning({ id: project.id })
-			);
-
-			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-
-			const s3 = await resolveProjectS3Config(projectId, ctx.user.id, ctx.withRLS).catch(
-				() => null
-			);
-			if (s3) {
-				const keys = [...photoKeys.map((r) => r.key), ...pdfKeys.map((r) => r.key as string)];
-				await Promise.allSettled(keys.map((key) => deleteFileWithConfig(s3, key)));
-			}
-
 			return rows[0];
 		}),
 
