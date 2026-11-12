@@ -221,18 +221,14 @@
 	{/if}
 
 	{#if loadingAi}
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
+		<p class="font-sans text-sm text-ink-muted">Loading...</p>
 	{:else}
 		<!-- ── Spending banner ── -->
-		<section
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<section class="rounded-xl border border-paper-border bg-paper p-6">
 			<div class="flex items-start justify-between gap-4">
 				<div>
-					<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-						Spending banner
-					</h2>
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Spending banner</h2>
+					<p class="font-sans text-sm text-ink-muted">
 						Show a line under the navbar with what you have spent on AI with your own key this month
 						and this week, and what the last call cost. It updates after each AI action.
 					</p>
@@ -246,7 +242,7 @@
 					disabled={savingSpendBanner}
 					class="relative mt-1 inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 {showSpendBanner
 						? 'bg-accent'
-						: 'bg-paper-border dark:bg-dark-paper-border'}"
+						: 'bg-paper-border'}"
 				>
 					<span
 						class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 {showSpendBanner
@@ -258,13 +254,9 @@
 		</section>
 
 		<!-- ── Section 1: API Keys ── -->
-		<section
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				AI Connection
-			</h2>
-			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<section class="rounded-xl border border-paper-border bg-paper p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">AI Connection</h2>
+			<p class="mb-5 font-sans text-sm text-ink-muted">
 				Connect your OpenRouter account to enable AI features. OpenRouter gives you access to dozens
 				of AI models with a single connection.
 			</p>
@@ -389,13 +381,13 @@
 				<div class="mb-4 flex flex-col gap-2">
 					{#each aiKeys.filter((k) => k.source === 'manual') as key (key.id)}
 						<div
-							class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+							class="flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3"
 						>
 							<div class="min-w-0 flex-1">
-								<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+								<p class="font-sans text-sm font-medium text-ink">
 									{key.name}
 								</p>
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								<p class="font-sans text-xs text-ink-faint">
 									Added {formatDate(key.createdAt)}
 								</p>
 							</div>
@@ -403,7 +395,7 @@
 								<span
 									class="font-sans text-xs {key.enabled
 										? 'text-green-600 dark:text-green-400'
-										: 'text-ink-muted dark:text-dark-ink-muted'}"
+										: 'text-ink-muted'}"
 								>
 									{key.enabled ? 'Active' : 'Inactive'}
 								</span>
@@ -416,7 +408,7 @@
 									disabled={togglingKey[key.id]}
 									class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 {key.enabled
 										? 'bg-accent'
-										: 'bg-paper-border dark:bg-dark-paper-border'}"
+										: 'bg-paper-border'}"
 								>
 									<span
 										class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 {key.enabled
@@ -457,7 +449,7 @@
 			<button
 				type="button"
 				onclick={() => (showManualKeyForm = !showManualKeyForm)}
-				class="mb-3 inline-flex items-center gap-1 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+				class="mb-3 inline-flex items-center gap-1 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink"
 			>
 				{showManualKeyForm ? 'Hide manual entry' : 'Enter key manually'}
 				<svg
@@ -485,7 +477,7 @@
 						type="text"
 						bind:value={newKeyName}
 						placeholder="Name (e.g. 'My OpenRouter key')"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					<div class="flex gap-3">
 						<input
@@ -493,7 +485,7 @@
 							bind:value={newKeyValue}
 							placeholder="sk-or-v1-..."
 							autocomplete="off"
-							class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none"
 						/>
 						<button
 							type="button"
@@ -521,22 +513,16 @@
 							{savingNewKey ? 'Saving...' : 'Save'}
 						</button>
 					</div>
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						Encrypted before storage.
-					</p>
+					<p class="font-sans text-xs text-ink-faint">Encrypted before storage.</p>
 				</div>
 			{/if}
 		</section>
 
 		<!-- ── Section 2: Task configuration ── -->
 		{#if aiKeys.length > 0}
-			<section
-				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-			>
-				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Task configuration
-				</h2>
-				<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<section class="rounded-xl border border-paper-border bg-paper p-6">
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Task configuration</h2>
+				<p class="mb-5 font-sans text-sm text-ink-muted">
 					Choose which key and model to use for each AI feature. Falls back to the first active key
 					if not configured.
 				</p>
@@ -549,18 +535,18 @@
 						<div
 							class="rounded-lg border px-4 py-4 {isObsolete
 								? 'border-red-300 dark:border-red-700'
-								: 'border-paper-border dark:border-dark-paper-border'} bg-paper-ui dark:bg-dark-paper-ui"
+								: 'border-paper-border'} bg-paper-ui"
 						>
 							<div class="mb-3 flex items-center justify-between">
 								<div>
 									<div class="flex items-center gap-1.5">
-										<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+										<p class="font-sans text-sm font-medium text-ink">
 											{task.label}
 										</p>
 										<div class="group relative">
 											<svg
 												xmlns="http://www.w3.org/2000/svg"
-												class="h-3.5 w-3.5 cursor-default text-ink-faint dark:text-dark-ink-faint"
+												class="h-3.5 w-3.5 cursor-default text-ink-faint"
 												viewBox="0 0 20 20"
 												fill="currentColor"
 											>
@@ -571,16 +557,16 @@
 												/>
 											</svg>
 											<div
-												class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-64 -translate-x-1/2 rounded-md bg-ink px-3 py-2 font-sans text-xs text-paper opacity-0 shadow-md transition-opacity group-hover:opacity-100 dark:bg-dark-ink dark:text-dark-paper"
+												class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-64 -translate-x-1/2 rounded-md bg-ink px-3 py-2 font-sans text-xs text-paper opacity-0 shadow-md transition-opacity group-hover:opacity-100"
 											>
 												{task.hint}
 												<div
-													class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ink dark:border-t-dark-ink"
+													class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ink"
 												></div>
 											</div>
 										</div>
 									</div>
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									<p class="font-sans text-xs text-ink-faint">
 										{task.description}
 									</p>
 								</div>
@@ -588,7 +574,7 @@
 									<button
 										type="button"
 										onclick={() => handleClearTaskConfig(task.id as AiTaskId)}
-										class="font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										class="font-sans text-xs text-ink-muted hover:text-ink"
 									>
 										Reset
 									</button>
@@ -602,7 +588,7 @@
 										const model = cfg?.model ?? aiModels[0]?.id ?? '';
 										if (keyId) await handleSetTaskConfig(task.id as AiTaskId, keyId, model);
 									}}
-									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 								>
 									<option value="">— First active key —</option>
 									{#each enabledKeys as key (key.id)}
@@ -617,7 +603,7 @@
 										if (model && keyId)
 											await handleSetTaskConfig(task.id as AiTaskId, keyId, model);
 									}}
-									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 								>
 									<option value=""
 										>— Default ({formatModelSlug(aiDefaultModelIds[task.id as AiTaskId] ?? '')}) —</option
@@ -659,9 +645,9 @@
 		role="dialog"
 		aria-modal="true"
 	>
-		<div class="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-xl dark:bg-dark-paper">
-			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Delete API key?</h2>
-			<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+		<div class="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-xl">
+			<h2 class="font-serif text-lg font-semibold text-ink">Delete API key?</h2>
+			<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
 				<strong>{aiKeys.find((k) => k.id === deletingKeyId)?.name ?? 'This key'}</strong> will be deleted.
 				Any task configured with this key will fall back to the first active key.
 			</p>
@@ -669,7 +655,7 @@
 				<button
 					type="button"
 					onclick={() => (deletingKeyId = null)}
-					class="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					<svg
 						width="13"

@@ -42,7 +42,7 @@
 	});
 </script>
 
-<div class="flex h-screen flex-col overflow-hidden bg-paper-ui dark:bg-dark-paper-ui">
+<div class="flex h-screen flex-col overflow-hidden bg-paper-ui">
 	<!-- Focus mode (editor) hides all the chrome above the content -->
 	{#if !focusMode.on}
 		<!-- Desktop nav -->
@@ -149,19 +149,14 @@
 	{#if !focusMode.on && page.route.id !== '/(app)/projects/[id]/documents/[docId]'}
 		<FeedbackButton />
 	{/if}
-	<footer
-		class="hidden border-t border-paper-border px-6 py-3 dark:border-dark-paper-border {focusMode.on
-			? ''
-			: 'sm:block'}"
-	>
-		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+	<footer class="hidden border-t border-paper-border px-6 py-3 {focusMode.on ? '' : 'sm:block'}">
+		<p class="text-center font-sans text-xs text-ink-faint">
 			Scholio Beta · Developed with
 			<a
 				href="https://claude.ai/code"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
-				>Claude Code</a
+				class="underline decoration-dotted hover:text-ink-muted">Claude Code</a
 			>
 			· AI assistant powered by
 			<span class="font-medium">Claude</span> (Anthropic)

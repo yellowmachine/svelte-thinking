@@ -139,22 +139,18 @@
 		</div>
 	{/if}
 
-	<section
-		class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-	>
+	<section class="rounded-xl border border-paper-border bg-paper p-6">
 		<div class="flex items-start justify-between gap-4">
 			<div>
-				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Two-factor authentication (2FA)
-				</h2>
-				<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<h2 class="font-serif text-lg font-semibold text-ink">Two-factor authentication (2FA)</h2>
+				<p class="mt-1 font-sans text-sm text-ink-muted">
 					Secure your account with an authenticator app like Google Authenticator or Authy.
 				</p>
 			</div>
 			<span
 				class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold {twoFaEnabled
 					? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
-					: 'border border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+					: 'border border-paper-border text-ink-muted'}"
 			>
 				{twoFaEnabled ? 'Enabled' : 'Disabled'}
 			</span>
@@ -164,7 +160,7 @@
 			<!-- 2FA is active — show disable option -->
 			{#if twoFaStep === 'disabling'}
 				<div class="mt-5 flex flex-col gap-3">
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					<p class="font-sans text-sm text-ink-muted">
 						Enter your password to disable two-factor authentication.
 					</p>
 					<input
@@ -172,7 +168,7 @@
 						bind:value={twoFaPassword}
 						placeholder="Current password"
 						autocomplete="current-password"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					<div class="flex gap-2">
 						<button
@@ -190,7 +186,7 @@
 								twoFaPassword = '';
 								twoFaError = '';
 							}}
-							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 						>
 							Cancel
 						</button>
@@ -199,7 +195,7 @@
 			{:else if twoFaStep === 'view-confirm'}
 				<!-- Verify current TOTP code before revealing the secret -->
 				<div class="mt-5 flex flex-col gap-3">
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					<p class="font-sans text-sm text-ink-muted">
 						Enter the code from your current authenticator app to see the setup code.
 					</p>
 					<input
@@ -208,7 +204,7 @@
 						maxlength="6"
 						bind:value={twoFaViewCode}
 						placeholder="000000"
-						class="w-32 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-32 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					{#if twoFaError}
 						<p class="font-sans text-sm text-red-500">{twoFaError}</p>
@@ -229,7 +225,7 @@
 								twoFaViewCode = '';
 								twoFaError = '';
 							}}
-							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 						>
 							Cancel
 						</button>
@@ -238,7 +234,7 @@
 			{:else if twoFaStep === 'viewing'}
 				<!-- Show QR and text secret for adding another device -->
 				<div class="mt-5 flex flex-col gap-4">
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					<p class="font-sans text-sm text-ink-muted">
 						Scan the QR code with your new authenticator app, or enter the text code manually.
 					</p>
 					{#if twoFaQrDataUrl}
@@ -246,19 +242,19 @@
 					{/if}
 					{#if twoFaTextSecret}
 						<div class="flex flex-col gap-1">
-							<p class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
+							<p class="font-sans text-xs font-medium text-ink-muted">
 								Text code (for manual entry):
 							</p>
 							<div class="flex items-center gap-2">
 								<code
-									class="rounded bg-paper-ui px-3 py-2 font-mono text-sm tracking-widest text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
+									class="rounded bg-paper-ui px-3 py-2 font-mono text-sm tracking-widest text-ink"
 								>
 									{twoFaTextSecret}
 								</code>
 								<button
 									type="button"
 									onclick={() => navigator.clipboard.writeText(twoFaTextSecret)}
-									class="rounded border border-paper-border px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+									class="rounded border border-paper-border px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 								>
 									Copy
 								</button>
@@ -272,7 +268,7 @@
 							twoFaQrDataUrl = '';
 							twoFaTextSecret = '';
 						}}
-						class="self-start rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="self-start rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						Close
 					</button>
@@ -285,7 +281,7 @@
 							twoFaStep = 'view-confirm';
 							twoFaError = '';
 						}}
-						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						Add another device
 					</button>
@@ -316,15 +312,13 @@
 						Enable 2FA
 					</button>
 				{:else}
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Enter your password to continue.
-					</p>
+					<p class="font-sans text-sm text-ink-muted">Enter your password to continue.</p>
 					<input
 						type="password"
 						bind:value={twoFaPassword}
 						placeholder="Current password"
 						autocomplete="current-password"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					<div class="flex gap-2">
 						<button
@@ -342,7 +336,7 @@
 								twoFaPassword = '';
 								twoFaError = '';
 							}}
-							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 						>
 							Cancel
 						</button>
@@ -353,11 +347,9 @@
 			<!-- Enable step 2: scan QR and enter code -->
 			<div class="mt-5 flex flex-col gap-5">
 				<div
-					class="flex flex-col items-center gap-3 rounded-lg border border-paper-border bg-paper-ui p-5 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+					class="flex flex-col items-center gap-3 rounded-lg border border-paper-border bg-paper-ui p-5"
 				>
-					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Scan with your authenticator app
-					</p>
+					<p class="font-sans text-sm font-medium text-ink">Scan with your authenticator app</p>
 					{#if twoFaQrDataUrl}
 						<img src={twoFaQrDataUrl} alt="QR code to configure 2FA" class="h-44 w-44 rounded" />
 					{/if}
@@ -458,10 +450,7 @@
 				{/if}
 
 				<div class="flex flex-col gap-2">
-					<label
-						for="totp-verify"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<label for="totp-verify" class="font-sans text-sm font-medium text-ink">
 						Enter the 6-digit code to confirm
 					</label>
 					<div class="flex gap-2">
@@ -474,7 +463,7 @@
 							pattern="[0-9]*"
 							maxlength="6"
 							autocomplete="one-time-code"
-							class="w-36 rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-center font-mono text-sm tracking-widest text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-36 rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-center font-mono text-sm tracking-widest text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 						/>
 						<button
 							type="button"

@@ -58,20 +58,20 @@
 
 {#if status !== 'discarded'}
 	<div
-		class="mt-2 overflow-hidden rounded-xl border transition-colors
-		{status === 'done'
+		class="mt-2 overflow-hidden rounded-xl border transition-colors {status === 'done'
 			? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20'
 			: 'border-accent/20 bg-accent/5 dark:border-accent/15 dark:bg-accent/5'}"
 	>
 		<div class="px-3 pt-3">
 			<!-- Label + explanation -->
 			<p
-				class="font-sans text-[11px] font-semibold tracking-wide uppercase
-				{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent-ink'}"
+				class="font-sans text-[11px] font-semibold tracking-wide uppercase {status === 'done'
+					? 'text-green-600 dark:text-green-400'
+					: 'text-accent-ink'}"
 			>
 				{status === 'done' ? 'Applied' : label}
 			</p>
-			<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+			<p class="mt-0.5 font-sans text-xs text-ink-muted">
 				{action.explanation}
 			</p>
 
@@ -128,7 +128,7 @@
 				<button
 					type="button"
 					onclick={discard}
-					class="rounded-lg px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-border disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-border"
+					class="rounded-lg px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-border disabled:opacity-40"
 				>
 					Discard
 				</button>

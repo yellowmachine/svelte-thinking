@@ -37,19 +37,14 @@
 	aria-modal="true"
 	aria-labelledby="draft-conflict-title"
 >
-	<div
-		class="flex max-h-[90vh] w-full max-w-5xl flex-col gap-4 rounded-2xl bg-paper p-6 shadow-xl dark:bg-dark-paper"
-	>
+	<div class="flex max-h-[90vh] w-full max-w-5xl flex-col gap-4 rounded-2xl bg-paper p-6 shadow-xl">
 		<!-- Header -->
 		<div class="flex shrink-0 items-start justify-between">
 			<div>
-				<h2
-					id="draft-conflict-title"
-					class="font-serif text-lg font-semibold text-ink dark:text-dark-ink"
-				>
+				<h2 id="draft-conflict-title" class="font-serif text-lg font-semibold text-ink">
 					Draft conflict
 				</h2>
-				<p class="mt-1 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+				<p class="mt-1 font-sans text-sm leading-relaxed text-ink-muted">
 					Your local draft differs from the one saved on another device. Choose which content to
 					keep.
 				</p>
@@ -57,7 +52,7 @@
 			<button
 				type="button"
 				onclick={onclose}
-				class="shrink-0 rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="shrink-0 rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 				aria-label="Close"
 			>
 				<svg
@@ -88,15 +83,13 @@
 		</div>
 
 		<!-- Acciones alineadas a las dos columnas del diff -->
-		<div
-			class="grid shrink-0 grid-cols-2 gap-3 border-t border-paper-border pt-4 dark:border-dark-paper-border"
-		>
+		<div class="grid shrink-0 grid-cols-2 gap-3 border-t border-paper-border pt-4">
 			<!-- Columna izquierda: acciones sobre el borrador local -->
 			<div class="flex items-center gap-2">
 				<button
 					type="button"
 					onclick={copyLocal}
-					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					{#if copiedLocal}
 						<svg
@@ -145,7 +138,7 @@
 				<button
 					type="button"
 					onclick={copyRemote}
-					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					{#if copiedRemote}
 						<svg
@@ -183,7 +176,7 @@
 				<button
 					type="button"
 					onclick={onkeepremote}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs font-medium text-ink transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs font-medium text-ink transition-colors hover:bg-paper-ui"
 				>
 					Use the server's
 				</button>

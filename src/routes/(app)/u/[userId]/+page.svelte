@@ -115,11 +115,11 @@
 			{initials}
 		</div>
 		<div class="min-w-0 flex-1">
-			<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+			<h1 class="font-serif text-2xl font-semibold text-ink">
 				{data.profile.displayName ?? data.profile.name}
 			</h1>
 			{#if data.profile.institution}
-				<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<p class="mt-0.5 font-sans text-sm text-ink-muted">
 					{data.profile.institution}
 				</p>
 			{/if}
@@ -129,7 +129,7 @@
 						href="https://orcid.org/{data.profile.orcid}"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-accent-ink dark:text-dark-ink-faint"
+						class="flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-accent-ink"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="#A6CE39" class="shrink-0">
 							<path
@@ -162,7 +162,7 @@
 				</div>
 			{/if}
 			{#if data.profile.bio}
-				<p class="mt-3 font-sans text-sm text-ink dark:text-dark-ink">{data.profile.bio}</p>
+				<p class="mt-3 font-sans text-sm text-ink">{data.profile.bio}</p>
 			{/if}
 		</div>
 	</div>
@@ -170,39 +170,31 @@
 	<!-- Reputación como colaborador -->
 	{#if data.reputation.projectsTotal > 0 || data.reputation.totalCommits > 0}
 		<section class="mt-8">
-			<h2
-				class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
+			<h2 class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 				Collaboration history
 			</h2>
 
 			<!-- Stats row -->
 			<div class="grid grid-cols-3 gap-3">
-				<div
-					class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<p class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+				<div class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center">
+					<p class="font-serif text-2xl font-semibold text-ink">
 						{data.reputation.projectsTotal}
 					</p>
-					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mt-0.5 font-sans text-xs text-ink-faint">
 						{data.reputation.projectsTotal === 1 ? 'project' : 'projects'}
 					</p>
 				</div>
-				<div
-					class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<p class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+				<div class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center">
+					<p class="font-serif text-2xl font-semibold text-ink">
 						{data.reputation.projectsCompleted}
 					</p>
-					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">completed</p>
+					<p class="mt-0.5 font-sans text-xs text-ink-faint">completed</p>
 				</div>
-				<div
-					class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<p class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+				<div class="rounded-xl border border-paper-border bg-paper px-4 py-3 text-center">
+					<p class="font-serif text-2xl font-semibold text-ink">
 						{data.reputation.totalCommits}
 					</p>
-					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">commits</p>
+					<p class="mt-0.5 font-sans text-xs text-ink-faint">commits</p>
 				</div>
 			</div>
 
@@ -222,39 +214,33 @@
 			{/if}
 
 			<!-- Última actividad -->
-			<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="mt-2 font-sans text-xs text-ink-faint">
 				Last activity: {formatLastActive(data.reputation.lastActiveAt)}
 			</p>
 		</section>
 	{:else if !data.isOwnProfile}
 		<section class="mt-8">
-			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				No collaboration history on the platform yet.
-			</p>
+			<p class="font-sans text-xs text-ink-faint">No collaboration history on the platform yet.</p>
 		</section>
 	{/if}
 
 	<!-- Proyectos buscables que pertenecen a este usuario -->
 	{#if data.ownedSearchableProjects.length > 0}
 		<section class="mt-8">
-			<h2
-				class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
+			<h2 class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 				Open projects
 			</h2>
 			<ul class="flex flex-col gap-3">
 				{#each data.ownedSearchableProjects as proj (proj.id)}
 					<li
-						class="flex items-center justify-between gap-4 rounded-xl border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+						class="flex items-center justify-between gap-4 rounded-xl border border-paper-border bg-paper px-4 py-3"
 					>
 						<div class="min-w-0">
-							<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							<p class="truncate font-sans text-sm font-medium text-ink">
 								{proj.title}
 							</p>
 							{#if proj.description}
-								<p
-									class="mt-0.5 truncate font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-								>
+								<p class="mt-0.5 truncate font-sans text-xs text-ink-faint">
 									{proj.description}
 								</p>
 							{/if}
@@ -263,10 +249,11 @@
 							<button
 								onclick={() => togglePin(proj.id)}
 								disabled={pinning === proj.id}
-								class="shrink-0 rounded-lg border px-3 py-1.5 font-sans text-xs font-medium transition-colors disabled:opacity-50
-									{pinnedSet.has(proj.id)
+								class="shrink-0 rounded-lg border px-3 py-1.5 font-sans text-xs font-medium transition-colors disabled:opacity-50 {pinnedSet.has(
+									proj.id
+								)
 									? 'border-accent bg-accent/10 text-accent-ink'
-									: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+									: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent-ink'}"
 							>
 								{pinning === proj.id ? '…' : pinnedSet.has(proj.id) ? '★ Saved' : '☆ Save'}
 							</button>
@@ -283,9 +270,7 @@
 	<!-- Invite to collaborate (solo si no es el propio perfil) -->
 	{#if !data.isOwnProfile}
 		<section class="mt-8">
-			<h2
-				class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
+			<h2 class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 				Invite to collaborate
 			</h2>
 
@@ -294,31 +279,24 @@
 			{:else if !inviting}
 				<button
 					onclick={startInviting}
-					class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent-ink"
 				>
 					Invite to one of my projects
 				</button>
 			{:else if loadingProjects}
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading projects…</p>
+				<p class="font-sans text-sm text-ink-muted">Loading projects…</p>
 			{:else if myProjects.length === 0}
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<p class="font-sans text-sm text-ink-muted">
 					You don't have any projects you can invite people to.
 				</p>
 			{:else}
-				<div
-					class="flex flex-col gap-3 rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="flex flex-col gap-3 rounded-xl border border-paper-border bg-paper p-4">
 					<div class="flex flex-col gap-1">
-						<label
-							for="inv-project"
-							class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-						>
-							Project
-						</label>
+						<label for="inv-project" class="font-sans text-xs text-ink-faint"> Project </label>
 						<select
 							id="inv-project"
 							bind:value={inviteProjectId}
-							class="bg-surface dark:bg-dark-surface rounded-lg border border-paper-border px-3 py-2 font-sans text-sm text-ink focus:ring-2 focus:ring-accent focus:outline-none dark:border-dark-paper-border dark:text-dark-ink"
+							class="bg-surface dark:bg-dark-surface rounded-lg border border-paper-border px-3 py-2 font-sans text-sm text-ink focus:ring-2 focus:ring-accent focus:outline-none"
 						>
 							{#each myProjects as p (p.id)}
 								<option value={p.id}>{p.title}</option>
@@ -327,13 +305,11 @@
 					</div>
 
 					<div class="flex flex-col gap-1">
-						<label for="inv-role" class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Role
-						</label>
+						<label for="inv-role" class="font-sans text-xs text-ink-faint"> Role </label>
 						<select
 							id="inv-role"
 							bind:value={inviteRole}
-							class="bg-surface dark:bg-dark-surface rounded-lg border border-paper-border px-3 py-2 font-sans text-sm text-ink focus:ring-2 focus:ring-accent focus:outline-none dark:border-dark-paper-border dark:text-dark-ink"
+							class="bg-surface dark:bg-dark-surface rounded-lg border border-paper-border px-3 py-2 font-sans text-sm text-ink focus:ring-2 focus:ring-accent focus:outline-none"
 						>
 							{#each roleValues as role (role)}
 								<option value={role}>{roleLabel[role]}</option>
@@ -358,7 +334,7 @@
 								inviting = false;
 								inviteError = '';
 							}}
-							class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted"
+							class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted"
 						>
 							Cancel
 						</button>

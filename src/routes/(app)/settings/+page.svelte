@@ -32,28 +32,20 @@
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<!-- Header -->
 	<div class="mb-8">
-		<h1
-			data-tutorial="settings-title"
-			class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
-		>
+		<h1 data-tutorial="settings-title" class="font-serif text-3xl font-semibold text-ink">
 			Settings
 		</h1>
-		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Manage your account and preferences.
-		</p>
+		<p class="mt-1 font-sans text-sm text-ink-muted">Manage your account and preferences.</p>
 	</div>
 
 	<!-- Tabs -->
-	<div
-		data-tutorial="settings-tabs"
-		class="mb-8 flex gap-1 border-b border-paper-border dark:border-dark-paper-border"
-	>
+	<div data-tutorial="settings-tabs" class="mb-8 flex gap-1 border-b border-paper-border">
 		<button
 			type="button"
 			onclick={() => (activeTab = 'profile')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'profile'
 				? 'border-b-2 border-accent font-medium text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			Perfil
 		</button>
@@ -63,7 +55,7 @@
 			onclick={() => (activeTab = 'ai')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'ai'
 				? 'border-b-2 border-accent font-medium text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			AI Assistant
 		</button>
@@ -72,7 +64,7 @@
 			onclick={() => (activeTab = 'security')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'security'
 				? 'border-b-2 border-accent font-medium text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			Security
 		</button>
@@ -81,7 +73,7 @@
 			onclick={() => (activeTab = 'appearance')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'appearance'
 				? 'border-b-2 border-accent font-medium text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			Appearance
 		</button>
@@ -90,7 +82,7 @@
 			onclick={() => (activeTab = 'organizations')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'organizations'
 				? 'border-b-2 border-accent font-medium text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			Organizations
 		</button>
@@ -99,7 +91,7 @@
 			onclick={() => (activeTab = 'storage')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'storage'
 				? 'border-b-2 border-accent font-medium text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			Storage
 		</button>
@@ -108,7 +100,7 @@
 			onclick={() => (activeTab = 'blog')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'blog'
 				? 'border-b-2 border-accent font-medium text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			Blog
 		</button>
@@ -128,24 +120,18 @@
 		<SecurityTab twoFactorEnabled={data.user.twoFactorEnabled} />
 	{:else if activeTab === 'appearance'}
 		<div class="flex flex-col gap-8">
-			<section
-				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-			>
-				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Theme</h2>
-				<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<section class="rounded-xl border border-paper-border bg-paper p-6">
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Theme</h2>
+				<p class="mb-6 font-sans text-sm text-ink-muted">
 					Choose a color scheme. Top row is light, bottom row is dark.
 				</p>
 				<ThemePicker />
 			</section>
 		</div>
 	{:else if activeTab === 'organizations'}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Organizations
-			</h2>
-			<p class="mb-6 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<div class="rounded-xl border border-paper-border bg-paper p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Organizations</h2>
+			<p class="mb-6 font-sans text-sm text-ink-muted">
 				Create or join organizations to collaborate on projects with a shared AI key.
 			</p>
 			<OrgSettings initialOrgs={data.orgs ?? []} />

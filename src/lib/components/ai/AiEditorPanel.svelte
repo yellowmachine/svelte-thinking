@@ -304,13 +304,9 @@
 	}
 </script>
 
-<div
-	class="flex h-full flex-col border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
->
+<div class="flex h-full flex-col border-l border-paper-border bg-paper">
 	<!-- Header -->
-	<div
-		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
+	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3">
 		<div class="flex items-center gap-2">
 			<div
 				class="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10 text-accent-ink"
@@ -325,9 +321,7 @@
 					/>
 				</svg>
 			</div>
-			<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-				>Scholio Assistant</span
-			>
+			<span class="font-sans text-sm font-medium text-ink">Scholio Assistant</span>
 		</div>
 		<div class="flex items-center gap-2">
 			{#if messages.length > 0}
@@ -335,7 +329,7 @@
 					type="button"
 					onclick={() => (showClearDialog = true)}
 					title="Clear conversation"
-					class="font-sans text-[11px] text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+					class="font-sans text-[11px] text-ink-faint transition-colors hover:text-ink-muted"
 				>
 					Clear
 				</button>
@@ -343,7 +337,7 @@
 			{#if !orgId}
 				<select
 					bind:value={selectedModel}
-					class="rounded border border-paper-border bg-transparent px-1.5 py-0.5 font-sans text-[11px] text-ink-faint focus:outline-none dark:border-dark-paper-border dark:text-dark-ink-faint"
+					class="rounded border border-paper-border bg-transparent px-1.5 py-0.5 font-sans text-[11px] text-ink-faint focus:outline-none"
 					title="Model for this session"
 				>
 					<option value="">— model —</option>
@@ -355,7 +349,7 @@
 			<button
 				type="button"
 				onclick={onClose}
-				class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+				class="text-ink-faint transition-colors hover:text-ink-muted"
 				aria-label="Close assistant"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -380,10 +374,8 @@
 			<!-- Empty state + shortcuts -->
 			<div class="flex flex-col gap-4 pt-4">
 				<div class="flex flex-col items-center gap-2 text-center">
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Ask anything about your project.
-					</p>
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="font-sans text-sm text-ink-muted">Ask anything about your project.</p>
+					<p class="font-sans text-xs text-ink-faint">
 						The assistant can read your documents, references, and requirements.
 					</p>
 					<div class="mt-1 flex flex-wrap justify-center gap-1.5">
@@ -402,16 +394,14 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-1.5">
-					<p
-						class="mb-1 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-					>
+					<p class="mb-1 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase">
 						Quick questions
 					</p>
 					{#each SHORTCUTS as s, i (i)}
 						<button
 							type="button"
 							onclick={() => useShortcut(s.prompt)}
-							class="rounded-lg border border-paper-border px-3 py-2 text-left font-sans text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:text-dark-ink"
+							class="rounded-lg border border-paper-border px-3 py-2 text-left font-sans text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink"
 						>
 							{s.label}
 						</button>
@@ -423,11 +413,9 @@
 				{#each messages as msg, i (i)}
 					{#if msg.role === 'system'}
 						<div class="flex items-center gap-2">
-							<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
-							<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
-								>{msg.content}</span
-							>
-							<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+							<div class="h-px flex-1 bg-paper-border"></div>
+							<span class="font-sans text-[11px] text-ink-faint">{msg.content}</span>
+							<div class="h-px flex-1 bg-paper-border"></div>
 						</div>
 					{:else if msg.role === 'user'}
 						<div class="flex justify-end">
@@ -440,7 +428,7 @@
 					{:else}
 						<div class="flex flex-col gap-1.5">
 							<div
-								class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink dark:bg-dark-paper-ui dark:text-dark-ink {msg.broken
+								class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 font-sans text-sm leading-relaxed text-ink {msg.broken
 									? 'opacity-50'
 									: ''}"
 								style="white-space: pre-wrap;"
@@ -449,9 +437,7 @@
 							</div>
 							{#if msg.broken}
 								<div class="flex items-center gap-2 pl-1">
-									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-										>Response interrupted</span
-									>
+									<span class="font-sans text-xs text-ink-faint">Response interrupted</span>
 									<button
 										type="button"
 										onclick={retry}
@@ -514,9 +500,7 @@
 				{#if loading}
 					<div class="flex items-center gap-2 pl-1">
 						<Spinner size="sm" class="text-accent-ink" />
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-							>{loadingHint}</span
-						>
+						<span class="font-sans text-xs text-ink-faint">{loadingHint}</span>
 					</div>
 				{/if}
 			</div>
@@ -539,16 +523,16 @@
 	{/if}
 
 	<!-- Input -->
-	<div class="border-t border-paper-border px-3 pt-2.5 pb-3 dark:border-dark-paper-border">
+	<div class="border-t border-paper-border px-3 pt-2.5 pb-3">
 		<div
-			class="flex items-end gap-2 rounded-xl border border-paper-border bg-paper-ui px-3 py-2 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui"
+			class="flex items-end gap-2 rounded-xl border border-paper-border bg-paper-ui px-3 py-2 focus-within:border-accent"
 		>
 			<textarea
 				bind:value={input}
 				onkeydown={handleKeydown}
 				placeholder="Ask a question… (↵ to send, ⇧↵ for new line)"
 				rows="2"
-				class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
+				class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none"
 				style="max-height: 120px;"
 			></textarea>
 			{#if loading}
@@ -556,7 +540,7 @@
 					type="button"
 					onclick={stopStream}
 					aria-label="Stop"
-					class="shrink-0 rounded-lg border border-paper-border bg-paper p-1.5 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+					class="shrink-0 rounded-lg border border-paper-border bg-paper p-1.5 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 						<rect x="5" y="5" width="14" height="14" rx="2" />

@@ -78,7 +78,7 @@
 			aria-labelledby="safe-delete-title"
 			tabindex="-1"
 			onkeydown={handleKeydown}
-			class="w-full max-w-sm rounded-xl border border-red-200 bg-paper shadow-xl dark:border-red-900/40 dark:bg-dark-paper"
+			class="w-full max-w-sm rounded-xl border border-red-200 bg-paper shadow-xl dark:border-red-900/40"
 		>
 			<!-- Header -->
 			<div class="flex items-start justify-between gap-3 px-5 pt-5">
@@ -103,20 +103,17 @@
 					</svg>
 				</div>
 				<div class="min-w-0 flex-1">
-					<h2
-						id="safe-delete-title"
-						class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
-					>
+					<h2 id="safe-delete-title" class="font-serif text-base font-semibold text-ink">
 						{title ?? `Delete ${label}`}
 					</h2>
 					{#if warning}
-						<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{warning}</p>
+						<p class="mt-1 font-sans text-sm text-ink-muted">{warning}</p>
 					{/if}
 				</div>
 				<button
 					type="button"
 					onclick={oncancel}
-					class="shrink-0 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					class="shrink-0 text-ink-faint transition-colors hover:text-ink"
 					aria-label="Close"
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -133,7 +130,7 @@
 			<!-- Code confirmation -->
 			<div class="px-5 pt-4 pb-5">
 				{#if requireCode}
-					<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					<p class="mb-3 font-sans text-sm text-ink-muted">
 						To confirm, type these three characters:
 					</p>
 					<div class="mb-3 flex justify-center gap-3">
@@ -155,10 +152,9 @@
 						spellcheck="false"
 						onkeydown={(e) => e.key === 'Enter' && handleConfirm()}
 						placeholder="···"
-						class="w-full rounded-lg border px-3 py-2 text-center font-mono text-lg tracking-widest transition-colors focus:outline-none
-							{matches
+						class="w-full rounded-lg border px-3 py-2 text-center font-mono text-lg tracking-widest transition-colors focus:outline-none {matches
 							? 'border-red-400 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-900/20 dark:text-red-300'
-							: 'border-paper-border bg-paper-ui text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink'}"
+							: 'border-paper-border bg-paper-ui text-ink'}"
 					/>
 				{/if}
 
@@ -167,7 +163,7 @@
 						type="button"
 						onclick={oncancel}
 						disabled={deleting}
-						class="flex-1 rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex-1 rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50"
 					>
 						Cancel
 					</button>

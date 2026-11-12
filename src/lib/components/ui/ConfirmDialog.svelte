@@ -24,16 +24,13 @@
 		// Click on the backdrop (the dialog element itself, outside its box)
 		if (e.target === e.currentTarget) confirmStore.answer(false);
 	}}
-	class="m-auto w-[calc(100%-2rem)] max-w-md rounded-xl border border-paper-border bg-paper p-0 text-ink shadow-xl backdrop:bg-black/40 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+	class="m-auto w-[calc(100%-2rem)] max-w-md rounded-xl border border-paper-border bg-paper p-0 text-ink shadow-xl backdrop:bg-black/40"
 >
 	{#if pending}
 		<div class="p-6">
 			<h2 id="confirm-dialog-title" class="font-serif text-lg font-semibold">{pending.title}</h2>
 			{#if pending.message}
-				<p
-					id="confirm-dialog-message"
-					class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-				>
+				<p id="confirm-dialog-message" class="mt-2 font-sans text-sm text-ink-muted">
 					{pending.message}
 				</p>
 			{/if}
@@ -41,7 +38,7 @@
 				<button
 					type="button"
 					onclick={() => confirmStore.answer(false)}
-					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					{pending.cancelLabel ?? 'Cancel'}
 				</button>

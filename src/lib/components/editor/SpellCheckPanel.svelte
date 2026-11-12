@@ -80,15 +80,13 @@
 
 <div class="flex h-full flex-col">
 	<!-- Header -->
-	<div
-		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
+	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3">
 		<div class="flex items-center gap-2">
-			<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
+			<h3 class="font-serif text-sm font-semibold text-ink">
 				{mode === 'grammar' ? 'Grammar assistant' : 'Spell check'}
 			</h3>
 			{#if !loading && corrections.length > 0}
-				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				<span class="font-sans text-xs text-ink-faint">
 					{corrections.length}
 					{corrections.length === 1 ? 'issue' : 'issues'}
 				</span>
@@ -119,7 +117,7 @@
 			{/if}
 			<button
 				onclick={onclose}
-				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 				aria-label="Close"
 			>
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -139,14 +137,14 @@
 		{#if loading}
 			<div class="flex flex-col items-center gap-3 py-10 text-center">
 				<Spinner size="lg" class="text-accent-ink" />
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Checking…</p>
+				<p class="font-sans text-sm text-ink-muted">Checking…</p>
 			</div>
 		{:else if corrections.length === 0}
 			<div class="py-10 text-center">
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">No issues found.</p>
+				<p class="font-sans text-sm text-ink-muted">No issues found.</p>
 			</div>
 		{:else}
-			<ul class="divide-y divide-paper-border dark:divide-dark-paper-border">
+			<ul class="divide-y divide-paper-border">
 				{#each corrections as correction, i (correction.from)}
 					{@const ctx = getContext(correction)}
 					<li
@@ -155,9 +153,7 @@
 						onmouseleave={() => onhoverend?.()}
 					>
 						<!-- Context -->
-						<p
-							class="mb-2 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-						>
+						<p class="mb-2 font-sans text-xs leading-relaxed text-ink-muted">
 							…{ctx.before}<span
 								class="rounded bg-red-100 px-0.5 font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400"
 								>{ctx.error}</span
@@ -166,10 +162,10 @@
 
 						<!-- Suggestion + explanation -->
 						<div class="mb-2.5 flex items-baseline gap-1.5">
-							<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							<span class="font-sans text-sm font-medium text-ink">
 								→ {correction.suggestion}
 							</span>
-							<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							<span class="font-sans text-xs text-ink-faint">
 								{correction.explanation}
 							</span>
 						</div>
@@ -200,7 +196,7 @@
 								<button
 									onclick={() => ignoreAlways(i)}
 									disabled={ignoring === i}
-									class="flex items-center gap-1 rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+									class="flex items-center gap-1 rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui disabled:opacity-50"
 								>
 									<svg
 										width="12"
@@ -225,7 +221,7 @@
 									onclick={() => {
 										corrections = corrections.filter((_, j) => j !== i);
 									}}
-									class="flex items-center gap-1 rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+									class="flex items-center gap-1 rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui"
 								>
 									<svg
 										width="12"

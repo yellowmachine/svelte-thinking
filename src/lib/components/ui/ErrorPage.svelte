@@ -25,7 +25,7 @@
 <div
 	class="flex flex-col items-center justify-center px-6 {embedded
 		? 'min-h-full py-16'
-		: 'min-h-screen bg-paper-ui dark:bg-dark-paper-ui'}"
+		: 'min-h-screen bg-paper-ui'}"
 >
 	<div class="flex flex-col items-center gap-8 text-center">
 		<!-- Folio perdido -->
@@ -102,16 +102,14 @@
 
 		<!-- Código y mensaje -->
 		<div>
-			<p
-				class="font-sans text-xs font-semibold tracking-widest text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
+			<p class="font-sans text-xs font-semibold tracking-widest text-ink-faint uppercase">
 				Error {status}
 			</p>
-			<h1 class="mt-2 font-serif text-xl text-ink dark:text-dark-ink">
+			<h1 class="mt-2 font-serif text-xl text-ink">
 				{message}
 			</h1>
 			{#if extra}
-				<p class="mt-2 max-w-md font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<p class="mt-2 max-w-md font-sans text-sm text-ink-muted">
 					{extra}
 				</p>
 			{/if}
@@ -130,7 +128,7 @@
 			{/if}
 			<a
 				href={resolve('/projects')}
-				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper dark:hover:text-dark-ink"
+				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper hover:text-ink"
 			>
 				Back to projects
 			</a>

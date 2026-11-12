@@ -236,13 +236,11 @@
 
 <div class="hidden flex-col gap-6 sm:flex">
 	<!-- Project navigation -->
-	<div
-		class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
-	>
+	<div class="rounded-xl border border-paper-border bg-paper p-4">
 		<div class="flex flex-col gap-1">
 			<a
 				href={resolve(`/projects/${project.id}/ai`)}
-				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
 					><path
@@ -257,7 +255,7 @@
 			</a>
 			<a
 				href={resolve(`/projects/${project.id}/requirements`)}
-				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
 					><path
@@ -284,7 +282,7 @@
 			</a>
 			<a
 				href={resolve(`/projects/${project.id}/issues`)}
-				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 					<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" />
@@ -294,7 +292,7 @@
 			</a>
 			<a
 				href={resolve(`/projects/${project.id}/bib`)}
-				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
 					><path
@@ -315,7 +313,7 @@
 			</a>
 			<a
 				href={resolve(`/projects/${project.id}/datasets`)}
-				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
 					><path
@@ -331,7 +329,7 @@
 			{#if canEdit && canUploadS3}
 				<a
 					href={resolve(`/projects/${project.id}/photos`)}
-					class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
 						><rect
@@ -354,7 +352,7 @@
 				</a>
 				<a
 					href={resolve(`/projects/${project.id}/notebooks`)}
-					class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 						<path
@@ -368,7 +366,7 @@
 			{:else if canEdit && s3CtaType === 'personal'}
 				<a
 					href={resolve('/settings?tab=storage')}
-					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-faint"
+					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<rect
@@ -392,7 +390,7 @@
 			{:else if canEdit && s3CtaType === 'org-owner'}
 				<a
 					href={resolve('/settings?tab=organizations')}
-					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-faint"
+					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<rect
@@ -429,11 +427,9 @@
 			}}
 		/>
 	{:else}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Collaborators</h3>
-			<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<div class="rounded-xl border border-paper-border bg-paper p-5">
+			<h3 class="font-serif text-base font-semibold text-ink">Collaborators</h3>
+			<p class="mt-2 font-sans text-sm text-ink-muted">
 				{collaborators.length}
 				{collaborators.length === 1 ? 'collaborator' : 'collaborators'}
 			</p>
@@ -463,17 +459,12 @@
 
 	<!-- Publication metadata -->
 	{#if isOwner || project.doi || project.version || project.publishedAt}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h3 class="mb-3 font-serif text-base font-semibold text-ink dark:text-dark-ink">
-				Publication
-			</h3>
+		<div class="rounded-xl border border-paper-border bg-paper p-5">
+			<h3 class="mb-3 font-serif text-base font-semibold text-ink">Publication</h3>
 			<div class="flex flex-col gap-2">
 				<!-- DOI -->
 				<div>
-					<span
-						class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+					<span class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase"
 						>DOI</span
 					>
 					{#if editingField === 'doi'}
@@ -487,7 +478,7 @@
 								if (e.key === 'Escape') cancelEdit();
 							}}
 							placeholder="10.1000/xyz123"
-							class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-mono text-xs text-ink focus:outline-none dark:text-dark-ink"
+							class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-mono text-xs text-ink focus:outline-none"
 						/>
 					{:else}
 						<button
@@ -496,9 +487,7 @@
 							disabled={!isOwner}
 							class="mt-0.5 block w-full text-left font-mono text-xs {isOwner
 								? 'cursor-text hover:opacity-70'
-								: 'cursor-default'} {!project.doi
-								? 'text-ink-faint italic dark:text-dark-ink-faint'
-								: 'text-ink dark:text-dark-ink'}"
+								: 'cursor-default'} {!project.doi ? 'text-ink-faint italic' : 'text-ink'}"
 						>
 							{project.doi || (isOwner ? 'Add DOI…' : '—')}
 						</button>
@@ -506,8 +495,7 @@
 				</div>
 				<!-- Version -->
 				<div>
-					<span
-						class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+					<span class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase"
 						>Version</span
 					>
 					{#if editingField === 'version'}
@@ -521,7 +509,7 @@
 								if (e.key === 'Escape') cancelEdit();
 							}}
 							placeholder="1.0.0"
-							class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-sans text-xs text-ink focus:outline-none dark:text-dark-ink"
+							class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-sans text-xs text-ink focus:outline-none"
 						/>
 					{:else}
 						<button
@@ -530,9 +518,7 @@
 							disabled={!isOwner}
 							class="mt-0.5 block w-full text-left font-sans text-xs {isOwner
 								? 'cursor-text hover:opacity-70'
-								: 'cursor-default'} {!project.version
-								? 'text-ink-faint italic dark:text-dark-ink-faint'
-								: 'text-ink dark:text-dark-ink'}"
+								: 'cursor-default'} {!project.version ? 'text-ink-faint italic' : 'text-ink'}"
 						>
 							{project.version || (isOwner ? 'Add version…' : '—')}
 						</button>
@@ -540,8 +526,7 @@
 				</div>
 				<!-- Published date -->
 				<div>
-					<span
-						class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+					<span class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase"
 						>Publication date</span
 					>
 					{#if editingField === 'publishedAt'}
@@ -554,7 +539,7 @@
 								if (e.key === 'Enter') e.currentTarget.blur();
 								if (e.key === 'Escape') cancelEdit();
 							}}
-							class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-sans text-xs text-ink focus:outline-none dark:text-dark-ink"
+							class="mt-0.5 w-full rounded border border-accent/40 bg-transparent px-2 py-1 font-sans text-xs text-ink focus:outline-none"
 						/>
 					{:else}
 						<button
@@ -563,9 +548,7 @@
 							disabled={!isOwner}
 							class="mt-0.5 block w-full text-left font-sans text-xs {isOwner
 								? 'cursor-text hover:opacity-70'
-								: 'cursor-default'} {!project.publishedAt
-								? 'text-ink-faint italic dark:text-dark-ink-faint'
-								: 'text-ink dark:text-dark-ink'}"
+								: 'cursor-default'} {!project.publishedAt ? 'text-ink-faint italic' : 'text-ink'}"
 						>
 							{project.publishedAt
 								? project.publishedAt.toLocaleDateString('en', {
@@ -582,8 +565,7 @@
 				<!-- Citation style -->
 				{#if isOwner}
 					<div>
-						<span
-							class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+						<span class="font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase"
 							>Citation style</span
 						>
 						<div class="mt-1 flex flex-wrap gap-1.5">
@@ -597,13 +579,13 @@
 									class="rounded px-2 py-0.5 font-sans text-xs transition-colors {project.citationStyle ===
 									s
 										? 'bg-accent text-white'
-										: 'border border-paper-border text-ink-muted hover:border-accent/50 dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+										: 'border border-paper-border text-ink-muted hover:border-accent/50'}"
 									>{label}</button
 								>
 							{/each}
 						</div>
 						{#if project.citationStyle}
-							<p class="mt-1 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+							<p class="mt-1 font-sans text-[10px] text-ink-faint">
 								Documents inherit this style unless overridden.
 							</p>
 						{/if}
@@ -614,21 +596,17 @@
 	{/if}
 
 	<!-- Context links for AI -->
-	<div
-		class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-	>
+	<div class="rounded-xl border border-paper-border bg-paper p-5">
 		<div class="mb-3 flex items-center justify-between gap-2">
 			<div>
-				<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-					External context
-				</h3>
-				<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				<h3 class="font-serif text-base font-semibold text-ink">External context</h3>
+				<p class="mt-0.5 font-sans text-xs text-ink-faint">
 					Documents from other projects visible to the AI
 				</p>
 			</div>
 			<button
 				onclick={() => (showContextPicker = true)}
-				class="flex shrink-0 items-center gap-1 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="flex shrink-0 items-center gap-1 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 			>
 				<svg
 					width="11"
@@ -648,26 +626,24 @@
 		</div>
 
 		{#if contextLinks.length === 0}
-			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="font-sans text-xs text-ink-faint">
 				No external documents. Add notes from other projects for the AI to use as context.
 			</p>
 		{:else}
 			<div class="flex flex-col gap-1">
 				{#each contextLinks as link (link.id)}
-					<div
-						class="group flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-					>
+					<div class="group flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui">
 						<div class="min-w-0 flex-1">
-							<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+							<p class="truncate font-sans text-xs font-medium text-ink">
 								{link.docTitle}
 							</p>
-							<p class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+							<p class="truncate font-sans text-[11px] text-ink-faint">
 								{link.sourceProjectTitle}
 							</p>
 						</div>
 						<button
 							onclick={() => removeContextLink(link.id)}
-							class="mt-0.5 shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+							class="mt-0.5 shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400"
 							title="Remove"
 							aria-label="Remove context link"
 						>
@@ -692,15 +668,11 @@
 
 	<!-- Public search visibility — owner only -->
 	{#if isOwner}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<div class="rounded-xl border border-paper-border bg-paper p-5">
 			<div class="flex items-center justify-between gap-3">
 				<div>
-					<h3 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-						Public search
-					</h3>
-					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<h3 class="font-serif text-base font-semibold text-ink">Public search</h3>
+					<p class="mt-0.5 font-sans text-xs text-ink-faint">
 						{isSearchable
 							? 'Visible in Explore. Shows title, description and Abstract.'
 							: 'Visible to collaborators only.'}
@@ -711,23 +683,23 @@
 					disabled={togglingSearchable}
 					aria-pressed={isSearchable}
 					aria-label="Toggle public search visibility"
-					class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50
-						{isSearchable ? 'bg-accent' : 'bg-paper-border dark:bg-dark-paper-border'}"
+					class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 {isSearchable
+						? 'bg-accent'
+						: 'bg-paper-border'}"
 				>
 					<span
-						class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform
-						{isSearchable ? 'translate-x-6' : 'translate-x-1'}"
+						class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform {isSearchable
+							? 'translate-x-6'
+							: 'translate-x-1'}"
 					></span>
 				</button>
 			</div>
 
 			{#if isSearchable}
 				<!-- Interested users -->
-				<div class="mt-4 border-t border-paper-border pt-4 dark:border-dark-paper-border">
+				<div class="mt-4 border-t border-paper-border pt-4">
 					<div class="mb-2 flex items-center justify-between">
-						<h4
-							class="font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-						>
+						<h4 class="font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 							Interested
 						</h4>
 						{#if !loadedInterested}
@@ -742,16 +714,14 @@
 					</div>
 					{#if loadedInterested}
 						{#if interestedUsers.length === 0}
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-								No one has expressed interest yet.
-							</p>
+							<p class="font-sans text-xs text-ink-faint">No one has expressed interest yet.</p>
 						{:else}
 							<ul class="flex flex-col gap-2">
 								{#each interestedUsers as u (u.id)}
 									<li>
 										<a
 											href={resolve(`/u/${u.userId}`)}
-											class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+											class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui"
 										>
 											<span
 												class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/20 font-sans text-xs font-semibold text-accent-ink"
@@ -759,17 +729,11 @@
 												{(u.displayName ?? u.name).charAt(0).toUpperCase()}
 											</span>
 											<div class="min-w-0">
-												<p
-													translate="no"
-													class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink"
-												>
+												<p translate="no" class="truncate font-sans text-xs font-medium text-ink">
 													{u.displayName ?? u.name}
 												</p>
 												{#if u.institution}
-													<p
-														translate="no"
-														class="truncate font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
-													>
+													<p translate="no" class="truncate font-sans text-[11px] text-ink-faint">
 														{u.institution}
 													</p>
 												{/if}

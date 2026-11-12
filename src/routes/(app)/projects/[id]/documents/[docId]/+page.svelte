@@ -1423,15 +1423,15 @@
 			/>
 		{:else}
 			<!-- Read-only rendered view for non-notes documents -->
-			<div class="flex h-screen flex-col bg-paper dark:bg-dark-paper">
+			<div class="flex h-screen flex-col bg-paper">
 				<div
-					class="flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+					class="flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm"
 				>
 					<button
 						onclick={() => {
 							window.location.href = `/projects/${data.document.projectId}`;
 						}}
-						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -1448,16 +1448,14 @@
 						</svg>
 						{data.projectTitle}
 					</button>
-					<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-					<span
-						translate="no"
-						class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink"
+					<span class="text-ink-faint">/</span>
+					<span translate="no" class="truncate font-sans text-sm font-medium text-ink"
 						>{data.document.title}</span
 					>
 				</div>
 				<div class="pb-safe flex-1 overflow-y-auto px-4 py-6">
 					{#if !content.trim()}
-						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Empty document.</p>
+						<p class="font-sans text-sm text-ink-faint">Empty document.</p>
 					{:else if data.document.type === 'diagram'}
 						<MermaidPreview code={content} />
 					{:else}
@@ -1472,24 +1470,22 @@
 	<div class="hidden sm:flex sm:h-full sm:flex-col">
 		<!-- Sticky toolbar -->
 		<div
-			class="sticky top-0 z-10 flex flex-col border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+			class="sticky top-0 z-10 flex flex-col border-b border-paper-border bg-paper/95 backdrop-blur-sm"
 		>
 			<!-- Row 1: breadcrumb -->
 			<div
 				data-tutorial="doc-breadcrumb"
-				class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm dark:border-dark-paper-border/50"
+				class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm"
 			>
 				<button
 					translate="no"
 					onclick={() => (window.location.href = `/projects/${data.document.projectId}`)}
-					class="shrink-0 text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="shrink-0 text-ink-muted transition-colors hover:text-ink"
 				>
 					{data.projectTitle}
 				</button>
-				<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-				<span translate="no" class="truncate font-medium text-ink dark:text-dark-ink"
-					>{docTitle}</span
-				>
+				<span class="text-ink-faint">/</span>
+				<span translate="no" class="truncate font-medium text-ink">{docTitle}</span>
 
 				<!-- Writer badge -->
 				{#if currentWriterUserId !== null}
@@ -1501,7 +1497,7 @@
 				{/if}
 				{#if !canWrite}
 					<span
-						class="shrink-0 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-xs text-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+						class="shrink-0 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-xs text-ink-faint"
 					>
 						Read-only
 					</span>
@@ -1513,7 +1509,7 @@
 							await trpc.documents.update.mutate({ id: data.document.id, isReadonly: true });
 							data.document = { ...data.document, isReadonly: true };
 						}}
-						class="shrink-0 font-sans text-xs text-ink-faint hover:text-ink hover:underline dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						class="shrink-0 font-sans text-xs text-ink-faint hover:text-ink hover:underline"
 					>
 						Lock editing
 					</button>
@@ -1538,7 +1534,7 @@
 							? 'text-red-500'
 							: saveStatus === 'saved'
 								? 'text-green-600'
-								: 'text-ink-faint dark:text-dark-ink-faint'}"
+								: 'text-ink-faint'}"
 					>
 						{saveStatusLabel()}
 					</span>
@@ -1552,7 +1548,7 @@
 					title={focusMode.on ? 'Leave focus mode (Esc)' : 'Focus mode (Ctrl+.)'}
 					class="{saveStatusLabel()
 						? ''
-						: 'ml-auto'} flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+						: 'ml-auto'} flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 				>
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						{#if focusMode.on}
@@ -1612,7 +1608,7 @@
 							onclick={() => handleSetWriter(null)}
 							disabled={delegating}
 							title="Release write access — the project owner will regain control"
-							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 						>
 							<svg
 								width="13"
@@ -1644,7 +1640,7 @@
 									: saveCap.kind === 'blocked'
 										? saveCap.reason
 										: undefined}
-							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 						>
 							<svg
 								width="13"
@@ -1672,7 +1668,7 @@
 					<!-- View mode selector -->
 					{#if canWrite && !data.forcePublished}
 						<div
-							class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
+							class="flex overflow-hidden rounded-md border border-paper-border"
 							role="group"
 							aria-label="View mode"
 						>
@@ -1681,7 +1677,7 @@
 								title="Editor only"
 								class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
 									? 'bg-accent text-white'
-									: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+									: 'text-ink-muted hover:bg-paper-ui'}"
 								aria-pressed={viewMode === 'editor'}
 							>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1696,10 +1692,10 @@
 							<button
 								onclick={() => setViewMode('split')}
 								title="Editor and preview"
-								class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
+								class="border-x border-paper-border px-2.5 py-1.5 transition-colors {viewMode ===
 								'split'
 									? 'bg-accent text-white'
-									: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+									: 'text-ink-muted hover:bg-paper-ui'}"
 								aria-pressed={viewMode === 'split'}
 							>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1728,7 +1724,7 @@
 								title="Preview only"
 								class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
 									? 'bg-accent text-white'
-									: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+									: 'text-ink-muted hover:bg-paper-ui'}"
 								aria-pressed={viewMode === 'preview'}
 							>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1748,7 +1744,7 @@
 							href={resolve(
 								`/projects/${data.document.projectId}/documents/${data.document.id}/read`
 							)}
-							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 						>
 							<svg
 								width="14"
@@ -1774,7 +1770,7 @@
 							type="button"
 							onclick={() => (showDiagramPicker = true)}
 							title="Insert an embedded diagram"
-							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 						>
 							<svg
 								width="14"
@@ -1826,7 +1822,7 @@
 								title="Review document against project requirements"
 								class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
 									? 'border-accent bg-accent/10 text-accent-ink dark:border-accent dark:text-accent-ink'
-									: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+									: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 							>
 								<span class="flex items-center gap-1.5">
 									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1861,7 +1857,7 @@
 								title="Draft assistant — generate text from your project context"
 								class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showDraft
 									? 'border-accent bg-accent/10 text-accent-ink dark:border-accent dark:text-accent-ink'
-									: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+									: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 							>
 								<span class="flex items-center gap-1.5">
 									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1896,7 +1892,7 @@
 								title="Find untagged persons and informal citations"
 								class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
 									? 'border-accent/40 bg-accent/5 text-accent-ink dark:border-accent/30'
-									: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+									: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 							>
 								<span class="flex items-center gap-1.5">
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1943,7 +1939,7 @@
 							Configure org AI
 						</a>
 					{:else}
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<span class="font-sans text-xs text-ink-faint">
 							AI not configured · contact your org owner
 						</span>
 					{/if}
@@ -1957,7 +1953,7 @@
 							showCiteStyleMenu = !showCiteStyleMenu;
 						}}
 						title="Citation style — how [[@key]] citations render in the preview"
-						class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						{CITATION_STYLE_LABELS[citationStyle]}
 						<svg
@@ -1976,7 +1972,7 @@
 						title="Toggle comment threads panel"
 						class="relative flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
 							? 'border-amber-400 bg-amber-400/10 text-amber-700 dark:text-amber-300'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 					>
 						<svg
 							width="13"
@@ -2009,7 +2005,7 @@
 							title="Bibliography panel — insert citations from your project references"
 							class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
 								? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
-								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+								: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 						>
 							<svg
 								width="13"
@@ -2034,7 +2030,7 @@
 						title="Toggle subnotes panel"
 						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showAnnotations
 							? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 					>
 						<svg
 							width="13"
@@ -2060,7 +2056,7 @@
 							`/projects/${data.document.projectId}/documents/${data.document.id}/history`
 						)}
 						title="Version history — browse and restore past committed versions"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						<svg
 							width="13"
@@ -2120,7 +2116,7 @@
 							class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel ||
 							showGrammarPanel
 								? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
-								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+								: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 						>
 							<svg
 								width="13"
@@ -2161,7 +2157,7 @@
 						aria-pressed={showSearch}
 						class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showSearch
 							? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 					>
 						<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 							<path
@@ -2179,7 +2175,7 @@
 						aria-pressed={showCheatsheet}
 						class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showCheatsheet
 							? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 					>
 						<svg
 							width="14"
@@ -2206,7 +2202,7 @@
 							showExport = !showExport;
 						}}
 						title="Export — PDF, LaTeX (.tex) or Typst (.typ)"
-						class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						Export
 						<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
@@ -2227,7 +2223,7 @@
 							: 'Private document. Click to make public.'}
 						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {isPublic
 							? 'border-green-400/60 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-500/40 dark:bg-green-950/30 dark:text-green-400'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 					>
 						{#if isPublic}
 							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -2310,7 +2306,7 @@
 			<div class="mb-6">
 				{#if sourceRefCitation}
 					<div
-						class="mb-1 flex items-start gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+						class="mb-1 flex items-start gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2"
 					>
 						<svg
 							width="12"
@@ -2344,7 +2340,7 @@
 									titlePickerSearch = sourceReference?.citeKey ?? '';
 									showTitleRefPicker = true;
 								}}
-								class="rounded p-1 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+								class="rounded p-1 text-ink-faint transition-colors hover:text-ink"
 							>
 								<svg
 									width="12"
@@ -2365,7 +2361,7 @@
 								type="button"
 								title="Unlink reference"
 								onclick={handleTitleRefUnlink}
-								class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+								class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:hover:text-red-400"
 							>
 								<svg
 									width="12"
@@ -2401,7 +2397,7 @@
 							titlePickerSearch = '';
 							showTitleRefPicker = true;
 						}}
-						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-accent dark:hover:text-accent-ink"
+						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent-ink dark:hover:border-accent dark:hover:text-accent-ink"
 					>
 						<svg
 							width="11"
@@ -2422,15 +2418,13 @@
 				{/if}
 				{#if showTitleRefPicker}
 					<div class="relative mb-3">
-						<div
-							class="flex items-center gap-2 rounded border border-accent bg-paper-ui px-3 py-2 dark:bg-dark-paper-ui"
-						>
+						<div class="flex items-center gap-2 rounded border border-accent bg-paper-ui px-3 py-2">
 							<input
 								{@attach (node) => node.focus()}
 								type="text"
 								bind:value={titlePickerSearch}
 								placeholder="Search by citeKey, title or author…"
-								class="min-w-0 flex-1 bg-transparent font-sans text-xs text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+								class="min-w-0 flex-1 bg-transparent font-sans text-xs text-ink placeholder:text-ink-faint focus:outline-none"
 								onkeydown={(e) => {
 									if (e.key === 'Escape') {
 										showTitleRefPicker = false;
@@ -2453,7 +2447,7 @@
 									titlePickerRefId = '';
 								}}
 								aria-label="Cancel"
-								class="shrink-0 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+								class="shrink-0 text-ink-faint transition-colors hover:text-ink"
 							>
 								<svg
 									width="12"
@@ -2473,7 +2467,7 @@
 						</div>
 						{#if filteredTitleRefs.length > 0}
 							<ul
-								class="absolute top-full right-0 left-0 z-20 max-h-56 overflow-y-auto rounded-b border border-t-0 border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+								class="absolute top-full right-0 left-0 z-20 max-h-56 overflow-y-auto rounded-b border border-t-0 border-paper-border bg-paper shadow-lg"
 							>
 								{#each filteredTitleRefs as ref (ref.id ?? ref.citeKey)}
 									<li>
@@ -2483,18 +2477,14 @@
 												titlePickerRefId = ref.id ?? '';
 												handleTitleRefAssign();
 											}}
-											class="flex w-full items-baseline gap-2 px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+											class="flex w-full items-baseline gap-2 px-3 py-2 text-left hover:bg-paper-ui"
 										>
 											<span class="shrink-0 font-mono text-[11px] font-medium text-accent-ink"
 												>@{ref.citeKey}</span
 											>
-											<span class="min-w-0 truncate font-sans text-xs text-ink dark:text-dark-ink"
-												>{ref.title}</span
-											>
+											<span class="min-w-0 truncate font-sans text-xs text-ink">{ref.title}</span>
 											{#if ref.year}
-												<span
-													class="shrink-0 font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
-													>{ref.year}</span
+												<span class="shrink-0 font-sans text-[11px] text-ink-faint">{ref.year}</span
 												>
 											{/if}
 										</button>
@@ -2503,7 +2493,7 @@
 							</ul>
 						{:else if titlePickerSearch.trim()}
 							<div
-								class="absolute top-full right-0 left-0 z-20 rounded-b border border-t-0 border-paper-border bg-paper px-3 py-2 font-sans text-xs text-ink-faint shadow-lg dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-faint"
+								class="absolute top-full right-0 left-0 z-20 rounded-b border border-t-0 border-paper-border bg-paper px-3 py-2 font-sans text-xs text-ink-faint shadow-lg"
 							>
 								No results
 							</div>
@@ -2517,7 +2507,7 @@
 						bind:value={docTitle}
 						onblur={commitTitle}
 						onkeydown={onTitleKeydown}
-						class="w-full border-none bg-transparent font-serif text-3xl font-semibold text-ink outline-none dark:text-dark-ink"
+						class="w-full border-none bg-transparent font-serif text-3xl font-semibold text-ink outline-none"
 					/>
 					{#if titleError}
 						<p class="mt-1 font-sans text-xs text-red-500">{titleError}</p>
@@ -2528,14 +2518,14 @@
 						translate="no"
 						onclick={startEditTitle}
 						aria-label="Edit document title"
-						class="cursor-text text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
+						class="cursor-text text-left font-serif text-3xl font-semibold text-ink"
 					>
 						{docTitle}
 					</button>
 				{/if}
 				{#if data.document?.generatedByAi}
 					<div
-						class="mt-2 inline-flex items-center gap-1.5 rounded border border-paper-border px-2 py-1 dark:border-dark-paper-border"
+						class="mt-2 inline-flex items-center gap-1.5 rounded border border-paper-border px-2 py-1"
 					>
 						<svg
 							width="11"
@@ -2543,7 +2533,7 @@
 							viewBox="0 0 24 24"
 							fill="none"
 							aria-hidden="true"
-							class="text-ink-faint dark:text-dark-ink-faint"
+							class="text-ink-faint"
 						>
 							<path
 								d="M12 2L9.5 9.5L2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5L12 2z"
@@ -2552,9 +2542,7 @@
 								stroke-linejoin="round"
 							/>
 						</svg>
-						<span class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
-							>Generated by AI</span
-						>
+						<span class="font-sans text-[10px] text-ink-faint">Generated by AI</span>
 					</div>
 				{/if}
 			</div>
@@ -2564,7 +2552,7 @@
 		<div data-tutorial="doc-editor-area" class="flex min-h-0 flex-1 overflow-hidden">
 			{#if data.document.type === 'diagram'}
 				<div class="relative flex flex-1 flex-col overflow-hidden">
-					<div class="border-b border-paper-border px-6 pt-10 pb-4 dark:border-dark-paper-border">
+					<div class="border-b border-paper-border px-6 pt-10 pb-4">
 						<div class="mx-auto w-full max-w-4xl">
 							{@render editableTitle()}
 						</div>
@@ -2578,15 +2566,13 @@
 			{:else if viewMode === 'split'}
 				<!-- Split: editor left, preview right -->
 				<div class="relative flex flex-1 flex-col overflow-hidden">
-					<div class="border-b border-paper-border px-6 pt-10 pb-4 dark:border-dark-paper-border">
+					<div class="border-b border-paper-border px-6 pt-10 pb-4">
 						<div class="mx-auto w-full max-w-4xl">
 							{@render editableTitle()}
 						</div>
 					</div>
 					<div class="flex flex-1 overflow-hidden">
-						<div
-							class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-6 dark:border-dark-paper-border"
-						>
+						<div class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-6">
 							<div class="mx-auto w-full max-w-2xl">
 								<MarkdownEditor
 									bind:this={editorEl}
@@ -2640,7 +2626,7 @@
 						{@render editableTitle()}
 						{#if viewMode === 'preview'}
 							{#if data.document?.lastCommit}
-								<p class="-mt-4 mb-6 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								<p class="-mt-4 mb-6 font-sans text-xs text-ink-faint">
 									{#if data.document.lastCommit.committerName}
 										{data.document.lastCommit.committerName} ·
 									{/if}
@@ -2652,7 +2638,7 @@
 								</p>
 							{/if}
 							{#if data.unpublished}
-								<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+								<p class="font-sans text-sm text-ink-faint">
 									The author hasn't published this document yet.
 								</p>
 							{:else}
@@ -2804,18 +2790,16 @@
 			<!-- Backlinks panel -->
 			{#if backlinks.length > 0}
 				<div
-					class="flex w-56 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+					class="flex w-56 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper"
 				>
-					<div class="border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Mentioned in
-						</h3>
+					<div class="border-b border-paper-border px-4 py-3">
+						<h3 class="font-serif text-sm font-semibold text-ink">Mentioned in</h3>
 					</div>
 					<div class="flex-1 overflow-y-auto p-2">
 						{#each backlinks as link (link.id)}
 							<a
 								href={resolve(`/projects/${data.document.projectId}/documents/${link.id}`)}
-								class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+								class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui"
 							>
 								<svg
 									width="12"
@@ -2838,9 +2822,7 @@
 										stroke-linecap="round"
 									/>
 								</svg>
-								<span class="truncate font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-									>{link.title}</span
-								>
+								<span class="truncate font-sans text-xs text-ink-muted">{link.title}</span>
 							</a>
 						{/each}
 					</div>
@@ -2849,9 +2831,7 @@
 
 			<!-- Spell check sidebar -->
 			{#if showSpellPanel}
-				<div
-					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
-				>
+				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border">
 					<SpellCheckPanel
 						bind:corrections={spellCorrections}
 						loading={spellLoading}
@@ -2871,9 +2851,7 @@
 
 			<!-- Grammar assistant sidebar -->
 			{#if showGrammarPanel}
-				<div
-					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
-				>
+				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border">
 					<SpellCheckPanel
 						bind:corrections={grammarCorrections}
 						loading={grammarLoading}
@@ -2895,7 +2873,7 @@
 			<!-- Chat assistant sidebar -->
 			{#if showChat}
 				<div
-					class="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
+					class="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border"
 				>
 					<AiEditorPanel
 						projectId={data.document.projectId}
@@ -3075,7 +3053,7 @@
 		tabindex="-1"
 	></button>
 	<div
-		class="fixed z-20 w-28 overflow-hidden rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		class="fixed z-20 w-28 overflow-hidden rounded-md border border-paper-border bg-paper shadow-lg"
 		style="top: {citeStyleMenuPos.top}px; left: {citeStyleMenuPos.left}px;"
 	>
 		{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
@@ -3084,10 +3062,10 @@
 					setCitationStyle(s as CitationStyle);
 					showCiteStyleMenu = false;
 				}}
-				class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle ===
+				class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui {citationStyle ===
 				s
 					? 'font-semibold text-accent-ink'
-					: 'text-ink-muted dark:text-dark-ink-muted'}"
+					: 'text-ink-muted'}"
 			>
 				{label}
 				{#if citationStyle === s}
@@ -3114,7 +3092,7 @@
 		tabindex="-1"
 	></button>
 	<div
-		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg"
 		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
 		<a
@@ -3123,9 +3101,9 @@
 			)}
 			download
 			onclick={() => (showExport = false)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
+			<span class="font-mono text-xs text-ink-faint">.tex</span>LaTeX
 		</a>
 		<a
 			href={resolve(
@@ -3133,9 +3111,9 @@
 			)}
 			download
 			onclick={() => (showExport = false)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
+			<span class="font-mono text-xs text-ink-faint">.typ</span>Typst
 		</a>
 		<a
 			href={resolve(
@@ -3145,9 +3123,9 @@
 			)}
 			download
 			onclick={() => (showExport = false)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.pdf</span>PDF
+			<span class="font-mono text-xs text-ink-faint">.pdf</span>PDF
 		</a>
 	</div>
 {/if}
@@ -3187,7 +3165,7 @@
 		tabindex="-1"
 	></button>
 	<div
-		class="fixed z-20 w-52 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		class="fixed z-20 w-52 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg"
 		style="top: {spellMenuPos.top}px; left: {spellMenuPos.left}px;"
 	>
 		<button
@@ -3196,9 +3174,9 @@
 				showSpellMenu = false;
 			}}
 			disabled={spellLoading}
-			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showSpellPanel
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 {showSpellPanel
 				? 'text-accent-ink'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+				: 'text-ink-muted'}"
 		>
 			<svg
 				width="13"
@@ -3223,9 +3201,9 @@
 				showSpellMenu = false;
 			}}
 			disabled={grammarLoading}
-			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showGrammarPanel
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 {showGrammarPanel
 				? 'text-accent-ink'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+				: 'text-ink-muted'}"
 		>
 			<svg
 				width="13"
@@ -3243,16 +3221,13 @@
 			</svg>
 			{grammarLoading ? 'Checking…' : 'Grammar'}
 		</button>
-		<div class="border-t border-paper-border px-4 py-2 dark:border-dark-paper-border">
-			<label
-				for="spell-lang"
-				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Language</label
-			>
+		<div class="border-t border-paper-border px-4 py-2">
+			<label for="spell-lang" class="mb-1 block font-sans text-xs text-ink-faint">Language</label>
 			<select
 				id="spell-lang"
 				value={spellLanguage}
 				onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
-				class="w-full cursor-pointer rounded bg-paper-ui px-1.5 py-1 font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+				class="w-full cursor-pointer rounded bg-paper-ui px-1.5 py-1 font-sans text-sm text-ink-muted outline-none"
 			>
 				{#each SPELL_LANGUAGES as lang (lang.code)}
 					<option value={lang.code}>{lang.label}</option>

@@ -38,11 +38,11 @@
 	);
 
 	const statusStyle: Record<ProjectStatus, string> = {
-		draft: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted',
+		draft: 'bg-paper-border text-ink-muted',
 		active: 'bg-green-100 text-green-700',
 		review: 'bg-amber-100 text-amber-700',
 		published: 'bg-blue-100 text-blue-700',
-		archived: 'bg-paper-border text-ink-faint dark:bg-dark-paper-border dark:text-dark-ink-faint'
+		archived: 'bg-paper-border text-ink-faint'
 	};
 
 	let formattedDate = $derived(
@@ -74,13 +74,13 @@
 		tabindex="0"
 		{onclick}
 		onkeydown={(e) => e.key === 'Enter' && onclick?.()}
-		class="w-full cursor-pointer rounded-xl border border-paper-border bg-paper p-5 text-left transition-all hover:border-accent/30 hover:shadow-sm dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/30"
+		class="w-full cursor-pointer rounded-xl border border-paper-border bg-paper p-5 text-left transition-all hover:border-accent/30 hover:shadow-sm dark:hover:border-accent/30"
 	>
 		<div class="flex items-start justify-between gap-3">
 			<div class="flex min-w-0 items-center gap-2">
 				<h3
 					translate="no"
-					class="font-serif text-lg font-semibold text-ink group-hover:text-accent-ink dark:text-dark-ink dark:group-hover:text-accent-ink"
+					class="font-serif text-lg font-semibold text-ink group-hover:text-accent-ink dark:group-hover:text-accent-ink"
 				>
 					{title}
 				</h3>
@@ -130,18 +130,13 @@
 		</div>
 
 		{#if description}
-			<p
-				translate="no"
-				class="mt-2 line-clamp-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-			>
+			<p translate="no" class="mt-2 line-clamp-2 font-sans text-sm leading-relaxed text-ink-muted">
 				{description}
 			</p>
 		{/if}
 
 		<div class="mt-4 flex items-center gap-4">
-			<span
-				class="flex items-center gap-1.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-			>
+			<span class="flex items-center gap-1.5 font-sans text-xs text-ink-faint">
 				<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
 					<circle cx="6" cy="4" r="2" stroke="currentColor" stroke-width="1.2" />
 					<path
@@ -156,7 +151,7 @@
 			</span>
 
 			{#if formattedDate}
-				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				<span class="font-sans text-xs text-ink-faint">
 					Updated {formattedDate}
 				</span>
 			{/if}
@@ -240,7 +235,7 @@
 			<button
 				type="button"
 				onclick={toggleMenu}
-				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:bg-paper-ui hover:text-ink dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:bg-paper-ui hover:text-ink"
 				aria-label="Project options"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -254,7 +249,7 @@
 
 			{#if menuOpen}
 				<div
-					class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+					class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper shadow-lg"
 					role="menu"
 				>
 					<button

@@ -212,13 +212,11 @@
 		}}
 	></div>
 	<div
-		class="relative w-full max-w-lg rounded-2xl border border-paper-border bg-paper p-6 shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+		class="relative w-full max-w-lg rounded-2xl border border-paper-border bg-paper p-6 shadow-2xl"
 	>
 		{#if urlStep === 'input' || urlStep === 'extracting'}
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import URL</h2>
-			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Paste the URL of an article or web page.
-			</p>
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Import URL</h2>
+			<p class="mb-4 font-sans text-sm text-ink-muted">Paste the URL of an article or web page.</p>
 
 			<!-- svelte-ignore a11y_autofocus -->
 			<input
@@ -229,12 +227,12 @@
 				onkeydown={(e) => {
 					if (e.key === 'Enter' && hasAiKey) runUrlAiExtract();
 				}}
-				class="mb-3 w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="mb-3 w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			/>
 
 			{#if !hasAiKey}
 				<div class="mb-3">
-					<p class="mb-1.5 font-sans text-xs font-medium text-ink dark:text-dark-ink">
+					<p class="mb-1.5 font-sans text-xs font-medium text-ink">
 						Bibliographic reference <span class="font-normal text-ink-faint">(optional)</span>
 					</p>
 					{#if urlSelectedRef}
@@ -242,10 +240,10 @@
 							class="flex items-center justify-between rounded-md border border-accent/40 bg-accent/5 px-3 py-2 dark:border-accent/30 dark:bg-accent/10"
 						>
 							<div class="min-w-0">
-								<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+								<p class="truncate font-sans text-sm font-medium text-ink">
 									{urlSelectedRef.title}
 								</p>
-								<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								<p class="font-sans text-xs text-ink-faint">
 									{urlSelectedRef.citeKey}
 								</p>
 							</div>
@@ -256,8 +254,7 @@
 									urlRefSearch = '';
 									urlRefResults = [];
 								}}
-								class="ml-2 shrink-0 rounded p-0.5 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-								>✕</button
+								class="ml-2 shrink-0 rounded p-0.5 text-ink-faint hover:text-ink">✕</button
 							>
 						</div>
 					{:else}
@@ -267,14 +264,14 @@
 								bind:value={urlRefSearch}
 								oninput={() => searchUrlRefs(urlRefSearch)}
 								placeholder="Search by title, author or citeKey…"
-								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 							/>
 							{#if urlRefLoading}<div class="absolute top-2 right-2">
 									<Spinner size="sm" />
 								</div>{/if}
 							{#if urlRefResults.length > 0}
 								<div
-									class="absolute top-full right-0 left-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+									class="absolute top-full right-0 left-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg"
 								>
 									{#each urlRefResults as ref (ref.id)}
 										<button
@@ -284,12 +281,10 @@
 												urlRefSearch = '';
 												urlRefResults = [];
 											}}
-											class="flex w-full flex-col px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+											class="flex w-full flex-col px-3 py-2 text-left hover:bg-paper-ui"
 										>
-											<span class="truncate font-sans text-sm text-ink dark:text-dark-ink"
-												>{ref.title}</span
-											>
-											<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+											<span class="truncate font-sans text-sm text-ink">{ref.title}</span>
+											<span class="font-sans text-xs text-ink-faint"
 												>{ref.citeKey}{ref.year ? ` · ${ref.year}` : ''}</span
 											>
 										</button>
@@ -306,7 +301,7 @@
 					onkeydown={(e) => {
 						if (e.key === 'Enter' && urlImportUrl.trim() && urlImportTitle.trim()) startUrlImport();
 					}}
-					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				/>
 			{/if}
 
@@ -320,7 +315,7 @@
 						reset();
 						onclose();
 					}}
-					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 				>
 					Cancel
 				</button>
@@ -351,7 +346,7 @@
 						urlStep = 'input';
 						urlAiResult = null;
 					}}
-					class="rounded p-1 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					class="rounded p-1 text-ink-faint hover:text-ink"
 					aria-label="Back"
 				>
 					<svg
@@ -365,46 +360,38 @@
 						stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg
 					>
 				</button>
-				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Review metadata
-				</h2>
+				<h2 class="font-serif text-lg font-semibold text-ink">Review metadata</h2>
 			</div>
-			<p class="mb-4 truncate font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="mb-4 truncate font-sans text-xs text-ink-faint">
 				{urlImportUrl}
 			</p>
 
 			<div class="space-y-3">
 				<div>
-					<label
-						for="url-edit-title"
-						class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+					<label for="url-edit-title" class="mb-1 block font-sans text-xs text-ink-faint"
 						>Title</label
 					>
 					<input
 						id="url-edit-title"
 						type="text"
 						bind:value={urlEditTitle}
-						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					/>
 				</div>
 				<div class="grid grid-cols-2 gap-3">
 					<div>
-						<label
-							for="url-edit-citekey"
-							class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+						<label for="url-edit-citekey" class="mb-1 block font-sans text-xs text-ink-faint"
 							>CiteKey</label
 						>
 						<input
 							id="url-edit-citekey"
 							type="text"
 							bind:value={urlEditCiteKey}
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink focus:border-accent focus:outline-none"
 						/>
 					</div>
 					<div>
-						<label
-							for="url-edit-year"
-							class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+						<label for="url-edit-year" class="mb-1 block font-sans text-xs text-ink-faint"
 							>Year</label
 						>
 						<input
@@ -412,19 +399,17 @@
 							type="text"
 							bind:value={urlEditYear}
 							placeholder="2024"
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 						/>
 					</div>
 				</div>
 				<div>
-					<label
-						for="url-edit-type"
-						class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Tipo</label
+					<label for="url-edit-type" class="mb-1 block font-sans text-xs text-ink-faint">Tipo</label
 					>
 					<select
 						id="url-edit-type"
 						bind:value={urlEditType}
-						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					>
 						{#each REF_TYPES as t (t)}
 							<option value={t}>{t}</option>
@@ -432,16 +417,14 @@
 					</select>
 				</div>
 				<div>
-					<label
-						for="url-edit-authors"
-						class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+					<label for="url-edit-authors" class="mb-1 block font-sans text-xs text-ink-faint"
 						>Authors <span class="text-ink-faint">(one per line: Last, First)</span></label
 					>
 					<textarea
 						id="url-edit-authors"
 						bind:value={urlEditAuthors}
 						rows={3}
-						class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					></textarea>
 				</div>
 			</div>
@@ -456,7 +439,7 @@
 						reset();
 						onclose();
 					}}
-					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 				>
 					Cancel
 				</button>

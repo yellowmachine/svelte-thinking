@@ -168,19 +168,15 @@
 
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<div class="mb-8">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Lists</h1>
-		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<h1 class="font-serif text-3xl font-semibold text-ink">Lists</h1>
+		<p class="mt-1 font-sans text-sm text-ink-muted">
 			Public, curated lists of other blogs. Each one has its own page and RSS feed.
 		</p>
 	</div>
 
 	{#if !data.handle}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-6 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Set up your blog before creating a list.
-			</p>
+		<div class="rounded-xl border border-paper-border bg-paper p-6 text-center">
+			<p class="mb-4 font-sans text-sm text-ink-muted">Set up your blog before creating a list.</p>
 			<a
 				href={resolve('/settings?tab=blog')}
 				class="inline-block rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
@@ -193,7 +189,7 @@
 			<input
 				bind:value={newTitle}
 				placeholder="New list title"
-				class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 			/>
 			<button
 				onclick={createAggregator}
@@ -208,28 +204,24 @@
 		{/if}
 
 		{#if aggregators.length === 0}
-			<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-				You haven't created any lists yet.
-			</p>
+			<p class="font-sans text-sm text-ink-faint">You haven't created any lists yet.</p>
 		{:else}
 			<div class="flex flex-col gap-3">
 				{#each aggregators as agg (agg.id)}
-					<div
-						class="rounded-lg border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-					>
+					<div class="rounded-lg border border-paper-border bg-paper">
 						<div class="flex items-center justify-between gap-3 px-4 py-3">
 							<div class="min-w-0 flex-1">
 								{#if editingId === agg.id}
 									<div class="flex flex-col gap-2">
 										<input
 											bind:value={editTitle}
-											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 										/>
 										<textarea
 											bind:value={editDescription}
 											rows="2"
 											placeholder="Description (optional)"
-											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 										></textarea>
 										<div class="flex gap-3">
 											<button
@@ -241,7 +233,7 @@
 											</button>
 											<button
 												onclick={() => (editingId = null)}
-												class="font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+												class="font-sans text-xs text-ink-muted hover:text-ink"
 											>
 												Cancel
 											</button>
@@ -255,16 +247,16 @@
 										})}
 										target="_blank"
 										rel="noopener noreferrer"
-										class="truncate font-sans text-sm font-medium text-ink hover:underline dark:text-dark-ink"
+										class="truncate font-sans text-sm font-medium text-ink hover:underline"
 									>
 										{agg.title}
 									</a>
 									{#if agg.description}
-										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+										<p class="font-sans text-xs text-ink-muted">
 											{agg.description}
 										</p>
 									{/if}
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									<p class="font-sans text-xs text-ink-faint">
 										{agg.itemCount} blog{agg.itemCount === 1 ? '' : 's'} · created {dateFmt.format(
 											new Date(agg.createdAt)
 										)}
@@ -276,14 +268,14 @@
 									<button
 										type="button"
 										onclick={() => toggleExpand(agg)}
-										class="font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										class="font-sans text-xs text-ink-muted transition-colors hover:text-ink"
 									>
 										Manage blogs
 									</button>
 									<button
 										type="button"
 										onclick={() => startEdit(agg)}
-										class="font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										class="font-sans text-xs text-ink-muted transition-colors hover:text-ink"
 									>
 										Edit
 									</button>
@@ -300,12 +292,12 @@
 						</div>
 
 						{#if expandedId === agg.id}
-							<div class="border-t border-paper-border px-4 py-3 dark:border-dark-paper-border">
+							<div class="border-t border-paper-border px-4 py-3">
 								<div class="flex gap-2">
 									<input
 										bind:value={newHandle}
 										placeholder="@handle of the blog to add"
-										class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 									/>
 									<button
 										onclick={() => addBlog(agg)}
@@ -322,11 +314,9 @@
 								{/if}
 
 								{#if itemsLoading}
-									<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										Loading…
-									</p>
+									<p class="mt-3 font-sans text-xs text-ink-faint">Loading…</p>
 								{:else if items.length === 0}
-									<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									<p class="mt-3 font-sans text-xs text-ink-faint">
 										This list doesn't include any blogs yet.
 									</p>
 								{:else}
@@ -337,7 +327,7 @@
 													href={resolve('/@[handle]', { handle: item.handle ?? '' })}
 													target="_blank"
 													rel="noopener noreferrer"
-													class="font-sans text-sm text-ink hover:underline dark:text-dark-ink"
+													class="font-sans text-sm text-ink hover:underline"
 												>
 													{item.displayName ?? `@${item.handle}`}
 												</a>

@@ -9,21 +9,21 @@
 	<title>Diff v{data.current.versionNumber} — {data.documentTitle}</title>
 </svelte:head>
 
-<div class="min-h-screen bg-paper px-6 py-8 dark:bg-dark-paper">
+<div class="min-h-screen bg-paper px-6 py-8">
 	<div class="mx-auto max-w-5xl">
 		<div class="mb-6 flex items-center gap-3">
 			<button
 				onclick={() => history.back()}
-				class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+				class="font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 			>
 				← Back
 			</button>
-			<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-			<h1 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+			<span class="text-ink-faint">/</span>
+			<h1 class="font-serif text-lg font-semibold text-ink">
 				{data.documentTitle} — v{data.current.versionNumber}
 			</h1>
 			{#if data.current.changeDescription}
-				<span class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<span class="font-sans text-sm text-ink-muted">
 					"{data.current.changeDescription}"
 				</span>
 			{/if}

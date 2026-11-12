@@ -38,18 +38,13 @@
 	<title>Sign-in error — Scholio</title>
 </svelte:head>
 
-<main class="flex min-h-screen items-center justify-center bg-paper px-6 dark:bg-dark-paper">
+<main class="flex min-h-screen items-center justify-center bg-paper px-6">
 	<div class="w-full max-w-md">
-		<a
-			href={resolve('/')}
-			class="mb-8 block font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-		>
+		<a href={resolve('/')} class="mb-8 block font-serif text-2xl font-semibold text-ink">
 			Scholio
 		</a>
 
-		<div
-			class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<div class="rounded-xl border border-paper-border bg-white p-8 dark:bg-dark-paper">
 			<div
 				class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20"
 			>
@@ -71,13 +66,13 @@
 				</svg>
 			</div>
 
-			<h1 class="mb-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink">{title}</h1>
-			<p class="mb-6 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+			<h1 class="mb-2 font-serif text-xl font-semibold text-ink">{title}</h1>
+			<p class="mb-6 font-sans text-sm leading-relaxed text-ink-muted">
 				{description}
 			</p>
 
 			{#if errorCode !== 'default'}
-				<p class="mb-6 font-mono text-xs text-ink-faint dark:text-dark-ink-faint">
+				<p class="mb-6 font-mono text-xs text-ink-faint">
 					Code: {errorCode}
 				</p>
 			{/if}
@@ -91,7 +86,7 @@
 				</a>
 				<a
 					href={resolve('/')}
-					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					Home
 				</a>

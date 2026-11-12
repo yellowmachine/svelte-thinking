@@ -93,13 +93,11 @@
 
 <div class="flex flex-col gap-6">
 	{#if loading}
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
+		<p class="font-sans text-sm text-ink-muted">Loading...</p>
 	{:else}
-		<section
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Your blog</h2>
-			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<section class="rounded-xl border border-paper-border bg-paper p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Your blog</h2>
+			<p class="mb-5 font-sans text-sm text-ink-muted">
 				Publish saved versions of your documents as permanent, search-indexable posts under your own
 				handle.
 			</p>
@@ -123,7 +121,7 @@
 					</div>
 				</div>
 				{#if locked}
-					<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mt-2 font-sans text-xs text-ink-faint">
 						You can't change your handle once you've published — this protects URLs already out
 						there.
 					</p>
@@ -132,24 +130,21 @@
 
 			{#if canEditHandle}
 				<div class="flex flex-col gap-2">
-					<label
-						for="blog-handle"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<label for="blog-handle" class="font-sans text-sm font-medium text-ink">
 						Choose your handle
 					</label>
 					<div class="flex gap-2">
 						<div
-							class="flex flex-1 items-center rounded-md border border-paper-border bg-paper-ui px-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+							class="flex flex-1 items-center rounded-md border border-paper-border bg-paper-ui px-3"
 						>
-							<span class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">@</span>
+							<span class="font-sans text-sm text-ink-faint">@</span>
 							<input
 								id="blog-handle"
 								type="text"
 								bind:value={handleInput}
 								oninput={onHandleInput}
 								placeholder="your-name"
-								class="w-full bg-transparent px-1 py-2 font-sans text-sm text-ink focus:outline-none dark:text-dark-ink"
+								class="w-full bg-transparent px-1 py-2 font-sans text-sm text-ink focus:outline-none"
 							/>
 						</div>
 						<button
@@ -162,7 +157,7 @@
 						</button>
 					</div>
 					{#if checking}
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Checking…</p>
+						<p class="font-sans text-xs text-ink-faint">Checking…</p>
 					{:else if availability === 'available'}
 						<p class="font-sans text-xs text-green-600 dark:text-green-400">Disponible.</p>
 					{:else if availability === 'taken'}
@@ -183,22 +178,15 @@
 			{/if}
 		</section>
 
-		<section
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Public profile
-			</h2>
-			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<section class="rounded-xl border border-paper-border bg-paper p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Public profile</h2>
+			<p class="mb-5 font-sans text-sm text-ink-muted">
 				Shown on your blog's home page (<code class="font-mono">/@handle</code>).
 			</p>
 
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-1.5">
-					<label
-						for="public-display-name"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<label for="public-display-name" class="font-sans text-sm font-medium text-ink">
 						Display name
 					</label>
 					<input
@@ -206,21 +194,19 @@
 						type="text"
 						maxlength="100"
 						bind:value={publicDisplayName}
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					/>
 				</div>
 
 				<div class="flex flex-col gap-1.5">
-					<label for="public-bio" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Bio
-					</label>
+					<label for="public-bio" class="font-sans text-sm font-medium text-ink"> Bio </label>
 					<textarea
 						id="public-bio"
 						rows="3"
 						maxlength="500"
 						bind:value={publicBio}
 						placeholder="A short description of yourself…"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					></textarea>
 				</div>
 
@@ -247,14 +233,11 @@
 		</section>
 
 		{#if handle}
-			<section
-				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-			>
-				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Posts</h2>
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Manage your posts at <a
-						href={resolve('/posts')}
-						class="underline hover:text-ink dark:hover:text-dark-ink">/posts →</a
+			<section class="rounded-xl border border-paper-border bg-paper p-6">
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Posts</h2>
+				<p class="font-sans text-sm text-ink-muted">
+					Manage your posts at <a href={resolve('/posts')} class="underline hover:text-ink"
+						>/posts →</a
 					>
 				</p>
 			</section>

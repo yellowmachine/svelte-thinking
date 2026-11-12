@@ -18,13 +18,9 @@
 	}
 </script>
 
-<div
-	class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
->
+<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border">
 	<!-- Header -->
-	<div
-		class="flex shrink-0 items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
+	<div class="flex shrink-0 items-center justify-between border-b border-paper-border px-4 py-3">
 		<div class="flex items-center gap-2">
 			<!-- Layers icon -->
 			<svg
@@ -36,14 +32,14 @@
 				stroke-width="1.5"
 				stroke-linecap="round"
 				stroke-linejoin="round"
-				class="text-ink-muted dark:text-dark-ink-muted"
+				class="text-ink-muted"
 				aria-hidden="true"
 			>
 				<polygon points="12 2 2 7 12 12 22 7 12 2" />
 				<polyline points="2 17 12 22 22 17" />
 				<polyline points="2 12 12 17 22 12" />
 			</svg>
-			<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Stash</h3>
+			<h3 class="font-serif text-sm font-semibold text-ink">Stash</h3>
 		</div>
 
 		<div class="flex items-center gap-1">
@@ -52,7 +48,7 @@
 				type="button"
 				onclick={onclear}
 				title="Clear discarded text"
-				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				<svg
 					width="13"
@@ -78,7 +74,7 @@
 				type="button"
 				onclick={copyAll}
 				title={copied ? 'Copied' : 'Copy all'}
-				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				{#if copied}
 					<svg
@@ -117,7 +113,7 @@
 				type="button"
 				onclick={onclose}
 				aria-label="Close discarded text"
-				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				<svg
 					width="13"
@@ -138,9 +134,7 @@
 	</div>
 
 	<!-- Nota de contexto -->
-	<div
-		class="shrink-0 border-b border-paper-border/50 bg-amber-50 px-4 py-2 dark:border-dark-paper-border/50 dark:bg-amber-900/10"
-	>
+	<div class="shrink-0 border-b border-paper-border/50 bg-amber-50 px-4 py-2 dark:bg-amber-900/10">
 		<p class="font-sans text-xs leading-relaxed text-amber-700 dark:text-amber-400">
 			Content discarded when the conflict was resolved. Select and copy whatever you need.
 		</p>
@@ -148,7 +142,6 @@
 
 	<!-- Contenido como texto plano: tamaño y peso normales, adecuado para cherry-pick -->
 	<div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-		<pre
-			class="font-sans text-sm leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink">{content}</pre>
+		<pre class="font-sans text-sm leading-relaxed whitespace-pre-wrap text-ink">{content}</pre>
 	</div>
 </div>

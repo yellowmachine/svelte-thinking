@@ -110,7 +110,7 @@
 	<div class="mb-6">
 		<a
 			href={resolve(`/projects/${data.project.id}`)}
-			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 				<path
@@ -126,36 +126,30 @@
 
 		<div class="flex items-center justify-between gap-4">
 			<div>
-				<h1
-					data-tutorial="project-bib-title"
-					class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-				>
+				<h1 data-tutorial="project-bib-title" class="font-serif text-2xl font-semibold text-ink">
 					Bibliography
 				</h1>
-				<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<p class="mt-0.5 font-sans text-sm text-ink-muted">
 					{references.length}
 					{references.length === 1 ? 'reference' : 'references'}
 				</p>
 			</div>
 			<div class="flex items-center gap-2">
 				{#if references.length > 0}
-					<div
-						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-					>
+					<div class="flex overflow-hidden rounded-md border border-paper-border">
 						{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
 							<button
 								onclick={() => (citationStyle = s as CitationStyle)}
 								class="px-3 py-1.5 font-sans text-xs transition-colors {citationStyle === s
 									? 'bg-accent text-white'
-									: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-								>{label}</button
+									: 'text-ink-muted hover:bg-paper-ui'}">{label}</button
 							>
 						{/each}
 					</div>
 				{/if}
 				<button
 					onclick={() => (showSemanticSearch = true)}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					title="Search on Semantic Scholar"
 				>
 					Search paper
@@ -163,35 +157,35 @@
 				<button
 					data-tutorial="project-bib-doi"
 					onclick={() => (panel = 'doi')}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					DOI lookup
 				</button>
 				<button
 					data-tutorial="project-bib-url"
 					onclick={() => (panel = 'url')}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					URL → AI
 				</button>
 				<button
 					data-tutorial="project-bib-import"
 					onclick={() => (panel = 'import')}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					Import .bib
 				</button>
 
 				<button
 					onclick={() => (panel = 'link-library')}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					Link from library
 				</button>
 				{#if references.length > 0}
 					<button
 						onclick={exportBib}
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						Export .bib
 					</button>
@@ -214,7 +208,7 @@
 				type="search"
 				bind:value={searchQuery}
 				placeholder="Search by author, title, year, journal…"
-				class="w-full max-w-sm rounded-lg border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+				class="w-full max-w-sm rounded-lg border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			/>
 		</div>
 	{/if}

@@ -41,16 +41,16 @@
 	});
 </script>
 
-<div class="flex h-screen flex-col bg-paper dark:bg-dark-paper">
+<div class="flex h-screen flex-col bg-paper">
 	<!-- Header -->
 	<div
-		class="flex shrink-0 items-center justify-between border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+		class="flex shrink-0 items-center justify-between border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm"
 	>
 		<button
 			onclick={() => {
 				window.location.href = `/projects/${projectId}`;
 			}}
-			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -70,14 +70,12 @@
 
 		<div class="flex items-center gap-3">
 			<!-- Edit / Preview toggle -->
-			<div
-				class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-			>
+			<div class="flex overflow-hidden rounded-md border border-paper-border">
 				<button
 					onclick={() => (mode = 'edit')}
 					class="px-2.5 py-1 font-sans text-xs transition-colors {mode === 'edit'
 						? 'bg-accent text-white'
-						: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+						: 'text-ink-muted hover:bg-paper-ui'}"
 				>
 					Edit
 				</button>
@@ -85,7 +83,7 @@
 					onclick={() => (mode = 'preview')}
 					class="px-2.5 py-1 font-sans text-xs transition-colors {mode === 'preview'
 						? 'bg-accent text-white'
-						: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+						: 'text-ink-muted hover:bg-paper-ui'}"
 				>
 					Preview
 				</button>
@@ -98,7 +96,7 @@
 							? 'text-red-500'
 							: saveStatus === 'saved'
 								? 'text-green-600'
-								: 'text-ink-faint dark:text-dark-ink-faint'}"
+								: 'text-ink-faint'}"
 					>
 						{saveLabel()}
 					</span>
@@ -117,7 +115,7 @@
 	{#if mode === 'edit'}
 		<!-- Document title -->
 		<div class="shrink-0 px-4 pt-4 pb-1">
-			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{documentTitle}</p>
+			<p class="font-sans text-xs text-ink-faint">{documentTitle}</p>
 		</div>
 		<!-- Textarea -->
 		<textarea
@@ -125,7 +123,7 @@
 			oninput={(e) => onchange((e.target as HTMLTextAreaElement).value)}
 			placeholder="Write your note…"
 			spellcheck="true"
-			class="pb-safe flex-1 resize-none bg-transparent px-4 py-2 font-sans text-base leading-relaxed text-ink focus:outline-none dark:text-dark-ink"
+			class="pb-safe flex-1 resize-none bg-transparent px-4 py-2 font-sans text-base leading-relaxed text-ink focus:outline-none"
 		></textarea>
 	{:else}
 		<!-- Rendered preview -->
@@ -133,7 +131,7 @@
 			{#if content.trim()}
 				<MarkdownPreview {content} {projectId} />
 			{:else}
-				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Empty note.</p>
+				<p class="font-sans text-sm text-ink-faint">Empty note.</p>
 			{/if}
 		</div>
 	{/if}

@@ -41,20 +41,14 @@
 	role="dialog"
 	aria-modal="true"
 >
-	<div
-		class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-			Save as template
-		</h2>
-		<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+	<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl">
+		<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Save as template</h2>
+		<p class="mb-4 font-sans text-sm text-ink-muted">
 			A copy of this document will be saved as a reusable template in this project.
 		</p>
 		<div class="flex flex-col gap-3">
 			<div>
-				<label
-					for="tmpl-title"
-					class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
+				<label for="tmpl-title" class="mb-1 block font-sans text-xs font-medium text-ink-muted"
 					>Template name</label
 				>
 				<input
@@ -64,7 +58,7 @@
 					onkeydown={(e) => {
 						if (e.key === 'Enter' && title.trim() && !saving) saveAsTemplate();
 					}}
-					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 				/>
 			</div>
 			{#if error}
@@ -80,7 +74,7 @@
 				</button>
 				<button
 					onclick={onclose}
-					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 				>
 					Cancel
 				</button>

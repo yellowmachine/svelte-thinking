@@ -37,43 +37,32 @@
 	<div class="mb-8 flex items-center gap-3">
 		<a
 			href={resolve('/admin')}
-			class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
 			← Admin
 		</a>
-		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-		<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Notifications</h1>
+		<span class="text-ink-faint">/</span>
+		<h1 class="font-serif text-2xl font-semibold text-ink">Notifications</h1>
 	</div>
 
 	<!-- Create form -->
-	<div
-		class="mb-8 rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<h2 class="mb-4 font-sans text-sm font-semibold text-ink dark:text-dark-ink">
-			New notification
-		</h2>
+	<div class="mb-8 rounded-xl border border-paper-border bg-paper p-6">
+		<h2 class="mb-4 font-sans text-sm font-semibold text-ink">New notification</h2>
 		<form method="POST" action="?/create" use:enhance class="space-y-4">
 			<div>
-				<label
-					for="message"
-					class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-					>Message</label
-				>
+				<label for="message" class="mb-1 block font-sans text-xs text-ink-muted">Message</label>
 				<textarea
 					id="message"
 					name="message"
 					rows="3"
 					required
 					placeholder="Write the notification message..."
-					class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+					class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				></textarea>
 			</div>
 			<div class="flex gap-4">
 				<div class="flex-1">
-					<label
-						for="startsAt"
-						class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-						>Starts at</label
+					<label for="startsAt" class="mb-1 block font-sans text-xs text-ink-muted">Starts at</label
 					>
 					<input
 						type="datetime-local"
@@ -81,13 +70,11 @@
 						name="startsAt"
 						value={defaultStartsAt}
 						required
-						class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					/>
 				</div>
 				<div class="w-36">
-					<label
-						for="ttlHours"
-						class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+					<label for="ttlHours" class="mb-1 block font-sans text-xs text-ink-muted"
 						>TTL (hours)</label
 					>
 					<input
@@ -97,7 +84,7 @@
 						min="1"
 						value="24"
 						required
-						class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					/>
 				</div>
 			</div>
@@ -114,20 +101,18 @@
 	</div>
 
 	<!-- Notification list -->
-	<h2 class="mb-3 font-sans text-sm font-semibold text-ink dark:text-dark-ink">
+	<h2 class="mb-3 font-sans text-sm font-semibold text-ink">
 		All notifications ({data.notifications.length})
 	</h2>
 
 	{#if data.notifications.length === 0}
-		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">No notifications yet.</p>
+		<p class="font-sans text-sm text-ink-faint">No notifications yet.</p>
 	{:else}
 		<ul class="space-y-3">
 			{#each data.notifications as n (n.id)}
 				{@const active = isActive(n)}
 				{@const scheduled = isScheduled(n)}
-				<li
-					class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<li class="rounded-xl border border-paper-border bg-paper p-4">
 					<div class="flex items-start gap-3">
 						<div class="min-w-0 flex-1">
 							<div class="mb-1 flex items-center gap-2">
@@ -143,13 +128,13 @@
 									>
 								{:else}
 									<span
-										class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-xs font-medium text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+										class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-xs font-medium text-ink-faint"
 										>Expired</span
 									>
 								{/if}
 							</div>
-							<p class="font-sans text-sm text-ink dark:text-dark-ink">{n.message}</p>
-							<p class="mt-1.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							<p class="font-sans text-sm text-ink">{n.message}</p>
+							<p class="mt-1.5 font-sans text-xs text-ink-faint">
 								{fmt.format(new Date(n.startsAt))} → {fmt.format(new Date(n.expiresAt))}
 							</p>
 						</div>
@@ -163,7 +148,7 @@
 										confirmLabel: 'Delete',
 										danger: true
 									})}
-								class="rounded p-1 text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:text-dark-ink-faint dark:hover:bg-red-900/20 dark:hover:text-red-400"
+								class="rounded p-1 text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
 								aria-label="Delete notification"
 							>
 								<svg

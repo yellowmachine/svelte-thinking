@@ -129,13 +129,10 @@
 <div class="mx-auto max-w-4xl px-6 py-8">
 	<div class="mb-6 flex items-start justify-between gap-4">
 		<div>
-			<h1
-				data-tutorial="bib-title"
-				class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-			>
+			<h1 data-tutorial="bib-title" class="font-serif text-2xl font-semibold text-ink">
 				Global bibliography
 			</h1>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="mt-1 font-sans text-sm text-ink-muted">
 				{data.references.length} reference{data.references.length !== 1 ? 's' : ''} across all your projects
 			</p>
 		</div>
@@ -147,7 +144,7 @@
 				importResult = null;
 				importError = '';
 			}}
-			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 		>
 			Import .bib
 		</button>
@@ -160,21 +157,19 @@
 			type="search"
 			bind:value={query}
 			placeholder="Search by title, author, key, project…"
-			class="w-full rounded-lg border border-paper-border bg-paper px-4 py-2.5 font-sans text-sm text-ink placeholder-ink-faint outline-none focus:border-accent focus:ring-1 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint dark:focus:border-accent"
+			class="w-full rounded-lg border border-paper-border bg-paper px-4 py-2.5 font-sans text-sm text-ink placeholder-ink-faint outline-none focus:border-accent focus:ring-1 focus:ring-accent dark:focus:border-accent"
 		/>
 	</div>
 
 	{#if data.references.length === 0}
-		<div
-			class="rounded-lg border border-paper-border bg-paper p-8 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<div class="rounded-lg border border-paper-border bg-paper p-8 text-center">
+			<p class="font-sans text-sm text-ink-muted">
 				No references yet. Add them from the
 				<strong>Bibliography</strong> section of each project.
 			</p>
 		</div>
 	{:else if filtered.length === 0}
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<p class="font-sans text-sm text-ink-muted">
 			No results for <em>"{query}"</em>.
 		</p>
 	{:else}
@@ -184,7 +179,7 @@
 					<div class="mb-3 flex items-center justify-between">
 						<h2
 							translate={group.projectId ? 'no' : 'yes'}
-							class="font-sans text-xs font-semibold tracking-wider text-ink-muted uppercase dark:text-dark-ink-muted"
+							class="font-sans text-xs font-semibold tracking-wider text-ink-muted uppercase"
 						>
 							{group.projectTitle}
 						</h2>
@@ -198,39 +193,28 @@
 						{/if}
 					</div>
 
-					<div
-						class="divide-y divide-paper-border rounded-lg border border-paper-border dark:divide-dark-paper-border dark:border-dark-paper-border"
-					>
+					<div class="divide-y divide-paper-border rounded-lg border border-paper-border">
 						{#each group.refs as ref (ref.id)}
 							<div class="px-4 py-3">
 								<div class="flex items-start justify-between gap-3">
 									<div class="min-w-0 flex-1">
-										<p
-											translate="no"
-											class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-										>
+										<p translate="no" class="font-sans text-sm font-medium text-ink">
 											{ref.title}
 										</p>
 										{#if ref.authors && ref.authors.length > 0}
-											<p
-												translate="no"
-												class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-											>
+											<p translate="no" class="mt-0.5 font-sans text-xs text-ink-muted">
 												{authorString(ref.authors)}{ref.year ? ` (${ref.year})` : ''}
 											</p>
 										{/if}
 										{#if ref.journal || ref.booktitle}
-											<p
-												translate="no"
-												class="mt-0.5 font-sans text-xs text-ink-faint italic dark:text-dark-ink-faint"
-											>
+											<p translate="no" class="mt-0.5 font-sans text-xs text-ink-faint italic">
 												{ref.journal ?? ref.booktitle}
 											</p>
 										{/if}
 									</div>
 									<div class="flex shrink-0 items-center gap-2">
 										<span
-											class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+											class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-muted"
 										>
 											{typeLabel(ref.type)}
 										</span>
@@ -291,18 +275,13 @@
 		aria-labelledby="import-bib-title"
 	>
 		<div
-			class="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+			class="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl"
 		>
 			<div class="flex items-center justify-between">
-				<h2
-					id="import-bib-title"
-					class="font-serif text-lg font-semibold text-ink dark:text-dark-ink"
-				>
-					Import .bib
-				</h2>
+				<h2 id="import-bib-title" class="font-serif text-lg font-semibold text-ink">Import .bib</h2>
 				<button
 					onclick={() => (showImport = false)}
-					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 					aria-label="Close"
 				>
 					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -320,11 +299,11 @@
 				bind:value={importRaw}
 				placeholder="Paste BibTeX content here…"
 				rows="12"
-				class="w-full resize-y rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="w-full resize-y rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			></textarea>
 
 			{#if importRaw.trim()}
-				<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+				<p class="font-sans text-xs text-ink-muted">
 					{importPreview()} entr{importPreview() === 1 ? 'y' : 'ies'} detected
 				</p>
 			{/if}
@@ -352,7 +331,7 @@
 			<div class="flex justify-end gap-2">
 				<button
 					onclick={() => (showImport = false)}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 				>
 					Close
 				</button>

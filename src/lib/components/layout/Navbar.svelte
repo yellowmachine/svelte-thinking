@@ -54,14 +54,12 @@
 	}
 </script>
 
-<nav
-	class="sticky top-0 z-30 border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
->
+<nav class="sticky top-0 z-30 border-b border-paper-border bg-paper/95 backdrop-blur-sm">
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
 		<div class="flex items-center gap-2">
 			<a
 				href={resolve('/projects')}
-				class="flex items-center gap-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink"
+				class="flex items-center gap-2 font-serif text-xl font-semibold text-ink"
 			>
 				Scholio
 				<span
@@ -77,7 +75,7 @@
 					<button
 						type="button"
 						onclick={() => (workspaceOpen = !workspaceOpen)}
-						class="flex items-center gap-1 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+						class="flex items-center gap-1 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 					>
 						{#if workspaceStore.current.id !== null}
 							<span>({workspaceStore.current.name})</span>
@@ -105,10 +103,10 @@
 							onkeydown={(e) => e.key === 'Escape' && (workspaceOpen = false)}
 						></div>
 						<div
-							class="absolute top-8 left-0 z-50 min-w-44 rounded-xl border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+							class="absolute top-8 left-0 z-50 min-w-44 rounded-xl border border-paper-border bg-paper py-1 shadow-lg"
 						>
 							<p
-								class="px-3 py-1.5 font-sans text-[10px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+								class="px-3 py-1.5 font-sans text-[10px] font-semibold tracking-wide text-ink-faint uppercase"
 							>
 								Workspace
 							</p>
@@ -120,10 +118,10 @@
 									if (page.url.pathname.startsWith('/projects/'))
 										goto(resolve('/projects?org=personal'));
 								}}
-								class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore
+								class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui {workspaceStore
 									.current.id === null
 									? 'text-accent-ink'
-									: 'text-ink dark:text-dark-ink'}"
+									: 'text-ink'}"
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
@@ -144,7 +142,7 @@
 								</svg>
 								Personal
 							</button>
-							<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
+							<div class="my-1 border-t border-paper-border"></div>
 							{#each orgs as org (org.id)}
 								<button
 									type="button"
@@ -154,10 +152,10 @@
 										if (page.url.pathname.startsWith('/projects/'))
 											goto(resolve(`/projects?org=${org.id}`));
 									}}
-									class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore
+									class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui {workspaceStore
 										.current.id === org.id
 										? 'text-accent-ink'
-										: 'text-ink dark:text-dark-ink'}"
+										: 'text-ink'}"
 								>
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
@@ -176,10 +174,7 @@
 									</svg>
 									<span class="truncate">{org.name}</span>
 									{#if org.role === 'owner'}
-										<span
-											class="ml-auto font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
-											>owner</span
-										>
+										<span class="ml-auto font-sans text-[10px] text-ink-faint">owner</span>
 									{/if}
 								</button>
 							{/each}
@@ -195,7 +190,7 @@
 					<a
 						href={resolve(link.href)}
 						aria-current={isActive(link.match) ? 'page' : undefined}
-						class="relative font-sans text-sm text-ink-muted transition-colors hover:text-ink aria-[current=page]:text-ink aria-[current=page]:underline aria-[current=page]:decoration-accent aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-[6px] dark:text-dark-ink-muted dark:hover:text-dark-ink dark:aria-[current=page]:text-dark-ink"
+						class="relative font-sans text-sm text-ink-muted transition-colors hover:text-ink aria-[current=page]:text-ink aria-[current=page]:underline aria-[current=page]:decoration-accent aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-[6px]"
 					>
 						{link.label}
 						{#if link.href === '/network' && pendingInvitationCount > 0}
@@ -217,7 +212,7 @@
 				title="AI usage"
 				aria-label="AI usage"
 				aria-current={page.url.pathname.startsWith('/usage') ? 'page' : undefined}
-				class="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink aria-[current=page]:bg-paper-ui aria-[current=page]:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink dark:aria-[current=page]:bg-dark-paper-ui dark:aria-[current=page]:text-dark-ink"
+				class="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink aria-[current=page]:bg-paper-ui aria-[current=page]:text-ink"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -244,7 +239,7 @@
 					title="Appearance"
 					aria-label="Appearance"
 					onclick={() => (themeOpen = !themeOpen)}
-					class="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					class="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -276,11 +271,9 @@
 						onkeydown={(e) => e.key === 'Escape' && (themeOpen = false)}
 					></div>
 					<div
-						class="absolute top-10 right-0 z-50 w-80 rounded-xl border border-paper-border bg-paper p-4 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+						class="absolute top-10 right-0 z-50 w-80 rounded-xl border border-paper-border bg-paper p-4 shadow-lg"
 					>
-						<p class="mb-3 font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
-							Appearance
-						</p>
+						<p class="mb-3 font-sans text-xs font-medium text-ink-muted">Appearance</p>
 						<ThemePicker />
 					</div>
 				{/if}
@@ -295,17 +288,17 @@
 					{initials}
 				</a>
 				<div class="hidden sm:block">
-					<p translate="no" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+					<p translate="no" class="font-sans text-sm font-medium text-ink">
 						{user.name}
 					</p>
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{user.email}</p>
+					<p class="font-sans text-xs text-ink-faint">{user.email}</p>
 				</div>
 			</div>
 
 			<form method="post" action="/logout" onsubmit={handleLogout}>
 				<button
 					type="submit"
-					class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+					class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 				>
 					Sign out
 				</button>

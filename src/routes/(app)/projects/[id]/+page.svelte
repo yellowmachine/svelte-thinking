@@ -450,7 +450,7 @@
 	<div class="mb-8">
 		<button
 			onclick={() => (window.location.href = '/projects')}
-			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 				<path
@@ -482,7 +482,7 @@
 								cancelEdit();
 							}
 						}}
-						class="w-full rounded-md border border-accent/40 bg-transparent px-2 py-1 font-serif text-3xl font-semibold text-ink focus:outline-none dark:text-dark-ink"
+						class="w-full rounded-md border border-accent/40 bg-transparent px-2 py-1 font-serif text-3xl font-semibold text-ink focus:outline-none"
 					/>
 				{:else}
 					<button
@@ -491,7 +491,7 @@
 						translate="no"
 						onclick={() => startEdit('title')}
 						disabled={!data.isOwner}
-						class="block text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink {data.isOwner
+						class="block text-left font-serif text-3xl font-semibold text-ink {data.isOwner
 							? 'cursor-text hover:opacity-80'
 							: 'cursor-default'}"
 					>
@@ -512,7 +512,7 @@
 						}}
 						rows={3}
 						placeholder="Add a description…"
-						class="mt-2 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink-muted focus:outline-none dark:text-dark-ink-muted"
+						class="mt-2 w-full resize-none rounded-md border border-accent/40 bg-transparent px-2 py-1 font-sans text-sm leading-relaxed text-ink-muted focus:outline-none"
 					></textarea>
 				{:else if data.project.description || data.isOwner}
 					<button
@@ -523,8 +523,8 @@
 						class="mt-2 block w-full text-left font-sans text-sm leading-relaxed {data.isOwner
 							? 'cursor-text hover:opacity-80'
 							: 'cursor-default'} {!data.project.description
-							? 'text-ink-faint italic dark:text-dark-ink-faint'
-							: 'text-ink-muted dark:text-dark-ink-muted'}"
+							? 'text-ink-faint italic'
+							: 'text-ink-muted'}"
 					>
 						{data.project.description || 'Add a description…'}
 					</button>
@@ -570,7 +570,7 @@
 							showUrlModal = true;
 						}}
 						title="Import URL"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						<svg
 							width="14"
@@ -594,7 +594,7 @@
 							showEpubModal = true;
 						}}
 						title="Import book text"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						<svg
 							width="14"
@@ -618,7 +618,7 @@
 					href={resolve(`/api/projects/${data.project.id}/export`)}
 					download
 					title="Export project as ZIP"
-					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					<svg
 						width="14"
@@ -638,7 +638,7 @@
 					Export
 				</a>
 				<span
-					class="rounded-full bg-paper-border px-3 py-1 font-sans text-xs font-medium text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-full bg-paper-border px-3 py-1 font-sans text-xs font-medium text-ink-muted"
 				>
 					{statusLabel[data.project.status] ?? data.project.status}
 				</span>
@@ -646,7 +646,7 @@
 		</div>
 
 		{#if data.myRole}
-			<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="mt-2 font-sans text-xs text-ink-faint">
 				Your role: <span class="font-medium text-accent-ink"
 					>{roleLabel[data.myRole] ?? data.myRole}</span
 				>
@@ -682,37 +682,31 @@
 			class={docViewMode === 'grid' ? 'lg:col-span-3' : 'lg:col-span-2'}
 		>
 			<div class="mb-4 flex items-center justify-between">
-				<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
+				<h2 class="font-serif text-xl font-semibold text-ink">Documents</h2>
 				<div class="hidden items-center gap-2 sm:flex">
 					<!-- Sort toggle -->
-					<div
-						class="flex overflow-hidden rounded-md border border-paper-border font-sans text-xs dark:border-dark-paper-border"
-					>
+					<div class="flex overflow-hidden rounded-md border border-paper-border font-sans text-xs">
 						<button
 							onclick={() => (docSortMode = 'date')}
 							class="px-2.5 py-1 transition-colors {docSortMode === 'date'
-								? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'
-								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
-							>Date</button
+								? 'bg-paper-ui text-ink'
+								: 'text-ink-muted hover:text-ink'}">Date</button
 						>
 						<button
 							onclick={() => (docSortMode = 'alpha')}
 							class="px-2.5 py-1 transition-colors {docSortMode === 'alpha'
-								? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'
-								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
-							>A–Z</button
+								? 'bg-paper-ui text-ink'
+								: 'text-ink-muted hover:text-ink'}">A–Z</button
 						>
 					</div>
 					<!-- List / Grid view toggle -->
-					<div
-						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-					>
+					<div class="flex overflow-hidden rounded-md border border-paper-border">
 						<button
 							onclick={() => (docViewMode = 'list')}
 							aria-label="List view"
 							class="px-2 py-1 transition-colors {docViewMode === 'list'
-								? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'
-								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+								? 'bg-paper-ui text-ink'
+								: 'text-ink-muted hover:text-ink'}"
 						>
 							<svg
 								width="14"
@@ -736,8 +730,8 @@
 							onclick={() => (docViewMode = 'grid')}
 							aria-label="Grid view"
 							class="px-2 py-1 transition-colors {docViewMode === 'grid'
-								? 'bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink'
-								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+								? 'bg-paper-ui text-ink'
+								: 'text-ink-muted hover:text-ink'}"
 						>
 							<svg
 								width="14"
@@ -785,7 +779,7 @@
 						<button
 							data-tutorial="project-new-doc"
 							onclick={() => (showCreateDoc = !showCreateDoc)}
-							class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="cursor-pointer rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 						>
 							+ New
 						</button>
@@ -795,13 +789,13 @@
 
 			<!-- Create document form -->
 			{#if showCreateDoc}
-				<div class="mb-4 rounded-xl border border-accent/30 bg-paper p-5 dark:bg-dark-paper">
+				<div class="mb-4 rounded-xl border border-accent/30 bg-paper p-5">
 					<div class="flex flex-col gap-3">
 						<input
 							type="text"
 							bind:value={newDocTitle}
 							placeholder="Document title"
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 							onkeydown={(e) => {
 								if (e.key === 'Enter' && newDocTitle.trim() && !creatingDoc) createDocument();
 							}}
@@ -814,15 +808,14 @@
 									class="flex flex-col gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors {newDocType ===
 									opt.value
 										? 'border-accent bg-accent/5 dark:bg-accent/10'
-										: 'border-paper-border hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui'}"
+										: 'border-paper-border hover:bg-paper-ui'}"
 								>
 									<span
 										class="font-sans text-sm font-medium {newDocType === opt.value
 											? 'text-accent-ink'
-											: 'text-ink dark:text-dark-ink'}">{opt.label}</span
+											: 'text-ink'}">{opt.label}</span
 									>
-									<span
-										class="font-sans text-xs leading-tight text-ink-faint dark:text-dark-ink-faint"
+									<span class="font-sans text-xs leading-tight text-ink-faint"
 										>{opt.description}</span
 									>
 								</button>
@@ -852,7 +845,7 @@
 							</span>
 							<button
 								onclick={() => (showCreateDoc = false)}
-								class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+								class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 							>
 								Cancel
 							</button>
@@ -873,7 +866,7 @@
 						stroke-width="2"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						class="absolute top-1/2 left-3 -translate-y-1/2 text-ink-faint dark:text-dark-ink-faint"
+						class="absolute top-1/2 left-3 -translate-y-1/2 text-ink-faint"
 						aria-hidden="true"
 					>
 						<circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -882,7 +875,7 @@
 						type="search"
 						name="q"
 						placeholder="Search in this project…"
-						class="w-full rounded-lg border border-paper-border bg-paper px-3 py-1.5 pl-8 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+						class="w-full rounded-lg border border-paper-border bg-paper px-3 py-1.5 pl-8 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 				</div>
 			</form>
@@ -912,9 +905,7 @@
 									stroke-linecap="round"
 								/>
 							</svg>
-							<span class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-								>{pc.title}</span
-							>
+							<span class="font-sans text-sm text-ink-muted">{pc.title}</span>
 						</div>
 					{/each}
 				</div>
@@ -927,7 +918,7 @@
 						type="search"
 						bind:value={docFilter}
 						placeholder="Filter by title…"
-						class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+						class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 				</div>
 			{/if}
@@ -952,12 +943,8 @@
 						<circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
 					</svg>
 					<div class="min-w-0 flex-1">
-						<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-							Sample documents
-						</p>
-						<p
-							class="mt-0.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-						>
+						<p class="font-sans text-sm font-medium text-ink">Sample documents</p>
+						<p class="mt-0.5 font-sans text-xs leading-relaxed text-ink-muted">
 							Two AI-generated example documents have been added to show you features like
 							citations, footnotes, and epigraphs. Explore them freely — or delete them whenever you
 							like.
@@ -965,7 +952,7 @@
 					</div>
 					<button
 						onclick={dismissStarterBanner}
-						class="shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						class="shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-ink"
 						aria-label="Dismiss"
 					>
 						<svg
@@ -986,30 +973,24 @@
 
 			<!-- Document list -->
 			{#if normalDocs.length === 0 && templates.length === 0}
-				<div
-					class="rounded-xl border border-dashed border-paper-border py-12 text-center dark:border-dark-paper-border"
-				>
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						No documents yet. Create the first one.
-					</p>
+				<div class="rounded-xl border border-dashed border-paper-border py-12 text-center">
+					<p class="font-sans text-sm text-ink-muted">No documents yet. Create the first one.</p>
 				</div>
 			{:else if normalDocs.length > 0}
 				{#if normalDocsFiltered.length === 0}
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						No documents match your filter.
-					</p>
+					<p class="font-sans text-sm text-ink-faint">No documents match your filter.</p>
 				{:else if docViewMode === 'grid'}
 					<!-- Grid view: all documents, 4 columns -->
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
 						{#each normalDocsFiltered as doc (doc.id)}
 							<button
 								onclick={() => goto(resolve(`/projects/${data.project.id}/documents/${doc.id}`))}
-								class="group relative flex flex-col gap-2 rounded-xl border border-paper-border bg-paper p-4 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/30 dark:hover:bg-dark-paper-ui"
+								class="group relative flex flex-col gap-2 rounded-xl border border-paper-border bg-paper p-4 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui dark:hover:border-accent/30"
 							>
 								<!-- Type icon / badge -->
 								<div class="flex items-center justify-between">
 									<span
-										class="font-sans text-[10px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+										class="font-sans text-[10px] font-medium tracking-wide text-ink-faint uppercase"
 										>{doc.type}</span
 									>
 									{#if navigatingToDocId === doc.id}
@@ -1020,7 +1001,7 @@
 											height="11"
 											viewBox="0 0 24 24"
 											fill="none"
-											class="text-ink-faint dark:text-dark-ink-faint"
+											class="text-ink-faint"
 											aria-hidden="true"
 										>
 											<rect
@@ -1043,12 +1024,12 @@
 								</div>
 								<p
 									translate="no"
-									class="line-clamp-3 font-serif text-sm leading-snug font-medium text-ink dark:text-dark-ink"
+									class="line-clamp-3 font-serif text-sm leading-snug font-medium text-ink"
 								>
 									{doc.title}
 								</p>
 								{#if doc.updatedAt}
-									<p class="mt-auto font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+									<p class="mt-auto font-sans text-[10px] text-ink-faint">
 										{new Date(doc.updatedAt).toLocaleDateString()}
 									</p>
 								{/if}
@@ -1056,9 +1037,7 @@
 						{/each}
 					</div>
 				{:else}
-					<div
-						class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
-					>
+					<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2">
 						{#each normalDocsVisible as doc (doc.id)}
 							<div
 								class="group relative flex items-center {doc.generatedByAi
@@ -1100,7 +1079,7 @@
 								{#if isDocReadOnly(doc)}
 									<span
 										title="Read-only"
-										class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"
+										class="mr-1 shrink-0 text-ink-faint"
 										aria-label="Read-only"
 									>
 										<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1123,9 +1102,7 @@
 									</span>
 								{/if}
 								{#if navigatingToDocId === doc.id}
-									<span class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"
-										><Spinner size="sm" /></span
-									>
+									<span class="mr-1 shrink-0 text-ink-faint"><Spinner size="sm" /></span>
 								{/if}
 								{#if (data.openCommentsByDoc[doc.id] ?? 0) > 0}
 									<a
@@ -1153,7 +1130,7 @@
 												e.stopPropagation();
 												docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id;
 											}}
-											class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+											class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted"
 											aria-label="Document options"
 										>
 											<svg
@@ -1173,7 +1150,7 @@
 										{#if docMenuOpenId === doc.id}
 											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<div
-												class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+												class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper py-1 shadow-lg"
 												role="menu"
 												tabindex="-1"
 												onclick={(e) => e.stopPropagation()}
@@ -1182,7 +1159,7 @@
 													<a
 														href={resolve(`/projects/${data.project.id}/documents/${doc.id}/read`)}
 														onclick={() => (docMenuOpenId = null)}
-														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 													>
 														Read
 													</a>
@@ -1190,7 +1167,7 @@
 												<a
 													href={resolve(`/projects/${data.project.id}/documents/${doc.id}/history`)}
 													onclick={() => (docMenuOpenId = null)}
-													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 												>
 													Ver historial
 												</a>
@@ -1200,7 +1177,7 @@
 															`/projects/${data.project.id}/documents/${doc.id}?published`
 														)}
 														onclick={() => (docMenuOpenId = null)}
-														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 													>
 														Ver publicado
 													</a>
@@ -1211,7 +1188,7 @@
 															delegateDocTarget = { id: doc.id, title: doc.title };
 															docMenuOpenId = null;
 														}}
-														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+														class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 													>
 														Delegate writing…
 													</button>
@@ -1221,11 +1198,11 @@
 														openSaveAsTemplate(doc.id, doc.title);
 														docMenuOpenId = null;
 													}}
-													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 												>
 													Save as template
 												</button>
-												<hr class="my-1 border-paper-border dark:border-dark-paper-border" />
+												<hr class="my-1 border-paper-border" />
 												<button
 													onclick={() => {
 														deleteDocTarget = { id: doc.id, title: doc.title };
@@ -1245,7 +1222,7 @@
 					{#if !docFilter.trim() && normalDocsFiltered.length > normalDocsLimit}
 						<button
 							onclick={() => (normalDocsLimit += DOCS_PAGE_SIZE)}
-							class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+							class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted"
 						>
 							Show {Math.min(DOCS_PAGE_SIZE, normalDocsFiltered.length - normalDocsLimit)} more
 						</button>
@@ -1256,28 +1233,22 @@
 			<!-- My notes (private) -->
 			<div class="mt-6">
 				<div class="mb-2 flex items-center justify-between">
-					<h3
-						class="font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-					>
+					<h3 class="font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 						My notes
 					</h3>
 					<button
 						onclick={createPrivateNote}
 						disabled={creatingPrivateNote}
-						class="font-sans text-xs text-ink-faint transition-colors hover:text-ink disabled:opacity-50 dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						class="font-sans text-xs text-ink-faint transition-colors hover:text-ink disabled:opacity-50"
 					>
 						+ New private note
 					</button>
 				</div>
 				{#if privateDocs.length > 0}
 					{#if privateDocsFiltered.length === 0}
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							No notes match your filter.
-						</p>
+						<p class="font-sans text-xs text-ink-faint">No notes match your filter.</p>
 					{:else}
-						<div
-							class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
-						>
+						<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2">
 							{#each privateDocsVisible as doc (doc.id)}
 								<div class="group relative flex items-center">
 									<div class="min-w-0 flex-1">
@@ -1289,9 +1260,7 @@
 										/>
 									</div>
 									{#if navigatingToDocId === doc.id}
-										<span class="mr-1 shrink-0 text-ink-faint dark:text-dark-ink-faint"
-											><Spinner size="sm" /></span
-										>
+										<span class="mr-1 shrink-0 text-ink-faint"><Spinner size="sm" /></span>
 									{/if}
 									{#if activeShareDocSet.has(doc.id)}
 										<span
@@ -1306,7 +1275,7 @@
 												e.stopPropagation();
 												docMenuOpenId = docMenuOpenId === doc.id ? null : doc.id;
 											}}
-											class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+											class="rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink-muted"
 											aria-label="Note options"
 										>
 											<svg
@@ -1326,7 +1295,7 @@
 										{#if docMenuOpenId === doc.id}
 											<!-- svelte-ignore a11y_click_events_have_key_events -->
 											<div
-												class="absolute top-full right-0 z-20 mt-1 w-36 rounded-lg border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+												class="absolute top-full right-0 z-20 mt-1 w-36 rounded-lg border border-paper-border bg-paper py-1 shadow-lg"
 												role="menu"
 												tabindex="-1"
 												onclick={(e) => e.stopPropagation()}
@@ -1349,14 +1318,14 @@
 						{#if !docFilter.trim() && privateDocsFiltered.length > privateDocsLimit}
 							<button
 								onclick={() => (privateDocsLimit += DOCS_PAGE_SIZE)}
-								class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+								class="mt-1.5 w-full rounded-lg py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted"
 							>
 								Show {Math.min(DOCS_PAGE_SIZE, privateDocsFiltered.length - privateDocsLimit)} more
 							</button>
 						{/if}
 					{/if}
 				{:else}
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="font-sans text-xs text-ink-faint">
 						No private notes yet. Only you can see them.
 					</p>
 				{/if}
@@ -1365,14 +1334,10 @@
 			<!-- Templates section -->
 			{#if templates.length > 0}
 				<div class="mt-6">
-					<h3
-						class="mb-2 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-					>
+					<h3 class="mb-2 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 						Templates
 					</h3>
-					<div
-						class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
-					>
+					<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2">
 						{#each templates as tmpl (tmpl.id)}
 							<div class="flex items-center gap-1 py-1.5 pr-1 pl-2">
 								<svg
@@ -1384,7 +1349,7 @@
 									stroke-width="1.5"
 									stroke-linecap="round"
 									stroke-linejoin="round"
-									class="shrink-0 text-ink-faint dark:text-dark-ink-faint"
+									class="shrink-0 text-ink-faint"
 									aria-hidden="true"
 								>
 									<rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 3v4h8V3" /><path
@@ -1393,7 +1358,7 @@
 								</svg>
 								<span
 									translate="no"
-									class="min-w-0 flex-1 truncate font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+									class="min-w-0 flex-1 truncate font-sans text-sm text-ink-muted"
 									>{tmpl.title}</span
 								>
 								<div class="flex shrink-0 items-center gap-1">
@@ -1407,7 +1372,7 @@
 									{/if}
 									<a
 										href={resolve(`/projects/${data.project.id}/documents/${tmpl.id}`)}
-										class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+										class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted hover:bg-paper-ui"
 									>
 										Edit
 									</a>
@@ -1467,14 +1432,10 @@
 
 <!-- Delegate writing (from list) -->
 {#if delegateDocTarget}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 backdrop-blur-sm dark:bg-dark-ink/30"
-	>
-		<div
-			class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">Delegate writing</h2>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 backdrop-blur-sm">
+		<div class="w-full max-w-sm rounded-2xl border border-paper-border bg-paper p-6 shadow-xl">
+			<h2 class="font-serif text-lg font-semibold text-ink">Delegate writing</h2>
+			<p class="mt-1 font-sans text-sm text-ink-muted">
 				Select a collaborator to give exclusive write access to
 				<strong>{delegateDocTarget.title}</strong>. You will lose write access until you reclaim it.
 			</p>
@@ -1483,14 +1444,10 @@
 					<button
 						onclick={() => handleSetWriterFromList(delegateDocTarget!.id, collab.userId)}
 						disabled={delegatingInList}
-						class="flex items-center justify-between rounded-lg border border-paper-border px-4 py-2.5 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
+						class="flex items-center justify-between rounded-lg border border-paper-border px-4 py-2.5 text-left transition-colors hover:border-accent/40 hover:bg-paper-ui disabled:opacity-50"
 					>
-						<span class="font-sans text-sm text-ink dark:text-dark-ink"
-							>{collab.name ?? collab.userId}</span
-						>
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-							>{collab.role}</span
-						>
+						<span class="font-sans text-sm text-ink">{collab.name ?? collab.userId}</span>
+						<span class="font-sans text-xs text-ink-faint">{collab.role}</span>
 					</button>
 				{/each}
 			</div>
@@ -1500,7 +1457,7 @@
 			<div class="mt-4 flex justify-end">
 				<button
 					onclick={() => (delegateDocTarget = null)}
-					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					Cancel
 				</button>

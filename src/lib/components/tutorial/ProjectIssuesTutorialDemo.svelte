@@ -65,7 +65,7 @@
 	};
 </script>
 
-<div class="min-h-screen bg-paper-ui dark:bg-dark-paper-ui">
+<div class="min-h-screen bg-paper-ui">
 	<div class="mx-auto max-w-3xl px-4 py-8">
 		<!-- Header -->
 		<div class="mb-6 flex items-center justify-between gap-4">
@@ -145,7 +145,7 @@
 		</ul>
 
 		{#if completed}
-			<p class="mt-8 font-sans text-sm text-ink-muted italic dark:text-dark-ink-muted">
+			<p class="mt-8 font-sans text-sm text-ink-muted italic">
 				Tutorial already completed — the tour will not launch.
 			</p>
 		{/if}

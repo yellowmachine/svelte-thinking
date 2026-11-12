@@ -86,19 +86,14 @@
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
 	<div
-		class="flex w-full max-w-md flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+		class="flex w-full max-w-md flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl"
 		style="max-height: 80vh"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="context-picker-title"
 	>
-		<div
-			class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border"
-		>
-			<h2
-				id="context-picker-title"
-				class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
-			>
+		<div class="flex items-center justify-between border-b border-paper-border px-5 py-4">
+			<h2 id="context-picker-title" class="font-serif text-base font-semibold text-ink">
 				Add external context
 			</h2>
 			<button
@@ -106,7 +101,7 @@
 					contextPickerSearch = '';
 					onclose();
 				}}
-				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 				aria-label="Close"
 			>
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -125,17 +120,15 @@
 				type="search"
 				bind:value={contextPickerSearch}
 				placeholder="Search documents or projects…"
-				class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			/>
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-5 py-3">
 			{#if loadingAvailable}
-				<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					Loading…
-				</p>
+				<p class="py-4 text-center font-sans text-sm text-ink-faint">Loading…</p>
 			{:else if availableByProject.length === 0}
-				<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+				<p class="py-4 text-center font-sans text-sm text-ink-faint">
 					{availableDocs.length === 0
 						? 'No documents in other projects'
 						: 'All documents already added'}
@@ -144,21 +137,19 @@
 				{#each availableByProject as group (group.id)}
 					<div class="mb-3">
 						<p
-							class="mb-1 font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+							class="mb-1 font-sans text-[11px] font-semibold tracking-wide text-ink-faint uppercase"
 						>
 							{group.title}
 						</p>
 						{#each group.docs as doc (doc.id)}
 							<div
-								class="flex items-center gap-1 rounded-lg px-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+								class="flex items-center gap-1 rounded-lg px-1 transition-colors hover:bg-paper-ui"
 							>
 								<button
 									onclick={async () => onadd(doc.id)}
 									class="flex min-w-0 flex-1 items-center gap-2 py-2 pl-2 text-left"
 								>
-									<span
-										class="min-w-0 flex-1 truncate font-sans text-sm text-ink dark:text-dark-ink"
-										>{doc.title}</span
+									<span class="min-w-0 flex-1 truncate font-sans text-sm text-ink">{doc.title}</span
 									>
 									{#if doc.isPublic && doc.projectTitle === null}
 										<svg
@@ -179,7 +170,7 @@
 										</svg>
 									{/if}
 									<span
-										class="shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+										class="shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint"
 										>{doc.type}</span
 									>
 								</button>
@@ -190,7 +181,7 @@
 											navigator.clipboard.writeText(`[[${doc.title}:${doc.id.slice(0, 8)}]]`);
 										}}
 										title="Copy wikilink syntax"
-										class="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-ink-faint transition-colors hover:bg-paper-border hover:text-accent-ink dark:text-dark-ink-faint dark:hover:bg-dark-paper-border"
+										class="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-ink-faint transition-colors hover:bg-paper-border hover:text-accent-ink"
 										>[[·]]</button
 									>
 								{/if}

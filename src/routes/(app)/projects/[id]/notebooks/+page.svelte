@@ -56,7 +56,7 @@
 	<div class="mb-8">
 		<button
 			onclick={() => (window.location.href = `/projects/${data.project.id}`)}
-			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 				<path
@@ -72,16 +72,15 @@
 
 		<div class="flex items-center justify-between">
 			<div>
-				<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Notebooks</h1>
-				<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Import <code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui"
-						>.ipynb</code
-					> files to use as context for the AI agent.
+				<h1 class="font-serif text-3xl font-semibold text-ink">Notebooks</h1>
+				<p class="mt-1 font-sans text-sm text-ink-muted">
+					Import <code class="rounded bg-paper-ui px-1 font-mono text-xs">.ipynb</code> files to use as
+					context for the AI agent.
 				</p>
 			</div>
 			<div class="flex items-center gap-2">
 				<label
-					class="flex cursor-pointer items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:pointer-events-none disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui {uploadingNotebook
+					class="flex cursor-pointer items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:pointer-events-none disabled:opacity-50 {uploadingNotebook
 						? 'pointer-events-none opacity-50'
 						: ''}"
 				>
@@ -98,7 +97,7 @@
 				</label>
 				<button
 					onclick={() => (showJupyterModal = true)}
-					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 						<path
@@ -122,28 +121,22 @@
 	{/if}
 
 	{#if notebooks.length === 0}
-		<div
-			class="rounded-xl border border-dashed border-paper-border p-12 text-center dark:border-dark-paper-border"
-		>
-			<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-				No notebooks yet. Import a <code
-					class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.ipynb</code
+		<div class="rounded-xl border border-dashed border-paper-border p-12 text-center">
+			<p class="font-sans text-sm text-ink-faint">
+				No notebooks yet. Import a <code class="rounded bg-paper-ui px-1 font-mono text-xs"
+					>.ipynb</code
 				> file or connect to a remote Jupyter server.
 			</p>
 		</div>
 	{:else}
-		<div
-			class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2">
 			{#each notebooks as notebook (notebook.id)}
-				<div
-					class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-				>
+				<div class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-paper-ui">
 					<div class="min-w-0">
-						<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						<p class="truncate font-sans text-sm font-medium text-ink">
 							{notebook.filename}
 						</p>
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<p class="font-sans text-xs text-ink-faint">
 							{formatSize(notebook.size)}{notebook.languageName
 								? ` · ${notebook.languageName}`
 								: ''}
@@ -151,7 +144,7 @@
 					</div>
 					<button
 						onclick={() => deleteNotebook(notebook.id)}
-						class="ml-3 shrink-0 font-sans text-xs text-ink-faint transition-colors hover:text-red-600 dark:text-dark-ink-faint dark:hover:text-red-400"
+						class="ml-3 shrink-0 font-sans text-xs text-ink-faint transition-colors hover:text-red-600 dark:hover:text-red-400"
 					>
 						Delete
 					</button>

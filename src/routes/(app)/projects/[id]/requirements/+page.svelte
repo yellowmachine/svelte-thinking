@@ -112,7 +112,7 @@
 	<div class="mb-8">
 		<a
 			href={resolve(`/projects/${data.project.id}`)}
-			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 				<path
@@ -127,14 +127,14 @@
 		</a>
 
 		<div class="flex items-center justify-between gap-4">
-			<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Requirements</h1>
+			<h1 class="font-serif text-3xl font-semibold text-ink">Requirements</h1>
 
 			{#if requirements.length > 0 && data.isOwner}
 				<button
 					onclick={() => {
 						requirements = [];
 					}}
-					class="font-sans text-sm text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="font-sans text-sm text-ink-muted underline-offset-2 hover:text-ink hover:underline"
 				>
 					Regenerate
 				</button>
@@ -143,9 +143,7 @@
 
 		{#if requirements.length > 0}
 			<div class="mt-4">
-				<div
-					class="mb-1.5 flex items-center justify-between font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-				>
+				<div class="mb-1.5 flex items-center justify-between font-sans text-xs text-ink-muted">
 					<span>{fulfilled} of {total} completed</span>
 					{#if allRequiredDone}
 						<span class="font-medium text-green-600 dark:text-green-400">All required done</span>
@@ -153,9 +151,7 @@
 						<span>{requiredFulfilled} of {requiredTotal} required</span>
 					{/if}
 				</div>
-				<div
-					class="h-1.5 w-full overflow-hidden rounded-full bg-paper-border dark:bg-dark-paper-border"
-				>
+				<div class="h-1.5 w-full overflow-hidden rounded-full bg-paper-border">
 					<div
 						class="h-full rounded-full transition-all duration-300 {allRequiredDone
 							? 'bg-green-500'
@@ -169,13 +165,9 @@
 
 	<!-- Generate form (shown when no requirements exist) -->
 	{#if requirements.length === 0}
-		<div
-			class="rounded-xl border border-paper-border bg-paper-ui p-6 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Generate requirements with AI
-			</h2>
-			<p class="mb-4 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+		<div class="rounded-xl border border-paper-border bg-paper-ui p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Generate requirements with AI</h2>
+			<p class="mb-4 font-sans text-sm leading-relaxed text-ink-muted">
 				Describe the type of document you want to create and the AI will automatically generate the
 				required sections and checklist.
 			</p>
@@ -185,7 +177,7 @@
 				placeholder="E.g. medical article on hypertension treatment, systematic review, doctoral thesis in philosophy…"
 				rows={3}
 				disabled={generating}
-				class="w-full resize-none rounded-lg border border-paper-border bg-paper px-3 py-2.5 font-sans text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none disabled:opacity-50 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder:text-dark-ink-faint dark:focus:border-accent"
+				class="w-full resize-none rounded-lg border border-paper-border bg-paper px-3 py-2.5 font-sans text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none disabled:opacity-50 dark:focus:border-accent"
 			></textarea>
 
 			{#if generateError}

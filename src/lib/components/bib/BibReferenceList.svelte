@@ -182,10 +182,10 @@
 
 {#if totalCount === 0}
 	<div
-		class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paper-border py-20 text-center dark:border-dark-paper-border"
+		class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paper-border py-20 text-center"
 	>
-		<p class="font-serif text-lg text-ink-muted dark:text-dark-ink-muted">No references yet</p>
-		<p class="mt-1 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+		<p class="font-serif text-lg text-ink-muted">No references yet</p>
+		<p class="mt-1 font-sans text-sm text-ink-faint">
 			Add references manually or import a .bib file
 		</p>
 		<div class="mt-4 flex gap-3">
@@ -197,21 +197,21 @@
 			</button>
 			<button
 				onclick={onimport}
-				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 			>
 				Import .bib
 			</button>
 		</div>
 	</div>
 {:else if refs.length === 0}
-	<p class="py-8 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+	<p class="py-8 text-center font-sans text-sm text-ink-faint">
 		No results for "<span class="font-medium">{searchQuery}</span>"
 	</p>
 {:else}
 	<div class="flex flex-col gap-1">
 		{#each refs as ref, i (ref.id)}
 			<div
-				class="group flex items-start gap-3 rounded-xl border border-paper-border bg-paper px-4 py-3 transition-colors hover:border-accent/30 dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/20"
+				class="group flex items-start gap-3 rounded-xl border border-paper-border bg-paper px-4 py-3 transition-colors hover:border-accent/30 dark:hover:border-accent/20"
 			>
 				<!-- Cite key badge -->
 				<button
@@ -225,16 +225,10 @@
 
 				<!-- Content -->
 				<div class="min-w-0 flex-1">
-					<p
-						translate="no"
-						class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<p translate="no" class="truncate font-sans text-sm font-medium text-ink">
 						{ref.title}
 					</p>
-					<p
-						translate="no"
-						class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-					>
+					<p translate="no" class="mt-0.5 font-sans text-xs text-ink-muted">
 						{formatAuthors(ref)}{ref.year ? ' · ' + ref.year : ''}
 						{#if ref.journal}
 							· <em>{ref.journal}</em>
@@ -254,10 +248,7 @@
 							doi:{ref.doi}
 						</a>
 					{/if}
-					<p
-						translate="no"
-						class="mt-1.5 font-sans text-[11px] leading-snug text-ink-faint dark:text-dark-ink-faint"
-					>
+					<p translate="no" class="mt-1.5 font-sans text-[11px] leading-snug text-ink-faint">
 						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 						{@html renderInlineMarkdown(
 							formatFullCitation(ref as unknown as CiteRef, citationStyle, i + 1)
@@ -268,7 +259,7 @@
 					<div class="mt-2">
 						<button
 							onclick={() => toggleSubnotes(ref.id)}
-							class="flex items-center gap-1.5 font-sans text-[11px] text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+							class="flex items-center gap-1.5 font-sans text-[11px] text-ink-muted transition-colors hover:text-ink"
 						>
 							<svg
 								width="10"
@@ -299,26 +290,25 @@
 						</button>
 
 						{#if expandedSubnotes.has(ref.id)}
-							<div class="mt-1.5 border-l-2 border-paper-border pl-3 dark:border-dark-paper-border">
+							<div class="mt-1.5 border-l-2 border-paper-border pl-3">
 								{#if subnotesByRef[ref.id]?.length > 0}
 									<ul class="flex flex-col gap-1">
 										{#each subnotesByRef[ref.id] as sn (sn.id)}
 											<li class="flex items-start gap-2">
 												<span
 													translate="no"
-													class="mt-px shrink-0 rounded bg-paper-ui px-1.5 py-px font-mono text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+													class="mt-px shrink-0 rounded bg-paper-ui px-1.5 py-px font-mono text-[10px] text-ink-muted"
 												>
 													{sn.slug}
 												</span>
 												{#if sn.notes}
 													<span
 														translate="no"
-														class="flex-1 font-sans text-[11px] leading-snug text-ink dark:text-dark-ink"
+														class="flex-1 font-sans text-[11px] leading-snug text-ink"
 														>{sn.notes}</span
 													>
 												{:else}
-													<span
-														class="flex-1 font-sans text-[11px] text-ink-faint italic dark:text-dark-ink-faint"
+													<span class="flex-1 font-sans text-[11px] text-ink-faint italic"
 														>no notes</span
 													>
 												{/if}
@@ -326,7 +316,7 @@
 													onclick={() => deleteSubnote(ref.id, sn.id)}
 													disabled={deletingSubnoteId === sn.id}
 													title="Delete annotation"
-													class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-red-400"
+													class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 disabled:opacity-40 dark:hover:text-red-400"
 												>
 													{#if deletingSubnoteId === sn.id}
 														<Spinner size="sm" />
@@ -357,9 +347,7 @@
 										{/each}
 									</ul>
 								{:else if !loadingSubnotes.has(ref.id)}
-									<p class="font-sans text-[11px] text-ink-faint italic dark:text-dark-ink-faint">
-										No subnotes yet.
-									</p>
+									<p class="font-sans text-[11px] text-ink-faint italic">No subnotes yet.</p>
 								{/if}
 
 								{#if addingSubnoteRef === ref.id}
@@ -369,13 +357,13 @@
 												type="text"
 												placeholder="slug (e.g. p103, ch2)"
 												bind:value={newSubnoteSlug}
-												class="w-28 rounded border border-paper-border bg-paper px-2 py-1 font-mono text-[11px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder:text-dark-ink-faint dark:focus:border-accent"
+												class="w-28 rounded border border-paper-border bg-paper px-2 py-1 font-mono text-[11px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:focus:border-accent"
 											/>
 											<input
 												type="text"
 												placeholder="notes (optional)"
 												bind:value={newSubnoteNotes}
-												class="min-w-0 flex-1 rounded border border-paper-border bg-paper px-2 py-1 font-sans text-[11px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder:text-dark-ink-faint dark:focus:border-accent"
+												class="min-w-0 flex-1 rounded border border-paper-border bg-paper px-2 py-1 font-sans text-[11px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:focus:border-accent"
 											/>
 										</div>
 										<div class="flex gap-1.5">
@@ -388,7 +376,7 @@
 											</button>
 											<button
 												onclick={() => (addingSubnoteRef = null)}
-												class="rounded px-2.5 py-1 font-sans text-[11px] text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+												class="rounded px-2.5 py-1 font-sans text-[11px] text-ink-muted transition-colors hover:text-ink"
 											>
 												Cancel
 											</button>
@@ -397,7 +385,7 @@
 								{:else}
 									<button
 										onclick={() => openAddSubnote(ref.id)}
-										class="mt-1.5 flex items-center gap-1 font-sans text-[11px] text-ink-faint transition-colors hover:text-accent-ink dark:text-dark-ink-faint dark:hover:text-accent-ink"
+										class="mt-1.5 flex items-center gap-1 font-sans text-[11px] text-ink-faint transition-colors hover:text-accent-ink dark:hover:text-accent-ink"
 									>
 										<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
 											<line
@@ -429,7 +417,7 @@
 
 				<!-- Type badge -->
 				<span
-					class="mt-0.5 shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+					class="mt-0.5 shrink-0 rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-faint"
 				>
 					{TYPE_LABELS[ref.type] ?? ref.type}
 				</span>
@@ -443,7 +431,7 @@
 						disabled={openingNotes === ref.id}
 						class="relative rounded-md p-1.5 transition-colors {ref.readingNotesDocId
 							? 'text-accent-ink'
-							: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'} disabled:opacity-50"
+							: 'text-ink-muted hover:bg-paper-ui hover:text-ink'} disabled:opacity-50"
 						title="Reading notes"
 					>
 						{#if openingNotes === ref.id}
@@ -531,7 +519,7 @@
 					{:else}
 						<label
 							title={uploadingPdfId === ref.id ? 'Uploading…' : 'Attach PDF'}
-							class="flex cursor-pointer items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-ink-faint uppercase transition-colors hover:border-ink-muted hover:text-ink-muted dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint dark:hover:border-dark-ink-muted dark:hover:text-dark-ink-muted {uploadingPdfId ===
+							class="flex cursor-pointer items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-ink-faint uppercase transition-colors hover:border-ink-muted hover:text-ink-muted {uploadingPdfId ===
 							ref.id
 								? 'pointer-events-none opacity-60'
 								: ''}"
@@ -555,7 +543,7 @@
 
 					<button
 						onclick={() => onedit(ref)}
-						class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+						class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 						title="Edit"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -575,7 +563,7 @@
 					</button>
 					<button
 						onclick={() => ondelete(ref)}
-						class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:text-dark-ink-muted dark:hover:bg-red-950/30 dark:hover:text-red-400"
+						class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
 						title="Delete"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none">

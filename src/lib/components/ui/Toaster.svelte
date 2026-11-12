@@ -6,7 +6,7 @@
 			'border-green-200 bg-green-50 text-green-900 dark:border-green-800/60 dark:bg-green-950 dark:text-green-100',
 		error:
 			'border-red-200 bg-red-50 text-red-900 dark:border-red-800/60 dark:bg-red-950 dark:text-red-100',
-		info: 'border-paper-border bg-paper text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink'
+		info: 'border-paper-border bg-paper text-ink'
 	};
 
 	async function runAction(toast: Toast) {

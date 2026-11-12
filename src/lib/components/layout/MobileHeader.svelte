@@ -39,11 +39,11 @@
 </script>
 
 <header
-	class="sticky top-0 z-10 flex items-center justify-between border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm sm:hidden dark:border-dark-paper-border dark:bg-dark-paper/95"
+	class="sticky top-0 z-10 flex items-center justify-between border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm sm:hidden"
 >
 	<a
 		href={resolve('/projects')}
-		class="flex items-center gap-2 font-serif text-lg font-semibold text-ink dark:text-dark-ink"
+		class="flex items-center gap-2 font-serif text-lg font-semibold text-ink"
 	>
 		Scholio
 		<span
@@ -72,19 +72,19 @@
 
 		{#if menuOpen}
 			<div
-				class="absolute top-full right-0 z-50 mt-1.5 w-44 rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+				class="absolute top-full right-0 z-50 mt-1.5 w-44 rounded-xl border border-paper-border bg-paper shadow-lg"
 			>
-				<div class="border-b border-paper-border px-4 py-2.5 dark:border-dark-paper-border">
-					<p translate="no" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+				<div class="border-b border-paper-border px-4 py-2.5">
+					<p translate="no" class="font-sans text-sm font-medium text-ink">
 						{user.name}
 					</p>
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{user.email}</p>
+					<p class="font-sans text-xs text-ink-faint">{user.email}</p>
 				</div>
 				<ul class="py-1">
 					<li>
 						<a
 							href={resolve('/settings')}
-							class="block px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+							class="block px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui"
 						>
 							Settings
 						</a>
@@ -92,7 +92,7 @@
 					<li>
 						<a
 							href={resolve('/usage')}
-							class="block px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+							class="block px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui"
 						>
 							AI usage
 						</a>
@@ -101,7 +101,7 @@
 						<form method="post" action="/logout" onsubmit={handleLogout}>
 							<button
 								type="submit"
-								class="w-full px-4 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+								class="w-full px-4 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui"
 							>
 								Sign out
 							</button>

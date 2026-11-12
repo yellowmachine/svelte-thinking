@@ -83,14 +83,12 @@
 >
 	<div class="absolute inset-0" aria-hidden="true" onclick={() => onclose()}></div>
 	<div
-		class="relative flex w-full max-w-lg flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+		class="relative flex w-full max-w-lg flex-col rounded-2xl border border-paper-border bg-paper shadow-2xl"
 		style="max-height: 90vh;"
 	>
 		<div class="shrink-0 px-6 pt-6 pb-4">
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Import book text
-			</h2>
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Import book text</h2>
+			<p class="font-sans text-sm text-ink-muted">
 				Paste the content as plain text (e.g. exported with Calibre or another tool).
 			</p>
 		</div>
@@ -98,10 +96,7 @@
 		<div class="min-h-0 flex-1 overflow-y-auto px-6">
 			<!-- Title -->
 			<div class="mb-4">
-				<label
-					for="import-title"
-					class="mb-1.5 block font-sans text-xs font-medium text-ink dark:text-dark-ink"
-				>
+				<label for="import-title" class="mb-1.5 block font-sans text-xs font-medium text-ink">
 					Document title
 				</label>
 				<input
@@ -110,13 +105,13 @@
 					bind:value={title}
 					oninput={() => (titleTouched = true)}
 					placeholder="Book title…"
-					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				/>
 			</div>
 
 			<!-- Reference picker -->
 			<div class="mb-4">
-				<p class="mb-1.5 font-sans text-xs font-medium text-ink dark:text-dark-ink">
+				<p class="mb-1.5 font-sans text-xs font-medium text-ink">
 					Bibliographic reference <span class="font-normal text-ink-faint">(optional)</span>
 				</p>
 				{#if selectedRef}
@@ -124,10 +119,10 @@
 						class="flex items-center justify-between rounded-md border border-accent/40 bg-accent/5 px-3 py-2 dark:border-accent/30 dark:bg-accent/10"
 					>
 						<div class="min-w-0">
-							<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							<p class="truncate font-sans text-sm font-medium text-ink">
 								{selectedRef.title}
 							</p>
-							<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							<p class="font-sans text-xs text-ink-faint">
 								{selectedRef.citeKey}
 							</p>
 						</div>
@@ -137,8 +132,7 @@
 								selectedRef = null;
 								refSearch = '';
 							}}
-							class="ml-2 shrink-0 rounded p-0.5 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-							>✕</button
+							class="ml-2 shrink-0 rounded p-0.5 text-ink-faint hover:text-ink">✕</button
 						>
 					</div>
 				{:else}
@@ -148,14 +142,14 @@
 							bind:value={refSearch}
 							oninput={() => searchRefs(refSearch)}
 							placeholder="Search by title, author or citeKey…"
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 						/>
 						{#if refLoading}
 							<div class="absolute top-2 right-2"><Spinner size="sm" /></div>
 						{/if}
 						{#if refResults.length > 0}
 							<div
-								class="absolute top-full right-0 left-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+								class="absolute top-full right-0 left-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg"
 							>
 								{#each refResults as ref (ref.id)}
 									<button
@@ -165,12 +159,10 @@
 											refSearch = '';
 											refResults = [];
 										}}
-										class="flex w-full flex-col px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+										class="flex w-full flex-col px-3 py-2 text-left hover:bg-paper-ui"
 									>
-										<span class="truncate font-sans text-sm text-ink dark:text-dark-ink"
-											>{ref.title}</span
-										>
-										<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+										<span class="truncate font-sans text-sm text-ink">{ref.title}</span>
+										<span class="font-sans text-xs text-ink-faint"
 											>{ref.citeKey}{ref.year ? ` · ${ref.year}` : ''}</span
 										>
 									</button>
@@ -183,10 +175,7 @@
 
 			<!-- Text content -->
 			<div class="mb-4">
-				<label
-					for="import-text"
-					class="mb-1.5 block font-sans text-xs font-medium text-ink dark:text-dark-ink"
-				>
+				<label for="import-text" class="mb-1.5 block font-sans text-xs font-medium text-ink">
 					Content
 				</label>
 				<textarea
@@ -194,7 +183,7 @@
 					oninput={onTextInput}
 					placeholder="Paste the book text here…"
 					rows="10"
-					class="w-full resize-y rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="w-full resize-y rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				></textarea>
 			</div>
 
@@ -205,7 +194,7 @@
 					bind:checked={copyrightConsent}
 					class="mt-0.5 h-4 w-4 shrink-0 accent-accent"
 				/>
-				<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+				<span class="font-sans text-xs text-ink-muted">
 					I confirm that I have the right to process this content on this platform. I am solely
 					responsible for compliance with applicable copyright law.
 				</span>
@@ -216,12 +205,10 @@
 			{/if}
 		</div>
 
-		<div
-			class="flex shrink-0 justify-end gap-2 border-t border-paper-border px-6 py-4 dark:border-dark-paper-border"
-		>
+		<div class="flex shrink-0 justify-end gap-2 border-t border-paper-border px-6 py-4">
 			<button
 				onclick={() => onclose()}
-				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 			>
 				Cancel
 			</button>

@@ -148,10 +148,7 @@
 	<div class="mb-8 flex items-center justify-between">
 		<div>
 			<div class="flex items-center gap-2">
-				<h1
-					data-tutorial="projects-title"
-					class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
-				>
+				<h1 data-tutorial="projects-title" class="font-serif text-3xl font-semibold text-ink">
 					{isOrgWorkspace ? workspaceName : 'My projects'}
 				</h1>
 				{#if isOrgWorkspace}
@@ -161,7 +158,7 @@
 					>
 				{/if}
 			</div>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="mt-1 font-sans text-sm text-ink-muted">
 				{filteredProjects.length === 1 ? '1 project' : `${filteredProjects.length} projects`}
 			</p>
 		</div>
@@ -177,7 +174,7 @@
 				data-tutorial="import-btn"
 				onclick={() => importFileInput?.click()}
 				disabled={importing}
-				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm font-medium text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm font-medium text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50"
 			>
 				{importing ? 'Importing…' : 'Import'}
 			</button>
@@ -208,7 +205,7 @@
 					class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId ===
 					null
 						? 'border-accent bg-accent text-white'
-						: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+						: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink'}"
 					>All</button
 				>
 				{#each data.allTags as t (t.id)}
@@ -217,14 +214,14 @@
 						class="rounded-full border px-3 py-1 font-sans text-xs transition-colors {activeTagId ===
 						t.id
 							? 'border-accent bg-accent text-white'
-							: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+							: 'border-paper-border text-ink-muted hover:border-accent/50 hover:text-ink'}"
 						><span translate="no">{t.name}</span></button
 					>
 				{/each}
 			</div>
 			<a
 				href={resolve('/tags')}
-				class="mt-2 inline-block font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+				class="mt-2 inline-block font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted"
 			>
 				Manage tags →
 			</a>
@@ -233,16 +230,11 @@
 
 	<!-- Create form -->
 	{#if showCreate}
-		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-6 dark:bg-dark-paper">
-			<h2 class="mb-4 font-serif text-lg font-semibold text-ink dark:text-dark-ink">New project</h2>
+		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-6">
+			<h2 class="mb-4 font-serif text-lg font-semibold text-ink">New project</h2>
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-1.5">
-					<label
-						for="project-title"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
-						Title
-					</label>
+					<label for="project-title" class="font-sans text-sm font-medium text-ink"> Title </label>
 					<!-- svelte-ignore a11y_autofocus -->
 					<input
 						id="project-title"
@@ -256,14 +248,11 @@
 								createProject();
 							}
 						}}
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 				</div>
 				<div class="flex flex-col gap-1.5">
-					<label
-						for="project-desc"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<label for="project-desc" class="font-sans text-sm font-medium text-ink">
 						Description <span class="font-normal text-ink-faint">(optional)</span>
 					</label>
 					<textarea
@@ -271,7 +260,7 @@
 						bind:value={newDescription}
 						rows={2}
 						placeholder="Brief project description..."
-						class="resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					></textarea>
 				</div>
 
@@ -289,7 +278,7 @@
 					</button>
 					<button
 						onclick={cancelCreate}
-						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						Cancel
 					</button>
@@ -301,18 +290,10 @@
 	<!-- Empty state -->
 	{#if projects.length === 0}
 		<div
-			class="flex flex-col items-center justify-center rounded-xl border border-dashed border-paper-border py-20 dark:border-dark-paper-border"
+			class="flex flex-col items-center justify-center rounded-xl border border-dashed border-paper-border py-20"
 		>
-			<div
-				class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-paper-ui dark:bg-dark-paper-ui"
-			>
-				<svg
-					width="24"
-					height="24"
-					viewBox="0 0 24 24"
-					fill="none"
-					class="text-ink-faint dark:text-dark-ink-faint"
-				>
+			<div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-paper-ui">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-ink-faint">
 					<path
 						d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
 						stroke="currentColor"
@@ -329,8 +310,8 @@
 					/>
 				</svg>
 			</div>
-			<p class="font-serif text-lg font-medium text-ink dark:text-dark-ink">No projects yet</p>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="font-serif text-lg font-medium text-ink">No projects yet</p>
+			<p class="mt-1 font-sans text-sm text-ink-muted">
 				Create your first academic project to get started.
 			</p>
 			<button
@@ -343,9 +324,7 @@
 	{:else}
 		{#if ownedProjects.length > 0}
 			{#if sharedProjects.length > 0}
-				<h2
-					class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-				>
+				<h2 class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 					My projects
 				</h2>
 			{/if}
@@ -373,9 +352,7 @@
 
 		{#if sharedProjects.length > 0}
 			<div class="mt-10">
-				<h2
-					class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-				>
+				<h2 class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 					Shared with me
 				</h2>
 				<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

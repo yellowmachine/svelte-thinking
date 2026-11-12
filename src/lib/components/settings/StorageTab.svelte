@@ -129,16 +129,12 @@
 	{/if}
 
 	{#if loadingS3}
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
+		<p class="font-sans text-sm text-ink-muted">Loading...</p>
 	{:else}
 		<!-- BYOS3 -->
-		<section
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Your own S3 bucket
-			</h2>
-			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<section class="rounded-xl border border-paper-border bg-paper p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Your own S3 bucket</h2>
+			<p class="mb-5 font-sans text-sm text-ink-muted">
 				Connect your own S3 bucket (AWS, Cloudflare R2, Backblaze B2, MinIO, etc.) to upload photos
 				and datasets. Without configuration, file uploads are disabled.
 			</p>
@@ -169,16 +165,14 @@
 			<!-- Current config status -->
 			{#if s3Config}
 				<div
-					class="mb-5 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+					class="mb-5 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3"
 				>
 					<div class="min-w-0 flex-1">
-						<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						<p class="truncate font-sans text-sm font-medium text-ink">
 							{s3Config.bucket}
-							<span class="font-normal text-ink-faint dark:text-dark-ink-faint"
-								>@ {s3Config.endpoint}</span
-							>
+							<span class="font-normal text-ink-faint">@ {s3Config.endpoint}</span>
 						</p>
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<p class="font-sans text-xs text-ink-faint">
 							{s3Config.verified ? 'Verified' : 'Not verified'} · Region: {s3Config.region}
 						</p>
 					</div>
@@ -194,7 +188,7 @@
 							type="button"
 							onclick={handleTestS3}
 							disabled={s3Testing}
-							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+							class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50"
 						>
 							{s3Testing ? 'Testing...' : 'Test connection'}
 						</button>
@@ -212,7 +206,7 @@
 
 			<!-- Form -->
 			<div class="flex flex-col gap-3">
-				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+				<p class="font-sans text-sm font-medium text-ink">
 					{s3Config ? 'Update configuration' : 'Configure bucket'}
 				</p>
 				<div class="grid grid-cols-2 gap-3">
@@ -220,25 +214,25 @@
 						type="url"
 						bind:value={s3Endpoint}
 						placeholder="https://s3.amazonaws.com"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					<input
 						type="text"
 						bind:value={s3Bucket}
 						placeholder="bucket-name"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					<input
 						type="text"
 						bind:value={s3Region}
 						placeholder="us-east-1"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					<input
 						type="url"
 						bind:value={s3PublicUrl}
 						placeholder="https://cdn.example.com (optional)"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 				</div>
 				<input
@@ -246,7 +240,7 @@
 					bind:value={s3AccessKey}
 					placeholder="Access Key ID"
 					autocomplete="off"
-					class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				/>
 				<div class="flex gap-3">
 					<input
@@ -254,7 +248,7 @@
 						bind:value={s3SecretKey}
 						placeholder="Secret Access Key"
 						autocomplete="off"
-						class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					<button
 						type="button"

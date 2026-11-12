@@ -4,26 +4,18 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
-	<h1 class="mb-2 font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Admin</h1>
-	<p class="mb-8 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-		Scholio administration panel.
-	</p>
+	<h1 class="mb-2 font-serif text-3xl font-semibold text-ink">Admin</h1>
+	<p class="mb-8 font-sans text-sm text-ink-muted">Scholio administration panel.</p>
 
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		<a
 			href={resolve('/admin/waitlist')}
-			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
+			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:hover:border-accent"
 		>
-			<p
-				class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
-				Waitlist
-			</p>
-			<p class="mt-1 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+			<p class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase">Waitlist</p>
+			<p class="mt-1 font-serif text-2xl font-semibold text-ink">
 				{data.pendingWaitlist}
-				<span class="font-sans text-sm font-normal text-ink-muted dark:text-dark-ink-muted"
-					>pending</span
-				>
+				<span class="font-sans text-sm font-normal text-ink-muted">pending</span>
 			</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent-ink opacity-0 transition-opacity group-hover:opacity-100"
@@ -34,18 +26,12 @@
 
 		<a
 			href={resolve('/admin/users')}
-			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
+			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:hover:border-accent"
 		>
-			<p
-				class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
-				Users
-			</p>
-			<p class="mt-1 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+			<p class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase">Users</p>
+			<p class="mt-1 font-serif text-2xl font-semibold text-ink">
 				{data.totalUsers}
-				<span class="font-sans text-sm font-normal text-ink-muted dark:text-dark-ink-muted"
-					>registered</span
-				>
+				<span class="font-sans text-sm font-normal text-ink-muted">registered</span>
 			</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent-ink opacity-0 transition-opacity group-hover:opacity-100"
@@ -56,18 +42,12 @@
 
 		<a
 			href={resolve('/admin/activity')}
-			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
+			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:hover:border-accent"
 		>
-			<p
-				class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
-				Activity
-			</p>
-			<p class="mt-1 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+			<p class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase">Activity</p>
+			<p class="mt-1 font-serif text-2xl font-semibold text-ink">
 				{data.recentlyActive}
-				<span class="font-sans text-sm font-normal text-ink-muted dark:text-dark-ink-muted"
-					>last {data.activityDays}d</span
-				>
+				<span class="font-sans text-sm font-normal text-ink-muted">last {data.activityDays}d</span>
 			</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent-ink opacity-0 transition-opacity group-hover:opacity-100"
@@ -78,16 +58,12 @@
 
 		<a
 			href={resolve('/admin/notifications')}
-			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
+			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:hover:border-accent"
 		>
-			<p
-				class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
+			<p class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase">
 				Notifications
 			</p>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Informational banners for all users.
-			</p>
+			<p class="mt-1 font-sans text-sm text-ink-muted">Informational banners for all users.</p>
 			<p
 				class="mt-3 font-sans text-xs text-accent-ink opacity-0 transition-opacity group-hover:opacity-100"
 			>

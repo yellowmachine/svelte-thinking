@@ -4,16 +4,16 @@
 	let { data }: { data: PageData } = $props();
 </script>
 
-<div class="flex min-h-screen items-center justify-center bg-paper px-4 dark:bg-dark-paper">
+<div class="flex min-h-screen items-center justify-center bg-paper px-4">
 	<div class="max-w-md text-center">
 		{#if data.alreadyUnsubscribed}
-			<p class="font-serif text-xl text-ink dark:text-dark-ink">Already unsubscribed</p>
-			<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="font-serif text-xl text-ink">Already unsubscribed</p>
+			<p class="mt-2 font-sans text-sm text-ink-muted">
 				You will not receive email notifications (comments and new versions) from this project.
 			</p>
 		{:else}
-			<p class="font-serif text-xl text-ink dark:text-dark-ink">Notifications muted</p>
-			<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="font-serif text-xl text-ink">Notifications muted</p>
+			<p class="mt-2 font-sans text-sm text-ink-muted">
 				You will no longer receive email notifications (comments and new versions) from this
 				project.
 			</p>

@@ -9,16 +9,14 @@
 	let { people }: { people: Person[] } = $props();
 </script>
 
-<section class="border-t border-paper-border py-24 dark:border-dark-paper-border">
+<section class="border-t border-paper-border py-24">
 	<div class="mx-auto max-w-5xl px-6">
 		<div class="mb-12 text-center">
 			<p class="mb-3 font-sans text-xs font-semibold tracking-widest text-accent-ink uppercase">
 				Acknowledgements
 			</p>
-			<h2 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Thank you</h2>
-			<p
-				class="mx-auto mt-4 max-w-xl font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-			>
+			<h2 class="font-serif text-3xl font-semibold text-ink">Thank you</h2>
+			<p class="mx-auto mt-4 max-w-xl font-sans text-base leading-relaxed text-ink-muted">
 				Writers who believed in Scholio from the very beginning and helped shape it.
 			</p>
 		</div>
@@ -29,17 +27,17 @@
 					href={person.url}
 					target="_blank"
 					rel="noopener noreferrer external"
-					class="group flex w-72 flex-col items-center rounded-xl border border-paper-border bg-paper p-8 text-center transition-shadow hover:shadow-md dark:border-dark-paper-border dark:bg-dark-paper"
+					class="group flex w-72 flex-col items-center rounded-xl border border-paper-border bg-paper p-8 text-center transition-shadow hover:shadow-md"
 				>
 					{#if person.avatarUrl}
 						<img
 							src={person.avatarUrl}
 							alt={person.name}
-							class="mb-4 h-16 w-16 rounded-full object-cover ring-2 ring-paper-border dark:ring-dark-paper-border"
+							class="mb-4 h-16 w-16 rounded-full object-cover ring-2 ring-paper-border"
 						/>
 					{:else}
 						<div
-							class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10 ring-2 ring-paper-border dark:ring-dark-paper-border"
+							class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10 ring-2 ring-paper-border"
 						>
 							<svg
 								width="28"
@@ -59,11 +57,11 @@
 					{/if}
 
 					<h3
-						class="font-serif text-base font-semibold text-ink transition-colors group-hover:text-accent-ink dark:text-dark-ink dark:group-hover:text-accent-ink"
+						class="font-serif text-base font-semibold text-ink transition-colors group-hover:text-accent-ink dark:group-hover:text-accent-ink"
 					>
 						{person.name}
 					</h3>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
 						{person.description}
 					</p>
 				</a>

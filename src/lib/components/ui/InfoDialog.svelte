@@ -32,22 +32,19 @@
 			aria-labelledby="info-dialog-title"
 			tabindex="-1"
 			onkeydown={handleKeydown}
-			class="w-full max-w-sm rounded-xl border border-paper-border bg-paper shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+			class="w-full max-w-sm rounded-xl border border-paper-border bg-paper shadow-xl"
 		>
 			<div class="px-5 pt-5 pb-5">
-				<h2
-					id="info-dialog-title"
-					class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
-				>
+				<h2 id="info-dialog-title" class="font-serif text-base font-semibold text-ink">
 					{title}
 				</h2>
-				<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">{message}</p>
+				<p class="mt-2 font-sans text-sm text-ink-muted">{message}</p>
 
 				<div class="mt-4 flex gap-3">
 					<button
 						type="button"
 						onclick={oncancel}
-						class="flex-1 rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex-1 rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						Close
 					</button>

@@ -55,23 +55,19 @@
 	});
 </script>
 
-<div
-	class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
->
-	<div
-		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
-		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Comments</h3>
-		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper">
+	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3">
+		<h3 class="font-serif text-sm font-semibold text-ink">Comments</h3>
+		<span class="font-sans text-xs text-ink-faint">
 			{openCount} abierto{openCount !== 1 ? 's' : ''}
 		</span>
 	</div>
 
 	<div class="flex-1 space-y-2 overflow-y-auto p-3">
 		{#if comments.length === 0}
-			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted">
 				No comments yet.<br />
-				<span class="text-xs text-ink-faint dark:text-dark-ink-faint">Select text to comment.</span>
+				<span class="text-xs text-ink-faint">Select text to comment.</span>
 			</p>
 		{:else}
 			{#each comments as c (c.id)}

@@ -9,34 +9,25 @@
 	<title>Access pending — Scholio</title>
 </svelte:head>
 
-<main class="flex min-h-screen items-center justify-center bg-paper px-6 dark:bg-dark-paper">
+<main class="flex min-h-screen items-center justify-center bg-paper px-6">
 	<div class="w-full max-w-md">
-		<a
-			href={resolve('/')}
-			class="mb-8 block font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-		>
+		<a href={resolve('/')} class="mb-8 block font-serif text-2xl font-semibold text-ink">
 			Scholio
 		</a>
 
 		{#if form?.ok}
-			<div
-				class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper"
-			>
-				<h1 class="mb-3 font-serif text-xl font-semibold text-ink dark:text-dark-ink">
-					Request submitted
-				</h1>
-				<p class="font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+			<div class="rounded-xl border border-paper-border bg-white p-8 dark:bg-dark-paper">
+				<h1 class="mb-3 font-serif text-xl font-semibold text-ink">Request submitted</h1>
+				<p class="font-sans text-sm leading-relaxed text-ink-muted">
 					We will notify you as soon as your access to the academic writing platform is ready.
 				</p>
 			</div>
 		{:else}
-			<div
-				class="rounded-xl border border-paper-border bg-white p-8 dark:border-dark-paper-border dark:bg-dark-paper"
-			>
-				<h1 class="mb-2 font-serif text-xl font-semibold text-ink dark:text-dark-ink">
+			<div class="rounded-xl border border-paper-border bg-white p-8 dark:bg-dark-paper">
+				<h1 class="mb-2 font-serif text-xl font-semibold text-ink">
 					Your account does not have access to Scholio yet
 				</h1>
-				<p class="mb-6 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+				<p class="mb-6 font-sans text-sm leading-relaxed text-ink-muted">
 					Scholio is in closed beta. If you want access to the academic writing platform, request a
 					spot and we will notify you when it is ready.
 				</p>
@@ -49,24 +40,18 @@
 
 				<form method="post" action="?/joinWaitlist" class="space-y-4">
 					<div>
-						<label
-							for="name"
-							class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
-						>
+						<label for="name" class="mb-1 block font-sans text-sm font-medium text-ink">
 							Nombre
 						</label>
 						<input
 							id="name"
 							name="name"
 							type="text"
-							class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent"
 						/>
 					</div>
 					<div>
-						<label
-							for="email"
-							class="mb-1 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
-						>
+						<label for="email" class="mb-1 block font-sans text-sm font-medium text-ink">
 							Email
 						</label>
 						<input
@@ -75,7 +60,7 @@
 							type="email"
 							value={data.email ?? ''}
 							required
-							class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent"
 						/>
 					</div>
 					<button
@@ -88,10 +73,7 @@
 			</div>
 
 			<form method="post" action="/logout" class="mt-4 text-center">
-				<button
-					type="submit"
-					class="font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-				>
+				<button type="submit" class="font-sans text-sm text-ink-muted hover:text-ink">
 					Sign out
 				</button>
 			</form>

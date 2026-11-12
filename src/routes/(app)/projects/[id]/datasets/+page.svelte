@@ -73,7 +73,7 @@
 	<div class="mb-8">
 		<a
 			href={resolve(`/projects/${data.project.id}`)}
-			class="mb-4 flex w-fit items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="mb-4 flex w-fit items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 				<path
@@ -89,8 +89,8 @@
 
 		<div class="flex flex-wrap items-center justify-between gap-4">
 			<div>
-				<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Datasets</h1>
-				<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<h1 class="font-serif text-3xl font-semibold text-ink">Datasets</h1>
+				<p class="mt-1 font-sans text-sm text-ink-muted">
 					CSV, TSV or JSON files (up to 5 MB) for the Vega-Lite charts in your documents.
 				</p>
 			</div>
@@ -121,42 +121,36 @@
 	{/if}
 
 	{#if data.datasets.length === 0}
-		<div
-			class="rounded-xl border border-dashed border-paper-border p-12 text-center dark:border-dark-paper-border"
-		>
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<div class="rounded-xl border border-dashed border-paper-border p-12 text-center">
+			<p class="font-sans text-sm text-ink-muted">
 				No datasets yet. Upload a file, then use it in a chart:
 			</p>
 			<pre
-				class="mx-auto mt-3 w-fit rounded bg-paper-ui px-3 py-2 text-left font-mono text-xs text-ink dark:bg-dark-paper-ui dark:text-dark-ink">```vega-lite
+				class="mx-auto mt-3 w-fit rounded bg-paper-ui px-3 py-2 text-left font-mono text-xs text-ink">```vega-lite
 &#123; "data": &#123; "$ref": "dataset:results.csv" &#125;, … &#125;
 ```</pre>
 		</div>
 	{:else}
-		<ul
-			class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<ul class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper p-2">
 			{#each data.datasets as dataset (dataset.id)}
-				<li
-					class="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
-				>
+				<li class="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-paper-ui">
 					<div class="min-w-0">
-						<p class="truncate font-mono text-sm text-ink dark:text-dark-ink">{dataset.filename}</p>
-						<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+						<p class="truncate font-mono text-sm text-ink">{dataset.filename}</p>
+						<p class="font-sans text-xs text-ink-muted">
 							{formatSize(dataset.size)} · {formatDate(dataset.createdAt)}
 						</p>
 					</div>
 					<div class="flex shrink-0 items-center gap-3">
 						<button
 							onclick={() => copyRef(dataset.id, dataset.filename)}
-							class="font-sans text-xs text-ink-muted transition-colors hover:text-accent-ink dark:text-dark-ink-muted"
+							class="font-sans text-xs text-ink-muted transition-colors hover:text-accent-ink"
 						>
 							{copiedId === dataset.id ? 'Copied' : 'Copy chart reference'}
 						</button>
 						{#if dataset.uploadedBy === data.userId}
 							<button
 								onclick={() => remove(dataset.id)}
-								class="font-sans text-xs text-ink-muted transition-colors hover:text-red-600 dark:text-dark-ink-muted dark:hover:text-red-400"
+								class="font-sans text-xs text-ink-muted transition-colors hover:text-red-600 dark:hover:text-red-400"
 							>
 								Delete
 							</button>

@@ -65,20 +65,20 @@
 				<span class="absolute inset-x-0 top-0 h-4" style:background-color={theme.dark.bg}></span>
 			</button>
 
-			<p class="truncate text-center font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+			<p class="truncate text-center font-sans text-[10px] text-ink-faint">
 				{theme.label}
 			</p>
 		</div>
 	{/each}
 </div>
 
-<div class="mt-3 border-t border-paper-border pt-3 dark:border-dark-paper-border">
+<div class="mt-3 border-t border-paper-border pt-3">
 	<button
 		type="button"
 		onclick={() => einkStore.toggle()}
-		class="flex w-full items-center justify-between rounded-md px-1 py-1 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+		class="flex w-full items-center justify-between rounded-md px-1 py-1 hover:bg-paper-ui"
 	>
-		<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">E-ink mode</span>
+		<span class="font-sans text-xs text-ink-muted">E-ink mode</span>
 		<span
 			class="relative inline-flex h-4 w-7 shrink-0 rounded-full border transition-colors"
 			class:bg-ink={einkStore.enabled}

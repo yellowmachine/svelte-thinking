@@ -17,12 +17,12 @@
 		author: 'bg-accent-light text-accent-ink',
 		coauthor: 'bg-accent-light text-accent-ink',
 		reviewer: 'bg-blue-100 text-blue-700',
-		commenter: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted',
-		draft: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted',
+		commenter: 'bg-paper-border text-ink-muted',
+		draft: 'bg-paper-border text-ink-muted',
 		active: 'bg-green-100 text-green-700',
 		review: 'bg-amber-100 text-amber-700',
 		published: 'bg-blue-100 text-blue-700',
-		archived: 'bg-paper-border text-ink-faint dark:bg-dark-paper-border dark:text-dark-ink-faint'
+		archived: 'bg-paper-border text-ink-faint'
 	};
 
 	let displayLabel = $derived(label ?? labels[variant]);

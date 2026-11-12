@@ -24,7 +24,7 @@
 			y2="16"
 		/>
 	</svg>
-	<p class="font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+	<p class="font-sans text-xs leading-relaxed text-ink-muted">
 		{@render children?.()}
 	</p>
 </div>

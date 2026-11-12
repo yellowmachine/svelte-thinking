@@ -76,16 +76,14 @@
 
 {#if status !== 'discarded'}
 	<div
-		class="mt-2 overflow-hidden rounded-xl border transition-colors
-		{status === 'done'
+		class="mt-2 overflow-hidden rounded-xl border transition-colors {status === 'done'
 			? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20'
 			: 'border-accent/20 bg-accent/5 dark:border-accent/15 dark:bg-accent/5'}"
 	>
 		<!-- Header -->
 		<div class="flex items-center gap-3 px-4 pt-4 pb-2">
 			<div
-				class="shrink-0 rounded-lg p-2
-				{status === 'done'
+				class="shrink-0 rounded-lg p-2 {status === 'done'
 					? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
 					: 'bg-accent/10 text-accent-ink'}"
 			>
@@ -121,8 +119,9 @@
 			</div>
 			<div class="min-w-0 flex-1">
 				<p
-					class="font-sans text-[11px] font-semibold tracking-wide uppercase
-					{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent-ink'}"
+					class="font-sans text-[11px] font-semibold tracking-wide uppercase {status === 'done'
+						? 'text-green-600 dark:text-green-400'
+						: 'text-accent-ink'}"
 				>
 					{#if status === 'done'}
 						{addedCount} {addedCount === 1 ? 'reference' : 'references'} added
@@ -131,7 +130,7 @@
 					{/if}
 				</p>
 				{#if status !== 'done'}
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="font-sans text-xs text-ink-faint">
 						{references.length}
 						{references.length === 1 ? 'reference' : 'references'} proposed — select the ones to add
 					</p>
@@ -154,10 +153,10 @@
 								class="mt-0.5 shrink-0 accent-accent"
 							/>
 							<div class="min-w-0">
-								<p class="font-sans text-xs leading-snug font-medium text-ink dark:text-dark-ink">
+								<p class="font-sans text-xs leading-snug font-medium text-ink">
 									{ref.title}
 								</p>
-								<p class="mt-0.5 font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+								<p class="mt-0.5 font-sans text-[11px] text-ink-faint">
 									{#if ref.authors.length > 0}{formatAuthors(ref.authors)}{/if}{#if ref.year}
 										· {ref.year}{/if}
 									{#if ref.type}
@@ -196,7 +195,7 @@
 				<button
 					onclick={discard}
 					disabled={status === 'loading'}
-					class="rounded-lg px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-border disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-border"
+					class="rounded-lg px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-border disabled:opacity-40"
 				>
 					Discard
 				</button>

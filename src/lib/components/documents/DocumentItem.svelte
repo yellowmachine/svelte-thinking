@@ -30,10 +30,9 @@
 
 <button
 	{onclick}
-	class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left font-sans text-sm transition-colors
-		{active
+	class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left font-sans text-sm transition-colors {active
 		? 'bg-accent-light text-accent-ink dark:bg-accent/20 dark:text-dark-ink'
-		: 'text-ink-muted hover:bg-paper-border/50 dark:text-dark-ink-muted dark:hover:bg-dark-paper-border/50'}"
+		: 'text-ink-muted hover:bg-paper-border/50'}"
 >
 	<svg width="13" height="13" viewBox="0 0 13 13" fill="none" class="shrink-0 opacity-60">
 		<path d={typeIcon[type]} stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />

@@ -25,9 +25,7 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<header
-	class="sticky top-0 z-20 border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
->
+<header class="sticky top-0 z-20 border-b border-paper-border bg-paper/95 backdrop-blur-sm">
 	<div class="mx-auto flex max-w-2xl items-center justify-between gap-4 px-6 py-3">
 		<a href={resolve('/')} class="flex items-center gap-2 transition-opacity hover:opacity-80">
 			<div class="flex h-7 w-7 items-center justify-center rounded bg-accent">
@@ -35,18 +33,18 @@
 					<path d="M2 3h10M2 7h7M2 11h5" stroke="white" stroke-width="1.5" stroke-linecap="round" />
 				</svg>
 			</div>
-			<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Scholio</span>
+			<span class="font-serif text-base font-semibold text-ink">Scholio</span>
 		</a>
 		<div class="flex items-center gap-2">
 			<a
 				href={resolve('/blogs')}
-				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				Blogs
 			</a>
 			<a
 				href={resolve('/login')}
-				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				Sign in
 			</a>
@@ -55,22 +53,22 @@
 </header>
 
 <main class="mx-auto max-w-2xl px-6 py-12">
-	<div class="mb-10 border-b border-paper-border pb-6 dark:border-dark-paper-border">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+	<div class="mb-10 border-b border-paper-border pb-6">
+		<h1 class="font-serif text-3xl font-semibold text-ink">
 			{data.author.displayName ?? `@${data.author.handle}`}
 		</h1>
-		<p class="mt-1 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+		<p class="mt-1 font-sans text-sm text-ink-faint">
 			@{data.author.handle}
 		</p>
 		{#if data.author.bio}
-			<p class="mt-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="mt-3 font-sans text-sm text-ink-muted">
 				{data.author.bio}
 			</p>
 		{/if}
 		<a
 			href={resolve('/@[handle]/rss.xml', { handle: data.author.handle ?? '' })}
 			title="Feed RSS"
-			class="mt-3 flex w-fit items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+			class="mt-3 flex w-fit items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink"
 		>
 			<svg
 				width="14"
@@ -92,7 +90,7 @@
 	</div>
 
 	{#if data.posts.length === 0}
-		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">No posts yet.</p>
+		<p class="font-sans text-sm text-ink-faint">No posts yet.</p>
 	{:else}
 		<ul class="flex flex-col gap-6">
 			{#each data.posts as post (post.slug)}
@@ -102,16 +100,16 @@
 							handle: data.author.handle ?? '',
 							slug: post.slug
 						})}
-						class="block rounded-lg border border-paper-border p-5 transition-colors hover:border-accent dark:border-dark-paper-border"
+						class="block rounded-lg border border-paper-border p-5 transition-colors hover:border-accent"
 					>
-						<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">
+						<h2 class="font-serif text-xl font-semibold text-ink">
 							{post.title}
 						</h2>
-						<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<p class="mt-1 font-sans text-xs text-ink-faint">
 							{fmt.format(new Date(post.publishedAt))}
 						</p>
 						{#if post.excerpt}
-							<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+							<p class="mt-2 font-sans text-sm text-ink-muted">
 								{post.excerpt}{post.truncated ? '…' : ''}
 							</p>
 						{/if}
@@ -122,15 +120,10 @@
 	{/if}
 </main>
 
-<footer
-	class="mt-16 border-t border-paper-border bg-paper-ui/50 py-12 dark:border-dark-paper-border dark:bg-dark-paper-ui/50"
->
+<footer class="mt-16 border-t border-paper-border bg-paper-ui/50 py-12">
 	<div class="mx-auto max-w-2xl px-6 text-center">
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Published with <a
-				href={resolve('/')}
-				class="underline hover:text-ink dark:hover:text-dark-ink">Scholio</a
-			>.
+		<p class="font-sans text-sm text-ink-muted">
+			Published with <a href={resolve('/')} class="underline hover:text-ink">Scholio</a>.
 		</p>
 	</div>
 </footer>

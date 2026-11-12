@@ -127,7 +127,7 @@
 	<div class="mb-8">
 		<button
 			onclick={() => (window.location.href = `/projects/${data.project.id}`)}
-			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 				<path
@@ -141,8 +141,8 @@
 			{data.project.title}
 		</button>
 
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Photos</h1>
-		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<h1 class="font-serif text-3xl font-semibold text-ink">Photos</h1>
+		<p class="mt-1 font-sans text-sm text-ink-muted">
 			Upload photos of whiteboards, notes or sketches to use in your documents.
 		</p>
 	</div>
@@ -153,7 +153,7 @@
 			type="button"
 			class="mb-6 w-full cursor-pointer rounded-xl border-2 border-dashed transition-colors {dragOver
 				? 'border-accent bg-accent/5'
-				: 'border-paper-border hover:border-accent/50 dark:border-dark-paper-border'}"
+				: 'border-paper-border hover:border-accent/50'}"
 			ondragover={(e) => {
 				e.preventDefault();
 				dragOver = true;
@@ -168,7 +168,7 @@
 					height="32"
 					viewBox="0 0 24 24"
 					fill="none"
-					class="text-ink-faint dark:text-dark-ink-faint"
+					class="text-ink-faint"
 					aria-hidden="true"
 				>
 					<path
@@ -180,12 +180,8 @@
 					/>
 				</svg>
 				<div>
-					<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Drag photos here or click to select
-					</p>
-					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						JPG, PNG, WebP, GIF · Max. 10 MB
-					</p>
+					<p class="font-sans text-sm font-medium text-ink">Drag photos here or click to select</p>
+					<p class="mt-0.5 font-sans text-xs text-ink-faint">JPG, PNG, WebP, GIF · Max. 10 MB</p>
 				</div>
 			</div>
 		</button>
@@ -201,8 +197,8 @@
 
 	<!-- Staging area -->
 	{#if staged.length > 0}
-		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-5 dark:bg-dark-paper">
-			<h2 class="mb-4 font-serif text-base font-semibold text-ink dark:text-dark-ink">
+		<div class="mb-6 rounded-xl border border-accent/30 bg-paper p-5">
+			<h2 class="mb-4 font-serif text-base font-semibold text-ink">
 				{staged.length === 1
 					? '1 photo ready to upload'
 					: `${staged.length} photos ready to upload`}
@@ -218,7 +214,7 @@
 								type="button"
 								aria-label="Remove"
 								onclick={() => removeStaged(i)}
-								class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white shadow"
+								class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-stone-900 text-white shadow"
 							>
 								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 									<path
@@ -233,14 +229,14 @@
 
 						<!-- Description input -->
 						<div class="flex flex-1 flex-col justify-center gap-1">
-							<p class="truncate font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							<p class="truncate font-sans text-xs text-ink-faint">
 								{item.file.name} · {formatSize(item.file.size)}
 							</p>
 							<textarea
 								bind:value={item.description}
 								placeholder="Note or caption (optional)"
 								rows="2"
-								class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+								class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 							></textarea>
 						</div>
 					</div>
@@ -273,7 +269,7 @@
 					type="button"
 					onclick={cancelStaging}
 					disabled={uploading}
-					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50"
 				>
 					Cancel
 				</button>
@@ -281,7 +277,7 @@
 					type="button"
 					onclick={() => fileInput.click()}
 					disabled={uploading}
-					class="ml-auto rounded-md border border-paper-border px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="ml-auto rounded-md border border-paper-border px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50"
 				>
 					+ Add more
 				</button>
@@ -291,19 +287,15 @@
 
 	<!-- Gallery grid -->
 	{#if photos.length === 0}
-		<div
-			class="rounded-xl border border-dashed border-paper-border py-16 text-center dark:border-dark-paper-border"
-		>
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<div class="rounded-xl border border-dashed border-paper-border py-16 text-center">
+			<p class="font-sans text-sm text-ink-muted">
 				No photos yet. Upload the first one from your phone or computer.
 			</p>
 		</div>
 	{:else}
 		<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
 			{#each photos as photo (photo.id)}
-				<div
-					class="group relative overflow-hidden rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="group relative overflow-hidden rounded-xl border border-paper-border bg-paper">
 					<button
 						type="button"
 						class="block w-full"
@@ -318,7 +310,7 @@
 					</button>
 					{#if photo.description}
 						<div class="px-2.5 py-2">
-							<p class="line-clamp-2 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+							<p class="line-clamp-2 font-sans text-xs text-ink-muted">
 								{photo.description}
 							</p>
 						</div>
@@ -331,7 +323,7 @@
 							<button
 								title="Copy as Markdown"
 								onclick={() => copyMarkdown(photo)}
-								class="rounded-md bg-white/90 p-1.5 text-ink transition-colors hover:bg-white"
+								class="rounded-md bg-white/90 p-1.5 text-stone-900 transition-colors hover:bg-white"
 							>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 									<rect

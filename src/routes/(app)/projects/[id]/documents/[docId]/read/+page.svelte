@@ -67,14 +67,14 @@
 	<title>{data.book.title} — Scholio</title>
 </svelte:head>
 
-<div class="flex h-screen flex-col bg-paper dark:bg-dark-paper">
+<div class="flex h-screen flex-col bg-paper">
 	<!-- Header -->
 	<header
-		class="sticky top-0 z-10 flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-6 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+		class="sticky top-0 z-10 flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-6 py-3 backdrop-blur-sm"
 	>
 		<a
 			href={resolve(`/projects/${data.book.projectId}/documents/${data.book.id}`)}
-			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -91,12 +91,10 @@
 			</svg>
 			Edit
 		</a>
-		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-		<span translate="no" class="font-serif font-semibold text-ink dark:text-dark-ink"
-			>{data.book.title}</span
-		>
+		<span class="text-ink-faint">/</span>
+		<span translate="no" class="font-serif font-semibold text-ink">{data.book.title}</span>
 		{#if data.chapters.length > 0}
-			<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<span class="font-sans text-xs text-ink-faint">
 				{data.chapters.length} chapter{data.chapters.length === 1 ? '' : 's'}
 			</span>
 		{/if}
@@ -105,7 +103,7 @@
 		<button
 			onclick={exportPdf}
 			disabled={isExporting}
-			class="ml-auto flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="ml-auto flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
 			title="Export to PDF"
 		>
 			{#if isExporting}
@@ -135,23 +133,21 @@
 		<!-- TOC sidebar (desktop only) -->
 		{#if data.chapters.length > 0}
 			<aside
-				class="hidden w-56 shrink-0 overflow-y-auto border-r border-paper-border px-4 py-6 lg:block dark:border-dark-paper-border"
+				class="hidden w-56 shrink-0 overflow-y-auto border-r border-paper-border px-4 py-6 lg:block"
 			>
-				<p
-					class="mb-3 font-sans text-xs font-semibold tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
-				>
+				<p class="mb-3 font-sans text-xs font-semibold tracking-wider text-ink-faint uppercase">
 					Contents
 				</p>
 				<nav class="flex flex-col gap-0.5">
 					{#each data.chapters as chapter, i (chapter.id)}
 						<button
 							onclick={() => scrollToChapter(chapter.id)}
-							class="rounded px-2 py-1.5 text-left font-sans text-sm transition-colors
-								{activeChapterId === chapter.id
+							class="rounded px-2 py-1.5 text-left font-sans text-sm transition-colors {activeChapterId ===
+							chapter.id
 								? 'bg-accent-light font-medium text-accent-ink dark:bg-accent/20 dark:text-dark-ink'
-								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+								: 'text-ink-muted hover:text-ink'}"
 						>
-							<span class="mr-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">{i + 1}.</span>
+							<span class="mr-1.5 text-xs text-ink-faint">{i + 1}.</span>
 							<span translate="no">{chapter.title}</span>
 						</button>
 					{/each}
@@ -163,7 +159,7 @@
 		<main class="flex-1 overflow-y-auto">
 			<div class="mx-auto max-w-2xl px-6 py-10">
 				<!-- Book title -->
-				<h1 translate="no" class="mb-8 font-serif text-3xl font-bold text-ink dark:text-dark-ink">
+				<h1 translate="no" class="mb-8 font-serif text-3xl font-bold text-ink">
 					{data.book.title}
 				</h1>
 
@@ -179,25 +175,20 @@
 				{/if}
 
 				{#if data.chapters.length === 0}
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+					<p class="font-sans text-sm text-ink-faint">
 						This book has no chapters yet. Add chapter references using <code
-							class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">[[</code
+							class="rounded bg-paper-ui px-1 font-mono text-xs">[[</code
 						> in the editor.
 					</p>
 				{:else}
 					<!-- Chapters -->
 					{#each data.chapters as chapter, i (chapter.id)}
 						<section id="chapter-{chapter.id}" class="mb-16 scroll-mt-20">
-							<div class="mb-6 border-b border-paper-border pb-4 dark:border-dark-paper-border">
-								<p
-									class="mb-1 font-sans text-xs tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
-								>
+							<div class="mb-6 border-b border-paper-border pb-4">
+								<p class="mb-1 font-sans text-xs tracking-wider text-ink-faint uppercase">
 									Chapter {i + 1}
 								</p>
-								<h2
-									translate="no"
-									class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-								>
+								<h2 translate="no" class="font-serif text-2xl font-semibold text-ink">
 									{chapter.title}
 								</h2>
 							</div>
@@ -209,7 +200,7 @@
 									docMap={docMap()}
 								/>
 							{:else}
-								<p class="font-sans text-sm text-ink-faint italic dark:text-dark-ink-faint">
+								<p class="font-sans text-sm text-ink-faint italic">
 									This chapter has no content yet.
 								</p>
 							{/if}

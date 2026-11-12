@@ -73,17 +73,13 @@
 </script>
 
 <div class="w-full max-w-sm shrink-0">
-	<div
-		class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<div
-			class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-		>
-			<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">URL → AI</h2>
+	<div class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper">
+		<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5">
+			<h2 class="font-serif text-base font-semibold text-ink">URL → AI</h2>
 			<button
 				onclick={onclose}
 				aria-label="Close"
-				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 			>
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 					<path
@@ -99,7 +95,7 @@
 		<div class="space-y-4 px-5 py-4">
 			{#if !hasAiKey}
 				<div class="flex flex-col gap-3 py-2">
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					<p class="font-sans text-sm text-ink-muted">
 						This feature requires an AI model. Configure your API key to extract metadata from URLs.
 					</p>
 					<a
@@ -110,7 +106,7 @@
 					</a>
 				</div>
 			{:else}
-				<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+				<p class="font-sans text-xs text-ink-muted">
 					Paste the URL of a webpage. Your AI model will extract the bibliographic metadata. The
 					page must be publicly accessible.
 				</p>
@@ -119,7 +115,7 @@
 						type="url"
 						bind:value={urlInput}
 						placeholder="https://..."
-						class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 						onkeydown={(e) => e.key === 'Enter' && runUrlLookup()}
 					/>
 					<button
@@ -132,9 +128,7 @@
 				</div>
 
 				{#if urlLoading}
-					<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-						Fetching page and extracting metadata…
-					</p>
+					<p class="font-sans text-xs text-ink-muted">Fetching page and extracting metadata…</p>
 				{/if}
 
 				{#if urlError}
@@ -146,26 +140,24 @@
 				{/if}
 
 				{#if urlResult}
-					<div
-						class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-					>
-						<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+					<div class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3">
+						<p class="font-sans text-xs font-semibold text-ink">
 							{urlResult.title}
 						</p>
 						{#if urlResult.authors.length}
-							<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+							<p class="font-sans text-xs text-ink-muted">
 								{urlResult.authors.map((a) => `${a.last}, ${a.first}`).join(' · ')}
 							</p>
 						{/if}
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<p class="font-sans text-xs text-ink-faint">
 							{[urlResult.journal, urlResult.year].filter(Boolean).join(', ')}
 						</p>
 						<p class="font-mono text-[10px] text-accent-ink">@{urlResult.citeKey}</p>
-						<p class="truncate font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+						<p class="truncate font-sans text-[10px] text-ink-faint">
 							{urlResult.url}
 						</p>
 					</div>
-					<p class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">
+					<p class="font-sans text-[11px] text-ink-muted">
 						Review and edit the fields after adding if needed.
 					</p>
 					<label class="flex cursor-pointer items-center gap-2">
@@ -174,9 +166,7 @@
 							bind:checked={urlImportDocument}
 							class="h-3.5 w-3.5 rounded accent-accent"
 						/>
-						<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-							Import page as document
-						</span>
+						<span class="font-sans text-xs text-ink-muted"> Import page as document </span>
 					</label>
 					<button
 						onclick={handleAccept}

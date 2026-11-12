@@ -85,36 +85,24 @@
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
-	<h1
-		data-tutorial="explore-title"
-		class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-	>
-		Explore
-	</h1>
-	<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-		Discover academic projects and collaborators.
-	</p>
+	<h1 data-tutorial="explore-title" class="font-serif text-2xl font-semibold text-ink">Explore</h1>
+	<p class="mt-1 font-sans text-sm text-ink-muted">Discover academic projects and collaborators.</p>
 
 	<!-- Tabs -->
-	<div
-		data-tutorial="explore-tabs"
-		class="mt-6 flex gap-1 border-b border-paper-border dark:border-dark-paper-border"
-	>
+	<div data-tutorial="explore-tabs" class="mt-6 flex gap-1 border-b border-paper-border">
 		<button
 			onclick={() => switchTab('projects')}
-			class="px-4 py-2 font-sans text-sm font-medium transition-colors
-				{tab === 'projects'
+			class="px-4 py-2 font-sans text-sm font-medium transition-colors {tab === 'projects'
 				? 'border-b-2 border-accent text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			Projects
 		</button>
 		<button
 			onclick={() => switchTab('researchers')}
-			class="px-4 py-2 font-sans text-sm font-medium transition-colors
-				{tab === 'researchers'
+			class="px-4 py-2 font-sans text-sm font-medium transition-colors {tab === 'researchers'
 				? 'border-b-2 border-accent text-accent-ink'
-				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+				: 'text-ink-muted hover:text-ink'}"
 		>
 			Researchers
 		</button>
@@ -129,7 +117,7 @@
 			placeholder={tab === 'projects'
 				? 'Search projects by topic…'
 				: 'Search researchers by specialty…'}
-			class="flex-1 rounded-lg border border-paper-border bg-paper px-4 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:ring-2 focus:ring-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint"
+			class="flex-1 rounded-lg border border-paper-border bg-paper px-4 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:ring-2 focus:ring-accent focus:outline-none"
 		/>
 		<button
 			onclick={search}
@@ -142,7 +130,7 @@
 			<button
 				onclick={loadAll}
 				disabled={loading}
-				class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent-ink disabled:opacity-50"
 			>
 				Ver todos
 			</button>
@@ -157,26 +145,18 @@
 	{#if tab === 'projects' && searched}
 		<div class="mt-8">
 			{#if projectResults.length === 0}
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">No projects found.</p>
+				<p class="font-sans text-sm text-ink-muted">No projects found.</p>
 			{:else}
 				<ul class="flex flex-col gap-4">
 					{#each projectResults as proj (proj.id)}
-						<li
-							class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-						>
+						<li class="rounded-xl border border-paper-border bg-paper p-5">
 							<div class="flex items-start justify-between gap-4">
 								<div class="min-w-0 flex-1">
-									<h2
-										translate="no"
-										class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
-									>
+									<h2 translate="no" class="font-serif text-base font-semibold text-ink">
 										{proj.title}
 									</h2>
 									{#if proj.description}
-										<p
-											translate="no"
-											class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-										>
+										<p translate="no" class="mt-1 font-sans text-sm text-ink-muted">
 											{proj.description}
 										</p>
 									{/if}
@@ -184,14 +164,11 @@
 									{#if proj.abstractContent}
 										<div class="bg-surface dark:bg-dark-surface mt-3 rounded-lg px-4 py-3">
 											<p
-												class="mb-1 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
+												class="mb-1 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase"
 											>
 												Abstract
 											</p>
-											<p
-												translate="no"
-												class="line-clamp-4 font-sans text-sm text-ink dark:text-dark-ink"
-											>
+											<p translate="no" class="line-clamp-4 font-sans text-sm text-ink">
 												{proj.abstractContent}
 											</p>
 										</div>
@@ -206,10 +183,7 @@
 										>
 											{(proj.ownerDisplayName ?? proj.ownerName ?? '?').charAt(0).toUpperCase()}
 										</span>
-										<span
-											translate="no"
-											class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-										>
+										<span translate="no" class="font-sans text-xs text-ink-muted">
 											{proj.ownerDisplayName ?? proj.ownerName}
 											{#if proj.ownerInstitution}
 												· {proj.ownerInstitution}
@@ -222,10 +196,9 @@
 									onclick={() => togglePin(proj.id, proj.isPinned)}
 									disabled={pinning === proj.id}
 									title={proj.isPinned ? 'Remove interest' : 'Mark interest'}
-									class="shrink-0 rounded-lg border px-3 py-1.5 font-sans text-xs font-medium transition-colors disabled:opacity-50
-										{proj.isPinned
+									class="shrink-0 rounded-lg border px-3 py-1.5 font-sans text-xs font-medium transition-colors disabled:opacity-50 {proj.isPinned
 										? 'border-accent bg-accent/10 text-accent-ink'
-										: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+										: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent-ink'}"
 								>
 									{pinning === proj.id ? '…' : proj.isPinned ? '★ Saved' : '☆ Save'}
 								</button>
@@ -241,15 +214,11 @@
 	{#if tab === 'researchers' && searched}
 		<div class="mt-8">
 			{#if researcherResults.length === 0}
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					No researchers found.
-				</p>
+				<p class="font-sans text-sm text-ink-muted">No researchers found.</p>
 			{:else}
 				<ul class="flex flex-col gap-4">
 					{#each researcherResults as r (r.user_id)}
-						<li
-							class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-						>
+						<li class="rounded-xl border border-paper-border bg-paper p-5">
 							<a
 								href={resolve(`/u/${r.user_id}`)}
 								class="flex items-start gap-4 hover:no-underline"
@@ -260,30 +229,21 @@
 									{(r.display_name ?? r.name ?? '?').charAt(0).toUpperCase()}
 								</span>
 								<div class="min-w-0 flex-1">
-									<p
-										translate="no"
-										class="font-sans text-sm font-semibold text-ink dark:text-dark-ink"
-									>
+									<p translate="no" class="font-sans text-sm font-semibold text-ink">
 										{r.display_name ?? r.name}
 									</p>
 									{#if r.institution}
-										<p
-											translate="no"
-											class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-										>
+										<p translate="no" class="font-sans text-xs text-ink-muted">
 											{r.institution}
 										</p>
 									{/if}
 									{#if r.bio}
-										<p
-											translate="no"
-											class="mt-1 line-clamp-2 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-										>
+										<p translate="no" class="mt-1 line-clamp-2 font-sans text-xs text-ink-muted">
 											{r.bio}
 										</p>
 									{/if}
 								</div>
-								<span class="shrink-0 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								<span class="shrink-0 font-sans text-xs text-ink-faint">
 									{Math.round(r.similarity * 100)}% match
 								</span>
 							</a>

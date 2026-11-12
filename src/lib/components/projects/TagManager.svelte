@@ -97,20 +97,20 @@
 				showDropdown = true;
 			}}
 			placeholder="Add tag…"
-			class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+			class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 		/>
 
 		{#if showDropdown && (filtered.length > 0 || inputValue.trim())}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
-				class="absolute top-full right-0 left-0 z-20 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+				class="absolute top-full right-0 left-0 z-20 mt-1 max-h-48 overflow-y-auto rounded-md border border-paper-border bg-paper shadow-lg"
 				onmousedown={(e) => e.preventDefault()}
 			>
 				{#each filtered as t (t.id)}
 					<button
 						type="button"
 						onclick={() => addTag(t)}
-						class="flex w-full items-center px-3 py-1.5 font-sans text-xs text-ink hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+						class="flex w-full items-center px-3 py-1.5 font-sans text-xs text-ink hover:bg-paper-ui"
 						><span translate="no">{t.name}</span></button
 					>
 				{/each}
@@ -119,7 +119,7 @@
 						type="button"
 						onclick={createAndAdd}
 						disabled={loading}
-						class="flex w-full items-center gap-1.5 px-3 py-1.5 font-sans text-xs text-accent-ink hover:bg-paper-ui disabled:opacity-50 dark:hover:bg-dark-paper-ui"
+						class="flex w-full items-center gap-1.5 px-3 py-1.5 font-sans text-xs text-accent-ink hover:bg-paper-ui disabled:opacity-50"
 					>
 						<span class="font-medium">+ Create</span> "{inputValue.trim()}"
 					</button>

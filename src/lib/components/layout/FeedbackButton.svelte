@@ -62,28 +62,23 @@
 		></button>
 
 		<div
-			class="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+			class="relative w-full max-w-md rounded-2xl border border-paper-border bg-paper shadow-2xl"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="feedback-dialog-title"
 		>
-			<div
-				class="flex items-center justify-between border-b border-paper-border px-5 py-4 dark:border-dark-paper-border"
-			>
+			<div class="flex items-center justify-between border-b border-paper-border px-5 py-4">
 				<div>
-					<h2
-						id="feedback-dialog-title"
-						class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
-					>
+					<h2 id="feedback-dialog-title" class="font-serif text-base font-semibold text-ink">
 						Leave feedback
 					</h2>
-					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mt-0.5 font-sans text-xs text-ink-faint">
 						We're in beta — your feedback shapes Scholio.
 					</p>
 				</div>
 				<button
 					onclick={close}
-					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 					aria-label="Close"
 				>
 					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -116,17 +111,15 @@
 								stroke-linejoin="round"
 							/>
 						</svg>
-						<p class="font-serif text-base font-medium text-ink dark:text-dark-ink">Thank you!</p>
-						<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							Your feedback has been published.
-						</p>
+						<p class="font-serif text-base font-medium text-ink">Thank you!</p>
+						<p class="font-sans text-sm text-ink-muted">Your feedback has been published.</p>
 					</div>
 				{:else}
 					<textarea
 						bind:value={message}
 						rows="4"
 						placeholder="What would you improve? What's missing? Anything not working well?"
-						class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					></textarea>
 
 					<div
@@ -146,8 +139,7 @@
 							bind:checked={showName}
 							class="h-4 w-4 rounded border-paper-border accent-accent"
 						/>
-						<span class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-							>Show my name alongside the feedback</span
+						<span class="font-sans text-sm text-ink-muted">Show my name alongside the feedback</span
 						>
 					</label>
 
@@ -158,7 +150,7 @@
 					<div class="mt-4 flex justify-end gap-2">
 						<button
 							onclick={close}
-							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 						>
 							Cancel
 						</button>

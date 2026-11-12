@@ -58,17 +58,13 @@
 </script>
 
 <div class="w-full max-w-sm shrink-0">
-	<div
-		class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<div
-			class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-		>
-			<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">DOI lookup</h2>
+	<div class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper">
+		<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5">
+			<h2 class="font-serif text-base font-semibold text-ink">DOI lookup</h2>
 			<button
 				onclick={onclose}
 				aria-label="Close"
-				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 			>
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 					<path
@@ -87,7 +83,7 @@
 					type="text"
 					bind:value={doiInput}
 					placeholder="10.1000/xyz123 or https://doi.org/..."
-					class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="min-w-0 flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					onkeydown={(e) => e.key === 'Enter' && runDoiLookup()}
 				/>
 				<button
@@ -108,18 +104,16 @@
 			{/if}
 
 			{#if doiResult}
-				<div
-					class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-				>
-					<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+				<div class="space-y-1.5 rounded-lg border border-paper-border bg-paper-ui px-4 py-3">
+					<p class="font-sans text-xs font-semibold text-ink">
 						{doiResult.title}
 					</p>
 					{#if doiResult.authors.length}
-						<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+						<p class="font-sans text-xs text-ink-muted">
 							{doiResult.authors.map((a) => `${a.last}, ${a.first}`).join(' · ')}
 						</p>
 					{/if}
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="font-sans text-xs text-ink-faint">
 						{[doiResult.journal, doiResult.year].filter(Boolean).join(', ')}
 						{#if doiResult.doi}<span class="ml-1 font-mono">DOI: {doiResult.doi}</span>{/if}
 					</p>

@@ -72,9 +72,7 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.39/dist/katex.min.css" />
 </svelte:head>
 
-<header
-	class="sticky top-0 z-20 border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
->
+<header class="sticky top-0 z-20 border-b border-paper-border bg-paper/95 backdrop-blur-sm">
 	<div class="mx-auto flex max-w-2xl items-center justify-between gap-4 px-6 py-3">
 		<a href={resolve('/')} class="flex items-center gap-2 transition-opacity hover:opacity-80">
 			<div class="flex h-7 w-7 items-center justify-center rounded bg-accent">
@@ -82,18 +80,18 @@
 					<path d="M2 3h10M2 7h7M2 11h5" stroke="white" stroke-width="1.5" stroke-linecap="round" />
 				</svg>
 			</div>
-			<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Scholio</span>
+			<span class="font-serif text-base font-semibold text-ink">Scholio</span>
 		</a>
 		<div class="flex items-center gap-2">
 			<a
 				href={resolve('/blogs')}
-				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				Blogs
 			</a>
 			<a
 				href={resolve('/login')}
-				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				Sign in
 			</a>
@@ -102,18 +100,18 @@
 </header>
 
 <main class="mx-auto max-w-2xl px-6 py-12">
-	<div class="mb-8 border-b border-paper-border pb-6 dark:border-dark-paper-border">
+	<div class="mb-8 border-b border-paper-border pb-6">
 		<a
 			href={resolve('/@[handle]', { handle: data.author.handle ?? '' })}
-			class="font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink"
 		>
 			@{data.author.handle}
 		</a>
-		<h1 class="mt-2 font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+		<h1 class="mt-2 font-serif text-3xl font-semibold text-ink">
 			{data.post.title}
 		</h1>
 		<div class="mt-3 flex flex-wrap items-center gap-4">
-			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="font-sans text-xs text-ink-faint">
 				{fmt.format(new Date(data.post.publishedAt))}
 			</p>
 			<div class="flex items-center gap-3">
@@ -124,7 +122,7 @@
 					href={pdfUrl}
 					title="Download PDF"
 					aria-label="Download PDF"
-					class="flex items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					class="flex items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink"
 				>
 					<svg
 						width="14"
@@ -149,7 +147,7 @@
 					rel="noopener noreferrer"
 					title="Share on X"
 					aria-label="Share on X"
-					class="flex items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					class="flex items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 						<path
@@ -169,8 +167,8 @@
 	</article>
 
 	{#if data.post.commentsEnabled || comments.length > 0}
-		<section class="mt-16 border-t border-paper-border pt-8 dark:border-dark-paper-border">
-			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+		<section class="mt-16 border-t border-paper-border pt-8">
+			<h2 class="font-serif text-lg font-semibold text-ink">
 				Comments{comments.length > 0 ? ` (${comments.length})` : ''}
 			</h2>
 
@@ -182,7 +180,7 @@
 							rows="3"
 							maxlength="5000"
 							placeholder="Write a comment…"
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 						></textarea>
 						{#if postError}
 							<p class="font-sans text-sm text-red-600 dark:text-red-400">{postError}</p>
@@ -196,10 +194,8 @@
 						</button>
 					</div>
 				{:else}
-					<p class="mt-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						<a href={resolve('/login')} class="underline hover:text-ink dark:hover:text-dark-ink"
-							>Sign in</a
-						> to comment.
+					<p class="mt-3 font-sans text-sm text-ink-muted">
+						<a href={resolve('/login')} class="underline hover:text-ink">Sign in</a> to comment.
 					</p>
 				{/if}
 			{/if}
@@ -207,23 +203,17 @@
 			{#if comments.length > 0}
 				<ul class="mt-6 flex flex-col gap-4">
 					{#each comments as comment (comment.id)}
-						<li class="border-b border-paper-border pb-4 dark:border-dark-paper-border">
+						<li class="border-b border-paper-border pb-4">
 							<div class="flex items-baseline gap-2">
-								<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-									>{comment.authorName}</span
-								>
-								<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								<span class="font-sans text-sm font-medium text-ink">{comment.authorName}</span>
+								<span class="font-sans text-xs text-ink-faint">
 									{commentFmt.format(new Date(comment.createdAt))}
 								</span>
 								{#if optimisticComments.some((c) => c.id === comment.id)}
-									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-										>· awaiting moderation</span
-									>
+									<span class="font-sans text-xs text-ink-faint">· awaiting moderation</span>
 								{/if}
 							</div>
-							<p
-								class="mt-1 font-sans text-sm whitespace-pre-wrap text-ink-muted dark:text-dark-ink-muted"
-							>
+							<p class="mt-1 font-sans text-sm whitespace-pre-wrap text-ink-muted">
 								{comment.content}
 							</p>
 						</li>
@@ -234,15 +224,10 @@
 	{/if}
 </main>
 
-<footer
-	class="mt-16 border-t border-paper-border bg-paper-ui/50 py-12 dark:border-dark-paper-border dark:bg-dark-paper-ui/50"
->
+<footer class="mt-16 border-t border-paper-border bg-paper-ui/50 py-12">
 	<div class="mx-auto max-w-2xl px-6 text-center">
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Published with <a
-				href={resolve('/')}
-				class="underline hover:text-ink dark:hover:text-dark-ink">Scholio</a
-			>.
+		<p class="font-sans text-sm text-ink-muted">
+			Published with <a href={resolve('/')} class="underline hover:text-ink">Scholio</a>.
 		</p>
 	</div>
 </footer>

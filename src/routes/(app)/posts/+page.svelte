@@ -125,26 +125,20 @@
 <div class="mx-auto max-w-5xl px-6 py-10">
 	<div class="mb-8 flex items-start justify-between gap-4">
 		<div>
-			<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Blog</h1>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Manage the posts on your blog.
-			</p>
+			<h1 class="font-serif text-3xl font-semibold text-ink">Blog</h1>
+			<p class="mt-1 font-sans text-sm text-ink-muted">Manage the posts on your blog.</p>
 		</div>
 		<a
 			href={resolve('/lists')}
-			class="shrink-0 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="shrink-0 font-sans text-sm text-ink-muted underline decoration-dotted hover:text-ink"
 		>
 			Your lists →
 		</a>
 	</div>
 
 	{#if !data.handle}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-6 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				You haven't set up your blog yet.
-			</p>
+		<div class="rounded-xl border border-paper-border bg-paper p-6 text-center">
+			<p class="mb-4 font-sans text-sm text-ink-muted">You haven't set up your blog yet.</p>
 			<a
 				href={resolve('/settings?tab=blog')}
 				class="inline-block rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
@@ -153,14 +147,14 @@
 			</a>
 		</div>
 	{:else if data.months.length === 0}
-		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+		<p class="font-sans text-sm text-ink-faint">
 			You haven't published anything yet. Publish a version from a document's history.
 		</p>
 	{:else}
 		<div class="flex flex-col gap-8 sm:flex-row">
 			<div class="flex-1">
 				{#if posts.length === 0}
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+					<p class="font-sans text-sm text-ink-faint">
 						No posts in {monthLabel(data.selectedMonth)}.
 					</p>
 				{:else}
@@ -170,26 +164,24 @@
 								expandedPostId === post.id
 									? moderationComments.filter((c) => c.status === 'pending').length
 									: post.pendingCommentCount}
-							<div
-								class="rounded-lg border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-							>
+							<div class="rounded-lg border border-paper-border bg-paper">
 								<div class="flex items-center justify-between gap-3 px-4 py-3">
 									<div class="min-w-0 flex-1">
 										<a
 											href={resolve('/@[handle]/[slug]', { handle: data.handle, slug: post.slug })}
 											target="_blank"
 											rel="noopener noreferrer"
-											class="truncate font-sans text-sm font-medium text-ink hover:underline dark:text-dark-ink"
+											class="truncate font-sans text-sm font-medium text-ink hover:underline"
 										>
 											{post.title}
 										</a>
-										<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+										<p class="font-sans text-xs text-ink-faint">
 											{dateFmt.format(new Date(post.publishedAt))} · originado en
 											<a
 												href={resolve(
 													`/projects/${post.projectId}/documents/${post.documentId}/history`
 												)}
-												class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
+												class="underline decoration-dotted hover:text-ink-muted"
 											>
 												v{post.versionNumber}
 											</a>
@@ -198,7 +190,7 @@
 									<button
 										type="button"
 										onclick={() => toggleModeration(post)}
-										class="shrink-0 font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										class="shrink-0 font-sans text-xs text-ink-muted transition-colors hover:text-ink"
 									>
 										Comments{pendingCount > 0 ? ` (${pendingCount} pending)` : ''}
 									</button>
@@ -213,11 +205,9 @@
 								</div>
 
 								{#if expandedPostId === post.id}
-									<div class="border-t border-paper-border px-4 py-3 dark:border-dark-paper-border">
+									<div class="border-t border-paper-border px-4 py-3">
 										<div class="flex flex-wrap items-center gap-4">
-											<label
-												class="flex items-center gap-2 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-											>
+											<label class="flex items-center gap-2 font-sans text-xs text-ink-muted">
 												<input
 													type="checkbox"
 													checked={post.commentsEnabled}
@@ -227,9 +217,7 @@
 												/>
 												Allow new comments
 											</label>
-											<label
-												class="flex items-center gap-2 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-											>
+											<label class="flex items-center gap-2 font-sans text-xs text-ink-muted">
 												<input
 													type="checkbox"
 													checked={post.commentsVisible}
@@ -242,23 +230,17 @@
 										</div>
 
 										{#if moderationLoading}
-											<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-												Loading comments…
-											</p>
+											<p class="mt-3 font-sans text-xs text-ink-faint">Loading comments…</p>
 										{:else if moderationComments.length === 0}
-											<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+											<p class="mt-3 font-sans text-xs text-ink-faint">
 												No comments on this post yet.
 											</p>
 										{:else}
 											<ul class="mt-3 flex flex-col gap-3">
 												{#each moderationComments as comment (comment.id)}
-													<li
-														class="rounded-md border border-paper-border p-3 dark:border-dark-paper-border"
-													>
+													<li class="rounded-md border border-paper-border p-3">
 														<div class="flex flex-wrap items-center gap-2">
-															<span
-																class="font-sans text-xs font-medium text-ink dark:text-dark-ink"
-															>
+															<span class="font-sans text-xs font-medium text-ink">
 																{statusLabel[comment.status]}
 															</span>
 															{#if comment.aiFlagged}
@@ -269,15 +251,11 @@
 																	Flagged by AI
 																</span>
 															{/if}
-															<span
-																class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-															>
+															<span class="font-sans text-xs text-ink-faint">
 																{dateFmt.format(new Date(comment.createdAt))}
 															</span>
 														</div>
-														<p
-															class="mt-1 font-sans text-sm whitespace-pre-wrap text-ink-muted dark:text-dark-ink-muted"
-														>
+														<p class="mt-1 font-sans text-sm whitespace-pre-wrap text-ink-muted">
 															{comment.content}
 														</p>
 														<div class="mt-2 flex gap-3">
@@ -296,7 +274,7 @@
 																	type="button"
 																	disabled={commentActionId === comment.id}
 																	onclick={() => moderate(comment, 'hidden')}
-																	class="font-sans text-xs text-ink-muted hover:text-ink disabled:opacity-50 dark:text-dark-ink-muted dark:hover:text-dark-ink"
+																	class="font-sans text-xs text-ink-muted hover:text-ink disabled:opacity-50"
 																>
 																	Hide
 																</button>
@@ -323,9 +301,7 @@
 			</div>
 
 			<nav class="shrink-0 sm:w-48">
-				<p
-					class="mb-2 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-				>
+				<p class="mb-2 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 					Archive
 				</p>
 				<ul class="flex flex-col gap-0.5">
@@ -336,10 +312,10 @@
 								class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 font-sans text-sm transition-colors {bucket.month ===
 								data.selectedMonth
 									? 'bg-accent/10 text-accent-ink'
-									: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
+									: 'text-ink-muted hover:bg-paper-ui hover:text-ink'}"
 							>
 								<span class="capitalize">{monthLabel(bucket.month)}</span>
-								<span class="text-xs text-ink-faint dark:text-dark-ink-faint">{bucket.count}</span>
+								<span class="text-xs text-ink-faint">{bucket.count}</span>
 							</a>
 						</li>
 					{/each}

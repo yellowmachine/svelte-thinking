@@ -37,6 +37,19 @@
 	--color-dark-accent: #c4996b;
 }
 
+/* Dark mode: the paper/ink tokens take their dark values, so bg-paper, text-ink,
+   border-paper-border… follow the mode by themselves and need no dark: twin.
+   (The dark-* tokens stay, for the few places that pin a colour on purpose.)
+   Theme blocks and e-ink set both sets on <html>; these read whichever applies. */
+:root.dark {
+	--color-paper: var(--color-dark-paper);
+	--color-paper-ui: var(--color-dark-paper-ui);
+	--color-paper-border: var(--color-dark-paper-border);
+	--color-ink: var(--color-dark-ink);
+	--color-ink-muted: var(--color-dark-ink-muted);
+	--color-ink-faint: var(--color-dark-ink-faint);
+}
+
 /* text-accent-ink: the light accent on paper, the dark accent on dark paper */
 :root {
 	--accent-ink: var(--color-accent);

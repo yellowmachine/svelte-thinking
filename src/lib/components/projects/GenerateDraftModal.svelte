@@ -97,24 +97,19 @@
 		tabindex="-1"
 	></button>
 	<div
-		class="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+		class="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-paper-border bg-paper shadow-2xl"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="generate-draft-title"
 	>
 		<!-- Header -->
-		<div
-			class="flex items-center justify-between border-b border-paper-border px-6 py-4 dark:border-dark-paper-border"
-		>
-			<h2
-				id="generate-draft-title"
-				class="font-serif text-lg font-semibold text-ink dark:text-dark-ink"
-			>
+		<div class="flex items-center justify-between border-b border-paper-border px-6 py-4">
+			<h2 id="generate-draft-title" class="font-serif text-lg font-semibold text-ink">
 				Generate draft with AI
 			</h2>
 			<button
 				onclick={onclose}
-				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 				aria-label="Close"
 			>
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -132,16 +127,13 @@
 		<div class="flex-1 space-y-5 overflow-y-auto px-6 py-5">
 			<!-- Output type -->
 			<div>
-				<label
-					for="output-type"
-					class="mb-1.5 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
-				>
+				<label for="output-type" class="mb-1.5 block font-sans text-sm font-medium text-ink">
 					Draft type
 				</label>
 				<select
 					id="output-type"
 					bind:value={outputType}
-					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 				>
 					{#each outputTypeOptions as opt (opt.value)}
 						<option value={opt.value}>{opt.label}</option>
@@ -152,16 +144,13 @@
 			<!-- Style + Audience -->
 			<div class="grid grid-cols-2 gap-3">
 				<div>
-					<label
-						for="draft-style"
-						class="mb-1.5 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<label for="draft-style" class="mb-1.5 block font-sans text-sm font-medium text-ink">
 						Style
 					</label>
 					<select
 						id="draft-style"
 						bind:value={style}
-						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					>
 						{#each styleOptions as opt (opt.value)}
 							<option value={opt.value}>{opt.label}</option>
@@ -169,16 +158,13 @@
 					</select>
 				</div>
 				<div>
-					<label
-						for="draft-audience"
-						class="mb-1.5 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<label for="draft-audience" class="mb-1.5 block font-sans text-sm font-medium text-ink">
 						Audience
 					</label>
 					<select
 						id="draft-audience"
 						bind:value={audience}
-						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					>
 						{#each audienceOptions as opt (opt.value)}
 							<option value={opt.value}>{opt.label}</option>
@@ -190,32 +176,24 @@
 			<!-- Context documents -->
 			<div>
 				<div class="mb-1.5 flex items-center justify-between">
-					<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Context documents
-					</span>
+					<span class="font-sans text-sm font-medium text-ink"> Context documents </span>
 					<div class="flex gap-2">
 						<button onclick={selectAll} class="font-sans text-xs text-accent-ink hover:underline"
 							>All</button
 						>
-						<span class="text-ink-faint dark:text-dark-ink-faint">·</span>
-						<button
-							onclick={selectNone}
-							class="font-sans text-xs text-ink-muted hover:underline dark:text-dark-ink-muted"
+						<span class="text-ink-faint">·</span>
+						<button onclick={selectNone} class="font-sans text-xs text-ink-muted hover:underline"
 							>None</button
 						>
 					</div>
 				</div>
 				{#if documents.length === 0}
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						No documents in this project.
-					</p>
+					<p class="font-sans text-sm text-ink-faint">No documents in this project.</p>
 				{:else}
-					<div
-						class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper-ui p-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-					>
+					<div class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper-ui p-2">
 						{#each documents as doc (doc.id)}
 							<label
-								class="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-paper dark:hover:bg-dark-paper"
+								class="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-paper"
 							>
 								<input
 									type="checkbox"
@@ -224,17 +202,15 @@
 									class="h-4 w-4 rounded border-paper-border accent-accent"
 								/>
 								<span class="min-w-0 flex-1">
-									<span class="block truncate font-sans text-sm text-ink dark:text-dark-ink"
-										>{doc.title}</span
-									>
-									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+									<span class="block truncate font-sans text-sm text-ink">{doc.title}</span>
+									<span class="font-sans text-xs text-ink-faint"
 										>{docTypeLabel[doc.type] ?? doc.type}</span
 									>
 								</span>
 							</label>
 						{/each}
 					</div>
-					<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mt-1 font-sans text-xs text-ink-faint">
 						{selectedDocIds.size} of {documents.length} selected
 					</p>
 				{/if}
@@ -242,13 +218,8 @@
 
 			<!-- Extra instructions -->
 			<div>
-				<label
-					for="extra-instructions"
-					class="mb-1.5 block font-sans text-sm font-medium text-ink dark:text-dark-ink"
-				>
-					Additional instructions <span class="font-normal text-ink-faint dark:text-dark-ink-faint"
-						>(optional)</span
-					>
+				<label for="extra-instructions" class="mb-1.5 block font-sans text-sm font-medium text-ink">
+					Additional instructions <span class="font-normal text-ink-faint">(optional)</span>
 				</label>
 				<textarea
 					id="extra-instructions"
@@ -256,7 +227,7 @@
 					placeholder="E.g.: Focus on the results of section 3. Use molecular biology terminology."
 					rows={3}
 					maxlength={1000}
-					class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				></textarea>
 			</div>
 
@@ -270,13 +241,11 @@
 		</div>
 
 		<!-- Footer -->
-		<div
-			class="flex items-center justify-end gap-2 border-t border-paper-border px-6 py-4 dark:border-dark-paper-border"
-		>
+		<div class="flex items-center justify-end gap-2 border-t border-paper-border px-6 py-4">
 			<button
 				onclick={onclose}
 				disabled={loading}
-				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50"
 			>
 				Cancel
 			</button>

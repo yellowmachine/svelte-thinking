@@ -129,7 +129,7 @@
 
 <!-- Bottom nav -->
 <nav
-	class="pb-safe fixed inset-x-0 bottom-0 z-10 border-t border-paper-border bg-paper/95 backdrop-blur-sm sm:hidden dark:border-dark-paper-border dark:bg-dark-paper/95"
+	class="pb-safe fixed inset-x-0 bottom-0 z-10 border-t border-paper-border bg-paper/95 backdrop-blur-sm sm:hidden"
 >
 	<div class="flex items-center">
 		<!-- Proyectos -->
@@ -138,7 +138,7 @@
 			aria-current={onProjects ? 'page' : undefined}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onProjects
 				? 'text-accent-ink'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+				: 'text-ink-muted'}"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -162,7 +162,7 @@
 			aria-current={onExplore ? 'page' : undefined}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onExplore
 				? 'text-accent-ink'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+				: 'text-ink-muted'}"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -183,7 +183,7 @@
 		<!-- + Nota -->
 		<button
 			onclick={() => openSheet('note')}
-			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors dark:text-dark-ink-muted"
+			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors"
 		>
 			<span
 				class="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white shadow-sm"
@@ -209,7 +209,7 @@
 		<!-- Photos -->
 		<button
 			onclick={() => openSheet('photo')}
-			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors dark:text-dark-ink-muted"
+			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -237,7 +237,7 @@
 			aria-expanded={sheet === 'more'}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onMore
 				? 'text-accent-ink'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+				: 'text-ink-muted'}"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -277,11 +277,11 @@
 		role="dialog"
 		aria-modal="true"
 		aria-label={sheet === 'more' ? 'More sections' : 'Choose a project'}
-		class="pb-safe fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-paper-border bg-paper sm:hidden dark:border-dark-paper-border dark:bg-dark-paper"
+		class="pb-safe fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-paper-border bg-paper sm:hidden"
 	>
 		<!-- Handle -->
 		<div class="flex justify-center pt-3 pb-1">
-			<div class="h-1 w-10 rounded-full bg-paper-border dark:bg-dark-paper-border"></div>
+			<div class="h-1 w-10 rounded-full bg-paper-border"></div>
 		</div>
 
 		{#if sheet === 'more'}
@@ -292,7 +292,7 @@
 							href={resolve(link.href)}
 							onclick={close}
 							aria-current={page.url.pathname.startsWith(link.href) ? 'page' : undefined}
-							class="block px-4 py-3 font-sans text-sm text-ink transition-colors hover:bg-paper-ui aria-[current=page]:font-medium aria-[current=page]:text-accent-ink dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+							class="block px-4 py-3 font-sans text-sm text-ink transition-colors hover:bg-paper-ui aria-[current=page]:font-medium aria-[current=page]:text-accent-ink"
 						>
 							{link.label}
 						</a>
@@ -301,7 +301,7 @@
 			</ul>
 		{:else}
 			<div class="px-4 pb-2">
-				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+				<p class="font-sans text-sm font-medium text-ink">
 					{sheet === 'note'
 						? 'Which project to add the note to?'
 						: 'Which project to add the photo to?'}
@@ -309,13 +309,9 @@
 			</div>
 
 			{#if loading}
-				<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Loading projects…
-				</p>
+				<p class="px-4 py-4 font-sans text-sm text-ink-muted">Loading projects…</p>
 			{:else if projects.length === 0}
-				<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					You have no projects yet.
-				</p>
+				<p class="px-4 py-4 font-sans text-sm text-ink-muted">You have no projects yet.</p>
 			{:else}
 				<ul class="max-h-64 overflow-y-auto pb-2">
 					{#each projects as p (p.id)}
@@ -323,7 +319,7 @@
 							<button
 								onclick={() => (sheet === 'note' ? createNote(p.id) : selectPhotoProject(p.id))}
 								disabled={creating}
-								class="w-full px-4 py-3 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+								class="w-full px-4 py-3 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50"
 							>
 								{p.title}
 							</button>
