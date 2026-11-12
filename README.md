@@ -14,7 +14,7 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 
 ### Colaboración
 
-- Invitación de colaboradores por email con roles (editor / viewer)
+- Invitación de colaboradores por email con roles (owner, author, coauthor, reviewer, commenter)
 - Comentarios inline anclados al texto: los comentarios se asocian a la selección exacta del documento
 - Respuestas a comentarios y resolución/reapertura de hilos
 
@@ -28,10 +28,11 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 
 ### Asistente IA
 
-- Chat por proyecto: el asistente recibe como contexto todos los borradores activos del proyecto
-- Sugerencias inline en el editor: se activan con un toggle y proponen reemplazos de fragmentos con explicación
-- Filtros antes de llamar a la IA: mínimo 100 palabras en el documento y mínimo 30 palabras de diferencia respecto a la última consulta (sin coste innecesario)
-- Modelo: Claude Haiku 4.5 (Anthropic)
+- Chat por proyecto (agente con herramientas: leer documentos, búsqueda semántica, crear documentos…)
+  y chat en el editor que propone cambios como antes/después que se aceptan o rechazan
+- Revisión, borradores de sección, enriquecimiento, ortografía y gramática
+- Modelos vía [OpenRouter](https://openrouter.ai) con la clave de cada usuario u organización (BYOK);
+  el modelo se elige por tarea en Settings → AI, y el coste real de cada llamada queda registrado (`/usage`)
 
 ### Cuenta y acceso
 
@@ -162,7 +163,7 @@ Las soluciones contemporáneas al problema se discuten en
 | Base de datos | PostgreSQL con Row-Level Security (RLS), Drizzle ORM |
 | Auth          | Better Auth (email + Seilide, OpenID Connect)        |
 | Storage       | S3 propio de cada usuario u organización (BYO S3)    |
-| IA            | Anthropic SDK — Claude Haiku 4.5                     |
+| IA            | OpenRouter (BYOK, modelo por tarea)                  |
 | Errores       | Sentry                                               |
 | Runtime       | Bun                                                  |
 
@@ -401,21 +402,21 @@ docker system prune -af
 
 Todas están documentadas en `.env.example`. Las que hay que poner en Dokploy para `docker-compose.prod.yml`:
 
-| Variable                                        | Descripción                                                                |
-| ----------------------------------------------- | -------------------------------------------------------------------------- |
-| `ORIGIN`                                        | `https://scholio.review` (URLs de retorno, cookies)                        |
-| `BETTER_AUTH_SECRET`                            | Secreto de sesión (`openssl rand -base64 32`)                              |
-| `POSTGRES_PASSWORD`                             | Contraseña del dueño de la base (`scholio`), la usan las migraciones       |
-| `APP_DB_PASSWORD`                               | Contraseña del rol de la app (`scholio_app`, con RLS); sin ella no arranca |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                | Admin con acceso a `/admin`, sembrado al arrancar                          |
-| `SEILIDE_URL/CLIENT_ID/CLIENT_SECRET`           | «Entrar con Seilide» (opcional: sin las tres no sale el botón)             |
-| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID (opcional)                                                  |
-| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                               |
-| `KMS_MASTER_KEY`                                | Cifra las API keys de usuario (BYOK); cambiarla las pierde                 |
-| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica              |
-| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                         |
-| `SENTRY_DSN`                                    | DSN de Sentry en servidor (opcional)                                       |
-| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente — **build-time**, se hornea en la imagen de GHCR  |
+| Variable                                        | Descripción                                                                                  |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `ORIGIN`                                        | `https://scholio.review` (URLs de retorno, cookies)                                          |
+| `BETTER_AUTH_SECRET`                            | Secreto de sesión (`openssl rand -base64 32`)                                                |
+| `POSTGRES_PASSWORD`                             | Contraseña del dueño de la base (`scholio`), la usan las migraciones                         |
+| `APP_DB_PASSWORD`                               | Contraseña del rol de la app (`scholio_app`, con RLS); sin ella no arranca                   |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                | Admin con acceso a `/admin`, sembrado al arrancar                                            |
+| `SEILIDE_URL/CLIENT_ID/CLIENT_SECRET`           | «Entrar con Seilide» (opcional: sin las tres no sale el botón)                               |
+| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID (opcional)                                                                    |
+| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                                 |
+| `KMS_MASTER_KEY`                                | Cifra las API keys de usuario (BYOK); cambiarla las pierde                                   |
+| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                                |
+| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                           |
+| `SENTRY_DSN`                                    | DSN de Sentry en servidor (opcional)                                                         |
+| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente (opcional; se lee al arrancar, suele ser el mismo que `SENTRY_DSN`) |
 
 Ya no existen `GITHUB_CLIENT_ID/SECRET` (sin login con GitHub), `PUBLIC_LIBRARIAN_URL` ni nada de
 Stripe.
@@ -429,34 +430,19 @@ Antes de abrir acceso a usuarios reales:
 - [ ] Rellenar todas las variables de entorno de producción (ver tabla anterior)
 - [ ] Crear el cliente de Scholio en Seilide (ver [Entrar con Seilide](#entrar-con-seilide))
 - [ ] Crear el proyecto en Sentry y copiar el DSN (servidor y cliente)
-- [ ] Verificar que el bucket es accesible públicamente para `GET` (la política se aplica automáticamente en el primer upload)
 
 ---
 
 ## Pendiente (no bloquea el beta)
 
-### Funcionalidades de usuario
-
-- **Perfil editable** — los campos de nombre y email están en la UI pero sin backend; actualmente son de solo lectura
-- **Cambio de contraseña** — formulario presente, sin endpoint conectado
+- **Perfil editable** — nombre y email se muestran en Settings pero no se pueden cambiar
 - **Avatar de usuario** — muestra iniciales; subida de foto de perfil no implementada
-
-### Infraestructura y operaciones
-
-- **Panel de administración** — sin métricas de uso ni gestión de usuarios desde la propia app; por ahora se gestiona desde el dashboard de Sentry
-- **Rate limiting en IA** — sugerencias inline limitadas a 30/día por usuario; chat y borradores requieren BYOK (OpenRouter)
-- **Soft delete** para proyectos y documentos — el borrado actual es definitivo; anotado para implementar antes de escalar
-
-### Funcionalidades académicas avanzadas
-
-- **Sugerencias de referencias externas** — el asistente podría enlazar fuentes de Semantic Scholar u OpenLibrary relevantes al contexto del documento (feature 1 del roadmap IA)
-- **Exportación PDF** — pendiente; exportación a LaTeX (`.tex`) y Typst (`.typ`) ya implementada
-- **Transferencia de propiedad de proyectos** — esquema de base de datos preparado, sin UI ni endpoint
-- **Eliminación de cuenta** — botón presente en zona de peligro, sin acción conectada
+- **Soft delete** de documentos — el borrado actual es definitivo
+- **Transferencia de propiedad de proyectos** — sin UI ni endpoint
+- **Sugerencias de referencias externas** (Semantic Scholar, OpenLibrary) para el asistente
 
 ---
 
 ## Créditos
 
 Desarrollado con [Claude Code](https://claude.ai/claude-code).
-Asistente IA impulsado por [Claude Haiku 4.5](https://www.anthropic.com) (Anthropic).
