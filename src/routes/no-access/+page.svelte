@@ -42,7 +42,7 @@
 				</p>
 
 				{#if form?.message}
-					<p class="mb-4 rounded-lg bg-accent/10 px-4 py-3 font-sans text-sm text-accent">
+					<p class="mb-4 rounded-lg bg-accent/10 px-4 py-3 font-sans text-sm text-accent-ink">
 						{form.message}
 					</p>
 				{/if}

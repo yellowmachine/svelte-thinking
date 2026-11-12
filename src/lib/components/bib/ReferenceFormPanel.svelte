@@ -260,7 +260,7 @@
 						<span class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
 							>Autores</span
 						>
-						<button onclick={addAuthor} class="font-sans text-xs text-accent hover:underline"
+						<button onclick={addAuthor} class="font-sans text-xs text-accent-ink hover:underline"
 							>+ Add</button
 						>
 					</div>

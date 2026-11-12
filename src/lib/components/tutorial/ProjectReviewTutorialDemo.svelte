@@ -68,7 +68,7 @@
 						<!-- svelte-ignore a11y_invalid_attribute -->
 						<a
 							href="#"
-							class="font-serif text-lg font-semibold text-ink hover:text-accent dark:text-dark-ink"
+							class="font-serif text-lg font-semibold text-ink hover:text-accent-ink dark:text-dark-ink"
 						>
 							{thread.documentTitle}
 						</a>

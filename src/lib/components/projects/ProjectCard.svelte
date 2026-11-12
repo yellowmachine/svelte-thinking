@@ -80,13 +80,13 @@
 			<div class="flex min-w-0 items-center gap-2">
 				<h3
 					translate="no"
-					class="font-serif text-lg font-semibold text-ink group-hover:text-accent dark:text-dark-ink dark:group-hover:text-accent"
+					class="font-serif text-lg font-semibold text-ink group-hover:text-accent-ink dark:text-dark-ink dark:group-hover:text-accent-ink"
 				>
 					{title}
 				</h3>
 				{#if hasActiveShares}
 					<span
-						class="mt-0.5 shrink-0 text-accent"
+						class="mt-0.5 shrink-0 text-accent-ink"
 						title="Has active public links"
 						aria-label="Has active public links"
 					>

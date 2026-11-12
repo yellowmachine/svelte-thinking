@@ -89,7 +89,7 @@
 					</p>
 					<a
 						href={resolve(`/projects/${projectId}/bib`)}
-						class="mt-1 block font-sans text-xs text-accent hover:underline"
+						class="mt-1 block font-sans text-xs text-accent-ink hover:underline"
 					>
 						Go to Bibliography →
 					</a>
@@ -105,7 +105,7 @@
 						class="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 					>
 						<span
-							class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-1.5 py-0.5 font-mono text-xs text-accent"
+							class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-1.5 py-0.5 font-mono text-xs text-accent-ink"
 						>
 							{ref.citeKey}
 						</span>

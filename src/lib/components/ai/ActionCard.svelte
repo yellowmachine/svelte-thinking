@@ -92,7 +92,7 @@
 				class="mt-0.5 shrink-0 rounded-lg p-2
 				{status === 'done'
 					? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
-					: 'bg-accent/10 text-accent'}"
+					: 'bg-accent/10 text-accent-ink'}"
 			>
 				{#if status === 'done'}
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -134,7 +134,7 @@
 			<div class="min-w-0 flex-1">
 				<p
 					class="font-sans text-[11px] font-semibold tracking-wide uppercase
-					{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent'}"
+					{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent-ink'}"
 				>
 					{#if status === 'done'}
 						{action.type === 'create_issue' ? 'Issue created' : 'Document created'}

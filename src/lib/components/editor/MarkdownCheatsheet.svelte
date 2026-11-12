@@ -41,7 +41,7 @@
 				href="https://www.markdownguide.org/basic-syntax/"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="text-accent underline underline-offset-2 hover:text-accent-hover">Markdown</a
+				class="text-accent-ink underline underline-offset-2 hover:text-accent-hover">Markdown</a
 			>. Use the left pane to write and the right pane to preview. Save with
 			<kbd
 				class="rounded border border-paper-border bg-paper-ui px-1 py-0.5 font-mono text-[10px] text-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -55,7 +55,7 @@
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 					{#each [['# Title', 'Heading 1 — creates document structure'], ['## Section', 'Heading 2'], ['**bold**', 'Bold'], ['*italic*', 'Italic'], ['`code`', 'Inline code'], ['> quote', 'Blockquote'], ['- item', 'Unordered list'], ['1. item', 'Numbered list'], ['[text](url)', 'Hyperlink'], ['---', 'Horizontal rule (visible separator)']] as item, i (i)}
 						<tr>
-							<td class="py-1.5 pr-4 font-mono text-xs text-accent">{item[0]}</td>
+							<td class="py-1.5 pr-4 font-mono text-xs text-accent-ink">{item[0]}</td>
 							<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">{item[1]}</td>
 						</tr>
 					{/each}
@@ -68,11 +68,11 @@
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 					<tr>
-						<td class="py-1.5 pr-4 font-mono text-xs text-accent">text[^1]</td>
+						<td class="py-1.5 pr-4 font-mono text-xs text-accent-ink">text[^1]</td>
 						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Footnote marker in text</td>
 					</tr>
 					<tr>
-						<td class="py-1.5 pr-4 font-mono text-xs text-accent">[^1]: Note text</td>
+						<td class="py-1.5 pr-4 font-mono text-xs text-accent-ink">[^1]: Note text</td>
 						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted"
 							>Footnote definition (at end of document)</td
 						>
@@ -86,11 +86,11 @@
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 					<tr>
-						<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[@citeKey]]</td>
+						<td class="py-1.5 pr-4 font-mono text-xs text-accent-ink">[[@citeKey]]</td>
 						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Single citation</td>
 					</tr>
 					<tr>
-						<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[@key1; @key2]]</td>
+						<td class="py-1.5 pr-4 font-mono text-xs text-accent-ink">[[@key1; @key2]]</td>
 						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Multiple citations</td>
 					</tr>
 				</tbody>
@@ -109,11 +109,11 @@
 			<table class="w-full">
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
 					<tr>
-						<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[Title]]</td>
+						<td class="py-1.5 pr-4 font-mono text-xs text-accent-ink">[[Title]]</td>
 						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">Same project</td>
 					</tr>
 					<tr>
-						<td class="py-1.5 pr-4 font-mono text-xs text-accent">[[Title:hash]]</td>
+						<td class="py-1.5 pr-4 font-mono text-xs text-accent-ink">[[Title:hash]]</td>
 						<td class="py-1.5 text-ink-muted dark:text-dark-ink-muted">External document</td>
 					</tr>
 				</tbody>

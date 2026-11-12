@@ -76,7 +76,7 @@
 	<button
 		onclick={toggle}
 		disabled={creating}
-		class="flex items-center gap-1.5 rounded-md border border-accent/50 px-3 py-1.5 font-sans text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
+		class="flex items-center gap-1.5 rounded-md border border-accent/50 px-3 py-1.5 font-sans text-sm font-medium text-accent-ink transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"

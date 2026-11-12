@@ -6,7 +6,7 @@
 	class="mt-3 flex gap-3 rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 dark:border-accent/15 dark:bg-accent/5"
 >
 	<svg
-		class="mt-0.5 shrink-0 text-accent"
+		class="mt-0.5 shrink-0 text-accent-ink"
 		width="14"
 		height="14"
 		viewBox="0 0 24 24"

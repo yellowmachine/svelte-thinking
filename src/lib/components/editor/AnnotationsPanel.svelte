@@ -129,7 +129,7 @@
 					<div class="mb-1.5 flex items-center justify-between gap-2">
 						<button
 							onclick={() => s.anchorText && onscrolltoannotation?.(s.id)}
-							class="font-mono text-xs font-semibold text-accent {s.anchorText
+							class="font-mono text-xs font-semibold text-accent-ink {s.anchorText
 								? 'cursor-pointer hover:underline'
 								: 'cursor-default'}"
 							disabled={!s.anchorText}

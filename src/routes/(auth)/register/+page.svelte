@@ -16,8 +16,9 @@
 	<h2 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Create account</h2>
 	<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 		Already have an account?
-		<button onclick={() => (window.location.href = '/login')} class="text-accent hover:underline"
-			>Sign in</button
+		<button
+			onclick={() => (window.location.href = '/login')}
+			class="text-accent-ink hover:underline">Sign in</button
 		>
 	</p>
 

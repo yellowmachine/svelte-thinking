@@ -164,7 +164,7 @@
 									<button
 										type="button"
 										onclick={() => openDocument(doc)}
-										class="block w-full rounded-md px-3 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui hover:text-accent dark:text-dark-ink dark:hover:bg-dark-paper-ui dark:hover:text-accent"
+										class="block w-full rounded-md px-3 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui hover:text-accent-ink dark:text-dark-ink dark:hover:bg-dark-paper-ui dark:hover:text-accent-ink"
 									>
 										{doc.title}
 									</button>
@@ -179,7 +179,7 @@
 		<button
 			type="button"
 			onclick={() => window.location.reload()}
-			class="rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
+			class="rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent-ink"
 		>
 			Try again
 		</button>

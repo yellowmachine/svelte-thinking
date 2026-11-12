@@ -37,7 +37,7 @@
 	<nav
 		class="mb-6 flex items-center gap-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 	>
-		<a href={resolve('/help')} class="text-accent underline-offset-2 hover:underline">Help</a>
+		<a href={resolve('/help')} class="text-accent-ink underline-offset-2 hover:underline">Help</a>
 		<span>/</span>
 		<span>Document types</span>
 		<span>/</span>
@@ -64,7 +64,7 @@
 				<li
 					class="flex items-start gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
 				>
-					<span class="mt-0.5 shrink-0 text-accent">✓</span>
+					<span class="mt-0.5 shrink-0 text-accent-ink">✓</span>
 					<span>{feature}</span>
 				</li>
 			{/each}

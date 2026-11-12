@@ -218,7 +218,7 @@
 					onclick={() => copyCiteKey(ref)}
 					translate="no"
 					title="Copiar como [[@{ref.citeKey}]]"
-					class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-2 py-0.5 font-mono text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+					class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-2 py-0.5 font-mono text-xs font-medium text-accent-ink transition-colors hover:bg-accent/10"
 				>
 					{copiedId === ref.id ? '✓' : ref.citeKey}
 				</button>
@@ -249,7 +249,7 @@
 							href="https://doi.org/{ref.doi}"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="mt-0.5 block truncate font-sans text-xs text-accent hover:underline"
+							class="mt-0.5 block truncate font-sans text-xs text-accent-ink hover:underline"
 						>
 							doi:{ref.doi}
 						</a>
@@ -288,7 +288,7 @@
 							<span>Subnotes</span>
 							{#if (subnotesByRef[ref.id]?.length ?? 0) > 0}
 								<span
-									class="rounded-full bg-accent/10 px-1.5 py-px text-[10px] font-semibold text-accent"
+									class="rounded-full bg-accent/10 px-1.5 py-px text-[10px] font-semibold text-accent-ink"
 								>
 									{subnotesByRef[ref.id].length}
 								</span>
@@ -397,7 +397,7 @@
 								{:else}
 									<button
 										onclick={() => openAddSubnote(ref.id)}
-										class="mt-1.5 flex items-center gap-1 font-sans text-[11px] text-ink-faint transition-colors hover:text-accent dark:text-dark-ink-faint dark:hover:text-accent"
+										class="mt-1.5 flex items-center gap-1 font-sans text-[11px] text-ink-faint transition-colors hover:text-accent-ink dark:text-dark-ink-faint dark:hover:text-accent-ink"
 									>
 										<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
 											<line
@@ -442,7 +442,7 @@
 						onclick={() => openReadingNotes(ref)}
 						disabled={openingNotes === ref.id}
 						class="relative rounded-md p-1.5 transition-colors {ref.readingNotesDocId
-							? 'text-accent'
+							? 'text-accent-ink'
 							: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'} disabled:opacity-50"
 						title="Reading notes"
 					>

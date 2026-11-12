@@ -178,7 +178,7 @@
 						<button
 							onclick={() => addSemanticResult(result)}
 							disabled={semanticAdding.has(result.paperId)}
-							class="shrink-0 rounded-lg border border-accent px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
+							class="shrink-0 rounded-lg border border-accent px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
 						>
 							{semanticAdding.has(result.paperId) ? 'Adding…' : '+ Add'}
 						</button>

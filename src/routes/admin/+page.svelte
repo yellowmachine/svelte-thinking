@@ -26,7 +26,7 @@
 				>
 			</p>
 			<p
-				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
+				class="mt-3 font-sans text-xs text-accent-ink opacity-0 transition-opacity group-hover:opacity-100"
 			>
 				View waitlist →
 			</p>
@@ -48,7 +48,7 @@
 				>
 			</p>
 			<p
-				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
+				class="mt-3 font-sans text-xs text-accent-ink opacity-0 transition-opacity group-hover:opacity-100"
 			>
 				Search users →
 			</p>
@@ -70,7 +70,7 @@
 				>
 			</p>
 			<p
-				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
+				class="mt-3 font-sans text-xs text-accent-ink opacity-0 transition-opacity group-hover:opacity-100"
 			>
 				View activity →
 			</p>
@@ -89,7 +89,7 @@
 				Informational banners for all users.
 			</p>
 			<p
-				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
+				class="mt-3 font-sans text-xs text-accent-ink opacity-0 transition-opacity group-hover:opacity-100"
 			>
 				Manage →
 			</p>

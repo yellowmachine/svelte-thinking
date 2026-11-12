@@ -105,7 +105,7 @@
 										>
 											{ref.type}
 										</span>
-										<code class="font-mono text-[11px] text-accent">@{ref.citeKey}</code>
+										<code class="font-mono text-[11px] text-accent-ink">@{ref.citeKey}</code>
 									</div>
 								</div>
 							</div>

@@ -32,7 +32,7 @@
 		<textarea
 			readonly
 			value={content}
-			class="h-48 w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+			class="h-48 w-full resize-none rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 		></textarea>
 		<div class="flex justify-end">
 			<button

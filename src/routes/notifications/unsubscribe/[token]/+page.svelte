@@ -20,7 +20,7 @@
 		{/if}
 		<a
 			href={resolve('/projects')}
-			class="mt-6 inline-block font-sans text-sm text-accent hover:underline"
+			class="mt-6 inline-block font-sans text-sm text-accent-ink hover:underline"
 		>
 			Back to my projects
 		</a>

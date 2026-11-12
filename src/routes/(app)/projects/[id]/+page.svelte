@@ -531,7 +531,7 @@
 			<div class="hidden shrink-0 items-center gap-2 sm:flex">
 				<a
 					href={resolve(`/projects/${data.project.id}/ai`)}
-					class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent transition-colors hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
+					class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent-ink transition-colors hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<path
@@ -645,7 +645,7 @@
 
 		{#if data.myRole}
 			<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Your role: <span class="font-medium text-accent"
+				Your role: <span class="font-medium text-accent-ink"
 					>{roleLabel[data.myRole] ?? data.myRole}</span
 				>
 				· {data.collaborators.length}
@@ -767,7 +767,7 @@
 					{#if canEdit}
 						<button
 							onclick={() => (showGenerateDraft = true)}
-							class="flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
+							class="flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent-ink transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 								<path
@@ -816,7 +816,7 @@
 								>
 									<span
 										class="font-sans text-sm font-medium {newDocType === opt.value
-											? 'text-accent'
+											? 'text-accent-ink'
 											: 'text-ink dark:text-dark-ink'}">{opt.label}</span
 									>
 									<span
@@ -944,7 +944,7 @@
 						stroke-width="1.5"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						class="mt-0.5 shrink-0 text-accent"
+						class="mt-0.5 shrink-0 text-accent-ink"
 						aria-hidden="true"
 					>
 						<circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
@@ -1074,7 +1074,7 @@
 								</div>
 								{#if data.isOwner && activeShareDocSet.has(doc.id)}
 									<span
-										class="mr-1 shrink-0 text-accent"
+										class="mr-1 shrink-0 text-accent-ink"
 										title="Has active public links"
 										aria-label="Has active public links"
 									>
@@ -1398,7 +1398,7 @@
 									{#if canEdit}
 										<button
 											onclick={() => openUseTemplate(tmpl.id, tmpl.title)}
-											class="rounded-md bg-accent/10 px-2.5 py-1 font-sans text-xs font-medium text-accent hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
+											class="rounded-md bg-accent/10 px-2.5 py-1 font-sans text-xs font-medium text-accent-ink hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
 										>
 											Use
 										</button>

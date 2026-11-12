@@ -50,7 +50,7 @@
 			<button
 				onclick={() => (tab = 'projects')}
 				class="px-4 py-2 font-sans text-sm font-medium transition-colors {tab === 'projects'
-					? 'border-b-2 border-accent text-accent'
+					? 'border-b-2 border-accent text-accent-ink'
 					: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 			>
 				Projects
@@ -58,7 +58,7 @@
 			<button
 				onclick={() => (tab = 'researchers')}
 				class="px-4 py-2 font-sans text-sm font-medium transition-colors {tab === 'researchers'
-					? 'border-b-2 border-accent text-accent'
+					? 'border-b-2 border-accent text-accent-ink'
 					: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 			>
 				Researchers
@@ -82,7 +82,7 @@
 			</button>
 			{#if tab === 'projects'}
 				<button
-					class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
 					Ver todos
 				</button>
@@ -106,7 +106,7 @@
 								</p>
 								<div class="mt-3 flex items-center gap-2">
 									<span
-										class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent/20 font-sans text-xs font-semibold text-accent"
+										class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent/20 font-sans text-xs font-semibold text-accent-ink"
 									>
 										{proj.ownerName.charAt(0)}
 									</span>
@@ -117,8 +117,8 @@
 							</div>
 							<button
 								class="shrink-0 rounded-lg border px-3 py-1.5 font-sans text-xs font-medium transition-colors {proj.isPinned
-									? 'border-accent bg-accent/10 text-accent'
-									: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+									? 'border-accent bg-accent/10 text-accent-ink'
+									: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
 							>
 								{proj.isPinned ? '★ Saved' : '☆ Save'}
 							</button>

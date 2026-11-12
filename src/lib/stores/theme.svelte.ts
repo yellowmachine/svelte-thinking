@@ -23,25 +23,25 @@ export const THEMES: ThemeDef[] = [
 	{
 		id: 'solarized',
 		label: 'Solarized',
-		light: { bg: '#fdf6e3', ui: '#eee8d5', accent: '#268bd2' },
-		dark: { bg: '#002b36', ui: '#073642', accent: '#268bd2' }
+		light: { bg: '#fdf6e3', ui: '#eee8d5', accent: '#1e6da5' },
+		dark: { bg: '#002b36', ui: '#073642', accent: '#48a0de' }
 	},
 	{
 		id: 'nord',
 		label: 'Nord',
-		light: { bg: '#eceff4', ui: '#e5e9f0', accent: '#5e81ac' },
+		light: { bg: '#eceff4', ui: '#e5e9f0', accent: '#4b6a91' },
 		dark: { bg: '#2e3440', ui: '#272c36', accent: '#88c0d0' }
 	},
 	{
 		id: 'catppuccin',
 		label: 'Catppuccin',
-		light: { bg: '#eff1f5', ui: '#e6e9ef', accent: '#1e66f5' },
+		light: { bg: '#eff1f5', ui: '#e6e9ef', accent: '#0d5af4' },
 		dark: { bg: '#1e1e2e', ui: '#181825', accent: '#89b4fa' }
 	},
 	{
 		id: 'gruvbox',
 		label: 'Gruvbox',
-		light: { bg: '#fbf1c7', ui: '#f2e5bc', accent: '#b57614' },
+		light: { bg: '#fbf1c7', ui: '#f2e5bc', accent: '#8c5b0f' },
 		dark: { bg: '#282828', ui: '#1d2021', accent: '#fe8019' }
 	}
 ];

@@ -191,7 +191,7 @@
 						{#if group.bibHref}
 							<a
 								href={resolve(`/projects/${group.projectId!}/bib`)}
-								class="font-sans text-xs text-accent hover:underline"
+								class="font-sans text-xs text-accent-ink hover:underline"
 							>
 								Ver en proyecto →
 							</a>
@@ -234,7 +234,7 @@
 										>
 											{typeLabel(ref.type)}
 										</span>
-										<code translate="no" class="font-mono text-[11px] text-accent"
+										<code translate="no" class="font-mono text-[11px] text-accent-ink"
 											>@{ref.citeKey}</code
 										>
 										{#if ref.externalHref}
@@ -242,7 +242,7 @@
 												href={ref.externalHref}
 												target="_blank"
 												rel="noopener noreferrer external"
-												class="font-sans text-xs text-accent hover:underline"
+												class="font-sans text-xs text-accent-ink hover:underline"
 											>
 												{ref.doi ? 'DOI' : 'URL'}
 											</a>

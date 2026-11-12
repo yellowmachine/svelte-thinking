@@ -94,7 +94,7 @@
 					<li class="px-4 py-3">
 						<div class="flex items-start justify-between gap-2">
 							<div class="min-w-0">
-								<p class="font-sans text-xs font-semibold text-accent">v{v.versionNumber}</p>
+								<p class="font-sans text-xs font-semibold text-accent-ink">v{v.versionNumber}</p>
 								<p class="mt-0.5 truncate font-sans text-sm text-ink dark:text-dark-ink">
 									{v.changeDescription ?? 'No description'}
 								</p>
@@ -121,7 +121,7 @@
 								{#if selectedVersionId === v.id && compareDiff !== null}
 									<button
 										onclick={() => restoreVersion(v.id)}
-										class="rounded px-2 py-1 font-sans text-xs text-accent transition-colors hover:underline"
+										class="rounded px-2 py-1 font-sans text-xs text-accent-ink transition-colors hover:underline"
 									>
 										Restaurar
 									</button>

@@ -157,7 +157,7 @@
 				<button
 					type="button"
 					onclick={applyAll}
-					class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-xs text-accent transition-colors hover:bg-accent/10"
+					class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-xs text-accent-ink transition-colors hover:bg-accent/10"
 				>
 					<svg
 						width="12"
@@ -208,7 +208,7 @@
 								<button
 									type="button"
 									onclick={() => applyPerson(name)}
-									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent hover:underline"
+									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent-ink hover:underline"
 								>
 									<svg
 										width="10"
@@ -270,7 +270,7 @@
 								<button
 									type="button"
 									onclick={() => applyRef(ref)}
-									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent hover:underline"
+									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent-ink hover:underline"
 								>
 									<svg
 										width="10"

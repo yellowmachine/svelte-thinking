@@ -194,7 +194,7 @@
 						Context documents
 					</span>
 					<div class="flex gap-2">
-						<button onclick={selectAll} class="font-sans text-xs text-accent hover:underline"
+						<button onclick={selectAll} class="font-sans text-xs text-accent-ink hover:underline"
 							>All</button
 						>
 						<span class="text-ink-faint dark:text-dark-ink-faint">·</span>

@@ -67,7 +67,7 @@
 			<!-- Label + explanation -->
 			<p
 				class="font-sans text-[11px] font-semibold tracking-wide uppercase
-				{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent'}"
+				{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent-ink'}"
 			>
 				{status === 'done' ? 'Applied' : label}
 			</p>

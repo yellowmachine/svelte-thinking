@@ -138,7 +138,7 @@
 	<div class="flex-1 overflow-y-auto">
 		{#if loading}
 			<div class="flex flex-col items-center gap-3 py-10 text-center">
-				<Spinner size="lg" class="text-accent" />
+				<Spinner size="lg" class="text-accent-ink" />
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Checking…</p>
 			</div>
 		{:else if corrections.length === 0}

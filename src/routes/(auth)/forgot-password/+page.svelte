@@ -29,7 +29,7 @@
 			</p>
 			<a
 				href={resolve('/login')}
-				class="mt-6 inline-block font-sans text-sm text-accent hover:underline"
+				class="mt-6 inline-block font-sans text-sm text-accent-ink hover:underline"
 			>
 				Back to sign in
 			</a>

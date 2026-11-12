@@ -367,7 +367,7 @@
 			{:else if canEdit && s3CtaType === 'personal'}
 				<a
 					href={resolve('/settings?tab=storage')}
-					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
+					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-faint"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<rect
@@ -391,7 +391,7 @@
 			{:else if canEdit && s3CtaType === 'org-owner'}
 				<a
 					href={resolve('/settings?tab=organizations')}
-					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
+					class="flex items-center gap-2.5 rounded-lg border border-dashed border-paper-border px-3 py-2 font-sans text-sm text-ink-faint transition-colors hover:border-accent/40 hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-faint"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 						<rect
@@ -733,7 +733,7 @@
 							<button
 								onclick={loadInterested}
 								disabled={loadingInterested}
-								class="font-sans text-xs text-accent hover:underline disabled:opacity-50"
+								class="font-sans text-xs text-accent-ink hover:underline disabled:opacity-50"
 							>
 								{loadingInterested ? 'Loading…' : 'Load'}
 							</button>
@@ -753,7 +753,7 @@
 											class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 										>
 											<span
-												class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/20 font-sans text-xs font-semibold text-accent"
+												class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/20 font-sans text-xs font-semibold text-accent-ink"
 											>
 												{(u.displayName ?? u.name).charAt(0).toUpperCase()}
 											</span>

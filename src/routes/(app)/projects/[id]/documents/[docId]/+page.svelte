@@ -1472,7 +1472,7 @@
 							await trpc.documents.update.mutate({ id: data.document.id, isReadonly: false });
 							data.document = { ...data.document, isReadonly: false };
 						}}
-						class="shrink-0 font-sans text-[10px] text-accent hover:underline"
+						class="shrink-0 font-sans text-[10px] text-accent-ink hover:underline"
 					>
 						Unlock editing
 					</button>
@@ -1717,8 +1717,8 @@
 						onclick={toggleChat}
 						title="Chat with the assistant about this document"
 						class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-sans text-sm font-medium transition-colors {showChat
-							? 'bg-accent/20 text-accent hover:bg-accent/30 dark:bg-accent/30 dark:hover:bg-accent/40'
-							: 'bg-accent/10 text-accent hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'}"
+							? 'bg-accent/20 text-accent-ink hover:bg-accent/30 dark:bg-accent/30 dark:hover:bg-accent/40'
+							: 'bg-accent/10 text-accent-ink hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'}"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
@@ -1739,7 +1739,7 @@
 							onclick={toggleReview}
 							title="Review document against project requirements"
 							class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
-								? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
+								? 'border-accent bg-accent/10 text-accent-ink dark:border-accent dark:text-accent-ink'
 								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 						>
 							<span class="flex items-center gap-1.5">
@@ -1774,7 +1774,7 @@
 							onclick={toggleDraft}
 							title="Draft assistant — generate text from your project context"
 							class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showDraft
-								? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
+								? 'border-accent bg-accent/10 text-accent-ink dark:border-accent dark:text-accent-ink'
 								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 						>
 							<span class="flex items-center gap-1.5">
@@ -1809,7 +1809,7 @@
 							onclick={toggleEnrich}
 							title="Find untagged persons and informal citations"
 							class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
-								? 'border-accent/40 bg-accent/5 text-accent dark:border-accent/30'
+								? 'border-accent/40 bg-accent/5 text-accent-ink dark:border-accent/30'
 								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 						>
 							<span class="flex items-center gap-1.5">
@@ -1829,7 +1829,7 @@
 				{:else if aiCtaType === 'personal'}
 					<a
 						href={resolve('/settings?tab=ai')}
-						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
+						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:border-accent hover:bg-accent/5"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
@@ -1844,7 +1844,7 @@
 				{:else if aiCtaType === 'org-owner'}
 					<a
 						href={resolve('/settings?tab=organizations')}
-						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
+						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:border-accent hover:bg-accent/5"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
@@ -1922,7 +1922,7 @@
 						onclick={toggleBib}
 						title="Bibliography panel — insert citations from your project references"
 						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
-							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+							? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 					>
 						<svg
@@ -1947,7 +1947,7 @@
 					onclick={() => (showAnnotations = !showAnnotations)}
 					title="Toggle subnotes panel"
 					class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showAnnotations
-						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+						? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
 					<svg
@@ -2043,7 +2043,7 @@
 						title="Spell check and grammar"
 						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel ||
 						showGrammarPanel
-							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+							? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 					>
 						<svg
@@ -2084,7 +2084,7 @@
 					aria-pressed={showSearch && searchTab === 'text'}
 					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showSearch &&
 					searchTab === 'text'
-						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+						? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
 					<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -2106,7 +2106,7 @@
 					aria-pressed={showSearch && searchTab === 'semantic'}
 					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showSearch &&
 					searchTab === 'semantic'
-						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+						? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -2122,7 +2122,7 @@
 					title="Syntax reference (Ctrl+/)"
 					aria-pressed={showCheatsheet}
 					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showCheatsheet
-						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
+						? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
 						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
 				>
 					<svg
@@ -2344,7 +2344,7 @@
 							titlePickerSearch = '';
 							showTitleRefPicker = true;
 						}}
-						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-accent dark:hover:text-accent"
+						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-accent dark:hover:text-accent-ink"
 					>
 						<svg
 							width="11"
@@ -2428,7 +2428,7 @@
 											}}
 											class="flex w-full items-baseline gap-2 px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 										>
-											<span class="shrink-0 font-mono text-[11px] font-medium text-accent"
+											<span class="shrink-0 font-mono text-[11px] font-medium text-accent-ink"
 												>@{ref.citeKey}</span
 											>
 											<span class="min-w-0 truncate font-sans text-xs text-ink dark:text-dark-ink"
@@ -2765,7 +2765,7 @@
 									height="12"
 									viewBox="0 0 24 24"
 									fill="none"
-									class="shrink-0 text-accent"
+									class="shrink-0 text-accent-ink"
 									aria-hidden="true"
 								>
 									<path
@@ -3025,7 +3025,7 @@
 				}}
 				class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle ===
 				s
-					? 'font-semibold text-accent'
+					? 'font-semibold text-accent-ink'
 					: 'text-ink-muted dark:text-dark-ink-muted'}"
 			>
 				{label}
@@ -3130,7 +3130,7 @@
 			}}
 			disabled={spellLoading}
 			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showSpellPanel
-				? 'text-accent'
+				? 'text-accent-ink'
 				: 'text-ink-muted dark:text-dark-ink-muted'}"
 		>
 			<svg
@@ -3157,7 +3157,7 @@
 			}}
 			disabled={grammarLoading}
 			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showGrammarPanel
-				? 'text-accent'
+				? 'text-accent-ink'
 				: 'text-ink-muted dark:text-dark-ink-muted'}"
 		>
 			<svg

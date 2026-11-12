@@ -260,7 +260,7 @@
 						>
 							<div class="flex items-start justify-between gap-2">
 								<div class="min-w-0">
-									<p class="font-sans text-xs font-semibold text-accent">v{v.versionNumber}</p>
+									<p class="font-sans text-xs font-semibold text-accent-ink">v{v.versionNumber}</p>
 									<p class="mt-0.5 truncate font-sans text-sm text-ink dark:text-dark-ink">
 										{v.changeDescription ?? 'No description'}
 									</p>
@@ -517,7 +517,7 @@
 						actionsOpenId = null;
 					}}
 					disabled={unpublishingBlogId === blogPosts[v.id]?.id}
-					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-accent transition-colors hover:bg-accent/10 disabled:opacity-40"
+					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-accent-ink transition-colors hover:bg-accent/10 disabled:opacity-40"
 				>
 					<svg
 						width="14"

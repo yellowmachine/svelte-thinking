@@ -215,7 +215,7 @@
 					<button
 						type="button"
 						onclick={llToggleAll}
-						class="font-sans text-xs text-accent hover:underline"
+						class="font-sans text-xs text-accent-ink hover:underline"
 					>
 						{llSelectedIds.size === llFiltered.length && llFiltered.length > 0
 							? 'Deselect all'

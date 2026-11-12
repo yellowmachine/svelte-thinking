@@ -52,7 +52,7 @@
 			type="button"
 			onclick={() => (activeTab = 'profile')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'profile'
-				? 'border-b-2 border-accent font-medium text-accent'
+				? 'border-b-2 border-accent font-medium text-accent-ink'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Perfil
@@ -62,7 +62,7 @@
 			type="button"
 			onclick={() => (activeTab = 'ai')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'ai'
-				? 'border-b-2 border-accent font-medium text-accent'
+				? 'border-b-2 border-accent font-medium text-accent-ink'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			AI Assistant
@@ -71,7 +71,7 @@
 			type="button"
 			onclick={() => (activeTab = 'security')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'security'
-				? 'border-b-2 border-accent font-medium text-accent'
+				? 'border-b-2 border-accent font-medium text-accent-ink'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Security
@@ -80,7 +80,7 @@
 			type="button"
 			onclick={() => (activeTab = 'appearance')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'appearance'
-				? 'border-b-2 border-accent font-medium text-accent'
+				? 'border-b-2 border-accent font-medium text-accent-ink'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Appearance
@@ -89,7 +89,7 @@
 			type="button"
 			onclick={() => (activeTab = 'organizations')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'organizations'
-				? 'border-b-2 border-accent font-medium text-accent'
+				? 'border-b-2 border-accent font-medium text-accent-ink'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Organizations
@@ -98,7 +98,7 @@
 			type="button"
 			onclick={() => (activeTab = 'storage')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'storage'
-				? 'border-b-2 border-accent font-medium text-accent'
+				? 'border-b-2 border-accent font-medium text-accent-ink'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Storage
@@ -107,7 +107,7 @@
 			type="button"
 			onclick={() => (activeTab = 'blog')}
 			class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === 'blog'
-				? 'border-b-2 border-accent font-medium text-accent'
+				? 'border-b-2 border-accent font-medium text-accent-ink'
 				: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 		>
 			Blog

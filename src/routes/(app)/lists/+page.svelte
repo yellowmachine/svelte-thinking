@@ -189,7 +189,7 @@
 			<input
 				bind:value={newTitle}
 				placeholder="Título de la nueva lista"
-				class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
 			<button
 				onclick={createAggregator}
@@ -219,19 +219,19 @@
 									<div class="flex flex-col gap-2">
 										<input
 											bind:value={editTitle}
-											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 										/>
 										<textarea
 											bind:value={editDescription}
 											rows="2"
 											placeholder="Descripción (opcional)"
-											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 										></textarea>
 										<div class="flex gap-3">
 											<button
 												onclick={() => saveEdit(agg)}
 												disabled={savingEdit}
-												class="font-sans text-xs text-accent hover:text-accent-hover disabled:opacity-50"
+												class="font-sans text-xs text-accent-ink hover:text-accent-hover disabled:opacity-50"
 											>
 												Guardar
 											</button>
@@ -301,7 +301,7 @@
 									<input
 										bind:value={newHandle}
 										placeholder="@handle del blog a añadir"
-										class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 									/>
 									<button
 										onclick={() => addBlog(agg)}

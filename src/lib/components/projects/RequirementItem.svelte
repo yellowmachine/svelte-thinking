@@ -164,7 +164,7 @@
 				{:else}
 					<button
 						onclick={ontogglePicker}
-						class="mt-2 flex items-center gap-1.5 font-sans text-xs text-accent underline-offset-2 hover:underline"
+						class="mt-2 flex items-center gap-1.5 font-sans text-xs text-accent-ink underline-offset-2 hover:underline"
 					>
 						<svg
 							width="11"

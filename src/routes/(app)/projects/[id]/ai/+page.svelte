@@ -351,7 +351,7 @@
 								height="28"
 								viewBox="0 0 24 24"
 								fill="none"
-								class="text-accent"
+								class="text-accent-ink"
 								aria-hidden="true"
 							>
 								<path
@@ -375,15 +375,15 @@
 							</p>
 							<div class="mt-3 flex flex-wrap justify-center gap-1.5">
 								<span
-									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
 									>Busca en tus documentos</span
 								>
 								<span
-									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
 									>Crea documentos</span
 								>
 								<span
-									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
 									>Abre issues</span
 								>
 							</div>
@@ -435,7 +435,7 @@
 												<button
 													type="button"
 													onclick={retry}
-													class="font-sans text-xs text-accent underline decoration-dotted hover:decoration-solid"
+													class="font-sans text-xs text-accent-ink underline decoration-dotted hover:decoration-solid"
 													>Retry</button
 												>
 											</div>
@@ -624,7 +624,7 @@
 								type="button"
 								onclick={() => (showModelPicker = !showModelPicker)}
 								class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {isOverridden
-									? 'border-accent/50 text-accent dark:border-accent/50'
+									? 'border-accent/50 text-accent-ink dark:border-accent/50'
 									: 'border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}"
 							>
 								<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
@@ -679,7 +679,7 @@
 											}}
 											class="flex w-full items-center justify-between px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {activeModel ===
 											m.id
-												? 'text-accent'
+												? 'text-accent-ink'
 												: 'text-ink dark:text-dark-ink'}"
 										>
 											<span>{m.shortLabel}</span>

@@ -35,7 +35,7 @@
 				<div
 					class="flex flex-col gap-1 rounded-xl border border-paper-border bg-paper px-3 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
-					<span class="font-mono text-xs font-semibold text-accent">{step.n}</span>
+					<span class="font-mono text-xs font-semibold text-accent-ink">{step.n}</span>
 					<p class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">{step.label}</p>
 					<p class="font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint">{step.sub}</p>
 				</div>
@@ -112,7 +112,7 @@
 					class="group flex flex-col gap-1 rounded-xl border border-paper-border bg-paper px-4 py-3 transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
 					<span
-						class="font-sans text-sm font-semibold text-ink group-hover:text-accent dark:text-dark-ink"
+						class="font-sans text-sm font-semibold text-ink group-hover:text-accent-ink dark:text-dark-ink"
 						>{item.label} →</span
 					>
 					<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
@@ -138,7 +138,7 @@
 			{#each [{ href: '#projects', label: 'Projects & workspaces' }, { href: '#bibliography', label: 'Bibliography' }, { href: '#editor', label: 'Documents & editor' }, { href: '#formatting', label: '↳ Basic formatting' }, { href: '#citations', label: '↳ Bibliographic citations' }, { href: '#math', label: '↳ Mathematics & formal logic' }, { href: '#wikilinks', label: '↳ Wikilinks' }, { href: '#autocomplete', label: '↳ [[ autocomplete' }, { href: '#footnotes', label: '↳ Footnotes' }, { href: '#callouts', label: '↳ Callout blocks' }, { href: '#photos', label: '↳ Photos' }, { href: '#charts', label: '↳ Vega-Lite charts' }, { href: '#export', label: '↳ Export' }, { href: '#versions', label: 'Version history' }, { href: '/help/ai', label: 'AI assistant →' }, { href: '#collaboration', label: 'Collaboration' }, { href: '#explore', label: 'Explore' }, { href: '#settings', label: 'Settings' }, { href: '#tips', label: 'Tips' }] as item (item.href)}
 				<a
 					href={item.href}
-					class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline"
+					class="block font-sans text-sm text-accent-ink decoration-dotted underline-offset-2 hover:underline"
 					>{item.label}</a
 				>
 			{/each}
@@ -377,7 +377,7 @@
 								>[text](url)</code
 							></td
 						>
-						<td class="px-4 py-3 font-sans text-accent underline">link</td>
+						<td class="px-4 py-3 font-sans text-accent-ink underline">link</td>
 					</tr>
 					<tr>
 						<td class="px-4 py-3"
@@ -409,7 +409,7 @@
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 			>
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">
-					<span class="text-accent">[[@darwin1859]]</span>
+					<span class="text-accent-ink">[[@darwin1859]]</span>
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Single citation — renders as "(Darwin, 1859)" in APA or "[1]" in IEEE/Vancouver
@@ -419,7 +419,7 @@
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 			>
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">
-					<span class="text-accent">[[@dawkins1976; @gould1979]]</span>
+					<span class="text-accent-ink">[[@dawkins1976; @gould1979]]</span>
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Multiple citations separated by semicolons
@@ -451,7 +451,7 @@
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 			>
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">
-					The formula <span class="text-accent">$E = mc^2$</span> describes...
+					The formula <span class="text-accent-ink">$E = mc^2$</span> describes...
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Inline math — within the text
@@ -461,9 +461,8 @@
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 			>
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">
-					<span class="text-accent">$$</span><br />H = -\sum_&#123;i&#125; p_i \log p_i<br /><span
-						class="text-accent">$$</span
-					>
+					<span class="text-accent-ink">$$</span><br />H = -\sum_&#123;i&#125; p_i \log p_i<br
+					/><span class="text-accent-ink">$$</span>
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Block math — centered on its own line
@@ -520,7 +519,7 @@
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 			>
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">
-					<span class="text-accent">[[Introduction]]</span>
+					<span class="text-accent-ink">[[Introduction]]</span>
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Link to a document in the <strong>same project</strong> by exact title.
@@ -530,7 +529,7 @@
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 			>
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">
-					<span class="text-accent">[[Introduction:a3f9b2c1]]</span>
+					<span class="text-accent-ink">[[Introduction:a3f9b2c1]]</span>
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Link to a <strong>public document from another user</strong>. The hash is the first 8
@@ -560,7 +559,7 @@
 					class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 				>
 					<p class="font-mono text-sm text-ink dark:text-dark-ink">
-						<span class="text-accent">{item.trigger}</span>
+						<span class="text-accent-ink">{item.trigger}</span>
 						<span class="text-xs text-ink-faint dark:text-dark-ink-faint"> — {item.example}</span>
 					</p>
 					<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">{item.desc}</p>
@@ -580,9 +579,8 @@
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 			>
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">
-					The theory was proposed by Kuhn<span class="text-accent">[^1]</span> and later expanded<span
-						class="text-accent">[^kuhn]</span
-					>.
+					The theory was proposed by Kuhn<span class="text-accent-ink">[^1]</span> and later
+					expanded<span class="text-accent-ink">[^kuhn]</span>.
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Mark in the text — key can be a number or a word. Renders as a numbered superscript.
@@ -592,9 +590,10 @@
 				class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 			>
 				<p class="font-mono text-sm text-ink dark:text-dark-ink">
-					<span class="text-accent">[^1]</span>: Kuhn, T. S. (1962).
+					<span class="text-accent-ink">[^1]</span>: Kuhn, T. S. (1962).
 					<em>The Structure of Scientific Revolutions</em>.<br />
-					<span class="text-accent">[^kuhn]</span>: Feyerabend, P. (1975). <em>Against Method</em>.
+					<span class="text-accent-ink">[^kuhn]</span>: Feyerabend, P. (1975).
+					<em>Against Method</em>.
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Note definition — can go anywhere, usually at the end.
@@ -626,7 +625,7 @@
 					<div class="flex items-start gap-4">
 						<div class="min-w-0 flex-1">
 							<p class="font-mono text-sm text-ink dark:text-dark-ink">
-								<span class="text-accent">&gt; [!{item.type}]</span><br />
+								<span class="text-accent-ink">&gt; [!{item.type}]</span><br />
 								<span class="text-ink-muted dark:text-dark-ink-muted"
 									>&gt; Text of the callout.</span
 								>
@@ -783,7 +782,7 @@
 						href="https://typst.app"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-accent underline decoration-dotted">typst.app</a
+						class="text-accent-ink underline decoration-dotted">typst.app</a
 					> or the Typst CLI.
 				</p>
 			</div>
@@ -848,7 +847,7 @@
 			</div>
 			<a
 				href={resolve('/help/ai')}
-				class="shrink-0 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 font-sans text-xs font-semibold text-accent transition-colors hover:bg-accent/10 dark:border-accent/20 dark:bg-accent/5"
+				class="shrink-0 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 font-sans text-xs font-semibold text-accent-ink transition-colors hover:bg-accent/10 dark:border-accent/20 dark:bg-accent/5"
 			>
 				Full AI guide →
 			</a>

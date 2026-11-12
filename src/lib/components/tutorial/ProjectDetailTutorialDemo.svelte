@@ -34,7 +34,7 @@
 				<!-- svelte-ignore a11y_invalid_attribute -->
 				<a
 					href="#"
-					class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent"
+					class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent-ink"
 				>
 					Assistant
 				</a>
@@ -53,7 +53,7 @@
 					<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Documents</h2>
 					<div class="flex items-center gap-2">
 						<button
-							class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent"
+							class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent-ink"
 						>
 							Generate draft
 						</button>

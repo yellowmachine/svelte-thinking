@@ -149,7 +149,7 @@
 					<div class="flex shrink-0 items-center gap-3">
 						<button
 							onclick={() => copyRef(dataset.id, dataset.filename)}
-							class="font-sans text-xs text-ink-muted transition-colors hover:text-accent dark:text-dark-ink-muted"
+							class="font-sans text-xs text-ink-muted transition-colors hover:text-accent-ink dark:text-dark-ink-muted"
 						>
 							{copiedId === dataset.id ? 'Copied' : 'Copy chart reference'}
 						</button>

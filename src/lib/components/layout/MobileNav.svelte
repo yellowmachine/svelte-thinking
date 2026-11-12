@@ -4,7 +4,7 @@
 
 	import { resolve } from '$app/paths';
 	type Project = { id: string; title: string };
-	type Sheet = 'note' | 'photo' | null;
+	type Sheet = 'note' | 'photo' | 'more' | null;
 
 	let sheet = $state<Sheet>(null);
 	let projects: Project[] = $state([]);
@@ -17,10 +17,24 @@
 	const onProjects = $derived(page.url.pathname.startsWith('/projects'));
 	const onExplore = $derived(page.url.pathname.startsWith('/explore'));
 
+	// Sections without a tab of their own: reached through "More".
+	const MORE_LINKS = [
+		{ href: '/bib', label: 'Bibliography' },
+		{ href: '/posts', label: 'Blog' },
+		{ href: '/network', label: 'Network' },
+		{ href: '/help', label: 'Help' }
+	] as const;
+	const onMore = $derived(
+		MORE_LINKS.some(
+			(l) => page.url.pathname === l.href || page.url.pathname.startsWith(`${l.href}/`)
+		)
+	);
+
 	async function openSheet(type: Sheet) {
 		sheet = type;
 		uploadError = '';
 		photoProjectId = '';
+		if (type === 'more') return;
 		if (projects.length === 0) {
 			loading = true;
 			try {
@@ -121,8 +135,9 @@
 		<!-- Proyectos -->
 		<a
 			href={resolve('/projects')}
+			aria-current={onProjects ? 'page' : undefined}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onProjects
-				? 'text-accent'
+				? 'text-accent-ink'
 				: 'text-ink-muted dark:text-dark-ink-muted'}"
 		>
 			<svg
@@ -144,8 +159,9 @@
 		<!-- Explore -->
 		<a
 			href={resolve('/explore')}
+			aria-current={onExplore ? 'page' : undefined}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onExplore
-				? 'text-accent'
+				? 'text-accent-ink'
 				: 'text-ink-muted dark:text-dark-ink-muted'}"
 		>
 			<svg
@@ -213,8 +229,40 @@
 			</svg>
 			Photos
 		</button>
+
+		<!-- More -->
+		<button
+			onclick={() => openSheet('more')}
+			aria-haspopup="dialog"
+			aria-expanded={sheet === 'more'}
+			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onMore
+				? 'text-accent-ink'
+				: 'text-ink-muted dark:text-dark-ink-muted'}"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="currentColor"
+				aria-hidden="true"
+			>
+				<circle cx="5" cy="12" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle
+					cx="19"
+					cy="12"
+					r="1.75"
+				/>
+			</svg>
+			More
+		</button>
 	</div>
 </nav>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && sheet) close();
+	}}
+/>
 
 <!-- Bottom sheet backdrop -->
 {#if sheet}
@@ -226,6 +274,9 @@
 	></button>
 
 	<div
+		role="dialog"
+		aria-modal="true"
+		aria-label={sheet === 'more' ? 'More sections' : 'Choose a project'}
 		class="pb-safe fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-paper-border bg-paper sm:hidden dark:border-dark-paper-border dark:bg-dark-paper"
 	>
 		<!-- Handle -->
@@ -233,36 +284,53 @@
 			<div class="h-1 w-10 rounded-full bg-paper-border dark:bg-dark-paper-border"></div>
 		</div>
 
-		<div class="px-4 pb-2">
-			<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-				{sheet === 'note'
-					? 'Which project to add the note to?'
-					: 'Which project to add the photo to?'}
-			</p>
-		</div>
-
-		{#if loading}
-			<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Loading projects…
-			</p>
-		{:else if projects.length === 0}
-			<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				You have no projects yet.
-			</p>
-		{:else}
-			<ul class="max-h-64 overflow-y-auto pb-2">
-				{#each projects as p (p.id)}
+		{#if sheet === 'more'}
+			<ul class="pb-2">
+				{#each MORE_LINKS as link (link.href)}
 					<li>
-						<button
-							onclick={() => (sheet === 'note' ? createNote(p.id) : selectPhotoProject(p.id))}
-							disabled={creating}
-							class="w-full px-4 py-3 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+						<a
+							href={resolve(link.href)}
+							onclick={close}
+							aria-current={page.url.pathname.startsWith(link.href) ? 'page' : undefined}
+							class="block px-4 py-3 font-sans text-sm text-ink transition-colors hover:bg-paper-ui aria-[current=page]:font-medium aria-[current=page]:text-accent-ink dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 						>
-							{p.title}
-						</button>
+							{link.label}
+						</a>
 					</li>
 				{/each}
 			</ul>
+		{:else}
+			<div class="px-4 pb-2">
+				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
+					{sheet === 'note'
+						? 'Which project to add the note to?'
+						: 'Which project to add the photo to?'}
+				</p>
+			</div>
+
+			{#if loading}
+				<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					Loading projects…
+				</p>
+			{:else if projects.length === 0}
+				<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					You have no projects yet.
+				</p>
+			{:else}
+				<ul class="max-h-64 overflow-y-auto pb-2">
+					{#each projects as p (p.id)}
+						<li>
+							<button
+								onclick={() => (sheet === 'note' ? createNote(p.id) : selectPhotoProject(p.id))}
+								disabled={creating}
+								class="w-full px-4 py-3 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+							>
+								{p.title}
+							</button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		{/if}
 
 		{#if uploadError}

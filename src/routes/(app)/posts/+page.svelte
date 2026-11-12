@@ -333,7 +333,7 @@
 								href={resolve(`/posts?month=${bucket.month}`)}
 								class="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 font-sans text-sm transition-colors {bucket.month ===
 								data.selectedMonth
-									? 'bg-accent/10 text-accent'
+									? 'bg-accent/10 text-accent-ink'
 									: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
 							>
 								<span class="capitalize">{monthLabel(bucket.month)}</span>

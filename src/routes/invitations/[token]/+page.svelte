@@ -151,7 +151,7 @@
 							{data.invitation.invitedEmail}
 						</p>
 						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Role: <span class="font-medium text-accent"
+							Role: <span class="font-medium text-accent-ink"
 								>{PROJECT_ROLE_LABELS[data.invitation.role]}</span
 							>
 						</p>

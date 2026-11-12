@@ -141,7 +141,7 @@
 				{#each [{ n: '1', label: 'First violation', desc: 'Email warning explaining what happened and what we expect.' }, { n: '2', label: 'Second violation', desc: 'Formal warning and temporary restriction of some features.' }, { n: '3', label: 'Third violation', desc: 'Account suspension.' }] as step (step.n)}
 					<li class="flex gap-4">
 						<span
-							class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 font-sans text-sm font-semibold text-accent"
+							class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 font-sans text-sm font-semibold text-accent-ink"
 						>
 							{step.n}
 						</span>
@@ -180,7 +180,7 @@
 			</p>
 			<p class="mt-4 font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
 				Questions or issues? Write to us at
-				<a href="mailto:conduct@scholio.app" class="text-accent underline underline-offset-2"
+				<a href="mailto:conduct@scholio.app" class="text-accent-ink underline underline-offset-2"
 					>conduct@scholio.app</a
 				>.
 			</p>

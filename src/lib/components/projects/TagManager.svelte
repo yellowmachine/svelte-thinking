@@ -73,12 +73,12 @@
 		<div class="mb-2 flex flex-wrap gap-1.5">
 			{#each tags as t (t.id)}
 				<span
-					class="flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 font-sans text-xs font-medium text-accent dark:bg-accent/20"
+					class="flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 font-sans text-xs font-medium text-accent-ink dark:bg-accent/20"
 				>
 					<span translate="no">{t.name}</span>
 					<button
 						onclick={() => removeTag(t.id)}
-						class="ml-0.5 rounded-full text-accent/60 hover:text-accent"
+						class="ml-0.5 rounded-full text-accent-ink/60 hover:text-accent-ink"
 						aria-label="Remove tag">✕</button
 					>
 				</span>
@@ -119,7 +119,7 @@
 						type="button"
 						onclick={createAndAdd}
 						disabled={loading}
-						class="flex w-full items-center gap-1.5 px-3 py-1.5 font-sans text-xs text-accent hover:bg-paper-ui disabled:opacity-50 dark:hover:bg-dark-paper-ui"
+						class="flex w-full items-center gap-1.5 px-3 py-1.5 font-sans text-xs text-accent-ink hover:bg-paper-ui disabled:opacity-50 dark:hover:bg-dark-paper-ui"
 					>
 						<span class="font-medium">+ Create</span> "{inputValue.trim()}"
 					</button>

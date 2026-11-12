@@ -47,7 +47,7 @@
 	<div class="mb-8">
 		<a
 			href={resolve(`/projects/${data.project.id}`)}
-			class="mb-3 flex items-center gap-1.5 font-sans text-sm text-ink-muted hover:text-accent dark:text-dark-ink-muted"
+			class="mb-3 flex items-center gap-1.5 font-sans text-sm text-ink-muted hover:text-accent-ink dark:text-dark-ink-muted"
 		>
 			<svg
 				width="14"
@@ -113,7 +113,7 @@
 					<div class="mb-3 flex items-center gap-2">
 						<a
 							href={resolve(`/projects/${data.project.id}/documents/${doc.documentId}`)}
-							class="font-serif text-lg font-semibold text-ink hover:text-accent dark:text-dark-ink"
+							class="font-serif text-lg font-semibold text-ink hover:text-accent-ink dark:text-dark-ink"
 						>
 							{doc.documentTitle}
 						</a>
@@ -184,7 +184,7 @@
 											href={resolve(
 												`/projects/${data.project.id}/documents/${doc.documentId}?commentId=${thread.id}`
 											)}
-											class="rounded-md border border-paper-border px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:border-accent/40 hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint"
+											class="rounded-md border border-paper-border px-2 py-1 font-sans text-xs text-ink-faint transition-colors hover:border-accent/40 hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-faint"
 											title="View in document"
 										>
 											<svg

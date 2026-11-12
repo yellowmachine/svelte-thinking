@@ -17,11 +17,14 @@
 
 	--color-ink: #1c1917;
 	--color-ink-muted: #57534e;
-	--color-ink-faint: #a8a29e;
+	--color-ink-faint: #716a65;
 
 	--color-accent: #7c5c3e;
 	--color-accent-hover: #6b4f35;
 	--color-accent-light: #e8d9c8;
+	/* Accent as a text colour: follows dark mode by itself (see --accent-ink below).
+	   bg-accent keeps --color-accent in both modes so white text on it stays legible. */
+	--color-accent-ink: var(--accent-ink);
 
 	/* Paleta dark */
 	--color-dark-paper: #1a1917;
@@ -30,7 +33,16 @@
 
 	--color-dark-ink: #e8e4dc;
 	--color-dark-ink-muted: #a8a29e;
-	--color-dark-ink-faint: #57534e;
+	--color-dark-ink-faint: #878179;
+	--color-dark-accent: #c4996b;
+}
+
+/* text-accent-ink: the light accent on paper, the dark accent on dark paper */
+:root {
+	--accent-ink: var(--color-accent);
+}
+:root.dark {
+	--accent-ink: var(--color-dark-accent);
 }
 
 /* Base */
@@ -43,6 +55,27 @@ html {
 html.dark {
 	background-color: var(--color-dark-paper-ui);
 	color: var(--color-dark-ink);
+}
+
+/* Keyboard focus: one ring in the theme's accent for everything clickable.
+   Unlayered, so it wins over utilities such as outline-none or focus:outline-none.
+   Text fields are left out: they show focus with their own border (focus:border-accent).
+   A visually hidden file input lights up its <label> instead. */
+:where(
+	a[href],
+	button,
+	summary,
+	[role='button'],
+	[role='tab'],
+	[role='menuitem'],
+	[role='switch'],
+	[tabindex]:not([tabindex='-1']),
+	input[type='checkbox'],
+	input[type='radio']
+):focus-visible,
+label:has(> input.sr-only:focus-visible) {
+	outline: 2px solid var(--accent-ink);
+	outline-offset: 2px;
 }
 
 /* Safe area para PWA en iOS (home indicator) */
@@ -76,8 +109,8 @@ html.dark ::-webkit-scrollbar-thumb {
 	--color-paper-ui: #f6f8fa;
 	--color-paper-border: #d0d7de;
 	--color-ink: #1f2328;
-	--color-ink-muted: #636c76;
-	--color-ink-faint: #9198a1;
+	--color-ink-muted: #5c646e;
+	--color-ink-faint: #6b737d;
 	--color-accent: #0969da;
 	--color-accent-hover: #0860ca;
 	--color-accent-light: #ddf4ff;
@@ -86,25 +119,27 @@ html.dark ::-webkit-scrollbar-thumb {
 	--color-dark-paper-border: #30363d;
 	--color-dark-ink: #e6edf3;
 	--color-dark-ink-muted: #8b949e;
-	--color-dark-ink-faint: #6e7781;
+	--color-dark-ink-faint: #7a848e;
+	--color-dark-accent: #58a6ff;
 }
 
 [data-theme='solarized'] {
 	--color-paper: #fdf6e3;
 	--color-paper-ui: #eee8d5;
 	--color-paper-border: #ddd6c1;
-	--color-ink: #657b83;
-	--color-ink-muted: #839496;
-	--color-ink-faint: #93a1a1;
-	--color-accent: #268bd2;
-	--color-accent-hover: #1a7bbf;
+	--color-ink: #404e53;
+	--color-ink-muted: #505d5e;
+	--color-ink-faint: #5d6b6b;
+	--color-accent: #1e6da5;
+	--color-accent-hover: #195c8b;
 	--color-accent-light: #d4e8f6;
 	--color-dark-paper: #002b36;
 	--color-dark-paper-ui: #073642;
 	--color-dark-paper-border: #0d4a5a;
-	--color-dark-ink: #839496;
-	--color-dark-ink-muted: #657b83;
-	--color-dark-ink-faint: #586e75;
+	--color-dark-ink: #b7c1c2;
+	--color-dark-ink-muted: #9cacb2;
+	--color-dark-ink-faint: #859ca3;
+	--color-dark-accent: #48a0de;
 }
 
 [data-theme='nord'] {
@@ -113,27 +148,28 @@ html.dark ::-webkit-scrollbar-thumb {
 	--color-paper-border: #d8dee9;
 	--color-ink: #2e3440;
 	--color-ink-muted: #4c566a;
-	--color-ink-faint: #8090a8;
-	--color-accent: #5e81ac;
-	--color-accent-hover: #507399;
+	--color-ink-faint: #596a82;
+	--color-accent: #4b6a91;
+	--color-accent-hover: #415b7d;
 	--color-accent-light: #d8e4f0;
 	--color-dark-paper: #2e3440;
 	--color-dark-paper-ui: #272c36;
 	--color-dark-paper-border: #3b4252;
 	--color-dark-ink: #eceff4;
 	--color-dark-ink-muted: #d8dee9;
-	--color-dark-ink-faint: #8090a8;
+	--color-dark-ink-faint: #8f9db2;
+	--color-dark-accent: #88c0d0;
 }
 
 [data-theme='catppuccin'] {
 	--color-paper: #eff1f5;
 	--color-paper-ui: #e6e9ef;
 	--color-paper-border: #ccd0da;
-	--color-ink: #4c4f69;
-	--color-ink-muted: #6c6f85;
-	--color-ink-faint: #9ca0b0;
-	--color-accent: #1e66f5;
-	--color-accent-hover: #1958d4;
+	--color-ink: #484b63;
+	--color-ink-muted: #575a6c;
+	--color-ink-faint: #63687c;
+	--color-accent: #0d5af4;
+	--color-accent-hover: #0a4fd9;
 	--color-accent-light: #d3e0fd;
 	--color-dark-paper: #1e1e2e;
 	--color-dark-paper-ui: #181825;
@@ -141,6 +177,7 @@ html.dark ::-webkit-scrollbar-thumb {
 	--color-dark-ink: #cdd6f4;
 	--color-dark-ink-muted: #bac2de;
 	--color-dark-ink-faint: #a6adc8;
+	--color-dark-accent: #89b4fa;
 }
 
 [data-theme='gruvbox'] {
@@ -148,17 +185,18 @@ html.dark ::-webkit-scrollbar-thumb {
 	--color-paper-ui: #f2e5bc;
 	--color-paper-border: #ebdbb2;
 	--color-ink: #3c3836;
-	--color-ink-muted: #665c54;
-	--color-ink-faint: #928374;
-	--color-accent: #b57614;
-	--color-accent-hover: #9e6910;
+	--color-ink-muted: #625851;
+	--color-ink-faint: #716458;
+	--color-accent: #8c5b0f;
+	--color-accent-hover: #70490c;
 	--color-accent-light: #f2d49e;
 	--color-dark-paper: #282828;
 	--color-dark-paper-ui: #1d2021;
 	--color-dark-paper-border: #3c3836;
 	--color-dark-ink: #ebdbb2;
 	--color-dark-ink-muted: #d5c4a1;
-	--color-dark-ink-faint: #928374;
+	--color-dark-ink-faint: #9a8c7e;
+	--color-dark-accent: #fe8019;
 }
 
 /* ── E-ink mode ──────────────────────────────────────────────────────────── */
@@ -185,6 +223,7 @@ html.dark ::-webkit-scrollbar-thumb {
 	--color-dark-ink: #ffffff;
 	--color-dark-ink-muted: #cccccc;
 	--color-dark-ink-faint: #999999;
+	--color-dark-accent: #ffffff;
 }
 
 [data-mode='eink'] * {

@@ -156,7 +156,7 @@
 				</h1>
 				{#if isOrgWorkspace}
 					<span
-						class="rounded-full border border-accent/30 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+						class="rounded-full border border-accent/30 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent-ink uppercase"
 						>org</span
 					>
 				{/if}

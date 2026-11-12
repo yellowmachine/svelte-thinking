@@ -70,13 +70,13 @@
 			Don't have an account?
 			<button
 				onclick={() => (window.location.href = '/#waitlist')}
-				class="text-accent hover:underline">Sign up</button
+				class="text-accent-ink hover:underline">Sign up</button
 			>
 		</p>
 
 		{#if data.welcome}
 			<div
-				class="mt-4 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-accent"
+				class="mt-4 rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-accent-ink"
 			>
 				Your Scholio access is ready. Sign in with your credentials.
 			</div>

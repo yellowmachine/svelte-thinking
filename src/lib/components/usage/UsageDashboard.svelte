@@ -167,7 +167,8 @@
 						{#each props.ownedOrgs as org (org.id)}
 							<a
 								href={resolve(`/usage/org/${org.id}`)}
-								class="font-sans text-xs text-accent underline decoration-dotted">{org.name} →</a
+								class="font-sans text-xs text-accent-ink underline decoration-dotted"
+								>{org.name} →</a
 							>
 						{/each}
 					</div>
@@ -247,7 +248,7 @@
 
 	{#if loading && !data}
 		<div class="flex items-center justify-center py-24">
-			<Spinner size="lg" class="text-accent" />
+			<Spinner size="lg" class="text-accent-ink" />
 		</div>
 	{:else if data}
 		<!-- KPI Cards -->
@@ -305,7 +306,7 @@
 								PAD.top -
 								PAD.bottom} L{chartData.points[0].x},{PAD.top + CHART_H - PAD.top - PAD.bottom} Z"
 							fill="currentColor"
-							class="text-accent/10"
+							class="text-accent-ink/10"
 							opacity="0.8"
 						/>
 
@@ -314,14 +315,14 @@
 							d={chartData.path}
 							fill="none"
 							stroke="currentColor"
-							class="text-accent"
+							class="text-accent-ink"
 							stroke-width="1.5"
 							stroke-linejoin="round"
 						/>
 
 						<!-- Dots -->
 						{#each chartData.points as p, i (i)}
-							<circle cx={p.x} cy={p.y} r="2.5" fill="currentColor" class="text-accent" />
+							<circle cx={p.x} cy={p.y} r="2.5" fill="currentColor" class="text-accent-ink" />
 						{/each}
 
 						<!-- X axis labels -->
@@ -425,7 +426,7 @@
 								<div class="mb-0.5 flex items-center justify-between gap-2">
 									<a
 										href={resolve(`/projects/${row.projectId}`)}
-										class="truncate font-sans text-sm text-ink hover:text-accent dark:text-dark-ink"
+										class="truncate font-sans text-sm text-ink hover:text-accent-ink dark:text-dark-ink"
 									>
 										{row.title ?? row.projectId}
 									</a>

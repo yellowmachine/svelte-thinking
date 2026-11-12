@@ -123,7 +123,7 @@
 						{[doiResult.journal, doiResult.year].filter(Boolean).join(', ')}
 						{#if doiResult.doi}<span class="ml-1 font-mono">DOI: {doiResult.doi}</span>{/if}
 					</p>
-					<p class="font-mono text-[10px] text-accent">@{doiResult.citeKey}</p>
+					<p class="font-mono text-[10px] text-accent-ink">@{doiResult.citeKey}</p>
 				</div>
 				<button
 					onclick={handleAccept}

@@ -14,8 +14,8 @@
 
 	const styles: Record<Variant, string> = {
 		owner: 'bg-accent text-white',
-		author: 'bg-accent-light text-accent',
-		coauthor: 'bg-accent-light text-accent',
+		author: 'bg-accent-light text-accent-ink',
+		coauthor: 'bg-accent-light text-accent-ink',
 		reviewer: 'bg-blue-100 text-blue-700',
 		commenter: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted',
 		draft: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted',

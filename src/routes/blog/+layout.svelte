@@ -15,7 +15,7 @@
 			</div>
 			<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Scholio</span>
 			<span
-				class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+				class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent-ink uppercase"
 				>beta</span
 			>
 		</a>

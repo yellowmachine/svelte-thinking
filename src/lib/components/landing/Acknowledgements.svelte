@@ -12,7 +12,7 @@
 <section class="border-t border-paper-border py-24 dark:border-dark-paper-border">
 	<div class="mx-auto max-w-5xl px-6">
 		<div class="mb-12 text-center">
-			<p class="mb-3 font-sans text-xs font-semibold tracking-widest text-accent uppercase">
+			<p class="mb-3 font-sans text-xs font-semibold tracking-widest text-accent-ink uppercase">
 				Acknowledgements
 			</p>
 			<h2 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Thank you</h2>
@@ -59,7 +59,7 @@
 					{/if}
 
 					<h3
-						class="font-serif text-base font-semibold text-ink transition-colors group-hover:text-accent dark:text-dark-ink dark:group-hover:text-accent"
+						class="font-serif text-base font-semibold text-ink transition-colors group-hover:text-accent-ink dark:text-dark-ink dark:group-hover:text-accent-ink"
 					>
 						{person.name}
 					</h3>

@@ -190,7 +190,7 @@
 											navigator.clipboard.writeText(`[[${doc.title}:${doc.id.slice(0, 8)}]]`);
 										}}
 										title="Copy wikilink syntax"
-										class="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-ink-faint transition-colors hover:bg-paper-border hover:text-accent dark:text-dark-ink-faint dark:hover:bg-dark-paper-border"
+										class="shrink-0 rounded px-1.5 py-1 font-mono text-[10px] text-ink-faint transition-colors hover:bg-paper-border hover:text-accent-ink dark:text-dark-ink-faint dark:hover:bg-dark-paper-border"
 										>[[·]]</button
 									>
 								{/if}

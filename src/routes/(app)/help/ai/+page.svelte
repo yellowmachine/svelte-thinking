@@ -12,7 +12,7 @@
 	<nav
 		class="mb-6 flex items-center gap-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 	>
-		<a href={resolve('/help')} class="text-accent underline-offset-2 hover:underline">Help</a>
+		<a href={resolve('/help')} class="text-accent-ink underline-offset-2 hover:underline">Help</a>
 		<span>/</span>
 		<span class="text-ink-muted dark:text-dark-ink-muted">AI assistant</span>
 	</nav>
@@ -43,7 +43,7 @@
 			{#each [{ href: '#architecture', label: 'Architecture' }, { href: '#setup', label: 'Setup & API key' }, { href: '#agent-tools', label: 'Agent tools (conversational)' }, { href: '#read-tools', label: '↳ Read tools' }, { href: '#write-tools', label: '↳ Write tools (with confirmation)' }, { href: '#editor-tools', label: 'Editor tools (inline)' }, { href: '#task-tools', label: 'Task-based features' }, { href: '#models', label: 'Supported models' }, { href: '#tips', label: 'Tips' }] as item (item.href)}
 				<a
 					href={item.href}
-					class="block font-sans text-sm text-accent decoration-dotted underline-offset-2 hover:underline"
+					class="block font-sans text-sm text-accent-ink decoration-dotted underline-offset-2 hover:underline"
 					>{item.label}</a
 				>
 			{/each}
@@ -92,7 +92,7 @@
 						<div class="space-y-1.5">
 							{#each ['AI tab → Chat', 'Editor → inline assistant'] as item (item)}
 								<div class="flex items-center gap-2">
-									<span class="font-mono text-[10px] text-accent">→</span>
+									<span class="font-mono text-[10px] text-accent-ink">→</span>
 									<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 										>{item}</span
 									>
@@ -233,12 +233,12 @@
 			model decides when to call them based on your question.
 		</p>
 		<div class="space-y-3">
-			{#each [{ name: 'get_project_context', badge: 'called first', badgeColor: 'bg-accent/10 text-accent', desc: 'Returns a snapshot of the project: title, description, list of all documents with their summaries, open requirements, bibliography entries, and open issues. The agent calls this automatically at the start of any project-related question.', returns: 'Project metadata + document list + bibliography + requirements + issues' }, { name: 'read_document', badge: 'full content', badgeColor: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted', desc: 'Fetches the complete Markdown content of a specific document by ID. Used when the agent needs to analyse, quote, or review the full text of a document identified via get_project_context.', returns: 'Full Markdown content of the document' }, { name: 'search_documents_semantic', badge: 'vector search', badgeColor: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted', desc: 'Runs a semantic similarity search over all document chunks using pgvector embeddings. Returns the 6 most relevant passages even if they don\'t share keywords with the query. Useful for "find everything related to X" questions.', returns: 'Top 6 text chunks with document title and relevance score' }, { name: 'list_references', badge: null, badgeColor: '', desc: 'Returns the full bibliography of the project: citekeys, authors, year, title, journal/publisher. The agent uses this to answer questions about sources and to suggest citations when drafting.', returns: 'All bibliography entries with metadata' }, { name: 'get_requirement_details', badge: null, badgeColor: '', desc: 'Returns the project\'s requirements (if configured) with their completion status: fulfilled ✓, pending mandatory ✗, or pending optional ○. Useful for asking "what sections am I still missing?"', returns: 'Requirements list with status per requirement' }, { name: 'list_issues', badge: null, badgeColor: '', desc: 'Returns all open issues in the project with their title, priority and a preview of the content. Allows the agent to give advice on what the review panel has flagged.', returns: 'Open issues with priority and preview' }] as tool (tool.name)}
+			{#each [{ name: 'get_project_context', badge: 'called first', badgeColor: 'bg-accent/10 text-accent-ink', desc: 'Returns a snapshot of the project: title, description, list of all documents with their summaries, open requirements, bibliography entries, and open issues. The agent calls this automatically at the start of any project-related question.', returns: 'Project metadata + document list + bibliography + requirements + issues' }, { name: 'read_document', badge: 'full content', badgeColor: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted', desc: 'Fetches the complete Markdown content of a specific document by ID. Used when the agent needs to analyse, quote, or review the full text of a document identified via get_project_context.', returns: 'Full Markdown content of the document' }, { name: 'search_documents_semantic', badge: 'vector search', badgeColor: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted', desc: 'Runs a semantic similarity search over all document chunks using pgvector embeddings. Returns the 6 most relevant passages even if they don\'t share keywords with the query. Useful for "find everything related to X" questions.', returns: 'Top 6 text chunks with document title and relevance score' }, { name: 'list_references', badge: null, badgeColor: '', desc: 'Returns the full bibliography of the project: citekeys, authors, year, title, journal/publisher. The agent uses this to answer questions about sources and to suggest citations when drafting.', returns: 'All bibliography entries with metadata' }, { name: 'get_requirement_details', badge: null, badgeColor: '', desc: 'Returns the project\'s requirements (if configured) with their completion status: fulfilled ✓, pending mandatory ✗, or pending optional ○. Useful for asking "what sections am I still missing?"', returns: 'Requirements list with status per requirement' }, { name: 'list_issues', badge: null, badgeColor: '', desc: 'Returns all open issues in the project with their title, priority and a preview of the content. Allows the agent to give advice on what the review panel has flagged.', returns: 'Open issues with priority and preview' }] as tool (tool.name)}
 				<div
 					class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 				>
 					<div class="flex flex-wrap items-center gap-2">
-						<code class="font-mono text-sm text-accent">{tool.name}</code>
+						<code class="font-mono text-sm text-accent-ink">{tool.name}</code>
 						{#if tool.badge}
 							<span class="rounded px-1.5 py-0.5 font-mono text-[10px] {tool.badgeColor}"
 								>{tool.badge}</span
@@ -317,7 +317,7 @@
 					class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
 				>
 					<div class="flex flex-wrap items-center gap-2">
-						<code class="font-mono text-sm text-accent">{tool.name}</code>
+						<code class="font-mono text-sm text-accent-ink">{tool.name}</code>
 						{#if tool.type === 'write'}
 							<span
 								class="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"

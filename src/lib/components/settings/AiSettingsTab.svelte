@@ -201,7 +201,7 @@
 	<div class="flex justify-end">
 		<a
 			href={resolve('/usage')}
-			class="font-sans text-sm text-accent underline decoration-dotted hover:decoration-solid"
+			class="font-sans text-sm text-accent-ink underline decoration-dotted hover:decoration-solid"
 			>View AI usage dashboard →</a
 		>
 	</div>

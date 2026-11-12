@@ -182,7 +182,7 @@
 							rows="3"
 							maxlength="5000"
 							placeholder="Escribe un comentario..."
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						></textarea>
 						{#if postError}
 							<p class="font-sans text-sm text-red-600 dark:text-red-400">{postError}</p>

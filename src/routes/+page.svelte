@@ -34,7 +34,7 @@
 				</div>
 				<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Scholio</span>
 				<span
-					class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+					class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent-ink uppercase"
 					>beta</span
 				>
 			</div>
@@ -75,7 +75,7 @@
 
 	<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
 	<section class="mx-auto max-w-3xl px-6 pt-24 pb-20 text-center">
-		<p class="mb-4 font-sans text-xs font-semibold tracking-widest text-accent uppercase">
+		<p class="mb-4 font-sans text-xs font-semibold tracking-widest text-accent-ink uppercase">
 			Collaborative academic writing
 		</p>
 		<h1
@@ -142,11 +142,11 @@ The effect is especially pronounced
 in clinical sciences[^1] and STEM
 [[@hong2004; @wuchty2007]].
 
-<span class="text-accent">$$</span>
+<span class="text-accent-ink">$$</span>
 D(E) = -\sum_&#123;i&#125; p_i \log p_i
-<span class="text-accent">$$</span>
+<span class="text-accent-ink">$$</span>
 
-<span class="text-accent">[^1]</span>: See also [[Methodology]]
+<span class="text-accent-ink">[^1]</span>: See also [[Methodology]]
 for the study design.</code
 						></pre>
 				</div>
@@ -155,14 +155,14 @@ for the study design.</code
 					<h3 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Introduction</h3>
 					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
 						Epistemic diversity in interdisciplinary teams improves publication quality
-						<span class="text-accent">(Page, 2007)</span>.
+						<span class="text-accent-ink">(Page, 2007)</span>.
 					</p>
 					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
 						The effect is especially pronounced in clinical sciences<sup
-							class="font-semibold text-accent">1</sup
+							class="font-semibold text-accent-ink">1</sup
 						>
 						and STEM
-						<span class="text-accent">(Hong & Page, 2004; Wuchty et al., 2007)</span>.
+						<span class="text-accent-ink">(Hong & Page, 2004; Wuchty et al., 2007)</span>.
 					</p>
 					<div
 						class="my-4 rounded bg-paper-ui px-4 py-3 text-center font-mono text-sm text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
@@ -172,8 +172,9 @@ for the study design.</code
 					<p
 						class="border-t border-paper-border pt-3 font-sans text-xs text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
 					>
-						<sup class="font-semibold text-accent">1</sup> See also
-						<span class="text-accent underline decoration-dotted">Methodology</span> for the study design.
+						<sup class="font-semibold text-accent-ink">1</sup> See also
+						<span class="text-accent-ink underline decoration-dotted">Methodology</span> for the study
+						design.
 					</p>
 				</div>
 			</div>
@@ -534,7 +535,7 @@ for the study design.</code
 	<!-- ── Honestidad científica ─────────────────────────────────────────────── -->
 	<section class="border-t border-paper-border py-20 dark:border-dark-paper-border">
 		<div class="mx-auto max-w-2xl px-6 text-center">
-			<p class="mb-3 font-sans text-xs font-semibold tracking-widest text-accent uppercase">
+			<p class="mb-3 font-sans text-xs font-semibold tracking-widest text-accent-ink uppercase">
 				Clear position
 			</p>
 			<h2 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">

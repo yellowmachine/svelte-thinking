@@ -312,7 +312,9 @@
 		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
 	>
 		<div class="flex items-center gap-2">
-			<div class="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10 text-accent">
+			<div
+				class="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10 text-accent-ink"
+			>
 				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 					<path
 						d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
@@ -372,7 +374,7 @@
 	<div bind:this={messagesEl} class="flex-1 overflow-y-auto px-4 py-4">
 		{#if !historyLoaded}
 			<div class="flex h-full items-center justify-center">
-				<Spinner class="text-accent" />
+				<Spinner class="text-accent-ink" />
 			</div>
 		{:else if messages.length === 0}
 			<!-- Empty state + shortcuts -->
@@ -386,15 +388,15 @@
 					</p>
 					<div class="mt-1 flex flex-wrap justify-center gap-1.5">
 						<span
-							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
 							>Propone edits inline</span
 						>
 						<span
-							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
 							>Lee tus referencias</span
 						>
 						<span
-							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
+							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
 							>Mejora el estilo</span
 						>
 					</div>
@@ -453,7 +455,7 @@
 									<button
 										type="button"
 										onclick={retry}
-										class="font-sans text-xs text-accent underline decoration-dotted hover:decoration-solid"
+										class="font-sans text-xs text-accent-ink underline decoration-dotted hover:decoration-solid"
 										>Retry</button
 									>
 								</div>
@@ -461,7 +463,7 @@
 								<div class="flex flex-wrap gap-1 pl-1">
 									{#each msg.docsUsed as doc (doc.id)}
 										<span
-											class="rounded-full bg-accent/8 px-2 py-0.5 font-sans text-[10px] text-accent dark:bg-accent/12"
+											class="rounded-full bg-accent/8 px-2 py-0.5 font-sans text-[10px] text-accent-ink dark:bg-accent/12"
 										>
 											{doc.title}
 										</span>
@@ -511,7 +513,7 @@
 				{/each}
 				{#if loading}
 					<div class="flex items-center gap-2 pl-1">
-						<Spinner size="sm" class="text-accent" />
+						<Spinner size="sm" class="text-accent-ink" />
 						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 							>{loadingHint}</span
 						>

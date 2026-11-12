@@ -160,7 +160,7 @@
 						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 							{[urlResult.journal, urlResult.year].filter(Boolean).join(', ')}
 						</p>
-						<p class="font-mono text-[10px] text-accent">@{urlResult.citeKey}</p>
+						<p class="font-mono text-[10px] text-accent-ink">@{urlResult.citeKey}</p>
 						<p class="truncate font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
 							{urlResult.url}
 						</p>

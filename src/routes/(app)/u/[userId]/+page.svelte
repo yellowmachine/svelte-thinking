@@ -110,7 +110,7 @@
 	<!-- Cabecera del perfil -->
 	<div class="flex items-start gap-5">
 		<div
-			class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent/20 font-serif text-2xl font-semibold text-accent"
+			class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent/20 font-serif text-2xl font-semibold text-accent-ink"
 		>
 			{initials}
 		</div>
@@ -129,7 +129,7 @@
 						href="https://orcid.org/{data.profile.orcid}"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-accent dark:text-dark-ink-faint"
+						class="flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-accent-ink dark:text-dark-ink-faint"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="#A6CE39" class="shrink-0">
 							<path
@@ -265,8 +265,8 @@
 								disabled={pinning === proj.id}
 								class="shrink-0 rounded-lg border px-3 py-1.5 font-sans text-xs font-medium transition-colors disabled:opacity-50
 									{pinnedSet.has(proj.id)
-									? 'border-accent bg-accent/10 text-accent'
-									: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+									? 'border-accent bg-accent/10 text-accent-ink'
+									: 'border-paper-border text-ink-muted hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-muted'}"
 							>
 								{pinning === proj.id ? '…' : pinnedSet.has(proj.id) ? '★ Saved' : '☆ Save'}
 							</button>
@@ -294,7 +294,7 @@
 			{:else if !inviting}
 				<button
 					onclick={startInviting}
-					class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
 					Invite to one of my projects
 				</button>

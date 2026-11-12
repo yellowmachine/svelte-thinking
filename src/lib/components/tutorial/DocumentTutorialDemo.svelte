@@ -35,7 +35,7 @@
 				>Save</button
 			>
 			<button
-				class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent"
+				class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent-ink"
 				>Assistant</button
 			>
 			<button

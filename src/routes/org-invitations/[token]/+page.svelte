@@ -155,7 +155,7 @@
 							{data.invitation.invitedEmail}
 						</p>
 						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Invited as <span class="font-medium text-accent">member</span>
+							Invited as <span class="font-medium text-accent-ink">member</span>
 						</p>
 					</div>
 				</div>

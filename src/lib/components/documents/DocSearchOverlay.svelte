@@ -144,7 +144,7 @@
 				onclick={() => (activeTab = 'text')}
 				class="flex items-center gap-1.5 border-b-2 px-4 py-2.5 font-sans text-xs font-medium transition-colors {activeTab ===
 				'text'
-					? 'border-accent text-accent'
+					? 'border-accent text-accent-ink'
 					: 'border-transparent text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 			>
 				<!-- magnifier -->
@@ -162,7 +162,7 @@
 				onclick={() => (activeTab = 'semantic')}
 				class="flex items-center gap-1.5 border-b-2 px-4 py-2.5 font-sans text-xs font-medium transition-colors {activeTab ===
 				'semantic'
-					? 'border-accent text-accent'
+					? 'border-accent text-accent-ink'
 					: 'border-transparent text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 			>
 				<!-- sparkles -->
@@ -234,7 +234,7 @@
 					onclick={() => (listMode = !listMode)}
 					title="Toggle list view"
 					class="rounded p-1 transition-colors {listMode
-						? 'text-accent'
+						? 'text-accent-ink'
 						: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
 				>
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -329,7 +329,7 @@
 									class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 								>
 									<span
-										class="mt-0.5 shrink-0 rounded bg-accent/10 px-1.5 py-0.5 font-sans text-[10px] font-medium text-accent"
+										class="mt-0.5 shrink-0 rounded bg-accent/10 px-1.5 py-0.5 font-sans text-[10px] font-medium text-accent-ink"
 									>
 										{Math.round(result.similarity * 100)}%
 									</span>

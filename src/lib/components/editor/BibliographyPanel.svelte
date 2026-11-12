@@ -77,7 +77,7 @@
 					<div class="flex items-center justify-between gap-1">
 						<button
 							onclick={() => onscrolltocite?.(ref.citeKey)}
-							class="font-mono text-xs font-semibold text-accent hover:underline"
+							class="font-mono text-xs font-semibold text-accent-ink hover:underline"
 						>
 							@{ref.citeKey}
 						</button>
@@ -103,7 +103,7 @@
 						>
 							{#each ref.subnotes as s (s.slug)}
 								<div class="border-l-2 border-accent/30 pl-2">
-									<span class="font-mono text-[10px] font-semibold text-accent">:{s.slug}</span>
+									<span class="font-mono text-[10px] font-semibold text-accent-ink">:{s.slug}</span>
 									{#if s.notes}
 										<p
 											class="mt-0.5 font-sans text-[10px] leading-snug whitespace-pre-wrap text-ink-muted dark:text-dark-ink-muted"

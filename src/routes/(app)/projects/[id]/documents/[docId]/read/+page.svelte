@@ -148,7 +148,7 @@
 							onclick={() => scrollToChapter(chapter.id)}
 							class="rounded px-2 py-1.5 text-left font-sans text-sm transition-colors
 								{activeChapterId === chapter.id
-								? 'bg-accent-light font-medium text-accent dark:bg-accent/20 dark:text-dark-ink'
+								? 'bg-accent-light font-medium text-accent-ink dark:bg-accent/20 dark:text-dark-ink'
 								: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 						>
 							<span class="mr-1.5 text-xs text-ink-faint dark:text-dark-ink-faint">{i + 1}.</span>

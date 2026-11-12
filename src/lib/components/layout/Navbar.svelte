@@ -38,6 +38,20 @@
 			.join('')
 			.toUpperCase()
 	);
+
+	const NAV_LINKS = [
+		{ href: '/projects', label: 'Projects', match: ['/projects'] },
+		{ href: '/bib', label: 'Bibliography', match: ['/bib'] },
+		{ href: '/explore', label: 'Explore', match: ['/explore', '/u/'] },
+		{ href: '/posts', label: 'Blog', match: ['/posts', '/lists'] },
+		{ href: '/network', label: 'Network', match: ['/network'] },
+		{ href: '/help', label: 'Help', match: ['/help'] }
+	] as const;
+
+	function isActive(prefixes: readonly string[]): boolean {
+		const path = page.url.pathname;
+		return prefixes.some((p) => path === p || path.startsWith(p.endsWith('/') ? p : `${p}/`));
+	}
 </script>
 
 <nav
@@ -51,7 +65,7 @@
 			>
 				Scholio
 				<span
-					class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+					class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent-ink uppercase"
 				>
 					beta
 				</span>
@@ -108,7 +122,7 @@
 								}}
 								class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore
 									.current.id === null
-									? 'text-accent'
+									? 'text-accent-ink'
 									: 'text-ink dark:text-dark-ink'}"
 							>
 								<svg
@@ -142,7 +156,7 @@
 									}}
 									class="flex w-full items-center gap-2 px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {workspaceStore
 										.current.id === org.id
-										? 'text-accent'
+										? 'text-accent-ink'
 										: 'text-ink dark:text-dark-ink'}"
 								>
 									<svg
@@ -176,50 +190,24 @@
 		</div>
 
 		<div class="flex items-center gap-4">
-			<nav class="hidden items-center gap-4 sm:flex">
-				<a
-					href={resolve('/projects')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-				>
-					Projects
-				</a>
-				<a
-					href={resolve('/bib')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-				>
-					Bibliography
-				</a>
-				<a
-					href={resolve('/explore')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-				>
-					Explore
-				</a>
-				<a
-					href={resolve('/posts')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-				>
-					Blog
-				</a>
-				<a
-					href={resolve('/network')}
-					class="relative font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-				>
-					Network
-					{#if pendingInvitationCount > 0}
-						<span
-							class="absolute -top-1.5 -right-3 flex h-4 w-4 items-center justify-center rounded-full bg-accent font-sans text-[10px] font-semibold text-white"
-						>
-							{pendingInvitationCount > 9 ? '9+' : pendingInvitationCount}
-						</span>
-					{/if}
-				</a>
-				<a
-					href={resolve('/help')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
-				>
-					Help
-				</a>
+			<nav class="hidden items-center gap-4 sm:flex" aria-label="Main">
+				{#each NAV_LINKS as link (link.href)}
+					<a
+						href={resolve(link.href)}
+						aria-current={isActive(link.match) ? 'page' : undefined}
+						class="relative font-sans text-sm text-ink-muted transition-colors hover:text-ink aria-[current=page]:text-ink aria-[current=page]:underline aria-[current=page]:decoration-accent aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-[6px] dark:text-dark-ink-muted dark:hover:text-dark-ink dark:aria-[current=page]:text-dark-ink"
+					>
+						{link.label}
+						{#if link.href === '/network' && pendingInvitationCount > 0}
+							<span
+								class="absolute -top-1.5 -right-3 flex h-4 w-4 items-center justify-center rounded-full bg-accent font-sans text-[10px] font-semibold text-white"
+								aria-label="{pendingInvitationCount} pending invitations"
+							>
+								{pendingInvitationCount > 9 ? '9+' : pendingInvitationCount}
+							</span>
+						{/if}
+					</a>
+				{/each}
 			</nav>
 			<QuickNoteButton />
 

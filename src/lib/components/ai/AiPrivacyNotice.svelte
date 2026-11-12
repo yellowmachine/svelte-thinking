@@ -59,7 +59,7 @@
 							href="https://openrouter.ai/privacy"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="text-accent underline underline-offset-2">OpenRouter</a
+							class="text-accent-ink underline underline-offset-2">OpenRouter</a
 						>.
 					</p>
 				</div>

@@ -123,7 +123,7 @@
 						<button
 							type="button"
 							onclick={() => startEdit(tag)}
-							class="flex-1 text-left font-sans text-sm text-ink hover:text-accent dark:text-dark-ink dark:hover:text-accent"
+							class="flex-1 text-left font-sans text-sm text-ink hover:text-accent-ink dark:text-dark-ink dark:hover:text-accent-ink"
 						>
 							<span translate="no">{tag.name}</span>
 						</button>

@@ -23,7 +23,7 @@
 					<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Scholio</span
 					>
 					<span
-						class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+						class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent-ink uppercase"
 						>beta</span
 					>
 				</a>
@@ -56,7 +56,7 @@
 		<!-- Placeholder foto -->
 		<div class="mb-10 flex flex-col items-start gap-8 sm:flex-row sm:items-center">
 			<div
-				class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-accent/10 font-serif text-3xl font-semibold text-accent"
+				class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-accent/10 font-serif text-3xl font-semibold text-accent-ink"
 			>
 				MA
 			</div>

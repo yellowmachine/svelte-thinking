@@ -37,7 +37,7 @@
 					data-tutorial={tab === 'AI Assistant' ? 'settings-ai-tab' : undefined}
 					onclick={() => (activeTab = tab)}
 					class="px-4 pb-3 font-sans text-sm transition-colors {activeTab === tab
-						? 'border-b-2 border-accent font-medium text-accent'
+						? 'border-b-2 border-accent font-medium text-accent-ink'
 						: 'text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
 				>
 					{tab}

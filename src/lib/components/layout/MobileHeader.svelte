@@ -47,7 +47,7 @@
 	>
 		Scholio
 		<span
-			class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+			class="rounded-full border border-accent/40 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent-ink uppercase"
 		>
 			beta
 		</span>

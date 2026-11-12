@@ -102,7 +102,7 @@
 								{ref.authors} ({ref.year}) · <em>{ref.journal}</em>
 							</p>
 						</div>
-						<code class="shrink-0 font-mono text-[11px] text-accent">@{ref.citeKey}</code>
+						<code class="shrink-0 font-mono text-[11px] text-accent-ink">@{ref.citeKey}</code>
 					</div>
 				</div>
 			{/each}

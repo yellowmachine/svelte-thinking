@@ -283,7 +283,7 @@
 					onclick={() => (selectedOrgId = org.id)}
 					class="w-full truncate rounded-lg px-3 py-2 text-left font-sans text-sm transition-colors {selectedOrgId ===
 					org.id
-						? 'bg-accent/10 text-accent'
+						? 'bg-accent/10 text-accent-ink'
 						: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
 				>
 					{org.name}
@@ -534,7 +534,7 @@
 										type="button"
 										onclick={testOrgS3}
 										disabled={orgS3Testing}
-										class="inline-flex items-center gap-1 font-sans text-xs text-accent hover:underline disabled:opacity-50"
+										class="inline-flex items-center gap-1 font-sans text-xs text-accent-ink hover:underline disabled:opacity-50"
 									>
 										{#if !orgS3Testing}
 											<svg

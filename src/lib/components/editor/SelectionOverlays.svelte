@@ -375,7 +375,7 @@
 			<div class="space-y-2 px-3 py-2.5">
 				{#if selectionReview.loading}
 					<div class="flex items-center gap-2">
-						<Spinner size="sm" class="text-accent" />
+						<Spinner size="sm" class="text-accent-ink" />
 						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Reviewing…</span
 						>
 					</div>
@@ -456,7 +456,7 @@
 							}}
 							class="flex w-full items-baseline gap-1.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
 						>
-							<span class="shrink-0 font-mono text-[10px] text-accent">@{ref.citeKey}</span>
+							<span class="shrink-0 font-mono text-[10px] text-accent-ink">@{ref.citeKey}</span>
 							<span
 								class="min-w-0 truncate font-sans text-xs text-ink dark:text-dark-ink"
 								title={ref.title}>{ref.title}</span
@@ -604,7 +604,7 @@
 				</select>
 			{:else}
 				<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Referencia: <span class="font-mono text-accent">@{sourceReference.citeKey}</span>
+					Referencia: <span class="font-mono text-accent-ink">@{sourceReference.citeKey}</span>
 				</p>
 			{/if}
 			<label

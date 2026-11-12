@@ -19,7 +19,7 @@
 	</p>
 	<button
 		onclick={() => (window.location.href = '/login')}
-		class="mt-6 font-sans text-sm text-accent hover:underline"
+		class="mt-6 font-sans text-sm text-accent-ink hover:underline"
 	>
 		Back to sign in
 	</button>

@@ -78,7 +78,7 @@
 			</p>
 
 			<label
-				class="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-paper-border px-3 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-paper-border px-3 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent-ink dark:border-dark-paper-border dark:text-dark-ink-muted"
 			>
 				<svg
 					width="14"
@@ -111,7 +111,7 @@
 				>
 					BibTeX content
 					{#if importPreview > 0}
-						<span class="ml-1 text-accent"
+						<span class="ml-1 text-accent-ink"
 							>· {importPreview} {importPreview === 1 ? 'entry' : 'entries'} detected</span
 						>
 					{/if}

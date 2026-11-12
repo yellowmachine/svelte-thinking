@@ -112,7 +112,7 @@
 							onclick={() => select(doc)}
 							class="block w-full truncate rounded-lg px-3 py-2 text-left font-sans text-sm transition-colors {selected?.id ===
 							doc.id
-								? 'bg-accent/10 text-accent dark:bg-accent/20'
+								? 'bg-accent/10 text-accent-ink dark:bg-accent/20'
 								: 'text-ink hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui'}"
 						>
 							{doc.title}

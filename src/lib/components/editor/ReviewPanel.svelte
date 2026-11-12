@@ -86,7 +86,7 @@
 		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Document review</h3>
 		<div class="flex items-center gap-2">
 			{#if loadingReview}
-				<Spinner size="sm" class="text-accent" />
+				<Spinner size="sm" class="text-accent-ink" />
 			{/if}
 			<button
 				type="button"

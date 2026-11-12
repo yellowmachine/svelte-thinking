@@ -58,7 +58,7 @@
 					{data.document.title}
 				</span>
 				<span
-					class="rounded-md bg-accent/10 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-accent"
+					class="rounded-md bg-accent/10 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-accent-ink"
 				>
 					v{data.version.versionNumber}
 				</span>
