@@ -14,6 +14,8 @@ import { userApiKey, userProfile, userSpellAllowlist } from '$lib/server/db/sche
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { orgAiKeys, type OrgKeyRow } from '$lib/server/definerFunctions';
 import { rowsOf } from '$lib/server/db/rows';
+import { projectRoleOf } from '$lib/server/projectAccess';
+import { canCreateDocument } from '$lib/domain/permissions';
 import { decryptSecret } from '$lib/server/kms';
 import { type AiTask, parseTaskConfig } from './aiConfig';
 import { getDefaultModelId } from '$lib/server/openrouter';
@@ -2261,6 +2263,14 @@ export const aiRouter = router({
 				const versionId = crypto.randomUUID();
 
 				await ctx.withRLS(async (db) => {
+					// The agent creates shared documents: same rule as creating one by hand.
+					const role = await projectRoleOf(db, input.projectId, ctx.user.id);
+					if (!canCreateDocument(role, false)) {
+						throw new TRPCError({
+							code: 'FORBIDDEN',
+							message: 'Your role in this project does not let you add documents.'
+						});
+					}
 					await db.insert(document).values({
 						id: docId,
 						projectId: input.projectId,

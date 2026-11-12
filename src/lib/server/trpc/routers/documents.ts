@@ -15,7 +15,9 @@ import { logUsage } from '$lib/server/aiUsage';
 import { sendCommitNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 import { DOCUMENT_TYPES } from '$lib/domain/document';
+import { projectRoleOf } from '$lib/server/projectAccess';
 import {
+	canCreateDocument,
 	canDelegateWriting,
 	roleAllowsWrite,
 	type CollaboratorRole
@@ -198,6 +200,15 @@ export const documentsRouter = router({
 			const docId = crypto.randomUUID();
 
 			return ctx.withRLS(async (db) => {
+				const role = await projectRoleOf(db, input.projectId, ctx.user.id);
+				if (!canCreateDocument(role, input.isPrivate)) {
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: role
+							? 'Your role in this project only lets you add private notes.'
+							: 'Project not found.'
+					});
+				}
 				try {
 					const [created] = await db
 						.insert(document)

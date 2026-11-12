@@ -8,6 +8,7 @@ import {
 	canEditDocument,
 	canWriteDocument,
 	roleAllowsWrite,
+	canCreateDocument,
 	isOrgOwner,
 	canManageOrg
 } from './permissions';
@@ -180,5 +181,25 @@ describe('isOrgOwner / canManageOrg', () => {
 	it('blocks non-owners', () => {
 		expect(isOrgOwner('u2', 'u1')).toBe(false);
 		expect(canManageOrg('u2', 'u1')).toBe(false);
+	});
+});
+
+describe('canCreateDocument', () => {
+	it('lets owners and writers add any document', () => {
+		for (const role of ['owner', 'author', 'coauthor'] as const) {
+			expect(canCreateDocument(role, false)).toBe(true);
+			expect(canCreateDocument(role, true)).toBe(true);
+		}
+	});
+
+	it('lets reviewers and commenters add only private notes', () => {
+		for (const role of ['reviewer', 'commenter'] as const) {
+			expect(canCreateDocument(role, false)).toBe(false);
+			expect(canCreateDocument(role, true)).toBe(true);
+		}
+	});
+
+	it('refuses non-members', () => {
+		expect(canCreateDocument(null, true)).toBe(false);
 	});
 });
