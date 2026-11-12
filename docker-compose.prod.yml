@@ -24,6 +24,10 @@ services:
       MIGRATION_DATABASE_URL: postgres://scholio:${POSTGRES_PASSWORD}@db:5432/scholio
       APP_DB_USER: scholio_app
       APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      # IP real del cliente para getClientAddress (rate limiting): la última entrada
+      # de X-Forwarded-For, la que añade Traefik. Sin esto sería la IP de Traefik.
+      ADDRESS_HEADER: x-forwarded-for
+      XFF_DEPTH: '1'
       # Servicios internos del stack
       REDIS_URL: redis://redis:6379
       TYPST_SERVICE_URL: http://typst:3100
@@ -58,6 +62,7 @@ services:
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
       # Observability
       SENTRY_DSN: ${SENTRY_DSN:-}
+      PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
     # Sin puerto al host: Traefik llega por dokploy-network al 3000.
     healthcheck:
       test:

@@ -26,7 +26,6 @@ FROM oven/bun:1 AS build
 WORKDIR /app
 
 # Build flags (baked in at build time via --build-arg)
-ARG PUBLIC_SENTRY_DSN=""
 # Set ENABLE_SW=true to include the Service Worker / offline support.
 # Default is false — no SW, no offline, no interference with online UX.
 ARG ENABLE_SW=false
@@ -39,7 +38,6 @@ COPY . .
 ENV NODE_ENV=production
 ENV ORIGIN=https://placeholder.local
 ENV DATABASE_URL=postgres://placeholder
-ENV PUBLIC_SENTRY_DSN=${PUBLIC_SENTRY_DSN}
 ENV ENABLE_SW=${ENABLE_SW}
 
 RUN BETTER_AUTH_SECRET=build-placeholder SCIPY_API_KEY=build-placeholder bun run build

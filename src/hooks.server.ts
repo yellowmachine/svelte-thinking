@@ -9,6 +9,16 @@ import { db } from '$lib/server/db';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { eq } from 'drizzle-orm';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
+import { env } from '$env/dynamic/private';
+
+// The adapter has no instrumentation.server.ts support, so Sentry starts here,
+// before any handle runs. Without SENTRY_DSN it stays off.
+Sentry.init({
+	dsn: env.SENTRY_DSN,
+	enabled: !!env.SENTRY_DSN,
+	tracesSampleRate: 0.2,
+	environment: dev ? 'development' : 'production'
+});
 
 export const handleError = Sentry.handleErrorWithSentry();
 
@@ -123,6 +133,20 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	return svelteKitHandler({ event, resolve, auth, building });
 };
 
+// /admin: the check in admin/+layout.server.ts only runs for page loads, and
+// SvelteKit runs form actions before any load. This guard covers every request
+// (GET, POST to ?/action, __data.json) before it reaches the route.
+const handleAdminGuard: Handle = ({ event, resolve }) => {
+	const path = event.url.pathname;
+	if (path === '/admin' || path.startsWith('/admin/')) {
+		const adminEmail = env.ADMIN_EMAIL;
+		if (!adminEmail) error(503, 'ADMIN_EMAIL not configured');
+		if (!event.locals.user) error(401, 'Not authenticated');
+		if (event.locals.user.email !== adminEmail) error(403, 'Forbidden');
+	}
+	return resolve(event);
+};
+
 const handleRLS: Handle = ({ event, resolve }) => {
 	const userId = event.locals.user?.id;
 
@@ -149,6 +173,7 @@ export const handle: Handle = sequence(
 	handleSubdomain,
 	handleAuthError,
 	handleBetterAuth,
+	handleAdminGuard,
 	handleRLS,
 	handleHeaders
 );
