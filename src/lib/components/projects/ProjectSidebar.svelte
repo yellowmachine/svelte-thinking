@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Plus from '@lucide/svelte/icons/plus';
+	import X from '@lucide/svelte/icons/x';
 	import { flash } from '$lib/stores/flash.svelte';
 	import { untrack } from 'svelte';
 	import { invalidateAll, goto } from '$app/navigation';
@@ -608,19 +610,7 @@
 				onclick={() => (showContextPicker = true)}
 				class="flex shrink-0 items-center gap-1 rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 			>
-				<svg
-					width="11"
-					height="11"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2.5"
-					stroke-linecap="round"
-					aria-hidden="true"
-				>
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<line x1="5" y1="12" x2="19" y2="12" />
-				</svg>
+				<Plus size={11} strokeWidth={1.75} aria-hidden="true" />
 				Add
 			</button>
 		</div>
@@ -647,18 +637,7 @@
 							title="Remove"
 							aria-label="Remove context link"
 						>
-							<svg
-								width="12"
-								height="12"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								aria-hidden="true"
-							>
-								<path d="M18 6L6 18M6 6l12 12" />
-							</svg>
+							<X size={12} strokeWidth={1.75} aria-hidden="true" />
 						</button>
 					</div>
 				{/each}

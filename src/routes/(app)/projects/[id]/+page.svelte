@@ -1,4 +1,11 @@
 <script lang="ts">
+	import Book from '@lucide/svelte/icons/book';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Download from '@lucide/svelte/icons/download';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import Search from '@lucide/svelte/icons/search';
+	import Star from '@lucide/svelte/icons/star';
+	import X from '@lucide/svelte/icons/x';
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import { invalidateAll, goto } from '$app/navigation';
@@ -454,15 +461,7 @@
 			onclick={() => (window.location.href = '/projects')}
 			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-				<path
-					d="M10 12L6 8l4-4"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
+			<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 			Projects
 		</button>
 
@@ -537,15 +536,7 @@
 					href={resolve(`/projects/${data.project.id}/ai`)}
 					class="flex items-center gap-1.5 rounded-md bg-accent/10 px-3 py-1.5 font-sans text-sm font-medium text-accent-ink transition-colors hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30"
 				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
+					<MessageSquare size={14} strokeWidth={1.75} aria-hidden="true" />
 					Assistant
 				</a>
 				{#if data.openComments > 0}
@@ -554,15 +545,7 @@
 						class="flex items-center gap-1 rounded-full bg-warning-bg px-2.5 py-1 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 						title="View open comments"
 					>
-						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
+						<MessageSquare size={11} strokeWidth={1.75} aria-hidden="true" />
 						{data.openComments}
 					</a>
 				{/if}
@@ -598,21 +581,7 @@
 						title="Import book text"
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path
-								d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-							/>
-						</svg>
+						<Book size={14} strokeWidth={1.75} aria-hidden="true" />
 						Book
 					</button>
 				{/if}
@@ -622,21 +591,7 @@
 					title="Export project as ZIP"
 					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-						<polyline points="7 10 12 15 17 10" />
-						<line x1="12" y1="15" x2="12" y2="3" />
-					</svg>
+					<Download size={14} strokeWidth={1.75} aria-hidden="true" />
 					Export
 				</a>
 				<span
@@ -767,15 +722,7 @@
 							onclick={() => (showGenerateDraft = true)}
 							class="flex cursor-pointer items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-sm text-accent-ink transition-colors hover:bg-accent/10 dark:border-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
+							<Star size={14} strokeWidth={1.75} aria-hidden="true" />
 							Generate draft
 						</button>
 						<button
@@ -859,20 +806,12 @@
 			<!-- Semantic search -->
 			<form method="GET" action="/projects/{data.project.id}/search" class="mb-3">
 				<div class="relative">
-					<svg
-						width="13"
-						height="13"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
+					<Search
+						size={13}
+						strokeWidth={1.75}
 						class="absolute top-1/2 left-3 -translate-y-1/2 text-ink-faint"
 						aria-hidden="true"
-					>
-						<circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-					</svg>
+					/>
 					<input
 						type="search"
 						name="q"
@@ -957,18 +896,7 @@
 						class="shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-ink"
 						aria-label="Dismiss"
 					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							aria-hidden="true"
-						>
-							<path d="M18 6 6 18M6 6l12 12" />
-						</svg>
+						<X size={14} strokeWidth={1.75} aria-hidden="true" />
 					</button>
 				</div>
 			{/if}
@@ -1117,15 +1045,7 @@
 										class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 										title="View open comments"
 									>
-										<svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-											<path
-												d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-												stroke-linejoin="round"
-											/>
-										</svg>
+										<MessageSquare size={9} strokeWidth={1.75} aria-hidden="true" />
 										{data.openCommentsByDoc[doc.id]}
 									</a>
 								{/if}

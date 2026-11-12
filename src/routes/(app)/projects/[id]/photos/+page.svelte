@@ -1,4 +1,7 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Trash from '@lucide/svelte/icons/trash';
+	import X from '@lucide/svelte/icons/x';
 	import { flash } from '$lib/stores/flash.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
@@ -129,15 +132,7 @@
 			onclick={() => (window.location.href = `/projects/${data.project.id}`)}
 			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-				<path
-					d="M10 12L6 8l4-4"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
+			<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 			{data.project.title}
 		</button>
 
@@ -216,14 +211,7 @@
 								onclick={() => removeStaged(i)}
 								class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-stone-900 text-white shadow"
 							>
-								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M18 6L6 18M6 6l12 12"
-										stroke="currentColor"
-										stroke-width="2.5"
-										stroke-linecap="round"
-									/>
-								</svg>
+								<X size={10} strokeWidth={1.75} aria-hidden="true" />
 							</button>
 						</div>
 
@@ -346,15 +334,7 @@
 									onclick={() => deletePhoto(photo.id)}
 									class="rounded-md bg-white/90 p-1.5 text-danger transition-colors hover:bg-white"
 								>
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-										<path
-											d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										/>
-									</svg>
+									<Trash size={14} strokeWidth={1.75} aria-hidden="true" />
 								</button>
 							{/if}
 						</div>
@@ -415,14 +395,7 @@
 			onclick={() => (lightboxPhoto = null)}
 			class="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
 		>
-			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path
-					d="M18 6L6 18M6 6l12 12"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-				/>
-			</svg>
+			<X size={20} strokeWidth={1.75} aria-hidden="true" />
 		</button>
 	</div>
 {/if}

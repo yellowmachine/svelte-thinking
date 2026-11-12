@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import { generateCiteKey } from '$lib/utils/bibtex';
@@ -108,14 +109,7 @@
 				class="rounded p-1 text-ink-faint transition-colors hover:text-ink"
 				aria-label="Close"
 			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path
-						d="M18 6 6 18M6 6l12 12"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={16} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 

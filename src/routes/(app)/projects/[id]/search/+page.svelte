@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import Search from '@lucide/svelte/icons/search';
 	import type { PageData } from './$types';
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { projectSearchTutorialSteps } from '$lib/tutorials/projectSearch';
@@ -16,38 +18,18 @@
 		href={resolve(`/projects/${data.projectId}`)}
 		class="mb-6 inline-flex items-center gap-1.5 font-sans text-sm text-ink-faint transition-colors hover:text-ink-muted"
 	>
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			<path d="M19 12H5M12 5l-7 7 7 7" />
-		</svg>
+		<ArrowLeft size={14} strokeWidth={1.75} aria-hidden="true" />
 		{data.projectTitle}
 	</a>
 
 	<form method="GET" class="mb-8">
 		<div data-tutorial="project-search-input" class="relative">
-			<svg
-				width="15"
-				height="15"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
+			<Search
+				size={15}
+				strokeWidth={1.75}
 				class="absolute top-1/2 left-3 -translate-y-1/2 text-ink-faint"
 				aria-hidden="true"
-			>
-				<circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-			</svg>
+			/>
 			<!-- svelte-ignore a11y_autofocus -->
 			<input
 				type="search"

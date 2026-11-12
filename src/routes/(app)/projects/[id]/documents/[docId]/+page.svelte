@@ -1,4 +1,9 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Link from '@lucide/svelte/icons/link';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import Star from '@lucide/svelte/icons/star';
+	import X from '@lucide/svelte/icons/x';
 	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { onMount, onDestroy, untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
@@ -1433,19 +1438,7 @@
 						}}
 						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted"
 					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<path d="M15 18l-6-6 6-6" />
-						</svg>
+						<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 						{data.projectTitle}
 					</button>
 					<span class="text-ink-faint">/</span>
@@ -1802,15 +1795,7 @@
 								? 'bg-accent/20 text-accent-ink hover:bg-accent/30 dark:bg-accent/30 dark:hover:bg-accent/40'
 								: 'bg-accent/10 text-accent-ink hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'}"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
+							<MessageSquare size={14} strokeWidth={1.75} aria-hidden="true" />
 							Assistant
 						</button>
 
@@ -1913,14 +1898,7 @@
 							href={resolve('/settings?tab=ai')}
 							class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:border-accent hover:bg-accent/5"
 						>
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linejoin="round"
-								/>
-							</svg>
+							<Star size={12} strokeWidth={1.75} aria-hidden="true" />
 							Configure AI
 						</a>
 					{:else if aiCtaType === 'org-owner'}
@@ -1928,14 +1906,7 @@
 							href={resolve('/settings?tab=organizations')}
 							class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:border-accent hover:bg-accent/5"
 						>
-							<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linejoin="round"
-								/>
-							</svg>
+							<Star size={12} strokeWidth={1.75} aria-hidden="true" />
 							Configure org AI
 						</a>
 					{:else}
@@ -2308,21 +2279,12 @@
 					<div
 						class="mb-1 flex items-start gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2"
 					>
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
+						<Link
+							size={12}
+							strokeWidth={1.75}
 							class="text-ink-light dark:text-dark-ink-light mt-0.5 shrink-0"
 							aria-hidden="true"
-						>
-							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-						</svg>
+						/>
 						<p
 							class="text-ink-light dark:text-dark-ink-light min-w-0 flex-1 font-sans text-xs leading-relaxed"
 							translate="no"
@@ -2399,20 +2361,7 @@
 						}}
 						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent-ink dark:hover:border-accent dark:hover:text-accent-ink"
 					>
-						<svg
-							width="11"
-							height="11"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-						</svg>
+						<Link size={11} strokeWidth={1.75} aria-hidden="true" />
 						Link bibliographic reference
 					</button>
 				{/if}
@@ -2449,20 +2398,7 @@
 								aria-label="Cancel"
 								class="shrink-0 text-ink-faint transition-colors hover:text-ink"
 							>
-								<svg
-									width="12"
-									height="12"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									aria-hidden="true"
-								>
-									<line x1="18" y1="6" x2="6" y2="18" />
-									<line x1="6" y1="6" x2="18" y2="18" />
-								</svg>
+								<X size={12} strokeWidth={1.75} aria-hidden="true" />
 							</button>
 						</div>
 						{#if filteredTitleRefs.length > 0}
@@ -2801,27 +2737,12 @@
 								href={resolve(`/projects/${data.document.projectId}/documents/${link.id}`)}
 								class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui"
 							>
-								<svg
-									width="12"
-									height="12"
-									viewBox="0 0 24 24"
-									fill="none"
+								<Link
+									size={12}
+									strokeWidth={1.75}
 									class="shrink-0 text-accent-ink"
 									aria-hidden="true"
-								>
-									<path
-										d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-									/>
-									<path
-										d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-									/>
-								</svg>
+								/>
 								<span class="truncate font-sans text-xs text-ink-muted">{link.title}</span>
 							</a>
 						{/each}

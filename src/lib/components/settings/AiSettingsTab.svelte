@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Trash from '@lucide/svelte/icons/trash';
+	import X from '@lucide/svelte/icons/x';
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
@@ -651,19 +653,7 @@
 					onclick={() => (deletingKeyId = null)}
 					class="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 				>
-					<svg
-						width="13"
-						height="13"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M18 6L6 18M6 6l12 12" />
-					</svg>
+					<X size={13} strokeWidth={1.75} aria-hidden="true" />
 					Cancel
 				</button>
 				<button
@@ -671,22 +661,7 @@
 					onclick={executeDeleteKey}
 					class="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-red-600 px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700"
 				>
-					<svg
-						width="13"
-						height="13"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<polyline points="3 6 5 6 21 6" />
-						<path d="M19 6l-1 14H6L5 6" />
-						<path d="M10 11v6M14 11v6" />
-						<path d="M9 6V4h6v2" />
-					</svg>
+					<Trash size={13} strokeWidth={1.75} aria-hidden="true" />
 					Delete
 				</button>
 			</div>

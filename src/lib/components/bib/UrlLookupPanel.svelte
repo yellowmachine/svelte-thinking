@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import { trpc } from '$lib/utils/trpc';
 
 	import { resolve } from '$app/paths';
@@ -81,14 +82,7 @@
 				aria-label="Close"
 				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 			>
-				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-					<path
-						d="M1 1l12 12M13 1L1 13"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 

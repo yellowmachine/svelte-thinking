@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Plus from '@lucide/svelte/icons/plus';
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
@@ -313,19 +314,7 @@
 				class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
 			>
 				{#if !creating}
-					<svg
-						width="12"
-						height="12"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2.5"
-						stroke-linecap="round"
-						aria-hidden="true"
-					>
-						<line x1="12" y1="5" x2="12" y2="19" />
-						<line x1="5" y1="12" x2="19" y2="12" />
-					</svg>
+					<Plus size={12} strokeWidth={1.75} aria-hidden="true" />
 				{/if}
 				{creating ? 'Creating…' : 'Create'}
 			</button>
@@ -415,19 +404,7 @@
 								class="flex items-center gap-1 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:opacity-80 disabled:opacity-50"
 							>
 								{#if !addingKey}
-									<svg
-										width="11"
-										height="11"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2.5"
-										stroke-linecap="round"
-										aria-hidden="true"
-									>
-										<line x1="12" y1="5" x2="12" y2="19" />
-										<line x1="5" y1="12" x2="19" y2="12" />
-									</svg>
+									<Plus size={11} strokeWidth={1.75} aria-hidden="true" />
 								{/if}
 								{addingKey ? 'Adding…' : 'Add'}
 							</button>

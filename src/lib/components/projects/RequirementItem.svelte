@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Plus from '@lucide/svelte/icons/plus';
+	import Trash from '@lucide/svelte/icons/trash';
 	import { DOCUMENT_TYPE_LABELS } from '$lib/domain/document';
 
 	import { resolve } from '$app/paths';
@@ -158,20 +160,7 @@
 						onclick={ontogglePicker}
 						class="mt-2 flex items-center gap-1.5 font-sans text-xs text-accent-ink underline-offset-2 hover:underline"
 					>
-						<svg
-							width="11"
-							height="11"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<line x1="12" y1="5" x2="12" y2="19" />
-							<line x1="5" y1="12" x2="19" y2="12" />
-						</svg>
+						<Plus size={11} strokeWidth={1.75} aria-hidden="true" />
 						Assign document
 					</button>
 				{/if}
@@ -185,22 +174,7 @@
 				title="Delete requirement"
 				class="shrink-0 rounded p-1 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink"
 			>
-				<svg
-					width="13"
-					height="13"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<polyline points="3 6 5 6 21 6" />
-					<path d="M19 6l-1 14H6L5 6" />
-					<path d="M10 11v6M14 11v6" />
-					<path d="M9 6V4h6v2" />
-				</svg>
+				<Trash size={13} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		{/if}
 	</div>

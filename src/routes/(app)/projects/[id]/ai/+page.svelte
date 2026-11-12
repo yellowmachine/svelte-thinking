@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import X from '@lucide/svelte/icons/x';
 	import { notifyAiUsed } from '$lib/utils/aiUsedEvent';
 	import { onMount } from 'svelte';
 	import { marked } from 'marked';
@@ -346,22 +349,12 @@
 				{#if messages.length === 0}
 					<div class="flex h-full flex-col items-center justify-center gap-4 text-center">
 						<div class="rounded-full bg-accent/10 p-4">
-							<svg
-								width="28"
-								height="28"
-								viewBox="0 0 24 24"
-								fill="none"
+							<MessageSquare
+								size={28}
+								strokeWidth={1.75}
 								class="text-accent-ink"
 								aria-hidden="true"
-							>
-								<path
-									d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
+							/>
 						</div>
 						<div>
 							<p class="font-serif text-lg font-semibold text-ink">Research assistant</p>
@@ -542,14 +535,7 @@
 							aria-label="Close"
 							class="shrink-0 text-red-400 hover:text-danger dark:text-red-500"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M18 6L6 18M6 6l12 12"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-								/>
-							</svg>
+							<X size={14} strokeWidth={1.75} aria-hidden="true" />
 						</button>
 					</div>
 				{/if}
@@ -668,21 +654,7 @@
 										>
 											<span>{m.shortLabel}</span>
 											{#if activeModel === m.id}
-												<svg
-													width="13"
-													height="13"
-													viewBox="0 0 24 24"
-													fill="none"
-													aria-hidden="true"
-												>
-													<path
-														d="M20 6L9 17l-5-5"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													/>
-												</svg>
+												<Check size={13} strokeWidth={1.75} aria-hidden="true" />
 											{/if}
 										</button>
 									{/each}

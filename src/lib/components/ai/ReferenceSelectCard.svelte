@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import type { ProposedReference } from '$lib/server/trpc/routers/ai';
@@ -88,15 +89,7 @@
 					: 'bg-accent/10 text-accent-ink'}"
 			>
 				{#if status === 'done'}
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M20 6L9 17l-5-5"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
+					<Check size={14} strokeWidth={1.75} aria-hidden="true" />
 				{:else}
 					<!-- Book icon -->
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -208,15 +201,7 @@
 						<Spinner size="sm" />
 						Adding…
 					{:else}
-						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M20 6L9 17l-5-5"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
+						<Check size={11} strokeWidth={1.75} aria-hidden="true" />
 						Add {selectedCount > 0 ? `${selectedCount} ` : ''}{selectedCount === 1
 							? 'reference'
 							: 'references'}

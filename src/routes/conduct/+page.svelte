@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { resolve } from '$app/paths';
 </script>
 
@@ -12,19 +13,7 @@
 		href={resolve('/')}
 		class="mb-10 inline-flex items-center gap-1.5 font-sans text-sm text-ink-muted hover:text-ink"
 	>
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			aria-hidden="true"
-		>
-			<path d="M19 12H5M12 5l-7 7 7 7" />
-		</svg>
+		<ArrowLeft size={14} strokeWidth={1.75} aria-hidden="true" />
 		Back
 	</a>
 

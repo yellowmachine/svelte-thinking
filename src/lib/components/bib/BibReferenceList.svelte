@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import BookOpen from '@lucide/svelte/icons/book-open';
@@ -315,26 +316,7 @@
 													{#if deletingSubnoteId === sn.id}
 														<Spinner size="sm" />
 													{:else}
-														<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-															<line
-																x1="18"
-																y1="6"
-																x2="6"
-																y2="18"
-																stroke="currentColor"
-																stroke-width="2.5"
-																stroke-linecap="round"
-															/>
-															<line
-																x1="6"
-																y1="6"
-																x2="18"
-																y2="18"
-																stroke="currentColor"
-																stroke-width="2.5"
-																stroke-linecap="round"
-															/>
-														</svg>
+														<X size={10} strokeWidth={1.75} aria-hidden="true" />
 													{/if}
 												</button>
 											</li>
@@ -381,26 +363,7 @@
 										onclick={() => openAddSubnote(ref.id)}
 										class="mt-1.5 flex items-center gap-1 font-sans text-[11px] text-ink-faint transition-colors hover:text-accent-ink dark:hover:text-accent-ink"
 									>
-										<svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-											<line
-												x1="12"
-												y1="5"
-												x2="12"
-												y2="19"
-												stroke="currentColor"
-												stroke-width="2.5"
-												stroke-linecap="round"
-											/>
-											<line
-												x1="5"
-												y1="12"
-												x2="19"
-												y2="12"
-												stroke="currentColor"
-												stroke-width="2.5"
-												stroke-linecap="round"
-											/>
-										</svg>
+										<Plus size={10} strokeWidth={1.75} aria-hidden="true" />
 										Add subnote
 									</button>
 								{/if}
@@ -488,26 +451,7 @@
 								title="Remove PDF"
 								class="rounded-l-none rounded-r border border-success-border bg-success-bg px-1 py-0.5 text-success transition-colors hover:border-danger-border hover:bg-danger-bg hover:text-danger disabled:opacity-40"
 							>
-								<svg width="9" height="9" viewBox="0 0 24 24" fill="none">
-									<line
-										x1="18"
-										y1="6"
-										x2="6"
-										y2="18"
-										stroke="currentColor"
-										stroke-width="2.5"
-										stroke-linecap="round"
-									/>
-									<line
-										x1="6"
-										y1="6"
-										x2="18"
-										y2="18"
-										stroke="currentColor"
-										stroke-width="2.5"
-										stroke-linecap="round"
-									/>
-								</svg>
+								<X size={9} strokeWidth={1.75} aria-hidden="true" />
 							</button>
 						</div>
 					{:else}

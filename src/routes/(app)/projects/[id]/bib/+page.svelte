@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { trpc } from '$lib/utils/trpc';
 	import { CITATION_STYLE_LABELS, type CitationStyle } from '$lib/utils/citations';
@@ -112,15 +113,7 @@
 			href={resolve(`/projects/${data.project.id}`)}
 			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-				<path
-					d="M10 12L6 8l4-4"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
+			<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 			{data.project.title}
 		</a>
 

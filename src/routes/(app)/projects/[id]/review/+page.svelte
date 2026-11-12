@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
 	import { goto } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
@@ -49,16 +51,7 @@
 			href={resolve(`/projects/${data.project.id}`)}
 			class="mb-3 flex items-center gap-1.5 font-sans text-sm text-ink-muted hover:text-accent-ink"
 		>
-			<svg
-				width="14"
-				height="14"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-			>
-				<path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round" />
-			</svg>
+			<ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true" />
 			{data.project.title}
 		</a>
 		<h1 data-tutorial="project-review-title" class="font-serif text-3xl font-semibold text-ink">
@@ -80,15 +73,7 @@
 		<div
 			class="flex flex-col items-center justify-center rounded-xl border border-dashed border-paper-border py-20"
 		>
-			<svg width="32" height="32" viewBox="0 0 24 24" fill="none" class="mb-3 text-ink-faint">
-				<path
-					d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
+			<MessageSquare size={32} strokeWidth={1.75} class="mb-3 text-ink-faint" aria-hidden="true" />
 			<p class="font-serif text-base font-medium text-ink">All clear</p>
 			<p class="mt-1 font-sans text-sm text-ink-muted">No open comment threads in this project.</p>
 		</div>

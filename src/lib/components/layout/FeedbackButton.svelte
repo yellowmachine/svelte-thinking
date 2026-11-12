@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import X from '@lucide/svelte/icons/x';
 	import { trpc } from '$lib/utils/trpc';
 
 	import { resolve } from '$app/paths';
@@ -42,15 +45,7 @@
 	class="fixed right-6 bottom-6 z-40 hidden items-center gap-2 rounded-full bg-accent px-4 py-2.5 font-sans text-sm font-medium text-white shadow-lg transition-all hover:bg-accent-hover hover:shadow-xl sm:flex"
 	aria-label="Send feedback"
 >
-	<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-		<path
-			d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-			stroke="currentColor"
-			stroke-width="1.5"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		/>
-	</svg>
+	<MessageSquare size={14} strokeWidth={1.75} aria-hidden="true" />
 	Feedback
 </button>
 
@@ -81,36 +76,14 @@
 					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 					aria-label="Close"
 				>
-					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-						<path
-							d="M1 1l12 12M13 1L1 13"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-						/>
-					</svg>
+					<X size={14} strokeWidth={1.75} aria-hidden="true" />
 				</button>
 			</div>
 
 			<div class="p-5">
 				{#if done}
 					<div class="flex flex-col items-center gap-2 py-6 text-center">
-						<svg
-							width="32"
-							height="32"
-							viewBox="0 0 24 24"
-							fill="none"
-							class="text-success"
-							aria-hidden="true"
-						>
-							<path
-								d="M20 6L9 17l-5-5"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
+						<Check size={32} strokeWidth={1.75} class="text-success" aria-hidden="true" />
 						<p class="font-serif text-base font-medium text-ink">Thank you!</p>
 						<p class="font-sans text-sm text-ink-muted">Your feedback has been published.</p>
 					</div>

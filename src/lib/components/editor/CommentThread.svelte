@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Trash from '@lucide/svelte/icons/trash';
 	import { trpc } from '$lib/utils/trpc';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import MarkdownEditor from './MarkdownEditor.svelte';
@@ -184,15 +185,7 @@
 					class="rounded p-1 text-ink-faint transition-colors hover:text-danger"
 					aria-label="Delete comment"
 				>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
+					<Trash size={12} strokeWidth={1.75} aria-hidden="true" />
 				</button>
 			{/if}
 		</div>

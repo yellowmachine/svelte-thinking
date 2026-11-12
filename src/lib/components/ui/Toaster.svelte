@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import { toasts, type Toast } from '$lib/stores/flash.svelte';
 
 	const STYLES: Record<Toast['type'], string> = {
@@ -43,14 +44,7 @@
 				aria-label="Dismiss notification"
 				class="-m-1 shrink-0 rounded p-1 opacity-70 hover:opacity-100"
 			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path
-						d="M18 6L6 18M6 6l12 12"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 	{/each}

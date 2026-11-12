@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
+	import X from '@lucide/svelte/icons/x';
 	export type SpellCorrection = {
 		original: string;
 		suggestion: string;
@@ -120,14 +122,7 @@
 				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 				aria-label="Close"
 			>
-				<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-					<path
-						d="M1 1l12 12M13 1L1 13"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 	</div>
@@ -176,19 +171,7 @@
 								disabled={accepting === i}
 								class="flex items-center gap-1 rounded-md bg-accent px-2.5 py-1 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 							>
-								<svg
-									width="12"
-									height="12"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									aria-hidden="true"
-								>
-									<polyline points="20 6 9 17 4 12" />
-								</svg>
+								<Check size={12} strokeWidth={1.75} aria-hidden="true" />
 								Accept
 							</button>
 							{#if mode === 'spell'}
@@ -222,18 +205,7 @@
 									}}
 									class="flex items-center gap-1 rounded-md px-2.5 py-1 font-sans text-xs text-ink-faint transition-colors hover:bg-paper-ui"
 								>
-									<svg
-										width="12"
-										height="12"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										aria-hidden="true"
-									>
-										<path d="M18 6L6 18M6 6l12 12" />
-									</svg>
+									<X size={12} strokeWidth={1.75} aria-hidden="true" />
 									Dismiss
 								</button>
 							{/if}

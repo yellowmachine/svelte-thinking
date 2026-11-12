@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
+	import X from '@lucide/svelte/icons/x';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { trpc } from '$lib/utils/trpc';
 
@@ -118,14 +120,7 @@
 			class="text-ink-faint transition-colors hover:text-ink-muted"
 			aria-label="Close draft assistant"
 		>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path
-					d="M18 6L6 18M6 6l12 12"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-				/>
-			</svg>
+			<X size={14} strokeWidth={1.75} aria-hidden="true" />
 		</button>
 	</div>
 
@@ -271,19 +266,7 @@
 						onclick={acceptDraft}
 						class="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover"
 					>
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<polyline points="20 6 9 17 4 12" />
-						</svg>
+						<Check size={12} strokeWidth={1.75} aria-hidden="true" />
 						{draftMode === 'rewrite' ? 'Accept' : 'Insert at cursor'}
 					</button>
 					<button
@@ -291,18 +274,7 @@
 						onclick={rejectDraft}
 						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 					>
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							aria-hidden="true"
-						>
-							<path d="M18 6L6 18M6 6l12 12" />
-						</svg>
+						<X size={12} strokeWidth={1.75} aria-hidden="true" />
 						Reject
 					</button>
 				</div>

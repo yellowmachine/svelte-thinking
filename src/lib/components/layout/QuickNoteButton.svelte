@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Plus from '@lucide/svelte/icons/plus';
 	import { trpc } from '$lib/utils/trpc';
 
 	type Project = { id: string; title: string };
@@ -78,20 +79,7 @@
 		disabled={creating}
 		class="flex items-center gap-1.5 rounded-md border border-accent/50 px-3 py-1.5 font-sans text-sm font-medium text-accent-ink transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
 	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2.5"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		>
-			<line x1="12" y1="5" x2="12" y2="19" />
-			<line x1="5" y1="12" x2="19" y2="12" />
-		</svg>
+		<Plus size={14} strokeWidth={1.75} aria-hidden="true" />
 		Quick note
 	</button>
 

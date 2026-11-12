@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Book from '@lucide/svelte/icons/book';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import type { PageData } from './$types';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
@@ -212,19 +214,7 @@
 			href={resolve(`/projects/${data.document.projectId}/documents/${data.document.id}`)}
 			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				<path d="M15 18l-6-6 6-6" />
-			</svg>
+			<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 			<span translate="no">{data.document.title}</span>
 		</a>
 		<span class="text-ink-faint">/</span>
@@ -513,21 +503,7 @@
 					disabled={unpublishingBlogId === blogPosts[v.id]?.id}
 					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-accent-ink transition-colors hover:bg-accent/10 disabled:opacity-40"
 				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						class="shrink-0"
-					>
-						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-					</svg>
+					<Book size={14} strokeWidth={1.75} class="shrink-0" aria-hidden="true" />
 					Unpublish from blog
 				</button>
 			{:else}
@@ -539,21 +515,7 @@
 					}}
 					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						class="shrink-0"
-					>
-						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-					</svg>
+					<Book size={14} strokeWidth={1.75} class="shrink-0" aria-hidden="true" />
 					Publish to blog
 				</button>
 			{/if}

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import Trash from '@lucide/svelte/icons/trash';
 	import { type ProjectStatus, PROJECT_STATUS_LABELS } from '$lib/domain/project';
 	let {
 		title,
@@ -167,15 +169,7 @@
 								class="flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 								title="View open comments"
 							>
-								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
+								<MessageSquare size={10} strokeWidth={1.75} aria-hidden="true" />
 								{openComments}
 							</a>
 							<!-- eslint-enable svelte/no-navigation-without-resolve -->
@@ -183,15 +177,7 @@
 							<span
 								class="flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning"
 							>
-								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
+								<MessageSquare size={10} strokeWidth={1.75} aria-hidden="true" />
 								{openComments}
 							</span>
 						{/if}
@@ -262,19 +248,7 @@
 						}}
 						class="flex w-full items-center gap-2 px-3 py-2 font-sans text-xs text-danger transition-colors hover:bg-danger-bg"
 					>
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							aria-hidden="true"
-						>
-							<polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path
-								d="M10 11v6M14 11v6"
-							/><path d="M9 6V4h6v2" />
-						</svg>
+						<Trash size={12} strokeWidth={1.75} aria-hidden="true" />
 						Delete project…
 					</button>
 				</div>

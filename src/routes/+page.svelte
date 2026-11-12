@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Download from '@lucide/svelte/icons/download';
+	import Link from '@lucide/svelte/icons/link';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
 	import Acknowledgements from '$lib/components/landing/Acknowledgements.svelte';
@@ -216,19 +219,7 @@ for the study design.</code
 				<!-- AI assistant -->
 				<div class="rounded-xl border border-paper-border bg-paper p-8">
 					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
-						<svg
-							width="22"
-							height="22"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="#7c5c3e"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-						</svg>
+						<MessageSquare size={22} strokeWidth={1.75} aria-hidden="true" />
 					</div>
 					<h3 class="font-serif text-lg font-semibold text-ink">AI assistant with real context</h3>
 					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted">
@@ -326,21 +317,7 @@ for the study design.</code
 				<!-- Export -->
 				<div class="rounded-xl border border-paper-border bg-paper p-5">
 					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
-						<svg
-							width="18"
-							height="18"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="#7c5c3e"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
-								points="7 10 12 15 17 10"
-							/><line x1="12" y1="15" x2="12" y2="3" />
-						</svg>
+						<Download size={18} strokeWidth={1.75} aria-hidden="true" />
 					</div>
 					<h3 class="font-serif text-sm font-semibold text-ink">Export to LaTeX and Typst</h3>
 					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">
@@ -383,21 +360,7 @@ for the study design.</code
 				<!-- Wikilinks -->
 				<div class="rounded-xl border border-paper-border bg-paper p-5">
 					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
-						<svg
-							width="18"
-							height="18"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="#7c5c3e"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path
-								d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-							/>
-						</svg>
+						<Link size={18} strokeWidth={1.75} aria-hidden="true" />
 					</div>
 					<h3 class="font-serif text-sm font-semibold text-ink">Internal knowledge network</h3>
 					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import { SvelteMap } from 'svelte/reactivity';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import type { PageData } from './$types';
@@ -76,19 +77,7 @@
 			href={resolve(`/projects/${data.book.projectId}/documents/${data.book.id}`)}
 			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M15 18l-6-6 6-6" />
-			</svg>
+			<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 			Edit
 		</a>
 		<span class="text-ink-faint">/</span>

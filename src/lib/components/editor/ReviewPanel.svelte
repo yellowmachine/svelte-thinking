@@ -1,4 +1,6 @@
 <script lang="ts">
+	import RotateCw from '@lucide/svelte/icons/rotate-cw';
+	import X from '@lucide/svelte/icons/x';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { trpc } from '$lib/utils/trpc';
 
@@ -90,14 +92,7 @@
 				class="text-ink-faint transition-colors hover:text-ink-muted"
 				aria-label="Close review"
 			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path
-						d="M18 6L6 18M6 6l12 12"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 	</div>
@@ -260,20 +255,7 @@
 						disabled={loadingQuestions}
 						class="mt-3 flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 					>
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<polyline points="23 4 23 10 17 10" />
-							<path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-						</svg>
+						<RotateCw size={12} strokeWidth={1.75} aria-hidden="true" />
 						Regenerate
 					</button>
 				{/if}
@@ -285,20 +267,7 @@
 				disabled={loadingReview}
 				class="mt-auto flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 			>
-				<svg
-					width="12"
-					height="12"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<polyline points="23 4 23 10 17 10" />
-					<path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-				</svg>
+				<RotateCw size={12} strokeWidth={1.75} aria-hidden="true" />
 				Re-run review
 			</button>
 		{/if}

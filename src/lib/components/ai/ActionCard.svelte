@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
 	import { resolve } from '$app/paths';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -93,15 +94,7 @@
 					: 'bg-accent/10 text-accent-ink'}"
 			>
 				{#if status === 'done'}
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M20 6L9 17l-5-5"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
+					<Check size={14} strokeWidth={1.75} aria-hidden="true" />
 				{:else if action.type === 'create_issue'}
 					<!-- Issue icon: circle with dot -->
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -195,15 +188,7 @@
 						<Spinner size="sm" />
 						Creating…
 					{:else}
-						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M20 6L9 17l-5-5"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
+						<Check size={11} strokeWidth={1.75} aria-hidden="true" />
 						Create
 					{/if}
 				</button>

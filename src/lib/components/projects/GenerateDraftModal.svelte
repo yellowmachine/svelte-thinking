@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
@@ -112,14 +113,7 @@
 				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 				aria-label="Close"
 			>
-				<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-					<path
-						d="M1 1l12 12M13 1L1 13"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 

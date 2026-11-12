@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Trash from '@lucide/svelte/icons/trash';
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 
@@ -66,15 +68,7 @@
 			href={resolve(`/projects/${projectId}`)}
 			class="flex items-center gap-1.5 font-sans text-xs text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-				<path
-					d="M10 12L6 8l4-4"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
+			<ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true" />
 			{projectTitle}
 		</a>
 		<button
@@ -124,15 +118,7 @@
 						onclick={(e) => ondeleteconversation(conv.id, e)}
 						class="mt-2.5 mr-2 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
 					>
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
+						<Trash size={12} strokeWidth={1.75} aria-hidden="true" />
 					</button>
 				</div>
 			{/each}

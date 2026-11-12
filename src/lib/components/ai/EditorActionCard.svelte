@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
 	import type { PendingEditorAction } from '$lib/server/trpc/routers/ai';
 
 	type Props = {
@@ -131,15 +132,7 @@
 					onclick={confirm}
 					class="flex items-center gap-1 rounded-lg bg-accent px-2.5 py-1 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
 				>
-					<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M20 6L9 17l-5-5"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
+					<Check size={10} strokeWidth={1.75} aria-hidden="true" />
 					Apply
 				</button>
 			{/if}

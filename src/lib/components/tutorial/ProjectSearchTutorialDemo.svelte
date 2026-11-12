@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Search from '@lucide/svelte/icons/search';
 	import TutorialManager from './TutorialManager.svelte';
 	import { projectSearchTutorialSteps } from '$lib/tutorials/projectSearch';
 
@@ -39,20 +40,12 @@
 
 		<form class="mb-8">
 			<div data-tutorial="project-search-input" class="relative">
-				<svg
-					width="15"
-					height="15"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
+				<Search
+					size={15}
+					strokeWidth={1.75}
 					class="absolute top-1/2 left-3 -translate-y-1/2 text-ink-faint"
 					aria-hidden="true"
-				>
-					<circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-				</svg>
+				/>
 				<input
 					type="search"
 					value="carbon pricing"
