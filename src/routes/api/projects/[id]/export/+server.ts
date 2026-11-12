@@ -93,7 +93,7 @@ export const GET: RequestHandler = async (event) => {
 			)
 		]);
 
-	if (!proj[0]) error(404, 'Proyecto no encontrado');
+	if (!proj[0]) error(404, 'Project not found');
 
 	// Group comments by documentId, nest replies under their parent
 	type CommentRow = (typeof allComments)[number];

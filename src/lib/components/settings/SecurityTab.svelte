@@ -115,7 +115,7 @@
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				throw new Error(body.message || 'Código incorrecto');
+				throw new Error(body.message || 'Incorrect code');
 			}
 			const { totpURI, textSecret } = await res.json();
 			twoFaQrDataUrl = await QRCode.toDataURL(totpURI);
@@ -123,7 +123,7 @@
 			twoFaViewCode = '';
 			twoFaStep = 'viewing';
 		} catch (e) {
-			twoFaError = e instanceof Error ? e.message : 'Error inesperado';
+			twoFaError = e instanceof Error ? e.message : 'Unexpected error';
 		} finally {
 			twoFaLoading = false;
 		}
@@ -192,7 +192,7 @@
 							}}
 							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 						>
-							Cancelar
+							Cancel
 						</button>
 					</div>
 				</div>
@@ -200,7 +200,7 @@
 				<!-- Verify current TOTP code before revealing the secret -->
 				<div class="mt-5 flex flex-col gap-3">
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Introduce el código de tu app autenticadora actual para ver el código de configuración.
+						Enter the code from your current authenticator app to see the setup code.
 					</p>
 					<input
 						type="text"
@@ -220,7 +220,7 @@
 							disabled={twoFaViewCode.length !== 6 || twoFaLoading}
 							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 						>
-							{twoFaLoading ? 'Verificando...' : 'Verificar'}
+							{twoFaLoading ? 'Verifying...' : 'Verify'}
 						</button>
 						<button
 							type="button"
@@ -231,7 +231,7 @@
 							}}
 							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 						>
-							Cancelar
+							Cancel
 						</button>
 					</div>
 				</div>
@@ -239,20 +239,15 @@
 				<!-- Show QR and text secret for adding another device -->
 				<div class="mt-5 flex flex-col gap-4">
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Escanea el código QR con tu nueva app autenticadora, o introduce el código en texto
-						manualmente.
+						Scan the QR code with your new authenticator app, or enter the text code manually.
 					</p>
 					{#if twoFaQrDataUrl}
-						<img
-							src={twoFaQrDataUrl}
-							alt="QR code para configurar 2FA"
-							class="h-40 w-40 rounded-md"
-						/>
+						<img src={twoFaQrDataUrl} alt="QR code to set up 2FA" class="h-40 w-40 rounded-md" />
 					{/if}
 					{#if twoFaTextSecret}
 						<div class="flex flex-col gap-1">
 							<p class="font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
-								Código en texto (para entrada manual):
+								Text code (for manual entry):
 							</p>
 							<div class="flex items-center gap-2">
 								<code
@@ -265,7 +260,7 @@
 									onclick={() => navigator.clipboard.writeText(twoFaTextSecret)}
 									class="rounded border border-paper-border px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 								>
-									Copiar
+									Copy
 								</button>
 							</div>
 						</div>
@@ -279,7 +274,7 @@
 						}}
 						class="self-start rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
-						Cerrar
+						Close
 					</button>
 				</div>
 			{:else}
@@ -292,7 +287,7 @@
 						}}
 						class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
-						Añadir otro dispositivo
+						Add another device
 					</button>
 					<button
 						type="button"
@@ -302,7 +297,7 @@
 						}}
 						class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
 					>
-						Desactivar 2FA
+						Disable 2FA
 					</button>
 				</div>
 			{/if}
@@ -318,7 +313,7 @@
 						}}
 						class="self-start rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 					>
-						Activar 2FA
+						Enable 2FA
 					</button>
 				{:else}
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
@@ -349,7 +344,7 @@
 							}}
 							class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 						>
-							Cancelar
+							Cancel
 						</button>
 					</div>
 				{/if}

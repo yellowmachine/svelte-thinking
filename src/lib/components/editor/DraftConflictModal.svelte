@@ -47,18 +47,18 @@
 					id="draft-conflict-title"
 					class="font-serif text-lg font-semibold text-ink dark:text-dark-ink"
 				>
-					Conflicto de borrador
+					Draft conflict
 				</h2>
 				<p class="mt-1 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-					Tu borrador local difiere del guardado desde otro dispositivo. Elige qué contenido
-					conservar.
+					Your local draft differs from the one saved on another device. Choose which content to
+					keep.
 				</p>
 			</div>
 			<button
 				type="button"
 				onclick={onclose}
 				class="shrink-0 rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
-				aria-label="Cerrar"
+				aria-label="Close"
 			>
 				<svg
 					width="16"
@@ -82,8 +82,8 @@
 			<DiffViewer
 				oldText={localContent}
 				newText={remoteContent}
-				oldLabel="Tu borrador (local)"
-				newLabel="Borrador del servidor"
+				oldLabel="Your draft (local)"
+				newLabel="Server draft"
 			/>
 		</div>
 
@@ -112,7 +112,7 @@
 						>
 							<polyline points="20 6 9 17 4 12" />
 						</svg>
-						Copiado
+						Copied
 					{:else}
 						<svg
 							width="12"
@@ -128,7 +128,7 @@
 							<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
 							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 						</svg>
-						Copiar el mío
+						Copy mine
 					{/if}
 				</button>
 				<button
@@ -136,7 +136,7 @@
 					onclick={onkeepmyself}
 					class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
 				>
-					Mantener el mío
+					Keep mine
 				</button>
 			</div>
 
@@ -161,7 +161,7 @@
 						>
 							<polyline points="20 6 9 17 4 12" />
 						</svg>
-						Copiado
+						Copied
 					{:else}
 						<svg
 							width="12"
@@ -177,7 +177,7 @@
 							<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
 							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 						</svg>
-						Copiar el del servidor
+						Copy the server's
 					{/if}
 				</button>
 				<button
@@ -185,7 +185,7 @@
 					onclick={onkeepremote}
 					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs font-medium text-ink transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink dark:hover:bg-dark-paper-ui"
 				>
-					Usar el del servidor
+					Use the server's
 				</button>
 			</div>
 		</div>

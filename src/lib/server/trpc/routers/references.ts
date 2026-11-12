@@ -420,7 +420,7 @@ export const referencesRouter = router({
 			if (parsed.length === 0) {
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
-					message: 'No se encontraron entradas BibTeX válidas.'
+					message: 'No valid BibTeX entries found.'
 				});
 			}
 
@@ -466,7 +466,7 @@ export const referencesRouter = router({
 							userId: ctx.user.id,
 							citeKey: uniqueKey,
 							type: entry.type,
-							title: entry.title || '(sin título)',
+							title: entry.title || '(no title)',
 							authors: entry.authors as Author[],
 							year: entry.year || null,
 							abstract: entry.abstract || null,
@@ -830,7 +830,7 @@ ${truncated}`;
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un documento con el título "${title}" en este proyecto.`
+							message: `A document titled "${title}" already exists in this project.`
 						});
 					}
 					throw e;

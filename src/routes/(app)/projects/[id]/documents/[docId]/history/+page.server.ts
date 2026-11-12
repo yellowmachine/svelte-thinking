@@ -51,7 +51,7 @@ export const load: PageServerLoad = async (event) => {
 		)
 	]);
 
-	if (!docRows[0]) error(404, 'Documento no encontrado');
+	if (!docRows[0]) error(404, 'Document not found');
 
 	const proj = projectRows[0];
 	const ownerId = proj?.ownerId ?? '';

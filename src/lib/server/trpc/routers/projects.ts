@@ -565,7 +565,7 @@ export const projectsRouter = router({
 			if (proj[0].ownerId === ctx.user.id) {
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
-					message: 'El owner no puede abandonar su propio proyecto.'
+					message: "The owner can't leave their own project."
 				});
 			}
 

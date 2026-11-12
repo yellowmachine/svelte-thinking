@@ -51,7 +51,7 @@
 			<button
 				type="button"
 				onclick={onclear}
-				title="Limpiar stash"
+				title="Clear discarded text"
 				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg
@@ -77,7 +77,7 @@
 			<button
 				type="button"
 				onclick={copyAll}
-				title={copied ? 'Copiado' : 'Copiar todo'}
+				title={copied ? 'Copied' : 'Copy all'}
 				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				{#if copied}
@@ -116,7 +116,7 @@
 			<button
 				type="button"
 				onclick={onclose}
-				aria-label="Cerrar stash"
+				aria-label="Close discarded text"
 				class="rounded p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
 			>
 				<svg
@@ -142,7 +142,7 @@
 		class="shrink-0 border-b border-paper-border/50 bg-amber-50 px-4 py-2 dark:border-dark-paper-border/50 dark:bg-amber-900/10"
 	>
 		<p class="font-sans text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-			Contenido descartado al resolver el conflicto. Selecciona y copia lo que necesites.
+			Content discarded when the conflict was resolved. Select and copy whatever you need.
 		</p>
 	</div>
 

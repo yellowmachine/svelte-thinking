@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.where(eq(projectInvitation.token, params.token))
 		.limit(1);
 
-	if (!rows[0]) error(404, 'Invitación no encontrada');
+	if (!rows[0]) error(404, 'Invitation not found');
 
 	return {
 		invitation: rows[0],

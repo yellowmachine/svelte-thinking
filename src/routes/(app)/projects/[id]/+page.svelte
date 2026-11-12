@@ -316,7 +316,9 @@
 			} catch (e) {
 				const msg = e instanceof Error ? e.message : 'Unknown error';
 				// Title conflict: append suffix and retry once
-				if (msg.includes('título') || msg.includes('CONFLICT')) {
+				// Decided by the tRPC error code, not by the message text (which is translatable).
+				const code = (e as { data?: { code?: string } } | null)?.data?.code;
+				if (code === 'CONFLICT' || msg.includes('already exists')) {
 					const fallbackTitle = `${pc.title} (offline)`;
 					try {
 						await trpc.documents.create.mutate({

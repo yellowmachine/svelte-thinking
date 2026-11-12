@@ -54,7 +54,7 @@ export const invitationsRouter = router({
 				throw new TRPCError({ code: 'FORBIDDEN' });
 			}
 			if (input.invitedEmail.toLowerCase() === ctx.user.email.toLowerCase()) {
-				throw new TRPCError({ code: 'BAD_REQUEST', message: 'No puedes invitarte a ti mismo' });
+				throw new TRPCError({ code: 'BAD_REQUEST', message: "You can't invite yourself" });
 			}
 
 			// Evita reinvitar a alguien que ya es colaborador
@@ -93,7 +93,7 @@ export const invitationsRouter = router({
 			if (existing[0]) {
 				throw new TRPCError({
 					code: 'CONFLICT',
-					message: 'Ya existe una invitación pendiente para este email'
+					message: 'There is already a pending invitation for this email'
 				});
 			}
 
@@ -161,7 +161,7 @@ export const invitationsRouter = router({
 		const invitation = invitations[0];
 
 		if (!invitation) {
-			throw new TRPCError({ code: 'NOT_FOUND', message: 'Invitación no válida o expirada' });
+			throw new TRPCError({ code: 'NOT_FOUND', message: 'Invitation is invalid or has expired' });
 		}
 
 		if (invitation.expiresAt < new Date()) {
@@ -170,7 +170,7 @@ export const invitationsRouter = router({
 				.set({ status: 'expired' })
 				.where(eq(projectInvitation.id, invitation.id));
 
-			throw new TRPCError({ code: 'BAD_REQUEST', message: 'La invitación ha expirado' });
+			throw new TRPCError({ code: 'BAD_REQUEST', message: 'This invitation has expired' });
 		}
 
 		// Verifica que no sea ya colaborador
@@ -186,7 +186,10 @@ export const invitationsRouter = router({
 			.limit(1);
 
 		if (alreadyCollaborator[0]) {
-			throw new TRPCError({ code: 'CONFLICT', message: 'Ya eres colaborador de este proyecto' });
+			throw new TRPCError({
+				code: 'CONFLICT',
+				message: "You're already a collaborator on this project"
+			});
 		}
 
 		try {
@@ -202,7 +205,7 @@ export const invitationsRouter = router({
 				entity: 'membership',
 				operation: 'accept invitation',
 				constraints: {
-					project_collaborator_unique_idx: 'Ya eres colaborador de este proyecto'
+					project_collaborator_unique_idx: "You're already a collaborator on this project"
 				}
 			});
 		}
@@ -228,7 +231,7 @@ export const invitationsRouter = router({
 
 			if (!targetUser[0]) throw new TRPCError({ code: 'NOT_FOUND' });
 			if (isSelfInvite(ctx.user.id, input.userId)) {
-				throw new TRPCError({ code: 'BAD_REQUEST', message: 'No puedes invitarte a ti mismo' });
+				throw new TRPCError({ code: 'BAD_REQUEST', message: "You can't invite yourself" });
 			}
 
 			// Reutiliza el flujo de create con email
@@ -258,7 +261,7 @@ export const invitationsRouter = router({
 				if (existing[0]) {
 					throw new TRPCError({
 						code: 'CONFLICT',
-						message: 'Ya existe una invitación pendiente para este usuario'
+						message: 'There is already a pending invitation for this user'
 					});
 				}
 

@@ -5,11 +5,11 @@
 	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
-	const fmt = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', year: 'numeric' });
+	const fmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
 	const title = $derived(`${data.author.displayName ?? '@' + data.author.handle} — Blog`);
 	const description = $derived(
-		data.author.bio?.slice(0, 160) ?? `Artículos de @${data.author.handle} en Scholio.`
+		data.author.bio?.slice(0, 160) ?? `Posts by @${data.author.handle} on Scholio.`
 	);
 </script>
 
@@ -92,9 +92,7 @@
 	</div>
 
 	{#if data.posts.length === 0}
-		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-			Todavía no hay publicaciones.
-		</p>
+		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">No posts yet.</p>
 	{:else}
 		<ul class="flex flex-col gap-6">
 			{#each data.posts as post (post.slug)}
@@ -129,8 +127,9 @@
 >
 	<div class="mx-auto max-w-2xl px-6 text-center">
 		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Publicado con <a href={resolve('/')} class="underline hover:text-ink dark:hover:text-dark-ink"
-				>Scholio</a
+			Published with <a
+				href={resolve('/')}
+				class="underline hover:text-ink dark:hover:text-dark-ink">Scholio</a
 			>.
 		</p>
 	</div>

@@ -50,7 +50,7 @@
 	let versionToUnpublish = $state<Version | null>(null);
 	let versionToPublish = $state<Version | null>(null);
 
-	const fmt = new Intl.DateTimeFormat('es', {
+	const fmt = new Intl.DateTimeFormat('en-GB', {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric',
@@ -58,7 +58,7 @@
 		minute: '2-digit'
 	});
 
-	const fmtExpiry = new Intl.DateTimeFormat('es', {
+	const fmtExpiry = new Intl.DateTimeFormat('en-GB', {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric'
@@ -200,7 +200,7 @@
 </script>
 
 <svelte:head>
-	<title>Historial · {data.document.title} — Scholio</title>
+	<title>History · {data.document.title} — Scholio</title>
 </svelte:head>
 
 <div class="flex h-screen flex-col bg-paper dark:bg-dark-paper">
@@ -228,7 +228,7 @@
 			<span translate="no">{data.document.title}</span>
 		</a>
 		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-		<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Historial</span>
+		<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink">History</span>
 		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 			{data.versions.length}
 			{data.versions.length === 1 ? 'version' : 'versions'}
@@ -311,8 +311,8 @@
 										actionsMenuPos = { top: rect.bottom + 4, left: rect.left };
 										actionsOpenId = actionsOpenId === v.id ? null : v.id;
 									}}
-									title="Más acciones"
-									aria-label="Más acciones"
+									title="More actions"
+									aria-label="More actions"
 									class="ml-auto flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
 								>
 									<svg
@@ -475,11 +475,11 @@
 					</svg>
 				{/if}
 				{#if copiedVersionId === v.id}
-					Copiada ✓
+					Copied ✓
 				{:else if shares[v.id]}
-					Copiar URL pública
+					Copy public URL
 				{:else}
-					Crear URL pública
+					Create public URL
 				{/if}
 			</button>
 			{#if shares[v.id]}
@@ -509,7 +509,7 @@
 					>
 						<circle cx="12" cy="12" r="10" /><line x1="8" y1="12" x2="16" y2="12" />
 					</svg>
-					Revocar URL pública
+					Revoke public URL
 				</button>
 			{/if}
 
@@ -540,7 +540,7 @@
 						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
 						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
 					</svg>
-					Despublicar del blog
+					Unpublish from blog
 				</button>
 			{:else}
 				<button
@@ -566,7 +566,7 @@
 						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
 						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
 					</svg>
-					Publicar en el blog
+					Publish to blog
 				</button>
 			{/if}
 		{/if}
@@ -575,19 +575,19 @@
 
 <InfoDialog
 	open={showNoHandleDialog}
-	title="Configura tu blog primero"
-	message="Necesitas elegir un handle en Ajustes → Blog antes de poder publicar."
-	actionLabel="Ir a Ajustes"
+	title="Set up your blog first"
+	message="You need to choose a handle in Settings → Blog before you can publish."
+	actionLabel="Go to Settings"
 	actionHref={resolve('/settings?tab=blog')}
 	oncancel={() => (showNoHandleDialog = false)}
 />
 
 <SafeDeleteDialog
 	open={!!versionToUnpublish}
-	title="Despublicar del blog"
-	label="esta versión del blog"
-	confirmLabel="Despublicar"
-	warning="La URL pública dejará de funcionar. Puedes volver a publicarla cuando quieras."
+	title="Unpublish from blog"
+	label="this version from the blog"
+	confirmLabel="Unpublish"
+	warning="The public URL will stop working. You can publish it again whenever you like."
 	deleting={unpublishingBlogId === blogPosts[versionToUnpublish?.id ?? '']?.id}
 	requireCode={false}
 	onconfirm={unpublishFromBlog}

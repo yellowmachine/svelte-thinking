@@ -179,7 +179,7 @@
 							>
 						</p>
 						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							{s3Config.verified ? 'Verified' : 'Not verified'} · Región: {s3Config.region}
+							{s3Config.verified ? 'Verified' : 'Not verified'} · Region: {s3Config.region}
 						</p>
 					</div>
 					<div class="flex items-center gap-3">
@@ -188,7 +188,7 @@
 								? 'text-green-600 dark:text-green-400'
 								: 'text-amber-600 dark:text-amber-400'}"
 						>
-							{s3Config.verified ? '✓ OK' : '⚠ Sin verificar'}
+							{s3Config.verified ? '✓ OK' : '⚠ Not verified'}
 						</span>
 						<button
 							type="button"
@@ -225,7 +225,7 @@
 					<input
 						type="text"
 						bind:value={s3Bucket}
-						placeholder="nombre-del-bucket"
+						placeholder="bucket-name"
 						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					/>
 					<input
@@ -237,7 +237,7 @@
 					<input
 						type="url"
 						bind:value={s3PublicUrl}
-						placeholder="https://cdn.example.com (opcional)"
+						placeholder="https://cdn.example.com (optional)"
 						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 					/>
 				</div>

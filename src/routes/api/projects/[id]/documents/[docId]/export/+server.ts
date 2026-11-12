@@ -64,14 +64,14 @@ async function resolveDiagramSvgs(event: RequestEvent, content: string): Promise
 }
 
 export const GET: RequestHandler = async (event) => {
-	if (!event.locals.user) error(401, 'No autenticado');
+	if (!event.locals.user) error(401, 'Not authenticated');
 
 	const { docId, id: projectId } = event.params;
 	const format = event.url.searchParams.get('format');
 	const versionId = event.url.searchParams.get('versionId');
 
 	if (format !== 'latex' && format !== 'typst' && format !== 'pdf') {
-		error(400, 'El parámetro format debe ser latex, typst o pdf');
+		error(400, 'The format parameter must be latex, typst or pdf');
 	}
 
 	// Load document content (specific version > draft > current version)
@@ -105,7 +105,7 @@ export const GET: RequestHandler = async (event) => {
 		return { title: doc.title, content: versions[0]?.content ?? '' };
 	})) as { title: string; content: string } | null;
 
-	if (!docResult) error(404, 'Documento no encontrado');
+	if (!docResult) error(404, 'Document not found');
 
 	// Load project references for bibliography
 	const refs = (await event.locals
@@ -152,7 +152,7 @@ export const GET: RequestHandler = async (event) => {
 		try {
 			pdf = await compileToPdf(typ, undefined, Object.keys(files).length ? files : undefined);
 		} catch (e) {
-			error(500, `Error compilando PDF: ${e instanceof Error ? e.message : e}`);
+			error(500, `Error compiling PDF: ${e instanceof Error ? e.message : e}`);
 		}
 		return new Response(pdf.buffer as ArrayBuffer, {
 			headers: {

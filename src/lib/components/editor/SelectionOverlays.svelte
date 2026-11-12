@@ -577,7 +577,7 @@
 			class="pointer-events-auto w-80 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
 		>
 			<p class="mb-2 font-sans text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
-				Nueva subnota bibliográfica
+				New bibliographic subnote
 			</p>
 			<p
 				class="mb-3 truncate border-l-2 border-paper-border pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
@@ -590,27 +590,27 @@
 				<label
 					for="subnote-ref"
 					class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-					>Referencia</label
+					>Reference</label
 				>
 				<select
 					id="subnote-ref"
 					bind:value={subnoteRefId}
 					class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				>
-					<option value="">— elige referencia —</option>
+					<option value="">— choose a reference —</option>
 					{#each projectRefs as ref (ref.id)}
 						<option value={ref.id ?? ''}>{ref.citeKey}</option>
 					{/each}
 				</select>
 			{:else}
 				<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Referencia: <span class="font-mono text-accent-ink">@{sourceReference.citeKey}</span>
+					Reference: <span class="font-mono text-accent-ink">@{sourceReference.citeKey}</span>
 				</p>
 			{/if}
 			<label
 				for="subnote-slug"
 				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-				>Slug <span class="text-ink-faint">(identificador único)</span></label
+				>Slug <span class="text-ink-faint">(unique identifier)</span></label
 			>
 			<input
 				id="subnote-slug"
@@ -671,7 +671,7 @@
 			class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
 		>
 			<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Comentario en ¶{pendingParagraphNumber}
+				Comment on ¶{pendingParagraphNumber}
 			</p>
 			<textarea
 				use:focusOnMount

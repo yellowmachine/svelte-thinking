@@ -36,7 +36,7 @@ export const blogCommentsRouter = router({
 			if (!post.commentsEnabled) {
 				throw new TRPCError({
 					code: 'FORBIDDEN',
-					message: 'Los comentarios están desactivados en esta publicación.'
+					message: 'Comments are turned off for this post.'
 				});
 			}
 

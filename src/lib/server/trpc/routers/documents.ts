@@ -233,7 +233,7 @@ export const documentsRouter = router({
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un documento con el título "${input.title}" en este proyecto.`
+							message: `A document titled "${input.title}" already exists in this project.`
 						});
 					}
 					throw e;
@@ -284,7 +284,7 @@ export const documentsRouter = router({
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un documento con ese título en este proyecto.`
+							message: `A document with that title already exists in this project.`
 						});
 					}
 					throw e;
@@ -340,7 +340,7 @@ export const documentsRouter = router({
 				if (contentToCommit === null) {
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
-						message: 'No hay cambios sin commitear'
+						message: 'No changes since the last saved version'
 					});
 				}
 
@@ -592,7 +592,7 @@ export const documentsRouter = router({
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un documento con el título "${input.title}" en este proyecto.`
+							message: `A document titled "${input.title}" already exists in this project.`
 						});
 					}
 					throw e;
@@ -662,7 +662,7 @@ export const documentsRouter = router({
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un template con el título "${input.templateTitle}" en este proyecto.`
+							message: `A template titled "${input.templateTitle}" already exists in this project.`
 						});
 					}
 					throw e;
@@ -708,7 +708,7 @@ export const documentsRouter = router({
 				) {
 					throw new TRPCError({
 						code: 'FORBIDDEN',
-						message: 'Solo el propietario o el writer actual pueden modificar la delegación'
+						message: 'Only the owner or the current writer can change who has write access'
 					});
 				}
 
@@ -717,7 +717,7 @@ export const documentsRouter = router({
 				if (!isProjectOwner && input.writerUserId !== null) {
 					throw new TRPCError({
 						code: 'FORBIDDEN',
-						message: 'Solo el propietario puede transferir la escritura a otro usuario'
+						message: 'Only the owner can hand write access to another user'
 					});
 				}
 
@@ -736,14 +736,14 @@ export const documentsRouter = router({
 					if (!collab) {
 						throw new TRPCError({
 							code: 'BAD_REQUEST',
-							message: 'El usuario no es colaborador de este proyecto'
+							message: 'This user is not a collaborator on this project'
 						});
 					}
 
 					if (!roleAllowsWrite(collab.role as CollaboratorRole)) {
 						throw new TRPCError({
 							code: 'BAD_REQUEST',
-							message: 'El colaborador no tiene un rol que permita escritura'
+							message: "This collaborator's role doesn't allow writing"
 						});
 					}
 				}

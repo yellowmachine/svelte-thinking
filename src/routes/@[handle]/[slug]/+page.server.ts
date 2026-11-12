@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.from(userProfile)
 		.where(eq(userProfile.handle, handle))
 		.limit(1);
-	if (!profileRows[0]) error(404, 'Este blog no existe');
+	if (!profileRows[0]) error(404, 'This blog does not exist');
 	const author = profileRows[0];
 
 	const postRows = await db
@@ -34,12 +34,12 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.from(blogPost)
 		.where(and(eq(blogPost.userId, author.userId), eq(blogPost.slug, params.slug)))
 		.limit(1);
-	if (!postRows[0]) error(404, 'Esta publicación no existe');
+	if (!postRows[0]) error(404, 'This post does not exist');
 	const post = postRows[0];
 
 	const description =
 		excerptFromHtml(post.renderedHtml, 160) ||
-		`${post.title} — publicado por @${author.handle} en Scholio.`;
+		`${post.title} — published by @${author.handle} on Scholio.`;
 
 	// Plain db, no user: RLS still applies, and only blog_post_comment_public_read
 	// lets rows through (approved comments on posts with comments visible). The

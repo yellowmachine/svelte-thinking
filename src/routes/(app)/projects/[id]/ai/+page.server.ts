@@ -23,7 +23,7 @@ export const load: PageServerLoad = async (event) => {
 			.then((r) => r)
 	);
 
-	if (!proj?.[0]) error(404, 'Proyecto no encontrado');
+	if (!proj?.[0]) error(404, 'Project not found');
 
 	const conversations = await event.locals.withRLS((db) =>
 		db

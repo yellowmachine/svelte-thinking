@@ -172,7 +172,7 @@ export const GET: RequestHandler = async (event) => {
 	try {
 		const p = proj[0];
 		const date = p.publishedAt
-			? p.publishedAt.toLocaleDateString('es-ES', {
+			? p.publishedAt.toLocaleDateString('en-GB', {
 					year: 'numeric',
 					month: 'long',
 					day: 'numeric'
@@ -196,7 +196,7 @@ export const GET: RequestHandler = async (event) => {
 		const files = bibContent ? { 'refs.bib': bibContent } : undefined;
 		pdf = await compileToPdf(typstSource, images, files);
 	} catch (e) {
-		const msg = e instanceof Error ? e.message : 'Error al generar el PDF';
+		const msg = e instanceof Error ? e.message : "Couldn't generate the PDF";
 		error(500, msg);
 	}
 

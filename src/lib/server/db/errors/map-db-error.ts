@@ -20,21 +20,21 @@ export function mapDbError(err: unknown, meta: Meta): TRPCError {
 		const constraint = constraintName(err);
 		const message =
 			(constraint && meta.constraints?.[constraint]) ??
-			`Ya existe un ${meta.entity} con esos datos`;
+			`A ${meta.entity} with these details already exists`;
 		return new TRPCError({ code: 'CONFLICT', message });
 	}
 
 	if (isRlsViolation(err)) {
 		return new TRPCError({
 			code: 'FORBIDDEN',
-			message: 'No tienes permisos para realizar esta operación'
+			message: "You don't have permission to do this"
 		});
 	}
 
 	if (isForeignKeyViolation(err)) {
 		return new TRPCError({
 			code: 'BAD_REQUEST',
-			message: 'La referencia relacionada no existe o no es válida'
+			message: 'The related record does not exist or is not valid'
 		});
 	}
 

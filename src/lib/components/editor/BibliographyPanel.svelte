@@ -43,7 +43,7 @@
 	<div
 		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
 	>
-		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Bibliografía</h3>
+		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Bibliography</h3>
 		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{refs.length} refs</span
 		>
 	</div>
@@ -52,7 +52,7 @@
 		<input
 			type="text"
 			bind:value={filter}
-			placeholder="Filtrar… ej. dennett"
+			placeholder="Filter… e.g. dennett"
 			class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
 		/>
 	</div>
@@ -60,11 +60,11 @@
 	<div class="flex-1 space-y-1 overflow-y-auto p-2">
 		{#if refs.length === 0}
 			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin referencias en este proyecto.
+				No references in this project.
 			</p>
 		{:else if filtered.length === 0}
 			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin coincidencias.
+				No matches.
 			</p>
 		{:else}
 			{#each filtered as ref (ref.id ?? ref.citeKey)}
@@ -83,10 +83,10 @@
 						</button>
 						<button
 							onclick={() => oninsert?.(ref.citeKey)}
-							title="Insertar cita en el cursor"
+							title="Insert citation at cursor"
 							class="rounded px-1.5 py-0.5 font-sans text-[10px] text-ink-faint transition-colors hover:bg-accent hover:text-white dark:text-dark-ink-faint"
 						>
-							+ cita
+							+ cite
 						</button>
 					</div>
 					<p class="mt-0.5 line-clamp-2 font-sans text-xs leading-snug text-ink dark:text-dark-ink">

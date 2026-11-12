@@ -17,7 +17,7 @@ export const discoverRouter = router({
 
 		if (!proj[0] || !proj[0].isSearchable) throw new TRPCError({ code: 'NOT_FOUND' });
 		if (proj[0].ownerId === ctx.user.id) {
-			throw new TRPCError({ code: 'BAD_REQUEST', message: 'No puedes marcar tu propio proyecto.' });
+			throw new TRPCError({ code: 'BAD_REQUEST', message: "You can't star your own project." });
 		}
 
 		// withRLS para que la política INSERT verifique el contexto

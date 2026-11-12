@@ -119,7 +119,7 @@
 				.join('\n');
 			urlStep = 'review';
 		} catch (e) {
-			urlImportError = e instanceof Error ? e.message : 'No se pudo extraer metadata de la URL.';
+			urlImportError = e instanceof Error ? e.message : "Couldn't extract metadata from the URL.";
 			urlStep = 'input';
 		}
 	}
@@ -217,7 +217,7 @@
 		{#if urlStep === 'input' || urlStep === 'extracting'}
 			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Import URL</h2>
 			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Pega la URL de un artículo o página web.
+				Paste the URL of an article or web page.
 			</p>
 
 			<!-- svelte-ignore a11y_autofocus -->
@@ -235,7 +235,7 @@
 			{#if !hasAiKey}
 				<div class="mb-3">
 					<p class="mb-1.5 font-sans text-xs font-medium text-ink dark:text-dark-ink">
-						Referencia bibliográfica <span class="font-normal text-ink-faint">(opcional)</span>
+						Bibliographic reference <span class="font-normal text-ink-faint">(optional)</span>
 					</p>
 					{#if urlSelectedRef}
 						<div
@@ -266,7 +266,7 @@
 								type="text"
 								bind:value={urlRefSearch}
 								oninput={() => searchUrlRefs(urlRefSearch)}
-								placeholder="Buscar por título, autor o citeKey…"
+								placeholder="Search by title, author or citeKey…"
 								class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 							/>
 							{#if urlRefLoading}<div class="absolute top-2 right-2">
@@ -302,7 +302,7 @@
 				<input
 					type="text"
 					bind:value={urlImportTitle}
-					placeholder="Título del documento"
+					placeholder="Document title"
 					onkeydown={(e) => {
 						if (e.key === 'Enter' && urlImportUrl.trim() && urlImportTitle.trim()) startUrlImport();
 					}}
@@ -322,7 +322,7 @@
 					}}
 					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
-					Cancelar
+					Cancel
 				</button>
 				{#if hasAiKey}
 					<button
@@ -331,7 +331,7 @@
 						class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 					>
 						{#if urlStep === 'extracting'}<Spinner size="sm" />{/if}
-						{urlStep === 'extracting' ? 'Extrayendo…' : 'Extraer con IA'}
+						{urlStep === 'extracting' ? 'Extracting…' : 'Extract with AI'}
 					</button>
 				{:else}
 					<button
@@ -340,7 +340,7 @@
 						class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 					>
 						{#if urlImporting}<Spinner size="sm" />{/if}
-						{urlImporting ? 'Importando…' : 'Import'}
+						{urlImporting ? 'Importing…' : 'Import'}
 					</button>
 				{/if}
 			</div>
@@ -352,7 +352,7 @@
 						urlAiResult = null;
 					}}
 					class="rounded p-1 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
-					aria-label="Volver"
+					aria-label="Back"
 				>
 					<svg
 						width="14"
@@ -366,7 +366,7 @@
 					>
 				</button>
 				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Revisar metadata
+					Review metadata
 				</h2>
 			</div>
 			<p class="mb-4 truncate font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
@@ -378,7 +378,7 @@
 					<label
 						for="url-edit-title"
 						class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-						>Título</label
+						>Title</label
 					>
 					<input
 						id="url-edit-title"
@@ -405,7 +405,7 @@
 						<label
 							for="url-edit-year"
 							class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-							>Año</label
+							>Year</label
 						>
 						<input
 							id="url-edit-year"
@@ -435,7 +435,7 @@
 					<label
 						for="url-edit-authors"
 						class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-						>Autores <span class="text-ink-faint">(uno por línea: Apellido, Nombre)</span></label
+						>Authors <span class="text-ink-faint">(one per line: Last, First)</span></label
 					>
 					<textarea
 						id="url-edit-authors"
@@ -458,7 +458,7 @@
 					}}
 					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
-					Cancelar
+					Cancel
 				</button>
 				<button
 					onclick={startUrlImport}
@@ -466,7 +466,7 @@
 					class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 				>
 					{#if urlImporting}<Spinner size="sm" />{/if}
-					{urlImporting ? 'Importando…' : 'Importar documento'}
+					{urlImporting ? 'Importing…' : 'Import document'}
 				</button>
 			</div>
 		{/if}

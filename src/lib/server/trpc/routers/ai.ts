@@ -98,14 +98,14 @@ async function throwProviderError(res: Response): Promise<never> {
 		const msg = body?.error?.message ?? '';
 		const code = body?.error?.code ?? res.status;
 		if (code === 401)
-			message = `API key de ${providerLabel} inválida. Revísala en Ajustes → Asistente IA.`;
+			message = `Invalid ${providerLabel} API key. Check it in Settings → AI Assistant.`;
 		else if (code === 402)
-			message = `Has agotado los créditos de ${providerLabel}. Recarga tu cuenta.`;
+			message = `You've run out of ${providerLabel} credits. Top up your account.`;
 		else if (code === 429)
-			message = `Límite de peticiones alcanzado en ${providerLabel}. Espera un momento.`;
-		else message = msg || `Error de ${providerLabel} (${res.status}).`;
+			message = `${providerLabel} rate limit reached. Wait a moment and try again.`;
+		else message = msg || `${providerLabel} error (${res.status}).`;
 	} catch {
-		message = `Error de ${providerLabel} (${res.status}).`;
+		message = `${providerLabel} error (${res.status}).`;
 	}
 	throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message });
 }
@@ -1609,7 +1609,7 @@ export async function runAgentLoopSSE(
 					if (tc.function.name === 'create_document') {
 						pendingActions.push({
 							type: 'create_document',
-							title: (args.title as string) || 'Nuevo documento',
+							title: (args.title as string) || 'New document',
 							docType:
 								(args.type as string as Extract<
 									PendingAction,
@@ -1627,7 +1627,7 @@ export async function runAgentLoopSSE(
 					if (tc.function.name === 'create_issue') {
 						pendingActions.push({
 							type: 'create_issue',
-							title: (args.title as string) || 'Nuevo issue',
+							title: (args.title as string) || 'New issue',
 							content: (args.content as string) || undefined,
 							priority:
 								(args.priority as string as Extract<
@@ -2474,6 +2474,15 @@ export const aiRouter = router({
 				methodology: 'sección de Metodología',
 				literature_review: 'Revisión de Literatura'
 			};
+			const outputTypeTitles: Record<string, string> = {
+				full_paper: 'Full paper',
+				introduction: 'Introduction',
+				abstract: 'Abstract',
+				discussion: 'Discussion',
+				conclusion: 'Conclusion',
+				methodology: 'Methodology',
+				literature_review: 'Literature review'
+			};
 			const styleLabels: Record<string, string> = {
 				formal: 'formal y riguroso',
 				technical: 'técnico y detallado',
@@ -2563,7 +2572,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 			const docId = crypto.randomUUID();
 			const versionId = crypto.randomUUID();
 			const typeLabel = outputTypeLabels[input.outputType] ?? input.outputType;
-			const docTitle = `Borrador: ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}`;
+			const docTitle = `Draft: ${outputTypeTitles[input.outputType] ?? typeLabel}`;
 
 			await ctx.withRLS(async (db) => {
 				await db.insert(document).values({
@@ -2579,7 +2588,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 					documentId: docId,
 					content: '',
 					versionNumber: 1,
-					changeDescription: 'Versión inicial',
+					changeDescription: 'Initial version',
 					createdBy: ctx.user.id
 				});
 				await db
@@ -2610,7 +2619,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 
 			const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
 			if (!projectContext) {
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found.' });
 			}
 
 			const baseUrl = OPENROUTER_URL;
@@ -2697,17 +2706,17 @@ Reglas:
 			]);
 
 			if (!docRows[0]) {
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Documento no encontrado.' });
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Document not found.' });
 			}
 			if (!projectContext) {
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found.' });
 			}
 
 			const docContent = docRows[0].draftContent?.trim() ?? '';
 			if (!docContent) {
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
-					message: 'El documento está vacío. Escribe algo antes de revisarlo.'
+					message: 'The document is empty. Write something before reviewing it.'
 				});
 			}
 

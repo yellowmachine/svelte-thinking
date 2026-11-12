@@ -33,7 +33,7 @@
 			const withContent = await trpc.documents.withContent.query(doc.id);
 			previewSvg = await renderMermaidToSvg(withContent.content);
 		} catch (e) {
-			previewError = `No se pudo previsualizar el diagrama: ${e}`;
+			previewError = `Couldn't preview the diagram: ${e}`;
 		} finally {
 			previewLoading = false;
 		}
@@ -65,11 +65,11 @@
 				id="diagram-insert-title"
 				class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
 			>
-				Insertar diagrama
+				Insert diagram
 			</h2>
 			<button
 				onclick={onclose}
-				aria-label="Cerrar"
+				aria-label="Close"
 				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -87,7 +87,7 @@
 			<input
 				type="search"
 				bind:value={diagramSearch}
-				placeholder="Buscar por título…"
+				placeholder="Search by title…"
 				class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 			/>
 		</div>
@@ -98,13 +98,13 @@
 					<p
 						class="px-3 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
 					>
-						Sin diagramas en este proyecto.
+						No diagrams in this project.
 					</p>
 				{:else if filteredDocs.length === 0}
 					<p
 						class="px-3 py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint"
 					>
-						Sin resultados.
+						No results.
 					</p>
 				{:else}
 					{#each filteredDocs as doc (doc.id)}
@@ -126,14 +126,14 @@
 			>
 				{#if !selected}
 					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						Selecciona un diagrama para previsualizarlo
+						Select a diagram to preview it
 					</p>
 				{:else}
 					<p class="mb-2 self-start font-sans text-sm font-medium text-ink dark:text-dark-ink">
 						{selected.title}
 					</p>
 					{#if previewLoading}
-						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Cargando…</p>
+						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Loading…</p>
 					{:else if previewError}
 						<p class="font-sans text-sm text-red-600 dark:text-red-400">{previewError}</p>
 					{:else}
@@ -153,14 +153,14 @@
 				onclick={onclose}
 				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
-				Cancelar
+				Cancel
 			</button>
 			<button
 				onclick={confirmInsert}
 				disabled={!selected}
 				class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
 			>
-				Insertar
+				Insert
 			</button>
 		</div>
 	</div>

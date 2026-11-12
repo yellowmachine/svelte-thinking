@@ -156,7 +156,7 @@
 									clip-rule="evenodd"
 								/>
 							</svg>
-							Verificado
+							Verified
 						</span>
 					{/if}
 				</div>
@@ -299,10 +299,10 @@
 					Invite to one of my projects
 				</button>
 			{:else if loadingProjects}
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Cargando proyectos…</p>
+				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading projects…</p>
 			{:else if myProjects.length === 0}
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					No tienes proyectos donde puedas invitar.
+					You don't have any projects you can invite people to.
 				</p>
 			{:else}
 				<div
@@ -313,7 +313,7 @@
 							for="inv-project"
 							class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
 						>
-							Proyecto
+							Project
 						</label>
 						<select
 							id="inv-project"
@@ -328,7 +328,7 @@
 
 					<div class="flex flex-col gap-1">
 						<label for="inv-role" class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							Rol
+							Role
 						</label>
 						<select
 							id="inv-role"
@@ -360,7 +360,7 @@
 							}}
 							class="rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted"
 						>
-							Cancelar
+							Cancel
 						</button>
 					</div>
 				</div>

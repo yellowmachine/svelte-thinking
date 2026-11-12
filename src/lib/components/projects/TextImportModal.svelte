@@ -91,7 +91,7 @@
 				Import book text
 			</h2>
 			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Pega el contenido en texto plano (obtenido con Calibre u otra herramienta).
+				Paste the content as plain text (e.g. exported with Calibre or another tool).
 			</p>
 		</div>
 
@@ -102,14 +102,14 @@
 					for="import-title"
 					class="mb-1.5 block font-sans text-xs font-medium text-ink dark:text-dark-ink"
 				>
-					Título del documento
+					Document title
 				</label>
 				<input
 					id="import-title"
 					type="text"
 					bind:value={title}
 					oninput={() => (titleTouched = true)}
-					placeholder="Título del libro…"
+					placeholder="Book title…"
 					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				/>
 			</div>
@@ -117,7 +117,7 @@
 			<!-- Reference picker -->
 			<div class="mb-4">
 				<p class="mb-1.5 font-sans text-xs font-medium text-ink dark:text-dark-ink">
-					Referencia bibliográfica <span class="font-normal text-ink-faint">(opcional)</span>
+					Bibliographic reference <span class="font-normal text-ink-faint">(optional)</span>
 				</p>
 				{#if selectedRef}
 					<div
@@ -147,7 +147,7 @@
 							type="text"
 							bind:value={refSearch}
 							oninput={() => searchRefs(refSearch)}
-							placeholder="Buscar por título, autor o citeKey…"
+							placeholder="Search by title, author or citeKey…"
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						/>
 						{#if refLoading}
@@ -187,12 +187,12 @@
 					for="import-text"
 					class="mb-1.5 block font-sans text-xs font-medium text-ink dark:text-dark-ink"
 				>
-					Contenido
+					Content
 				</label>
 				<textarea
 					id="import-text"
 					oninput={onTextInput}
-					placeholder="Pega aquí el texto del libro…"
+					placeholder="Paste the book text here…"
 					rows="10"
 					class="w-full resize-y rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 				></textarea>
@@ -231,7 +231,7 @@
 				class="flex items-center gap-2 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover disabled:opacity-50"
 			>
 				{#if importing}<Spinner size="sm" />{/if}
-				{importing ? 'Importando…' : 'Import'}
+				{importing ? 'Importing…' : 'Import'}
 			</button>
 		</div>
 	</div>

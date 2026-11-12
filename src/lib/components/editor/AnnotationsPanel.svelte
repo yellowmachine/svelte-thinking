@@ -55,7 +55,7 @@
 	<div
 		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
 	>
-		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Anotaciones</h3>
+		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Annotations</h3>
 		{#if sourceReference}
 			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint"
 				>@{sourceReference.citeKey}</span
@@ -67,10 +67,10 @@
 		{#if !sourceReference}
 			<div class="px-1 py-6 text-center">
 				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Sin referencia bibliográfica.
+					No bibliographic reference.
 				</p>
 				<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Asigna una referencia para poder anotar este documento.
+					Assign a reference to annotate this document.
 				</p>
 				{#if !assigningReference}
 					<button
@@ -80,7 +80,7 @@
 						}}
 						class="mt-3 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:bg-accent/90"
 					>
-						Asignar referencia
+						Assign reference
 					</button>
 				{:else}
 					<div class="mt-3 text-left">
@@ -88,7 +88,7 @@
 							bind:value={assignRefId}
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						>
-							<option value="">— elige referencia —</option>
+							<option value="">— choose a reference —</option>
 							{#each projectRefs as ref (ref.id ?? ref.citeKey)}
 								<option value={ref.id ?? ''}>{ref.citeKey}</option>
 							{/each}
@@ -99,7 +99,7 @@
 								disabled={!assignRefId}
 								class="flex-1 rounded-md bg-accent py-1.5 font-sans text-xs font-medium text-white hover:bg-accent/90 disabled:opacity-50"
 							>
-								Guardar
+								Save
 							</button>
 							<button
 								onclick={() => {
@@ -108,7 +108,7 @@
 								}}
 								class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
 							>
-								Cancelar
+								Cancel
 							</button>
 						</div>
 					</div>
@@ -116,9 +116,8 @@
 			</div>
 		{:else if subnotes.length === 0}
 			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin anotaciones.<br />
-				<span class="text-xs text-ink-faint dark:text-dark-ink-faint"
-					>Selecciona texto para anotar.</span
+				No annotations.<br />
+				<span class="text-xs text-ink-faint dark:text-dark-ink-faint">Select text to annotate.</span
 				>
 			</p>
 		{:else}
@@ -143,7 +142,7 @@
 									editingSubnoteNotes = s.notes;
 								}}
 								class="rounded p-0.5 text-ink-faint transition-colors hover:text-ink dark:text-ink-faint dark:hover:text-dark-ink"
-								aria-label="Editar"
+								aria-label="Edit"
 							>
 								<svg
 									width="12"
@@ -162,7 +161,7 @@
 							<button
 								onclick={() => ondeletesubnote?.(s.id)}
 								class="rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint"
-								aria-label="Eliminar"
+								aria-label="Delete"
 							>
 								<svg
 									width="12"
@@ -206,13 +205,13 @@
 								onclick={() => handleSave(s.id)}
 								class="rounded bg-accent px-2 py-0.5 font-sans text-xs text-white hover:bg-accent/90"
 							>
-								Guardar
+								Save
 							</button>
 							<button
 								onclick={() => (editingSubnoteId = null)}
 								class="rounded px-2 py-0.5 font-sans text-xs text-ink-faint hover:text-ink dark:text-dark-ink-faint"
 							>
-								Cancelar
+								Cancel
 							</button>
 						</div>
 					{:else if s.notes}

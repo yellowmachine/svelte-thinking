@@ -16,8 +16,8 @@
 	let posting = $state(false);
 	let postError = $state('');
 
-	const fmt = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', year: 'numeric' });
-	const commentFmt = new Intl.DateTimeFormat('es', {
+	const fmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+	const commentFmt = new Intl.DateTimeFormat('en-GB', {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric'
@@ -36,7 +36,7 @@
 				{
 					id: created.id,
 					authorId: created.authorId,
-					authorName: 'Tú',
+					authorName: 'You',
 					content: created.content,
 					createdAt: created.createdAt
 				},
@@ -44,7 +44,7 @@
 			];
 			commentInput = '';
 		} catch (e) {
-			postError = e instanceof Error ? e.message : 'Error al publicar el comentario.';
+			postError = e instanceof Error ? e.message : "Couldn't post the comment.";
 		} finally {
 			posting = false;
 		}
@@ -122,8 +122,8 @@
 				<!-- eslint-disable svelte/no-navigation-without-resolve -->
 				<a
 					href={pdfUrl}
-					title="Descargar PDF"
-					aria-label="Descargar PDF"
+					title="Download PDF"
+					aria-label="Download PDF"
 					class="flex items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 				>
 					<svg
@@ -147,8 +147,8 @@
 					href={twitterUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					title="Compartir en X"
-					aria-label="Compartir en X"
+					title="Share on X"
+					aria-label="Share on X"
 					class="flex items-center gap-1 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -171,7 +171,7 @@
 	{#if data.post.commentsEnabled || comments.length > 0}
 		<section class="mt-16 border-t border-paper-border pt-8 dark:border-dark-paper-border">
 			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Comentarios{comments.length > 0 ? ` (${comments.length})` : ''}
+				Comments{comments.length > 0 ? ` (${comments.length})` : ''}
 			</h2>
 
 			{#if data.post.commentsEnabled}
@@ -181,7 +181,7 @@
 							bind:value={commentInput}
 							rows="3"
 							maxlength="5000"
-							placeholder="Escribe un comentario..."
+							placeholder="Write a comment…"
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
 						></textarea>
 						{#if postError}
@@ -192,14 +192,14 @@
 							disabled={posting || !commentInput.trim()}
 							class="self-start rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 						>
-							{posting ? 'Enviando...' : 'Comentar'}
+							{posting ? 'Sending…' : 'Comment'}
 						</button>
 					</div>
 				{:else}
 					<p class="mt-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 						<a href={resolve('/login')} class="underline hover:text-ink dark:hover:text-dark-ink"
-							>Inicia sesión</a
-						> para comentar.
+							>Sign in</a
+						> to comment.
 					</p>
 				{/if}
 			{/if}
@@ -217,7 +217,7 @@
 								</span>
 								{#if optimisticComments.some((c) => c.id === comment.id)}
 									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-										>· pendiente de moderación</span
+										>· awaiting moderation</span
 									>
 								{/if}
 							</div>
@@ -239,8 +239,9 @@
 >
 	<div class="mx-auto max-w-2xl px-6 text-center">
 		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Publicado con <a href={resolve('/')} class="underline hover:text-ink dark:hover:text-dark-ink"
-				>Scholio</a
+			Published with <a
+				href={resolve('/')}
+				class="underline hover:text-ink dark:hover:text-dark-ink">Scholio</a
 			>.
 		</p>
 	</div>

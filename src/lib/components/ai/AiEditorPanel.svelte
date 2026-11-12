@@ -389,15 +389,15 @@
 					<div class="mt-1 flex flex-wrap justify-center gap-1.5">
 						<span
 							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
-							>Propone edits inline</span
+							>Suggests inline edits</span
 						>
 						<span
 							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
-							>Lee tus referencias</span
+							>Reads your references</span
 						>
 						<span
 							class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
-							>Mejora el estilo</span
+							>Improves your style</span
 						>
 					</div>
 				</div>

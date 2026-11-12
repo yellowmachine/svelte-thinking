@@ -151,7 +151,7 @@ export const s3ConfigRouter = router({
 
 	test: protectedProcedure.mutation(async ({ ctx }) => {
 		const config = await getDecryptedUserS3Config(ctx.user.id, ctx.withRLS);
-		if (!config) throw new TRPCError({ code: 'NOT_FOUND', message: 'S3 no configurado' });
+		if (!config) throw new TRPCError({ code: 'NOT_FOUND', message: 'S3 not configured' });
 
 		const result = await testS3Connection(config);
 		if (result.ok) {
@@ -255,7 +255,7 @@ export const s3ConfigRouter = router({
 
 		const config = await getDecryptedOrgS3Config(orgId, ctx.withRLS);
 		if (!config)
-			throw new TRPCError({ code: 'NOT_FOUND', message: 'S3 de organización no configurado' });
+			throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization S3 not configured' });
 
 		const result = await testS3Connection(config);
 		if (result.ok) {

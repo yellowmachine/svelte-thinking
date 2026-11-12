@@ -35,7 +35,7 @@
 			});
 			onpublished(result);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Error al publicar.';
+			error = e instanceof Error ? e.message : "Couldn't publish.";
 		} finally {
 			publishing = false;
 		}
@@ -55,10 +55,10 @@
 			id="publish-dialog-title"
 			class="font-serif text-xl font-semibold text-ink dark:text-dark-ink"
 		>
-			Publicar en el blog
+			Publish to blog
 		</h2>
 		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Esta versión quedará publicada de forma permanente en la URL de abajo.
+			This version will be published permanently at the URL below.
 		</p>
 
 		<div class="mt-4 flex flex-col gap-3">
@@ -87,7 +87,7 @@
 
 			<label class="flex items-center gap-2 font-sans text-sm text-ink dark:text-dark-ink">
 				<input type="checkbox" bind:checked={commentsEnabled} class="rounded" />
-				Permitir comentarios en esta publicación
+				Allow comments on this post
 			</label>
 
 			{#if error}
@@ -100,14 +100,14 @@
 					disabled={publishing}
 					class="flex-1 rounded-md bg-accent py-2.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 				>
-					{publishing ? 'Publicando...' : 'Publicar'}
+					{publishing ? 'Publishing…' : 'Publish'}
 				</button>
 				<button
 					onclick={onclose}
 					disabled={publishing}
 					class="rounded-md border border-paper-border px-4 py-2.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
-					Cancelar
+					Cancel
 				</button>
 			</div>
 		</div>

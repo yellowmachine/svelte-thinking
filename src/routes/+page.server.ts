@@ -30,15 +30,15 @@ export const load: PageServerLoad = async (event) => {
 export const actions: Actions = {
 	joinWaitlist: async ({ request, getClientAddress }) => {
 		const { allowed } = await hitRateLimit(RATE_LIMITS.waitlist, getClientAddress());
-		if (!allowed) return fail(429, { error: 'Demasiados intentos. Prueba de nuevo más tarde.' });
+		if (!allowed) return fail(429, { error: 'Too many attempts. Try again later.' });
 
 		const data = await request.formData();
 		const name = data.get('name')?.toString().trim() ?? '';
 		const email = data.get('email')?.toString().trim().toLowerCase() ?? '';
 		const message = data.get('message')?.toString().trim() ?? '';
 
-		if (!email || !name) return fail(400, { error: 'Nombre y email son obligatorios.' });
-		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, { error: 'Email no válido.' });
+		if (!email || !name) return fail(400, { error: 'Name and email are required.' });
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, { error: 'Invalid email.' });
 
 		const existing = await db
 			.select({ id: waitlist.id, status: waitlist.status })

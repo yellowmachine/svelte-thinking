@@ -199,7 +199,7 @@
 						{#each llProjects as p (p.id)}
 							<option value={p.id}>{p.title}</option>
 						{/each}
-						<option value="__unlinked__">Sin proyecto</option>
+						<option value="__unlinked__">No project</option>
 					</select>
 				{/if}
 				<input
@@ -250,7 +250,7 @@
 									<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
 										{[author, ref.year].filter(Boolean).join(', ')}
 										<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
-										{#if isOrphan}<span class="ml-1 italic opacity-60">sin proyecto</span>{/if}
+										{#if isOrphan}<span class="ml-1 italic opacity-60">no project</span>{/if}
 									</p>
 								</div>
 							</label>
@@ -259,7 +259,7 @@
 									type="button"
 									onclick={() => llDeleteRef(ref.id)}
 									disabled={llDeleting.has(ref.id)}
-									aria-label="Borrar referencia"
+									aria-label="Delete reference"
 									class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
 								>
 									<svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">

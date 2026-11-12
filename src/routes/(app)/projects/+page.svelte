@@ -135,7 +135,7 @@
 			const { projectId } = await res.json();
 			await goto(resolve(`/projects/${projectId}`), { invalidateAll: true });
 		} catch (e) {
-			importError = e instanceof Error ? e.message : 'Error al importar';
+			importError = e instanceof Error ? e.message : 'Import failed';
 		} finally {
 			importing = false;
 			input.value = '';

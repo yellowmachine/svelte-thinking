@@ -49,14 +49,14 @@ export const GET: RequestHandler = async ({ params }) => {
 		.from(userProfile)
 		.where(eq(userProfile.handle, handle))
 		.limit(1);
-	if (!profileRows[0]) error(404, 'Este blog no existe');
+	if (!profileRows[0]) error(404, 'This blog does not exist');
 
 	const postRows = await db
 		.select({ title: blogPost.title, content: blogPost.content, refsJson: blogPost.refsJson })
 		.from(blogPost)
 		.where(and(eq(blogPost.userId, profileRows[0].userId), eq(blogPost.slug, params.slug)))
 		.limit(1);
-	if (!postRows[0]) error(404, 'Esta publicación no existe');
+	if (!postRows[0]) error(404, 'This post does not exist');
 	const post = postRows[0];
 
 	const refs: RefData[] = post.refsJson ? JSON.parse(post.refsJson) : [];
@@ -68,7 +68,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	try {
 		pdf = await compileToPdf(typ, undefined, files);
 	} catch (e) {
-		error(500, `Error compilando PDF: ${e instanceof Error ? e.message : e}`);
+		error(500, `Error compiling PDF: ${e instanceof Error ? e.message : e}`);
 	}
 
 	const slug = params.slug;

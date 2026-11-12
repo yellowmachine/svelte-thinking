@@ -52,7 +52,7 @@
 			if (!map.has(key)) {
 				map.set(key, {
 					projectId: r.projectId,
-					projectTitle: r.projectTitle ?? 'Sin proyecto',
+					projectTitle: r.projectTitle ?? 'No project',
 					bibHref: r.projectId ? `/projects/${r.projectId}/bib` : null,
 					refs: []
 				});
@@ -110,10 +110,10 @@
 	function typeLabel(type: string): string {
 		const labels: Record<string, string> = {
 			article: 'Article',
-			book: 'Libro',
-			inproceedings: 'Conferencia',
+			book: 'Book',
+			inproceedings: 'Conference paper',
 			incollection: 'Chapter',
-			phdthesis: 'Tesis doctoral',
+			phdthesis: 'PhD thesis',
 			mastersthesis: "Master's thesis",
 			techreport: 'Technical report',
 			misc: 'Miscellaneous'
@@ -136,7 +136,7 @@
 				Global bibliography
 			</h1>
 			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				{data.references.length} referencia{data.references.length !== 1 ? 's' : ''} en todos tus proyectos
+				{data.references.length} reference{data.references.length !== 1 ? 's' : ''} across all your projects
 			</p>
 		</div>
 		<button
@@ -175,7 +175,7 @@
 		</div>
 	{:else if filtered.length === 0}
 		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Sin resultados para <em>"{query}"</em>.
+			No results for <em>"{query}"</em>.
 		</p>
 	{:else}
 		<div class="space-y-8">
@@ -193,7 +193,7 @@
 								href={resolve(`/projects/${group.projectId!}/bib`)}
 								class="font-sans text-xs text-accent-ink hover:underline"
 							>
-								Ver en proyecto →
+								View in project →
 							</a>
 						{/if}
 					</div>
@@ -252,7 +252,7 @@
 												type="button"
 												onclick={() => deleteRef(ref.id)}
 												disabled={deleting.has(ref.id)}
-												aria-label="Borrar referencia"
+												aria-label="Delete reference"
 												class="rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
 											>
 												<svg

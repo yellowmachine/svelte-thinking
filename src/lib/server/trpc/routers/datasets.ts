@@ -31,7 +31,7 @@ export const datasetsRouter = router({
 			const [proj] = await ctx.withRLS((db) =>
 				db.select({ id: project.id }).from(project).where(eq(project.id, input.projectId)).limit(1)
 			);
-			if (!proj) throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado' });
+			if (!proj) throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' });
 
 			const [dataset] = await ctx.withRLS((db) =>
 				db
@@ -49,7 +49,7 @@ export const datasetsRouter = router({
 			if (!dataset) {
 				throw new TRPCError({
 					code: 'NOT_FOUND',
-					message: `Dataset "${input.filename}" no encontrado en el proyecto`
+					message: `Dataset "${input.filename}" not found in the project`
 				});
 			}
 

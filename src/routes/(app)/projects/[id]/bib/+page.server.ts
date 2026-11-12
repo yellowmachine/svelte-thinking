@@ -27,7 +27,7 @@ export const load: PageServerLoad = async (event) => {
 			.then((rows) => (rows as { ref: typeof reference.$inferSelect }[]).map((r) => r.ref))
 	]);
 
-	if (!(proj as { id: string }[])[0]) error(404, 'Proyecto no encontrado');
+	if (!(proj as { id: string }[])[0]) error(404, 'Project not found');
 
 	return {
 		project: (proj as { id: string; title: string }[])[0],

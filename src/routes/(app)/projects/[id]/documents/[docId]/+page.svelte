@@ -935,7 +935,7 @@
 			case 'error':
 				return 'Error saving';
 			case 'offline':
-				return 'Guardado offline';
+				return 'Saved offline';
 			default:
 				return '';
 		}
@@ -1605,7 +1605,7 @@
 							onclick={doSaveDraft}
 							disabled={!isDirty || !canTriggerSave(saveCap) || newerVersion?.type === 'draft'}
 							title={newerVersion?.type === 'draft'
-								? 'Resuelve el conflicto de borrador antes de guardar'
+								? 'Resolve the draft conflict before saving'
 								: saveCap.kind === 'queued'
 									? saveCap.hint
 									: saveCap.kind === 'blocked'
@@ -2620,7 +2620,7 @@
 							{/if}
 							{#if data.unpublished}
 								<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-									El autor aún no ha publicado este documento.
+									The author hasn't published this document yet.
 								</p>
 							{:else}
 								<MarkdownPreview
@@ -2775,7 +2775,7 @@
 				>
 					<div class="border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
 						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Mencionado en
+							Mentioned in
 						</h3>
 					</div>
 					<div class="flex-1 overflow-y-auto p-2">

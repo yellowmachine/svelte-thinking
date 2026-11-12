@@ -14,7 +14,7 @@ const updateProfileSchema = z.object({
 	institution: z.string().max(200).nullable().optional(),
 	orcid: z
 		.string()
-		.regex(/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/, 'Formato ORCID inválido (ej: 0000-0002-1825-0097)')
+		.regex(/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/, 'Invalid ORCID format (e.g. 0000-0002-1825-0097)')
 		.nullable()
 		.optional()
 });

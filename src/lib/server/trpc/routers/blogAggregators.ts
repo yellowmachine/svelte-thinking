@@ -142,7 +142,7 @@ export const blogAggregatorsRouter = router({
 					.where(eq(userProfile.handle, handle))
 					.limit(1);
 				if (!target) {
-					throw new TRPCError({ code: 'NOT_FOUND', message: `No existe ningún blog @${handle}.` });
+					throw new TRPCError({ code: 'NOT_FOUND', message: `No blog found for @${handle}.` });
 				}
 
 				try {
@@ -158,7 +158,7 @@ export const blogAggregatorsRouter = router({
 				} catch {
 					throw new TRPCError({
 						code: 'CONFLICT',
-						message: `@${handle} ya está en esta lista.`
+						message: `@${handle} is already in this list.`
 					});
 				}
 			});

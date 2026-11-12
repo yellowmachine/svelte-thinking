@@ -69,7 +69,7 @@ export const load: PageServerLoad = async (event) => {
 			)
 		]);
 
-	if (!profileRow[0]) error(404, 'Usuario no encontrado');
+	if (!profileRow[0]) error(404, 'User not found');
 
 	const pinnedProjectIds = myInterest.map((i) => i.projectId);
 

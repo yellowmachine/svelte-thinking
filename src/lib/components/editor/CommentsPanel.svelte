@@ -71,9 +71,7 @@
 		{#if comments.length === 0}
 			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
 				No comments yet.<br />
-				<span class="text-xs text-ink-faint dark:text-dark-ink-faint"
-					>Selecciona texto para comentar.</span
-				>
+				<span class="text-xs text-ink-faint dark:text-dark-ink-faint">Select text to comment.</span>
 			</p>
 		{:else}
 			{#each comments as c (c.id)}
