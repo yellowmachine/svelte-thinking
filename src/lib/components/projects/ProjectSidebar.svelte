@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flash } from '$lib/stores/flash.svelte';
 	import { untrack } from 'svelte';
 	import { invalidateAll, goto } from '$app/navigation';
 	import InviteCollaborator from '$lib/components/projects/InviteCollaborator.svelte';
@@ -210,7 +211,7 @@
 		} catch (e: unknown) {
 			leavingProject = false;
 			showLeaveProject = false;
-			alert(e instanceof Error ? e.message : 'Error leaving project');
+			flash.set(e instanceof Error ? e.message : 'Error leaving project', 'error');
 		}
 	}
 
@@ -226,7 +227,7 @@
 			showRemoveCollaborator = false;
 			collaboratorToRemove = null;
 		} catch (e: unknown) {
-			alert(e instanceof Error ? e.message : 'Error removing collaborator');
+			flash.set(e instanceof Error ? e.message : 'Error removing collaborator', 'error');
 		} finally {
 			removingCollaborator = false;
 		}

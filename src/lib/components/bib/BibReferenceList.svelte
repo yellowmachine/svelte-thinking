@@ -147,7 +147,7 @@
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				alert(body.message ?? 'Error uploading PDF');
+				flash.set(body.message ?? 'Error uploading PDF', 'error');
 				return;
 			}
 			onreferenceupdated(ref.id, { pdfKey: 'set', pdfUrl: `/api/references/${ref.id}/pdf` });

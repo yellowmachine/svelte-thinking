@@ -4,7 +4,8 @@
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { documentTutorialSteps } from '$lib/tutorials/document';
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
@@ -1270,23 +1271,36 @@
 	// Guard: unsaved changes — SvelteKit client-side navigation
 	// Capture workspace at page entry so we can restore it if the user cancels.
 	const entryWorkspace = { ...workspaceStore.current };
-	beforeNavigate(({ cancel }) => {
-		if (isDirty) {
-			const ok = confirm('You have unsaved changes. Leave anyway?');
+	// Closing the tab is covered by the beforeunload handler below; in-app
+	// navigation is paused here and resumed with goto() once the user confirms.
+	let leaveConfirmed = false;
+	beforeNavigate((nav) => {
+		if (!isDirty || leaveConfirmed || nav.type === 'leave' || !nav.to) return;
+		nav.cancel();
+		const target = nav.to.url;
+		confirmDialog({
+			title: 'Leave without saving?',
+			message: 'Your latest changes have not been saved to the server yet.',
+			confirmLabel: 'Leave',
+			cancelLabel: 'Stay'
+		}).then((ok) => {
 			if (!ok) {
-				cancel();
 				workspaceStore.set(entryWorkspace);
-			} else {
-				// Save to Dexie before leaving so content survives navigation
-				offlineDb.pendingEdits.add({
-					id: crypto.randomUUID(),
-					documentId: data.document.id,
-					content,
-					savedAt: new Date(),
-					status: 'pending'
-				});
+				return;
 			}
-		}
+			// Save to Dexie before leaving so content survives navigation
+			offlineDb.pendingEdits.add({
+				id: crypto.randomUUID(),
+				documentId: data.document.id,
+				content,
+				savedAt: new Date(),
+				status: 'pending'
+			});
+			leaveConfirmed = true;
+			// target is SvelteKit's own resolved destination (nav.to.url).
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(target);
+		});
 	});
 
 	// Guard: tab close / hard refresh

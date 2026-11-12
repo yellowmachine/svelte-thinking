@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flash } from '$lib/stores/flash.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { type ProjectRole, PROJECT_ROLE_LABELS, INVITABLE_ROLES } from '$lib/domain/project';
 	import type { CollaboratorRole } from '$lib/domain/permissions';
@@ -49,7 +50,7 @@
 			savedRoleFor = userId;
 			setTimeout(() => (savedRoleFor = null), 1500);
 		} catch (e: unknown) {
-			alert(e instanceof Error ? e.message : 'Failed to change role');
+			flash.set(e instanceof Error ? e.message : 'Failed to change role', 'error');
 		} finally {
 			changingRoleFor = null;
 		}

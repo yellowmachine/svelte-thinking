@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import type { PageData } from './$types';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
@@ -178,8 +179,13 @@
 	}
 
 	async function restoreVersion(v: Version) {
-		if (!confirm(`¿Restaurar v${v.versionNumber} como borrador? El draft actual se perderá.`))
-			return;
+		const ok = await confirmDialog({
+			title: `Restore version ${v.versionNumber}?`,
+			message: 'It replaces the current draft. Unsaved changes in the draft will be lost.',
+			confirmLabel: 'Restore',
+			danger: true
+		});
+		if (!ok) return;
 		restoring = true;
 		try {
 			await trpc.documents.restoreVersion.mutate({

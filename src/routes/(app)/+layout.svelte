@@ -4,7 +4,6 @@
 	import MobileHeader from '$lib/components/layout/MobileHeader.svelte';
 	import MobileNav from '$lib/components/layout/MobileNav.svelte';
 	import FeedbackButton from '$lib/components/layout/FeedbackButton.svelte';
-	import ConnectivityBanner from '$lib/components/ui/ConnectivityBanner.svelte';
 	import AiSpendBanner from '$lib/components/layout/AiSpendBanner.svelte';
 	import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
@@ -141,7 +140,6 @@
 	<main id="main-content" class="flex-1 overflow-y-auto pb-16 sm:pb-0">
 		{@render children()}
 	</main>
-	<ConnectivityBanner />
 	<FeedbackButton />
 	<footer
 		class="hidden border-t border-paper-border px-6 py-3 sm:block dark:border-dark-paper-border"

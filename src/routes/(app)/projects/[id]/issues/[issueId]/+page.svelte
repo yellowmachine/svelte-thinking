@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
@@ -206,11 +207,26 @@
 	});
 
 	// ── Navigation guard ──────────────────────────────────────────────────────
-	beforeNavigate(({ cancel }) => {
-		if (isDirty) {
-			const ok = confirm('You have unsaved changes. Leave anyway?');
-			if (!ok) cancel();
-		}
+	// Closing the tab is covered by the browser's own prompt; in-app navigation
+	// is paused here and resumed with goto() once the user confirms.
+	let leaveConfirmed = false;
+	beforeNavigate((nav) => {
+		if (!isDirty || leaveConfirmed || nav.type === 'leave' || !nav.to) return;
+		nav.cancel();
+		const target = nav.to.url;
+		confirmDialog({
+			title: 'Leave without saving?',
+			message: 'Your changes to this issue have not been saved.',
+			confirmLabel: 'Leave',
+			cancelLabel: 'Stay',
+			danger: true
+		}).then((ok) => {
+			if (!ok) return;
+			leaveConfirmed = true;
+			// target is SvelteKit's own resolved destination (nav.to.url).
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(target);
+		});
 	});
 
 	// ── Helpers ───────────────────────────────────────────────────────────────

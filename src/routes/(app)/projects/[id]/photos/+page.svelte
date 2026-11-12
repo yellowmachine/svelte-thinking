@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flash } from '$lib/stores/flash.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -95,7 +96,7 @@
 			extraPhotos = extraPhotos.filter((p) => p.id !== id);
 			if (lightboxPhoto?.id === id) lightboxPhoto = null;
 		} catch (e) {
-			alert(e instanceof Error ? e.message : 'Error deleting');
+			flash.set(e instanceof Error ? e.message : 'Error deleting', 'error');
 		}
 	}
 
