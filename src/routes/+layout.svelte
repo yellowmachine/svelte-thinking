@@ -5,6 +5,7 @@
 	import { onlineStore } from '$lib/stores/online.svelte';
 	import Toaster from '$lib/components/ui/Toaster.svelte';
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+	import NavigationProgress from '$lib/components/ui/NavigationProgress.svelte';
 
 	let { children } = $props();
 
@@ -49,5 +50,6 @@
 
 {@render children()}
 
+<NavigationProgress />
 <Toaster />
 <ConfirmDialog />
