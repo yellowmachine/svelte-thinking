@@ -6,7 +6,8 @@ import {
 	integer,
 	uniqueIndex,
 	jsonb,
-	numeric
+	numeric,
+	boolean
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
@@ -119,10 +120,13 @@ export const aiUsageLog = scholioSchema
 			projectId: text('project_id').notNull(),
 			userId: text('user_id').notNull(),
 			model: text('model').notNull(),
-			task: text('task'), // 'agent' | 'draft' | 'review' | 'requirements' | 'suggest'
+			task: text('task'), // AiTask, or 'spell' / 'grammar' from inside the editor agent
 			inputTokens: integer('input_tokens').notNull().default(0),
 			outputTokens: integer('output_tokens').notNull().default(0),
-			estimatedCostEur: numeric('estimated_cost_eur', { precision: 10, scale: 6 }),
+			// USD: what OpenRouter charged (usage.cost), or tokens × list price when the response
+			// had no charge (cost_is_estimate). Null only for an unknown model with no charge.
+			costUsd: numeric('cost_usd', { precision: 12, scale: 8 }),
+			costIsEstimate: boolean('cost_is_estimate').notNull().default(false),
 			createdAt: timestamp('created_at').notNull().defaultNow()
 		},
 		(t) => [

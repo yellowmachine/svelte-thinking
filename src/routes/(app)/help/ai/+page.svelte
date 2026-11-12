@@ -422,7 +422,7 @@
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-paper-border dark:divide-dark-paper-border">
-					{#each [{ provider: 'Anthropic', model: 'Claude Opus 4.5', tools: true, note: 'Complex reasoning, long context' }, { provider: 'Anthropic', model: 'Claude Sonnet 4.6', tools: true, note: 'Default for agent & draft' }, { provider: 'Anthropic', model: 'Claude Haiku 4.5', tools: true, note: 'Default for spell, grammar, summary' }, { provider: 'Google', model: 'Gemini 2.5 Pro', tools: true, note: 'Long documents' }, { provider: 'Google', model: 'Gemini 2.5 Flash', tools: true, note: 'Default for requirements' }, { provider: 'OpenAI', model: 'GPT-4o', tools: true, note: 'General purpose' }, { provider: 'OpenAI', model: 'GPT-4o mini', tools: true, note: 'Fast and cheap' }, { provider: 'DeepSeek', model: 'DeepSeek R1', tools: false, note: 'Default for review — strong at critique' }, { provider: 'DeepSeek', model: 'DeepSeek V3', tools: true, note: 'General purpose' }, { provider: 'Meta', model: 'Llama 3.3 70B', tools: true, note: 'Open-weight alternative' }, { provider: 'Perplexity', model: 'Sonar', tools: false, note: 'Web-augmented answers' }, { provider: 'Perplexity', model: 'Sonar Pro', tools: false, note: 'Web-augmented, higher quality' }] as row (row.model)}
+					{#each [{ provider: 'Anthropic', model: 'Claude Fable', tools: true, note: 'Most capable, and the most expensive' }, { provider: 'Anthropic', model: 'Claude Opus', tools: true, note: 'Complex reasoning, long context' }, { provider: 'Anthropic', model: 'Claude Sonnet', tools: true, note: 'Default for agent, draft & review' }, { provider: 'Anthropic', model: 'Claude Haiku', tools: true, note: 'Default for spell, grammar, summary' }, { provider: 'Google', model: 'Gemini 4', tools: true, note: 'Long documents' }, { provider: 'Google', model: 'Gemini Flash', tools: true, note: 'Default for requirements' }, { provider: 'OpenAI', model: 'GPT Sol', tools: true, note: 'General purpose' }, { provider: 'OpenAI', model: 'GPT Luna', tools: true, note: 'Fast and cheap' }, { provider: 'DeepSeek', model: 'DeepSeek Pro', tools: true, note: 'Much cheaper alternative for review' }, { provider: 'DeepSeek', model: 'DeepSeek Flash', tools: true, note: 'Very cheap, light tasks' }, { provider: 'Perplexity', model: 'Sonar', tools: false, note: 'Web-augmented answers' }, { provider: 'Perplexity', model: 'Sonar Pro', tools: false, note: 'Web-augmented, higher quality' }] as row (row.model)}
 						<tr>
 							<td class="px-4 py-3 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
 								>{row.provider}</td
@@ -447,8 +447,8 @@
 			</table>
 		</div>
 		<Callout
-			>Models without tool calling (DeepSeek R1, Perplexity) cannot be used as the conversational
-			agent. They work fine for task-based features like review, spell and grammar.</Callout
+			>Models without tool calling (Perplexity) cannot be used as the conversational agent. They
+			work fine for task-based features like review, spell and grammar.</Callout
 		>
 	</section>
 
@@ -491,8 +491,8 @@
 			</li>
 			<li class="flex gap-2">
 				<span class="text-ink-faint dark:text-dark-ink-faint">—</span>
-				Assign <strong>DeepSeek R1</strong> to the review task for the most critical and detailed feedback
-				— it is specifically strong at identifying gaps in argumentation.
+				For a cheaper <strong>Review</strong>, assign <strong>DeepSeek Pro</strong> to the review task
+				— it costs a fraction of Claude Sonnet.
 			</li>
 			<li class="flex gap-2">
 				<span class="text-ink-faint dark:text-dark-ink-faint">—</span>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { notifyAiUsed } from '$lib/utils/aiUsedEvent';
 	import { trpc } from '$lib/utils/trpc';
 	import { tick, onMount, untrack } from 'svelte';
 	type ResolvedModel = { id: string; shortLabel: string; toolCalling: boolean };
@@ -222,6 +223,7 @@
 							);
 						}
 					} else if (evt.type === 'done') {
+						notifyAiUsed();
 						conversationId = evt.conversationId as string;
 						localStorage.setItem(CONV_KEY, conversationId);
 						if (Array.isArray(evt.pendingEditorActions) && evt.pendingEditorActions.length) {

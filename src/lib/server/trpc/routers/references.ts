@@ -16,6 +16,7 @@ import { parseBibtexFile, formatBibtexFile, generateCiteKey } from '$lib/utils/b
 import type { Author } from '$lib/utils/bibtex';
 import type { Db } from '$lib/server/db';
 import { resolveTaskKey, OPENROUTER_URL, type WithRLS } from './ai';
+import { logUsage, readUsage, type OpenRouterUsage } from '$lib/server/aiUsage';
 
 const authorSchema = z.object({ first: z.string(), last: z.string() });
 
@@ -628,7 +629,7 @@ export const referencesRouter = router({
 
 			const truncated = text.slice(0, 8_000);
 
-			const { apiKey, model } = await resolveTaskKey(
+			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
 				ctx.db as Db,
 				ctx.user.id,
@@ -677,7 +678,18 @@ ${truncated}`;
 			if (!aiRes.ok)
 				throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'AI model error.' });
 
-			const aiJson = (await aiRes.json()) as { choices: { message: { content: string } }[] };
+			const aiJson = (await aiRes.json()) as {
+				choices: { message: { content: string } }[];
+				usage?: OpenRouterUsage;
+			};
+			logUsage(ctx.withRLS as WithRLS, {
+				orgId: resolvedOrgId,
+				projectId,
+				userId: ctx.user.id,
+				model,
+				task: 'bibliography',
+				usage: readUsage(aiJson.usage)
+			});
 			const content = aiJson.choices?.[0]?.message?.content ?? '';
 
 			const jsonMatch = content.match(/\{[\s\S]*\}/);

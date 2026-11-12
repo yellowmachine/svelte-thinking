@@ -137,6 +137,17 @@ export const usersRouter = router({
 			);
 		}),
 
+	setShowAiSpendBanner: protectedProcedure
+		.input(z.boolean())
+		.mutation(async ({ ctx, input: showAiSpendBanner }) => {
+			return ctx.withRLS((db) =>
+				db
+					.update(userProfile)
+					.set({ showAiSpendBanner, updatedAt: new Date() })
+					.where(eq(userProfile.userId, ctx.user.id))
+			);
+		}),
+
 	updateProfile: protectedProcedure.input(updateProfileSchema).mutation(async ({ ctx, input }) => {
 		return ctx.withRLS(async (db) => {
 			const existing = await db

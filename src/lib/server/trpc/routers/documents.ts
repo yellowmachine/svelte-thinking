@@ -11,6 +11,7 @@ import { extractWikilinks } from '$lib/utils/wikilinks';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
 import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
+import { logUsage } from '$lib/server/aiUsage';
 import { sendCommitNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 import { DOCUMENT_TYPES } from '$lib/domain/document';
@@ -472,14 +473,14 @@ export const documentsRouter = router({
 			// Fire-and-forget: generate AI summary for the project chat agent
 			void (async () => {
 				try {
-					const { apiKey, model } = await resolveTaskKey(
+					const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 						ctx.withRLS as never,
 						ctx.db as Db,
 						ctx.user.id,
 						'summary',
 						result._projectId
 					);
-					await ctx.withRLS((db) =>
+					const usage = (await ctx.withRLS((db) =>
 						generateAndSaveDocumentSummary(
 							db as Db,
 							result._versionId,
@@ -489,7 +490,16 @@ export const documentsRouter = router({
 							apiKey,
 							model
 						)
-					);
+					)) as Awaited<ReturnType<typeof generateAndSaveDocumentSummary>>;
+					if (usage)
+						await logUsage(ctx.withRLS, {
+							orgId: resolvedOrgId,
+							projectId: result._projectId,
+							userId: ctx.user.id,
+							model,
+							task: 'summary',
+							usage
+						});
 				} catch (err) {
 					console.error('[summary] generateDocumentSummary failed:', err);
 				}

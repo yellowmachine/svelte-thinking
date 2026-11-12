@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, gte, lte, sql, count } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, count, desc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { aiUsageLog } from '$lib/server/db/schemas/ai.schema';
@@ -14,7 +14,7 @@ const dateRangeInput = z.object({
 });
 
 function costSum() {
-	return sql<string>`COALESCE(SUM(${aiUsageLog.estimatedCostEur}), 0)`;
+	return sql<string>`COALESCE(SUM(${aiUsageLog.costUsd}), 0)`;
 }
 function callCount() {
 	return count(aiUsageLog.id);
@@ -27,6 +27,59 @@ function outputSum() {
 }
 
 export const usageRouter = router({
+	// ── Spending banner (under the navbar) ────────────────────────────────
+	// The user's own key only (org keys are the org's money, in its dashboard). Weeks start
+	// on Monday; month and week are the database's (UTC) calendar.
+	banner: protectedProcedure.query(async ({ ctx }) => {
+		const mine = and(eq(aiUsageLog.userId, ctx.user.id), sql`${aiUsageLog.orgId} IS NULL`);
+		const thisMonth = sql`${aiUsageLog.createdAt} >= date_trunc('month', now())`;
+		const thisWeek = sql`${aiUsageLog.createdAt} >= date_trunc('week', now())`;
+
+		const [totals, last] = await Promise.all([
+			ctx.withRLS((db) =>
+				db
+					.select({
+						monthUsd: sql<string>`COALESCE(SUM(${aiUsageLog.costUsd}), 0)`,
+						weekUsd: sql<string>`COALESCE(SUM(${aiUsageLog.costUsd}) FILTER (WHERE ${thisWeek}), 0)`,
+						monthCalls: count(aiUsageLog.id),
+						monthHasEstimates: sql<boolean>`COALESCE(BOOL_OR(${aiUsageLog.costIsEstimate}), false)`
+					})
+					.from(aiUsageLog)
+					.where(and(mine, thisMonth))
+					.then((r) => r[0])
+			),
+			ctx.withRLS((db) =>
+				db
+					.select({
+						task: aiUsageLog.task,
+						model: aiUsageLog.model,
+						costUsd: aiUsageLog.costUsd,
+						costIsEstimate: aiUsageLog.costIsEstimate,
+						at: aiUsageLog.createdAt
+					})
+					.from(aiUsageLog)
+					.where(mine)
+					.orderBy(desc(aiUsageLog.createdAt))
+					.limit(1)
+					.then((r) => r[0] ?? null)
+			)
+		]);
+
+		return {
+			monthUsd: Number(totals?.monthUsd ?? 0),
+			weekUsd: Number(totals?.weekUsd ?? 0),
+			monthCalls: Number(totals?.monthCalls ?? 0),
+			monthHasEstimates: Boolean(totals?.monthHasEstimates),
+			last: last && {
+				task: last.task,
+				model: last.model,
+				costUsd: last.costUsd === null ? null : Number(last.costUsd),
+				costIsEstimate: last.costIsEstimate,
+				at: last.at
+			}
+		};
+	}),
+
 	// ── Personal dashboard ─────────────────────────────────────────────────
 	personal: protectedProcedure.input(dateRangeInput).query(async ({ ctx, input }) => {
 		const from = new Date(input.from);
@@ -45,7 +98,7 @@ export const usageRouter = router({
 			ctx.withRLS((db) =>
 				db
 					.select({
-						totalCostEur: costSum(),
+						totalCostUsd: costSum(),
 						totalCalls: callCount(),
 						totalInputTokens: inputSum(),
 						totalOutputTokens: outputSum()
@@ -60,7 +113,7 @@ export const usageRouter = router({
 				db
 					.select({
 						date: sql<string>`DATE(${aiUsageLog.createdAt})`,
-						costEur: costSum(),
+						costUsd: costSum(),
 						calls: callCount()
 					})
 					.from(aiUsageLog)
@@ -74,7 +127,7 @@ export const usageRouter = router({
 				db
 					.select({
 						model: aiUsageLog.model,
-						costEur: costSum(),
+						costUsd: costSum(),
 						calls: callCount(),
 						inputTokens: inputSum(),
 						outputTokens: outputSum()
@@ -82,7 +135,7 @@ export const usageRouter = router({
 					.from(aiUsageLog)
 					.where(where)
 					.groupBy(aiUsageLog.model)
-					.orderBy(sql`SUM(${aiUsageLog.estimatedCostEur}) DESC`)
+					.orderBy(sql`SUM(${aiUsageLog.costUsd}) DESC`)
 			),
 
 			// Cost by task
@@ -90,13 +143,13 @@ export const usageRouter = router({
 				db
 					.select({
 						task: aiUsageLog.task,
-						costEur: costSum(),
+						costUsd: costSum(),
 						calls: callCount()
 					})
 					.from(aiUsageLog)
 					.where(where)
 					.groupBy(aiUsageLog.task)
-					.orderBy(sql`SUM(${aiUsageLog.estimatedCostEur}) DESC`)
+					.orderBy(sql`SUM(${aiUsageLog.costUsd}) DESC`)
 			),
 
 			// Cost by project (top 10)
@@ -105,14 +158,14 @@ export const usageRouter = router({
 					.select({
 						projectId: aiUsageLog.projectId,
 						title: project.title,
-						costEur: costSum(),
+						costUsd: costSum(),
 						calls: callCount()
 					})
 					.from(aiUsageLog)
 					.leftJoin(project, eq(aiUsageLog.projectId, project.id))
 					.where(where)
 					.groupBy(aiUsageLog.projectId, project.title)
-					.orderBy(sql`SUM(${aiUsageLog.estimatedCostEur}) DESC`)
+					.orderBy(sql`SUM(${aiUsageLog.costUsd}) DESC`)
 					.limit(10)
 			)
 		]);
@@ -151,7 +204,7 @@ export const usageRouter = router({
 				ctx.withRLS((db) =>
 					db
 						.select({
-							totalCostEur: costSum(),
+							totalCostUsd: costSum(),
 							totalCalls: callCount(),
 							totalInputTokens: inputSum(),
 							totalOutputTokens: outputSum()
@@ -166,7 +219,7 @@ export const usageRouter = router({
 					db
 						.select({
 							date: sql<string>`DATE(${aiUsageLog.createdAt})`,
-							costEur: costSum(),
+							costUsd: costSum(),
 							calls: callCount()
 						})
 						.from(aiUsageLog)
@@ -180,7 +233,7 @@ export const usageRouter = router({
 					db
 						.select({
 							model: aiUsageLog.model,
-							costEur: costSum(),
+							costUsd: costSum(),
 							calls: callCount(),
 							inputTokens: inputSum(),
 							outputTokens: outputSum()
@@ -188,7 +241,7 @@ export const usageRouter = router({
 						.from(aiUsageLog)
 						.where(where)
 						.groupBy(aiUsageLog.model)
-						.orderBy(sql`SUM(${aiUsageLog.estimatedCostEur}) DESC`)
+						.orderBy(sql`SUM(${aiUsageLog.costUsd}) DESC`)
 				),
 
 				// Cost by task
@@ -196,13 +249,13 @@ export const usageRouter = router({
 					db
 						.select({
 							task: aiUsageLog.task,
-							costEur: costSum(),
+							costUsd: costSum(),
 							calls: callCount()
 						})
 						.from(aiUsageLog)
 						.where(where)
 						.groupBy(aiUsageLog.task)
-						.orderBy(sql`SUM(${aiUsageLog.estimatedCostEur}) DESC`)
+						.orderBy(sql`SUM(${aiUsageLog.costUsd}) DESC`)
 				),
 
 				// Cost by project (top 10)
@@ -211,14 +264,14 @@ export const usageRouter = router({
 						.select({
 							projectId: aiUsageLog.projectId,
 							title: project.title,
-							costEur: costSum(),
+							costUsd: costSum(),
 							calls: callCount()
 						})
 						.from(aiUsageLog)
 						.leftJoin(project, eq(aiUsageLog.projectId, project.id))
 						.where(where)
 						.groupBy(aiUsageLog.projectId, project.title)
-						.orderBy(sql`SUM(${aiUsageLog.estimatedCostEur}) DESC`)
+						.orderBy(sql`SUM(${aiUsageLog.costUsd}) DESC`)
 						.limit(10)
 				),
 
@@ -228,14 +281,14 @@ export const usageRouter = router({
 						.select({
 							userId: aiUsageLog.userId,
 							name: userProfile.displayName,
-							costEur: costSum(),
+							costUsd: costSum(),
 							calls: callCount()
 						})
 						.from(aiUsageLog)
 						.leftJoin(userProfile, eq(aiUsageLog.userId, userProfile.userId))
 						.where(where)
 						.groupBy(aiUsageLog.userId, userProfile.displayName)
-						.orderBy(sql`SUM(${aiUsageLog.estimatedCostEur}) DESC`)
+						.orderBy(sql`SUM(${aiUsageLog.costUsd}) DESC`)
 						.limit(10)
 				)
 			]);

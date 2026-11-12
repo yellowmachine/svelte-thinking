@@ -40,7 +40,8 @@ export const CACHE_KEY = {
 	orgS3: (orgId: string) => `scholio:s3:org:${orgId}`,
 	photoPresign: (photoId: string) => `scholio:photo:presign:${photoId}`,
 	projectIndex: (projectId: string) => `scholio:project-index:${projectId}`,
-	modelCatalog: () => 'scholio:model-catalog'
+	// v2: model families changed (2026-11); the old key may hold up to 5 days of the old set.
+	modelCatalog: () => 'scholio:model-catalog:v2'
 } as const;
 
 // ---------------------------------------------------------------------------

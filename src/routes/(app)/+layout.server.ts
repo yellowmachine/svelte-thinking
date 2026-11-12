@@ -69,6 +69,7 @@ export const load: LayoutServerLoad = async (event) => {
 				tx
 					.select({
 						theme: userProfile.theme,
+						showAiSpendBanner: userProfile.showAiSpendBanner,
 						aiTaskConfig: userProfile.aiTaskConfig,
 						completedTutorials: userProfile.completedTutorials
 					})
@@ -126,6 +127,7 @@ export const load: LayoutServerLoad = async (event) => {
 		},
 		pendingInvitationCount: pending.length,
 		theme: (profile[0]?.theme ?? 'warm') as string,
+		showAiSpendBanner: profile[0]?.showAiSpendBanner ?? false,
 		orgs,
 		aiTaskConfig,
 		completedTutorials: (profile[0]?.completedTutorials ?? []) as string[],

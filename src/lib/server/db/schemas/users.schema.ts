@@ -37,6 +37,8 @@ export const userProfile = scholioSchema
 			aiTaskConfig: text('ai_task_config'), // JSON stored as text
 			// UI theme preference: 'warm' | 'github' | 'solarized' | 'nord' | 'catppuccin' | 'gruvbox'
 			theme: text('theme'),
+			// A line under the navbar with this user's AI spending (Settings → AI). Off by default.
+			showAiSpendBanner: boolean('show_ai_spend_banner').notNull().default(false),
 			completedTutorials: text('completed_tutorials')
 				.array()
 				.notNull()

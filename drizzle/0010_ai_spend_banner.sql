@@ -1,0 +1,1 @@
+ALTER TABLE "scholio"."user_profile" ADD COLUMN "show_ai_spend_banner" boolean DEFAULT false NOT NULL;

@@ -92,17 +92,12 @@ export const POST: RequestHandler = async (event) => {
 		{ apiKey: grammarApiKey, model: grammarModel }
 	] = await Promise.all([
 		resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId),
-		resolveTaskKey(withRLS, rawDb, user.id, 'spell', projectId, 'anthropic/claude-haiku-4.5').catch(
-			() => resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId)
+		resolveTaskKey(withRLS, rawDb, user.id, 'spell', projectId).catch(() =>
+			resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId)
 		),
-		resolveTaskKey(
-			withRLS,
-			rawDb,
-			user.id,
-			'grammar',
-			projectId,
-			'anthropic/claude-haiku-4.5'
-		).catch(() => resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId))
+		resolveTaskKey(withRLS, rawDb, user.id, 'grammar', projectId).catch(() =>
+			resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId)
+		)
 	]);
 	const effectiveModel = !resolvedOrgId && modelOverride ? modelOverride : resolvedModel;
 
@@ -134,7 +129,16 @@ export const POST: RequestHandler = async (event) => {
 					grammarModel,
 					withRLS,
 					projectId,
-					documentId
+					documentId,
+					onUsage: (model, task, usage) =>
+						logUsage(withRLS, {
+							orgId: resolvedOrgId,
+							projectId,
+							userId: user.id,
+							model,
+							task,
+							usage
+						})
 				},
 				send,
 				event.request.signal
@@ -162,8 +166,7 @@ export const POST: RequestHandler = async (event) => {
 				userId: user.id,
 				model: effectiveModel,
 				task: 'agent',
-				inputTokens: result.inputTokens,
-				outputTokens: result.outputTokens
+				usage: result.usage
 			});
 
 			send({

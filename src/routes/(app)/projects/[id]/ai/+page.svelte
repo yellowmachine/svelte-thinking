@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { notifyAiUsed } from '$lib/utils/aiUsedEvent';
 	import { onMount } from 'svelte';
 	import { marked } from 'marked';
 	import DOMPurify from 'dompurify';
@@ -159,6 +160,7 @@
 							);
 						}
 					} else if (evt.type === 'done') {
+						notifyAiUsed();
 						activeConvId = evt.conversationId as string;
 						const msgId = evt.messageId as string;
 						const docsUsed = (evt.docsUsed as { id: string; title: string }[]) ?? [];

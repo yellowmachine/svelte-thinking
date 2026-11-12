@@ -11,6 +11,7 @@ import { user } from '$lib/server/db/auth.schema';
 import { embedQuery, indexDocument } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
 import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
+import { logUsage } from '$lib/server/aiUsage';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
@@ -776,14 +777,14 @@ export const projectsRouter = router({
 				const _type = sampleDoc.docType;
 				void (async () => {
 					try {
-						const { apiKey, model } = await resolveTaskKey(
+						const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 							ctx.withRLS as never,
 							ctx.db as Db,
 							userId,
 							'summary',
 							projectId
 						);
-						await generateAndSaveDocumentSummary(
+						const usage = await generateAndSaveDocumentSummary(
 							db as Db,
 							versionId,
 							content,
@@ -792,6 +793,15 @@ export const projectsRouter = router({
 							apiKey,
 							model
 						);
+						if (usage)
+							await logUsage(ctx.withRLS, {
+								orgId: resolvedOrgId,
+								projectId,
+								userId,
+								model,
+								task: 'summary',
+								usage
+							});
 					} catch (err) {
 						console.error('[summary] generateDocumentSummary failed (sample):', err);
 					}
