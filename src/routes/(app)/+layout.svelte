@@ -8,6 +8,8 @@
 	import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onlineStore } from '$lib/stores/online.svelte';
+	import { focusMode } from '$lib/stores/focusMode.svelte';
+	import { page } from '$app/state';
 	import { trpc } from '$lib/utils/trpc';
 	import { resolve } from '$app/paths';
 	import { AI_TASKS } from '$lib/ai-config';
@@ -41,108 +43,116 @@
 </script>
 
 <div class="flex h-screen flex-col overflow-hidden bg-paper-ui dark:bg-dark-paper-ui">
-	<!-- Desktop nav -->
-	<div class="hidden sm:block">
-		<Navbar
-			user={data.user}
-			pendingInvitationCount={data.pendingInvitationCount}
-			orgs={data.orgs}
-		/>
-	</div>
-	<!-- Mobile header -->
-	<MobileHeader user={data.user} />
-
-	<!-- AI spending line, if the user turned it on in Settings → AI -->
-	{#if data.showAiSpendBanner}
-		<AiSpendBanner />
-	{/if}
-
-	<!-- Obsolete AI model banner (persistent until the user fixes the config) -->
-	{#if data.obsoleteAiTasks.length > 0}
-		<div
-			class="flex shrink-0 items-start gap-3 border-b border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/50 dark:bg-red-900/20"
-		>
-			<svg
-				class="mt-0.5 shrink-0 text-red-600 dark:text-red-400"
-				width="15"
-				height="15"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				<circle cx="12" cy="12" r="10" />
-				<line x1="12" y1="8" x2="12" y2="12" />
-				<line x1="12" y1="16" x2="12.01" y2="16" />
-			</svg>
-			<p class="flex-1 font-sans text-sm text-red-900 dark:text-red-200">
-				{#if data.obsoleteAiTasks.length === 1}
-					The AI model configured for "{taskLabel(data.obsoleteAiTasks[0].task)}" is no longer
-					available on OpenRouter.
-				{:else}
-					{data.obsoleteAiTasks.length} AI models you configured are no longer available on OpenRouter.
-				{/if}
-				<a href="{resolve('/settings')}?tab=ai" class="font-medium underline"
-					>Review in Settings →</a
-				>
-			</p>
+	<!-- Focus mode (editor) hides all the chrome above the content -->
+	{#if !focusMode.on}
+		<!-- Desktop nav -->
+		<div class="hidden sm:block">
+			<Navbar
+				user={data.user}
+				pendingInvitationCount={data.pendingInvitationCount}
+				orgs={data.orgs}
+			/>
 		</div>
-	{/if}
+		<!-- Mobile header -->
+		<MobileHeader user={data.user} />
 
-	<!-- Notification banners -->
-	{#each visibleNotifications as n (n.id)}
-		<div
-			class="flex shrink-0 items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700/50 dark:bg-amber-900/20"
-		>
-			<svg
-				class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
-				width="15"
-				height="15"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				<circle cx="12" cy="12" r="10" />
-				<line x1="12" y1="8" x2="12" y2="12" />
-				<line x1="12" y1="16" x2="12.01" y2="16" />
-			</svg>
-			<p class="flex-1 font-sans text-sm text-amber-900 dark:text-amber-200">{n.message}</p>
-			<button
-				onclick={() => dismiss(n.id)}
-				aria-label="Dismiss notification"
-				class="shrink-0 rounded p-0.5 text-amber-600 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-800/30"
+		<!-- AI spending line, if the user turned it on in Settings → AI -->
+		{#if data.showAiSpendBanner}
+			<AiSpendBanner />
+		{/if}
+
+		<!-- Obsolete AI model banner (persistent until the user fixes the config) -->
+		{#if data.obsoleteAiTasks.length > 0}
+			<div
+				class="flex shrink-0 items-start gap-3 border-b border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/50 dark:bg-red-900/20"
 			>
 				<svg
-					width="14"
-					height="14"
+					class="mt-0.5 shrink-0 text-red-600 dark:text-red-400"
+					width="15"
+					height="15"
 					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
-					stroke-width="2.5"
+					stroke-width="2"
 					stroke-linecap="round"
 					stroke-linejoin="round"
 					aria-hidden="true"
 				>
-					<line x1="18" y1="6" x2="6" y2="18" />
-					<line x1="6" y1="6" x2="18" y2="18" />
+					<circle cx="12" cy="12" r="10" />
+					<line x1="12" y1="8" x2="12" y2="12" />
+					<line x1="12" y1="16" x2="12.01" y2="16" />
 				</svg>
-			</button>
-		</div>
-	{/each}
+				<p class="flex-1 font-sans text-sm text-red-900 dark:text-red-200">
+					{#if data.obsoleteAiTasks.length === 1}
+						The AI model configured for "{taskLabel(data.obsoleteAiTasks[0].task)}" is no longer
+						available on OpenRouter.
+					{:else}
+						{data.obsoleteAiTasks.length} AI models you configured are no longer available on OpenRouter.
+					{/if}
+					<a href="{resolve('/settings')}?tab=ai" class="font-medium underline"
+						>Review in Settings →</a
+					>
+				</p>
+			</div>
+		{/if}
+
+		<!-- Notification banners -->
+		{#each visibleNotifications as n (n.id)}
+			<div
+				class="flex shrink-0 items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700/50 dark:bg-amber-900/20"
+			>
+				<svg
+					class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+					width="15"
+					height="15"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<circle cx="12" cy="12" r="10" />
+					<line x1="12" y1="8" x2="12" y2="12" />
+					<line x1="12" y1="16" x2="12.01" y2="16" />
+				</svg>
+				<p class="flex-1 font-sans text-sm text-amber-900 dark:text-amber-200">{n.message}</p>
+				<button
+					onclick={() => dismiss(n.id)}
+					aria-label="Dismiss notification"
+					class="shrink-0 rounded p-0.5 text-amber-600 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-800/30"
+				>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<line x1="18" y1="6" x2="6" y2="18" />
+						<line x1="6" y1="6" x2="18" y2="18" />
+					</svg>
+				</button>
+			</div>
+		{/each}
+	{/if}
 
 	<main id="main-content" class="flex-1 overflow-y-auto pb-16 sm:pb-0">
 		{@render children()}
 	</main>
-	<FeedbackButton />
+	<!-- Not over the editor: it would cover its side panels -->
+	{#if !focusMode.on && page.route.id !== '/(app)/projects/[id]/documents/[docId]'}
+		<FeedbackButton />
+	{/if}
 	<footer
-		class="hidden border-t border-paper-border px-6 py-3 sm:block dark:border-dark-paper-border"
+		class="hidden border-t border-paper-border px-6 py-3 dark:border-dark-paper-border {focusMode.on
+			? ''
+			: 'sm:block'}"
 	>
 		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 			Scholio Beta · Developed with
