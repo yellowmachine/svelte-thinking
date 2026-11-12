@@ -217,7 +217,7 @@
 				<button
 					onclick={() => copyCiteKey(ref)}
 					translate="no"
-					title="Copiar como [[@{ref.citeKey}]]"
+					title="Copy as [[@{ref.citeKey}]]"
 					class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-2 py-0.5 font-mono text-xs font-medium text-accent-ink transition-colors hover:bg-accent/10"
 				>
 					{copiedId === ref.id ? '✓' : ref.citeKey}

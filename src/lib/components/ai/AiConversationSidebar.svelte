@@ -101,7 +101,7 @@
 	<div class="flex-1 overflow-y-auto py-2">
 		{#if conversations.length === 0}
 			<p class="px-4 py-6 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Sin conversaciones
+				No conversations yet
 			</p>
 		{:else}
 			{#each conversations as conv (conv.id)}

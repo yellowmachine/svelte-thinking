@@ -428,7 +428,7 @@
 					disabled={deletingAccount}
 					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 				>
-					Cancelar
+					Cancel
 				</button>
 				<button
 					type="button"

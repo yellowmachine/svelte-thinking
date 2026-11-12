@@ -119,7 +119,7 @@
 							<polyline points="9 10 4 15 9 20" />
 							<path d="M20 4v7a4 4 0 01-4 4H4" />
 						</svg>
-						Responder
+						Reply
 					</button>
 				{/if}
 
@@ -142,7 +142,7 @@
 							<path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
 							<polyline points="22 4 12 14.01 9 11.01" />
 						</svg>
-						Resolver
+						Resolve
 					</button>
 				{/if}
 			</div>

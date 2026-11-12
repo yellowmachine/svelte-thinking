@@ -275,7 +275,7 @@
 					disabled={uploading}
 					class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
 				>
-					Cancelar
+					Cancel
 				</button>
 				<button
 					type="button"
@@ -329,7 +329,7 @@
 					>
 						<div class="flex justify-end gap-1.5">
 							<button
-								title="Copiar markdown"
+								title="Copy as Markdown"
 								onclick={() => copyMarkdown(photo)}
 								class="rounded-md bg-white/90 p-1.5 text-ink transition-colors hover:bg-white"
 							>
@@ -352,7 +352,7 @@
 							</button>
 							{#if photo.uploadedBy === data.currentUserId}
 								<button
-									title="Eliminar"
+									title="Delete"
 									onclick={() => deletePhoto(photo.id)}
 									class="rounded-md bg-white/90 p-1.5 text-red-600 transition-colors hover:bg-white"
 								>
@@ -405,14 +405,14 @@
 							onclick={() => copyMarkdown(lightboxPhoto!)}
 							class="rounded-lg bg-white/10 px-3 py-1.5 font-sans text-xs text-white transition-colors hover:bg-white/20"
 						>
-							Copiar como ![img](url)
+							Copy as ![img](url)
 						</button>
 						{#if lightboxPhoto.uploadedBy === data.currentUserId}
 							<button
 								onclick={() => deletePhoto(lightboxPhoto!.id)}
 								class="rounded-lg bg-red-500/20 px-3 py-1.5 font-sans text-xs text-red-300 transition-colors hover:bg-red-500/30"
 							>
-								Eliminar
+								Delete
 							</button>
 						{/if}
 					</div>
@@ -421,7 +421,7 @@
 		</div>
 
 		<button
-			aria-label="Cerrar"
+			aria-label="Close"
 			onclick={() => (lightboxPhoto = null)}
 			class="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
 		>

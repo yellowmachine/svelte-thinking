@@ -54,7 +54,7 @@
 			</h2>
 			<button
 				onclick={onclose}
-				aria-label="Cerrar"
+				aria-label="Close"
 				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 			>
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -80,12 +80,12 @@
 		<div class="max-h-72 overflow-y-auto px-2 py-2">
 			{#if !refsLoaded}
 				<p class="px-3 py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					Cargando…
+					Loading…
 				</p>
 			{:else if refs.length === 0}
 				<div class="px-3 py-6 text-center">
 					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						Sin referencias en este proyecto.
+						No references in this project yet.
 					</p>
 					<a
 						href={resolve(`/projects/${projectId}/bib`)}
@@ -96,7 +96,7 @@
 				</div>
 			{:else if filteredRefs.length === 0}
 				<p class="px-3 py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					Sin resultados.
+					No results.
 				</p>
 			{:else}
 				{#each filteredRefs as ref (ref.citeKey)}

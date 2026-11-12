@@ -118,7 +118,7 @@
 
 	{#if data.posts.length === 0}
 		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-			Todavía no hay publicaciones en los blogs de esta lista.
+			No posts yet from the blogs in this list.
 		</p>
 	{:else}
 		<ul class="flex flex-col gap-6">
@@ -156,8 +156,9 @@
 >
 	<div class="mx-auto max-w-2xl px-6 text-center">
 		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Publicado con <a href={resolve('/')} class="underline hover:text-ink dark:hover:text-dark-ink"
-				>Scholio</a
+			Published with <a
+				href={resolve('/')}
+				class="underline hover:text-ink dark:hover:text-dark-ink">Scholio</a
 			>.
 		</p>
 	</div>

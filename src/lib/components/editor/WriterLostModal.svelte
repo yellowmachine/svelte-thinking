@@ -22,11 +22,11 @@
 	>
 		<div>
 			<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Cambios offline no sincronizados
+				Offline changes not synced
 			</h2>
 			<p class="mt-1 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-				Mientras estabas sin conexión, otro colaborador tomó el control de edición. Tus cambios no
-				se han sincronizado. Cópialos antes de cerrar.
+				While you were offline, another collaborator took over editing. Your changes were not
+				synced. Copy them before closing.
 			</p>
 		</div>
 		<textarea
@@ -45,7 +45,7 @@
 				}}
 				class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 			>
-				Descartar
+				Discard
 			</button>
 		</div>
 	</div>

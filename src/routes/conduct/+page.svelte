@@ -25,7 +25,7 @@
 		>
 			<path d="M19 12H5M12 5l-7 7 7 7" />
 		</svg>
-		Volver
+		Back
 	</a>
 
 	<h1 class="font-serif text-4xl font-semibold text-ink dark:text-dark-ink">Code of conduct</h1>

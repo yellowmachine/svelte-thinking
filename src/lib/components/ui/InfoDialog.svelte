@@ -49,7 +49,7 @@
 						onclick={oncancel}
 						class="flex-1 rounded-lg border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
 					>
-						Cerrar
+						Close
 					</button>
 					{#if actionLabel && actionHref}
 						<!-- eslint-disable svelte/no-navigation-without-resolve -->

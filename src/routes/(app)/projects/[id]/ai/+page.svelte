@@ -368,7 +368,7 @@
 								Research assistant
 							</p>
 							<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								Hazme preguntas sobre el contenido de tu proyecto.
+								Ask me about the content of your project.
 							</p>
 							<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
 								E.g. "What references to Mises are in the draft?"
@@ -376,15 +376,15 @@
 							<div class="mt-3 flex flex-wrap justify-center gap-1.5">
 								<span
 									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
-									>Busca en tus documentos</span
+									>Searches your documents</span
 								>
 								<span
 									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
-									>Crea documentos</span
+									>Creates documents</span
 								>
 								<span
 									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
-									>Abre issues</span
+									>Opens issues</span
 								>
 							</div>
 						</div>
@@ -551,7 +551,7 @@
 						<button
 							type="button"
 							onclick={() => (sendError = null)}
-							aria-label="Cerrar"
+							aria-label="Close"
 							class="shrink-0 text-red-400 hover:text-red-600 dark:text-red-500"
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -599,7 +599,7 @@
 								type="button"
 								onclick={() => send()}
 								disabled={!input.trim()}
-								aria-label="Enviar"
+								aria-label="Send"
 								class="shrink-0 rounded-lg bg-accent p-2 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 							>
 								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -616,7 +616,7 @@
 					</div>
 					<div class="mt-2 flex items-center justify-between">
 						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							El asistente tiene acceso al contenido de todos los documentos del proyecto.
+							The assistant can read every document in this project.
 						</p>
 						<!-- Model picker trigger -->
 						<div class="relative">

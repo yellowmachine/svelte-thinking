@@ -23,7 +23,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		.from(userProfile)
 		.where(eq(userProfile.handle, handle))
 		.limit(1);
-	if (!curatorRows[0]) error(404, 'Este blog no existe');
+	if (!curatorRows[0]) error(404, 'This blog does not exist');
 	const curator = curatorRows[0];
 
 	const aggRows = await db
@@ -31,7 +31,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		.from(blogAggregator)
 		.where(and(eq(blogAggregator.userId, curator.userId), eq(blogAggregator.slug, params.slug)))
 		.limit(1);
-	if (!aggRows[0]) error(404, 'Esta lista no existe');
+	if (!aggRows[0]) error(404, 'This list does not exist');
 	const aggregator = aggRows[0];
 
 	const items = await db

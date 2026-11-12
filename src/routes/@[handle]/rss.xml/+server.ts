@@ -27,7 +27,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		.from(userProfile)
 		.where(eq(userProfile.handle, handle))
 		.limit(1);
-	if (!profileRows[0]) error(404, 'Este blog no existe');
+	if (!profileRows[0]) error(404, 'This blog does not exist');
 	const author = profileRows[0];
 
 	const posts = await db

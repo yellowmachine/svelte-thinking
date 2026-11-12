@@ -136,7 +136,7 @@
 			disabled={loading || !query.trim()}
 			class="rounded-lg bg-accent px-5 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 		>
-			{loading ? 'Searching…' : 'Buscar'}
+			{loading ? 'Searching…' : 'Search'}
 		</button>
 		{#if tab === 'projects'}
 			<button

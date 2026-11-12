@@ -54,14 +54,12 @@
 			</span>
 		{:else}
 			<span class="font-medium">
-				Hay un borrador más reciente{committerName
-					? ` guardado por ${committerName}`
-					: ' guardado desde otro dispositivo'}.
+				A newer draft was saved{committerName ? ` by ${committerName}` : ' from another device'}.
 			</span>
 		{/if}
 		{#if hasDirtyContent}
 			<span class="ml-1 text-amber-700 dark:text-amber-300">
-				Tienes cambios sin guardar que se perderán al actualizar.
+				You have unsaved changes that will be lost if you update.
 			</span>
 		{/if}
 	</p>
@@ -73,7 +71,7 @@
 				onclick={onresolve}
 				class="rounded-md bg-amber-600 px-3 py-1 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90 dark:bg-amber-500"
 			>
-				Resolver conflicto
+				Resolve conflict
 			</button>
 		{:else}
 			<button
@@ -89,7 +87,7 @@
 			onclick={ondismiss}
 			class="rounded-md px-3 py-1 font-sans text-xs text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/40"
 		>
-			Descartar
+			Dismiss
 		</button>
 	</div>
 </div>

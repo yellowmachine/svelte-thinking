@@ -93,7 +93,7 @@
 						onclick={() => navigate(`/projects/${data.invitation.projectId}`)}
 						class="mt-6 inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
 					>
-						Ir al proyecto
+						Go to the project
 					</button>
 				</div>
 			{:else if isExpired || data.invitation.status === 'cancelled'}

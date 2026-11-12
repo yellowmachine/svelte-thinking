@@ -49,7 +49,7 @@
 		<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Listas</h2>
 		{#if data.lists.length === 0}
 			<p class="mt-3 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-				Todavía no hay ninguna lista pública.
+				No public lists yet.
 			</p>
 		{:else}
 			<ul class="mt-4 flex flex-col gap-4">
@@ -87,7 +87,7 @@
 		<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Blogs</h2>
 		{#if data.blogs.length === 0}
 			<p class="mt-3 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-				Todavía no hay ningún blog publicado.
+				No blogs published yet.
 			</p>
 		{:else}
 			<ul class="mt-4 flex flex-col gap-4">
@@ -124,8 +124,9 @@
 >
 	<div class="mx-auto max-w-2xl px-6 text-center">
 		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Publicado con <a href={resolve('/')} class="underline hover:text-ink dark:hover:text-dark-ink"
-				>Scholio</a
+			Published with <a
+				href={resolve('/')}
+				class="underline hover:text-ink dark:hover:text-dark-ink">Scholio</a
 			>.
 		</p>
 	</div>
