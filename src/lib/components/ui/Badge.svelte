@@ -19,8 +19,8 @@
 		reviewer: 'bg-blue-100 text-blue-700',
 		commenter: 'bg-paper-border text-ink-muted',
 		draft: 'bg-paper-border text-ink-muted',
-		active: 'bg-green-100 text-green-700',
-		review: 'bg-amber-100 text-amber-700',
+		active: 'bg-success-bg text-success',
+		review: 'bg-warning-bg text-warning',
 		published: 'bg-blue-100 text-blue-700',
 		archived: 'bg-paper-border text-ink-faint'
 	};

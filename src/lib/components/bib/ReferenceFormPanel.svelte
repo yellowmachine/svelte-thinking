@@ -275,7 +275,7 @@
 								{#if form.authors.length > 1}
 									<button
 										onclick={() => removeAuthor(i)}
-										class="shrink-0 rounded-md px-1.5 text-ink-faint hover:text-red-500">×</button
+										class="shrink-0 rounded-md px-1.5 text-ink-faint hover:text-danger">×</button
 									>
 								{/if}
 							</div>
@@ -985,9 +985,7 @@
 			</div>
 
 			{#if saveError}
-				<p
-					class="rounded-lg bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:bg-red-950/30 dark:text-red-400"
-				>
+				<p class="rounded-lg bg-danger-bg px-3 py-2 font-sans text-xs text-danger">
 					{saveError}
 				</p>
 			{/if}

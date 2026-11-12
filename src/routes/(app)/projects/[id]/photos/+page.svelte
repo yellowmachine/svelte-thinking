@@ -244,9 +244,7 @@
 			</div>
 
 			{#if uploadError}
-				<p
-					class="mt-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
-				>
+				<p class="mt-3 rounded-lg bg-danger-bg px-3 py-2 font-sans text-sm text-danger">
 					{uploadError}
 				</p>
 			{/if}
@@ -346,7 +344,7 @@
 								<button
 									title="Delete"
 									onclick={() => deletePhoto(photo.id)}
-									class="rounded-md bg-white/90 p-1.5 text-red-600 transition-colors hover:bg-white"
+									class="rounded-md bg-white/90 p-1.5 text-danger transition-colors hover:bg-white"
 								>
 									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 										<path

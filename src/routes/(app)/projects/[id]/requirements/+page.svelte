@@ -146,7 +146,7 @@
 				<div class="mb-1.5 flex items-center justify-between font-sans text-xs text-ink-muted">
 					<span>{fulfilled} of {total} completed</span>
 					{#if allRequiredDone}
-						<span class="font-medium text-green-600 dark:text-green-400">All required done</span>
+						<span class="font-medium text-success">All required done</span>
 					{:else}
 						<span>{requiredFulfilled} of {requiredTotal} required</span>
 					{/if}
@@ -181,7 +181,7 @@
 			></textarea>
 
 			{#if generateError}
-				<p class="mt-2 font-sans text-sm text-red-500">{generateError}</p>
+				<p class="mt-2 font-sans text-sm text-danger">{generateError}</p>
 			{/if}
 
 			<button
@@ -231,15 +231,11 @@
 
 		<!-- Generate PDF CTA -->
 		{#if allRequiredDone}
-			<div
-				class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/20"
-			>
+			<div class="mt-6 rounded-xl border border-success-border bg-success-bg p-4">
 				<div class="flex items-center justify-between gap-4">
 					<div>
-						<p class="font-sans text-sm font-semibold text-green-800 dark:text-green-300">
-							Project complete
-						</p>
-						<p class="font-sans text-xs text-green-700 dark:text-green-400">
+						<p class="font-sans text-sm font-semibold text-success">Project complete</p>
+						<p class="font-sans text-xs text-success">
 							{#if exportingPdf}
 								Compiling with Typst, this may take a few seconds…
 							{:else if exportError}

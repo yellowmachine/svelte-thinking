@@ -122,7 +122,7 @@
 						type="button"
 						aria-label="Delete conversation"
 						onclick={(e) => ondeleteconversation(conv.id, e)}
-						class="mt-2.5 mr-2 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
+						class="mt-2.5 mr-2 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
@@ -187,7 +187,7 @@
 					></textarea>
 					<div class="mt-2 flex items-center justify-end gap-2">
 						{#if promptSaved}
-							<span class="font-sans text-xs text-green-600 dark:text-green-400">Saved</span>
+							<span class="font-sans text-xs text-success">Saved</span>
 						{/if}
 						<button
 							type="button"

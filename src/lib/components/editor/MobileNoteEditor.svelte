@@ -93,9 +93,9 @@
 				{#if saveLabel()}
 					<span
 						class="font-sans text-xs {saveStatus === 'error'
-							? 'text-red-500'
+							? 'text-danger'
 							: saveStatus === 'saved'
-								? 'text-green-600'
+								? 'text-success'
 								: 'text-ink-faint'}"
 					>
 						{saveLabel()}

@@ -75,18 +75,16 @@
 				autocomplete="new-password"
 				minlength={8}
 				class="rounded-md border px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none {passwordMismatch
-					? 'border-red-400 bg-red-50 focus:border-red-500 dark:border-red-700 dark:bg-red-950'
+					? 'border-red-400 bg-danger-bg focus:border-red-500 dark:border-red-700 dark:bg-red-950'
 					: 'border-paper-border bg-paper-ui focus:border-accent'}"
 			/>
 			{#if passwordMismatch}
-				<p class="font-sans text-xs text-red-500 dark:text-red-400">Passwords do not match.</p>
+				<p class="font-sans text-xs text-danger">Passwords do not match.</p>
 			{/if}
 		</div>
 
 		{#if form?.message}
-			<p
-				class="rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-			>
+			<p class="rounded-lg bg-danger-bg px-4 py-3 font-sans text-sm text-danger">
 				{form.message}
 			</p>
 		{/if}

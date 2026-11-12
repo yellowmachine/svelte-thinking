@@ -113,7 +113,7 @@
 			{/if}
 		</button>
 		{#if errorMsg}
-			<p class="mt-2 font-sans text-xs text-red-600 dark:text-red-400">{errorMsg}</p>
+			<p class="mt-2 font-sans text-xs text-danger">{errorMsg}</p>
 		{/if}
 	</section>
 </div>

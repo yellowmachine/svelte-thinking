@@ -122,7 +122,7 @@
 					{#if previewLoading}
 						<p class="font-sans text-sm text-ink-faint">Loading…</p>
 					{:else if previewError}
-						<p class="font-sans text-sm text-red-600 dark:text-red-400">{previewError}</p>
+						<p class="font-sans text-sm text-danger">{previewError}</p>
 					{:else}
 						<div class="w-full [&_svg]:h-auto [&_svg]:max-w-full">
 							<!-- eslint-disable-next-line svelte/no-at-html-tags -->

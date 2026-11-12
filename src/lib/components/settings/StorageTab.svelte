@@ -115,14 +115,14 @@
 <div class="flex flex-col gap-6">
 	{#if s3Error}
 		<div
-			class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"
+			class="rounded-lg border border-danger-border bg-danger-bg px-4 py-3 font-sans text-sm text-danger"
 		>
 			{s3Error}
 		</div>
 	{/if}
 	{#if s3Success}
 		<div
-			class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+			class="rounded-lg border border-success-border bg-success-bg px-4 py-3 font-sans text-sm text-success"
 		>
 			{s3Success}
 		</div>
@@ -177,11 +177,7 @@
 						</p>
 					</div>
 					<div class="flex items-center gap-3">
-						<span
-							class="font-sans text-xs {s3Config.verified
-								? 'text-green-600 dark:text-green-400'
-								: 'text-amber-600 dark:text-amber-400'}"
-						>
+						<span class="font-sans text-xs {s3Config.verified ? 'text-success' : 'text-warning'}">
 							{s3Config.verified ? '✓ OK' : '⚠ Not verified'}
 						</span>
 						<button
@@ -196,7 +192,7 @@
 							type="button"
 							onclick={handleRemoveS3}
 							disabled={s3Removing}
-							class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+							class="font-sans text-xs text-danger transition-colors hover:text-danger disabled:opacity-50"
 						>
 							Delete
 						</button>

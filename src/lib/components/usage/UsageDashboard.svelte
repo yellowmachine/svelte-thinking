@@ -238,7 +238,7 @@
 
 	{#if loadError}
 		<div
-			class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-400"
+			class="mb-6 rounded-xl border border-danger-border bg-danger-bg px-4 py-3 font-sans text-sm text-danger"
 		>
 			{loadError}
 		</div>

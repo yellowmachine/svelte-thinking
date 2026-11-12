@@ -304,7 +304,7 @@
 				onkeydown={(e) => e.key === 'Enter' && createOrg()}
 			/>
 			{#if createError}
-				<p class="mt-1 font-sans text-xs text-red-500">{createError}</p>
+				<p class="mt-1 font-sans text-xs text-danger">{createError}</p>
 			{/if}
 			<button
 				type="button"
@@ -365,14 +365,14 @@
 										<button
 											type="button"
 											onclick={() => toggleKey(key.id, !key.enabled)}
-											class="font-sans text-xs {key.enabled ? 'text-green-600' : 'text-ink-faint'}"
+											class="font-sans text-xs {key.enabled ? 'text-success' : 'text-ink-faint'}"
 										>
 											{key.enabled ? 'Active' : 'Disabled'}
 										</button>
 										<button
 											type="button"
 											onclick={() => deleteKey(key.id)}
-											class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
+											class="inline-flex items-center gap-1 font-sans text-xs text-danger hover:text-danger"
 										>
 											<svg
 												width="11"
@@ -433,7 +433,7 @@
 							</button>
 						</div>
 						{#if keyError}
-							<p class="mt-1 font-sans text-xs text-red-500">{keyError}</p>
+							<p class="mt-1 font-sans text-xs text-danger">{keyError}</p>
 						{/if}
 					</section>
 
@@ -507,8 +507,8 @@
 								<div class="flex items-center gap-3">
 									<span
 										class="font-sans text-xs {orgS3Config.verified
-											? 'text-green-600 dark:text-green-400'
-											: 'text-amber-600 dark:text-amber-400'}"
+											? 'text-success'
+											: 'text-warning'}"
 									>
 										{orgS3Config.verified ? '✓ OK' : '⚠ Unverified'}
 									</span>
@@ -538,7 +538,7 @@
 									<button
 										type="button"
 										onclick={removeOrgS3}
-										class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
+										class="inline-flex items-center gap-1 font-sans text-xs text-danger hover:text-danger"
 									>
 										<svg
 											width="11"
@@ -562,16 +562,12 @@
 						{/if}
 
 						{#if orgS3Error}
-							<p
-								class="mb-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-							>
+							<p class="mb-3 rounded-lg bg-danger-bg px-3 py-2 font-sans text-sm text-danger">
 								{orgS3Error}
 							</p>
 						{/if}
 						{#if orgS3Success}
-							<p
-								class="mb-3 rounded-lg bg-green-50 px-3 py-2 font-sans text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400"
-							>
+							<p class="mb-3 rounded-lg bg-success-bg px-3 py-2 font-sans text-sm text-success">
 								{orgS3Success}
 							</p>
 						{/if}
@@ -699,7 +695,7 @@
 										<button
 											type="button"
 											onclick={() => removeMember(member.id)}
-											class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
+											class="inline-flex items-center gap-1 font-sans text-xs text-danger hover:text-danger"
 										>
 											<svg
 												width="11"
@@ -770,7 +766,7 @@
 							</button>
 						</div>
 						{#if inviteError}
-							<p class="mt-1 font-sans text-xs text-red-500">{inviteError}</p>
+							<p class="mt-1 font-sans text-xs text-danger">{inviteError}</p>
 						{/if}
 
 						<!-- Pending invitations -->
@@ -782,7 +778,7 @@
 										<button
 											type="button"
 											onclick={() => cancelInvite(inv.id)}
-											class="inline-flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-red-500"
+											class="inline-flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-danger"
 										>
 											<svg
 												width="11"

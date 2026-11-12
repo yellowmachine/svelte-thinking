@@ -94,8 +94,7 @@
 			<h1 class="font-serif text-base font-semibold text-ink">
 				{selected.title}
 			</h1>
-			<span
-				class="ml-auto rounded bg-amber-100 px-2 py-0.5 font-sans text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+			<span class="ml-auto rounded bg-warning-bg px-2 py-0.5 font-sans text-xs text-warning"
 				>Offline — read only</span
 			>
 		</div>

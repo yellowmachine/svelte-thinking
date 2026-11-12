@@ -100,7 +100,7 @@
 							<button
 								onclick={() => decline(inv.id)}
 								disabled={declining === inv.id || accepting === inv.token}
-								class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-900/10 dark:hover:text-red-400"
+								class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:border-danger-border hover:bg-danger-bg hover:text-danger disabled:opacity-50"
 							>
 								{declining === inv.id ? 'Declining…' : 'Decline'}
 							</button>
@@ -118,7 +118,7 @@
 			</ul>
 
 			{#if error}
-				<p class="mt-3 font-sans text-sm text-red-600 dark:text-red-400">{error}</p>
+				<p class="mt-3 font-sans text-sm text-danger">{error}</p>
 			{/if}
 		{/if}
 	</section>

@@ -136,7 +136,7 @@
 
 		{#if reviewError}
 			<div
-				class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400"
+				class="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 font-sans text-xs text-danger"
 			>
 				{#if reviewError === NO_KEY_MSG}
 					No AI key configured. <a
@@ -159,14 +159,12 @@
 						{#each reviewResult.requirements as req (req.name)}
 							<div
 								class="rounded-lg border {req.covered
-									? 'border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-900/10'
-									: 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/10'} px-3 py-2"
+									? 'border-success-border bg-success-bg dark:bg-green-900/10'
+									: 'border-warning-border bg-warning-bg '} px-3 py-2"
 							>
 								<div class="flex items-start gap-2">
 									<span
-										class="mt-0.5 shrink-0 text-sm {req.covered
-											? 'text-green-600 dark:text-green-400'
-											: 'text-amber-600 dark:text-amber-400'}"
+										class="mt-0.5 shrink-0 text-sm {req.covered ? 'text-success' : 'text-warning'}"
 									>
 										{req.covered ? '✓' : '✗'}
 									</span>
@@ -244,7 +242,7 @@
 				{:else if loadingQuestions}
 					<p class="py-2 font-sans text-xs text-ink-faint">Generating…</p>
 				{:else if questionsError}
-					<p class="font-sans text-xs text-red-500">{questionsError}</p>
+					<p class="font-sans text-xs text-danger">{questionsError}</p>
 				{:else if reviewQuestions}
 					<ol class="flex flex-col gap-2">
 						{#each reviewQuestions as q, i (i)}

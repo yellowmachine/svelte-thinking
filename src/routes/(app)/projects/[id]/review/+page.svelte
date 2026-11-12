@@ -105,7 +105,7 @@
 							{doc.documentTitle}
 						</a>
 						<span
-							class="rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+							class="rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning"
 						>
 							{doc.threads.length}
 						</span>
@@ -122,7 +122,7 @@
 									<!-- Selection comment: paragraph with highlight -->
 									<p
 										translate="no"
-										class="mb-2 rounded-md border-l-2 border-amber-300 bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink dark:border-amber-600"
+										class="mb-2 rounded-md border-l-2 border-warning-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink"
 									>
 										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 										{@html highlightAnchor(thread.anchorContext, thread.anchorText)}
@@ -139,7 +139,7 @@
 									<!-- Fallback: plain quoted selection (no context stored) -->
 									<p
 										translate="no"
-										class="mb-2 rounded-md border-l-2 border-amber-300 bg-paper-ui px-2.5 py-1.5 font-sans text-xs text-ink-muted italic dark:border-amber-600"
+										class="mb-2 rounded-md border-l-2 border-warning-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs text-ink-muted italic"
 									>
 										"{thread.anchorText}"
 									</p>
@@ -195,7 +195,7 @@
 												data-tutorial="project-review-resolve"
 												type="button"
 												onclick={() => resolveThread(thread.id)}
-												class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+												class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-success-border hover:bg-success-bg hover:text-success"
 												title="Mark as resolved"
 											>
 												Resolve

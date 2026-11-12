@@ -602,7 +602,7 @@
 				class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			></textarea>
 			{#if subnoteError}
-				<p class="mt-1 font-sans text-xs text-red-500">{subnoteError}</p>
+				<p class="mt-1 font-sans text-xs text-danger">{subnoteError}</p>
 			{/if}
 			<div class="mt-2 flex gap-2">
 				<button

@@ -140,7 +140,7 @@
 		{:else if loadingEnrich}
 			<p class="py-6 text-center font-sans text-sm text-ink-muted">Analysing…</p>
 		{:else if enrichError}
-			<p class="font-sans text-xs text-red-500">{enrichError}</p>
+			<p class="font-sans text-xs text-danger">{enrichError}</p>
 		{:else if enrichResult}
 			{#if enrichResult.persons.length === 0 && enrichResult.refs.length === 0}
 				<p class="font-sans text-xs text-ink-faint">

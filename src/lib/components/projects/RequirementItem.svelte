@@ -43,7 +43,7 @@
 
 <li
 	class="group rounded-xl border transition-colors {isFulfilled
-		? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20'
+		? 'border-success-border bg-success-bg dark:bg-green-950/20'
 		: 'border-paper-border bg-paper'}"
 >
 	<div class="flex items-start gap-3 p-4">
@@ -90,7 +90,7 @@
 				<div class="mt-2 flex flex-wrap items-center gap-2">
 					<a
 						href={resolve(`/projects/${projectId}/documents/${requirement.fulfilledDocumentId}`)}
-						class="flex items-center gap-1.5 rounded-md border border-green-200 bg-white px-2.5 py-1 font-sans text-xs font-medium text-green-700 transition-colors hover:bg-green-50 dark:border-green-900/40 dark:bg-dark-paper dark:text-green-400 dark:hover:bg-green-950/30"
+						class="flex items-center gap-1.5 rounded-md border border-success-border bg-white px-2.5 py-1 font-sans text-xs font-medium text-success transition-colors hover:bg-success-bg dark:bg-dark-paper"
 					>
 						<svg
 							width="11"

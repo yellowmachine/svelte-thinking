@@ -39,8 +39,8 @@
 
 	const statusStyle: Record<ProjectStatus, string> = {
 		draft: 'bg-paper-border text-ink-muted',
-		active: 'bg-green-100 text-green-700',
-		review: 'bg-amber-100 text-amber-700',
+		active: 'bg-success-bg text-success',
+		review: 'bg-warning-bg text-warning',
 		published: 'bg-blue-100 text-blue-700',
 		archived: 'bg-paper-border text-ink-faint'
 	};
@@ -111,7 +111,7 @@
 			<div class="flex shrink-0 items-center gap-1.5">
 				{#if daysLeft !== null}
 					<span
-						class="rounded-full bg-red-100 px-2.5 py-0.5 font-sans text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400"
+						class="rounded-full bg-danger-bg px-2.5 py-0.5 font-sans text-xs font-medium text-danger"
 					>
 						Deleting in {daysLeft}d
 					</span>
@@ -164,7 +164,7 @@
 							<a
 								href={reviewHref}
 								onclick={(e) => e.stopPropagation()}
-								class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+								class="flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 								title="View open comments"
 							>
 								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -181,7 +181,7 @@
 							<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						{:else}
 							<span
-								class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+								class="flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning"
 							>
 								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 									<path
@@ -260,7 +260,7 @@
 							menuOpen = false;
 							ondelete?.();
 						}}
-						class="flex w-full items-center gap-2 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
+						class="flex w-full items-center gap-2 px-3 py-2 font-sans text-xs text-danger transition-colors hover:bg-danger-bg"
 					>
 						<svg
 							width="12"

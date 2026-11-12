@@ -200,7 +200,7 @@
 			</button>
 		</div>
 		{#if createError}
-			<p class="mb-4 font-sans text-sm text-red-600 dark:text-red-400">{createError}</p>
+			<p class="mb-4 font-sans text-sm text-danger">{createError}</p>
 		{/if}
 
 		{#if aggregators.length === 0}
@@ -283,7 +283,7 @@
 										type="button"
 										onclick={() => (aggregatorToDelete = agg)}
 										disabled={deletingId === agg.id}
-										class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+										class="font-sans text-xs text-danger transition-colors hover:text-danger disabled:opacity-50"
 									>
 										Delete
 									</button>
@@ -308,7 +308,7 @@
 									</button>
 								</div>
 								{#if addBlogError}
-									<p class="mt-2 font-sans text-xs text-red-600 dark:text-red-400">
+									<p class="mt-2 font-sans text-xs text-danger">
 										{addBlogError}
 									</p>
 								{/if}
@@ -334,7 +334,7 @@
 												<button
 													type="button"
 													onclick={() => removeItem(agg, item)}
-													class="font-sans text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+													class="font-sans text-xs text-danger hover:text-danger"
 												>
 													Remove
 												</button>

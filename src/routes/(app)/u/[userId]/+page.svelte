@@ -14,7 +14,7 @@
 	const roleColor: Record<Role, string> = {
 		author: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
 		coauthor: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-		reviewer: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+		reviewer: 'bg-warning-bg text-warning',
 		commenter: 'bg-slate-100 text-slate-600 dark:bg-slate-700/40 dark:text-slate-300'
 	};
 
@@ -141,7 +141,7 @@
 					{#if data.profile.orcidVerified}
 						<span
 							title="Identity verified with ORCID"
-							class="inline-flex items-center gap-0.5 rounded-full bg-green-100 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400"
+							class="inline-flex items-center gap-0.5 rounded-full bg-success-bg px-1.5 py-0.5 font-sans text-[10px] font-semibold text-success"
 						>
 							<svg
 								width="10"
@@ -262,7 +262,7 @@
 				{/each}
 			</ul>
 			{#if pinError}
-				<p class="mt-2 font-sans text-xs text-red-600">{pinError}</p>
+				<p class="mt-2 font-sans text-xs text-danger">{pinError}</p>
 			{/if}
 		</section>
 	{/if}
@@ -275,7 +275,7 @@
 			</h2>
 
 			{#if inviteSuccess}
-				<p class="font-sans text-sm text-green-600">{inviteSuccess}</p>
+				<p class="font-sans text-sm text-success">{inviteSuccess}</p>
 			{:else if !inviting}
 				<button
 					onclick={startInviting}
@@ -318,7 +318,7 @@
 					</div>
 
 					{#if inviteError}
-						<p class="font-sans text-xs text-red-600">{inviteError}</p>
+						<p class="font-sans text-xs text-danger">{inviteError}</p>
 					{/if}
 
 					<div class="flex gap-2">

@@ -78,19 +78,17 @@
 			aria-labelledby="safe-delete-title"
 			tabindex="-1"
 			onkeydown={handleKeydown}
-			class="w-full max-w-sm rounded-xl border border-red-200 bg-paper shadow-xl dark:border-red-900/40"
+			class="w-full max-w-sm rounded-xl border border-danger-border bg-paper shadow-xl"
 		>
 			<!-- Header -->
 			<div class="flex items-start justify-between gap-3 px-5 pt-5">
-				<div
-					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30"
-				>
+				<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-bg">
 					<svg
 						width="16"
 						height="16"
 						viewBox="0 0 24 24"
 						fill="none"
-						class="text-red-600 dark:text-red-400"
+						class="text-danger"
 						aria-hidden="true"
 					>
 						<path
@@ -136,7 +134,7 @@
 					<div class="mb-3 flex justify-center gap-3">
 						{#each code.split('') as char, i (i)}
 							<span
-								class="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-red-300 bg-red-50 font-mono text-xl font-bold tracking-widest text-red-700 dark:border-red-700/50 dark:bg-red-900/20 dark:text-red-300"
+								class="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-danger-border bg-danger-bg font-mono text-xl font-bold tracking-widest text-danger"
 							>
 								{char}
 							</span>
@@ -153,7 +151,7 @@
 						onkeydown={(e) => e.key === 'Enter' && handleConfirm()}
 						placeholder="···"
 						class="w-full rounded-lg border px-3 py-2 text-center font-mono text-lg tracking-widest transition-colors focus:outline-none {matches
-							? 'border-red-400 bg-red-50 text-red-700 dark:border-red-600 dark:bg-red-900/20 dark:text-red-300'
+							? 'border-red-400 bg-danger-bg text-danger dark:border-red-600 dark:text-red-300'
 							: 'border-paper-border bg-paper-ui text-ink'}"
 					/>
 				{/if}

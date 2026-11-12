@@ -1490,7 +1490,7 @@
 				<!-- Writer badge -->
 				{#if currentWriterUserId !== null}
 					<span
-						class="shrink-0 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-sans text-xs text-amber-700 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400"
+						class="shrink-0 rounded border border-warning-border bg-warning-bg px-1.5 py-0.5 font-sans text-xs text-warning"
 					>
 						Writer: {currentWriterName ?? currentWriterUserId}
 					</span>
@@ -1531,9 +1531,9 @@
 				{#if saveStatusLabel()}
 					<span
 						class="ml-auto shrink-0 font-sans text-xs {saveStatus === 'error'
-							? 'text-red-500'
+							? 'text-danger'
 							: saveStatus === 'saved'
-								? 'text-green-600'
+								? 'text-success'
 								: 'text-ink-faint'}"
 					>
 						{saveStatusLabel()}
@@ -1582,7 +1582,7 @@
 							onclick={() => handleSetWriter(null)}
 							disabled={delegating}
 							title="Reclaim write access from {currentWriterName ?? currentWriterUserId}"
-							class="flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
+							class="flex items-center gap-1.5 rounded-md border border-warning-border bg-warning-bg px-3 py-1.5 font-sans text-sm text-warning transition-colors hover:bg-warning-bg disabled:opacity-40"
 						>
 							<svg
 								width="13"
@@ -1971,7 +1971,7 @@
 						onclick={toggleComments}
 						title="Toggle comment threads panel"
 						class="relative flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
-							? 'border-amber-400 bg-amber-400/10 text-amber-700 dark:text-amber-300'
+							? 'border-amber-400 bg-amber-400/10 text-warning dark:text-amber-300'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 					>
 						<svg
@@ -2081,8 +2081,8 @@
 							onclick={() => (showStash = !showStash)}
 							title="Discarded text — what was left out when a draft conflict was resolved"
 							class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showStash
-								? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-300'
-								: 'border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-700/50 dark:text-amber-400 dark:hover:bg-amber-900/20'}"
+								? 'border-amber-400 bg-warning-bg text-warning dark:text-amber-300'
+								: 'border-warning-border text-warning hover:bg-warning-bg '}"
 						>
 							<svg
 								width="13"
@@ -2222,7 +2222,7 @@
 							? 'Public document — visible to everyone as AI context. Click to make private.'
 							: 'Private document. Click to make public.'}
 						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {isPublic
-							? 'border-green-400/60 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-500/40 dark:bg-green-950/30 dark:text-green-400'
+							? 'border-green-400/60 bg-success-bg text-success hover:bg-success-bg dark:border-green-500/40 dark:text-green-400'
 							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 					>
 						{#if isPublic}
@@ -2361,7 +2361,7 @@
 								type="button"
 								title="Unlink reference"
 								onclick={handleTitleRefUnlink}
-								class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:hover:text-red-400"
+								class="rounded p-1 text-ink-faint transition-colors hover:text-danger"
 							>
 								<svg
 									width="12"
@@ -2510,7 +2510,7 @@
 						class="w-full border-none bg-transparent font-serif text-3xl font-semibold text-ink outline-none"
 					/>
 					{#if titleError}
-						<p class="mt-1 font-sans text-xs text-red-500">{titleError}</p>
+						<p class="mt-1 font-sans text-xs text-danger">{titleError}</p>
 					{/if}
 				{:else}
 					<button

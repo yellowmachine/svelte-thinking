@@ -183,7 +183,7 @@
 							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 						></textarea>
 						{#if postError}
-							<p class="font-sans text-sm text-red-600 dark:text-red-400">{postError}</p>
+							<p class="font-sans text-sm text-danger">{postError}</p>
 						{/if}
 						<button
 							onclick={submitComment}

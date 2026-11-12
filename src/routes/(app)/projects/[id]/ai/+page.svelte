@@ -533,14 +533,14 @@
 			<div class="border-t border-paper-border bg-paper px-6 py-4">
 				{#if sendError}
 					<div
-						class="mx-auto mb-3 flex max-w-2xl items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/30"
+						class="mx-auto mb-3 flex max-w-2xl items-start justify-between gap-3 rounded-lg border border-danger-border bg-danger-bg px-4 py-3"
 					>
-						<p class="font-sans text-sm text-red-700 dark:text-red-400">{sendError}</p>
+						<p class="font-sans text-sm text-danger">{sendError}</p>
 						<button
 							type="button"
 							onclick={() => (sendError = null)}
 							aria-label="Close"
-							class="shrink-0 text-red-400 hover:text-red-600 dark:text-red-500"
+							class="shrink-0 text-red-400 hover:text-danger dark:text-red-500"
 						>
 							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 								<path
@@ -570,7 +570,7 @@
 								type="button"
 								onclick={stopStream}
 								aria-label="Detener"
-								class="shrink-0 rounded-lg border border-paper-border bg-paper p-2 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+								class="shrink-0 rounded-lg border border-paper-border bg-paper p-2 text-ink-muted transition-colors hover:border-danger-border hover:bg-danger-bg hover:text-danger"
 							>
 								<svg
 									width="16"

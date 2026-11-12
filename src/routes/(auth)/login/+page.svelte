@@ -35,9 +35,7 @@
 			</div>
 
 			{#if form?.message}
-				<p
-					class="rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-				>
+				<p class="rounded-lg bg-danger-bg px-4 py-3 font-sans text-sm text-danger">
 					{form.message}
 				</p>
 			{/if}
@@ -110,9 +108,7 @@
 			</div>
 
 			{#if form?.message}
-				<p
-					class="rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-				>
+				<p class="rounded-lg bg-danger-bg px-4 py-3 font-sans text-sm text-danger">
 					{form.message}
 				</p>
 			{/if}

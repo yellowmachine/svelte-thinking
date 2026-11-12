@@ -190,7 +190,7 @@
 
 	{#if importError}
 		<p
-			class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-sans text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400"
+			class="mb-4 rounded-lg border border-danger-border bg-danger-bg px-4 py-2 font-sans text-sm text-danger"
 		>
 			{importError}
 		</p>
@@ -265,7 +265,7 @@
 				</div>
 
 				{#if createError}
-					<p class="font-sans text-sm text-red-600 dark:text-red-400">{createError}</p>
+					<p class="font-sans text-sm text-danger">{createError}</p>
 				{/if}
 
 				<div class="flex gap-3">

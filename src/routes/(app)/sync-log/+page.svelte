@@ -36,9 +36,9 @@
 	};
 
 	const statusStyle: Record<string, string> = {
-		pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-		synced: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-		failed: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+		pending: 'bg-warning-bg text-warning',
+		synced: 'bg-success-bg text-success',
+		failed: 'bg-danger-bg text-danger',
 		writer_lost: 'bg-paper-border text-ink-muted'
 	};
 
@@ -72,20 +72,18 @@
 	</div>
 
 	{#if connectivity.syncErrors.length > 0}
-		<div
-			class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-900/10"
-		>
-			<p class="font-sans text-sm font-medium text-red-600 dark:text-red-400">Last sync errors:</p>
+		<div class="mb-4 rounded-lg border border-danger-border bg-danger-bg px-4 py-3">
+			<p class="font-sans text-sm font-medium text-danger">Last sync errors:</p>
 			<ul class="mt-1 space-y-1">
 				{#each connectivity.syncErrors as err, i (i)}
-					<li class="font-sans text-xs text-red-500 dark:text-red-400">
+					<li class="font-sans text-xs text-danger">
 						Document {err.documentId.slice(0, 8)}… — {err.message}
 					</li>
 				{/each}
 			</ul>
 			<button
 				onclick={() => connectivity.clearErrors()}
-				class="mt-2 font-sans text-xs text-red-500 underline hover:text-red-600 dark:text-red-400"
+				class="mt-2 font-sans text-xs text-danger underline hover:text-danger"
 			>
 				Dismiss
 			</button>

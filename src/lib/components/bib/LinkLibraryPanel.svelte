@@ -250,7 +250,7 @@
 									onclick={() => llDeleteRef(ref.id)}
 									disabled={llDeleting.has(ref.id)}
 									aria-label="Delete reference"
-									class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
+									class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-danger disabled:opacity-40"
 								>
 									<svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 										<path
@@ -320,9 +320,7 @@
 			{/if}
 
 			{#if llError}
-				<p
-					class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-				>
+				<p class="rounded-lg bg-danger-bg px-3 py-2 font-sans text-sm text-danger">
 					{llError}
 				</p>
 			{/if}

@@ -143,7 +143,7 @@
 		</form>
 
 		{#if semanticError}
-			<p class="font-sans text-sm text-red-500">{semanticError}</p>
+			<p class="font-sans text-sm text-danger">{semanticError}</p>
 		{/if}
 
 		{#if semanticResults.length > 0}

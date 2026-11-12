@@ -114,7 +114,7 @@
 	{#if uploadError}
 		<p
 			role="alert"
-			class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-sans text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400"
+			class="mb-4 rounded-lg border border-danger-border bg-danger-bg px-4 py-2 font-sans text-sm text-danger"
 		>
 			{uploadError}
 		</p>
@@ -150,7 +150,7 @@
 						{#if dataset.uploadedBy === data.userId}
 							<button
 								onclick={() => remove(dataset.id)}
-								class="font-sans text-xs text-ink-muted transition-colors hover:text-red-600 dark:hover:text-red-400"
+								class="font-sans text-xs text-ink-muted transition-colors hover:text-danger"
 							>
 								Delete
 							</button>

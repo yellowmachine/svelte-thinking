@@ -100,7 +100,7 @@
 							height="32"
 							viewBox="0 0 24 24"
 							fill="none"
-							class="text-green-500"
+							class="text-success"
 							aria-hidden="true"
 						>
 							<path
@@ -122,10 +122,8 @@
 						class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					></textarea>
 
-					<div
-						class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/40 dark:bg-amber-950/20"
-					>
-						<p class="font-sans text-xs text-amber-700 dark:text-amber-400">
+					<div class="mt-3 rounded-lg border border-warning-border bg-warning-bg px-3 py-2">
+						<p class="font-sans text-xs text-warning">
 							Feedback is public and visible at <a
 								href={resolve('/feedback')}
 								class="underline hover:no-underline">/feedback</a
@@ -144,7 +142,7 @@
 					</label>
 
 					{#if error}
-						<p class="mt-2 font-sans text-sm text-red-600 dark:text-red-400">{error}</p>
+						<p class="mt-2 font-sans text-sm text-danger">{error}</p>
 					{/if}
 
 					<div class="mt-4 flex justify-end gap-2">

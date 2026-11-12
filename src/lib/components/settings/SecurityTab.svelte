@@ -133,7 +133,7 @@
 <div class="flex flex-col gap-6">
 	{#if twoFaError}
 		<div
-			class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"
+			class="rounded-lg border border-danger-border bg-danger-bg px-4 py-3 font-sans text-sm text-danger"
 		>
 			{twoFaError}
 		</div>
@@ -149,7 +149,7 @@
 			</div>
 			<span
 				class="shrink-0 rounded-full px-3 py-1 font-sans text-xs font-semibold {twoFaEnabled
-					? 'border border-green-300 text-green-700 dark:border-green-700 dark:text-green-400'
+					? 'border border-success-border text-success dark:text-green-400'
 					: 'border border-paper-border text-ink-muted'}"
 			>
 				{twoFaEnabled ? 'Enabled' : 'Disabled'}
@@ -175,7 +175,7 @@
 							type="button"
 							onclick={handleDisableTwoFa}
 							disabled={!twoFaPassword.trim() || twoFaLoading}
-							class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+							class="rounded-md border border-danger-border px-4 py-2 font-sans text-sm text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
 						>
 							{twoFaLoading ? 'Disabling...' : 'Confirm disable'}
 						</button>
@@ -207,7 +207,7 @@
 						class="w-32 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 					{#if twoFaError}
-						<p class="font-sans text-sm text-red-500">{twoFaError}</p>
+						<p class="font-sans text-sm text-danger">{twoFaError}</p>
 					{/if}
 					<div class="flex gap-2">
 						<button
@@ -291,7 +291,7 @@
 							twoFaStep = 'disabling';
 							twoFaError = '';
 						}}
-						class="rounded-md border border-red-300 px-4 py-2 font-sans text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+						class="rounded-md border border-danger-border px-4 py-2 font-sans text-sm text-danger transition-colors hover:bg-danger-bg"
 					>
 						Disable 2FA
 					</button>
@@ -356,16 +356,14 @@
 				</div>
 
 				{#if twoFaBackupCodes.length > 0}
-					<div
-						class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
-					>
+					<div class="rounded-lg border border-warning-border bg-warning-bg p-4">
 						<div class="mb-3 flex items-start gap-2">
 							<svg
 								width="14"
 								height="14"
 								viewBox="0 0 24 24"
 								fill="none"
-								class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+								class="mt-0.5 shrink-0 text-warning"
 								aria-hidden="true"
 							>
 								<path
@@ -377,18 +375,17 @@
 								/>
 							</svg>
 							<div>
-								<p class="font-sans text-xs font-semibold text-amber-700 dark:text-amber-400">
+								<p class="font-sans text-xs font-semibold text-warning">
 									Save these recovery codes now
 								</p>
-								<p class="mt-0.5 font-sans text-xs text-amber-600 dark:text-amber-500">
+								<p class="mt-0.5 font-sans text-xs text-warning">
 									They will <strong>not</strong> be shown again. Store them somewhere safe.
 								</p>
 							</div>
 						</div>
 						<div class="mb-3 grid grid-cols-2 gap-1.5">
 							{#each twoFaBackupCodes as code, i (i)}
-								<span
-									class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300"
+								<span class="rounded bg-warning-bg px-2 py-1 font-mono text-xs text-warning"
 									>{code}</span
 								>
 							{/each}
@@ -397,7 +394,7 @@
 							<button
 								type="button"
 								onclick={() => navigator.clipboard.writeText(twoFaBackupCodes.join('\n'))}
-								class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+								class="inline-flex items-center gap-1.5 rounded border border-warning-border bg-warning-bg px-3 py-1.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 							>
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 									<rect
@@ -432,7 +429,7 @@
 									a.click();
 									URL.revokeObjectURL(a.href);
 								}}
-								class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+								class="inline-flex items-center gap-1.5 rounded border border-warning-border bg-warning-bg px-3 py-1.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 							>
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 									<path
@@ -480,21 +477,19 @@
 			<!-- Success state -->
 			<div class="mt-5 flex flex-col gap-4">
 				<div
-					class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+					class="rounded-lg border border-success-border bg-success-bg px-4 py-3 font-sans text-sm text-success"
 				>
 					2FA enabled successfully. Your account is now protected.
 				</div>
 				{#if twoFaBackupCodes.length > 0}
-					<div
-						class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10"
-					>
+					<div class="rounded-lg border border-warning-border bg-warning-bg p-4">
 						<div class="mb-3 flex items-start gap-2">
 							<svg
 								width="14"
 								height="14"
 								viewBox="0 0 24 24"
 								fill="none"
-								class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+								class="mt-0.5 shrink-0 text-warning"
 								aria-hidden="true"
 							>
 								<path
@@ -506,18 +501,17 @@
 								/>
 							</svg>
 							<div>
-								<p class="font-sans text-xs font-semibold text-amber-700 dark:text-amber-400">
+								<p class="font-sans text-xs font-semibold text-warning">
 									Last chance to save your recovery codes
 								</p>
-								<p class="mt-0.5 font-sans text-xs text-amber-600 dark:text-amber-500">
+								<p class="mt-0.5 font-sans text-xs text-warning">
 									These codes will disappear when you leave this page.
 								</p>
 							</div>
 						</div>
 						<div class="mb-3 grid grid-cols-2 gap-1.5">
 							{#each twoFaBackupCodes as code, i (i)}
-								<span
-									class="rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-300"
+								<span class="rounded bg-warning-bg px-2 py-1 font-mono text-xs text-warning"
 									>{code}</span
 								>
 							{/each}
@@ -526,7 +520,7 @@
 							<button
 								type="button"
 								onclick={() => navigator.clipboard.writeText(twoFaBackupCodes.join('\n'))}
-								class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+								class="inline-flex items-center gap-1.5 rounded border border-warning-border bg-warning-bg px-3 py-1.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 							>
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 									<rect
@@ -561,7 +555,7 @@
 									a.click();
 									URL.revokeObjectURL(a.href);
 								}}
-								class="inline-flex items-center gap-1.5 rounded border border-amber-300 bg-amber-100 px-3 py-1.5 font-sans text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
+								class="inline-flex items-center gap-1.5 rounded border border-warning-border bg-warning-bg px-3 py-1.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 							>
 								<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 									<path

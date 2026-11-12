@@ -330,7 +330,7 @@
 		{/if}
 
 		{#if uploadError}
-			<p class="px-4 pb-3 font-sans text-xs text-red-600">{uploadError}</p>
+			<p class="px-4 pb-3 font-sans text-xs text-danger">{uploadError}</p>
 		{/if}
 	</div>
 {/if}

@@ -154,8 +154,7 @@
 					>
 						<!-- Context -->
 						<p class="mb-2 font-sans text-xs leading-relaxed text-ink-muted">
-							…{ctx.before}<span
-								class="rounded bg-red-100 px-0.5 font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400"
+							…{ctx.before}<span class="rounded bg-danger-bg px-0.5 font-medium text-danger"
 								>{ctx.error}</span
 							>{ctx.after}…
 						</p>

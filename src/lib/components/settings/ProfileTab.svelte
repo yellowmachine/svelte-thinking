@@ -162,22 +162,18 @@
 		</div>
 
 		{#if orcidStatus === 'connected'}
-			<p
-				class="mb-4 rounded-lg bg-green-50 px-4 py-2 font-sans text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400"
-			>
+			<p class="mb-4 rounded-lg bg-success-bg px-4 py-2 font-sans text-sm text-success">
 				ORCID connected successfully.
 			</p>
 		{:else if orcidStatus === 'error'}
-			<p
-				class="mb-4 rounded-lg bg-red-50 px-4 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
-			>
+			<p class="mb-4 rounded-lg bg-danger-bg px-4 py-2 font-sans text-sm text-danger">
 				Error connecting ORCID. Please try again.
 			</p>
 		{/if}
 
 		{#if orcid && orcidVerified}
 			<div
-				class="flex items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/40 dark:bg-green-900/10"
+				class="flex items-center justify-between gap-4 rounded-lg border border-success-border bg-success-bg px-4 py-3"
 			>
 				<div class="flex items-center gap-2">
 					<svg
@@ -185,7 +181,7 @@
 						height="16"
 						viewBox="0 0 20 20"
 						fill="currentColor"
-						class="shrink-0 text-green-600 dark:text-green-400"
+						class="shrink-0 text-success"
 					>
 						<path
 							fill-rule="evenodd"
@@ -193,9 +189,7 @@
 							clip-rule="evenodd"
 						/>
 					</svg>
-					<span class="font-sans text-sm font-medium text-green-700 dark:text-green-400"
-						>Verified</span
-					>
+					<span class="font-sans text-sm font-medium text-success">Verified</span>
 					<span class="font-mono text-sm text-ink">{orcid}</span>
 				</div>
 				<div class="flex items-center gap-3">
@@ -208,7 +202,7 @@
 					<button
 						onclick={unlinkOrcid}
 						disabled={unlinkingOrcid}
-						class="font-sans text-xs text-red-600 underline hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+						class="font-sans text-xs text-danger underline hover:text-danger disabled:opacity-50"
 					>
 						{unlinkingOrcid ? 'Unlinking…' : 'Unlink'}
 					</button>
@@ -304,12 +298,10 @@
 			</div>
 
 			{#if passwordError}
-				<p class="font-sans text-sm text-red-600 dark:text-red-400">{passwordError}</p>
+				<p class="font-sans text-sm text-danger">{passwordError}</p>
 			{/if}
 			{#if passwordSuccess}
-				<p class="font-sans text-sm text-green-600 dark:text-green-400">
-					Password updated successfully.
-				</p>
+				<p class="font-sans text-sm text-success">Password updated successfully.</p>
 			{/if}
 
 			<div class="flex justify-end">
@@ -325,15 +317,11 @@
 	</section>
 
 	<!-- Danger zone -->
-	<div
-		class="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30"
-	>
-		<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
-		<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
-			These actions are permanent and irreversible.
-		</p>
+	<div class="rounded-xl border border-danger-border bg-danger-bg p-6">
+		<h2 class="font-serif text-lg font-semibold text-danger">Danger zone</h2>
+		<p class="mt-1 font-sans text-sm text-danger">These actions are permanent and irreversible.</p>
 		<div
-			class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper"
+			class="mt-4 flex items-center justify-between rounded-lg border border-danger-border bg-white p-4 dark:bg-dark-paper"
 		>
 			<div>
 				<p class="font-sans text-sm font-medium text-ink">Delete account</p>
@@ -344,7 +332,7 @@
 			<button
 				type="button"
 				onclick={() => (showDeleteDialog = true)}
-				class="ml-4 shrink-0 rounded-md border border-red-300 px-4 py-2 font-sans text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+				class="ml-4 shrink-0 rounded-md border border-danger-border px-4 py-2 font-sans text-sm font-medium text-danger transition-colors hover:bg-danger-bg"
 			>
 				Delete account
 			</button>
@@ -383,7 +371,7 @@
 			</div>
 
 			{#if deleteError}
-				<p class="mt-3 font-sans text-sm text-red-600 dark:text-red-400">{deleteError}</p>
+				<p class="mt-3 font-sans text-sm text-danger">{deleteError}</p>
 			{/if}
 
 			<div class="mt-5 flex gap-3">

@@ -168,7 +168,7 @@
 				disabled={resolving}
 				class="rounded px-2 py-1 font-sans text-xs transition-colors {comment.resolved
 					? 'text-ink-muted hover:bg-paper-ui'
-					: 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'} disabled:opacity-50"
+					: 'text-success hover:bg-success-bg '} disabled:opacity-50"
 				title={comment.resolved ? 'Reopen' : 'Resolve'}
 			>
 				{comment.resolved ? 'Reopen' : 'Resolve'}
@@ -181,7 +181,7 @@
 						showDelete = true;
 					}}
 					title="Delete comment"
-					class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:hover:text-red-400"
+					class="rounded p-1 text-ink-faint transition-colors hover:text-danger"
 					aria-label="Delete comment"
 				>
 					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">

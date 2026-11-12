@@ -35,6 +35,22 @@
 	--color-dark-ink-muted: #a8a29e;
 	--color-dark-ink-faint: #878179;
 	--color-dark-accent: #c4996b;
+
+	/* Status — desaturated to sit with the paper palette: terracotta, ochre, sage,
+	   slate. Text on its own -bg and on paper ≥5.5:1 in light and dark. They follow
+	   dark mode by themselves (see :root.dark); one class per role, no dark: twins. */
+	--color-danger: #a23b2a;
+	--color-danger-bg: #fbeeea;
+	--color-danger-border: #f0c9bf;
+	--color-warning: #7f5300;
+	--color-warning-bg: #fbf3e0;
+	--color-warning-border: #ecd7a4;
+	--color-success: #3a6435;
+	--color-success-bg: #edf5ea;
+	--color-success-border: #c8dcc2;
+	--color-info: #2f5d84;
+	--color-info-bg: #eaf2f8;
+	--color-info-border: #c4d7e6;
 }
 
 /* Dark mode: the paper/ink tokens take their dark values, so bg-paper, text-ink,
@@ -48,6 +64,19 @@
 	--color-ink: var(--color-dark-ink);
 	--color-ink-muted: var(--color-dark-ink-muted);
 	--color-ink-faint: var(--color-dark-ink-faint);
+
+	--color-danger: #f0a493;
+	--color-danger-bg: #3a1d17;
+	--color-danger-border: #6b3226;
+	--color-warning: #e8c072;
+	--color-warning-bg: #33260f;
+	--color-warning-border: #5e4719;
+	--color-success: #a7cf9c;
+	--color-success-bg: #1c2b19;
+	--color-success-border: #36502f;
+	--color-info: #9cc3e4;
+	--color-info-bg: #172636;
+	--color-info-border: #2d4a66;
 }
 
 /* text-accent-ink: the light accent on paper, the dark accent on dark paper */
@@ -227,6 +256,23 @@ html.dark ::-webkit-scrollbar-thumb {
 	--color-accent: #000000;
 	--color-accent-hover: #222222;
 	--color-accent-light: #dddddd;
+}
+
+/* E-ink: status becomes plain black on white, told apart by icon and wording */
+[data-mode='eink'],
+[data-mode='eink'].dark {
+	--color-danger: var(--color-ink);
+	--color-warning: var(--color-ink);
+	--color-success: var(--color-ink);
+	--color-info: var(--color-ink);
+	--color-danger-bg: var(--color-paper);
+	--color-warning-bg: var(--color-paper);
+	--color-success-bg: var(--color-paper);
+	--color-info-bg: var(--color-paper);
+	--color-danger-border: var(--color-ink);
+	--color-warning-border: var(--color-ink);
+	--color-success-border: var(--color-ink);
+	--color-info-border: var(--color-ink);
 }
 
 [data-mode='eink'].dark {

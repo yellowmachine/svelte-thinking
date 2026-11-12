@@ -303,7 +303,7 @@
 				</div>
 
 				{#if semanticError}
-					<p class="px-4 pb-3 font-sans text-sm text-red-500">{semanticError}</p>
+					<p class="px-4 pb-3 font-sans text-sm text-danger">{semanticError}</p>
 				{:else if semanticResults.length > 0}
 					<ul class="max-h-72 overflow-y-auto border-t border-paper-border py-1">
 						{#each semanticResults as result (result.chunk_index)}

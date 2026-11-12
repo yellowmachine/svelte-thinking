@@ -105,9 +105,7 @@
 						<p class="mt-1 font-mono text-xs break-all text-ink-faint select-all">
 							{entry.registrationUrl}
 							{#if entry.tokenExpiresAt && new Date(entry.tokenExpiresAt) < new Date()}
-								<span class="ml-1 font-sans text-red-600 select-none dark:text-red-400"
-									>(expired)</span
-								>
+								<span class="ml-1 font-sans text-danger select-none">(expired)</span>
 							{/if}
 						</p>
 					{:else}

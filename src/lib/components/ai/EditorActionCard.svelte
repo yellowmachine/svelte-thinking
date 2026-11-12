@@ -59,14 +59,14 @@
 {#if status !== 'discarded'}
 	<div
 		class="mt-2 overflow-hidden rounded-xl border transition-colors {status === 'done'
-			? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20'
+			? 'border-success-border bg-success-bg dark:bg-green-950/20'
 			: 'border-accent/20 bg-accent/5 dark:border-accent/15 dark:bg-accent/5'}"
 	>
 		<div class="px-3 pt-3">
 			<!-- Label + explanation -->
 			<p
 				class="font-sans text-[11px] font-semibold tracking-wide uppercase {status === 'done'
-					? 'text-green-600 dark:text-green-400'
+					? 'text-success'
 					: 'text-accent-ink'}"
 			>
 				{status === 'done' ? 'Applied' : label}
@@ -78,40 +78,36 @@
 			{#if status === 'idle' && showDiff}
 				<!-- Diff preview -->
 				<div class="mt-2.5 space-y-1.5">
-					<div class="rounded-lg bg-red-50 px-2.5 py-2 dark:bg-red-950/30">
+					<div class="rounded-lg bg-danger-bg px-2.5 py-2">
 						<p
-							class="mb-0.5 font-sans text-[10px] font-semibold tracking-wide text-red-500 uppercase dark:text-red-400"
+							class="mb-0.5 font-sans text-[10px] font-semibold tracking-wide text-danger uppercase"
 						>
 							Before
 						</p>
-						<p
-							class="font-mono text-xs leading-relaxed text-red-700 line-through dark:text-red-300"
-						>
+						<p class="font-mono text-xs leading-relaxed text-danger line-through">
 							{truncate(originalText)}
 						</p>
 					</div>
-					<div class="rounded-lg bg-green-50 px-2.5 py-2 dark:bg-green-950/30">
+					<div class="rounded-lg bg-success-bg px-2.5 py-2">
 						<p
-							class="mb-0.5 font-sans text-[10px] font-semibold tracking-wide text-green-600 uppercase dark:text-green-400"
+							class="mb-0.5 font-sans text-[10px] font-semibold tracking-wide text-success uppercase"
 						>
 							After
 						</p>
-						<p class="font-mono text-xs leading-relaxed text-green-800 dark:text-green-200">
+						<p class="font-mono text-xs leading-relaxed text-success">
 							{truncate(newText)}
 						</p>
 					</div>
 				</div>
 			{:else if status === 'idle' && action.type === 'insert_index'}
-				<div class="mt-2.5 rounded-lg bg-green-50 px-2.5 py-2 dark:bg-green-950/30">
-					<p class="font-sans text-xs leading-relaxed text-green-800 dark:text-green-200">
+				<div class="mt-2.5 rounded-lg bg-success-bg px-2.5 py-2">
+					<p class="font-sans text-xs leading-relaxed text-success">
 						{indexDescription}
 					</p>
 				</div>
 			{:else if status === 'idle' && action.type === 'set_diagram_code'}
-				<div class="mt-2.5 rounded-lg bg-green-50 px-2.5 py-2 dark:bg-green-950/30">
-					<p
-						class="font-mono text-xs leading-relaxed whitespace-pre-wrap text-green-800 dark:text-green-200"
-					>
+				<div class="mt-2.5 rounded-lg bg-success-bg px-2.5 py-2">
+					<p class="font-mono text-xs leading-relaxed whitespace-pre-wrap text-success">
 						{truncate(diagramCode)}
 					</p>
 				</div>
@@ -121,9 +117,7 @@
 		<!-- Actions -->
 		<div class="flex justify-end gap-2 px-3 pt-2 pb-2.5">
 			{#if status === 'done'}
-				<span class="font-sans text-xs text-green-600 dark:text-green-400"
-					>✓ Applied to document</span
-				>
+				<span class="font-sans text-xs text-success">✓ Applied to document</span>
 			{:else}
 				<button
 					type="button"

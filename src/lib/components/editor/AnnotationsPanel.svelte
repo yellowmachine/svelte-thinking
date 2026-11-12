@@ -149,7 +149,7 @@
 							</button>
 							<button
 								onclick={() => ondeletesubnote?.(s.id)}
-								class="rounded p-0.5 text-ink-faint transition-colors hover:text-red-500"
+								class="rounded p-0.5 text-ink-faint transition-colors hover:text-danger"
 								aria-label="Delete"
 							>
 								<svg

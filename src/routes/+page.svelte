@@ -643,12 +643,10 @@ for the study design.</code
 
 			{#if form?.success}
 				<div
-					class="mt-10 rounded-xl border border-green-200 bg-green-50 px-6 py-8 text-center dark:border-green-900/40 dark:bg-green-900/20"
+					class="mt-10 rounded-xl border border-success-border bg-success-bg px-6 py-8 text-center"
 				>
-					<p class="font-serif text-xl font-semibold text-green-800 dark:text-green-300">
-						Request received
-					</p>
-					<p class="mt-2 font-sans text-sm text-green-700 dark:text-green-400">
+					<p class="font-serif text-xl font-semibold text-success">Request received</p>
+					<p class="mt-2 font-sans text-sm text-success">
 						We'll notify you at <strong>{form.email}</strong> when your access is ready.
 					</p>
 				</div>
@@ -677,7 +675,7 @@ for the study design.</code
 						></textarea>
 
 						{#if form?.error}
-							<p class="font-sans text-sm text-red-600 dark:text-red-400">{form.error}</p>
+							<p class="font-sans text-sm text-danger">{form.error}</p>
 						{/if}
 
 						<button

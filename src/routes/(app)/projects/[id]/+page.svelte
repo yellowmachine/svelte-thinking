@@ -549,7 +549,7 @@
 				{#if data.openComments > 0}
 					<a
 						href={resolve(`/projects/${data.project.id}/review`)}
-						class="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+						class="flex items-center gap-1 rounded-full bg-warning-bg px-2.5 py-1 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 						title="View open comments"
 					>
 						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -823,7 +823,7 @@
 						</div>
 
 						{#if createDocError}
-							<p class="font-sans text-sm text-red-600 dark:text-red-400">{createDocError}</p>
+							<p class="font-sans text-sm text-danger">{createDocError}</p>
 						{/if}
 
 						<div class="flex gap-2">
@@ -883,9 +883,9 @@
 			<!-- Pending offline documents -->
 			{#if pendingCreates.length > 0}
 				<div
-					class="mb-3 flex flex-col gap-1 rounded-xl border border-amber-200 bg-amber-50 p-2 dark:border-amber-900/40 dark:bg-amber-900/10"
+					class="mb-3 flex flex-col gap-1 rounded-xl border border-warning-border bg-warning-bg p-2"
 				>
-					<p class="px-1 font-sans text-[11px] font-medium text-amber-700 dark:text-amber-400">
+					<p class="px-1 font-sans text-[11px] font-medium text-warning">
 						{onlineStore.online ? 'Syncing…' : 'Pending sync when online'}
 					</p>
 					{#each pendingCreates as pc (pc.id)}
@@ -895,7 +895,7 @@
 								height="12"
 								viewBox="0 0 24 24"
 								fill="none"
-								class="shrink-0 text-amber-500"
+								class="shrink-0 text-warning"
 								aria-hidden="true"
 							>
 								<path
@@ -1108,7 +1108,7 @@
 									<a
 										href={resolve(`/projects/${data.project.id}/review#doc-${doc.id}`)}
 										onclick={(e) => e.stopPropagation()}
-										class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+										class="mr-1 flex shrink-0 items-center gap-0.5 rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 										title="View open comments"
 									>
 										<svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1208,7 +1208,7 @@
 														deleteDocTarget = { id: doc.id, title: doc.title };
 														docMenuOpenId = null;
 													}}
-													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
+													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-danger hover:bg-danger-bg"
 												>
 													Delete…
 												</button>
@@ -1305,7 +1305,7 @@
 														deleteDocTarget = { id: doc.id, title: doc.title };
 														docMenuOpenId = null;
 													}}
-													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
+													class="flex w-full items-center gap-2 px-3 py-2 font-sans text-sm text-danger hover:bg-danger-bg"
 												>
 													Delete…
 												</button>
@@ -1452,7 +1452,7 @@
 				{/each}
 			</div>
 			{#if delegateErrorInList}
-				<p class="mt-2 font-sans text-xs text-red-500">{delegateErrorInList}</p>
+				<p class="mt-2 font-sans text-xs text-danger">{delegateErrorInList}</p>
 			{/if}
 			<div class="mt-4 flex justify-end">
 				<button

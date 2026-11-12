@@ -485,7 +485,7 @@
 			precautions — the same way technical books mark margin notes.
 		</p>
 		<div class="space-y-3">
-			{#each [{ type: 'note', label: 'Nota', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40', border: 'border-blue-200 dark:border-blue-800' }, { type: 'warning', label: 'Atención', color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40', border: 'border-amber-200 dark:border-amber-800' }, { type: 'tip', label: 'Consejo', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/40', border: 'border-green-200 dark:border-green-800' }, { type: 'caution', label: 'Precaución', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/40', border: 'border-red-200 dark:border-red-800' }] as item (item.type)}
+			{#each [{ type: 'note', label: 'Nota', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40', border: 'border-blue-200 dark:border-blue-800' }, { type: 'warning', label: 'Atención', color: 'text-warning', bg: 'bg-warning-bg', border: 'border-warning-border' }, { type: 'tip', label: 'Consejo', color: 'text-success', bg: 'bg-success-bg', border: 'border-success-border' }, { type: 'caution', label: 'Precaución', color: 'text-danger', bg: 'bg-danger-bg', border: 'border-danger-border' }] as item (item.type)}
 				<div class="rounded-xl border border-paper-border bg-paper-ui px-4 py-3">
 					<div class="flex items-start gap-4">
 						<div class="min-w-0 flex-1">

@@ -68,7 +68,7 @@
 				<span class="text-sm font-medium text-ink">{authorName}</span>
 				<span class="text-xs text-ink-faint">{formattedDate}</span>
 				{#if status === 'resolved'}
-					<span class="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">Resuelto</span>
+					<span class="rounded-full bg-success-bg px-2 py-0.5 text-xs text-success">Resuelto</span>
 				{/if}
 			</div>
 
@@ -125,7 +125,7 @@
 				{#if status === 'open'}
 					<button
 						onclick={onresolve}
-						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-green-600"
+						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-success"
 					>
 						<svg
 							width="11"

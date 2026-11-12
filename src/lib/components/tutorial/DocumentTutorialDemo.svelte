@@ -20,7 +20,7 @@
 			<button class="shrink-0 text-ink-muted">Climate Policy Review</button>
 			<span class="text-ink-faint">/</span>
 			<span class="truncate font-medium text-ink">Introduction to Climate Policy</span>
-			<span class="ml-auto shrink-0 font-sans text-xs text-green-600">Saved</span>
+			<span class="ml-auto shrink-0 font-sans text-xs text-success">Saved</span>
 		</div>
 
 		<!-- Row 2: toolbar -->

@@ -435,7 +435,7 @@
 			</p>
 			<button
 				onclick={() => (showLeaveProject = true)}
-				class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/10"
+				class="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-danger-border px-3 py-2 font-sans text-xs text-danger transition-colors hover:border-danger-border hover:bg-danger-bg"
 			>
 				<svg
 					width="12"
@@ -643,7 +643,7 @@
 						</div>
 						<button
 							onclick={() => removeContextLink(link.id)}
-							class="mt-0.5 shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400"
+							class="mt-0.5 shrink-0 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
 							title="Remove"
 							aria-label="Remove context link"
 						>

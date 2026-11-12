@@ -80,7 +80,7 @@
 			</label>
 
 			{#if error}
-				<p class="font-sans text-sm text-red-600 dark:text-red-400">{error}</p>
+				<p class="font-sans text-sm text-danger">{error}</p>
 			{/if}
 
 			<div class="flex gap-3">

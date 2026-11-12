@@ -89,7 +89,7 @@
 				</div>
 			</div>
 			{#if form?.error}
-				<p class="font-sans text-xs text-red-600 dark:text-red-400">{form.error}</p>
+				<p class="font-sans text-xs text-danger">{form.error}</p>
 			{/if}
 			<button
 				type="submit"
@@ -118,7 +118,7 @@
 							<div class="mb-1 flex items-center gap-2">
 								{#if active}
 									<span
-										class="rounded-full bg-green-100 px-2 py-0.5 font-sans text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
+										class="rounded-full bg-success-bg px-2 py-0.5 font-sans text-xs font-medium text-success"
 										>Active</span
 									>
 								{:else if scheduled}
@@ -148,7 +148,7 @@
 										confirmLabel: 'Delete',
 										danger: true
 									})}
-								class="rounded p-1 text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+								class="rounded p-1 text-ink-faint transition-colors hover:bg-danger-bg hover:text-danger"
 								aria-label="Delete notification"
 							>
 								<svg

@@ -207,14 +207,14 @@
 	</div>
 	{#if aiError}
 		<div
-			class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"
+			class="rounded-lg border border-danger-border bg-danger-bg px-4 py-3 font-sans text-sm text-danger"
 		>
 			{aiError}
 		</div>
 	{/if}
 	{#if aiSuccess}
 		<div
-			class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+			class="rounded-lg border border-success-border bg-success-bg px-4 py-3 font-sans text-sm text-success"
 		>
 			{aiSuccess}
 		</div>
@@ -264,13 +264,13 @@
 			<!-- OpenRouter OAuth feedback -->
 			{#if openrouterNotice === 'success'}
 				<div
-					class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 font-sans text-sm text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-400"
+					class="mb-4 rounded-lg border border-success-border bg-success-bg px-4 py-3 font-sans text-sm text-success"
 				>
 					OpenRouter connected successfully.
 				</div>
 			{:else if openrouterNotice === 'error'}
 				<div
-					class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400"
+					class="mb-4 rounded-lg border border-danger-border bg-danger-bg px-4 py-3 font-sans text-sm text-danger"
 				>
 					Could not connect OpenRouter. Please try again.
 				</div>
@@ -279,11 +279,11 @@
 			<!-- OAuth connection status -->
 			{#if oauthKey}
 				<div
-					class="mb-5 flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900/40 dark:bg-green-900/20"
+					class="mb-5 flex items-center justify-between gap-3 rounded-lg border border-success-border bg-success-bg px-4 py-3"
 				>
 					<div class="flex items-center gap-2.5">
 						<svg
-							class="h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
+							class="h-4 w-4 shrink-0 text-success"
 							viewBox="0 0 24 24"
 							fill="none"
 							aria-hidden="true"
@@ -297,10 +297,8 @@
 							/>
 						</svg>
 						<div>
-							<p class="font-sans text-sm font-medium text-green-800 dark:text-green-300">
-								Connected via OpenRouter
-							</p>
-							<p class="font-sans text-xs text-green-700 dark:text-green-400">
+							<p class="font-sans text-sm font-medium text-success">Connected via OpenRouter</p>
+							<p class="font-sans text-xs text-success">
 								Added {formatDate(oauthKey.createdAt)}
 							</p>
 						</div>
@@ -308,7 +306,7 @@
 					<button
 						type="button"
 						onclick={() => confirmDeleteKey(oauthKey!.id)}
-						class="inline-flex items-center gap-1 font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+						class="inline-flex items-center gap-1 font-sans text-xs text-danger transition-colors hover:text-danger"
 					>
 						<svg
 							width="12"
@@ -392,11 +390,7 @@
 								</p>
 							</div>
 							<div class="flex items-center gap-3">
-								<span
-									class="font-sans text-xs {key.enabled
-										? 'text-green-600 dark:text-green-400'
-										: 'text-ink-muted'}"
-								>
+								<span class="font-sans text-xs {key.enabled ? 'text-success' : 'text-ink-muted'}">
 									{key.enabled ? 'Active' : 'Inactive'}
 								</span>
 								<button
@@ -419,7 +413,7 @@
 								<button
 									type="button"
 									onclick={() => confirmDeleteKey(key.id)}
-									class="inline-flex items-center gap-1 font-sans text-xs text-red-500 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+									class="inline-flex items-center gap-1 font-sans text-xs text-danger transition-colors hover:text-danger"
 								>
 									<svg
 										width="12"
@@ -534,7 +528,7 @@
 						{@const isObsolete = !!cfg?.model && aiObsoleteModels.includes(cfg.model)}
 						<div
 							class="rounded-lg border px-4 py-4 {isObsolete
-								? 'border-red-300 dark:border-red-700'
+								? 'border-danger-border'
 								: 'border-paper-border'} bg-paper-ui"
 						>
 							<div class="mb-3 flex items-center justify-between">
@@ -622,11 +616,11 @@
 								</select>
 							</div>
 							{#if isObsolete}
-								<p class="mt-2 font-sans text-xs text-red-600 dark:text-red-400">
+								<p class="mt-2 font-sans text-xs text-danger">
 									⚠ This model is no longer available on OpenRouter. Choose another model.
 								</p>
 							{:else if task.id === 'agent' && cfg?.model && !aiModels.find((m) => m.id === cfg.model)?.toolCalling}
-								<p class="mt-2 font-sans text-xs text-amber-600 dark:text-amber-400">
+								<p class="mt-2 font-sans text-xs text-warning">
 									⚠ This model may not support tool calling required by the agent.
 								</p>
 							{/if}

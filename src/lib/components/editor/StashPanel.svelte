@@ -134,8 +134,8 @@
 	</div>
 
 	<!-- Nota de contexto -->
-	<div class="shrink-0 border-b border-paper-border/50 bg-amber-50 px-4 py-2 dark:bg-amber-900/10">
-		<p class="font-sans text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+	<div class="shrink-0 border-b border-paper-border/50 bg-warning-bg px-4 py-2">
+		<p class="font-sans text-xs leading-relaxed text-warning">
 			Content discarded when the conflict was resolved. Select and copy whatever you need.
 		</p>
 	</div>

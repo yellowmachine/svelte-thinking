@@ -55,7 +55,7 @@
 			{#if reqState === 'success'}
 				<div class="text-center">
 					<div
-						class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100"
+						class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success-bg"
 					>
 						<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
 							<path
@@ -139,7 +139,7 @@
 				</div>
 
 				{#if reqState === 'error'}
-					<p class="mt-4 rounded-lg bg-red-50 px-4 py-3 font-sans text-sm text-red-700">
+					<p class="mt-4 rounded-lg bg-danger-bg px-4 py-3 font-sans text-sm text-danger">
 						{errorMsg}
 					</p>
 				{/if}

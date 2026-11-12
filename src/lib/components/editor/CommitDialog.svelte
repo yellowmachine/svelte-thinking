@@ -65,7 +65,7 @@
 			></textarea>
 
 			{#if commitError}
-				<p class="font-sans text-sm text-red-600 dark:text-red-400">{commitError}</p>
+				<p class="font-sans text-sm text-danger">{commitError}</p>
 			{/if}
 
 			<div class="flex gap-3">

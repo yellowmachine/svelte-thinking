@@ -90,8 +90,7 @@
 						{#if oldLine}
 							{#each oldLine.segments as seg (seg.text + seg.type)}
 								{#if seg.type === 'removed'}
-									<mark
-										class="rounded bg-red-200 px-0.5 text-red-800 no-underline dark:bg-red-900 dark:text-red-200"
+									<mark class="rounded bg-red-200 px-0.5 text-danger no-underline dark:bg-red-900"
 										>{seg.text}</mark
 									>
 								{:else}
@@ -111,7 +110,7 @@
 							{#each newLine.segments as seg (seg.text + seg.type)}
 								{#if seg.type === 'added'}
 									<mark
-										class="rounded bg-green-200 px-0.5 text-green-800 no-underline dark:bg-green-900 dark:text-green-200"
+										class="rounded bg-green-200 px-0.5 text-success no-underline dark:bg-green-900"
 										>{seg.text}</mark
 									>
 								{:else}

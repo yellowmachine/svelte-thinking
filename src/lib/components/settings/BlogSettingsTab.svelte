@@ -104,17 +104,17 @@
 
 			{#if handle}
 				<div
-					class="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900/40 dark:bg-green-900/20"
+					class="flex items-center justify-between gap-3 rounded-lg border border-success-border bg-success-bg px-4 py-3"
 				>
 					<div>
-						<p class="font-sans text-sm font-medium text-green-800 dark:text-green-300">
+						<p class="font-sans text-sm font-medium text-success">
 							@{handle}
 						</p>
 						<a
 							href={resolve('/@[handle]', { handle: handle ?? '' })}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="font-sans text-xs text-green-700 underline dark:text-green-400"
+							class="font-sans text-xs text-success underline"
 						>
 							View your blog →
 						</a>
@@ -159,20 +159,18 @@
 					{#if checking}
 						<p class="font-sans text-xs text-ink-faint">Checking…</p>
 					{:else if availability === 'available'}
-						<p class="font-sans text-xs text-green-600 dark:text-green-400">Disponible.</p>
+						<p class="font-sans text-xs text-success">Disponible.</p>
 					{:else if availability === 'taken'}
-						<p class="font-sans text-xs text-red-600 dark:text-red-400">
-							That handle is already taken.
-						</p>
+						<p class="font-sans text-xs text-danger">That handle is already taken.</p>
 					{:else if availability === 'invalid'}
-						<p class="font-sans text-xs text-red-600 dark:text-red-400">
+						<p class="font-sans text-xs text-danger">
 							3–30 characters: letters, numbers and hyphens.
 						</p>
 					{:else if availability === 'reserved'}
-						<p class="font-sans text-xs text-red-600 dark:text-red-400">That handle is reserved.</p>
+						<p class="font-sans text-xs text-danger">That handle is reserved.</p>
 					{/if}
 					{#if error}
-						<p class="font-sans text-xs text-red-600 dark:text-red-400">{error}</p>
+						<p class="font-sans text-xs text-danger">{error}</p>
 					{/if}
 				</div>
 			{/if}
@@ -211,12 +209,10 @@
 				</div>
 
 				{#if publicProfileError}
-					<p class="font-sans text-sm text-red-600 dark:text-red-400">{publicProfileError}</p>
+					<p class="font-sans text-sm text-danger">{publicProfileError}</p>
 				{/if}
 				{#if publicProfileSuccess}
-					<p class="font-sans text-sm text-green-600 dark:text-green-400">
-						Public profile updated.
-					</p>
+					<p class="font-sans text-sm text-success">Public profile updated.</p>
 				{/if}
 
 				<div class="flex justify-end">

@@ -62,7 +62,7 @@
 						<div class="flex shrink-0 items-center gap-2">
 							<button
 								type="button"
-								class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+								class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:border-danger-border hover:bg-danger-bg hover:text-danger"
 							>
 								Decline
 							</button>

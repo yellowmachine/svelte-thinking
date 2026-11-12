@@ -201,7 +201,7 @@
 			</label>
 
 			{#if error}
-				<p class="mb-3 font-sans text-xs text-red-500">{error}</p>
+				<p class="mb-3 font-sans text-xs text-danger">{error}</p>
 			{/if}
 		</div>
 

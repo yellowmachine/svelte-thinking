@@ -509,7 +509,7 @@
 
 	{#if error}
 		<div
-			class="mx-4 mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400"
+			class="mx-4 mb-2 rounded-lg border border-danger-border bg-danger-bg px-3 py-2 font-sans text-xs text-danger"
 		>
 			{#if error === 'NO_KEY'}
 				No AI key configured. <a
@@ -540,7 +540,7 @@
 					type="button"
 					onclick={stopStream}
 					aria-label="Stop"
-					class="shrink-0 rounded-lg border border-paper-border bg-paper p-1.5 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+					class="shrink-0 rounded-lg border border-paper-border bg-paper p-1.5 text-ink-muted transition-colors hover:border-danger-border hover:bg-danger-bg hover:text-danger"
 				>
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 						<rect x="5" y="5" width="14" height="14" rx="2" />

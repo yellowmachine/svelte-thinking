@@ -306,7 +306,7 @@
 			{/if}
 
 			{#if urlImportError}
-				<p class="mt-2 font-sans text-xs text-red-500">{urlImportError}</p>
+				<p class="mt-2 font-sans text-xs text-danger">{urlImportError}</p>
 			{/if}
 
 			<div class="mt-4 flex justify-end gap-2">
@@ -430,7 +430,7 @@
 			</div>
 
 			{#if urlImportError}
-				<p class="mt-2 font-sans text-xs text-red-500">{urlImportError}</p>
+				<p class="mt-2 font-sans text-xs text-danger">{urlImportError}</p>
 			{/if}
 
 			<div class="mt-4 flex justify-end gap-2">

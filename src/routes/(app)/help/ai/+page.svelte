@@ -229,13 +229,10 @@
 		</p>
 		<div class="space-y-3">
 			{#each [{ name: 'create_document', params: 'title, type (paper · notes · outline · bibliography · supplementary), content, requirementId?', desc: 'Proposes a new document with full Markdown content. Only called if you explicitly ask the agent to write or draft something. You see a preview of the document before it is created.', confirmation: 'Preview card with title, type and full content' }, { name: 'create_issue', params: 'title, content?, priority (low · medium · high · critical)', desc: "Proposes a new issue in the project's review panel. The agent must describe the problem in its reply text before calling this tool — you always see the reasoning first.", confirmation: 'Issue card with title, priority and content' }, { name: 'propose_references', params: 'Array of references: citeKey, type, title, authors, year, journal?, publisher?…', desc: 'Proposes one or more bibliography entries to add to the project. Shown as a checklist card — you select which references to actually add before anything is saved.', confirmation: 'Checklist card — select which references to add' }] as tool (tool.name)}
-				<div
-					class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/40 dark:bg-amber-950/20"
-				>
+				<div class="rounded-xl border border-warning-border bg-warning-bg px-4 py-3">
 					<div class="flex flex-wrap items-center gap-2">
 						<code class="font-mono text-sm text-ink">{tool.name}</code>
-						<span
-							class="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+						<span class="rounded bg-warning-bg px-1.5 py-0.5 font-mono text-[10px] text-warning"
 							>requires confirmation</span
 						>
 					</div>
@@ -274,8 +271,7 @@
 					<div class="flex flex-wrap items-center gap-2">
 						<code class="font-mono text-sm text-accent-ink">{tool.name}</code>
 						{#if tool.type === 'write'}
-							<span
-								class="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+							<span class="rounded bg-warning-bg px-1.5 py-0.5 font-mono text-[10px] text-warning"
 								>confirmation</span
 							>
 						{:else}
@@ -356,7 +352,7 @@
 							</td>
 							<td class="px-4 py-3">
 								{#if row.tools}
-									<span class="font-mono text-xs text-green-600 dark:text-green-400">✓ yes</span>
+									<span class="font-mono text-xs text-success">✓ yes</span>
 								{:else}
 									<span class="font-mono text-xs text-ink-faint">— no</span>
 								{/if}

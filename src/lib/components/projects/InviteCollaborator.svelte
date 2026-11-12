@@ -108,7 +108,7 @@
 									)}
 								class="rounded border px-1.5 py-0.5 text-xs transition-colors focus:outline-none disabled:opacity-50 {savedRoleFor ===
 								c.userId
-									? 'border-green-400 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/20 dark:text-green-400'
+									? 'border-green-400 bg-success-bg text-success dark:border-green-600 dark:text-green-400'
 									: 'border-paper-border bg-paper text-ink-muted focus:border-accent'}"
 							>
 								{#each roleOptions as opt (opt.value)}
@@ -117,7 +117,7 @@
 							</select>
 							<button
 								onclick={() => remove(c.userId, c.name || c.email)}
-								class="text-xs text-ink-faint transition-colors hover:text-red-600"
+								class="text-xs text-ink-faint transition-colors hover:text-danger"
 							>
 								Remove…
 							</button>
@@ -155,11 +155,11 @@
 	</div>
 
 	{#if reqState === 'sent'}
-		<p class="mt-2 text-sm text-green-600">Invitation sent successfully.</p>
+		<p class="mt-2 text-sm text-success">Invitation sent successfully.</p>
 	{:else if reqState === 'info'}
 		<p class="mt-2 text-sm text-ink-muted">{errorMsg}</p>
 	{:else if reqState === 'error'}
-		<p class="mt-2 text-sm text-red-600">{errorMsg}</p>
+		<p class="mt-2 text-sm text-danger">{errorMsg}</p>
 	{/if}
 
 	{#if invitations.length > 0}
@@ -183,7 +183,7 @@
 						</div>
 						<button
 							onclick={() => cancel(inv.id)}
-							class="text-xs text-ink-faint transition-colors hover:text-red-600"
+							class="text-xs text-ink-faint transition-colors hover:text-danger"
 						>
 							Cancel
 						</button>

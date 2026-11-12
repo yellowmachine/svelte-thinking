@@ -40,7 +40,7 @@
 	<span translate="no" class="flex-1 truncate">{title}</span>
 	{#if badge}
 		<span
-			class="ml-2 shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+			class="ml-2 shrink-0 rounded-full bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning"
 		>
 			{badge}
 		</span>

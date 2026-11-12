@@ -114,7 +114,7 @@
 
 	{#if notebookError}
 		<p
-			class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 font-sans text-sm text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400"
+			class="mb-4 rounded-lg border border-danger-border bg-danger-bg px-4 py-2 font-sans text-sm text-danger"
 		>
 			{notebookError}
 		</p>
@@ -144,7 +144,7 @@
 					</div>
 					<button
 						onclick={() => deleteNotebook(notebook.id)}
-						class="ml-3 shrink-0 font-sans text-xs text-ink-faint transition-colors hover:text-red-600 dark:hover:text-red-400"
+						class="ml-3 shrink-0 font-sans text-xs text-ink-faint transition-colors hover:text-danger"
 					>
 						Delete
 					</button>

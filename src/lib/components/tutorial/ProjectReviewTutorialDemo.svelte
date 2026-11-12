@@ -74,7 +74,7 @@
 					>
 						{#if thread.anchorContext && thread.anchorText}
 							<p
-								class="mb-2 rounded-md border-l-2 border-amber-300 bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink dark:border-amber-600"
+								class="mb-2 rounded-md border-l-2 border-warning-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink"
 							>
 								{thread.anchorContext}
 							</p>
@@ -95,7 +95,7 @@
 								<button
 									data-tutorial="project-review-resolve"
 									type="button"
-									class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+									class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-success-border hover:bg-success-bg hover:text-success"
 								>
 									Resolve
 								</button>

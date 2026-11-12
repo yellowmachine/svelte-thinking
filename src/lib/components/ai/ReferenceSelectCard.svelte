@@ -77,14 +77,14 @@
 {#if status !== 'discarded'}
 	<div
 		class="mt-2 overflow-hidden rounded-xl border transition-colors {status === 'done'
-			? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20'
+			? 'border-success-border bg-success-bg dark:bg-green-950/20'
 			: 'border-accent/20 bg-accent/5 dark:border-accent/15 dark:bg-accent/5'}"
 	>
 		<!-- Header -->
 		<div class="flex items-center gap-3 px-4 pt-4 pb-2">
 			<div
 				class="shrink-0 rounded-lg p-2 {status === 'done'
-					? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
+					? 'bg-success-bg text-success dark:text-green-400'
 					: 'bg-accent/10 text-accent-ink'}"
 			>
 				{#if status === 'done'}
@@ -120,7 +120,7 @@
 			<div class="min-w-0 flex-1">
 				<p
 					class="font-sans text-[11px] font-semibold tracking-wide uppercase {status === 'done'
-						? 'text-green-600 dark:text-green-400'
+						? 'text-success'
 						: 'text-accent-ink'}"
 				>
 					{#if status === 'done'}

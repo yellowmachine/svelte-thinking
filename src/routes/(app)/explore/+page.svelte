@@ -138,7 +138,7 @@
 	</div>
 
 	{#if error}
-		<p class="mt-3 font-sans text-sm text-red-600">{error}</p>
+		<p class="mt-3 font-sans text-sm text-danger">{error}</p>
 	{/if}
 
 	<!-- Projects results -->

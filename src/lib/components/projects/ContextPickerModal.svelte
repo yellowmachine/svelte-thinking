@@ -157,7 +157,7 @@
 											height="11"
 											viewBox="0 0 24 24"
 											fill="none"
-											class="shrink-0 text-green-500"
+											class="shrink-0 text-success"
 											aria-label="Public"
 										>
 											<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />

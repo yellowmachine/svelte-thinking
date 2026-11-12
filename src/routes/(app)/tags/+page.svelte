@@ -103,7 +103,7 @@
 								class="w-full rounded-md border border-accent bg-paper-ui px-2.5 py-1 font-sans text-sm text-ink focus:outline-none disabled:opacity-50"
 							/>
 							{#if editError}
-								<p class="font-sans text-xs text-red-600">{editError}</p>
+								<p class="font-sans text-xs text-danger">{editError}</p>
 							{/if}
 						</div>
 						<button
@@ -150,7 +150,7 @@
 							onclick={() => deleteTag(tag.id)}
 							disabled={deletingId === tag.id}
 							aria-label="Delete tag"
-							class="shrink-0 text-ink-faint transition-colors hover:text-red-600 disabled:opacity-40 dark:hover:text-red-500"
+							class="shrink-0 text-ink-faint transition-colors hover:text-danger disabled:opacity-40"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"

@@ -2,10 +2,8 @@
 	import { toasts, type Toast } from '$lib/stores/flash.svelte';
 
 	const STYLES: Record<Toast['type'], string> = {
-		success:
-			'border-green-200 bg-green-50 text-green-900 dark:border-green-800/60 dark:bg-green-950 dark:text-green-100',
-		error:
-			'border-red-200 bg-red-50 text-red-900 dark:border-red-800/60 dark:bg-red-950 dark:text-red-100',
+		success: 'border-success-border bg-success-bg text-success',
+		error: 'border-danger-border bg-danger-bg text-danger',
 		info: 'border-paper-border bg-paper text-ink'
 	};
 

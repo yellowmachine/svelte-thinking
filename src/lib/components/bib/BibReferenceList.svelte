@@ -316,7 +316,7 @@
 													onclick={() => deleteSubnote(ref.id, sn.id)}
 													disabled={deletingSubnoteId === sn.id}
 													title="Delete annotation"
-													class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-red-500 disabled:opacity-40 dark:hover:text-red-400"
+													class="mt-px shrink-0 rounded p-0.5 text-ink-faint transition-colors hover:text-danger disabled:opacity-40"
 												>
 													{#if deletingSubnoteId === sn.id}
 														<Spinner size="sm" />
@@ -484,7 +484,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								title="Open PDF"
-								class="rounded-l rounded-r-none border border-r-0 border-green-300 bg-green-50 px-1.5 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-green-700 uppercase transition-colors hover:bg-green-100 dark:border-green-700/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30"
+								class="rounded-l rounded-r-none border border-r-0 border-success-border bg-success-bg px-1.5 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-success uppercase transition-colors hover:bg-success-bg"
 							>
 								PDF
 							</a>
@@ -492,7 +492,7 @@
 								onclick={() => deletePdf(ref)}
 								disabled={deletingPdfId === ref.id}
 								title="Remove PDF"
-								class="rounded-l-none rounded-r border border-green-300 bg-green-50 px-1 py-0.5 text-green-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-green-700/50 dark:bg-green-900/20 dark:text-green-500 dark:hover:border-red-700/50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+								class="rounded-l-none rounded-r border border-success-border bg-success-bg px-1 py-0.5 text-success transition-colors hover:border-danger-border hover:bg-danger-bg hover:text-danger disabled:opacity-40"
 							>
 								<svg width="9" height="9" viewBox="0 0 24 24" fill="none">
 									<line
@@ -563,7 +563,7 @@
 					</button>
 					<button
 						onclick={() => ondelete(ref)}
-						class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+						class="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-danger-bg hover:text-danger"
 						title="Delete"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none">

@@ -118,10 +118,8 @@
 			</div>
 
 			{#if importResult}
-				<div
-					class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30"
-				>
-					<p class="font-sans text-sm text-green-700 dark:text-green-400">
+				<div class="rounded-lg border border-success-border bg-success-bg px-3 py-2">
+					<p class="font-sans text-sm text-success">
 						✓ {importResult.inserted}
 						{importResult.inserted === 1 ? 'reference imported' : 'references imported'}
 						{#if importResult.skipped > 0}· {importResult.skipped} skipped{/if}
@@ -130,9 +128,7 @@
 			{/if}
 
 			{#if importError}
-				<p
-					class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-				>
+				<p class="rounded-lg bg-danger-bg px-3 py-2 font-sans text-sm text-danger">
 					{importError}
 				</p>
 			{/if}

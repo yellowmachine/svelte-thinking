@@ -198,7 +198,7 @@
 										type="button"
 										onclick={() => (postToUnpublish = post)}
 										disabled={unpublishingId === post.id}
-										class="shrink-0 font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+										class="shrink-0 font-sans text-xs text-danger transition-colors hover:text-danger disabled:opacity-50"
 									>
 										{unpublishingId === post.id ? 'Unpublishing…' : 'Unpublish'}
 									</button>
@@ -245,7 +245,7 @@
 															</span>
 															{#if comment.aiFlagged}
 																<span
-																	class="rounded bg-amber-100 px-1.5 py-0.5 font-sans text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+																	class="rounded bg-warning-bg px-1.5 py-0.5 font-sans text-xs text-warning"
 																	title={comment.aiReason ?? ''}
 																>
 																	Flagged by AI
@@ -264,7 +264,7 @@
 																	type="button"
 																	disabled={commentActionId === comment.id}
 																	onclick={() => moderate(comment, 'approved')}
-																	class="font-sans text-xs text-emerald-600 hover:text-emerald-700 disabled:opacity-50 dark:text-emerald-400 dark:hover:text-emerald-300"
+																	class="font-sans text-xs text-success hover:text-success disabled:opacity-50"
 																>
 																	Approve
 																</button>
@@ -283,7 +283,7 @@
 																type="button"
 																disabled={commentActionId === comment.id}
 																onclick={() => deleteComment(comment)}
-																class="font-sans text-xs text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+																class="font-sans text-xs text-danger hover:text-danger disabled:opacity-50"
 															>
 																Delete
 															</button>

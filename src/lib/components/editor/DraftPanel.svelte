@@ -235,7 +235,7 @@
 
 		{#if draftError}
 			<div
-				class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400"
+				class="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 font-sans text-xs text-danger"
 			>
 				{#if draftError === NO_KEY_MSG}
 					No AI key configured. <a
@@ -253,8 +253,8 @@
 				{#if draftMode === 'rewrite' && capturedSelection}
 					<div class="rounded-xl border border-accent/20 bg-accent/5 p-3">
 						<div class="mb-2 space-y-1 rounded-md bg-paper px-2.5 py-2 font-mono text-xs">
-							<p class="text-red-500 line-through opacity-70">{capturedSelection.text}</p>
-							<p class="text-green-600 dark:text-green-400">{draftResult}</p>
+							<p class="text-danger line-through opacity-70">{capturedSelection.text}</p>
+							<p class="text-success">{draftResult}</p>
 						</div>
 					</div>
 				{:else}

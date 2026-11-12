@@ -311,7 +311,7 @@
 					</div>
 
 					{#if addError}
-						<p class="font-sans text-sm text-red-600 dark:text-red-400">{addError}</p>
+						<p class="font-sans text-sm text-danger">{addError}</p>
 					{/if}
 
 					<button
@@ -343,13 +343,13 @@
 				</div>
 
 				{#if importError}
-					<p class="mb-2 font-sans text-sm text-red-600 dark:text-red-400">{importError}</p>
+					<p class="mb-2 font-sans text-sm text-danger">{importError}</p>
 				{/if}
 
 				{#if loadingContents}
 					<p class="font-sans text-sm text-ink-faint">Loading…</p>
 				{:else if contentsError}
-					<p class="font-sans text-sm text-red-600 dark:text-red-400">{contentsError}</p>
+					<p class="font-sans text-sm text-danger">{contentsError}</p>
 				{:else if contentsItems.length === 0}
 					<p class="font-sans text-sm text-ink-faint">Empty directory.</p>
 				{:else}

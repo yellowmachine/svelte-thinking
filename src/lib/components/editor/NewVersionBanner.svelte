@@ -22,11 +22,7 @@
 	const showResolve = $derived(type === 'draft' && hasDirtyContent && onresolve != null);
 </script>
 
-<div
-	class="flex items-center gap-3 bg-amber-50 px-6 py-2.5 dark:bg-amber-900/20"
-	role="status"
-	aria-live="polite"
->
+<div class="flex items-center gap-3 bg-warning-bg px-6 py-2.5" role="status" aria-live="polite">
 	<!-- Icono info -->
 	<svg
 		width="15"
@@ -37,7 +33,7 @@
 		stroke-width="1.5"
 		stroke-linecap="round"
 		stroke-linejoin="round"
-		class="shrink-0 text-amber-600 dark:text-amber-400"
+		class="shrink-0 text-warning"
 		aria-hidden="true"
 	>
 		<circle cx="12" cy="12" r="10" />
@@ -45,7 +41,7 @@
 		<line x1="12" y1="16" x2="12.01" y2="16" />
 	</svg>
 
-	<p class="min-w-0 flex-1 font-sans text-sm text-amber-800 dark:text-amber-200">
+	<p class="min-w-0 flex-1 font-sans text-sm text-warning">
 		{#if type === 'commit'}
 			<span class="font-medium">
 				Nueva versión disponible{versionNumber != null ? ` (v${versionNumber})` : ''}{committerName
@@ -58,7 +54,7 @@
 			</span>
 		{/if}
 		{#if hasDirtyContent}
-			<span class="ml-1 text-amber-700 dark:text-amber-300">
+			<span class="ml-1 text-warning">
 				You have unsaved changes that will be lost if you update.
 			</span>
 		{/if}
@@ -85,7 +81,7 @@
 		<button
 			type="button"
 			onclick={ondismiss}
-			class="rounded-md px-3 py-1 font-sans text-xs text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/40"
+			class="rounded-md px-3 py-1 font-sans text-xs text-warning transition-colors hover:bg-warning-bg"
 		>
 			Dismiss
 		</button>

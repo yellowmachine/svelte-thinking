@@ -236,7 +236,7 @@
 
 		{#if restoredVersion !== null}
 			<span
-				class="ml-auto rounded-md border border-green-300 bg-green-50 px-2.5 py-1 font-sans text-xs text-green-700 dark:border-green-700/50 dark:bg-green-900/20 dark:text-green-400"
+				class="ml-auto rounded-md border border-success-border bg-success-bg px-2.5 py-1 font-sans text-xs text-success"
 			>
 				v{restoredVersion} restored as draft
 			</span>
@@ -481,7 +481,7 @@
 						actionsOpenId = null;
 					}}
 					disabled={revokingShareId === shares[v.id]?.id}
-					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-red-500 transition-colors hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-900/20"
+					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
 				>
 					<svg
 						width="14"

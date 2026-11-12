@@ -54,7 +54,7 @@
 								<span class="font-sans text-xs text-ink-faint">{formatDate(u.createdAt)}</span>
 								{#if u.twoFactorEnabled}
 									<span
-										class="rounded-full bg-emerald-100 px-2 py-0.5 font-sans text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+										class="rounded-full bg-success-bg px-2 py-0.5 font-sans text-xs font-medium text-success"
 									>
 										2FA active
 									</span>
@@ -74,7 +74,7 @@
 											confirmLabel: 'Disable 2FA',
 											danger: true
 										})}
-									class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:border-amber-300 hover:text-amber-700 dark:hover:border-amber-700 dark:hover:text-amber-400"
+									class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:border-warning-border hover:text-warning"
 								>
 									Reset 2FA
 								</button>
