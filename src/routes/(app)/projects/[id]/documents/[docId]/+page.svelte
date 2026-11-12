@@ -1721,6 +1721,7 @@
 						</button>
 					{/if}
 
+					<span class="mx-1 h-5 w-px shrink-0 bg-paper-border" aria-hidden="true"></span>
 					<!-- View mode selector -->
 					{#if canWrite && !data.forcePublished}
 						<div
@@ -1820,6 +1821,8 @@
 						</a>
 					{/if}
 
+					<!-- Insert and cite -->
+					<span class="mx-1 h-5 w-px shrink-0 bg-paper-border" aria-hidden="true"></span>
 					<!-- Insert diagram -->
 					{#if !data.document.isReadonly && data.document.type !== 'diagram' && data.projectDocs.some((d) => d.type === 'diagram')}
 						<button
@@ -1893,6 +1896,8 @@
 						>
 					</button>
 
+					<!-- Check and find -->
+					<span class="mx-1 h-5 w-px shrink-0 bg-paper-border" aria-hidden="true"></span>
 					{#if !data.document.isReadonly}
 						<!-- Spell / Grammar dropdown -->
 						<button
@@ -1984,6 +1989,8 @@
 						</svg>
 					</button>
 
+					<!-- Share and save, kept to the right -->
+					<div class="ml-auto" aria-hidden="true"></div>
 					<!-- Export dropdown trigger only — menu rendered at root level to escape backdrop-filter -->
 					<button
 						onclick={(e) => {
