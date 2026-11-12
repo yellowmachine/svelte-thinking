@@ -84,12 +84,12 @@
 
 	// ── Formatting ────────────────────────────────────────────────────────────
 
-	function fmtEur(v: string | number | null | undefined): string {
+	function fmtUsd(v: string | number | null | undefined): string {
 		const n = Number(v ?? 0);
-		if (n === 0) return '€0.00';
-		if (n < 0.001) return `€${n.toFixed(6)}`;
-		if (n < 1) return `€${n.toFixed(4)}`;
-		return `€${n.toFixed(2)}`;
+		if (n === 0) return '$0.00';
+		if (n < 0.001) return `$${n.toFixed(6)}`;
+		if (n < 1) return `$${n.toFixed(4)}`;
+		return `$${n.toFixed(2)}`;
 	}
 
 	function fmtTokens(v: string | number | null | undefined): string {
@@ -120,7 +120,7 @@
 	const chartData = $derived.by(() => {
 		if (!data?.byDay?.length) return null;
 		const days = data.byDay;
-		const maxCost = Math.max(...days.map((d) => Number(d.costEur)));
+		const maxCost = Math.max(...days.map((d) => Number(d.costUsd)));
 		if (maxCost === 0) return null;
 
 		const innerW = CHART_W - PAD.left - PAD.right;
@@ -129,7 +129,7 @@
 		const xScale = (i: number) => PAD.left + (i / (days.length - 1 || 1)) * innerW;
 		const yScale = (v: number) => PAD.top + innerH - (v / maxCost) * innerH;
 
-		const points = days.map((d, i) => ({ x: xScale(i), y: yScale(Number(d.costEur)), ...d }));
+		const points = days.map((d, i) => ({ x: xScale(i), y: yScale(Number(d.costUsd)), ...d }));
 		const path = points
 			.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
 			.join(' ');
@@ -137,7 +137,7 @@
 		// y-axis ticks (3 ticks)
 		const yTicks = [0, maxCost / 2, maxCost].map((v) => ({
 			y: yScale(v),
-			label: fmtEur(v)
+			label: fmtUsd(v)
 		}));
 
 		// x-axis: show first, last, and a few middle dates
@@ -151,8 +151,8 @@
 
 	// ── Horizontal bar helpers ────────────────────────────────────────────────
 
-	function maxOf(arr: { costEur: string }[]): number {
-		return Math.max(...arr.map((r) => Number(r.costEur)), 0.000001);
+	function maxOf(arr: { costUsd: string }[]): number {
+		return Math.max(...arr.map((r) => Number(r.costUsd)), 0.000001);
 	}
 </script>
 
@@ -252,7 +252,7 @@
 	{:else if data}
 		<!-- KPI Cards -->
 		<div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-			{#each [{ label: 'Total cost', value: fmtEur(data.summary?.totalCostEur) }, { label: 'API calls', value: fmtNum(data.summary?.totalCalls) }, { label: 'Input tokens', value: fmtTokens(data.summary?.totalInputTokens) }, { label: 'Output tokens', value: fmtTokens(data.summary?.totalOutputTokens) }] as card (card.label)}
+			{#each [{ label: 'Total cost', value: fmtUsd(data.summary?.totalCostUsd) }, { label: 'API calls', value: fmtNum(data.summary?.totalCalls) }, { label: 'Input tokens', value: fmtTokens(data.summary?.totalInputTokens) }, { label: 'Output tokens', value: fmtTokens(data.summary?.totalOutputTokens) }] as card (card.label)}
 				<div
 					class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
 				>
@@ -352,14 +352,14 @@
 					</h2>
 					<div class="space-y-2.5">
 						{#each data.byTask as row (row.task)}
-							{@const pct = (Number(row.costEur) / maxOf(data.byTask)) * 100}
+							{@const pct = (Number(row.costUsd) / maxOf(data.byTask)) * 100}
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
 									<span class="font-sans text-sm text-ink dark:text-dark-ink"
 										>{taskLabel(row.task)}</span
 									>
 									<span class="shrink-0 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-										>{fmtEur(row.costEur)} · {fmtNum(row.calls)} calls</span
+										>{fmtUsd(row.costUsd)} · {fmtNum(row.calls)} calls</span
 									>
 								</div>
 								<div
@@ -386,14 +386,14 @@
 					</h2>
 					<div class="space-y-2.5">
 						{#each data.byModel as row (row.model)}
-							{@const pct = (Number(row.costEur) / maxOf(data.byModel)) * 100}
+							{@const pct = (Number(row.costUsd) / maxOf(data.byModel)) * 100}
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
 									<span class="truncate font-sans text-sm text-ink dark:text-dark-ink"
 										>{modelLabel(row.model)}</span
 									>
 									<span class="shrink-0 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-										>{fmtEur(row.costEur)}</span
+										>{fmtUsd(row.costUsd)}</span
 									>
 								</div>
 								<div
@@ -420,7 +420,7 @@
 					</h2>
 					<div class="space-y-2.5">
 						{#each data.byProject as row (row.projectId)}
-							{@const pct = (Number(row.costEur) / maxOf(data.byProject)) * 100}
+							{@const pct = (Number(row.costUsd) / maxOf(data.byProject)) * 100}
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
 									<a
@@ -430,7 +430,7 @@
 										{row.title ?? row.projectId}
 									</a>
 									<span class="shrink-0 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-										>{fmtEur(row.costEur)} · {fmtNum(row.calls)}</span
+										>{fmtUsd(row.costUsd)} · {fmtNum(row.calls)}</span
 									>
 								</div>
 								<div
@@ -459,14 +459,14 @@
 						</h2>
 						<div class="space-y-2.5">
 							{#each orgData.byUser as row (row.userId)}
-								{@const pct = (Number(row.costEur) / maxOf(orgData.byUser)) * 100}
+								{@const pct = (Number(row.costUsd) / maxOf(orgData.byUser)) * 100}
 								<div>
 									<div class="mb-0.5 flex items-center justify-between gap-2">
 										<span class="truncate font-sans text-sm text-ink dark:text-dark-ink"
 											>{row.name ?? row.userId}</span
 										>
 										<span class="shrink-0 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-											>{fmtEur(row.costEur)} · {fmtNum(row.calls)}</span
+											>{fmtUsd(row.costUsd)} · {fmtNum(row.calls)}</span
 										>
 									</div>
 									<div

@@ -3,7 +3,7 @@ import { eq, desc, asc, inArray, and, count, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { env } from '$env/dynamic/private';
 import { router, protectedProcedure } from '../init';
-import { aiConversation, aiMessage, aiUsageLog } from '$lib/server/db/schemas/ai.schema';
+import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
@@ -18,12 +18,23 @@ import {
 } from '$lib/server/db/schemas/organizations.schema';
 import { decryptSecret } from '$lib/server/kms';
 import { type AiTask, parseTaskConfig } from './aiConfig';
-import { fetchOpenRouterPrices, getDefaultModelId } from '$lib/server/openrouter';
+import { getDefaultModelId } from '$lib/server/openrouter';
+import {
+	addUsage,
+	logUsage,
+	NO_USAGE,
+	readUsage,
+	type OpenRouterUsage,
+	type Usage
+} from '$lib/server/aiUsage';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { SUMMARY_MIN_CHARS } from '$lib/server/documentSummary';
 import type { Db } from '$lib/server/db';
 
 export type WithRLS = (fn: (db: Db) => Promise<unknown>) => Promise<unknown>;
+
+// Kept here so existing importers of logUsage from this module keep working.
+export { logUsage };
 
 export type ProposedReference = {
 	citeKey?: string;
@@ -1039,55 +1050,6 @@ export async function resolveTaskKey(
 	await cacheSet(cacheKey, result, TTL.taskKey);
 	return result;
 }
-// Fixed USD→EUR rate for cost estimates (good enough for beta quotas)
-const USD_TO_EUR = 0.92;
-
-// Fire-and-forget: inserts a usage record after each AI call
-export async function logUsage(
-	withRLS: WithRLS,
-	{
-		orgId,
-		projectId,
-		userId,
-		model,
-		task,
-		inputTokens,
-		outputTokens
-	}: {
-		orgId?: string;
-		projectId?: string;
-		userId: string;
-		model: string;
-		task: string;
-		inputTokens: number;
-		outputTokens: number;
-	}
-) {
-	try {
-		const prices = await fetchOpenRouterPrices();
-		const price = prices[model];
-		let estimatedCostEur: string | undefined;
-		if (price) {
-			const costUsd = inputTokens * price.input + outputTokens * price.output;
-			estimatedCostEur = (costUsd * USD_TO_EUR).toFixed(6);
-		}
-		await withRLS((db) =>
-			db.insert(aiUsageLog).values({
-				id: crypto.randomUUID(),
-				orgId: orgId ?? null,
-				projectId: projectId ?? '',
-				userId,
-				model,
-				task,
-				inputTokens,
-				outputTokens,
-				estimatedCostEur
-			})
-		);
-	} catch (e) {
-		console.error('[logUsage] failed:', e);
-	}
-}
 
 async function runAgentLoop(
 	systemPrompt: string,
@@ -1102,8 +1064,7 @@ async function runAgentLoop(
 	content: string;
 	pendingActions: PendingAction[];
 	docsUsed: { id: string; title: string }[];
-	inputTokens: number;
-	outputTokens: number;
+	usage: Usage;
 }> {
 	const messages: OAMessage[] = [
 		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
@@ -1116,8 +1077,7 @@ async function runAgentLoop(
 		'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
 		'X-Title': 'Scholio'
 	};
-	let totalInputTokens = 0;
-	let totalOutputTokens = 0;
+	let totalUsage = NO_USAGE;
 
 	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
 		const res = await fetch(OPENROUTER_URL, {
@@ -1140,10 +1100,9 @@ async function runAgentLoop(
 
 		const data = (await res.json()) as {
 			choices: { message: OAMessage; finish_reason: string }[];
-			usage?: { prompt_tokens: number; completion_tokens: number };
+			usage?: OpenRouterUsage;
 		};
-		totalInputTokens += data.usage?.prompt_tokens ?? 0;
-		totalOutputTokens += data.usage?.completion_tokens ?? 0;
+		totalUsage = addUsage(totalUsage, readUsage(data.usage));
 
 		const choice = data.choices[0];
 		if (!choice)
@@ -1243,8 +1202,7 @@ async function runAgentLoop(
 			content: choice.message.content ?? '',
 			pendingActions,
 			docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title })),
-			inputTokens: totalInputTokens,
-			outputTokens: totalOutputTokens
+			usage: totalUsage
 		};
 	}
 
@@ -1643,6 +1601,8 @@ type EditorToolContext = {
 	withRLS: WithRLS;
 	projectId: string;
 	documentId: string;
+	/** The spell/grammar checks' calls: their own model and key, so their own usage rows. */
+	onUsage?: (model: string, task: 'spell' | 'grammar', usage: Usage) => void;
 };
 
 async function runEditorAgentLoop(
@@ -1657,8 +1617,7 @@ async function runEditorAgentLoop(
 	content: string;
 	pendingEditorActions: PendingEditorAction[];
 	pendingActions: PendingAction[];
-	inputTokens: number;
-	outputTokens: number;
+	usage: Usage;
 }> {
 	const systemPrompt = `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
 
@@ -1673,8 +1632,7 @@ async function runEditorAgentLoop(
 		'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
 		'X-Title': 'Scholio'
 	};
-	let totalInputTokens = 0;
-	let totalOutputTokens = 0;
+	let totalUsage = NO_USAGE;
 
 	for (let i = 0; i < 4; i++) {
 		const res = await fetch(OPENROUTER_URL, {
@@ -1697,10 +1655,9 @@ async function runEditorAgentLoop(
 
 		const data = (await res.json()) as {
 			choices: { message: OAMessage; finish_reason: string }[];
-			usage?: { prompt_tokens: number; completion_tokens: number };
+			usage?: OpenRouterUsage;
 		};
-		totalInputTokens += data.usage?.prompt_tokens ?? 0;
-		totalOutputTokens += data.usage?.completion_tokens ?? 0;
+		totalUsage = addUsage(totalUsage, readUsage(data.usage));
 
 		const choice = data.choices[0];
 		if (!choice)
@@ -1860,7 +1817,9 @@ ${documentContent}`;
 							if (spellRes.ok) {
 								const spellData = (await spellRes.json()) as {
 									choices: { message: { content: string } }[];
+									usage?: OpenRouterUsage;
 								};
+								toolCtx.onUsage?.(toolCtx.spellModel, 'spell', readUsage(spellData.usage));
 								const raw = JSON.parse(
 									(spellData.choices[0]?.message?.content ?? '[]')
 										.trim()
@@ -1925,7 +1884,9 @@ ${documentContent}`;
 							if (grammarRes.ok) {
 								const grammarData = (await grammarRes.json()) as {
 									choices: { message: { content: string } }[];
+									usage?: OpenRouterUsage;
 								};
+								toolCtx.onUsage?.(toolCtx.grammarModel, 'grammar', readUsage(grammarData.usage));
 								const raw = JSON.parse(
 									(grammarData.choices[0]?.message?.content ?? '[]')
 										.trim()
@@ -2009,8 +1970,7 @@ ${documentContent}`;
 			content: choice.message.content ?? '',
 			pendingEditorActions,
 			pendingActions,
-			inputTokens: totalInputTokens,
-			outputTokens: totalOutputTokens
+			usage: totalUsage
 		};
 	}
 
@@ -2038,8 +1998,7 @@ async function parseStreamingResponse(
 ): Promise<{
 	content: string;
 	toolCalls: StreamedToolCall[];
-	inputTokens: number;
-	outputTokens: number;
+	usage: Usage;
 	finishReason: string;
 }> {
 	const reader = res.body!.getReader();
@@ -2048,8 +2007,8 @@ async function parseStreamingResponse(
 	let content = '';
 	const tcMap = new Map<number, StreamedToolCall>();
 	const notifiedStarts = new Set<number>();
-	let inputTokens = 0;
-	let outputTokens = 0;
+	// No usage chunk (an aborted stream): tokens unknown, and so is the cost.
+	let usage: Usage = { inputTokens: 0, outputTokens: 0, costUsd: null };
 	let finishReason = 'stop';
 
 	try {
@@ -2078,7 +2037,7 @@ async function parseStreamingResponse(
 						};
 						finish_reason?: string | null;
 					}[];
-					usage?: { prompt_tokens?: number; completion_tokens?: number };
+					usage?: OpenRouterUsage;
 				};
 				try {
 					chunk = JSON.parse(raw);
@@ -2086,10 +2045,7 @@ async function parseStreamingResponse(
 					continue;
 				}
 
-				if (chunk.usage) {
-					inputTokens = chunk.usage.prompt_tokens ?? 0;
-					outputTokens = chunk.usage.completion_tokens ?? 0;
-				}
+				if (chunk.usage) usage = readUsage(chunk.usage);
 
 				const choice = chunk.choices?.[0];
 				if (!choice) continue;
@@ -2127,7 +2083,7 @@ async function parseStreamingResponse(
 		reader.releaseLock();
 	}
 
-	return { content, toolCalls: [...tcMap.values()], inputTokens, outputTokens, finishReason };
+	return { content, toolCalls: [...tcMap.values()], usage, finishReason };
 }
 
 export async function runAgentLoopSSE(
@@ -2144,8 +2100,7 @@ export async function runAgentLoopSSE(
 	content: string;
 	pendingActions: PendingAction[];
 	docsUsed: { id: string; title: string }[];
-	inputTokens: number;
-	outputTokens: number;
+	usage: Usage;
 }> {
 	const messages: OAMessage[] = [
 		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
@@ -2157,30 +2112,27 @@ export async function runAgentLoopSSE(
 		'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
 		'X-Title': 'Scholio'
 	};
-	let totalInputTokens = 0;
-	let totalOutputTokens = 0;
+	let totalUsage = NO_USAGE;
 
 	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
 		if (signal?.aborted) break;
-		const { content, toolCalls, inputTokens, outputTokens, finishReason } =
-			await openRouterStreamCall(
-				apiKey,
-				extraHeaders,
-				{
-					model,
-					max_tokens: 2048,
-					messages: [{ role: 'system', content: systemPrompt }, ...messages],
-					tools: TOOLS,
-					tool_choice: 'auto',
-					stream: true,
-					stream_options: { include_usage: true }
-				},
-				(chunk) => write({ type: 'text_delta', content: chunk }),
-				(name) => write({ type: 'tool_start', name }),
-				signal
-			);
-		totalInputTokens += inputTokens;
-		totalOutputTokens += outputTokens;
+		const { content, toolCalls, usage, finishReason } = await openRouterStreamCall(
+			apiKey,
+			extraHeaders,
+			{
+				model,
+				max_tokens: 2048,
+				messages: [{ role: 'system', content: systemPrompt }, ...messages],
+				tools: TOOLS,
+				tool_choice: 'auto',
+				stream: true,
+				stream_options: { include_usage: true }
+			},
+			(chunk) => write({ type: 'text_delta', content: chunk }),
+			(name) => write({ type: 'tool_start', name }),
+			signal
+		);
+		totalUsage = addUsage(totalUsage, usage);
 
 		if (finishReason === 'tool_calls' && toolCalls.length > 0) {
 			messages.push({ role: 'assistant', content: content || null, tool_calls: toolCalls });
@@ -2275,8 +2227,7 @@ export async function runAgentLoopSSE(
 			content,
 			pendingActions,
 			docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title })),
-			inputTokens: totalInputTokens,
-			outputTokens: totalOutputTokens
+			usage: totalUsage
 		};
 	}
 
@@ -2300,8 +2251,7 @@ export async function runEditorAgentLoopSSE(
 	content: string;
 	pendingEditorActions: PendingEditorAction[];
 	pendingActions: PendingAction[];
-	inputTokens: number;
-	outputTokens: number;
+	usage: Usage;
 }> {
 	const isBook = !documentContent;
 	const systemPrompt = isBook
@@ -2318,30 +2268,27 @@ export async function runEditorAgentLoopSSE(
 		'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
 		'X-Title': 'Scholio'
 	};
-	let totalInputTokens = 0;
-	let totalOutputTokens = 0;
+	let totalUsage = NO_USAGE;
 
 	for (let i = 0; i < 4; i++) {
 		if (signal?.aborted) break;
-		const { content, toolCalls, inputTokens, outputTokens, finishReason } =
-			await openRouterStreamCall(
-				apiKey,
-				extraHeaders,
-				{
-					model,
-					max_tokens: 2048,
-					messages: [{ role: 'system', content: systemPrompt }, ...messages],
-					tools: activeTools,
-					tool_choice: 'auto',
-					stream: true,
-					stream_options: { include_usage: true }
-				},
-				(chunk) => write({ type: 'text_delta', content: chunk }),
-				(name) => write({ type: 'tool_start', name }),
-				signal
-			);
-		totalInputTokens += inputTokens;
-		totalOutputTokens += outputTokens;
+		const { content, toolCalls, usage, finishReason } = await openRouterStreamCall(
+			apiKey,
+			extraHeaders,
+			{
+				model,
+				max_tokens: 2048,
+				messages: [{ role: 'system', content: systemPrompt }, ...messages],
+				tools: activeTools,
+				tool_choice: 'auto',
+				stream: true,
+				stream_options: { include_usage: true }
+			},
+			(chunk) => write({ type: 'text_delta', content: chunk }),
+			(name) => write({ type: 'tool_start', name }),
+			signal
+		);
+		totalUsage = addUsage(totalUsage, usage);
 
 		if (finishReason === 'tool_calls' && toolCalls.length > 0) {
 			messages.push({ role: 'assistant', content: content || null, tool_calls: toolCalls });
@@ -2481,7 +2428,9 @@ export async function runEditorAgentLoopSSE(
 							if (spellRes.ok) {
 								const spellData = (await spellRes.json()) as {
 									choices: { message: { content: string } }[];
+									usage?: OpenRouterUsage;
 								};
+								toolCtx.onUsage?.(toolCtx.spellModel, 'spell', readUsage(spellData.usage));
 								const raw = JSON.parse(
 									(spellData.choices[0]?.message?.content ?? '[]')
 										.trim()
@@ -2538,7 +2487,9 @@ export async function runEditorAgentLoopSSE(
 							if (grammarRes.ok) {
 								const grammarData = (await grammarRes.json()) as {
 									choices: { message: { content: string } }[];
+									usage?: OpenRouterUsage;
 								};
+								toolCtx.onUsage?.(toolCtx.grammarModel, 'grammar', readUsage(grammarData.usage));
 								const raw = JSON.parse(
 									(grammarData.choices[0]?.message?.content ?? '[]')
 										.trim()
@@ -2638,8 +2589,7 @@ export async function runEditorAgentLoopSSE(
 			content,
 			pendingEditorActions,
 			pendingActions,
-			inputTokens: totalInputTokens,
-			outputTokens: totalOutputTokens
+			usage: totalUsage
 		};
 	}
 
@@ -2875,8 +2825,7 @@ export const aiRouter = router({
 				content: assistantContent,
 				pendingActions,
 				docsUsed,
-				inputTokens: agentIn,
-				outputTokens: agentOut
+				usage: agentUsage
 			} = await runAgentLoop(
 				systemWithIndex,
 				history,
@@ -2893,8 +2842,7 @@ export const aiRouter = router({
 				userId,
 				model: effectiveModel,
 				task: 'agent',
-				inputTokens: agentIn,
-				outputTokens: agentOut
+				usage: agentUsage
 			});
 
 			// ── Persist assistant response ────────────────────────────────────
@@ -3192,8 +3140,7 @@ export const aiRouter = router({
 				content: assistantContent,
 				pendingEditorActions,
 				pendingActions,
-				inputTokens,
-				outputTokens
+				usage
 			} = await runEditorAgentLoop(
 				input.documentTitle,
 				input.documentContent,
@@ -3209,7 +3156,16 @@ export const aiRouter = router({
 					grammarModel,
 					withRLS: ctx.withRLS as WithRLS,
 					projectId: input.projectId,
-					documentId: input.documentId
+					documentId: input.documentId,
+					onUsage: (model, task, usage) =>
+						logUsage(ctx.withRLS, {
+							orgId: resolvedOrgId,
+							projectId: input.projectId,
+							userId,
+							model,
+							task,
+							usage
+						})
 				}
 			);
 
@@ -3219,8 +3175,7 @@ export const aiRouter = router({
 				userId,
 				model: effectiveModel,
 				task: 'agent',
-				inputTokens,
-				outputTokens
+				usage
 			});
 
 			// ── Persist assistant response ────────────────────────────────────
@@ -3295,8 +3250,7 @@ export const aiRouter = router({
 				ctx.db as Db,
 				userId,
 				'draft',
-				input.projectId,
-				'anthropic/claude-sonnet-4-5'
+				input.projectId
 			);
 
 			const [proj, selectedDocs, ctxLinks] = await Promise.all([
@@ -3429,7 +3383,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 
 			const data = (await response.json()) as {
 				choices: { message: { content: string } }[];
-				usage?: { prompt_tokens: number; completion_tokens: number };
+				usage?: OpenRouterUsage;
 			};
 			const generatedContent = data.choices[0]?.message?.content ?? '';
 			logUsage(ctx.withRLS, {
@@ -3438,8 +3392,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				userId,
 				model: resolvedModel,
 				task: 'draft',
-				inputTokens: data.usage?.prompt_tokens ?? 0,
-				outputTokens: data.usage?.completion_tokens ?? 0
+				usage: readUsage(data.usage)
 			});
 
 			const docId = crypto.randomUUID();
@@ -3550,8 +3503,7 @@ Reglas:
 				userId,
 				model,
 				task: 'draft',
-				inputTokens: data.usage?.prompt_tokens ?? 0,
-				outputTokens: data.usage?.completion_tokens ?? 0
+				usage: readUsage(data.usage)
 			});
 
 			return { text };
@@ -3662,8 +3614,7 @@ Rules:
 				userId,
 				model: resolvedReviewModel,
 				task: 'review',
-				inputTokens: data.usage?.prompt_tokens ?? 0,
-				outputTokens: data.usage?.completion_tokens ?? 0
+				usage: readUsage(data.usage)
 			});
 
 			type ReviewResult = {
@@ -3773,8 +3724,7 @@ Rules:
 				userId,
 				model,
 				task: 'review',
-				inputTokens: data.usage?.prompt_tokens ?? 0,
-				outputTokens: data.usage?.completion_tokens ?? 0
+				usage: readUsage(data.usage)
 			});
 
 			let questions: string[] = [];
@@ -3894,8 +3844,7 @@ ${docContent.slice(0, 10000)}`;
 				userId,
 				model,
 				task: 'review',
-				inputTokens: data.usage?.prompt_tokens ?? 0,
-				outputTokens: data.usage?.completion_tokens ?? 0
+				usage: readUsage(data.usage)
 			});
 
 			type UntaggedResult = {
@@ -4021,8 +3970,7 @@ Rules:
 				projectId: input.projectId,
 				model,
 				task: 'review',
-				inputTokens: data.usage?.prompt_tokens ?? 0,
-				outputTokens: data.usage?.completion_tokens ?? 0
+				usage: readUsage(data.usage)
 			});
 
 			return parsed;
@@ -4089,7 +4037,7 @@ ${input.text}`;
 
 			const data = (await res.json()) as {
 				choices: { message: { content: string } }[];
-				usage?: { prompt_tokens: number; completion_tokens: number };
+				usage?: OpenRouterUsage;
 			};
 
 			logUsage(ctx.withRLS, {
@@ -4098,8 +4046,7 @@ ${input.text}`;
 				projectId: input.projectId,
 				model,
 				task: 'grammar',
-				inputTokens: data.usage?.prompt_tokens ?? 0,
-				outputTokens: data.usage?.completion_tokens ?? 0
+				usage: readUsage(data.usage)
 			});
 
 			let raw: { original: string; suggestion: string; explanation: string }[];
@@ -4210,7 +4157,7 @@ ${input.text}`;
 
 			const data = (await res.json()) as {
 				choices: { message: { content: string } }[];
-				usage?: { prompt_tokens: number; completion_tokens: number };
+				usage?: OpenRouterUsage;
 			};
 
 			logUsage(ctx.withRLS, {
@@ -4219,8 +4166,7 @@ ${input.text}`;
 				projectId: input.projectId,
 				model,
 				task: 'spell',
-				inputTokens: data.usage?.prompt_tokens ?? 0,
-				outputTokens: data.usage?.completion_tokens ?? 0
+				usage: readUsage(data.usage)
 			});
 
 			let raw: { original: string; suggestion: string; explanation: string }[];

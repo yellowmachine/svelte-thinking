@@ -1,0 +1,1 @@
+ALTER TABLE "scholio"."ai_usage_log" DROP COLUMN "estimated_cost_eur";

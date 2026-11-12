@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
-import { resolveTaskKey, logUsage, OPENROUTER_URL, type WithRLS } from './trpc/routers/ai';
+import { resolveTaskKey, OPENROUTER_URL, type WithRLS } from './trpc/routers/ai';
+import { logUsage, readUsage, type OpenRouterUsage } from './aiUsage';
 import { getDefaultModelId } from './openrouter';
 import type { Db } from './db';
 
@@ -56,7 +57,7 @@ export async function runCommentModerationCheck(
 
 		const data = (await res.json()) as {
 			choices: { message: { content: string } }[];
-			usage?: { prompt_tokens: number; completion_tokens: number };
+			usage?: OpenRouterUsage;
 		};
 		const text = data.choices[0]?.message?.content?.trim() ?? '';
 
@@ -64,8 +65,7 @@ export async function runCommentModerationCheck(
 			userId,
 			model,
 			task: 'moderate',
-			inputTokens: data.usage?.prompt_tokens ?? 0,
-			outputTokens: data.usage?.completion_tokens ?? 0
+			usage: readUsage(data.usage)
 		}).catch(() => {});
 
 		const match = /^FLAG:\s*(.*)/i.exec(text);

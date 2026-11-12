@@ -9,6 +9,7 @@ import { userApiKey, userProfile } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
 import { parseTaskConfig } from './aiConfig';
 import { getDefaultModelId } from '$lib/server/openrouter';
+import { logUsage, readUsage, type OpenRouterUsage } from '$lib/server/aiUsage';
 import { coerceTemplate, canManageRequirements, type TemplateType } from '$lib/domain/requirements';
 import type { Db } from '$lib/server/db';
 
@@ -56,7 +57,8 @@ Reglas para "requirements":
 async function generateRequirementsFromAI(
 	description: string,
 	withRLS: WithRLS,
-	userId: string
+	userId: string,
+	projectId: string
 ): Promise<AIGenerateResult> {
 	const [profileRows, keys] = await Promise.all([
 		withRLS((db) =>
@@ -146,7 +148,18 @@ async function generateRequirementsFromAI(
 		});
 	}
 
-	const data = (await res.json()) as { choices: { message: { content: string } }[] };
+	const data = (await res.json()) as {
+		choices: { message: { content: string } }[];
+		usage?: OpenRouterUsage;
+	};
+	// The user's own key (no org key here), so the cost is personal.
+	logUsage(withRLS, {
+		projectId,
+		userId,
+		model,
+		task: 'requirements',
+		usage: readUsage(data.usage)
+	});
 	const raw = data.choices[0]?.message?.content?.trim() ?? '{}';
 
 	type RawResult = {
@@ -223,7 +236,8 @@ export const requirementsRouter = router({
 			const { template, requirements: aiRequirements } = await generateRequirementsFromAI(
 				input.description,
 				ctx.withRLS as WithRLS,
-				ctx.user.id
+				ctx.user.id,
+				input.projectId
 			);
 
 			if (aiRequirements.length === 0) {

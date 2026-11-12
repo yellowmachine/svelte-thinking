@@ -133,8 +133,7 @@ export const POST: RequestHandler = async (event) => {
 				userId: user.id,
 				model: effectiveModel,
 				task: 'agent',
-				inputTokens: result.inputTokens,
-				outputTokens: result.outputTokens
+				usage: result.usage
 			});
 
 			send({

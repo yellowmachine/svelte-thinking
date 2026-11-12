@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import { documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { eq } from 'drizzle-orm';
 import type { Db } from '$lib/server/db';
+import { readUsage, type OpenRouterUsage, type Usage } from '$lib/server/aiUsage';
 
 /**
  * Documents shorter than this (chars) are sent verbatim to the agent instead of summarised.
@@ -19,7 +20,8 @@ const SUMMARY_SYSTEM_PROMPT =
  * documentVersion.aiSummary. Returns early (silently) for short documents — callers
  * should include the full content directly in those cases.
  *
- * Fire-and-forget safe: all errors are caught internally.
+ * Fire-and-forget safe: all errors are caught internally. Returns the call's usage for the
+ * caller to log (it knows the user and org), or null when no call was made or it failed.
  */
 export async function generateAndSaveDocumentSummary(
 	db: Db,
@@ -29,8 +31,8 @@ export async function generateAndSaveDocumentSummary(
 	docType: string,
 	apiKey: string,
 	model: string
-): Promise<void> {
-	if (content.trim().length < SUMMARY_MIN_CHARS) return;
+): Promise<Usage | null> {
+	if (content.trim().length < SUMMARY_MIN_CHARS) return null;
 
 	try {
 		const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -54,17 +56,23 @@ export async function generateAndSaveDocumentSummary(
 			})
 		});
 
-		if (!res.ok) return;
+		if (!res.ok) return null;
 
-		const data = (await res.json()) as { choices: { message: { content: string } }[] };
+		const data = (await res.json()) as {
+			choices: { message: { content: string } }[];
+			usage?: OpenRouterUsage;
+		};
+		const usage = readUsage(data.usage);
 		const summary = data.choices[0]?.message?.content?.trim() ?? '';
-		if (!summary) return;
+		if (!summary) return usage;
 
 		await db
 			.update(documentVersion)
 			.set({ aiSummary: summary })
 			.where(eq(documentVersion.id, versionId));
+		return usage;
 	} catch {
 		// Non-critical — agent falls back to metadata if no summary exists
+		return null;
 	}
 }

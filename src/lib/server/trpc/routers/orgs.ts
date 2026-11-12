@@ -507,15 +507,15 @@ export const orgsRouter = router({
 
 	// ── Usage / Quota ─────────────────────────────────────────────────────────
 
-	// Monthly spend for an org (EUR) — owner only, RLS enforces
+	// Monthly spend for an org (USD) — owner only, RLS enforces
 	getMonthlyUsage: protectedProcedure.input(z.string()).query(async ({ ctx, input: orgId }) => {
 		const since = startOfMonth();
 		const rows = await ctx.withRLS((db) =>
 			db
-				.select({ total: sum(aiUsageLog.estimatedCostEur) })
+				.select({ total: sum(aiUsageLog.costUsd) })
 				.from(aiUsageLog)
 				.where(and(eq(aiUsageLog.orgId, orgId), gte(aiUsageLog.createdAt, since)))
 		);
-		return { totalEur: rows[0]?.total ?? '0', since };
+		return { totalUsd: rows[0]?.total ?? '0', since };
 	})
 });
