@@ -223,6 +223,32 @@
 			</nav>
 			<QuickNoteButton />
 
+			<!-- AI spending -->
+			<a
+				href={resolve('/usage')}
+				title="AI usage"
+				aria-label="AI usage"
+				aria-current={page.url.pathname.startsWith('/usage') ? 'page' : undefined}
+				class="flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink aria-[current=page]:bg-paper-ui aria-[current=page]:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink dark:aria-[current=page]:bg-dark-paper-ui dark:aria-[current=page]:text-dark-ink"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path
+						d="M8 17v-3"
+					/>
+				</svg>
+			</a>
+
 			<!-- Theme picker -->
 			<div class="relative">
 				<button

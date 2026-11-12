@@ -90,6 +90,14 @@
 						</a>
 					</li>
 					<li>
+						<a
+							href={resolve('/usage')}
+							class="block px-4 py-2 font-sans text-sm text-ink transition-colors hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+						>
+							AI usage
+						</a>
+					</li>
+					<li>
 						<form method="post" action="/logout" onsubmit={handleLogout}>
 							<button
 								type="submit"
