@@ -1,6 +1,7 @@
 <script module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import { fn } from 'storybook/test';
+	import Plus from '@lucide/svelte/icons/plus';
 	import Button from './Button.svelte';
 
 	const { Story } = defineMeta({
@@ -8,32 +9,18 @@
 		component: Button,
 		tags: ['autodocs'],
 		argTypes: {
-			variant: {
-				control: 'select',
-				options: ['primary', 'secondary', 'ghost', 'danger']
-			},
-			size: {
-				control: 'select',
-				options: ['sm', 'md', 'lg']
-			}
+			variant: { control: 'select', options: ['primary', 'secondary', 'ghost', 'danger'] },
+			size: { control: 'select', options: ['sm', 'md', 'lg'] }
 		},
-		args: {
-			onclick: fn(),
-			label: 'Botón'
-		}
+		args: { onclick: fn() }
 	});
 </script>
 
-<Story name="Primary" args={{ variant: 'primary', label: 'Guardar cambios' }} />
-
-<Story name="Secondary" args={{ variant: 'secondary', label: 'Cancelar' }} />
-
-<Story name="Ghost" args={{ variant: 'ghost', label: 'Ver más' }} />
-
-<Story name="Danger" args={{ variant: 'danger', label: 'Eliminar proyecto' }} />
-
-<Story name="Small" args={{ variant: 'primary', size: 'sm', label: 'Guardar' }} />
-
-<Story name="Large" args={{ variant: 'primary', size: 'lg', label: 'Crear proyecto' }} />
-
-<Story name="Disabled" args={{ variant: 'primary', label: 'Guardando...', disabled: true }} />
+<Story name="Primary" args={{ variant: 'primary' }}>Save changes</Story>
+<Story name="Secondary" args={{ variant: 'secondary' }}>Cancel</Story>
+<Story name="Ghost" args={{ variant: 'ghost' }}>Show more</Story>
+<Story name="Danger" args={{ variant: 'danger' }}>Delete project</Story>
+<Story name="With icon" args={{ variant: 'primary', icon: Plus }}>New document</Story>
+<Story name="Small" args={{ variant: 'primary', size: 'sm' }}>Save</Story>
+<Story name="Loading" args={{ variant: 'primary', loading: true }}>Saving</Story>
+<Story name="Disabled" args={{ variant: 'primary', disabled: true }}>Save</Story>

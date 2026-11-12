@@ -1,4 +1,6 @@
 <script lang="ts">
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import FileText from '@lucide/svelte/icons/file-text';
 	import { invalidateAll, goto } from '$app/navigation';
 	import { navigating } from '$app/state';
 	import { onMount, untrack } from 'svelte';
@@ -973,9 +975,13 @@
 
 			<!-- Document list -->
 			{#if normalDocs.length === 0 && templates.length === 0}
-				<div class="rounded-xl border border-dashed border-paper-border py-12 text-center">
-					<p class="font-sans text-sm text-ink-muted">No documents yet. Create the first one.</p>
-				</div>
+				<EmptyState
+					icon={FileText}
+					title="No documents yet"
+					description={canEdit
+						? 'Start with a paper, a chapter or a set of notes — create one above.'
+						: 'The authors have not added any documents yet.'}
+				/>
 			{:else if normalDocs.length > 0}
 				{#if normalDocsFiltered.length === 0}
 					<p class="font-sans text-sm text-ink-faint">No documents match your filter.</p>

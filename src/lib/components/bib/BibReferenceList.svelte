@@ -1,4 +1,8 @@
 <script lang="ts">
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import Plus from '@lucide/svelte/icons/plus';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
@@ -181,28 +185,18 @@
 </script>
 
 {#if totalCount === 0}
-	<div
-		class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-paper-border py-20 text-center"
+	<EmptyState
+		icon={BookOpen}
+		title="No references yet"
+		description="Add them by hand, from a DOI or a URL, or import the .bib file from Zotero or Mendeley. Then cite them in any document with [[@key]]."
 	>
-		<p class="font-serif text-lg text-ink-muted">No references yet</p>
-		<p class="mt-1 font-sans text-sm text-ink-faint">
-			Add references manually or import a .bib file
-		</p>
-		<div class="mt-4 flex gap-3">
-			<button
-				onclick={onaddnew}
-				class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white hover:bg-accent-hover"
-			>
-				+ New reference
-			</button>
-			<button
-				onclick={onimport}
-				class="rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
-			>
-				Import .bib
-			</button>
-		</div>
-	</div>
+		{#snippet action()}
+			<div class="flex flex-wrap justify-center gap-2">
+				<Button icon={Plus} onclick={onaddnew}>New reference</Button>
+				<Button variant="secondary" onclick={onimport}>Import .bib</Button>
+			</div>
+		{/snippet}
+	</EmptyState>
 {:else if refs.length === 0}
 	<p class="py-8 text-center font-sans text-sm text-ink-faint">
 		No results for "<span class="font-medium">{searchQuery}</span>"

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import BookOpen from '@lucide/svelte/icons/book-open';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { invalidateAll } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
@@ -162,12 +164,11 @@
 	</div>
 
 	{#if data.references.length === 0}
-		<div class="rounded-lg border border-paper-border bg-paper p-8 text-center">
-			<p class="font-sans text-sm text-ink-muted">
-				No references yet. Add them from the
-				<strong>Bibliography</strong> section of each project.
-			</p>
-		</div>
+		<EmptyState
+			icon={BookOpen}
+			title="Your library is empty"
+			description="References you add in any project's Bibliography are kept here, so you can reuse them across projects."
+		/>
 	{:else if filtered.length === 0}
 		<p class="font-sans text-sm text-ink-muted">
 			No results for <em>"{query}"</em>.

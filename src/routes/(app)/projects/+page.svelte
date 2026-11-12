@@ -1,4 +1,8 @@
 <script lang="ts">
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import Plus from '@lucide/svelte/icons/plus';
 	import { invalidateAll, goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
@@ -289,38 +293,15 @@
 
 	<!-- Empty state -->
 	{#if projects.length === 0}
-		<div
-			class="flex flex-col items-center justify-center rounded-xl border border-dashed border-paper-border py-20"
+		<EmptyState
+			icon={FileText}
+			title="No projects yet"
+			description="A project holds your documents, references, reviews and collaborators for one paper, thesis or book."
 		>
-			<div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-paper-ui">
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-ink-faint">
-					<path
-						d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-					<path
-						d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
-			</div>
-			<p class="font-serif text-lg font-medium text-ink">No projects yet</p>
-			<p class="mt-1 font-sans text-sm text-ink-muted">
-				Create your first academic project to get started.
-			</p>
-			<button
-				onclick={() => (showCreate = true)}
-				class="mt-6 rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover"
-			>
-				Create project
-			</button>
-		</div>
+			{#snippet action()}
+				<Button icon={Plus} onclick={() => (showCreate = true)}>Create project</Button>
+			{/snippet}
+		</EmptyState>
 	{:else}
 		{#if ownedProjects.length > 0}
 			{#if sharedProjects.length > 0}
