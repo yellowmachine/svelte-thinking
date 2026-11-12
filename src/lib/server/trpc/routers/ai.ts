@@ -460,7 +460,9 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 	// References — with abstract preview (≤200 chars)
 	if (refs.length > 0) {
 		lines.push('## Available bibliography');
-		lines.push('Use citekeys in brackets when citing: [@citeKey]');
+		lines.push(
+			'Cite references with their citekey in double brackets: [[@citeKey]] (several: [[@a; @b]])'
+		);
 		for (const r of refs) {
 			const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
 				.map((a) => [a.last, a.first].filter(Boolean).join(', '))
@@ -469,7 +471,7 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 			const abstract = r.abstract
 				? `\n   Abstract: ${r.abstract.slice(0, 200)}${r.abstract.length > 200 ? '…' : ''}`
 				: '';
-			lines.push(`[@${r.citeKey}] ${authors}${year}. ${r.title}.${abstract}`);
+			lines.push(`[[@${r.citeKey}]] ${authors}${year}. ${r.title}.${abstract}`);
 		}
 		lines.push('');
 	}
@@ -789,7 +791,7 @@ async function executeTool(
 							.join('; ');
 						const year = r.year ? ` (${r.year})` : '';
 						const doi = r.doi ? ` DOI: ${r.doi}` : '';
-						return `[@${r.citeKey}] ${authors}${year}. ${r.title}.${doi}`;
+						return `[[@${r.citeKey}]] ${authors}${year}. ${r.title}.${doi}`;
 					})
 					.join('\n'),
 				docsUsed: []
@@ -1780,7 +1782,7 @@ async function runEditorAgentLoop(
 									.map((a) => [a.last, a.first].filter(Boolean).join(', '))
 									.join('; ');
 								const year = r.year ? ` (${r.year})` : '';
-								return `[@${r.citeKey}] ${authors}${year}. ${r.title}.`;
+								return `[[@${r.citeKey}]] ${authors}${year}. ${r.title}.`;
 							})
 							.join('\n');
 						return { role: 'tool' as const, tool_call_id: tc.id, content: output };
@@ -2399,7 +2401,7 @@ export async function runEditorAgentLoopSSE(
 									.map((a) => [a.last, a.first].filter(Boolean).join(', '))
 									.join('; ');
 								const year = r.year ? ` (${r.year})` : '';
-								return `[@${r.citeKey}] ${authors}${year}. ${r.title}.`;
+								return `[[@${r.citeKey}]] ${authors}${year}. ${r.title}.`;
 							})
 							.join('\n');
 						return { role: 'tool' as const, tool_call_id: tc.id, content: output };
@@ -3468,7 +3470,7 @@ ${projectContext}
 Reglas:
 - Responde ÚNICAMENTE con el texto redactado, listo para insertar en el documento. Sin explicaciones ni preámbulos.
 - Usa el idioma del investigador (detecta por la instrucción).
-- Cita referencias usando su citekey entre corchetes: [@citeKey].
+- Cita referencias con su citekey entre dobles corchetes: [[@citeKey]] (varias: [[@a; @b]]).
 - El texto debe tener un tono académico apropiado para publicación científica.
 - No inventes datos, cifras ni afirmaciones que no estén en el contexto.`;
 
@@ -3577,7 +3579,7 @@ Respond ONLY with a valid JSON object (no markdown, no explanation outside the J
 
 Rules:
 - "requirements": include every requirement from the project context, in the same order. Set "covered" to true only if the document meaningfully addresses it.
-- "uncitedRefs": list citeKeys from the bibliography that are relevant to the document's topic but never mentioned (as [@citeKey]) in the document. Omit refs that are genuinely unrelated to the document content.
+- "uncitedRefs": list citeKeys from the bibliography that are relevant to the document's topic but never mentioned (as [[@citeKey]]) in the document. Omit refs that are genuinely unrelated to the document content.
 - Keep notes concise (max 15 words).
 - Use the language of the document.`;
 

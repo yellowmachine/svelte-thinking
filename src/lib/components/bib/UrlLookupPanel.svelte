@@ -29,14 +29,13 @@
 		projectId: string;
 		hasAiKey: boolean;
 		onclose: () => void;
-		onaccept: (result: UrlResult, savePdf: boolean, importDocument: boolean) => Promise<void>;
+		onaccept: (result: UrlResult, importDocument: boolean) => Promise<void>;
 	} = $props();
 
 	let urlInput = $state('');
 	let urlLoading = $state(false);
 	let urlResult = $state<UrlResult | null>(null);
 	let urlError = $state('');
-	let urlSavePdf = $state(false);
 	let urlImportDocument = $state(false);
 	let urlImportingDoc = $state(false);
 
@@ -61,10 +60,9 @@
 		if (!urlResult) return;
 		urlImportingDoc = urlImportDocument;
 		try {
-			await onaccept(urlResult, urlSavePdf, urlImportDocument);
+			await onaccept(urlResult, urlImportDocument);
 			urlInput = '';
 			urlResult = null;
-			urlSavePdf = false;
 			urlImportDocument = false;
 		} catch (e) {
 			urlError = e instanceof Error ? e.message : 'Could not save reference.';
@@ -170,16 +168,6 @@
 					<p class="font-sans text-[11px] text-ink-muted dark:text-dark-ink-muted">
 						Review and edit the fields after adding if needed.
 					</p>
-					<label class="flex cursor-pointer items-center gap-2">
-						<input
-							type="checkbox"
-							bind:checked={urlSavePdf}
-							class="h-3.5 w-3.5 rounded accent-accent"
-						/>
-						<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
-							Save a PDF snapshot
-						</span>
-					</label>
 					<label class="flex cursor-pointer items-center gap-2">
 						<input
 							type="checkbox"

@@ -988,7 +988,7 @@
 				<p class="font-sans text-sm font-semibold text-ink dark:text-dark-ink">Storage (S3)</p>
 				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
 					Configure an S3-compatible bucket (AWS S3, Cloudflare R2, MinIO…) to enable photo uploads
-					and PDF snapshots. Without storage, the Photos section is unavailable.
+					and reference PDFs. Without storage, the Photos section is unavailable.
 				</p>
 			</div>
 			<div

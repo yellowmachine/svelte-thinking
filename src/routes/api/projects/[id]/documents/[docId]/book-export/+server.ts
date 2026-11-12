@@ -150,8 +150,11 @@ export const GET: RequestHandler = async (event) => {
 
 	// Convert content to Typst sections
 	const imageRegistry = new Map<string, string>();
+	const citeKeys = new Set(refs.map((r) => r.citeKey));
 
-	const typstPreamble = preamble ? markdownToTypst(preamble, imageRegistry) : undefined;
+	const typstPreamble = preamble
+		? markdownToTypst(preamble, imageRegistry, { citeKeys })
+		: undefined;
 
 	const sections = chapterRefs.map((ref) => {
 		const chapter = chapterData.get(ref.uuid);
@@ -162,7 +165,7 @@ export const GET: RequestHandler = async (event) => {
 			.replace(/^# [^\n]*\n?/, '');
 		return {
 			title: ref.title,
-			content: markdownToTypst(chapterContent, imageRegistry),
+			content: markdownToTypst(chapterContent, imageRegistry, { citeKeys }),
 			sectionType: (chapter?.type === 'chapter' ? 'chapter' : 'unnumbered') as
 				| 'chapter'
 				| 'unnumbered'

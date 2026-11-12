@@ -561,13 +561,6 @@ export const referencesRouter = router({
 			return { inserted: newLinks.length, skipped: toLink.length - newLinks.length };
 		}),
 
-	// ── Generate PDF from the reference's URL (disabled in beta) ───────────
-	generatePdfFromUrl: protectedProcedure
-		.input(z.object({ refId: z.string(), projectId: z.string() }))
-		.mutation(async () => {
-			return { pdfKey: null };
-		}),
-
 	// ── Export all references as a .bib file string ───────────────────────
 
 	exportBibtex: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {

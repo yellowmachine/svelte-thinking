@@ -52,12 +52,14 @@ El editor usa Markdown estándar extendido con las siguientes funcionalidades pr
 ### Citas bibliográficas
 
 ```markdown
-La selección natural opera sobre variaciones heredables [@darwin1859].
-Algunos autores discrepan en el mecanismo [@dawkins1976; @gould1979].
+La selección natural opera sobre variaciones heredables [[@darwin1859]].
+Algunos autores discrepan en el mecanismo [[@dawkins1976; @gould1979]].
 ```
 
-Las citas se renderizan según el estilo seleccionado (APA 7, IEEE o Vancouver).
-Al final del documento se genera la bibliografía automáticamente.
+Las citas se renderizan según el estilo seleccionado (APA 7, IEEE, Vancouver o Chicago).
+Al final del documento se genera la bibliografía automáticamente. La forma de Pandoc `[@clave]`
+también se acepta (vista previa y exportaciones), pero el editor inserta `[[@clave]]`. En las
+exportaciones a Typst/PDF, una clave que no está en la bibliografía sale como texto `[clave]`.
 
 ### Matemáticas (KaTeX)
 
@@ -110,9 +112,9 @@ El panel "Mencionado en" del editor muestra los backlinks entrantes al documento
 ## Introducción
 
 El problema de la justificación epistémica ocupa un lugar central en la
-filosofía analítica desde al menos [[Conocimiento y creencia]] [@ayer1956].
+filosofía analítica desde al menos [[Conocimiento y creencia]] [[@ayer1956]].
 La formulación clásica del conocimiento como _creencia verdadera justificada_
-fue cuestionada definitivamente por Edmund Gettier [@gettier1963].
+fue cuestionada definitivamente por Edmund Gettier [[@gettier1963]].
 
 ## Formalización
 
@@ -125,7 +127,7 @@ $$
 donde $B$ es creencia, $V$ es verdad y $J$ es justificación.
 
 Gettier demostró que esta condición es **necesaria pero no suficiente**
-[@gettier1963; @chisholm1966].
+[[@gettier1963; @chisholm1966]].
 
 ## Distribución de casos en la literatura
 

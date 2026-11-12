@@ -17,7 +17,7 @@
 	const longContent = `## Discusión
 
 Los resultados obtenidos muestran una correlación significativa entre las variables analizadas (p < 0.05),
-lo que confirma la hipótesis planteada en la introducción. En consonancia con estudios previos [@smith2022],
+lo que confirma la hipótesis planteada en la introducción. En consonancia con estudios previos [[@smith2022]],
 se observa que el efecto es especialmente pronunciado en el grupo de control.
 
 Sin embargo, es necesario considerar las limitaciones metodológicas descritas en la sección anterior.
@@ -93,7 +93,7 @@ Temas clave: financiación, metodología cualitativa, próximos pasos.`;
 			type: 'create_document',
 			title: 'Referencias bibliográficas',
 			docType: 'bibliography',
-			content: '[@smith2022] [@jones2021] [@garcia2023]'
+			content: '[[@smith2022]] [[@jones2021]] [[@garcia2023]]'
 		}
 	}}
 />

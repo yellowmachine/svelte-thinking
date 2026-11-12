@@ -1,6 +1,5 @@
 <script lang="ts">
 	/* eslint-disable @typescript-eslint/no-explicit-any */
-	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import { CITATION_STYLE_LABELS, type CitationStyle } from '$lib/utils/citations';
 	import type { PageData } from './$types';
@@ -47,8 +46,6 @@
 				r.booktitle?.toLowerCase().includes(q)
 		);
 	});
-
-	let generatingPdfIds = new SvelteSet<string>();
 
 	// ── Semantic Scholar ────────────────────────────────────────────────────
 	let showSemanticSearch = $state(false);
@@ -231,7 +228,6 @@
 				{searchQuery}
 				{citationStyle}
 				projectId={data.project.id}
-				{generatingPdfIds}
 				onedit={(ref) => openEdit(ref as any)}
 				ondelete={(ref) => (refToDelete = ref as any)}
 				onaddnew={openNew}
@@ -308,7 +304,7 @@
 				projectId={data.project.id}
 				hasAiKey={data.hasAiKey}
 				onclose={closePanel}
-				onaccept={async (result, savePdf, importDocument) => {
+				onaccept={async (result, importDocument) => {
 					const sourceUrl = result.url;
 					const newRef = await trpc.references.create.mutate({
 						projectId: data.project.id,
@@ -355,27 +351,6 @@
 							.catch((e) =>
 								flash.set(e instanceof Error ? e.message : 'Document import failed.', 'error')
 							);
-					}
-					if (savePdf) {
-						const refId = newRef.id;
-						generatingPdfIds.add(refId);
-						trpc.references.generatePdfFromUrl
-							.mutate({ refId, projectId: data.project.id })
-							.then((res) => {
-								if (res?.pdfKey)
-									references = references.map((r) =>
-										r.id === refId
-											? { ...r, pdfKey: res.pdfKey, pdfUrl: `/api/references/${refId}/pdf` }
-											: r
-									);
-								else flash.set('PDF generation failed — you can upload one manually.', 'error');
-							})
-							.catch(() =>
-								flash.set('PDF generation failed — you can upload one manually.', 'error')
-							)
-							.finally(() => {
-								generatingPdfIds.delete(refId);
-							});
 					}
 				}}
 			/>

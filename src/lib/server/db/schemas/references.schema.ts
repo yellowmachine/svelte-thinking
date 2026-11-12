@@ -128,7 +128,7 @@ export const reference = scholioSchema
 	.enableRLS();
 
 // reference_subnote: page/section-level annotations within a reference.
-// Cited as [@citeKey:slug] in document text; renders as root reference
+// Cited as [[@citeKey:slug]] in document text; renders as root reference
 // but hover popup shows the subnote notes.
 export const referenceSubnote = scholioSchema
 	.table(

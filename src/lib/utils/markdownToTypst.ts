@@ -4,14 +4,26 @@
  * Handles:
  * - Standard: headings, bold, italic, inline code, fenced code blocks,
  *   unordered/ordered lists, blockquotes, horizontal rules, links, images, display/inline math
- * - Scholio: [@citeKey] / [@k1; @k2] citations → Typst @key syntax
+ * - Scholio: [[@citeKey]] / [[@k1; @k2]] citations (and the older [@key]) → Typst @key syntax
  * - GFM footnotes: [^id] references + [^id]: content definitions → #footnote[...]
  * - Wikilinks [[Title]] → plain text
  *
  * @param imageRegistry  Optional map (localFilename → remoteUrl) populated as images are found.
  *                       The caller passes it to compileToPdf so the microservice can download them.
  */
-export function markdownToTypst(md: string, imageRegistry?: Map<string, string>): string {
+
+import { replaceCitations } from './citationSyntax';
+import { escapeTypstLine, escapeTypstText, typstCitation } from './typstEscape';
+
+export type MarkdownToTypstOptions = {
+	/** Cite keys present in refs.bib. Others are printed as text instead of breaking the compile. */
+	citeKeys?: Set<string>;
+};
+export function markdownToTypst(
+	md: string,
+	imageRegistry?: Map<string, string>,
+	options: MarkdownToTypstOptions = {}
+): string {
 	let src = md.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 	src = src.replace(/^---\r?\n[\s\S]*?\n---[ \t]*(\r?\n|$)/, '');
 
@@ -39,7 +51,7 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 				.filter((l: string) => l.trim().startsWith('>'))
 				.map((l: string) => l.replace(/^\s*>\s?/, '').trimEnd())
 				.filter(Boolean);
-			const content = lines.map(inlineToTypst).join('\n\n');
+			const content = lines.map((l) => inlineToTypst(escapeTypstLine(l))).join('\n\n');
 			const labels: Record<string, string> = {
 				note: 'Nota',
 				warning: 'Atención',
@@ -123,20 +135,21 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	);
 
 	// Replace inline references [^id] with #footnote[content]
+	const footnotePlaceholders: string[] = [];
 	src = src.replace(/\[\^([^\]]+)\]/g, (_m, id: string) => {
 		const content = footnotes.get(id.trim());
 		if (!content) return ''; // undefined footnote: remove silently
-		const converted = inlineToTypst(content);
-		return `#footnote[${converted}]`;
+		footnotePlaceholders.push(`#footnote[${inlineToTypst(escapeTypstLine(content))}]`);
+		return `%%FN${footnotePlaceholders.length - 1}%%`;
 	});
 
-	// ── 5. Citations [@key] / [@key1; @key2] → @key (Typst native) ───────────
-	src = src.replace(/\[(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]/g, (_m, inner: string) =>
-		inner
-			.split(';')
-			.map((k) => k.trim()) // keep the @ prefix — Typst uses @key
-			.join(' ')
-	);
+	// ── 5. Citations [[@key1; @key2]] (and the older [@key]) → @key (Typst native)
+	//     Placeholders, so the text escaping below leaves the @ alone.
+	const citePlaceholders: string[] = [];
+	src = replaceCitations(src, (keys) => {
+		citePlaceholders.push(typstCitation(keys, options.citeKeys));
+		return `%%CITE${citePlaceholders.length - 1}%%`;
+	});
 
 	// ── 6. Wikilinks ─────────────────────────────────────────────────────────
 
@@ -173,6 +186,10 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 
 	// 6d. Generic wikilinks [[Title]] / [[Title:hash]] → plain text
 	src = src.replace(/\[\[([^\]|]+?)(?:[:|][^\]]+)?\]\]/g, '$1');
+
+	// ── 6.5 Escape what is left of the plain text (@, #, $, <, ~, //) ─────────
+	//     Everything that already is Typst sits behind a %%PLACEHOLDER%%.
+	src = escapeTypstText(src);
 
 	// ── 7. Block-level transforms ─────────────────────────────────────────────
 	const lines = src.split('\n');
@@ -243,6 +260,8 @@ export function markdownToTypst(md: string, imageRegistry?: Map<string, string>)
 	result = result.replace(/%%EPIGRAPH(\d+)%%/g, (_m, i) => epigraphs[parseInt(i)]);
 	result = result.replace(/%%PP(\d+)%%/g, (_m, i) => personPlaceholders[parseInt(i)]);
 	result = result.replace(/%%DIAG(\d+)%%/g, (_m, i) => diagramPlaceholders[parseInt(i)]);
+	result = result.replace(/%%FN(\d+)%%/g, (_m, i) => footnotePlaceholders[parseInt(i)]);
+	result = result.replace(/%%CITE(\d+)%%/g, (_m, i) => citePlaceholders[parseInt(i)]);
 	result = result.replace(/%%PERSONS_INDEX%%/g, () => generatePersonsIndex(personNames));
 
 	return result;
@@ -289,7 +308,9 @@ function renderEpigraphToTypst(lines: string[]): string {
 }
 
 function escapeTypstStringHelper(s: string): string {
-	return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\[/g, '\\[').replace(/\]/g, '\\]');
+	return escapeTypstLine(
+		s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\[/g, '\\[').replace(/\]/g, '\\]')
+	);
 }
 
 function extOf(url: string): string {

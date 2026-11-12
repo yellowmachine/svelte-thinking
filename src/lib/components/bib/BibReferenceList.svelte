@@ -30,7 +30,6 @@
 		searchQuery,
 		citationStyle,
 		projectId,
-		generatingPdfIds,
 		onedit,
 		ondelete,
 		onaddnew,
@@ -42,7 +41,6 @@
 		searchQuery: string;
 		citationStyle: CitationStyle;
 		projectId: string;
-		generatingPdfIds: SvelteSet<string>;
 		onedit: (ref: BibRef) => void;
 		ondelete: (ref: BibRef) => void;
 		onaddnew: () => void;
@@ -55,7 +53,7 @@
 
 	let copiedId = $state<string | null>(null);
 	async function copyCiteKey(ref: BibRef) {
-		await navigator.clipboard.writeText(`[@${ref.citeKey}]`);
+		await navigator.clipboard.writeText(`[[@${ref.citeKey}]]`);
 		copiedId = ref.id;
 		setTimeout(() => (copiedId = null), 1500);
 	}
@@ -219,7 +217,7 @@
 				<button
 					onclick={() => copyCiteKey(ref)}
 					translate="no"
-					title="Copiar como [@{ref.citeKey}]"
+					title="Copiar como [[@{ref.citeKey}]]"
 					class="mt-0.5 shrink-0 rounded-md border border-accent/30 bg-accent/5 px-2 py-0.5 font-mono text-xs font-medium text-accent transition-colors hover:bg-accent/10"
 				>
 					{copiedId === ref.id ? '✓' : ref.citeKey}
@@ -491,15 +489,7 @@
 					</button>
 
 					<!-- PDF badge -->
-					{#if generatingPdfIds.has(ref.id)}
-						<span
-							title="Generating PDF…"
-							class="flex items-center gap-1 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-ink-faint uppercase dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
-						>
-							<Spinner size="sm" />
-							PDF
-						</span>
-					{:else if ref.pdfKey}
+					{#if ref.pdfKey}
 						<div class="flex items-center gap-0.5">
 							<a
 								href={resolve(`/api/references/${ref.id}/pdf`)}

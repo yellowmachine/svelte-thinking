@@ -94,7 +94,9 @@ function extractAbstract(sections: TypstSection[]): {
 }
 
 function renderSections(sections: TypstSection[]): string {
-	return sections.map((s) => `== ${s.title}\n\n${s.content.trim()}`).join('\n\n#v(1em)\n\n');
+	return sections
+		.map((s) => `== ${escapeTypstString(s.title)}\n\n${s.content.trim()}`)
+		.join('\n\n#v(1em)\n\n');
 }
 
 /**

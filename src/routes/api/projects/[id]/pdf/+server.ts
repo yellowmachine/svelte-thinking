@@ -96,10 +96,13 @@ export const GET: RequestHandler = async (event) => {
 	// Build sections in requirement order, skip missing docs
 	// imageRegistry collects localName → minioUrl for all images found across sections
 	const imageRegistry = new Map<string, string>();
+	const citeKeys = new Set(rawRefs.map((r) => r.citeKey));
 	const sections = fulfilledReqs.flatMap((req) => {
 		const doc = docMap.get(req.fulfilledDocumentId!);
 		if (!doc || !doc.draftContent?.trim()) return [];
-		return [{ title: req.name, content: markdownToTypst(doc.draftContent, imageRegistry) }];
+		return [
+			{ title: req.name, content: markdownToTypst(doc.draftContent, imageRegistry, { citeKeys }) }
+		];
 	});
 
 	if (sections.length === 0) {

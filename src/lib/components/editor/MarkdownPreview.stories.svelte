@@ -82,7 +82,7 @@ $$\\hat{f}(\\xi) = \\int_{-\\infty}^{\\infty} f(x)\\, e^{-2\\pi i x \\xi}\\, dx$
 		],
 		content: `# Marco teórico
 
-Según [@latour2004], la ciencia es una construcción social mediada por redes de actores humanos y no humanos. Este enfoque contrasta con la visión normativa clásica propuesta por [@merton1973], quien identificó cuatro normas institucionales: universalismo, comunismo, desinterés y escepticismo organizado.
+Según [[@latour2004]], la ciencia es una construcción social mediada por redes de actores humanos y no humanos. Este enfoque contrasta con la visión normativa clásica propuesta por [[@merton1973]], quien identificó cuatro normas institucionales: universalismo, comunismo, desinterés y escepticismo organizado.
 
 ## Referencias
 `
@@ -133,11 +133,11 @@ Según [@latour2004], la ciencia es una construcción social mediada por redes d
 		],
 		content: `# Intencionalidad y acción humana
 
-La teoría de la intencionalidad desarrollada por [@dennett1991] sostiene que la conciencia no es una entidad sustancial sino un proceso emergente de patrones de información. Esta perspectiva tiene implicaciones directas para la comprensión de la acción deliberada.
+La teoría de la intencionalidad desarrollada por [[@dennett1991]] sostiene que la conciencia no es una entidad sustancial sino un proceso emergente de patrones de información. Esta perspectiva tiene implicaciones directas para la comprensión de la acción deliberada.
 
-Desde una óptica radicalmente distinta, [@mises1949] define la *praxeología* como la ciencia de la acción humana intencional: toda acción supone un fin, medios escogidos y la expectativa de mejorar la situación del agente. La racionalidad no es un requisito psicológico sino la estructura lógica de la acción misma.
+Desde una óptica radicalmente distinta, [[@mises1949]] define la *praxeología* como la ciencia de la acción humana intencional: toda acción supone un fin, medios escogidos y la expectativa de mejorar la situación del agente. La racionalidad no es un requisito psicológico sino la estructura lógica de la acción misma.
 
-La compatibilidad entre el naturalismo de [@dennett2003] y el apriorismo de [@mises1957] es uno de los problemas filosóficos más sugerentes de la teoría de la acción contemporánea.
+La compatibilidad entre el naturalismo de [[@dennett2003]] y el apriorismo de [[@mises1957]] es uno de los problemas filosóficos más sugerentes de la teoría de la acción contemporánea.
 `
 	}}
 />
@@ -178,7 +178,7 @@ La compatibilidad entre el naturalismo de [@dennett2003] y el apriorismo de [@mi
 		],
 		content: `# Arquitecturas de atención
 
-Los modelos transformer [@vaswani2017] sustituyeron las redes recurrentes mediante mecanismos de auto-atención, permitiendo paralelización completa durante el entrenamiento. Esta arquitectura se construye sobre los fundamentos del aprendizaje profundo establecidos por [@lecun2015].
+Los modelos transformer [[@vaswani2017]] sustituyeron las redes recurrentes mediante mecanismos de auto-atención, permitiendo paralelización completa durante el entrenamiento. Esta arquitectura se construye sobre los fundamentos del aprendizaje profundo establecidos por [[@lecun2015]].
 `
 	}}
 />
@@ -214,7 +214,7 @@ Los modelos transformer [@vaswani2017] sustituyeron las redes recurrentes median
 		],
 		content: `# Metodología clínica
 
-La intervención fue diseñada siguiendo las recomendaciones internacionales de [@who2023]. El ensayo controlado aleatorizado reportado por [@smith2021] mostró una reducción significativa en la incidencia del evento primario.
+La intervención fue diseñada siguiendo las recomendaciones internacionales de [[@who2023]]. El ensayo controlado aleatorizado reportado por [[@smith2021]] mostró una reducción significativa en la incidencia del evento primario.
 `
 	}}
 />
