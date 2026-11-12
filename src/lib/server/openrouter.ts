@@ -112,7 +112,7 @@ export interface ResolvedModel {
 // see getModelCatalog — so we retry resolving the real catalog on the next call
 // rather than getting stuck serving this for the full 5-day TTL.
 const SAFETY_NET_MODEL: ResolvedModel = {
-	id: 'anthropic/claude-haiku-4.5',
+	id: 'anthropic/claude-haiku-5.5',
 	familyKey: 'claude-haiku',
 	label: 'Claude Haiku (fast)',
 	shortLabel: 'Haiku',

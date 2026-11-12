@@ -29,28 +29,28 @@ export const AI_TASKS: {
 		id: 'agent',
 		label: 'Agent (chat)',
 		description: 'Conversational assistant with tool use',
-		hint: 'Needs tool calling support. A capable model like Sonnet or GPT-4o works best — it reasons, searches, and takes actions across your project.',
+		hint: 'Needs tool calling support. A capable model like Claude Sonnet or GPT Sol works best — it reasons, searches, and takes actions across your project.',
 		defaultFamily: 'claude-sonnet'
 	},
 	{
 		id: 'draft',
 		label: 'Draft',
 		description: 'Generate document drafts and sections',
-		hint: 'Benefits from a high-quality, long-context model. Gemini 2.5 Pro or Claude Sonnet handle long documents well.',
+		hint: 'Benefits from a high-quality, long-context model. Gemini 4 or Claude Sonnet handle long documents well.',
 		defaultFamily: 'claude-sonnet'
 	},
 	{
 		id: 'review',
 		label: 'Review',
 		description: 'Review and give feedback on documents',
-		hint: 'A reasoning-focused model gives better structured feedback. DeepSeek R1 or o3-mini are strong and affordable choices.',
-		defaultFamily: 'deepseek-r1'
+		hint: 'A strong model gives better structured feedback. Claude Sonnet or Gemini 4 are solid choices; DeepSeek Pro is a much cheaper alternative.',
+		defaultFamily: 'claude-sonnet'
 	},
 	{
 		id: 'requirements',
 		label: 'Requirements',
 		description: 'Generate project requirements',
-		hint: 'Needs structured output and logical thinking. Gemini Flash or DeepSeek V3 offer a good speed/quality balance.',
+		hint: 'Needs structured output and logical thinking. Gemini Flash or DeepSeek Flash offer a good speed/quality balance.',
 		defaultFamily: 'gemini-flash'
 	},
 	{
@@ -97,6 +97,12 @@ export const AI_TASKS: {
 export const MODEL_FAMILIES: { key: string; pattern: RegExp; label: string; shortLabel: string }[] =
 	[
 		{
+			key: 'claude-fable',
+			pattern: /^anthropic\/claude-fable-[\d.]+$/,
+			label: 'Claude Fable (most capable, priciest)',
+			shortLabel: 'Fable'
+		},
+		{
 			key: 'claude-opus',
 			pattern: /^anthropic\/claude-opus-[\d.]+$/,
 			label: 'Claude Opus (best quality)',
@@ -115,10 +121,11 @@ export const MODEL_FAMILIES: { key: string; pattern: RegExp; label: string; shor
 			shortLabel: 'Haiku'
 		},
 		{
+			// Google's top line: "gemini-x.y-pro" up to 3.x, named models (argon, carbon) since 4.
 			key: 'gemini-pro',
-			pattern: /^google\/gemini-[\d.]+-pro$/,
-			label: 'Gemini Pro (long context)',
-			shortLabel: 'Gemini Pro'
+			pattern: /^google\/gemini-(?:[\d.]+-pro|4-(?:argon|carbon))$/,
+			label: 'Gemini 4 (long context)',
+			shortLabel: 'Gemini 4'
 		},
 		{
 			key: 'gemini-flash',
@@ -127,40 +134,28 @@ export const MODEL_FAMILIES: { key: string; pattern: RegExp; label: string; shor
 			shortLabel: 'Gemini Flash'
 		},
 		{
-			key: 'gpt-4o',
-			pattern: /^openai\/gpt-4o$/,
-			label: 'GPT-4o',
-			shortLabel: 'GPT-4o'
+			key: 'gpt-sol',
+			pattern: /^openai\/gpt-[\d.]+-sol$/,
+			label: 'GPT Sol (OpenAI flagship)',
+			shortLabel: 'GPT Sol'
 		},
 		{
-			key: 'gpt-4o-mini',
-			pattern: /^openai\/gpt-4o-mini$/,
-			label: 'GPT-4o mini (fast)',
-			shortLabel: 'GPT-4o mini'
+			key: 'gpt-luna',
+			pattern: /^openai\/gpt-[\d.]+-luna$/,
+			label: 'GPT Luna (fast, cheap)',
+			shortLabel: 'GPT Luna'
 		},
 		{
-			key: 'o3-mini',
-			pattern: /^openai\/o3-mini$/,
-			label: 'o3-mini (formal reasoning)',
-			shortLabel: 'o3-mini'
+			key: 'deepseek-pro',
+			pattern: /^deepseek\/deepseek-v[\d.]+-pro$/,
+			label: 'DeepSeek Pro (affordable)',
+			shortLabel: 'DeepSeek Pro'
 		},
 		{
-			key: 'deepseek-r1',
-			pattern: /^deepseek\/deepseek-r1$/,
-			label: 'DeepSeek R1 (reasoning, affordable)',
-			shortLabel: 'DeepSeek R1'
-		},
-		{
-			key: 'deepseek-chat',
-			pattern: /^deepseek\/deepseek-chat$/,
-			label: 'DeepSeek V3 (affordable)',
-			shortLabel: 'DeepSeek V3'
-		},
-		{
-			key: 'llama-3.3-70b',
-			pattern: /^meta-llama\/llama-3\.3-70b-instruct$/,
-			label: 'Llama 3.3 70B (open source)',
-			shortLabel: 'Llama 3.3'
+			key: 'deepseek-flash',
+			pattern: /^deepseek\/deepseek-v[\d.]+-flash$/,
+			label: 'DeepSeek Flash (very cheap)',
+			shortLabel: 'DeepSeek Flash'
 		},
 		{
 			key: 'sonar',
@@ -178,15 +173,16 @@ export const MODEL_FAMILIES: { key: string; pattern: RegExp; label: string; shor
 
 // Tasks for which each model family is recommended (empty = no specific recommendation)
 export const MODEL_RECOMMENDATIONS: Record<string, AiTask[]> = {
+	'claude-fable': ['agent', 'draft'],
 	'claude-opus': ['agent', 'draft'],
 	'claude-sonnet': ['agent', 'draft', 'review'],
 	'claude-haiku': ['bibliography', 'spell', 'grammar', 'summary', 'moderate'],
 	'gemini-pro': ['draft', 'review'],
 	'gemini-flash': ['requirements', 'summary'],
-	'gpt-4o': ['agent', 'draft'],
-	'o3-mini': ['review'],
-	'deepseek-r1': ['review', 'requirements'],
-	'deepseek-chat': ['draft', 'requirements']
+	'gpt-sol': ['agent', 'draft'],
+	'gpt-luna': ['spell', 'grammar', 'summary'],
+	'deepseek-pro': ['review', 'requirements'],
+	'deepseek-flash': ['requirements', 'summary']
 };
 
 // Best-effort display label for an arbitrary (possibly historical, possibly no

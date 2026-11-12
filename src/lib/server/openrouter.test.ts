@@ -105,7 +105,7 @@ describe('getModelCatalog: family resolution', () => {
 		const catalog = await getModelCatalog();
 
 		expect(catalog).toHaveLength(1);
-		expect(catalog[0].id).toBe('anthropic/claude-haiku-4.5');
+		expect(catalog[0].id).toBe('anthropic/claude-haiku-5.5');
 	});
 
 	it('does not cache the safety-net fallback in Redis', async () => {
@@ -144,12 +144,12 @@ describe('getModelCatalog: Redis cache', () => {
 
 describe('getDefaultModelId', () => {
 	it("resolves a task's default family to the current catalog id", async () => {
-		mockOpenRouterResponse([{ id: 'anthropic/claude-haiku-4.5', created: 100, toolCalling: true }]);
+		mockOpenRouterResponse([{ id: 'anthropic/claude-haiku-9', created: 100, toolCalling: true }]);
 		const { getDefaultModelId } = await import('./openrouter');
 
 		const model = await getDefaultModelId('bibliography'); // defaultFamily: 'claude-haiku'
 
-		expect(model).toBe('anthropic/claude-haiku-4.5');
+		expect(model).toBe('anthropic/claude-haiku-9');
 	});
 
 	it('falls back to the safety-net id when the resolved family is unavailable', async () => {
@@ -158,6 +158,6 @@ describe('getDefaultModelId', () => {
 
 		const model = await getDefaultModelId('bibliography'); // claude-haiku family absent from response
 
-		expect(model).toBe('anthropic/claude-haiku-4.5');
+		expect(model).toBe('anthropic/claude-haiku-5.5');
 	});
 });
