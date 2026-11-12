@@ -5,9 +5,12 @@
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import Banner from '$lib/components/ui/Banner.svelte';
+	import ProjectTabs from '$lib/components/projects/ProjectTabs.svelte';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 	const projectId = $derived(page.params.id!);
+	// The document editor has its own header (breadcrumb, toolbar): no tabs there.
+	const inEditor = $derived(page.route.id?.includes('/documents/[docId]') ?? false);
 
 	$effect(() => {
 		workspaceStore.syncToOrg(data.projectOrgId);
@@ -53,6 +56,10 @@
 			{/if}
 		{/snippet}
 	</Banner>
+{/if}
+
+{#if !inEditor}
+	<ProjectTabs {projectId} projectTitle={data.projectTitle} />
 {/if}
 
 {@render children()}

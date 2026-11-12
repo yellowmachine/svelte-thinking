@@ -11,6 +11,7 @@ export const load: LayoutServerLoad = async (event) => {
 	const rows = (await event.locals.withRLS((db) =>
 		db
 			.select({
+				title: project.title,
 				orgId: project.orgId,
 				ownerId: project.ownerId,
 				scheduledDeleteAt: project.scheduledDeleteAt
@@ -18,11 +19,16 @@ export const load: LayoutServerLoad = async (event) => {
 			.from(project)
 			.where(eq(project.id, projectId))
 			.limit(1)
-	)) as { orgId: string | null; ownerId: string; scheduledDeleteAt: Date | null }[];
+	)) as {
+		title: string;
+		orgId: string | null;
+		ownerId: string;
+		scheduledDeleteAt: Date | null;
+	}[];
 
 	if (!rows[0]) error(404, 'Project not found');
 
-	const { orgId, ownerId, scheduledDeleteAt } = rows[0];
+	const { title, orgId, ownerId, scheduledDeleteAt } = rows[0];
 	const userId = event.locals.user!.id;
 
 	// Lazy deletion: once the deadline has passed, the owner's next visit deletes it.
@@ -49,6 +55,7 @@ export const load: LayoutServerLoad = async (event) => {
 	}
 
 	return {
+		projectTitle: title,
 		projectOrgId: orgId,
 		hasOrgS3Config,
 		isOwner: ownerId === userId,
