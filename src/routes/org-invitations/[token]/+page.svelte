@@ -17,7 +17,6 @@
 				expiresAt: Date;
 				orgName: string | null;
 				invitedEmail: string;
-				orgSlug: string | null;
 			};
 			token: string;
 			user: { id: string; name: string; email: string } | null;
@@ -136,12 +135,6 @@
 				>
 					{data.invitation.orgName ?? 'Organization'}
 				</h1>
-				{#if data.invitation.orgSlug}
-					<p class="mt-0.5 font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						/{data.invitation.orgSlug}
-					</p>
-				{/if}
-
 				<div
 					class="mt-5 flex items-center gap-3 rounded-lg bg-paper-ui px-4 py-3 dark:bg-dark-paper-ui"
 				>

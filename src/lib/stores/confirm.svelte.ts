@@ -41,3 +41,14 @@ export const confirmStore = new ConfirmStore();
 export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
 	return confirmStore.ask(options);
 }
+
+/**
+ * For a submit button: <button onclick={(e) => confirmBeforeSubmit(e, {...})}>.
+ * Stops the click, asks, and submits the form (through use:enhance if present)
+ * only when confirmed.
+ */
+export async function confirmBeforeSubmit(e: MouseEvent, options: ConfirmOptions): Promise<void> {
+	const button = e.currentTarget as HTMLButtonElement;
+	e.preventDefault();
+	if (await confirmStore.ask(options)) button.form?.requestSubmit(button);
+}

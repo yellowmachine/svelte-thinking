@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { orgInvitation, organization } from '$lib/server/db/schemas/organizations.schema';
+import { orgInvitation } from '$lib/server/db/schemas/organizations.schema';
 export const load = async ({
 	params,
 	locals
@@ -16,11 +16,9 @@ export const load = async ({
 			expiresAt: orgInvitation.expiresAt,
 			orgId: orgInvitation.orgId,
 			orgName: orgInvitation.orgName,
-			invitedEmail: orgInvitation.invitedEmail,
-			orgSlug: organization.slug
+			invitedEmail: orgInvitation.invitedEmail
 		})
 		.from(orgInvitation)
-		.leftJoin(organization, eq(organization.id, orgInvitation.orgId))
 		.where(eq(orgInvitation.token, params.token))
 		.limit(1);
 

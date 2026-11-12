@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmBeforeSubmit } from '$lib/stores/confirm.svelte';
 	import { enhance } from '$app/forms';
 	import type { PageData, ActionData } from './$types';
 
@@ -156,9 +157,12 @@
 							<input type="hidden" name="id" value={n.id} />
 							<button
 								type="submit"
-								onclick={(e) => {
-									if (!confirm('Delete this notification?')) e.preventDefault();
-								}}
+								onclick={(e) =>
+									confirmBeforeSubmit(e, {
+										title: 'Delete this notification?',
+										confirmLabel: 'Delete',
+										danger: true
+									})}
 								class="rounded p-1 text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600 dark:text-dark-ink-faint dark:hover:bg-red-900/20 dark:hover:text-red-400"
 								aria-label="Delete notification"
 							>

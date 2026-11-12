@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmBeforeSubmit } from '$lib/stores/confirm.svelte';
 	import { resolve } from '$app/paths';
 	let { data } = $props();
 
@@ -72,18 +73,17 @@
 						</div>
 
 						{#if u.twoFactorEnabled}
-							<form
-								method="POST"
-								action="?/disable2FA"
-								onsubmit={(e) => {
-									if (!confirm(`Disable 2FA for ${u.email}? All their sessions will be closed.`))
-										e.preventDefault();
-								}}
-								class="shrink-0"
-							>
+							<form method="POST" action="?/disable2FA" class="shrink-0">
 								<input type="hidden" name="userId" value={u.id} />
 								<button
 									type="submit"
+									onclick={(e) =>
+										confirmBeforeSubmit(e, {
+											title: `Disable 2FA for ${u.email}?`,
+											message: 'All their sessions will be closed.',
+											confirmLabel: 'Disable 2FA',
+											danger: true
+										})}
 									class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:border-amber-300 hover:text-amber-700 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:border-amber-700 dark:hover:text-amber-400"
 								>
 									Reset 2FA
