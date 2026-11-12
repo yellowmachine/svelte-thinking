@@ -8,6 +8,7 @@ import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import { notificationRecipients } from '$lib/server/definerFunctions';
 import { extractWikilinks } from '$lib/utils/wikilinks';
+import { sha256Hex } from '$lib/utils/contentHash';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
 import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
@@ -313,18 +314,57 @@ export const documentsRouter = router({
 
 	// Auto-save: persiste el borrador sin crear versión.
 	// Llamado cada ~30s mientras el usuario escribe.
+	// baseDraftHash: SHA-256 of the draft the client last knew was on the server
+	// ('' when it knew of none). If the server's draft has changed since — another
+	// tab or device saved — the save is refused with CONFLICT instead of
+	// overwriting it. Without the hash (old clients, mobile notes) it saves as before.
 	saveDraft: protectedProcedure
-		.input(z.object({ documentId: z.string(), content: z.string() }))
+		.input(
+			z.object({
+				documentId: z.string(),
+				content: z.string(),
+				baseDraftHash: z
+					.string()
+					.regex(/^[0-9a-f]{64}$/)
+					.optional()
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
-			const rows = await ctx.withRLS((db) =>
-				db
+			return ctx.withRLS(async (db) => {
+				const [current] = await db
+					.select({ draftContent: document.draftContent })
+					.from(document)
+					.where(eq(document.id, input.documentId))
+					.for('update')
+					.limit(1);
+				if (!current) throw new TRPCError({ code: 'NOT_FOUND' });
+
+				const serverDraft = current.draftContent ?? '';
+				if (
+					input.baseDraftHash !== undefined &&
+					serverDraft !== '' &&
+					serverDraft !== input.content &&
+					(await sha256Hex(serverDraft)) !== input.baseDraftHash
+				) {
+					throw new TRPCError({
+						code: 'CONFLICT',
+						message: 'This draft was changed in another tab or device since you opened it.'
+					});
+				}
+
+				const rows = await db
 					.update(document)
 					.set({ draftContent: input.content, updatedAt: new Date() })
 					.where(eq(document.id, input.documentId))
-					.returning({ id: document.id, updatedAt: document.updatedAt })
-			);
-			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			return rows[0];
+					.returning({ id: document.id, updatedAt: document.updatedAt });
+				// Readable but not writable: someone else holds the writer slot now.
+				if (!rows[0])
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: 'You no longer have write access to this document.'
+					});
+				return rows[0];
+			});
 		}),
 
 	// Commit: crea una versión numerada a partir del draft actual.

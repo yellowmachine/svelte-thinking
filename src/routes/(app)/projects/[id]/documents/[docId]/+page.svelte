@@ -7,6 +7,7 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import { focusMode } from '$lib/stores/focusMode.svelte';
+	import { sha256Hex } from '$lib/utils/contentHash';
 	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
@@ -65,6 +66,12 @@
 	let content = $state(untrack(() => data.document?.content ?? ''));
 	let lastSavedContent = $state(untrack(() => data.document?.content ?? ''));
 	const isDirty = $derived(content !== lastSavedContent);
+	// The draft this tab knows is on the server ('' = none). saveDraft sends its
+	// hash so the server can refuse to overwrite a draft another tab or device
+	// saved in between (CONFLICT → the draft conflict modal).
+	let serverDraftBase = $state(
+		untrack(() => (data.document?.hasDraft ? (data.document.content ?? '') : ''))
+	);
 
 	// Editable title
 	let docTitle = $state(untrack(() => data.document?.title ?? ''));
@@ -237,10 +244,15 @@
 
 	function handleConflictKeepLocal() {
 		// Descartamos el remoto → lo guardamos en el stash
-		if (draftConflictRemoteContent !== null) openStash(draftConflictRemoteContent);
+		if (draftConflictRemoteContent !== null) {
+			openStash(draftConflictRemoteContent);
+			// The user has seen the remote draft and chose theirs: the next save may replace it.
+			serverDraftBase = draftConflictRemoteContent;
+		}
 		draftConflictRemoteContent = null;
 		newerVersion = null;
 		versionPollDismissed = true;
+		doSaveDraft();
 	}
 
 	function handleConflictKeepRemote() {
@@ -250,6 +262,7 @@
 		// Reemplazamos el contenido del editor con el del servidor
 		content = draftConflictRemoteContent;
 		lastSavedContent = draftConflictRemoteContent;
+		serverDraftBase = draftConflictRemoteContent;
 		draftConflictRemoteContent = null;
 		newerVersion = null;
 		versionPollDismissed = true;
@@ -811,7 +824,8 @@
 				documentId: data.document.id,
 				content,
 				savedAt: new Date(),
-				status: 'pending'
+				status: 'pending',
+				baseDraftHash: await sha256Hex(serverDraftBase)
 			});
 			lastSavedContent = content;
 			saveStatus = 'offline';
@@ -819,12 +833,15 @@
 		}
 
 		saveStatus = 'saving';
+		const toSave = content;
 		try {
 			const saved = await trpc.documents.saveDraft.mutate({
 				documentId: data.document.id,
-				content
+				content: toSave,
+				baseDraftHash: await sha256Hex(serverDraftBase)
 			});
-			lastSavedContent = content;
+			lastSavedContent = toSave;
+			serverDraftBase = toSave;
 			lastOwnSaveAt = saved.updatedAt;
 			saveStatus = 'saved';
 			setTimeout(() => {
@@ -845,7 +862,8 @@
 					documentId: data.document.id,
 					content,
 					savedAt: new Date(),
-					status: 'pending'
+					status: 'pending',
+					baseDraftHash: await sha256Hex(serverDraftBase)
 				});
 				lastSavedContent = content;
 				saveStatus = 'offline';
@@ -853,6 +871,12 @@
 				console.warn(
 					`[offline] save: network error detected — queued to Dexie (doc ${data.document.id})`
 				);
+			} else if ((e as { data?: { code?: string } }).data?.code === 'CONFLICT') {
+				// Another tab or device saved this draft meanwhile: stop autosaving and let
+				// the user choose between the two versions instead of overwriting theirs.
+				saveStatus = 'pending';
+				newerVersion = { type: 'draft', versionNumber: null, committerName: null };
+				handleResolveConflict();
 			} else {
 				saveStatus = 'error';
 				console.error(`[offline] save: ✗ server error (doc ${data.document.id})`, e);
@@ -877,6 +901,14 @@
 						writerLostContent = writerLost.content;
 						saveStatus = 'error';
 					} else if (!hasPending) {
+						// The sync pushed our latest queued edit: that is the server draft now.
+						// If it failed (e.g. a conflict), the base stays and the next save
+						// opens the conflict modal with both versions.
+						const latest = edits.reduce<(typeof edits)[number] | null>(
+							(acc, e) => (!acc || e.savedAt > acc.savedAt ? e : acc),
+							null
+						);
+						if (latest?.status === 'synced') serverDraftBase = lastSavedContent;
 						saveStatus = 'idle';
 					}
 				});
@@ -1284,18 +1316,19 @@
 			message: 'Your latest changes have not been saved to the server yet.',
 			confirmLabel: 'Leave',
 			cancelLabel: 'Stay'
-		}).then((ok) => {
+		}).then(async (ok) => {
 			if (!ok) {
 				workspaceStore.set(entryWorkspace);
 				return;
 			}
 			// Save to Dexie before leaving so content survives navigation
-			offlineDb.pendingEdits.add({
+			await offlineDb.pendingEdits.add({
 				id: crypto.randomUUID(),
 				documentId: data.document.id,
 				content,
 				savedAt: new Date(),
-				status: 'pending'
+				status: 'pending',
+				baseDraftHash: await sha256Hex(serverDraftBase)
 			});
 			leaveConfirmed = true;
 			// target is SvelteKit's own resolved destination (nav.to.url).
@@ -2964,6 +2997,8 @@
 						// Keep the draft being replaced, so it can still be copied back.
 						if (content.trim() && content !== restoredContent) openStash(content);
 						content = restoredContent;
+						// restoreVersion already wrote it as the server draft.
+						serverDraftBase = restoredContent;
 						lastSavedContent = restoredContent;
 						saveStatus = 'pending';
 						if (autoSaveTimer) clearTimeout(autoSaveTimer);
