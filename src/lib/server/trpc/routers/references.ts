@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { eq, and, asc, sql, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { safeFetch, UnsafeUrlError } from '$lib/server/safeFetch';
 import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
@@ -592,7 +593,7 @@ export const referencesRouter = router({
 			let text: string;
 			let pageTitle: string | null = null;
 			try {
-				const res = await fetch(url, {
+				const res = await safeFetch(url, {
 					headers: {
 						'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
 					},
@@ -610,6 +611,8 @@ export const referencesRouter = router({
 				pageTitle = article?.title ?? null;
 			} catch (e) {
 				if (e instanceof TRPCError) throw e;
+				if (e instanceof UnsafeUrlError)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: e.message });
 				throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch or parse the URL.' });
 			}
 
@@ -743,7 +746,7 @@ ${truncated}`;
 			// Fetch, extract main content and sanitize — store HTML directly (no markdown round-trip)
 			let renderedHtml: string;
 			try {
-				const res = await fetch(url, {
+				const res = await safeFetch(url, {
 					headers: {
 						'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
 					},
@@ -807,6 +810,8 @@ ${truncated}`;
 				});
 			} catch (e) {
 				if (e instanceof TRPCError) throw e;
+				if (e instanceof UnsafeUrlError)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: e.message });
 				throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch or parse the URL.' });
 			}
 

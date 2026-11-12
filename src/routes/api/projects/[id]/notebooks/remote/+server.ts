@@ -5,6 +5,7 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { projectNotebook } from '$lib/server/db/schemas/notebooks.schema';
 import { userJupyterConnection } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
+import { safeFetch, UnsafeUrlError } from '$lib/server/safeFetch';
 import { parseNotebook, getContentCells } from '$lib/utils/jupyter';
 
 export const POST: RequestHandler = async (event) => {
@@ -56,10 +57,10 @@ export const POST: RequestHandler = async (event) => {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(notebookUrl, {
-			headers: { Authorization: `token ${token}` }
-		});
-	} catch {
+		// No redirects: following one would send the Jupyter token to another host.
+		upstream = await safeFetch(notebookUrl, { headers: { Authorization: `token ${token}` } }, 0);
+	} catch (e) {
+		if (e instanceof UnsafeUrlError) error(400, e.message);
 		error(502, 'Could not reach the Jupyter server');
 	} finally {
 		token = '';
