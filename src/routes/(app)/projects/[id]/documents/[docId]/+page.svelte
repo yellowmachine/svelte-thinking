@@ -12,6 +12,17 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import { focusMode } from '$lib/stores/focusMode.svelte';
+	import EditorPanelRail, { type RailItem } from '$lib/components/editor/EditorPanelRail.svelte';
+	import StickyNote from '@lucide/svelte/icons/sticky-note';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import History from '@lucide/svelte/icons/rotate-ccw-clock';
+	import Layers from '@lucide/svelte/icons/layers';
+	import SpellCheck from '@lucide/svelte/icons/spell-check';
+	import SpellCheck2 from '@lucide/svelte/icons/spell-check-2';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
+	import PencilLine from '@lucide/svelte/icons/pencil-line';
+	import ScanSearch from '@lucide/svelte/icons/scan-search';
 	import { sha256Hex } from '$lib/utils/contentHash';
 	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
@@ -276,23 +287,43 @@
 	// ── Stash panel ───────────────────────────────────────────────────────────────
 	// sessionStorage keyado por documento: persiste recargas accidentales, se limpia al cerrar pestaña.
 	const STASH_KEY = untrack(() => `stash-${data.document?.id ?? ''}`);
-	let showStash = $state(false);
+	// Right-hand panels: one at a time, so they never squeeze the text.
+	type DockPanel =
+		| 'comments'
+		| 'annotations'
+		| 'bib'
+		| 'spell'
+		| 'grammar'
+		| 'chat'
+		| 'review'
+		| 'enrich'
+		| 'draft'
+		| 'history'
+		| 'stash'
+		| 'backlinks';
+	let activePanel = $state<DockPanel | null>(null);
+	function closePanel(panel: DockPanel) {
+		if (activePanel === panel) activePanel = null;
+	}
+	function togglePanel(panel: DockPanel) {
+		activePanel = activePanel === panel ? null : panel;
+	}
 	let stashContent = $state<string | null>(null);
 
 	function openStash(discarded: string) {
 		stashContent = discarded;
-		showStash = true;
+		activePanel = 'stash';
 		sessionStorage.setItem(STASH_KEY, discarded);
 	}
 
 	/** Solo oculta el panel; el contenido sigue en estado y sessionStorage para poder reabrirlo */
 	function closeStash() {
-		showStash = false;
+		closePanel('stash');
 	}
 
 	/** Borra el contenido definitivamente */
 	function clearStash() {
-		showStash = false;
+		closePanel('stash');
 		stashContent = null;
 		sessionStorage.removeItem(STASH_KEY);
 	}
@@ -323,7 +354,7 @@
 		viewMode = m;
 		localStorage.setItem(VIEW_MODE_KEY, m);
 		if (m !== 'editor') loadRefs();
-		if (m === 'preview') showBib = false;
+		if (m === 'preview') closePanel('bib');
 	}
 
 	// Citations
@@ -522,7 +553,6 @@
 	const backlinks = $derived(data.backlinks);
 
 	// Version history
-	let showHistory = $state(false);
 
 	// Public toggle
 	let isPublic = $state(untrack(() => data.document?.isPublic ?? false));
@@ -553,12 +583,11 @@
 	}
 
 	// ── Spell check panel ───────────────────────────────────────────────────────
-	let showSpellPanel = $state(false);
 	let spellLoading = $state(false);
 	let spellCorrections = $state<SpellCorrection[]>([]);
 
 	async function runSpellCheck(scoped?: { text: string; offset: number }) {
-		showSpellPanel = true;
+		activePanel = 'spell';
 		spellLoading = true;
 		spellCorrections = [];
 		try {
@@ -576,7 +605,7 @@
 					}))
 				: result.corrections;
 		} catch {
-			showSpellPanel = false;
+			closePanel('spell');
 		} finally {
 			spellLoading = false;
 		}
@@ -591,12 +620,11 @@
 	}
 
 	// ── Grammar assistant panel ──────────────────────────────────────────────────
-	let showGrammarPanel = $state(false);
 	let grammarLoading = $state(false);
 	let grammarCorrections = $state<SpellCorrection[]>([]);
 
 	async function runGrammarCheck() {
-		showGrammarPanel = true;
+		activePanel = 'grammar';
 		grammarLoading = true;
 		grammarCorrections = [];
 		try {
@@ -606,7 +634,7 @@
 			});
 			grammarCorrections = result.corrections;
 		} catch {
-			showGrammarPanel = false;
+			closePanel('grammar');
 		} finally {
 			grammarLoading = false;
 		}
@@ -671,13 +699,9 @@
 		replies: Reply[];
 	};
 
-	let showComments = $state(false);
 	let currentCommentId = $state<string | null>(null);
 
-	let showAnnotations = $state(false);
-
 	// ── Bibliography panel ────────────────────────────────────────────────────
-	let showBib = $state(false);
 	let bibFilter = $state('');
 	let activeBibCiteKey = $state<string | null>(null);
 	let inlineComments: InlineComment[] = $state(
@@ -921,13 +945,7 @@
 	});
 
 	function toggleHistory() {
-		showHistory = !showHistory;
-		if (showHistory) showComments = false;
-	}
-
-	function toggleComments() {
-		showComments = !showComments;
-		if (showComments) showHistory = false;
+		togglePanel('history');
 	}
 
 	function handleCommentClick(id: string) {
@@ -1010,8 +1028,8 @@
 	}
 
 	function toggleBib() {
-		showBib = !showBib;
-		if (showBib) {
+		togglePanel('bib');
+		if (activePanel === 'bib') {
 			loadRefs();
 			bibFilter = '';
 		}
@@ -1043,7 +1061,7 @@
 	}
 
 	function handlePreviewCommentClick(_id: string) {
-		showComments = true;
+		activePanel = 'comments';
 	}
 
 	function handleParagraphComment(paragraphNumber: number, coords: { top: number; right: number }) {
@@ -1070,13 +1088,90 @@
 					? 'org-owner'
 					: 'org-member'
 	);
+	// The side rail: every panel that can open here, in reading → writing → AI order.
+	const railItems = $derived<RailItem[]>(
+		[
+			{
+				id: 'comments',
+				label: 'Comments',
+				icon: MessageSquare,
+				badge: openCommentsCount,
+				show: true
+			},
+			{ id: 'annotations', label: 'Subnotes', icon: StickyNote, show: true },
+			{ id: 'bib', label: 'Bibliography', icon: BookOpen, show: viewMode !== 'preview' },
+			{
+				id: 'backlinks',
+				label: 'Mentioned in',
+				icon: Link,
+				badge: backlinks.length,
+				show: backlinks.length > 0
+			},
+			{ id: 'history', label: 'Version history', icon: History, show: true, group: true },
+			{ id: 'stash', label: 'Discarded text', icon: Layers, show: stashContent !== null },
+			{
+				id: 'spell',
+				label: 'Spelling',
+				icon: SpellCheck,
+				badge: spellCorrections.length,
+				show: activePanel === 'spell' || spellCorrections.length > 0
+			},
+			{
+				id: 'grammar',
+				label: 'Grammar',
+				icon: SpellCheck2,
+				badge: grammarCorrections.length,
+				show: activePanel === 'grammar' || grammarCorrections.length > 0
+			},
+			{
+				id: 'chat',
+				label: withModel('Chat with the assistant', 'agent'),
+				icon: Sparkles,
+				show: aiCtaType === 'ok',
+				group: true
+			},
+			{
+				id: 'review',
+				label: withModel('Review against the requirements', 'review'),
+				icon: ClipboardCheck,
+				show: aiCtaType === 'ok' && !data.document.isReadonly
+			},
+			{
+				id: 'draft',
+				label: withModel('Draft from project context', 'draft'),
+				icon: PencilLine,
+				show: aiCtaType === 'ok' && !data.document.isReadonly && viewMode !== 'preview'
+			},
+			{
+				id: 'enrich',
+				label: 'Find untagged people and citations',
+				icon: ScanSearch,
+				show: aiCtaType === 'ok' && !data.document.isReadonly
+			}
+		]
+			.filter((i) => i.show)
+			// A group divider only makes sense after something.
+			.map(({ show: _show, ...item }, idx) => ({ ...item, group: idx > 0 && item.group }))
+	);
+
+	/** Tooltip with the model this task uses, when one is configured. */
+	function withModel(label: string, task: 'agent' | 'draft' | 'review'): string {
+		const model = taskModel(task);
+		return model ? `${label} · ${model}` : label;
+	}
+
+	function onRailToggle(id: string) {
+		const panel = id as DockPanel;
+		if (panel === 'bib') return toggleBib();
+		togglePanel(panel);
+	}
+
 	function taskModel(task: 'agent' | 'draft' | 'review') {
 		const modelId = aiTaskConfig[task]?.model;
 		return modelId ? formatModelSlug(modelId) : null;
 	}
 
 	// ── Chat assistant ───────────────────────────────────────────────────────────
-	let showChat = $state(false);
 	let showSearch = $state(false);
 	let searchTab = $state<'text' | 'semantic'>('text');
 
@@ -1087,47 +1182,22 @@
 	}
 
 	function toggleChat() {
-		showChat = !showChat;
-		if (showChat) {
-			showReview = false;
-			showDraft = false;
-			showHistory = false;
-			showComments = false;
-			showBib = false;
-		}
+		togglePanel('chat');
 	}
 
 	// ── Review assistant ─────────────────────────────────────────────────────────
-	let showReview = $state(false);
 
 	function toggleReview() {
-		showReview = !showReview;
-		if (showReview) {
-			showChat = false;
-			showDraft = false;
-			showHistory = false;
-			showComments = false;
-			showBib = false;
-		}
+		togglePanel('review');
 	}
 
 	// ── Enrich (find untagged) ───────────────────────────────────────────────────
-	let showEnrich = $state(false);
 
 	function toggleEnrich() {
-		showEnrich = !showEnrich;
-		if (showEnrich) {
-			showChat = false;
-			showReview = false;
-			showDraft = false;
-			showHistory = false;
-			showComments = false;
-			showBib = false;
-		}
+		togglePanel('enrich');
 	}
 
 	// ── Draft assistant ──────────────────────────────────────────────────────────
-	let showDraft = $state(false);
 
 	// Selection AI review
 	type ReviewType = 'clarity' | 'argument' | 'citations' | 'terminology';
@@ -1199,14 +1269,7 @@
 	}
 
 	function toggleDraft() {
-		showDraft = !showDraft;
-		if (showDraft) {
-			showChat = false;
-			showReview = false;
-			showHistory = false;
-			showComments = false;
-			showBib = false;
-		}
+		togglePanel('draft');
 	}
 
 	// Show floating button only after selection stabilizes (not during drag)
@@ -1380,7 +1443,7 @@
 		const saved = sessionStorage.getItem(STASH_KEY);
 		if (saved) {
 			stashContent = saved;
-			showStash = true;
+			activePanel = 'stash';
 		}
 
 		// Polling de versión: comprueba cada 60s si hay un nuevo commit en el servidor.
@@ -1397,7 +1460,7 @@
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
 		currentCommentId = targetId;
-		showComments = true;
+		activePanel = 'comments';
 		if (viewMode === 'editor') setViewMode('preview');
 		// Scroll preview and sidebar after DOM renders
 		setTimeout(() => {
@@ -1784,116 +1847,8 @@
 						</button>
 					{/if}
 
-					<!-- AI buttons or CTA -->
-					{#if aiCtaType === 'ok'}
-						<!-- Chat assistant button -->
-						<button
-							type="button"
-							onclick={toggleChat}
-							title="Chat with the assistant about this document"
-							class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-sans text-sm font-medium transition-colors {showChat
-								? 'bg-accent/20 text-accent-ink hover:bg-accent/30 dark:bg-accent/30 dark:hover:bg-accent/40'
-								: 'bg-accent/10 text-accent-ink hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'}"
-						>
-							<MessageSquare size={14} strokeWidth={1.75} aria-hidden="true" />
-							Assistant
-						</button>
-
-						<!-- Review button -->
-						{#if !data.document.isReadonly}
-							<button
-								type="button"
-								onclick={toggleReview}
-								title="Review document against project requirements"
-								class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
-									? 'border-accent bg-accent/10 text-accent-ink dark:border-accent dark:text-accent-ink'
-									: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
-							>
-								<span class="flex items-center gap-1.5">
-									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-										<path
-											d="M9 11l3 3L22 4"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										/>
-										<path
-											d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										/>
-									</svg>
-									Review
-								</span>
-								{#if taskModel('review')}
-									<span class="text-[10px] opacity-50">{taskModel('review')}</span>
-								{/if}
-							</button>
-						{/if}
-
-						<!-- Draft assistant button -->
-						{#if !data.document.isReadonly && viewMode !== 'preview'}
-							<button
-								type="button"
-								onclick={toggleDraft}
-								title="Draft assistant — generate text from your project context"
-								class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showDraft
-									? 'border-accent bg-accent/10 text-accent-ink dark:border-accent dark:text-accent-ink'
-									: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
-							>
-								<span class="flex items-center gap-1.5">
-									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-										<path
-											d="M12 19l7-7 3 3-7 7-3-3z"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										/>
-										<path
-											d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										/>
-									</svg>
-									Draft
-								</span>
-								{#if taskModel('draft')}
-									<span class="text-[10px] opacity-50">{taskModel('draft')}</span>
-								{/if}
-							</button>
-						{/if}
-
-						<!-- Enrich button -->
-						{#if !data.document.isReadonly}
-							<button
-								type="button"
-								onclick={toggleEnrich}
-								title="Find untagged persons and informal citations"
-								class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
-									? 'border-accent/40 bg-accent/5 text-accent-ink dark:border-accent/30'
-									: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
-							>
-								<span class="flex items-center gap-1.5">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-										<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5" />
-										<path
-											d="M21 21l-4.35-4.35M11 8v6M8 11h6"
-											stroke="currentColor"
-											stroke-width="1.5"
-											stroke-linecap="round"
-										/>
-									</svg>
-									Enrich
-								</span>
-							</button>
-						{/if}
-					{:else if aiCtaType === 'personal'}
+					<!-- AI: the assistant panels live in the side rail; here only the set-up prompts -->
+					{#if aiCtaType === 'personal'}
 						<a
 							href={resolve('/settings?tab=ai')}
 							class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:border-accent hover:bg-accent/5"
@@ -1909,7 +1864,7 @@
 							<Star size={12} strokeWidth={1.75} aria-hidden="true" />
 							Configure org AI
 						</a>
-					{:else}
+					{:else if aiCtaType !== 'ok'}
 						<span class="font-sans text-xs text-ink-faint">
 							AI not configured · contact your org owner
 						</span>
@@ -1938,142 +1893,6 @@
 						>
 					</button>
 
-					<button
-						onclick={toggleComments}
-						title="Toggle comment threads panel"
-						class="relative flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
-							? 'border-amber-400 bg-amber-400/10 text-warning dark:text-amber-300'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
-					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-							<line x1="8" y1="9" x2="16" y2="9" />
-							<line x1="8" y1="13" x2="13" y2="13" />
-						</svg>
-						Comments
-						{#if openCommentsCount > 0}
-							<span
-								class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 font-sans text-xs font-semibold text-white"
-							>
-								{openCommentsCount}
-							</span>
-						{/if}
-					</button>
-
-					{#if viewMode !== 'preview'}
-						<button
-							onclick={toggleBib}
-							title="Bibliography panel — insert citations from your project references"
-							class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
-								? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
-								: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
-						>
-							<svg
-								width="13"
-								height="13"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								aria-hidden="true"
-							>
-								<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-								<path d="M6.5 2H20v20l-7-4-7 4V2z" />
-							</svg>
-							Bib
-						</button>
-					{/if}
-
-					<button
-						onclick={() => (showAnnotations = !showAnnotations)}
-						title="Toggle subnotes panel"
-						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showAnnotations
-							? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
-					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-							<polyline points="14 2 14 8 20 8" />
-							<line x1="16" y1="13" x2="8" y2="13" />
-							<line x1="16" y1="17" x2="8" y2="17" />
-						</svg>
-						Subnotes
-					</button>
-
-					<a
-						href={resolve(
-							`/projects/${data.document.projectId}/documents/${data.document.id}/history`
-						)}
-						title="Version history — browse and restore past committed versions"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
-					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<circle cx="12" cy="12" r="10" />
-							<polyline points="12 6 12 12 16 14" />
-						</svg>
-						History
-					</a>
-
-					{#if stashContent !== null}
-						<button
-							type="button"
-							onclick={() => (showStash = !showStash)}
-							title="Discarded text — what was left out when a draft conflict was resolved"
-							class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showStash
-								? 'border-amber-400 bg-warning-bg text-warning dark:text-amber-300'
-								: 'border-warning-border text-warning hover:bg-warning-bg '}"
-						>
-							<svg
-								width="13"
-								height="13"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								aria-hidden="true"
-							>
-								<polygon points="12 2 2 7 12 12 22 7 12 2" />
-								<polyline points="2 17 12 22 22 17" />
-								<polyline points="2 12 12 17 22 12" />
-							</svg>
-							Discarded text
-						</button>
-					{/if}
-
 					{#if !data.document.isReadonly}
 						<!-- Spell / Grammar dropdown -->
 						<button
@@ -2084,8 +1903,8 @@
 								showSpellMenu = !showSpellMenu;
 							}}
 							title="Spell check and grammar"
-							class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel ||
-							showGrammarPanel
+							class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {activePanel ===
+								'spell' || activePanel === 'grammar'
 								? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
 								: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 						>
@@ -2633,8 +2452,7 @@
 				bind:showNewComment
 				bind:showSubnote
 				bind:showReviewTypeMenu
-				bind:showComments
-				bind:showHistory
+				onopencomments={() => (activePanel = 'comments')}
 				bind:selectionReview
 				bind:authorPopover
 				bind:headingTooltip
@@ -2665,7 +2483,7 @@
 				}}
 			/>
 			<!-- Comments sidebar -->
-			{#if showComments}
+			{#if activePanel === 'comments'}
 				<CommentsPanel
 					comments={inlineComments}
 					activeCommentId={currentCommentId}
@@ -2683,7 +2501,7 @@
 			{/if}
 
 			<!-- Annotations panel (subnotes) -->
-			{#if showAnnotations}
+			{#if activePanel === 'annotations'}
 				<AnnotationsPanel
 					subnotes={docSubnotes}
 					{sourceReference}
@@ -2713,7 +2531,7 @@
 			{/if}
 
 			<!-- Bibliography panel -->
-			{#if showBib && viewMode !== 'preview'}
+			{#if activePanel === 'bib' && viewMode !== 'preview'}
 				<BibliographyPanel
 					refs={projectRefs}
 					activeKey={activeBibCiteKey}
@@ -2724,7 +2542,7 @@
 			{/if}
 
 			<!-- Backlinks panel -->
-			{#if backlinks.length > 0}
+			{#if activePanel === 'backlinks' && backlinks.length > 0}
 				<div
 					class="flex w-56 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper"
 				>
@@ -2751,7 +2569,7 @@
 			{/if}
 
 			<!-- Spell check sidebar -->
-			{#if showSpellPanel}
+			{#if activePanel === 'spell'}
 				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border">
 					<SpellCheckPanel
 						bind:corrections={spellCorrections}
@@ -2760,7 +2578,7 @@
 						onaccept={applySpellCorrection}
 						onignore={ignoreSpellWord}
 						onclose={() => {
-							showSpellPanel = false;
+							closePanel('spell');
 							spellCorrections = [];
 							editorEl?.clearSpellHover();
 						}}
@@ -2771,7 +2589,7 @@
 			{/if}
 
 			<!-- Grammar assistant sidebar -->
-			{#if showGrammarPanel}
+			{#if activePanel === 'grammar'}
 				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border">
 					<SpellCheckPanel
 						bind:corrections={grammarCorrections}
@@ -2781,7 +2599,7 @@
 						onaccept={applyGrammarCorrection}
 						onignore={async () => {}}
 						onclose={() => {
-							showGrammarPanel = false;
+							closePanel('grammar');
 							grammarCorrections = [];
 							editorEl?.clearSpellHover();
 						}}
@@ -2792,7 +2610,7 @@
 			{/if}
 
 			<!-- Chat assistant sidebar -->
-			{#if showChat}
+			{#if activePanel === 'chat'}
 				<div
 					class="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border"
 				>
@@ -2834,7 +2652,7 @@
 			{/if}
 
 			<!-- Review sidebar -->
-			{#if showReview}
+			{#if activePanel === 'review'}
 				<ReviewPanel
 					projectId={data.document.projectId}
 					documentId={data.document.id}
@@ -2845,7 +2663,7 @@
 			{/if}
 
 			<!-- Enrich sidebar -->
-			{#if showEnrich}
+			{#if activePanel === 'enrich'}
 				<EnrichPanel
 					projectId={data.document.projectId}
 					documentId={data.document.id}
@@ -2876,7 +2694,7 @@
 			{/if}
 
 			<!-- Draft assistant sidebar -->
-			{#if showDraft}
+			{#if activePanel === 'draft'}
 				<DraftPanel
 					projectId={data.document.projectId}
 					onclose={toggleDraft}
@@ -2887,7 +2705,7 @@
 			{/if}
 
 			<!-- Version history sidebar -->
-			{#if showHistory}
+			{#if activePanel === 'history'}
 				<VersionHistoryPanel
 					documentId={data.document.id}
 					projectId={data.document.projectId}
@@ -2907,9 +2725,11 @@
 			{/if}
 
 			<!-- Stash panel (contenido descartado al resolver conflicto de draft) -->
-			{#if showStash && stashContent !== null}
+			{#if activePanel === 'stash' && stashContent !== null}
 				<StashPanel content={stashContent} onclose={closeStash} onclear={clearStash} />
 			{/if}
+
+			<EditorPanelRail items={railItems} active={activePanel} ontoggle={onRailToggle} />
 		</div>
 
 		<!-- Cite picker modal -->
@@ -3095,7 +2915,8 @@
 				showSpellMenu = false;
 			}}
 			disabled={spellLoading}
-			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 {showSpellPanel
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 {activePanel ===
+			'spell'
 				? 'text-accent-ink'
 				: 'text-ink-muted'}"
 		>
@@ -3122,7 +2943,8 @@
 				showSpellMenu = false;
 			}}
 			disabled={grammarLoading}
-			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 {showGrammarPanel
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 {activePanel ===
+			'grammar'
 				? 'text-accent-ink'
 				: 'text-ink-muted'}"
 		>

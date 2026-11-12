@@ -63,8 +63,7 @@
 		showNewComment = $bindable(false),
 		showSubnote = $bindable(false),
 		showReviewTypeMenu = $bindable(false),
-		showComments = $bindable(false),
-		showHistory = $bindable(false),
+		onopencomments,
 		selectionReview = $bindable<SelectionReview>(null),
 		authorPopover = $bindable<AuthorPopover>(null),
 		headingTooltip = $bindable<HeadingTooltip>(null),
@@ -95,8 +94,8 @@
 		showNewComment?: boolean;
 		showSubnote?: boolean;
 		showReviewTypeMenu?: boolean;
-		showComments?: boolean;
-		showHistory?: boolean;
+		/** Opens the comments panel (e.g. after adding a comment). */
+		onopencomments?: () => void;
 		selectionReview?: SelectionReview;
 		authorPopover?: AuthorPopover;
 		headingTooltip?: HeadingTooltip;
@@ -198,7 +197,7 @@
 			showNewComment = false;
 			savedCommentSelection = null;
 			onclearselection();
-			showComments = true;
+			onopencomments?.();
 		} finally {
 			submittingComment = false;
 		}
@@ -265,7 +264,7 @@
 			paragraphCommentText = '';
 			showNewParagraphComment = false;
 			pendingParagraphNumber = null;
-			showComments = true;
+			onopencomments?.();
 		} catch (e) {
 			console.error('Failed to submit paragraph comment', e);
 		} finally {
@@ -285,8 +284,7 @@
 			onclick={() => {
 				savedCommentSelection = currentSelection;
 				showNewComment = true;
-				showComments = true;
-				showHistory = false;
+				onopencomments?.();
 			}}
 		>
 			+ Comment
