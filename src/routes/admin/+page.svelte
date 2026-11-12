@@ -77,25 +77,6 @@
 		</a>
 
 		<a
-			href={resolve('/admin/panics3')}
-			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
-		>
-			<p
-				class="font-sans text-xs font-medium tracking-wider text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
-				Storage
-			</p>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Internal storage management (S3).
-			</p>
-			<p
-				class="mt-3 font-sans text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100"
-			>
-				View storage →
-			</p>
-		</a>
-
-		<a
 			href={resolve('/admin/notifications')}
 			class="group rounded-xl border border-paper-border bg-paper p-5 transition-colors hover:border-accent dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent"
 		>

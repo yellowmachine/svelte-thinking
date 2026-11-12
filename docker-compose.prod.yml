@@ -32,12 +32,6 @@ services:
       REDIS_URL: redis://redis:6379
       TYPST_SERVICE_URL: http://typst:3100
       KROKI_URL: http://kroki:8000
-      # Storage (rustfs, en este mismo stack)
-      STORAGE_ENDPOINT: http://rustfs:9000
-      STORAGE_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
-      STORAGE_SECRET_KEY: ${RUSTFS_SECRET_KEY}
-      STORAGE_BUCKET: ${STORAGE_BUCKET:-scholio}
-      STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL}
       # «Entrar con Seilide» (opcional): las tres líneas del cliente de /admin/apps
       SEILIDE_URL: ${SEILIDE_URL:-}
       SEILIDE_CLIENT_ID: ${SEILIDE_CLIENT_ID:-}
@@ -128,49 +122,11 @@ services:
     pull_policy: always
     restart: unless-stopped
 
-  rustfs:
-    image: rustfs/rustfs:latest
-    restart: unless-stopped
-    security_opt:
-      - 'no-new-privileges:true'
-    environment:
-      RUSTFS_VOLUMES: /data # single physical disk, no erasure coding
-      RUSTFS_ADDRESS: 0.0.0.0:9000
-      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
-      RUSTFS_CONSOLE_ENABLE: 'true'
-      RUSTFS_CORS_ALLOWED_ORIGINS: '*'
-      RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: '*'
-      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
-      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
-      RUSTFS_OBS_LOGGER_LEVEL: info
-    # Sin puertos al host: el dominio de STORAGE_PUBLIC_URL llega por Traefik
-    # (dokploy-network, puerto 9000); la consola (9001) igual, si le das dominio.
-    volumes:
-      - rustfs_data:/data
-      - rustfs_logs:/logs
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'sh',
-          '-c',
-          'curl -f http://127.0.0.1:9000/health && curl -f http://127.0.0.1:9001/rustfs/console/health'
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - default
-      - dokploy-network
-
 # Sin `name:`: Compose les antepone el nombre del proyecto de Dokploy, así que
 # no chocan con los volúmenes scholio_* del despliegue anterior.
 volumes:
   pgdata:
   redis_data:
-  rustfs_data:
-  rustfs_logs:
 
 networks:
   dokploy-network:

@@ -52,6 +52,9 @@ services:
       timeout: 3s
       retries: 5
 
+  # S3 local para probar subidas (fotos, PDFs de referencias): la app no lo usa
+  # sola; configúralo como almacenamiento propio en Settings → Storage con
+  # endpoint http://localhost:9000, claves rustfsadmin/rustfsadmin.
   rustfs:
     security_opt:
       - 'no-new-privileges:true'
