@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import DiffViewer from './DiffViewer.svelte';
 
@@ -47,6 +48,13 @@
 
 	async function restoreVersion(versionId: string) {
 		if (!compareDiff) return;
+		const ok = await confirmDialog({
+			title: `Restore version ${compareDiff.current.versionNumber}?`,
+			message:
+				'It replaces the current draft. The draft you have now is kept under "Discarded text" until you close the tab.',
+			confirmLabel: 'Restore'
+		});
+		if (!ok) return;
 		await trpc.documents.restoreVersion.mutate({ documentId, versionId });
 		onrestore(compareDiff.current.content);
 		selectedVersionId = null;
@@ -63,7 +71,7 @@
 		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Version history</h3>
 		<div class="flex items-center gap-2">
 			{#if loadingVersions}
-				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Cargando...</span>
+				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Loading…</span>
 			{/if}
 			<button
 				type="button"
@@ -123,7 +131,7 @@
 										onclick={() => restoreVersion(v.id)}
 										class="rounded px-2 py-1 font-sans text-xs text-accent-ink transition-colors hover:underline"
 									>
-										Restaurar
+										Restore
 									</button>
 								{/if}
 							</div>
@@ -133,7 +141,7 @@
 							<div class="mt-3">
 								{#if loadingCompare}
 									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										Cargando diff...
+										Loading changes…
 									</p>
 								{:else if compareDiff !== null}
 									<DiffViewer

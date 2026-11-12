@@ -2961,6 +2961,8 @@
 					projectId={data.document.projectId}
 					onclose={toggleHistory}
 					onrestore={(restoredContent) => {
+						// Keep the draft being replaced, so it can still be copied back.
+						if (content.trim() && content !== restoredContent) openStash(content);
 						content = restoredContent;
 						lastSavedContent = restoredContent;
 						saveStatus = 'pending';

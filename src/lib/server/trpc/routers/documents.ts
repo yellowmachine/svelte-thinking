@@ -789,10 +789,16 @@ export const documentsRouter = router({
 		.input(z.object({ documentId: z.string(), versionId: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			return ctx.withRLS(async (db) => {
+				// The version must belong to this document, not just be readable.
 				const source = await db
 					.select()
 					.from(documentVersion)
-					.where(eq(documentVersion.id, input.versionId))
+					.where(
+						and(
+							eq(documentVersion.id, input.versionId),
+							eq(documentVersion.documentId, input.documentId)
+						)
+					)
 					.limit(1);
 
 				if (!source[0]) throw new TRPCError({ code: 'NOT_FOUND' });
