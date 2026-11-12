@@ -312,6 +312,21 @@
 				>
 				Bibliography
 			</a>
+			<a
+				href={resolve(`/projects/${project.id}/datasets`)}
+				class="flex items-center gap-2.5 rounded-lg px-3 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+			>
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+					><path
+						d="M3 3v18h18M7 15l4-4 3 3 5-6"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/></svg
+				>
+				Datasets
+			</a>
 			{#if canEdit && canUploadS3}
 				<a
 					href={resolve(`/projects/${project.id}/photos`)}

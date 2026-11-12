@@ -40,7 +40,7 @@ ENV ORIGIN=https://placeholder.local
 ENV DATABASE_URL=postgres://placeholder
 ENV ENABLE_SW=${ENABLE_SW}
 
-RUN BETTER_AUTH_SECRET=build-placeholder SCIPY_API_KEY=build-placeholder bun run build
+RUN BETTER_AUTH_SECRET=build-placeholder bun run build
 
 # ─── Stage 4: prod ────────────────────────────────────────────────────────────
 # svelte-adapter-bun genera un servidor que corre con Bun, no con Node.

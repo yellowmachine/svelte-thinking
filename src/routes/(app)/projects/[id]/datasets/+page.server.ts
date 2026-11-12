@@ -2,12 +2,12 @@ import { error } from '@sveltejs/kit';
 import { eq, desc } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 import { project } from '$lib/server/db/schemas/projects.schema';
-import { projectAnalysis } from '$lib/server/db/schemas/analyses.schema';
+import { projectDataset } from '$lib/server/db/schemas/datasets.schema';
 
 export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
 
-	const [proj, analyses] = await Promise.all([
+	const [proj, datasets] = await Promise.all([
 		event.locals.withRLS((db) =>
 			db
 				.select({ id: project.id, title: project.title })
@@ -17,14 +17,20 @@ export const load: PageServerLoad = async (event) => {
 		),
 		event.locals.withRLS((db) =>
 			db
-				.select()
-				.from(projectAnalysis)
-				.where(eq(projectAnalysis.projectId, projectId))
-				.orderBy(desc(projectAnalysis.createdAt))
+				.select({
+					id: projectDataset.id,
+					filename: projectDataset.filename,
+					size: projectDataset.size,
+					uploadedBy: projectDataset.uploadedBy,
+					createdAt: projectDataset.createdAt
+				})
+				.from(projectDataset)
+				.where(eq(projectDataset.projectId, projectId))
+				.orderBy(desc(projectDataset.createdAt))
 		)
 	]);
 
 	if (!proj[0]) error(404, 'Project not found');
 
-	return { project: proj[0], analyses };
+	return { project: proj[0], datasets, userId: event.locals.user!.id };
 };

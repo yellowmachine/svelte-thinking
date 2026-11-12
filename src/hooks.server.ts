@@ -29,12 +29,6 @@ const handleDevTools: Handle = ({ event, resolve }) => {
 	return resolve(event);
 };
 
-const handleSubdomain: Handle = ({ event, resolve }) => {
-	const host = event.request.headers.get('host') ?? '';
-	event.locals.app = host.startsWith('scipy.') ? 'scipy' : 'scholio';
-	return resolve(event);
-};
-
 // Añade cabeceras de seguridad a todas las respuestas HTML
 const handleHeaders: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
@@ -170,7 +164,6 @@ const handleRLS: Handle = ({ event, resolve }) => {
 export const handle: Handle = sequence(
 	Sentry.sentryHandle(),
 	handleDevTools,
-	handleSubdomain,
 	handleAuthError,
 	handleBetterAuth,
 	handleAdminGuard,

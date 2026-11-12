@@ -102,7 +102,8 @@ El panel "Mencionado en" del editor muestra los backlinks entrantes al documento
 ```
 ````
 
-`"$ref": "dataset:nombre"` hace referencia a un dataset subido al proyecto (CSV, TSV o JSON).
+`"$ref": "dataset:nombre"` hace referencia a un dataset subido al proyecto (CSV, TSV o JSON, hasta
+5 MB) desde **Proyecto → Datasets**. Se guardan en la base de datos: no necesitan S3.
 
 ### Ejemplo de documento completo
 
@@ -420,9 +421,6 @@ Todas están documentadas en `.env.example`. Las que hay que poner en Dokploy pa
 
 Ya no existen `GITHUB_CLIENT_ID/SECRET` (sin login con GitHub), `PUBLIC_LIBRARIAN_URL` ni nada de
 Stripe.
-
-`SCIPY_SERVICE_URL` se sigue leyendo desde `src/lib/server/scipy.ts`, pero es código muerto (la ruta
-`(scipy)` no está en uso).
 
 ---
 

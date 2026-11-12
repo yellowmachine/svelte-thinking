@@ -61,7 +61,7 @@ afterEach(() => {
 
 describe('indexDocument', () => {
 	it('chunkea el contenido y crea filas en document_chunk', async () => {
-		// Mock embed-service: devuelve embeddings falsos sin llamar al servidor real
+		// Mock the embeddings API: devuelve embeddings falsos sin llamar al servidor real
 		vi.stubGlobal(
 			'fetch',
 			vi.fn().mockResolvedValue({
@@ -225,7 +225,7 @@ describe('ai.sendMessage — search_documents_semantic', () => {
 		const fetchMock = vi.fn();
 
 		// Llamada 1: OpenRouter — responde con tool_call search_documents_semantic
-		// Llamada 2: embed-service — embedding de la query para la búsqueda semántica
+		// Llamada 2: API de embeddings — embedding de la query para la búsqueda semántica
 		// Llamada 3: OpenRouter — respuesta final tras recibir el resultado del tool
 		fetchMock
 			.mockResolvedValueOnce({
