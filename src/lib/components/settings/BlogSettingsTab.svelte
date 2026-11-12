@@ -24,7 +24,7 @@
 			});
 			publicProfileSuccess = true;
 		} catch (e) {
-			publicProfileError = e instanceof Error ? e.message : 'Error al guardar el perfil público.';
+			publicProfileError = e instanceof Error ? e.message : "Couldn't save the public profile.";
 		} finally {
 			savingPublicProfile = false;
 		}
@@ -80,7 +80,7 @@
 			handleInput = '';
 			availability = null;
 		} catch (e: unknown) {
-			error = e instanceof Error ? e.message : 'Error al guardar el handle.';
+			error = e instanceof Error ? e.message : "Couldn't save the handle.";
 		} finally {
 			saving = false;
 		}
@@ -93,62 +93,58 @@
 
 <div class="flex flex-col gap-6">
 	{#if loading}
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
+		<p class="font-sans text-sm text-ink-muted">Loading...</p>
 	{:else}
-		<section
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">Tu blog</h2>
-			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Publica versiones committeadas de tus documentos como entradas permanentes e indexables por
-				buscadores, bajo tu propio handle.
+		<section class="rounded-xl border border-paper-border bg-paper p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Your blog</h2>
+			<p class="mb-5 font-sans text-sm text-ink-muted">
+				Publish saved versions of your documents as permanent, search-indexable posts under your own
+				handle.
 			</p>
 
 			{#if handle}
 				<div
-					class="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900/40 dark:bg-green-900/20"
+					class="flex items-center justify-between gap-3 rounded-lg border border-success-border bg-success-bg px-4 py-3"
 				>
 					<div>
-						<p class="font-sans text-sm font-medium text-green-800 dark:text-green-300">
+						<p class="font-sans text-sm font-medium text-success">
 							@{handle}
 						</p>
 						<a
 							href={resolve('/@[handle]', { handle: handle ?? '' })}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="font-sans text-xs text-green-700 underline dark:text-green-400"
+							class="font-sans text-xs text-success underline"
 						>
-							Ver tu blog →
+							View your blog →
 						</a>
 					</div>
 				</div>
 				{#if locked}
-					<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						No puedes cambiar tu handle una vez has publicado — protege las URLs ya publicadas.
+					<p class="mt-2 font-sans text-xs text-ink-faint">
+						You can't change your handle once you've published — this protects URLs already out
+						there.
 					</p>
 				{/if}
 			{/if}
 
 			{#if canEditHandle}
 				<div class="flex flex-col gap-2">
-					<label
-						for="blog-handle"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
-						Elige tu handle
+					<label for="blog-handle" class="font-sans text-sm font-medium text-ink">
+						Choose your handle
 					</label>
 					<div class="flex gap-2">
 						<div
-							class="flex flex-1 items-center rounded-md border border-paper-border bg-paper-ui px-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+							class="flex flex-1 items-center rounded-md border border-paper-border bg-paper-ui px-3"
 						>
-							<span class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">@</span>
+							<span class="font-sans text-sm text-ink-faint">@</span>
 							<input
 								id="blog-handle"
 								type="text"
 								bind:value={handleInput}
 								oninput={onHandleInput}
-								placeholder="tu-nombre"
-								class="w-full bg-transparent px-1 py-2 font-sans text-sm text-ink focus:outline-none dark:text-dark-ink"
+								placeholder="your-name"
+								class="w-full bg-transparent px-1 py-2 font-sans text-sm text-ink focus:outline-none"
 							/>
 						</div>
 						<button
@@ -157,81 +153,66 @@
 							disabled={saving || availability !== 'available'}
 							class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 						>
-							{saving ? 'Guardando...' : 'Guardar'}
+							{saving ? 'Saving…' : 'Save'}
 						</button>
 					</div>
 					{#if checking}
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Comprobando...</p>
+						<p class="font-sans text-xs text-ink-faint">Checking…</p>
 					{:else if availability === 'available'}
-						<p class="font-sans text-xs text-green-600 dark:text-green-400">Disponible.</p>
+						<p class="font-sans text-xs text-success">Disponible.</p>
 					{:else if availability === 'taken'}
-						<p class="font-sans text-xs text-red-600 dark:text-red-400">
-							Ese handle ya está en uso.
-						</p>
+						<p class="font-sans text-xs text-danger">That handle is already taken.</p>
 					{:else if availability === 'invalid'}
-						<p class="font-sans text-xs text-red-600 dark:text-red-400">
-							3-30 caracteres: letras, números y guiones.
+						<p class="font-sans text-xs text-danger">
+							3–30 characters: letters, numbers and hyphens.
 						</p>
 					{:else if availability === 'reserved'}
-						<p class="font-sans text-xs text-red-600 dark:text-red-400">
-							Ese handle está reservado.
-						</p>
+						<p class="font-sans text-xs text-danger">That handle is reserved.</p>
 					{/if}
 					{#if error}
-						<p class="font-sans text-xs text-red-600 dark:text-red-400">{error}</p>
+						<p class="font-sans text-xs text-danger">{error}</p>
 					{/if}
 				</div>
 			{/if}
 		</section>
 
-		<section
-			class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Perfil público
-			</h2>
-			<p class="mb-5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Se muestra en la portada de tu blog (<code class="font-mono">/@handle</code>).
+		<section class="rounded-xl border border-paper-border bg-paper p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Public profile</h2>
+			<p class="mb-5 font-sans text-sm text-ink-muted">
+				Shown on your blog's home page (<code class="font-mono">/@handle</code>).
 			</p>
 
 			<div class="flex flex-col gap-4">
 				<div class="flex flex-col gap-1.5">
-					<label
-						for="public-display-name"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
-						Nombre público
+					<label for="public-display-name" class="font-sans text-sm font-medium text-ink">
+						Display name
 					</label>
 					<input
 						id="public-display-name"
 						type="text"
 						maxlength="100"
 						bind:value={publicDisplayName}
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					/>
 				</div>
 
 				<div class="flex flex-col gap-1.5">
-					<label for="public-bio" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Bio
-					</label>
+					<label for="public-bio" class="font-sans text-sm font-medium text-ink"> Bio </label>
 					<textarea
 						id="public-bio"
 						rows="3"
 						maxlength="500"
 						bind:value={publicBio}
-						placeholder="Una breve descripción sobre ti…"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						placeholder="A short description of yourself…"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					></textarea>
 				</div>
 
 				{#if publicProfileError}
-					<p class="font-sans text-sm text-red-600 dark:text-red-400">{publicProfileError}</p>
+					<p class="font-sans text-sm text-danger">{publicProfileError}</p>
 				{/if}
 				{#if publicProfileSuccess}
-					<p class="font-sans text-sm text-green-600 dark:text-green-400">
-						Perfil público actualizado.
-					</p>
+					<p class="font-sans text-sm text-success">Public profile updated.</p>
 				{/if}
 
 				<div class="flex justify-end">
@@ -241,23 +222,18 @@
 						disabled={savingPublicProfile}
 						class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
 					>
-						{savingPublicProfile ? 'Guardando…' : 'Save changes'}
+						{savingPublicProfile ? 'Saving…' : 'Save changes'}
 					</button>
 				</div>
 			</div>
 		</section>
 
 		{#if handle}
-			<section
-				class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-			>
-				<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-					Publicaciones
-				</h2>
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Gestiona tus publicaciones en <a
-						href={resolve('/posts')}
-						class="underline hover:text-ink dark:hover:text-dark-ink">/posts →</a
+			<section class="rounded-xl border border-paper-border bg-paper p-6">
+				<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Posts</h2>
+				<p class="font-sans text-sm text-ink-muted">
+					Manage your posts at <a href={resolve('/posts')} class="underline hover:text-ink"
+						>/posts →</a
 					>
 				</p>
 			</section>

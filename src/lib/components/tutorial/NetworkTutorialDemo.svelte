@@ -35,39 +35,34 @@
 	};
 </script>
 
-<div class="min-h-screen bg-paper-ui dark:bg-dark-paper-ui">
+<div class="min-h-screen bg-paper-ui">
 	<div class="mx-auto max-w-2xl px-6 py-10">
-		<h1
-			data-tutorial="network-title"
-			class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-		>
+		<h1 data-tutorial="network-title" class="font-serif text-2xl font-semibold text-ink">
 			Network
 		</h1>
 
 		<section data-tutorial="network-invitations" class="mt-8">
-			<h2
-				class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
+			<h2 class="mb-4 font-sans text-xs font-semibold tracking-wide text-ink-faint uppercase">
 				Pending invitations
 			</h2>
 
 			<ul class="flex flex-col gap-3">
 				{#each mockInvitations as inv (inv.id)}
 					<li
-						class="flex items-center justify-between gap-4 rounded-xl border border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+						class="flex items-center justify-between gap-4 rounded-xl border border-paper-border bg-paper px-4 py-3"
 					>
 						<div class="min-w-0 flex-1">
-							<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+							<p class="truncate font-sans text-sm font-medium text-ink">
 								{inv.projectTitle}
 							</p>
-							<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							<p class="mt-0.5 font-sans text-xs text-ink-faint">
 								{roleLabel[inv.role] ?? inv.role} · invited by {inv.invitedByName} · expires {inv.expiresAt}
 							</p>
 						</div>
 						<div class="flex shrink-0 items-center gap-2">
 							<button
 								type="button"
-								class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-dark-paper-border dark:text-dark-ink-muted"
+								class="rounded-lg border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:border-danger-border hover:bg-danger-bg hover:text-danger"
 							>
 								Decline
 							</button>
@@ -85,7 +80,7 @@
 		</section>
 
 		{#if completed}
-			<p class="mt-8 font-sans text-sm text-ink-muted italic dark:text-dark-ink-muted">
+			<p class="mt-8 font-sans text-sm text-ink-muted italic">
 				Tutorial already completed — the tour will not launch.
 			</p>
 		{/if}

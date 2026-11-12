@@ -161,13 +161,14 @@
 	<div class="mb-8 flex flex-wrap items-start justify-between gap-4">
 		<div>
 			{#if props.mode === 'personal'}
-				<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">AI Usage</h1>
+				<h1 class="font-serif text-2xl font-semibold text-ink">AI Usage</h1>
 				{#if props.ownedOrgs?.length}
 					<div class="mt-1 flex flex-wrap gap-2">
 						{#each props.ownedOrgs as org (org.id)}
 							<a
 								href={resolve(`/usage/org/${org.id}`)}
-								class="font-sans text-xs text-accent underline decoration-dotted">{org.name} →</a
+								class="font-sans text-xs text-accent-ink underline decoration-dotted"
+								>{org.name} →</a
 							>
 						{/each}
 					</div>
@@ -175,7 +176,7 @@
 			{:else}
 				<a
 					href={resolve('/usage')}
-					class="mb-2 flex items-center gap-1 font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted"
+					class="mb-2 flex items-center gap-1 font-sans text-sm text-ink-muted hover:text-ink"
 				>
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="none"
 						><path
@@ -188,12 +189,10 @@
 					>
 					My usage
 				</a>
-				<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+				<h1 class="font-serif text-2xl font-semibold text-ink">
 					{props.orgName}
 				</h1>
-				<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Organization AI usage
-				</p>
+				<p class="mt-0.5 font-sans text-sm text-ink-muted">Organization AI usage</p>
 			{/if}
 		</div>
 
@@ -205,7 +204,7 @@
 					onclick={() => (preset = p)}
 					class="rounded-md px-3 py-1.5 font-sans text-sm transition-colors {preset === p
 						? 'bg-accent text-white'
-						: 'border border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+						: 'border border-paper-border text-ink-muted hover:bg-paper-ui'}"
 				>
 					{p === 'custom'
 						? 'Custom'
@@ -222,7 +221,7 @@
 						type="date"
 						bind:value={customFrom}
 						max={customTo}
-						class="rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink"
 					/>
 					<span class="font-sans text-sm text-ink-muted">–</span>
 					<input
@@ -230,7 +229,7 @@
 						bind:value={customTo}
 						min={customFrom}
 						max={new Date().toISOString().slice(0, 10)}
-						class="rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper px-2 py-1.5 font-sans text-sm text-ink"
 					/>
 				</div>
 			{/if}
@@ -239,7 +238,7 @@
 
 	{#if loadError}
 		<div
-			class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-sans text-sm text-red-700 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-400"
+			class="mb-6 rounded-xl border border-danger-border bg-danger-bg px-4 py-3 font-sans text-sm text-danger"
 		>
 			{loadError}
 		</div>
@@ -247,17 +246,15 @@
 
 	{#if loading && !data}
 		<div class="flex items-center justify-center py-24">
-			<Spinner size="lg" class="text-accent" />
+			<Spinner size="lg" class="text-accent-ink" />
 		</div>
 	{:else if data}
 		<!-- KPI Cards -->
 		<div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
 			{#each [{ label: 'Total cost', value: fmtUsd(data.summary?.totalCostUsd) }, { label: 'API calls', value: fmtNum(data.summary?.totalCalls) }, { label: 'Input tokens', value: fmtTokens(data.summary?.totalInputTokens) }, { label: 'Output tokens', value: fmtTokens(data.summary?.totalOutputTokens) }] as card (card.label)}
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">{card.label}</p>
-					<p class="mt-1 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+				<div class="rounded-xl border border-paper-border bg-paper p-4">
+					<p class="font-sans text-xs text-ink-muted">{card.label}</p>
+					<p class="mt-1 font-serif text-2xl font-semibold text-ink">
 						{card.value}
 					</p>
 				</div>
@@ -266,12 +263,8 @@
 
 		<!-- Daily cost chart -->
 		{#if chartData}
-			<div
-				class="mb-8 rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-			>
-				<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-					Cost over time
-				</h2>
+			<div class="mb-8 rounded-xl border border-paper-border bg-paper p-5">
+				<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted">Cost over time</h2>
 				<div class="overflow-x-auto">
 					<svg viewBox="0 0 {CHART_W} {CHART_H}" class="w-full" style="min-width:320px">
 						<!-- Grid lines -->
@@ -283,14 +276,14 @@
 								y2={tick.y}
 								stroke="currentColor"
 								stroke-width="0.5"
-								class="text-paper-border dark:text-dark-paper-border"
+								class="text-paper-border"
 								stroke-dasharray="4 4"
 							/>
 							<text
 								x={PAD.left - 4}
 								y={tick.y + 4}
 								text-anchor="end"
-								class="fill-ink-faint dark:fill-dark-ink-faint"
+								class="fill-ink-faint"
 								font-size="10"
 								font-family="sans-serif"
 							>
@@ -305,7 +298,7 @@
 								PAD.top -
 								PAD.bottom} L{chartData.points[0].x},{PAD.top + CHART_H - PAD.top - PAD.bottom} Z"
 							fill="currentColor"
-							class="text-accent/10"
+							class="text-accent-ink/10"
 							opacity="0.8"
 						/>
 
@@ -314,14 +307,14 @@
 							d={chartData.path}
 							fill="none"
 							stroke="currentColor"
-							class="text-accent"
+							class="text-accent-ink"
 							stroke-width="1.5"
 							stroke-linejoin="round"
 						/>
 
 						<!-- Dots -->
 						{#each chartData.points as p, i (i)}
-							<circle cx={p.x} cy={p.y} r="2.5" fill="currentColor" class="text-accent" />
+							<circle cx={p.x} cy={p.y} r="2.5" fill="currentColor" class="text-accent-ink" />
 						{/each}
 
 						<!-- X axis labels -->
@@ -330,7 +323,7 @@
 								x={chartData.points[t.i]?.x ?? 0}
 								y={CHART_H - 6}
 								text-anchor="middle"
-								class="fill-ink-faint dark:fill-dark-ink-faint"
+								class="fill-ink-faint"
 								font-size="10"
 								font-family="sans-serif">{t.label}</text
 							>
@@ -344,27 +337,19 @@
 		<div class="mb-8 grid gap-6 md:grid-cols-2">
 			<!-- By task -->
 			{#if data.byTask?.length}
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-						Cost by task
-					</h2>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
+					<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted">Cost by task</h2>
 					<div class="space-y-2.5">
 						{#each data.byTask as row (row.task)}
 							{@const pct = (Number(row.costUsd) / maxOf(data.byTask)) * 100}
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
-									<span class="font-sans text-sm text-ink dark:text-dark-ink"
-										>{taskLabel(row.task)}</span
-									>
-									<span class="shrink-0 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									<span class="font-sans text-sm text-ink">{taskLabel(row.task)}</span>
+									<span class="shrink-0 font-sans text-xs text-ink-muted"
 										>{fmtUsd(row.costUsd)} · {fmtNum(row.calls)} calls</span
 									>
 								</div>
-								<div
-									class="h-1.5 w-full overflow-hidden rounded-full bg-paper-ui dark:bg-dark-paper-ui"
-								>
+								<div class="h-1.5 w-full overflow-hidden rounded-full bg-paper-ui">
 									<div
 										class="h-full rounded-full bg-accent transition-all"
 										style="width:{pct}%"
@@ -378,27 +363,19 @@
 
 			<!-- By model -->
 			{#if data.byModel?.length}
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-						Cost by model
-					</h2>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
+					<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted">Cost by model</h2>
 					<div class="space-y-2.5">
 						{#each data.byModel as row (row.model)}
 							{@const pct = (Number(row.costUsd) / maxOf(data.byModel)) * 100}
 							<div>
 								<div class="mb-0.5 flex items-center justify-between gap-2">
-									<span class="truncate font-sans text-sm text-ink dark:text-dark-ink"
-										>{modelLabel(row.model)}</span
-									>
-									<span class="shrink-0 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									<span class="truncate font-sans text-sm text-ink">{modelLabel(row.model)}</span>
+									<span class="shrink-0 font-sans text-xs text-ink-muted"
 										>{fmtUsd(row.costUsd)}</span
 									>
 								</div>
-								<div
-									class="h-1.5 w-full overflow-hidden rounded-full bg-paper-ui dark:bg-dark-paper-ui"
-								>
+								<div class="h-1.5 w-full overflow-hidden rounded-full bg-paper-ui">
 									<div
 										class="h-full rounded-full bg-accent/70 transition-all"
 										style="width:{pct}%"
@@ -412,12 +389,8 @@
 
 			<!-- By project -->
 			{#if data.byProject?.length}
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
-					<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-						Top projects
-					</h2>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
+					<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted">Top projects</h2>
 					<div class="space-y-2.5">
 						{#each data.byProject as row (row.projectId)}
 							{@const pct = (Number(row.costUsd) / maxOf(data.byProject)) * 100}
@@ -425,17 +398,15 @@
 								<div class="mb-0.5 flex items-center justify-between gap-2">
 									<a
 										href={resolve(`/projects/${row.projectId}`)}
-										class="truncate font-sans text-sm text-ink hover:text-accent dark:text-dark-ink"
+										class="truncate font-sans text-sm text-ink hover:text-accent-ink"
 									>
 										{row.title ?? row.projectId}
 									</a>
-									<span class="shrink-0 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+									<span class="shrink-0 font-sans text-xs text-ink-muted"
 										>{fmtUsd(row.costUsd)} · {fmtNum(row.calls)}</span
 									>
 								</div>
-								<div
-									class="h-1.5 w-full overflow-hidden rounded-full bg-paper-ui dark:bg-dark-paper-ui"
-								>
+								<div class="h-1.5 w-full overflow-hidden rounded-full bg-paper-ui">
 									<div
 										class="h-full rounded-full bg-accent/50 transition-all"
 										style="width:{pct}%"
@@ -451,27 +422,20 @@
 			{#if props.mode === 'org'}
 				{@const orgData = data as OrgData}
 				{#if orgData.byUser?.length}
-					<div
-						class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-					>
-						<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted dark:text-dark-ink-muted">
-							Top users
-						</h2>
+					<div class="rounded-xl border border-paper-border bg-paper p-5">
+						<h2 class="mb-4 font-sans text-sm font-medium text-ink-muted">Top users</h2>
 						<div class="space-y-2.5">
 							{#each orgData.byUser as row (row.userId)}
 								{@const pct = (Number(row.costUsd) / maxOf(orgData.byUser)) * 100}
 								<div>
 									<div class="mb-0.5 flex items-center justify-between gap-2">
-										<span class="truncate font-sans text-sm text-ink dark:text-dark-ink"
-											>{row.name ?? row.userId}</span
+										<span class="truncate font-sans text-sm text-ink">{row.name ?? row.userId}</span
 										>
-										<span class="shrink-0 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+										<span class="shrink-0 font-sans text-xs text-ink-muted"
 											>{fmtUsd(row.costUsd)} · {fmtNum(row.calls)}</span
 										>
 									</div>
-									<div
-										class="h-1.5 w-full overflow-hidden rounded-full bg-paper-ui dark:bg-dark-paper-ui"
-									>
+									<div class="h-1.5 w-full overflow-hidden rounded-full bg-paper-ui">
 										<div
 											class="h-full rounded-full bg-accent/40 transition-all"
 											style="width:{pct}%"
@@ -486,12 +450,8 @@
 		</div>
 
 		{#if Number(data.summary?.totalCalls) === 0}
-			<div
-				class="rounded-xl border border-dashed border-paper-border py-16 text-center dark:border-dark-paper-border"
-			>
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					No AI usage in this period.
-				</p>
+			<div class="rounded-xl border border-dashed border-paper-border py-16 text-center">
+				<p class="font-sans text-sm text-ink-muted">No AI usage in this period.</p>
 			</div>
 		{/if}
 	{/if}

@@ -2,7 +2,6 @@ import { error } from '@sveltejs/kit';
 import { eq, asc } from 'drizzle-orm';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { db as rawDb } from '$lib/server/db';
 import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
 import {
@@ -75,7 +74,6 @@ export const POST: RequestHandler = async (event) => {
 
 	const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 		withRLS,
-		rawDb,
 		user.id,
 		'agent',
 		projectId

@@ -53,7 +53,7 @@
 
 	const STATUS_CLASS: Record<string, string> = {
 		open: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-		in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+		in_progress: 'bg-warning-bg text-warning',
 		closed: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
 	};
 
@@ -61,11 +61,11 @@
 		low: 'text-zinc-400 dark:text-zinc-500',
 		medium: 'text-sky-500 dark:text-sky-400',
 		high: 'text-orange-500 dark:text-orange-400',
-		critical: 'text-red-600 dark:text-red-400'
+		critical: 'text-danger'
 	};
 </script>
 
-<div class="min-h-screen bg-paper-ui dark:bg-dark-paper-ui">
+<div class="min-h-screen bg-paper-ui">
 	<div class="mx-auto max-w-3xl px-4 py-8">
 		<!-- Header -->
 		<div class="mb-6 flex items-center justify-between gap-4">
@@ -145,7 +145,7 @@
 		</ul>
 
 		{#if completed}
-			<p class="mt-8 font-sans text-sm text-ink-muted italic dark:text-dark-ink-muted">
+			<p class="mt-8 font-sans text-sm text-ink-muted italic">
 				Tutorial already completed — the tour will not launch.
 			</p>
 		{/if}

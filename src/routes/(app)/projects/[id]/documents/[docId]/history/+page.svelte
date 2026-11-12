@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Book from '@lucide/svelte/icons/book';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import type { PageData } from './$types';
 	import MarkdownPreview from '$lib/components/editor/MarkdownPreview.svelte';
 	import DiffViewer from '$lib/components/editor/DiffViewer.svelte';
@@ -49,7 +52,7 @@
 	let versionToUnpublish = $state<Version | null>(null);
 	let versionToPublish = $state<Version | null>(null);
 
-	const fmt = new Intl.DateTimeFormat('es', {
+	const fmt = new Intl.DateTimeFormat('en-GB', {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric',
@@ -57,7 +60,7 @@
 		minute: '2-digit'
 	});
 
-	const fmtExpiry = new Intl.DateTimeFormat('es', {
+	const fmtExpiry = new Intl.DateTimeFormat('en-GB', {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric'
@@ -178,8 +181,13 @@
 	}
 
 	async function restoreVersion(v: Version) {
-		if (!confirm(`¿Restaurar v${v.versionNumber} como borrador? El draft actual se perderá.`))
-			return;
+		const ok = await confirmDialog({
+			title: `Restore version ${v.versionNumber}?`,
+			message: 'It replaces the current draft. Unsaved changes in the draft will be lost.',
+			confirmLabel: 'Restore',
+			danger: true
+		});
+		if (!ok) return;
 		restoring = true;
 		try {
 			await trpc.documents.restoreVersion.mutate({
@@ -194,43 +202,31 @@
 </script>
 
 <svelte:head>
-	<title>Historial · {data.document.title} — Scholio</title>
+	<title>History · {data.document.title} — Scholio</title>
 </svelte:head>
 
-<div class="flex h-screen flex-col bg-paper dark:bg-dark-paper">
+<div class="flex h-screen flex-col bg-paper">
 	<!-- Header -->
 	<header
-		class="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-paper-border bg-paper/95 px-6 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+		class="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-paper-border bg-paper/95 px-6 py-3 backdrop-blur-sm"
 	>
 		<a
 			href={resolve(`/projects/${data.document.projectId}/documents/${data.document.id}`)}
-			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				<path d="M15 18l-6-6 6-6" />
-			</svg>
+			<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 			<span translate="no">{data.document.title}</span>
 		</a>
-		<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-		<span class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Historial</span>
-		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+		<span class="text-ink-faint">/</span>
+		<span class="font-sans text-sm font-medium text-ink">History</span>
+		<span class="font-sans text-xs text-ink-faint">
 			{data.versions.length}
 			{data.versions.length === 1 ? 'version' : 'versions'}
 		</span>
 
 		{#if restoredVersion !== null}
 			<span
-				class="ml-auto rounded-md border border-green-300 bg-green-50 px-2.5 py-1 font-sans text-xs text-green-700 dark:border-green-700/50 dark:bg-green-900/20 dark:text-green-400"
+				class="ml-auto rounded-md border border-success-border bg-success-bg px-2.5 py-1 font-sans text-xs text-success"
 			>
 				v{restoredVersion} restored as draft
 			</span>
@@ -240,31 +236,23 @@
 	<div class="flex flex-1 overflow-hidden">
 		<!-- Version list -->
 		<aside
-			class="flex w-72 shrink-0 flex-col overflow-hidden border-r border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+			class="flex w-72 shrink-0 flex-col overflow-hidden border-r border-paper-border bg-paper"
 		>
 			{#if data.versions.length === 0}
-				<div
-					class="px-6 py-12 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-				>
+				<div class="px-6 py-12 text-center font-sans text-sm text-ink-muted">
 					“There are no published versions yet.
 				</div>
 			{:else}
-				<ul
-					class="flex-1 divide-y divide-paper-border overflow-y-auto dark:divide-dark-paper-border"
-				>
+				<ul class="flex-1 divide-y divide-paper-border overflow-y-auto">
 					{#each data.versions as v (v.id)}
-						<li
-							class="px-4 py-3 {selectedVersion?.id === v.id
-								? 'bg-paper-ui dark:bg-dark-paper-ui'
-								: ''}"
-						>
+						<li class="px-4 py-3 {selectedVersion?.id === v.id ? 'bg-paper-ui' : ''}">
 							<div class="flex items-start justify-between gap-2">
 								<div class="min-w-0">
-									<p class="font-sans text-xs font-semibold text-accent">v{v.versionNumber}</p>
-									<p class="mt-0.5 truncate font-sans text-sm text-ink dark:text-dark-ink">
+									<p class="font-sans text-xs font-semibold text-accent-ink">v{v.versionNumber}</p>
+									<p class="mt-0.5 truncate font-sans text-sm text-ink">
 										{v.changeDescription ?? 'No description'}
 									</p>
-									<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									<p class="mt-0.5 font-sans text-xs text-ink-faint">
 										{fmt.format(new Date(v.createdAt))}
 									</p>
 								</div>
@@ -275,7 +263,7 @@
 									class="rounded px-2 py-1 font-sans text-xs transition-colors {selectedVersion?.id ===
 										v.id && panelMode === 'preview'
 										? 'bg-accent text-white'
-										: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+										: 'text-ink-muted hover:bg-paper-ui'}"
 								>
 									View
 								</button>
@@ -284,7 +272,7 @@
 									class="rounded px-2 py-1 font-sans text-xs transition-colors {selectedVersion?.id ===
 										v.id && panelMode === 'diff'
 										? 'bg-accent text-white'
-										: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+										: 'text-ink-muted hover:bg-paper-ui'}"
 								>
 									Diff
 								</button>
@@ -294,7 +282,7 @@
 										class="rounded px-2 py-1 font-sans text-xs transition-colors {selectedVersion?.id ===
 											v.id && panelMode === 'summary'
 											? 'bg-accent text-white'
-											: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+											: 'text-ink-muted hover:bg-paper-ui'}"
 									>
 										Summary
 									</button>
@@ -305,9 +293,9 @@
 										actionsMenuPos = { top: rect.bottom + 4, left: rect.left };
 										actionsOpenId = actionsOpenId === v.id ? null : v.id;
 									}}
-									title="Más acciones"
-									aria-label="Más acciones"
-									class="ml-auto flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:bg-paper-ui dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui"
+									title="More actions"
+									aria-label="More actions"
+									class="ml-auto flex h-6 w-6 items-center justify-center rounded text-ink-faint transition-colors hover:bg-paper-ui"
 								>
 									<svg
 										width="14"
@@ -334,17 +322,17 @@
 		<main class="flex-1 overflow-y-auto">
 			{#if selectedVersion === null}
 				<div class="flex h-full items-center justify-center">
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+					<p class="font-sans text-sm text-ink-faint">
 						Select a version to view its contents or the diff.
 					</p>
 				</div>
 			{:else if loading}
 				<div class="flex h-full items-center justify-center">
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Loading...</p>
+					<p class="font-sans text-sm text-ink-faint">Loading...</p>
 				</div>
 			{:else if panelMode === 'preview' && versionContent !== null}
 				<div class="mx-auto max-w-2xl px-6 py-10">
-					<p class="mb-6 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mb-6 font-sans text-xs text-ink-faint">
 						v{selectedVersion.versionNumber} · {selectedVersion.changeDescription ??
 							'No description'}
 					</p>
@@ -352,7 +340,7 @@
 				</div>
 			{:else if panelMode === 'diff' && diffData !== null}
 				<div class="p-6">
-					<p class="mb-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mb-4 font-sans text-xs text-ink-faint">
 						v{selectedVersion.versionNumber} · {selectedVersion.changeDescription ??
 							'No description'}
 					</p>
@@ -365,19 +353,15 @@
 				</div>
 			{:else if panelMode === 'summary'}
 				<div class="mx-auto max-w-2xl px-6 py-10">
-					<p class="mb-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mb-4 font-sans text-xs text-ink-faint">
 						v{selectedVersion.versionNumber} · AI summary
 					</p>
 					{#if summaryContent}
-						<p
-							class="font-sans text-sm leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink"
-						>
+						<p class="font-sans text-sm leading-relaxed whitespace-pre-wrap text-ink">
 							{summaryContent}
 						</p>
 					{:else}
-						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-							No summary available for this version.
-						</p>
+						<p class="font-sans text-sm text-ink-faint">No summary available for this version.</p>
 					{/if}
 				</div>
 			{/if}
@@ -394,7 +378,7 @@
 		tabindex="-1"
 	></button>
 	<div
-		class="fixed z-20 w-60 overflow-hidden rounded-xl border border-paper-border bg-paper py-1 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		class="fixed z-20 w-60 overflow-hidden rounded-xl border border-paper-border bg-paper py-1 shadow-lg"
 		style="top: {actionsMenuPos.top}px; left: {actionsMenuPos.left}px;"
 	>
 		{#if data.canWrite}
@@ -405,11 +389,11 @@
 					actionsOpenId = null;
 				}}
 				disabled={restoring}
-				class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 			>
 				Restore as draft
 			</button>
-			<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
+			<div class="my-1 border-t border-paper-border"></div>
 		{/if}
 
 		<a
@@ -417,37 +401,37 @@
 				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=latex&versionId=${v.id}`
 			)}
 			onclick={() => (actionsOpenId = null)}
-			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
+			<span class="font-mono text-xs text-ink-faint">.tex</span>LaTeX
 		</a>
 		<a
 			href={resolve(
 				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=typst&versionId=${v.id}`
 			)}
 			onclick={() => (actionsOpenId = null)}
-			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
+			<span class="font-mono text-xs text-ink-faint">.typ</span>Typst
 		</a>
 		<a
 			href={resolve(
 				`/api/projects/${data.document.projectId}/documents/${data.document.id}/export?format=pdf&versionId=${v.id}`
 			)}
 			onclick={() => (actionsOpenId = null)}
-			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.pdf</span>PDF
+			<span class="font-mono text-xs text-ink-faint">.pdf</span>PDF
 		</a>
 
 		{#if data.isOwner}
-			<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
+			<div class="my-1 border-t border-paper-border"></div>
 
 			<button
 				type="button"
 				onclick={() => copyOrCreateShare(v)}
 				disabled={sharingVersionId === v.id}
-				class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 			>
 				{#if sharingVersionId === v.id}
 					<Spinner size="sm" />
@@ -469,15 +453,15 @@
 					</svg>
 				{/if}
 				{#if copiedVersionId === v.id}
-					Copiada ✓
+					Copied ✓
 				{:else if shares[v.id]}
-					Copiar URL pública
+					Copy public URL
 				{:else}
-					Crear URL pública
+					Create public URL
 				{/if}
 			</button>
 			{#if shares[v.id]}
-				<p class="px-4 pb-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				<p class="px-4 pb-1 font-sans text-xs text-ink-faint">
 					Expira {fmtExpiry.format(new Date(shares[v.id].expiresAt))}
 				</p>
 				<button
@@ -487,7 +471,7 @@
 						actionsOpenId = null;
 					}}
 					disabled={revokingShareId === shares[v.id]?.id}
-					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-red-500 transition-colors hover:bg-red-50 disabled:opacity-40 dark:hover:bg-red-900/20"
+					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-danger transition-colors hover:bg-danger-bg disabled:opacity-40"
 				>
 					<svg
 						width="14"
@@ -503,11 +487,11 @@
 					>
 						<circle cx="12" cy="12" r="10" /><line x1="8" y1="12" x2="16" y2="12" />
 					</svg>
-					Revocar URL pública
+					Revoke public URL
 				</button>
 			{/if}
 
-			<div class="my-1 border-t border-paper-border dark:border-dark-paper-border"></div>
+			<div class="my-1 border-t border-paper-border"></div>
 
 			{#if blogPosts[v.id]}
 				<button
@@ -517,24 +501,10 @@
 						actionsOpenId = null;
 					}}
 					disabled={unpublishingBlogId === blogPosts[v.id]?.id}
-					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-accent transition-colors hover:bg-accent/10 disabled:opacity-40"
+					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-accent-ink transition-colors hover:bg-accent/10 disabled:opacity-40"
 				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						class="shrink-0"
-					>
-						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-					</svg>
-					Despublicar del blog
+					<Book size={14} strokeWidth={1.75} class="shrink-0" aria-hidden="true" />
+					Unpublish from blog
 				</button>
 			{:else}
 				<button
@@ -543,24 +513,10 @@
 						publishToBlog(v);
 						actionsOpenId = null;
 					}}
-					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex w-full items-center gap-2.5 px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						class="shrink-0"
-					>
-						<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-						<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-					</svg>
-					Publicar en el blog
+					<Book size={14} strokeWidth={1.75} class="shrink-0" aria-hidden="true" />
+					Publish to blog
 				</button>
 			{/if}
 		{/if}
@@ -569,19 +525,19 @@
 
 <InfoDialog
 	open={showNoHandleDialog}
-	title="Configura tu blog primero"
-	message="Necesitas elegir un handle en Ajustes → Blog antes de poder publicar."
-	actionLabel="Ir a Ajustes"
+	title="Set up your blog first"
+	message="You need to choose a handle in Settings → Blog before you can publish."
+	actionLabel="Go to Settings"
 	actionHref={resolve('/settings?tab=blog')}
 	oncancel={() => (showNoHandleDialog = false)}
 />
 
 <SafeDeleteDialog
 	open={!!versionToUnpublish}
-	title="Despublicar del blog"
-	label="esta versión del blog"
-	confirmLabel="Despublicar"
-	warning="La URL pública dejará de funcionar. Puedes volver a publicarla cuando quieras."
+	title="Unpublish from blog"
+	label="this version from the blog"
+	confirmLabel="Unpublish"
+	warning="The public URL will stop working. You can publish it again whenever you like."
 	deleting={unpublishingBlogId === blogPosts[versionToUnpublish?.id ?? '']?.id}
 	requireCode={false}
 	onconfirm={unpublishFromBlog}

@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { eq, and } from 'drizzle-orm';
 import { userJupyterConnection } from '$lib/server/db/schemas/users.schema';
 import { decryptSecret } from '$lib/server/kms';
+import { safeFetch, UnsafeUrlError } from '$lib/server/safeFetch';
 
 // Shape returned by the Jupyter Contents API for a single item
 interface JupyterContentsItem {
@@ -71,10 +72,10 @@ export const GET: RequestHandler = async (event) => {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(contentsUrl, {
-			headers: { Authorization: `token ${token}` }
-		});
-	} catch {
+		// No redirects: following one would send the Jupyter token to another host.
+		upstream = await safeFetch(contentsUrl, { headers: { Authorization: `token ${token}` } }, 0);
+	} catch (e) {
+		if (e instanceof UnsafeUrlError) error(400, e.message);
 		error(502, 'Could not reach the Jupyter server');
 	} finally {
 		// Clear token from memory

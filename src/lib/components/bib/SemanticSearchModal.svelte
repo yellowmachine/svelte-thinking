@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import { generateCiteKey } from '$lib/utils/bibtex';
@@ -97,28 +98,18 @@
 	aria-labelledby="semantic-search-title"
 >
 	<div
-		class="flex w-full max-w-2xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+		class="flex w-full max-w-2xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl"
 	>
 		<div class="flex items-center justify-between">
-			<h2
-				id="semantic-search-title"
-				class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
-			>
+			<h2 id="semantic-search-title" class="font-serif text-base font-semibold text-ink">
 				Search Semantic Scholar
 			</h2>
 			<button
 				onclick={onclose}
-				class="rounded p-1 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+				class="rounded p-1 text-ink-faint transition-colors hover:text-ink"
 				aria-label="Close"
 			>
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path
-						d="M18 6 6 18M6 6l12 12"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={16} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 
@@ -133,7 +124,7 @@
 			<input
 				bind:value={semanticQuery}
 				placeholder="Title, author or keywords…"
-				class="flex-1 rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="flex-1 rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				autofocus
 			/>
 			<button
@@ -146,20 +137,20 @@
 		</form>
 
 		{#if semanticError}
-			<p class="font-sans text-sm text-red-500">{semanticError}</p>
+			<p class="font-sans text-sm text-danger">{semanticError}</p>
 		{/if}
 
 		{#if semanticResults.length > 0}
 			<div class="flex flex-col gap-2 overflow-y-auto" style="max-height: 420px;">
 				{#each semanticResults as result (result.paperId)}
 					<div
-						class="flex items-start gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+						class="flex items-start gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3"
 					>
 						<div class="min-w-0 flex-1">
-							<p class="font-sans text-sm leading-snug font-medium text-ink dark:text-dark-ink">
+							<p class="font-sans text-sm leading-snug font-medium text-ink">
 								{result.title}
 							</p>
-							<p class="mt-1 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+							<p class="mt-1 font-sans text-xs text-ink-muted">
 								{result.authors
 									.slice(0, 3)
 									.map((a) => a.name)
@@ -170,7 +161,7 @@
 									· <span class="italic">{result.venue}</span>{/if}
 							</p>
 							{#if result.externalIds?.DOI}
-								<p class="mt-0.5 font-mono text-xs text-ink-faint dark:text-dark-ink-faint">
+								<p class="mt-0.5 font-mono text-xs text-ink-faint">
 									DOI: {result.externalIds.DOI}
 								</p>
 							{/if}
@@ -178,7 +169,7 @@
 						<button
 							onclick={() => addSemanticResult(result)}
 							disabled={semanticAdding.has(result.paperId)}
-							class="shrink-0 rounded-lg border border-accent px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
+							class="shrink-0 rounded-lg border border-accent px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
 						>
 							{semanticAdding.has(result.paperId) ? 'Adding…' : '+ Add'}
 						</button>
@@ -186,7 +177,7 @@
 				{/each}
 			</div>
 		{:else if !semanticLoading && semanticQuery && !semanticError}
-			<p class="py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
+			<p class="py-4 text-center font-sans text-sm text-ink-faint">
 				No results. Try different terms.
 			</p>
 		{/if}

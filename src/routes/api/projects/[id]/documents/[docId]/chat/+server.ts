@@ -2,7 +2,6 @@ import { error } from '@sveltejs/kit';
 import { eq, and, asc } from 'drizzle-orm';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { db as rawDb } from '$lib/server/db';
 import { aiConversation, aiMessage } from '$lib/server/db/schemas/ai.schema';
 import { document } from '$lib/server/db/schemas/documents.schema';
 import {
@@ -91,12 +90,12 @@ export const POST: RequestHandler = async (event) => {
 		{ apiKey: spellApiKey, model: spellModel },
 		{ apiKey: grammarApiKey, model: grammarModel }
 	] = await Promise.all([
-		resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId),
-		resolveTaskKey(withRLS, rawDb, user.id, 'spell', projectId).catch(() =>
-			resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId)
+		resolveTaskKey(withRLS, user.id, 'agent', projectId),
+		resolveTaskKey(withRLS, user.id, 'spell', projectId).catch(() =>
+			resolveTaskKey(withRLS, user.id, 'agent', projectId)
 		),
-		resolveTaskKey(withRLS, rawDb, user.id, 'grammar', projectId).catch(() =>
-			resolveTaskKey(withRLS, rawDb, user.id, 'agent', projectId)
+		resolveTaskKey(withRLS, user.id, 'grammar', projectId).catch(() =>
+			resolveTaskKey(withRLS, user.id, 'agent', projectId)
 		)
 	]);
 	const effectiveModel = !resolvedOrgId && modelOverride ? modelOverride : resolvedModel;

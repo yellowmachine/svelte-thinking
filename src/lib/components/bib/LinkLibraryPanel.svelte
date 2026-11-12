@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { trpc } from '$lib/utils/trpc';
 	import type { Author } from '$lib/utils/bibtex';
@@ -157,79 +158,62 @@
 </script>
 
 <div class="w-full max-w-sm shrink-0">
-	<div
-		class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<div
-			class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-		>
-			<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
-				Link from library
-			</h2>
+	<div class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper">
+		<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5">
+			<h2 class="font-serif text-base font-semibold text-ink">Link from library</h2>
 			<button
 				onclick={onclose}
 				aria-label="Close"
-				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 			>
-				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-					<path
-						d="M1 1l12 12M13 1L1 13"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 
 		<div class="space-y-3 px-5 py-4">
 			{#if llLoading}
-				<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Loading library…</p>
+				<p class="font-sans text-xs text-ink-faint">Loading library…</p>
 			{:else if llRefs.length === 0 && !llError}
-				<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-					No other references in your library to link.
-				</p>
+				<p class="font-sans text-sm text-ink-faint">No other references in your library to link.</p>
 			{:else}
 				{#if llProjects.length > 0 || llRefs.some((r) => r.projectIds.length === 0)}
 					<select
 						bind:value={llFilterProjectId}
-						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					>
 						<option value="">All library</option>
 						{#each llProjects as p (p.id)}
 							<option value={p.id}>{p.title}</option>
 						{/each}
-						<option value="__unlinked__">Sin proyecto</option>
+						<option value="__unlinked__">No project</option>
 					</select>
 				{/if}
 				<input
 					type="search"
 					bind:value={llSearch}
 					placeholder="Search by author, title, year…"
-					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				/>
 				<div class="flex items-center justify-between">
-					<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+					<span class="font-sans text-xs text-ink-muted">
 						{llSelectedIds.size} / {llFiltered.length} selected
 					</span>
 					<button
 						type="button"
 						onclick={llToggleAll}
-						class="font-sans text-xs text-accent hover:underline"
+						class="font-sans text-xs text-accent-ink hover:underline"
 					>
 						{llSelectedIds.size === llFiltered.length && llFiltered.length > 0
 							? 'Deselect all'
 							: 'Select all'}
 					</button>
 				</div>
-				<div
-					class="max-h-72 overflow-y-auto rounded-md border border-paper-border dark:border-dark-paper-border"
-				>
+				<div class="max-h-72 overflow-y-auto rounded-md border border-paper-border">
 					{#each llFiltered as ref (ref.id)}
 						{@const author = (ref.authors as Author[])[0]?.last ?? ''}
 						{@const isOrphan = ref.projectIds.length === 0}
 						<div
-							class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2.5 last:border-b-0 hover:bg-paper-ui dark:border-dark-paper-border dark:hover:bg-dark-paper-ui"
+							class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2.5 last:border-b-0 hover:bg-paper-ui"
 						>
 							<label class="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5">
 								<input
@@ -244,13 +228,13 @@
 									class="mt-0.5 shrink-0 accent-accent"
 								/>
 								<div class="min-w-0">
-									<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+									<p class="truncate font-sans text-xs font-medium text-ink">
 										{ref.title}
 									</p>
-									<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+									<p class="font-sans text-[11px] text-ink-faint">
 										{[author, ref.year].filter(Boolean).join(', ')}
 										<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
-										{#if isOrphan}<span class="ml-1 italic opacity-60">sin proyecto</span>{/if}
+										{#if isOrphan}<span class="ml-1 italic opacity-60">no project</span>{/if}
 									</p>
 								</div>
 							</label>
@@ -259,8 +243,8 @@
 									type="button"
 									onclick={() => llDeleteRef(ref.id)}
 									disabled={llDeleting.has(ref.id)}
-									aria-label="Borrar referencia"
-									class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
+									aria-label="Delete reference"
+									class="mt-0.5 shrink-0 rounded p-0.5 text-ink-faint hover:text-danger disabled:opacity-40"
 								>
 									<svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
 										<path
@@ -276,7 +260,7 @@
 						</div>
 					{/each}
 					{#if llFiltered.length === 0}
-						<p class="px-3 py-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<p class="px-3 py-4 font-sans text-xs text-ink-faint">
 							No results for "{llSearch}"
 						</p>
 					{/if}
@@ -287,7 +271,7 @@
 				<button
 					type="button"
 					onclick={() => (llShowLinked = !llShowLinked)}
-					class="flex w-full items-center gap-1.5 font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="flex w-full items-center gap-1.5 font-sans text-xs text-ink-muted hover:text-ink"
 				>
 					<svg
 						width="10"
@@ -308,17 +292,17 @@
 					Already in this project ({linkedRefs.length})
 				</button>
 				{#if llShowLinked}
-					<div class="rounded-md border border-paper-border dark:border-dark-paper-border">
+					<div class="rounded-md border border-paper-border">
 						{#each linkedRefs as ref (ref.id)}
 							{@const author = (ref.authors as Author[])[0]?.last ?? ''}
 							<div
-								class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2 opacity-50 last:border-b-0 dark:border-dark-paper-border"
+								class="flex items-start gap-2.5 border-b border-paper-border px-3 py-2 opacity-50 last:border-b-0"
 							>
 								<div class="min-w-0">
-									<p class="truncate font-sans text-xs font-medium text-ink dark:text-dark-ink">
+									<p class="truncate font-sans text-xs font-medium text-ink">
 										{ref.title}
 									</p>
-									<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+									<p class="font-sans text-[11px] text-ink-faint">
 										{[author, ref.year].filter(Boolean).join(', ')}
 										<span class="ml-1 font-mono opacity-60">{ref.citeKey}</span>
 									</p>
@@ -330,20 +314,16 @@
 			{/if}
 
 			{#if llError}
-				<p
-					class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-				>
+				<p class="rounded-lg bg-danger-bg px-3 py-2 font-sans text-sm text-danger">
 					{llError}
 				</p>
 			{/if}
 		</div>
 
-		<div
-			class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border"
-		>
+		<div class="flex justify-end gap-2 border-t border-paper-border px-5 py-3">
 			<button
 				onclick={onclose}
-				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 			>
 				Cancel
 			</button>

@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Download from '@lucide/svelte/icons/download';
+	import Link from '@lucide/svelte/icons/link';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageData } from './$types';
 	import Acknowledgements from '$lib/components/landing/Acknowledgements.svelte';
@@ -15,11 +18,9 @@
 	];
 </script>
 
-<div class="min-h-screen bg-paper-ui font-sans dark:bg-dark-paper-ui">
+<div class="min-h-screen bg-paper-ui font-sans">
 	<!-- ── Nav ──────────────────────────────────────────────────────────────── -->
-	<header
-		class="sticky top-0 z-20 border-b border-paper-border bg-paper-ui/90 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper-ui/90"
-	>
+	<header class="sticky top-0 z-20 border-b border-paper-border bg-paper-ui/90 backdrop-blur-sm">
 		<div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
 			<div class="flex items-center gap-2">
 				<div class="flex h-7 w-7 items-center justify-center rounded bg-accent">
@@ -32,34 +33,34 @@
 						/>
 					</svg>
 				</div>
-				<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Scholio</span>
+				<span class="font-serif text-base font-semibold text-ink">Scholio</span>
 				<span
-					class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+					class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent-ink uppercase"
 					>beta</span
 				>
 			</div>
 			<div class="flex items-center gap-4">
 				<a
 					href={resolve('/about')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 				>
 					About
 				</a>
 				<a
 					href={resolve('/blog')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 				>
 					Blog
 				</a>
 				<a
 					href={resolve('/blogs')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 				>
 					Blogs
 				</a>
 				<a
 					href={resolve('/login')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 				>
 					Sign in
 				</a>
@@ -75,17 +76,13 @@
 
 	<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
 	<section class="mx-auto max-w-3xl px-6 pt-24 pb-20 text-center">
-		<p class="mb-4 font-sans text-xs font-semibold tracking-widest text-accent uppercase">
+		<p class="mb-4 font-sans text-xs font-semibold tracking-widest text-accent-ink uppercase">
 			Collaborative academic writing
 		</p>
-		<h1
-			class="font-serif text-5xl leading-tight font-semibold text-ink sm:text-6xl dark:text-dark-ink"
-		>
+		<h1 class="font-serif text-5xl leading-tight font-semibold text-ink sm:text-6xl">
 			The research editor<br />that knows your work
 		</h1>
-		<p
-			class="mx-auto mt-6 max-w-xl font-sans text-lg leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-		>
+		<p class="mx-auto mt-6 max-w-xl font-sans text-lg leading-relaxed text-ink-muted">
 			Markdown editor, automatic citations, version control, and an AI assistant with full context
 			of your project — without switching tools.
 		</p>
@@ -98,12 +95,12 @@
 			</a>
 			<a
 				href={resolve('/login')}
-				class="rounded-lg border border-paper-border px-6 py-3 font-sans text-sm text-ink-muted transition-colors hover:bg-paper hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper"
+				class="rounded-lg border border-paper-border px-6 py-3 font-sans text-sm text-ink-muted transition-colors hover:bg-paper hover:text-ink"
 			>
 				I already have an account
 			</a>
 		</div>
-		<p class="mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+		<p class="mt-4 font-sans text-xs text-ink-faint">
 			Closed beta · Open source · Free
 			{#if data.userCount > 0}
 				· {data.userCount} researcher{data.userCount === 1 ? '' : 's'} already writing
@@ -113,26 +110,21 @@
 
 	<!-- ── Editor preview ───────────────────────────────────────────────────── -->
 	<section class="mx-auto max-w-5xl px-6 pb-24">
-		<div
-			class="overflow-hidden rounded-2xl border border-paper-border bg-paper shadow-sm dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<div class="overflow-hidden rounded-2xl border border-paper-border bg-paper shadow-sm">
 			<!-- Fake toolbar -->
-			<div
-				class="flex items-center gap-2 border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-			>
-				<div class="h-3 w-3 rounded-full bg-paper-border dark:bg-dark-paper-border"></div>
-				<div class="h-3 w-3 rounded-full bg-paper-border dark:bg-dark-paper-border"></div>
-				<div class="h-3 w-3 rounded-full bg-paper-border dark:bg-dark-paper-border"></div>
-				<span class="ml-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
+			<div class="flex items-center gap-2 border-b border-paper-border px-4 py-3">
+				<div class="h-3 w-3 rounded-full bg-paper-border"></div>
+				<div class="h-3 w-3 rounded-full bg-paper-border"></div>
+				<div class="h-3 w-3 rounded-full bg-paper-border"></div>
+				<span class="ml-3 font-sans text-xs text-ink-faint"
 					>Impact of epistemic diversity in research teams.md</span
 				>
 			</div>
 			<div class="grid sm:grid-cols-2">
 				<!-- Editor side -->
-				<div class="border-r border-paper-border px-6 py-5 dark:border-dark-paper-border">
-					<pre
-						class="overflow-x-auto font-mono text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"><code
-							><span class="font-semibold text-ink dark:text-dark-ink"># Introduction</span>
+				<div class="border-r border-paper-border px-6 py-5">
+					<pre class="overflow-x-auto font-mono text-xs leading-relaxed text-ink-muted"><code
+							><span class="font-semibold text-ink"># Introduction</span>
 
 Epistemic diversity in interdisciplinary
 teams improves publication quality
@@ -142,65 +134,58 @@ The effect is especially pronounced
 in clinical sciences[^1] and STEM
 [[@hong2004; @wuchty2007]].
 
-<span class="text-accent">$$</span>
+<span class="text-accent-ink">$$</span>
 D(E) = -\sum_&#123;i&#125; p_i \log p_i
-<span class="text-accent">$$</span>
+<span class="text-accent-ink">$$</span>
 
-<span class="text-accent">[^1]</span>: See also [[Methodology]]
+<span class="text-accent-ink">[^1]</span>: See also [[Methodology]]
 for the study design.</code
 						></pre>
 				</div>
 				<!-- Preview side -->
 				<div class="px-6 py-5">
-					<h3 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">Introduction</h3>
-					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<h3 class="font-serif text-xl font-semibold text-ink">Introduction</h3>
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted">
 						Epistemic diversity in interdisciplinary teams improves publication quality
-						<span class="text-accent">(Page, 2007)</span>.
+						<span class="text-accent-ink">(Page, 2007)</span>.
 					</p>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
 						The effect is especially pronounced in clinical sciences<sup
-							class="font-semibold text-accent">1</sup
+							class="font-semibold text-accent-ink">1</sup
 						>
 						and STEM
-						<span class="text-accent">(Hong & Page, 2004; Wuchty et al., 2007)</span>.
+						<span class="text-accent-ink">(Hong & Page, 2004; Wuchty et al., 2007)</span>.
 					</p>
-					<div
-						class="my-4 rounded bg-paper-ui px-4 py-3 text-center font-mono text-sm text-ink dark:bg-dark-paper-ui dark:text-dark-ink"
-					>
+					<div class="my-4 rounded bg-paper-ui px-4 py-3 text-center font-mono text-sm text-ink">
 						D(E) = −∑ pᵢ log pᵢ
 					</div>
-					<p
-						class="border-t border-paper-border pt-3 font-sans text-xs text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
-					>
-						<sup class="font-semibold text-accent">1</sup> See also
-						<span class="text-accent underline decoration-dotted">Methodology</span> for the study design.
+					<p class="border-t border-paper-border pt-3 font-sans text-xs text-ink-faint">
+						<sup class="font-semibold text-accent-ink">1</sup> See also
+						<span class="text-accent-ink underline decoration-dotted">Methodology</span> for the study
+						design.
 					</p>
 				</div>
 			</div>
 		</div>
-		<p class="mt-3 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+		<p class="mt-3 text-center font-sans text-xs text-ink-faint">
 			Live editor and preview · Citations, math, and footnotes rendered instantly
 		</p>
 	</section>
 
 	<!-- ── Features ─────────────────────────────────────────────────────────── -->
-	<section class="border-t border-paper-border py-24 dark:border-dark-paper-border">
+	<section class="border-t border-paper-border py-24">
 		<div class="mx-auto max-w-5xl px-6">
-			<h2 class="text-center font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+			<h2 class="text-center font-serif text-3xl font-semibold text-ink">
 				Everything you need to write seriously
 			</h2>
-			<p
-				class="mx-auto mt-3 max-w-xl text-center font-sans text-base text-ink-muted dark:text-dark-ink-muted"
-			>
+			<p class="mx-auto mt-3 max-w-xl text-center font-sans text-base text-ink-muted">
 				Designed for researchers who publish — not for quick note-taking.
 			</p>
 
 			<!-- Core features — 2-column large cards -->
 			<div class="mt-14 grid gap-6 sm:grid-cols-2">
 				<!-- Citations -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-8">
 					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
 						<svg
 							width="22"
@@ -218,45 +203,26 @@ for the study design.</code
 							/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+					<h3 class="font-serif text-lg font-semibold text-ink">
 						Automatic citations and bibliography
 					</h3>
-					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted">
 						Manage your references with BibTeX. Cite with <code
-							class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui"
-							>[[@author2024]]</code
+							class="rounded bg-paper-ui px-1 font-mono text-xs">[[@author2024]]</code
 						>
 						and Scholio generates the bibliography in APA 7, IEEE, Vancouver, or Chicago Notes-Bibliography
 						at the end of the document. Import from DOI, URL, or existing
-						<code class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui"
-							>.bib</code
-						> files.
+						<code class="rounded bg-paper-ui px-1 font-mono text-xs">.bib</code> files.
 					</p>
 				</div>
 
 				<!-- AI assistant -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-8">
 					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
-						<svg
-							width="22"
-							height="22"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="#7c5c3e"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-						</svg>
+						<MessageSquare size={22} strokeWidth={1.75} aria-hidden="true" />
 					</div>
-					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-						AI assistant with real context
-					</h3>
-					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<h3 class="font-serif text-lg font-semibold text-ink">AI assistant with real context</h3>
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted">
 						The assistant reads every document in your project before responding. It's not a generic
 						chatbot — it knows your methodology, your data, and your argument. Powered by
 						OpenRouter; bring your own API key or leave it disabled.
@@ -264,9 +230,7 @@ for the study design.</code
 				</div>
 
 				<!-- Version control -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-8">
 					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
 						<svg
 							width="22"
@@ -284,19 +248,15 @@ for the study design.</code
 							/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-						Version control for writing
-					</h3>
-					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<h3 class="font-serif text-lg font-semibold text-ink">Version control for writing</h3>
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted">
 						Create labeled snapshots at any point. Compare versions with visual diff, restore any
 						previous state. Your research history is never lost.
 					</p>
 				</div>
 
 				<!-- Collaboration -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-8 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-8">
 					<div class="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
 						<svg
 							width="22"
@@ -316,10 +276,8 @@ for the study design.</code
 							/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
 						</svg>
 					</div>
-					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-						Role-based collaboration
-					</h3>
-					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<h3 class="font-serif text-lg font-semibold text-ink">Role-based collaboration</h3>
+					<p class="mt-3 font-sans text-sm leading-relaxed text-ink-muted">
 						Invite co-authors, reviewers, and commenters. Comments are anchored to exact passages.
 						Threads resolve when the change is incorporated.
 					</p>
@@ -329,9 +287,7 @@ for the study design.</code
 			<!-- Secondary features — smaller 3-column cards -->
 			<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				<!-- Math -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
 					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
 						<svg
 							width="18"
@@ -351,58 +307,29 @@ for the study design.</code
 							/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						Math and formal notation
-					</h3>
-					<p
-						class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-					>
+					<h3 class="font-serif text-sm font-semibold text-ink">Math and formal notation</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">
 						KaTeX for inline and block equations, plus numbered footnotes — without leaving the
 						editor.
 					</p>
 				</div>
 
 				<!-- Export -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
 					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
-						<svg
-							width="18"
-							height="18"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="#7c5c3e"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
-								points="7 10 12 15 17 10"
-							/><line x1="12" y1="15" x2="12" y2="3" />
-						</svg>
+						<Download size={18} strokeWidth={1.75} aria-hidden="true" />
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						Export to LaTeX and Typst
-					</h3>
-					<p
-						class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-					>
-						Export to <code
-							class="rounded bg-paper-ui px-0.5 font-mono text-xs dark:bg-dark-paper-ui">.tex</code
-						>
+					<h3 class="font-serif text-sm font-semibold text-ink">Export to LaTeX and Typst</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">
+						Export to <code class="rounded bg-paper-ui px-0.5 font-mono text-xs">.tex</code>
 						or
-						<code class="rounded bg-paper-ui px-0.5 font-mono text-xs dark:bg-dark-paper-ui"
-							>.typ</code
-						> with bibliography embedded. Ready to submit.
+						<code class="rounded bg-paper-ui px-0.5 font-mono text-xs">.typ</code> with bibliography embedded.
+						Ready to submit.
 					</p>
 				</div>
 
 				<!-- Charts -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
 					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
 						<svg
 							width="18"
@@ -423,55 +350,28 @@ for the study design.</code
 							/><line x1="2" y1="20" x2="22" y2="20" />
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						Charts from your data
-					</h3>
-					<p
-						class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-					>
+					<h3 class="font-serif text-sm font-semibold text-ink">Charts from your data</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">
 						Upload CSV or JSON and generate Vega-Lite charts inline — data and visualization
 						versioned together.
 					</p>
 				</div>
 
 				<!-- Wikilinks -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
 					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
-						<svg
-							width="18"
-							height="18"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="#7c5c3e"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" /><path
-								d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-							/>
-						</svg>
+						<Link size={18} strokeWidth={1.75} aria-hidden="true" />
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						Internal knowledge network
-					</h3>
-					<p
-						class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-					>
-						Link documents with <code
-							class="rounded bg-paper-ui px-0.5 font-mono text-xs dark:bg-dark-paper-ui"
+					<h3 class="font-serif text-sm font-semibold text-ink">Internal knowledge network</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">
+						Link documents with <code class="rounded bg-paper-ui px-0.5 font-mono text-xs"
 							>[[Title]]</code
 						>. Backlinks update automatically.
 					</p>
 				</div>
 
 				<!-- E-ink -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
 					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
 						<svg
 							width="18"
@@ -487,20 +387,14 @@ for the study design.</code
 							<rect x="5" y="2" width="14" height="20" rx="2" /><path d="M9 7h6M9 11h4" />
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						E-ink display mode
-					</h3>
-					<p
-						class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-					>
+					<h3 class="font-serif text-sm font-semibold text-ink">E-ink display mode</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">
 						High-contrast mode for e-ink readers like Boox. Maximum readability, no eye strain.
 					</p>
 				</div>
 
 				<!-- Open source -->
-				<div
-					class="rounded-xl border border-paper-border bg-paper p-5 dark:border-dark-paper-border dark:bg-dark-paper"
-				>
+				<div class="rounded-xl border border-paper-border bg-paper p-5">
 					<div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
 						<svg
 							width="18"
@@ -518,12 +412,8 @@ for the study design.</code
 							/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						Open source and self-hostable
-					</h3>
-					<p
-						class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-					>
+					<h3 class="font-serif text-sm font-semibold text-ink">Open source and self-hostable</h3>
+					<p class="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">
 						Public repo. Deploy on your own infrastructure. Your data, always yours.
 					</p>
 				</div>
@@ -532,31 +422,27 @@ for the study design.</code
 	</section>
 
 	<!-- ── Honestidad científica ─────────────────────────────────────────────── -->
-	<section class="border-t border-paper-border py-20 dark:border-dark-paper-border">
+	<section class="border-t border-paper-border py-20">
 		<div class="mx-auto max-w-2xl px-6 text-center">
-			<p class="mb-3 font-sans text-xs font-semibold tracking-widest text-accent uppercase">
+			<p class="mb-3 font-sans text-xs font-semibold tracking-widest text-accent-ink uppercase">
 				Clear position
 			</p>
-			<h2 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
-				Scholio does not write for you.
-			</h2>
-			<p
-				class="mx-auto mt-5 font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-			>
+			<h2 class="font-serif text-3xl font-semibold text-ink">Scholio does not write for you.</h2>
+			<p class="mx-auto mt-5 font-sans text-base leading-relaxed text-ink-muted">
 				The AI assistant can help you search, structure and propose drafts. Everything it generates
 				is marked as AI-originated and cannot become a final result directly. Authorship is yours or
 				it means nothing.
 			</p>
-			<p class="mt-4 font-sans text-sm leading-relaxed text-ink-faint dark:text-dark-ink-faint">
+			<p class="mt-4 font-sans text-sm leading-relaxed text-ink-faint">
 				You can copy and paste. That is your decision. We do not facilitate it.
 			</p>
 		</div>
 	</section>
 
 	<!-- ── Para quién ────────────────────────────────────────────────────────── -->
-	<section class="border-t border-paper-border py-24 dark:border-dark-paper-border">
+	<section class="border-t border-paper-border py-24">
 		<div class="mx-auto max-w-5xl px-6">
-			<h2 class="text-center font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
+			<h2 class="text-center font-serif text-3xl font-semibold text-ink">
 				Made for those who publish
 			</h2>
 			<div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
@@ -578,8 +464,8 @@ for the study design.</code
 							<path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" />
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Researchers</h3>
-					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<h3 class="font-serif text-sm font-semibold text-ink">Researchers</h3>
+					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted">
 						Articles, theses, technical reports with bibliographic rigor.
 					</p>
 				</div>
@@ -601,10 +487,10 @@ for the study design.</code
 							<path d="M22 12h-4l-3 9L9 3l-3 9H2" />
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
+					<h3 class="font-serif text-sm font-semibold text-ink">
 						Clinicians and medical researchers
 					</h3>
-					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted">
 						Case reports, systematic reviews, clinical guidelines.
 					</p>
 				</div>
@@ -630,10 +516,8 @@ for the study design.</code
 							/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						University teams
-					</h3>
-					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<h3 class="font-serif text-sm font-semibold text-ink">University teams</h3>
+					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted">
 						Research groups with co-authors at different institutions.
 					</p>
 				</div>
@@ -655,10 +539,8 @@ for the study design.</code
 							<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						PhD students and postdocs
-					</h3>
-					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<h3 class="font-serif text-sm font-semibold text-ink">PhD students and postdocs</h3>
+					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted">
 						Theses, conference papers, literature reviews.
 					</p>
 				</div>
@@ -682,10 +564,8 @@ for the study design.</code
 							/>
 						</svg>
 					</div>
-					<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-						Humanists and theologians
-					</h3>
-					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<h3 class="font-serif text-sm font-semibold text-ink">Humanists and theologians</h3>
+					<p class="mt-1 font-sans text-xs leading-relaxed text-ink-muted">
 						Essays and treatises with Chicago, classical text citations and magisterial sources.
 					</p>
 				</div>
@@ -694,21 +574,19 @@ for the study design.</code
 	</section>
 
 	<!-- ── Open source ───────────────────────────────────────────────────────── -->
-	<section class="border-t border-paper-border py-16 dark:border-dark-paper-border">
+	<section class="border-t border-paper-border py-16">
 		<div class="mx-auto max-w-2xl px-6 text-center">
-			<p
-				class="font-sans text-xs font-semibold tracking-widest text-ink-faint uppercase dark:text-dark-ink-faint"
-			>
+			<p class="font-sans text-xs font-semibold tracking-widest text-ink-faint uppercase">
 				Philosophy
 			</p>
-			<h2 class="mt-3 font-serif text-2xl font-semibold text-ink dark:text-dark-ink">
+			<h2 class="mt-3 font-serif text-2xl font-semibold text-ink">
 				Science is open. So is the tool.
 			</h2>
-			<p class="mt-4 font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+			<p class="mt-4 font-sans text-base leading-relaxed text-ink-muted">
 				Scholio is free software. The code is auditable, the platform is self-hostable, and the data
 				is completely yours. Built for the academic community, not to extract value from it.
 			</p>
-			<p class="mt-4 font-sans text-sm leading-relaxed text-ink-faint dark:text-dark-ink-faint">
+			<p class="mt-4 font-sans text-sm leading-relaxed text-ink-faint">
 				Free to use, no plans, no paywalls, no credit card required. If infrastructure costs require
 				it in the future, sponsorship may be introduced — but the core will always be free.
 			</p>
@@ -719,23 +597,19 @@ for the study design.</code
 	<Acknowledgements people={acknowledgedPeople} />
 
 	<!-- ── Waitlist ──────────────────────────────────────────────────────────── -->
-	<section id="waitlist" class="border-t border-paper-border py-24 dark:border-dark-paper-border">
+	<section id="waitlist" class="border-t border-paper-border py-24">
 		<div class="mx-auto max-w-md px-6">
-			<h2 class="text-center font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
-				Join the beta
-			</h2>
-			<p class="mt-3 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<h2 class="text-center font-serif text-3xl font-semibold text-ink">Join the beta</h2>
+			<p class="mt-3 text-center font-sans text-sm text-ink-muted">
 				We are gradually opening access. Tell us a bit about your research.
 			</p>
 
 			{#if form?.success}
 				<div
-					class="mt-10 rounded-xl border border-green-200 bg-green-50 px-6 py-8 text-center dark:border-green-900/40 dark:bg-green-900/20"
+					class="mt-10 rounded-xl border border-success-border bg-success-bg px-6 py-8 text-center"
 				>
-					<p class="font-serif text-xl font-semibold text-green-800 dark:text-green-300">
-						Request received
-					</p>
-					<p class="mt-2 font-sans text-sm text-green-700 dark:text-green-400">
+					<p class="font-serif text-xl font-semibold text-success">Request received</p>
+					<p class="mt-2 font-sans text-sm text-success">
 						We'll notify you at <strong>{form.email}</strong> when your access is ready.
 					</p>
 				</div>
@@ -747,24 +621,24 @@ for the study design.</code
 							name="name"
 							placeholder="Your name"
 							required
-							class="rounded-lg border border-paper-border bg-paper px-4 py-3 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+							class="rounded-lg border border-paper-border bg-paper px-4 py-3 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 						/>
 						<input
 							type="email"
 							name="email"
 							placeholder="your@email.com"
 							required
-							class="rounded-lg border border-paper-border bg-paper px-4 py-3 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+							class="rounded-lg border border-paper-border bg-paper px-4 py-3 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 						/>
 						<textarea
 							name="message"
 							placeholder="What kind of research do you work on? (optional)"
 							rows="3"
-							class="resize-none rounded-lg border border-paper-border bg-paper px-4 py-3 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+							class="resize-none rounded-lg border border-paper-border bg-paper px-4 py-3 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 						></textarea>
 
 						{#if form?.error}
-							<p class="font-sans text-sm text-red-600 dark:text-red-400">{form.error}</p>
+							<p class="font-sans text-sm text-danger">{form.error}</p>
 						{/if}
 
 						<button
@@ -775,7 +649,7 @@ for the study design.</code
 						</button>
 					</div>
 				</form>
-				<p class="mt-4 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				<p class="mt-4 text-center font-sans text-xs text-ink-faint">
 					Closed beta · Free · We notify by email
 				</p>
 			{/if}
@@ -783,7 +657,7 @@ for the study design.</code
 	</section>
 
 	<!-- ── Footer ────────────────────────────────────────────────────────────── -->
-	<footer class="border-t border-paper-border px-8 py-6 dark:border-dark-paper-border">
+	<footer class="border-t border-paper-border px-8 py-6">
 		<div class="mx-auto flex max-w-5xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
 			<div class="flex items-center gap-2">
 				<div class="flex h-6 w-6 items-center justify-center rounded bg-accent">
@@ -796,42 +670,39 @@ for the study design.</code
 						/>
 					</svg>
 				</div>
-				<span class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Scholio</span>
-				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-					>· scholio.review</span
-				>
+				<span class="font-serif text-sm font-semibold text-ink">Scholio</span>
+				<span class="font-sans text-xs text-ink-faint">· scholio.review</span>
 			</div>
 			<div class="flex items-center gap-4">
 				<a
 					href={resolve('/conduct')}
-					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted"
 				>
 					Code of conduct
 				</a>
 				<a
 					href={resolve('/privacy')}
-					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted"
 				>
 					Privacy policy
 				</a>
 				<a
 					href="mailto:contact@scholio.review"
-					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted"
 				>
 					contact@scholio.review
 				</a>
 				<a
 					href={resolve('/login')}
-					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+					class="font-sans text-xs text-ink-faint transition-colors hover:text-ink-muted"
 				>
 					Sign in
 				</a>
 			</div>
-			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="font-sans text-xs text-ink-faint">
 				AI features powered by <a
 					href={resolve('/help#ai')}
-					class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
-					>OpenRouter</a
+					class="underline decoration-dotted hover:text-ink-muted">OpenRouter</a
 				> · optional
 			</p>
 		</div>

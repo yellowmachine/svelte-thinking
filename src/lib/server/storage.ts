@@ -3,12 +3,9 @@ import {
 	PutObjectCommand,
 	DeleteObjectCommand,
 	GetObjectCommand,
-	CreateBucketCommand,
-	HeadBucketCommand,
-	PutBucketPolicyCommand
+	HeadBucketCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { env } from '$env/dynamic/private';
 
 // ── BYOS3: user-provided S3 config ───────────────────────────────────────────
 
@@ -104,63 +101,4 @@ function classifyS3Error(e: unknown, config: UserS3Config): string {
 		return 'SSL certificate error. For local installations, use http:// in the endpoint.';
 
 	return e.message;
-}
-
-export async function ensureBucket(client: S3Client, b: string) {
-	try {
-		await client.send(new HeadBucketCommand({ Bucket: b }));
-	} catch {
-		await client.send(new CreateBucketCommand({ Bucket: b }));
-		// Allow anonymous GET so <img src="..."> works directly from the browser.
-		// Security relies on unguessable keys (two UUIDs per path).
-		await client.send(
-			new PutBucketPolicyCommand({
-				Bucket: b,
-				Policy: JSON.stringify({
-					Version: '2012-10-17',
-					Statement: [
-						{
-							Effect: 'Allow',
-							Principal: { AWS: ['*'] },
-							Action: ['s3:GetObject'],
-							Resource: [`arn:aws:s3:::${b}/*`]
-						}
-					]
-				})
-			})
-		);
-	}
-}
-
-// ── Internal storage helpers (per-user bucket in platform RustFS) ────────────
-
-export const INTERNAL_STORAGE_QUOTA_BYTES = 50 * 1024 * 1024; // 50 MB
-
-export function internalBucketName(userId: string): string {
-	// Bucket names must be lowercase and can't contain underscores
-	return `scholio-u-${userId.toLowerCase().replace(/_/g, '-')}`;
-}
-
-export function buildInternalS3Config(userId: string): UserS3Config {
-	if (!env.STORAGE_ENDPOINT) throw new Error('STORAGE_ENDPOINT is not set');
-	if (!env.STORAGE_ACCESS_KEY) throw new Error('STORAGE_ACCESS_KEY is not set');
-	if (!env.STORAGE_SECRET_KEY) throw new Error('STORAGE_SECRET_KEY is not set');
-
-	const bucketName = internalBucketName(userId);
-	return {
-		endpoint: env.STORAGE_ENDPOINT,
-		bucket: bucketName,
-		region: 'us-east-1',
-		accessKey: env.STORAGE_ACCESS_KEY,
-		secretKey: env.STORAGE_SECRET_KEY,
-		publicUrl: env.STORAGE_PUBLIC_URL
-			? (() => {
-					const base = env.STORAGE_PUBLIC_URL!.replace(/\/$/, '');
-					// Replace last path segment if present (e.g. .../default-bucket → .../user-bucket),
-					// otherwise just append the bucket name (e.g. https://host → https://host/user-bucket).
-					const hasPath = new URL(base).pathname.replace(/^\//, '') !== '';
-					return hasPath ? base.replace(/\/[^/]+$/, `/${bucketName}`) : `${base}/${bucketName}`;
-				})()
-			: null
-	};
 }

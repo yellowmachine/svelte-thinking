@@ -38,14 +38,14 @@ export const actions: Actions = {
 					e.message?.toLowerCase().includes('email') && e.message?.toLowerCase().includes('verif');
 				if (isUnverified) {
 					return fail(400, {
-						message: 'Debes verificar tu correo antes de iniciar sesión.',
+						message: 'You need to verify your email before signing in.',
 						unverified: true,
 						email
 					});
 				}
-				return fail(400, { message: e.message || 'Credenciales incorrectas' });
+				return fail(400, { message: e.message || 'Incorrect email or password' });
 			}
-			return fail(500, { message: 'Error inesperado' });
+			return fail(500, { message: 'Unexpected error' });
 		}
 
 		redirect(302, redirectTo);
@@ -63,9 +63,9 @@ export const actions: Actions = {
 			});
 		} catch (e) {
 			if (e instanceof APIError) {
-				return fail(400, { twoFactor: true, message: e.message || 'Código incorrecto' });
+				return fail(400, { twoFactor: true, message: e.message || 'Incorrect code' });
 			}
-			return fail(400, { twoFactor: true, message: 'Código incorrecto. Inténtalo de nuevo.' });
+			return fail(400, { twoFactor: true, message: 'Incorrect code. Try again.' });
 		}
 
 		redirect(302, redirectTo);
@@ -80,6 +80,6 @@ export const actions: Actions = {
 		});
 
 		if (result?.url) redirect(302, result.url);
-		return fail(400, { message: 'Error al iniciar sesión con Seilide' });
+		return fail(400, { message: "Couldn't sign in with Seilide" });
 	}
 };

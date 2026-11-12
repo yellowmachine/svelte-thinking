@@ -66,12 +66,8 @@
 
 <div class="flex flex-col gap-8">
 	<!-- Personal info -->
-	<section
-		class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<h2 class="mb-5 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-			Personal information
-		</h2>
+	<section class="rounded-xl border border-paper-border bg-paper p-6">
+		<h2 class="mb-5 font-serif text-lg font-semibold text-ink">Personal information</h2>
 
 		<div class="flex flex-col gap-4">
 			<!-- Avatar placeholder -->
@@ -90,44 +86,40 @@
 					<button
 						type="button"
 						disabled
-						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted"
+						class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted opacity-50"
 					>
 						Change photo
 					</button>
-					<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Coming soon</p>
+					<p class="mt-1 font-sans text-xs text-ink-faint">Coming soon</p>
 				</div>
 			</div>
 
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div class="flex flex-col gap-1.5">
-					<label for="name" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Name
-					</label>
+					<label for="name" class="font-sans text-sm font-medium text-ink"> Name </label>
 					<input
 						id="name"
 						type="text"
 						bind:value={name}
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 					/>
 				</div>
 
 				<div class="flex flex-col gap-1.5">
-					<label for="email" class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-						Email
-					</label>
+					<label for="email" class="font-sans text-sm font-medium text-ink"> Email </label>
 					<input
 						id="email"
 						type="email"
 						bind:value={email}
 						readonly
-						class="cursor-default rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink opacity-60 focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="cursor-default rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink opacity-60 focus:border-accent focus:outline-none"
 					/>
 					{#if isAdmin}
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<p class="font-sans text-xs text-ink-faint">
 							Managed by environment config (<code class="font-mono">ADMIN_EMAIL</code>).
 						</p>
 					{:else}
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<p class="font-sans text-xs text-ink-faint">
 							El email no puede modificarse. Si necesitas cambiarlo, contacta con soporte.
 						</p>
 					{/if}
@@ -147,13 +139,11 @@
 	</section>
 
 	<!-- ORCID -->
-	<section
-		class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-	>
+	<section class="rounded-xl border border-paper-border bg-paper p-6">
 		<div class="mb-4 flex items-start justify-between gap-4">
 			<div>
-				<h2 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">ORCID</h2>
-				<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<h2 class="font-serif text-lg font-semibold text-ink">ORCID</h2>
+				<p class="mt-1 font-sans text-sm text-ink-muted">
 					Connect your ORCID account to verify your academic identity.
 				</p>
 			</div>
@@ -172,22 +162,18 @@
 		</div>
 
 		{#if orcidStatus === 'connected'}
-			<p
-				class="mb-4 rounded-lg bg-green-50 px-4 py-2 font-sans text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400"
-			>
+			<p class="mb-4 rounded-lg bg-success-bg px-4 py-2 font-sans text-sm text-success">
 				ORCID connected successfully.
 			</p>
 		{:else if orcidStatus === 'error'}
-			<p
-				class="mb-4 rounded-lg bg-red-50 px-4 py-2 font-sans text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400"
-			>
+			<p class="mb-4 rounded-lg bg-danger-bg px-4 py-2 font-sans text-sm text-danger">
 				Error connecting ORCID. Please try again.
 			</p>
 		{/if}
 
 		{#if orcid && orcidVerified}
 			<div
-				class="flex items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/40 dark:bg-green-900/10"
+				class="flex items-center justify-between gap-4 rounded-lg border border-success-border bg-success-bg px-4 py-3"
 			>
 				<div class="flex items-center gap-2">
 					<svg
@@ -195,7 +181,7 @@
 						height="16"
 						viewBox="0 0 20 20"
 						fill="currentColor"
-						class="shrink-0 text-green-600 dark:text-green-400"
+						class="shrink-0 text-success"
 					>
 						<path
 							fill-rule="evenodd"
@@ -203,22 +189,20 @@
 							clip-rule="evenodd"
 						/>
 					</svg>
-					<span class="font-sans text-sm font-medium text-green-700 dark:text-green-400"
-						>Verified</span
-					>
-					<span class="font-mono text-sm text-ink dark:text-dark-ink">{orcid}</span>
+					<span class="font-sans text-sm font-medium text-success">Verified</span>
+					<span class="font-mono text-sm text-ink">{orcid}</span>
 				</div>
 				<div class="flex items-center gap-3">
 					<a
 						href={resolve('/api/orcid/connect')}
-						class="font-sans text-xs text-ink-muted underline hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+						class="font-sans text-xs text-ink-muted underline hover:text-ink"
 					>
 						Reconnect
 					</a>
 					<button
 						onclick={unlinkOrcid}
 						disabled={unlinkingOrcid}
-						class="font-sans text-xs text-red-600 underline hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+						class="font-sans text-xs text-danger underline hover:text-danger disabled:opacity-50"
 					>
 						{unlinkingOrcid ? 'Unlinking…' : 'Unlink'}
 					</button>
@@ -226,13 +210,13 @@
 			</div>
 		{:else}
 			{#if orcid}
-				<p class="mb-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<p class="mb-3 font-sans text-sm text-ink-muted">
 					Current ORCID (unverified): <span class="font-mono">{orcid}</span>
 				</p>
 			{/if}
 			<a
 				href={resolve('/api/orcid/connect')}
-				class="inline-flex items-center gap-2 rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
+				class="inline-flex items-center gap-2 rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent-ink dark:hover:border-accent dark:hover:text-accent-ink"
 			>
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="#A6CE39" aria-hidden="true">
 					<path
@@ -245,12 +229,8 @@
 	</section>
 
 	<!-- Change password -->
-	<section
-		class="rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<h2 class="mb-5 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-			Change password
-		</h2>
+	<section class="rounded-xl border border-paper-border bg-paper p-6">
+		<h2 class="mb-5 font-serif text-lg font-semibold text-ink">Change password</h2>
 
 		<form
 			method="POST"
@@ -275,10 +255,7 @@
 			class="flex flex-col gap-4"
 		>
 			<div class="flex flex-col gap-1.5">
-				<label
-					for="current-password"
-					class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-				>
+				<label for="current-password" class="font-sans text-sm font-medium text-ink">
 					Current password
 				</label>
 				<input
@@ -287,16 +264,13 @@
 					type="password"
 					bind:value={currentPassword}
 					placeholder="••••••••"
-					class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				/>
 			</div>
 
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div class="flex flex-col gap-1.5">
-					<label
-						for="new-password"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<label for="new-password" class="font-sans text-sm font-medium text-ink">
 						New password
 					</label>
 					<input
@@ -305,14 +279,11 @@
 						type="password"
 						bind:value={newPassword}
 						placeholder="••••••••"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 				</div>
 				<div class="flex flex-col gap-1.5">
-					<label
-						for="confirm-password"
-						class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-					>
+					<label for="confirm-password" class="font-sans text-sm font-medium text-ink">
 						Confirm password
 					</label>
 					<input
@@ -321,18 +292,16 @@
 						type="password"
 						bind:value={confirmPassword}
 						placeholder="••••••••"
-						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					/>
 				</div>
 			</div>
 
 			{#if passwordError}
-				<p class="font-sans text-sm text-red-600 dark:text-red-400">{passwordError}</p>
+				<p class="font-sans text-sm text-danger">{passwordError}</p>
 			{/if}
 			{#if passwordSuccess}
-				<p class="font-sans text-sm text-green-600 dark:text-green-400">
-					Password updated successfully.
-				</p>
+				<p class="font-sans text-sm text-success">Password updated successfully.</p>
 			{/if}
 
 			<div class="flex justify-end">
@@ -348,26 +317,22 @@
 	</section>
 
 	<!-- Danger zone -->
-	<div
-		class="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30"
-	>
-		<h2 class="font-serif text-lg font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
-		<p class="mt-1 font-sans text-sm text-red-600 dark:text-red-500">
-			These actions are permanent and irreversible.
-		</p>
+	<div class="rounded-xl border border-danger-border bg-danger-bg p-6">
+		<h2 class="font-serif text-lg font-semibold text-danger">Danger zone</h2>
+		<p class="mt-1 font-sans text-sm text-danger">These actions are permanent and irreversible.</p>
 		<div
-			class="mt-4 flex items-center justify-between rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-dark-paper"
+			class="mt-4 flex items-center justify-between rounded-lg border border-danger-border bg-white p-4 dark:bg-dark-paper"
 		>
 			<div>
-				<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">Delete account</p>
-				<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+				<p class="font-sans text-sm font-medium text-ink">Delete account</p>
+				<p class="mt-0.5 font-sans text-xs text-ink-muted">
 					Permanently deletes your account, all projects, documents and files.
 				</p>
 			</div>
 			<button
 				type="button"
 				onclick={() => (showDeleteDialog = true)}
-				class="ml-4 shrink-0 rounded-md border border-red-300 px-4 py-2 font-sans text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+				class="ml-4 shrink-0 rounded-md border border-danger-border px-4 py-2 font-sans text-sm font-medium text-danger transition-colors hover:bg-danger-bg"
 			>
 				Delete account
 			</button>
@@ -383,25 +348,17 @@
 		aria-modal="true"
 		aria-labelledby="delete-dialog-title"
 	>
-		<div
-			class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h3
-				id="delete-dialog-title"
-				class="font-serif text-xl font-semibold text-ink dark:text-dark-ink"
-			>
+		<div class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl">
+			<h3 id="delete-dialog-title" class="font-serif text-xl font-semibold text-ink">
 				Delete your account?
 			</h3>
-			<p class="mt-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="mt-2 font-sans text-sm text-ink-muted">
 				This action will permanently delete your account and <strong>all your data</strong>:
 				projects, documents, version history, comments and files. This cannot be undone.
 			</p>
 
 			<div class="mt-5">
-				<label
-					for="delete-confirm"
-					class="block font-sans text-sm font-medium text-ink dark:text-dark-ink"
-				>
+				<label for="delete-confirm" class="block font-sans text-sm font-medium text-ink">
 					Type <span class="font-mono font-bold">{DELETE_KEYWORD}</span> to confirm
 				</label>
 				<input
@@ -409,12 +366,12 @@
 					type="text"
 					bind:value={deleteConfirmText}
 					placeholder={DELETE_KEYWORD}
-					class="mt-2 w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-red-400 focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="mt-2 w-full rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-red-400 focus:outline-none"
 				/>
 			</div>
 
 			{#if deleteError}
-				<p class="mt-3 font-sans text-sm text-red-600 dark:text-red-400">{deleteError}</p>
+				<p class="mt-3 font-sans text-sm text-danger">{deleteError}</p>
 			{/if}
 
 			<div class="mt-5 flex gap-3">
@@ -426,9 +383,9 @@
 						deleteError = '';
 					}}
 					disabled={deletingAccount}
-					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50"
 				>
-					Cancelar
+					Cancel
 				</button>
 				<button
 					type="button"

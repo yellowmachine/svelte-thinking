@@ -34,7 +34,7 @@ export const load: PageServerLoad = async (event) => {
 	]);
 
 	const p = (proj as { id: string; title: string; ownerId: string }[])[0];
-	if (!p) error(404, 'Proyecto no encontrado');
+	if (!p) error(404, 'Project not found');
 
 	return {
 		project: p,

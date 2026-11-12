@@ -36,10 +36,10 @@
 	};
 
 	const statusStyle: Record<string, string> = {
-		pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-		synced: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-		failed: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-		writer_lost: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted'
+		pending: 'bg-warning-bg text-warning',
+		synced: 'bg-success-bg text-success',
+		failed: 'bg-danger-bg text-danger',
+		writer_lost: 'bg-paper-border text-ink-muted'
 	};
 
 	const hasPending = $derived(edits.some((e) => e.status === 'pending' || e.status === 'failed'));
@@ -48,10 +48,8 @@
 <div class="mx-auto max-w-2xl px-6 py-10">
 	<div class="mb-6 flex items-center justify-between">
 		<div>
-			<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Sync log</h1>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Offline edits and their sync status.
-			</p>
+			<h1 class="font-serif text-2xl font-semibold text-ink">Sync log</h1>
+			<p class="mt-1 font-sans text-sm text-ink-muted">Offline edits and their sync status.</p>
 		</div>
 		<div class="flex gap-2">
 			{#if hasPending && onlineStore.online}
@@ -66,7 +64,7 @@
 			<button
 				onclick={discardFailed}
 				disabled={!edits.some((e) => e.status === 'failed' || e.status === 'writer_lost')}
-				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 			>
 				Discard failed
 			</button>
@@ -74,20 +72,18 @@
 	</div>
 
 	{#if connectivity.syncErrors.length > 0}
-		<div
-			class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-900/10"
-		>
-			<p class="font-sans text-sm font-medium text-red-600 dark:text-red-400">Last sync errors:</p>
+		<div class="mb-4 rounded-lg border border-danger-border bg-danger-bg px-4 py-3">
+			<p class="font-sans text-sm font-medium text-danger">Last sync errors:</p>
 			<ul class="mt-1 space-y-1">
 				{#each connectivity.syncErrors as err, i (i)}
-					<li class="font-sans text-xs text-red-500 dark:text-red-400">
+					<li class="font-sans text-xs text-danger">
 						Document {err.documentId.slice(0, 8)}… — {err.message}
 					</li>
 				{/each}
 			</ul>
 			<button
 				onclick={() => connectivity.clearErrors()}
-				class="mt-2 font-sans text-xs text-red-500 underline hover:text-red-600 dark:text-red-400"
+				class="mt-2 font-sans text-xs text-danger underline hover:text-danger"
 			>
 				Dismiss
 			</button>
@@ -95,30 +91,22 @@
 	{/if}
 
 	{#if loading}
-		<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Loading…</p>
+		<p class="font-sans text-sm text-ink-faint">Loading…</p>
 	{:else if edits.length === 0}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-10 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				No offline edits recorded.
-			</p>
+		<div class="rounded-xl border border-paper-border bg-paper p-10 text-center">
+			<p class="font-sans text-sm text-ink-muted">No offline edits recorded.</p>
 		</div>
 	{:else}
-		<div
-			class="overflow-hidden rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<div class="overflow-hidden rounded-xl border border-paper-border bg-paper">
 			{#each edits as edit, i (edit.id)}
 				<div
-					class="flex items-center gap-3 px-4 py-3 {i > 0
-						? 'border-t border-paper-border dark:border-dark-paper-border'
-						: ''}"
+					class="flex items-center gap-3 px-4 py-3 {i > 0 ? 'border-t border-paper-border' : ''}"
 				>
 					<div class="min-w-0 flex-1">
-						<p class="font-mono text-xs text-ink-muted dark:text-dark-ink-muted">
+						<p class="font-mono text-xs text-ink-muted">
 							{edit.documentId}
 						</p>
-						<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<p class="mt-0.5 font-sans text-xs text-ink-faint">
 							{new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(
 								edit.savedAt
 							)}

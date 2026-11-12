@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Download from '@lucide/svelte/icons/download';
 	import { trpc } from '$lib/utils/trpc';
 	import RequirementItem from '$lib/components/projects/RequirementItem.svelte';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -112,29 +114,21 @@
 	<div class="mb-8">
 		<a
 			href={resolve(`/projects/${data.project.id}`)}
-			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="mb-4 flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-				<path
-					d="M10 12L6 8l4-4"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
+			<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 			{data.project.title}
 		</a>
 
 		<div class="flex items-center justify-between gap-4">
-			<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Requirements</h1>
+			<h1 class="font-serif text-3xl font-semibold text-ink">Requirements</h1>
 
 			{#if requirements.length > 0 && data.isOwner}
 				<button
 					onclick={() => {
 						requirements = [];
 					}}
-					class="font-sans text-sm text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="font-sans text-sm text-ink-muted underline-offset-2 hover:text-ink hover:underline"
 				>
 					Regenerate
 				</button>
@@ -143,19 +137,15 @@
 
 		{#if requirements.length > 0}
 			<div class="mt-4">
-				<div
-					class="mb-1.5 flex items-center justify-between font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-				>
+				<div class="mb-1.5 flex items-center justify-between font-sans text-xs text-ink-muted">
 					<span>{fulfilled} of {total} completed</span>
 					{#if allRequiredDone}
-						<span class="font-medium text-green-600 dark:text-green-400">All required done</span>
+						<span class="font-medium text-success">All required done</span>
 					{:else}
 						<span>{requiredFulfilled} of {requiredTotal} required</span>
 					{/if}
 				</div>
-				<div
-					class="h-1.5 w-full overflow-hidden rounded-full bg-paper-border dark:bg-dark-paper-border"
-				>
+				<div class="h-1.5 w-full overflow-hidden rounded-full bg-paper-border">
 					<div
 						class="h-full rounded-full transition-all duration-300 {allRequiredDone
 							? 'bg-green-500'
@@ -169,13 +159,9 @@
 
 	<!-- Generate form (shown when no requirements exist) -->
 	{#if requirements.length === 0}
-		<div
-			class="rounded-xl border border-paper-border bg-paper-ui p-6 dark:border-dark-paper-border dark:bg-dark-paper-ui"
-		>
-			<h2 class="mb-1 font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-				Generate requirements with AI
-			</h2>
-			<p class="mb-4 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+		<div class="rounded-xl border border-paper-border bg-paper-ui p-6">
+			<h2 class="mb-1 font-serif text-lg font-semibold text-ink">Generate requirements with AI</h2>
+			<p class="mb-4 font-sans text-sm leading-relaxed text-ink-muted">
 				Describe the type of document you want to create and the AI will automatically generate the
 				required sections and checklist.
 			</p>
@@ -185,11 +171,11 @@
 				placeholder="E.g. medical article on hypertension treatment, systematic review, doctoral thesis in philosophy…"
 				rows={3}
 				disabled={generating}
-				class="w-full resize-none rounded-lg border border-paper-border bg-paper px-3 py-2.5 font-sans text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none disabled:opacity-50 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder:text-dark-ink-faint dark:focus:border-accent"
+				class="w-full resize-none rounded-lg border border-paper-border bg-paper px-3 py-2.5 font-sans text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none disabled:opacity-50 dark:focus:border-accent"
 			></textarea>
 
 			{#if generateError}
-				<p class="mt-2 font-sans text-sm text-red-500">{generateError}</p>
+				<p class="mt-2 font-sans text-sm text-danger">{generateError}</p>
 			{/if}
 
 			<button
@@ -239,15 +225,11 @@
 
 		<!-- Generate PDF CTA -->
 		{#if allRequiredDone}
-			<div
-				class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/20"
-			>
+			<div class="mt-6 rounded-xl border border-success-border bg-success-bg p-4">
 				<div class="flex items-center justify-between gap-4">
 					<div>
-						<p class="font-sans text-sm font-semibold text-green-800 dark:text-green-300">
-							Project complete
-						</p>
-						<p class="font-sans text-xs text-green-700 dark:text-green-400">
+						<p class="font-sans text-sm font-semibold text-success">Project complete</p>
+						<p class="font-sans text-xs text-success">
 							{#if exportingPdf}
 								Compiling with Typst, this may take a few seconds…
 							{:else if exportError}
@@ -266,20 +248,7 @@
 							<Spinner size="sm" />
 							Generating…
 						{:else}
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-								<polyline points="7 10 12 15 17 10" />
-								<line x1="12" y1="15" x2="12" y2="3" />
-							</svg>
+							<Download size={14} strokeWidth={1.75} aria-hidden="true" />
 							Export PDF
 						{/if}
 					</button>

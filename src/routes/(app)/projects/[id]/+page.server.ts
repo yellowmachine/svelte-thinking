@@ -133,7 +133,7 @@ export const load: PageServerLoad = async (event) => {
 		)
 	]);
 
-	if (!proj[0]) error(404, 'Proyecto no encontrado');
+	if (!proj[0]) error(404, 'Project not found');
 
 	const myRole = collaborators.find((c) => c.userId === userId)?.role ?? null;
 	const isOwner = proj[0].ownerId === userId;

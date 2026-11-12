@@ -128,6 +128,16 @@ export function createAuthOptions(params: {
 				}
 			}
 		},
+		// En producción Better Auth ya limita por IP (x-forwarded-for, que pone Traefik):
+		// 100 peticiones/10 s en general y 3/10 s en sign-in, sign-up y cambios de
+		// contraseña/email. Aquí se añaden las rutas que envían emails o adivinan códigos.
+		rateLimit: {
+			customRules: {
+				'/request-password-reset': { window: 60, max: 3 },
+				'/send-verification-email': { window: 60, max: 3 },
+				'/two-factor/*': { window: 60, max: 10 }
+			}
+		},
 		advanced: {
 			// Nombre propio para las cookies: las viejas con Domain=scholio.review (de
 			// cuando la sesión se compartía entre subdominios) no se confunden con estas.

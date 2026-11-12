@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Trash from '@lucide/svelte/icons/trash';
 	import { trpc } from '$lib/utils/trpc';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
 	import MarkdownEditor from './MarkdownEditor.svelte';
@@ -122,11 +123,9 @@
 </script>
 
 <div
-	class="group cursor-pointer rounded-lg border bg-paper p-3 transition-colors dark:bg-dark-paper {isActive
+	class="group cursor-pointer rounded-lg border bg-paper p-3 transition-colors {isActive
 		? 'border-amber-400 ring-1 ring-amber-400/40 dark:border-amber-500 dark:ring-amber-500/30'
-		: 'border-paper-border hover:border-accent/40 dark:border-dark-paper-border'} {comment.resolved
-		? 'opacity-60'
-		: ''}"
+		: 'border-paper-border hover:border-accent/40'} {comment.resolved ? 'opacity-60' : ''}"
 	role="button"
 	tabindex="0"
 	onclick={() => onclick?.(comment.id)}
@@ -136,12 +135,12 @@
 	{#if comment.anchorText}
 		<p
 			translate="no"
-			class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
+			class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic"
 		>
 			{comment.anchorText.slice(0, 80)}{comment.anchorText.length > 80 ? '…' : ''}
 		</p>
 	{:else if comment.paragraphNumber}
-		<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+		<p class="mb-2 font-sans text-xs text-ink-faint">
 			¶{comment.paragraphNumber}
 		</p>
 	{/if}
@@ -149,14 +148,14 @@
 	<!-- Main comment body -->
 	<div class="flex items-start justify-between gap-2">
 		<div class="min-w-0">
-			<p translate="no" class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+			<p translate="no" class="font-sans text-xs font-semibold text-ink">
 				{comment.authorName}
 			</p>
-			<div translate="no" class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink">
+			<div translate="no" class="comment-body mt-0.5 font-sans text-sm text-ink">
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				{@html renderMd(comment.content)}
 			</div>
-			<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="mt-1 font-sans text-xs text-ink-faint">
 				{formatDate(comment.createdAt)}
 			</p>
 		</div>
@@ -169,8 +168,8 @@
 				}}
 				disabled={resolving}
 				class="rounded px-2 py-1 font-sans text-xs transition-colors {comment.resolved
-					? 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'
-					: 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'} disabled:opacity-50"
+					? 'text-ink-muted hover:bg-paper-ui'
+					: 'text-success hover:bg-success-bg '} disabled:opacity-50"
 				title={comment.resolved ? 'Reopen' : 'Resolve'}
 			>
 				{comment.resolved ? 'Reopen' : 'Resolve'}
@@ -183,18 +182,10 @@
 						showDelete = true;
 					}}
 					title="Delete comment"
-					class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+					class="rounded p-1 text-ink-faint transition-colors hover:text-danger"
 					aria-label="Delete comment"
 				>
-					<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
+					<Trash size={12} strokeWidth={1.75} aria-hidden="true" />
 				</button>
 			{/if}
 		</div>
@@ -202,20 +193,17 @@
 
 	<!-- Replies -->
 	{#if comment.replies.length > 0}
-		<div class="mt-3 space-y-2 border-t border-paper-border pt-2 dark:border-dark-paper-border">
+		<div class="mt-3 space-y-2 border-t border-paper-border pt-2">
 			{#each comment.replies as reply (reply.id)}
 				<div>
-					<p translate="no" class="font-sans text-xs font-semibold text-ink dark:text-dark-ink">
+					<p translate="no" class="font-sans text-xs font-semibold text-ink">
 						{reply.authorName}
 					</p>
-					<div
-						translate="no"
-						class="comment-body mt-0.5 font-sans text-sm text-ink dark:text-dark-ink"
-					>
+					<div translate="no" class="comment-body mt-0.5 font-sans text-sm text-ink">
 						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 						{@html renderMd(reply.content)}
 					</div>
-					<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mt-0.5 font-sans text-xs text-ink-faint">
 						{formatDate(reply.createdAt)}
 					</p>
 				</div>
@@ -233,7 +221,7 @@
 		>
 			{#if !replyEditorActive}
 				<button
-					class="w-full rounded border border-paper-border bg-paper-ui px-2 py-1.5 text-left font-sans text-xs text-ink-faint transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+					class="w-full rounded border border-paper-border bg-paper-ui px-2 py-1.5 text-left font-sans text-xs text-ink-faint transition-colors hover:border-accent/40"
 					onclick={(e) => {
 						e.stopPropagation();
 						replyEditorActive = true;
@@ -242,7 +230,7 @@
 					Reply…
 				</button>
 			{:else}
-				<div class="reply-editor rounded border border-accent/40 bg-paper-ui dark:bg-dark-paper-ui">
+				<div class="reply-editor rounded border border-accent/40 bg-paper-ui">
 					<MarkdownEditor
 						bind:value={replyText}
 						{chapters}
@@ -258,7 +246,7 @@
 							replyEditorActive = false;
 							replyText = '';
 						}}
-						class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="rounded px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 					>
 						Cancel
 					</button>

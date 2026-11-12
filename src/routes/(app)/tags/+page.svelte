@@ -69,30 +69,24 @@
 
 <div class="mx-auto max-w-2xl px-6 py-10">
 	<div class="mb-8">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Tags</h1>
-		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<h1 class="font-serif text-3xl font-semibold text-ink">Tags</h1>
+		<p class="mt-1 font-sans text-sm text-ink-muted">
 			Manage your tags. Renaming a tag updates it across all projects.
 		</p>
 	</div>
 
 	{#if loading}
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading…</p>
+		<p class="font-sans text-sm text-ink-muted">Loading…</p>
 	{:else if tags.length === 0}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-8 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				No tags yet. Add tags from any project page.
-			</p>
+		<div class="rounded-xl border border-paper-border bg-paper p-8 text-center">
+			<p class="font-sans text-sm text-ink-muted">No tags yet. Add tags from any project page.</p>
 		</div>
 	{:else}
-		<div
-			class="rounded-xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<div class="rounded-xl border border-paper-border bg-paper">
 			{#each tags as tag, i (tag.id)}
 				<div
 					class="flex items-center gap-3 px-4 py-3 {i < tags.length - 1
-						? 'border-b border-paper-border dark:border-dark-paper-border'
+						? 'border-b border-paper-border'
 						: ''}"
 				>
 					{#if editingId === tag.id}
@@ -106,16 +100,16 @@
 								{@attach (el: HTMLInputElement) => {
 									el.focus();
 								}}
-								class="w-full rounded-md border border-accent bg-paper-ui px-2.5 py-1 font-sans text-sm text-ink focus:outline-none disabled:opacity-50 dark:bg-dark-paper-ui dark:text-dark-ink"
+								class="w-full rounded-md border border-accent bg-paper-ui px-2.5 py-1 font-sans text-sm text-ink focus:outline-none disabled:opacity-50"
 							/>
 							{#if editError}
-								<p class="font-sans text-xs text-red-600">{editError}</p>
+								<p class="font-sans text-xs text-danger">{editError}</p>
 							{/if}
 						</div>
 						<button
 							type="button"
 							onclick={cancelEdit}
-							class="shrink-0 font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+							class="shrink-0 font-sans text-xs text-ink-muted hover:text-ink"
 						>
 							Cancel
 						</button>
@@ -123,18 +117,18 @@
 						<button
 							type="button"
 							onclick={() => startEdit(tag)}
-							class="flex-1 text-left font-sans text-sm text-ink hover:text-accent dark:text-dark-ink dark:hover:text-accent"
+							class="flex-1 text-left font-sans text-sm text-ink hover:text-accent-ink dark:hover:text-accent-ink"
 						>
 							<span translate="no">{tag.name}</span>
 						</button>
-						<span class="shrink-0 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<span class="shrink-0 font-sans text-xs text-ink-faint">
 							{tag.projectCount === 1 ? '1 project' : `${tag.projectCount} projects`}
 						</span>
 						<button
 							type="button"
 							onclick={() => startEdit(tag)}
 							aria-label="Rename tag"
-							class="shrink-0 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+							class="shrink-0 text-ink-faint transition-colors hover:text-ink"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -156,7 +150,7 @@
 							onclick={() => deleteTag(tag.id)}
 							disabled={deletingId === tag.id}
 							aria-label="Delete tag"
-							class="shrink-0 text-ink-faint transition-colors hover:text-red-600 disabled:opacity-40 dark:text-dark-ink-faint dark:hover:text-red-500"
+							class="shrink-0 text-ink-faint transition-colors hover:text-danger disabled:opacity-40"
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"

@@ -47,7 +47,7 @@
 	</div>
 	{#if error}
 		<div
-			class="mt-3 max-w-md rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-mono text-xs whitespace-pre-wrap text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300"
+			class="mt-3 max-w-md rounded-lg border border-danger-border bg-danger-bg px-3 py-2 font-mono text-xs whitespace-pre-wrap text-danger"
 		>
 			{error}
 		</div>

@@ -11,6 +11,8 @@ export interface SyncError {
 	at: Date;
 }
 
+const SYNCED_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
 class ConnectivityStore {
 	syncState = $state<SyncState>('idle');
 	syncErrors = $state<SyncError[]>([]);
@@ -18,17 +20,23 @@ class ConnectivityStore {
 	async syncAll() {
 		if (this.syncState === 'syncing') return;
 
+		// Synced edits are full snapshots: keep a week for the sync log, then drop them.
+		const cutoff = new Date(Date.now() - SYNCED_RETENTION_MS);
+		await offlineDb.pendingEdits
+			.where('status')
+			.equals('synced')
+			.and((e) => e.savedAt < cutoff)
+			.delete();
+
 		const pending = await offlineDb.pendingEdits
 			.where('status')
 			.equals('pending')
 			.sortBy('savedAt');
 
 		if (pending.length === 0) {
-			console.log('[offline] syncAll: no pending edits, already up to date');
 			return;
 		}
 
-		console.log(`[offline] syncAll: starting — ${pending.length} pending edit(s)`);
 		this.syncState = 'syncing';
 
 		// Latest snapshot per document
@@ -37,35 +45,39 @@ class ConnectivityStore {
 			latestByDoc.set(edit.documentId, edit);
 		}
 
-		console.log(`[offline] syncAll: syncing ${latestByDoc.size} document(s)`);
 		const errors: SyncError[] = [];
 
 		for (const [documentId, edit] of latestByDoc) {
 			try {
-				await trpc.documents.saveDraft.mutate({ documentId, content: edit.content });
+				await trpc.documents.saveDraft.mutate({
+					documentId,
+					content: edit.content,
+					baseDraftHash: edit.baseDraftHash
+				});
 				await offlineDb.pendingEdits
 					.where({ documentId, status: 'pending' })
 					.modify({ status: 'synced' });
-				console.log(`[offline] syncAll: ✓ synced document ${documentId}`);
 			} catch (e) {
-				const isForbidden =
-					e instanceof Error &&
-					('code' in e
-						? (e as { code?: string }).code === 'FORBIDDEN'
-						: e.message.includes('FORBIDDEN'));
+				// tRPC puts the error code in e.data.code (it was read from e.code, which
+				// never existed, so "write access lost" was never detected).
+				const code = (e as { data?: { code?: string } } | null)?.data?.code;
+				const isForbidden = code === 'FORBIDDEN';
+				const isConflict = code === 'CONFLICT';
 				const finalStatus = isForbidden ? 'writer_lost' : 'failed';
 				const message = isForbidden
 					? 'Write access lost'
-					: e instanceof Error
-						? e.message
-						: 'Unknown error';
+					: isConflict
+						? 'The draft was changed elsewhere while you were offline; your version was not applied'
+						: e instanceof Error
+							? e.message
+							: 'Unknown error';
 				console.warn(
 					`[offline] syncAll: ✗ failed document ${documentId} — ${message} (status: ${finalStatus})`
 				);
 				errors.push({ documentId, message, at: new Date() });
 				await offlineDb.pendingEdits
 					.where({ documentId, status: 'pending' })
-					.modify({ status: finalStatus });
+					.modify({ status: finalStatus, failureReason: message });
 			}
 		}
 
@@ -74,7 +86,6 @@ class ConnectivityStore {
 			this.syncErrors = [...this.syncErrors, ...errors];
 			this.syncState = 'error';
 		} else {
-			console.log('[offline] syncAll: ✓ all documents synced');
 			this.syncState = 'idle';
 			flash.set('Synced', 'success');
 		}

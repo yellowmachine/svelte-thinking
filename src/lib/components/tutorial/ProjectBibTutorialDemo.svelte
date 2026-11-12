@@ -30,7 +30,7 @@
 	];
 </script>
 
-<div class="min-h-screen bg-paper-ui dark:bg-dark-paper-ui">
+<div class="min-h-screen bg-paper-ui">
 	<div class="mx-auto flex max-w-6xl flex-col px-6 py-8">
 		<!-- Header -->
 		<div class="mb-6">
@@ -40,13 +40,10 @@
 			</a>
 			<div class="flex items-center justify-between gap-4">
 				<div>
-					<h1
-						data-tutorial="project-bib-title"
-						class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-					>
+					<h1 data-tutorial="project-bib-title" class="font-serif text-2xl font-semibold text-ink">
 						Bibliography
 					</h1>
-					<p class="mt-0.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+					<p class="mt-0.5 font-sans text-sm text-ink-muted">
 						{mockRefs.length} references
 					</p>
 				</div>
@@ -90,26 +87,24 @@
 		</div>
 
 		<!-- Reference list -->
-		<div
-			class="divide-y divide-paper-border rounded-lg border border-paper-border dark:divide-dark-paper-border dark:border-dark-paper-border"
-		>
+		<div class="divide-y divide-paper-border rounded-lg border border-paper-border">
 			{#each mockRefs as ref (ref.id)}
 				<div class="px-4 py-3">
 					<div class="flex items-start justify-between gap-3">
 						<div class="min-w-0 flex-1">
-							<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">{ref.title}</p>
-							<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+							<p class="font-sans text-sm font-medium text-ink">{ref.title}</p>
+							<p class="mt-0.5 font-sans text-xs text-ink-muted">
 								{ref.authors} ({ref.year}) · <em>{ref.journal}</em>
 							</p>
 						</div>
-						<code class="shrink-0 font-mono text-[11px] text-accent">@{ref.citeKey}</code>
+						<code class="shrink-0 font-mono text-[11px] text-accent-ink">@{ref.citeKey}</code>
 					</div>
 				</div>
 			{/each}
 		</div>
 
 		{#if completed}
-			<p class="mt-8 font-sans text-sm text-ink-muted italic dark:text-dark-ink-muted">
+			<p class="mt-8 font-sans text-sm text-ink-muted italic">
 				Tutorial already completed — the tour will not launch.
 			</p>
 		{/if}

@@ -64,7 +64,7 @@
 			];
 			newTitle = '';
 		} catch (e) {
-			createError = e instanceof Error ? e.message : 'Error al crear la lista.';
+			createError = e instanceof Error ? e.message : "Couldn't create the list.";
 		} finally {
 			creating = false;
 		}
@@ -108,7 +108,7 @@
 			itemCountOverrides.set(agg.id, agg.itemCount + 1);
 			newHandle = '';
 		} catch (e) {
-			addBlogError = e instanceof Error ? e.message : 'Error al añadir el blog.';
+			addBlogError = e instanceof Error ? e.message : "Couldn't add the blog.";
 		} finally {
 			addingBlog = false;
 		}
@@ -159,87 +159,83 @@
 		}
 	}
 
-	const dateFmt = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', year: 'numeric' });
+	const dateFmt = new Intl.DateTimeFormat('en-GB', {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	});
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<div class="mb-8">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">Listas</h1>
-		<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Listas públicas y curadas de otros blogs. Cada una tiene su propia página y feed RSS.
+		<h1 class="font-serif text-3xl font-semibold text-ink">Lists</h1>
+		<p class="mt-1 font-sans text-sm text-ink-muted">
+			Public, curated lists of other blogs. Each one has its own page and RSS feed.
 		</p>
 	</div>
 
 	{#if !data.handle}
-		<div
-			class="rounded-xl border border-paper-border bg-paper p-6 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<p class="mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Configura tu blog antes de crear una lista.
-			</p>
+		<div class="rounded-xl border border-paper-border bg-paper p-6 text-center">
+			<p class="mb-4 font-sans text-sm text-ink-muted">Set up your blog before creating a list.</p>
 			<a
 				href={resolve('/settings?tab=blog')}
 				class="inline-block rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-opacity hover:opacity-90"
 			>
-				Configurar mi blog →
+				Set up my blog →
 			</a>
 		</div>
 	{:else}
 		<div class="mb-6 flex gap-2">
 			<input
 				bind:value={newTitle}
-				placeholder="Título de la nueva lista"
-				class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				placeholder="New list title"
+				class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 			/>
 			<button
 				onclick={createAggregator}
 				disabled={creating || !newTitle.trim()}
 				class="rounded-md bg-accent px-4 py-2 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 			>
-				{creating ? 'Creando...' : 'Crear lista'}
+				{creating ? 'Creating…' : 'Create list'}
 			</button>
 		</div>
 		{#if createError}
-			<p class="mb-4 font-sans text-sm text-red-600 dark:text-red-400">{createError}</p>
+			<p class="mb-4 font-sans text-sm text-danger">{createError}</p>
 		{/if}
 
 		{#if aggregators.length === 0}
-			<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-				Todavía no has creado ninguna lista.
-			</p>
+			<p class="font-sans text-sm text-ink-faint">You haven't created any lists yet.</p>
 		{:else}
 			<div class="flex flex-col gap-3">
 				{#each aggregators as agg (agg.id)}
-					<div
-						class="rounded-lg border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-					>
+					<div class="rounded-lg border border-paper-border bg-paper">
 						<div class="flex items-center justify-between gap-3 px-4 py-3">
 							<div class="min-w-0 flex-1">
 								{#if editingId === agg.id}
 									<div class="flex flex-col gap-2">
 										<input
 											bind:value={editTitle}
-											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 										/>
 										<textarea
 											bind:value={editDescription}
 											rows="2"
-											placeholder="Descripción (opcional)"
-											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+											placeholder="Description (optional)"
+											class="w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 										></textarea>
 										<div class="flex gap-3">
 											<button
 												onclick={() => saveEdit(agg)}
 												disabled={savingEdit}
-												class="font-sans text-xs text-accent hover:text-accent-hover disabled:opacity-50"
+												class="font-sans text-xs text-accent-ink hover:text-accent-hover disabled:opacity-50"
 											>
-												Guardar
+												Save
 											</button>
 											<button
 												onclick={() => (editingId = null)}
-												class="font-sans text-xs text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+												class="font-sans text-xs text-ink-muted hover:text-ink"
 											>
-												Cancelar
+												Cancel
 											</button>
 										</div>
 									</div>
@@ -251,17 +247,17 @@
 										})}
 										target="_blank"
 										rel="noopener noreferrer"
-										class="truncate font-sans text-sm font-medium text-ink hover:underline dark:text-dark-ink"
+										class="truncate font-sans text-sm font-medium text-ink hover:underline"
 									>
 										{agg.title}
 									</a>
 									{#if agg.description}
-										<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+										<p class="font-sans text-xs text-ink-muted">
 											{agg.description}
 										</p>
 									{/if}
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										{agg.itemCount} blog{agg.itemCount === 1 ? '' : 's'} · creada el {dateFmt.format(
+									<p class="font-sans text-xs text-ink-faint">
+										{agg.itemCount} blog{agg.itemCount === 1 ? '' : 's'} · created {dateFmt.format(
 											new Date(agg.createdAt)
 										)}
 									</p>
@@ -272,58 +268,56 @@
 									<button
 										type="button"
 										onclick={() => toggleExpand(agg)}
-										class="font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										class="font-sans text-xs text-ink-muted transition-colors hover:text-ink"
 									>
-										Gestionar blogs
+										Manage blogs
 									</button>
 									<button
 										type="button"
 										onclick={() => startEdit(agg)}
-										class="font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+										class="font-sans text-xs text-ink-muted transition-colors hover:text-ink"
 									>
-										Editar
+										Edit
 									</button>
 									<button
 										type="button"
 										onclick={() => (aggregatorToDelete = agg)}
 										disabled={deletingId === agg.id}
-										class="font-sans text-xs text-red-500 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+										class="font-sans text-xs text-danger transition-colors hover:text-danger disabled:opacity-50"
 									>
-										Eliminar
+										Delete
 									</button>
 								</div>
 							{/if}
 						</div>
 
 						{#if expandedId === agg.id}
-							<div class="border-t border-paper-border px-4 py-3 dark:border-dark-paper-border">
+							<div class="border-t border-paper-border px-4 py-3">
 								<div class="flex gap-2">
 									<input
 										bind:value={newHandle}
-										placeholder="@handle del blog a añadir"
-										class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+										placeholder="@handle of the blog to add"
+										class="flex-1 rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 									/>
 									<button
 										onclick={() => addBlog(agg)}
 										disabled={addingBlog || !newHandle.trim()}
 										class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
 									>
-										{addingBlog ? 'Añadiendo...' : 'Añadir'}
+										{addingBlog ? 'Adding…' : 'Add'}
 									</button>
 								</div>
 								{#if addBlogError}
-									<p class="mt-2 font-sans text-xs text-red-600 dark:text-red-400">
+									<p class="mt-2 font-sans text-xs text-danger">
 										{addBlogError}
 									</p>
 								{/if}
 
 								{#if itemsLoading}
-									<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										Cargando...
-									</p>
+									<p class="mt-3 font-sans text-xs text-ink-faint">Loading…</p>
 								{:else if items.length === 0}
-									<p class="mt-3 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-										Esta lista todavía no incluye ningún blog.
+									<p class="mt-3 font-sans text-xs text-ink-faint">
+										This list doesn't include any blogs yet.
 									</p>
 								{:else}
 									<ul class="mt-3 flex flex-col gap-1.5">
@@ -333,16 +327,16 @@
 													href={resolve('/@[handle]', { handle: item.handle ?? '' })}
 													target="_blank"
 													rel="noopener noreferrer"
-													class="font-sans text-sm text-ink hover:underline dark:text-dark-ink"
+													class="font-sans text-sm text-ink hover:underline"
 												>
 													{item.displayName ?? `@${item.handle}`}
 												</a>
 												<button
 													type="button"
 													onclick={() => removeItem(agg, item)}
-													class="font-sans text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+													class="font-sans text-xs text-danger hover:text-danger"
 												>
-													Quitar
+													Remove
 												</button>
 											</li>
 										{/each}
@@ -359,10 +353,10 @@
 
 <SafeDeleteDialog
 	open={!!aggregatorToDelete}
-	title="Eliminar lista"
+	title="Delete list"
 	label={aggregatorToDelete?.title ?? ''}
-	confirmLabel="Eliminar"
-	warning="La página pública de esta lista dejará de existir."
+	confirmLabel="Delete"
+	warning="This list's public page will stop existing."
 	deleting={deletingId === aggregatorToDelete?.id}
 	requireCode={false}
 	onconfirm={deleteAggregator}

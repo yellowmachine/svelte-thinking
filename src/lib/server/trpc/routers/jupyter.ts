@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { assertPublicUrl, UnsafeUrlError } from '$lib/server/safeFetch';
 import { router, protectedProcedure } from '../init';
 import { userJupyterConnection } from '$lib/server/db/schemas/users.schema';
 import { encryptSecret } from '$lib/server/kms';
@@ -33,6 +34,13 @@ export const jupyterRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			// Normalise: strip trailing slash
 			const baseUrl = input.baseUrl.replace(/\/$/, '');
+			try {
+				await assertPublicUrl(baseUrl);
+			} catch (e) {
+				if (e instanceof UnsafeUrlError)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: e.message });
+				throw e;
+			}
 
 			let encrypted;
 			try {

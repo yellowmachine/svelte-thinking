@@ -1,4 +1,6 @@
 <script lang="ts">
+	import RotateCw from '@lucide/svelte/icons/rotate-cw';
+	import X from '@lucide/svelte/icons/x';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import { trpc } from '$lib/utils/trpc';
 
@@ -77,38 +79,27 @@
 	}
 </script>
 
-<div
-	class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
->
-	<div
-		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
-		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Document review</h3>
+<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper">
+	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3">
+		<h3 class="font-serif text-sm font-semibold text-ink">Document review</h3>
 		<div class="flex items-center gap-2">
 			{#if loadingReview}
-				<Spinner size="sm" class="text-accent" />
+				<Spinner size="sm" class="text-accent-ink" />
 			{/if}
 			<button
 				type="button"
 				onclick={onclose}
-				class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+				class="text-ink-faint transition-colors hover:text-ink-muted"
 				aria-label="Close review"
 			>
-				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-					<path
-						d="M18 6L6 18M6 6l12 12"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 	</div>
 
 	<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
 		{#if !reviewResult && !loadingReview}
-			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="font-sans text-xs text-ink-faint">
 				Checks each project requirement against the document content, and identifies relevant
 				references that aren't cited yet.
 			</p>
@@ -135,14 +126,12 @@
 		{/if}
 
 		{#if loadingReview && !reviewResult}
-			<p class="py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Analysing document…
-			</p>
+			<p class="py-6 text-center font-sans text-sm text-ink-muted">Analysing document…</p>
 		{/if}
 
 		{#if reviewError}
 			<div
-				class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 font-sans text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400"
+				class="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 font-sans text-xs text-danger"
 			>
 				{#if reviewError === NO_KEY_MSG}
 					No AI key configured. <a
@@ -158,32 +147,28 @@
 		{#if reviewResult}
 			{#if reviewResult.requirements.length > 0}
 				<div>
-					<p
-						class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-					>
+					<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase">
 						Requirements
 					</p>
 					<div class="flex flex-col gap-2">
 						{#each reviewResult.requirements as req (req.name)}
 							<div
 								class="rounded-lg border {req.covered
-									? 'border-green-200 bg-green-50 dark:border-green-800/40 dark:bg-green-900/10'
-									: 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/10'} px-3 py-2"
+									? 'border-success-border bg-success-bg dark:bg-green-900/10'
+									: 'border-warning-border bg-warning-bg '} px-3 py-2"
 							>
 								<div class="flex items-start gap-2">
 									<span
-										class="mt-0.5 shrink-0 text-sm {req.covered
-											? 'text-green-600 dark:text-green-400'
-											: 'text-amber-600 dark:text-amber-400'}"
+										class="mt-0.5 shrink-0 text-sm {req.covered ? 'text-success' : 'text-warning'}"
 									>
 										{req.covered ? '✓' : '✗'}
 									</span>
 									<div>
-										<p class="font-sans text-xs font-medium text-ink dark:text-dark-ink">
+										<p class="font-sans text-xs font-medium text-ink">
 											{req.name}
 										</p>
 										{#if req.note}
-											<p class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+											<p class="mt-0.5 font-sans text-xs text-ink-muted">
 												{req.note}
 											</p>
 										{/if}
@@ -197,9 +182,7 @@
 
 			{#if reviewResult.uncitedRefs.length > 0}
 				<div>
-					<p
-						class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-					>
+					<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase">
 						Relevant but uncited
 					</p>
 					<div class="flex flex-col gap-1.5">
@@ -208,37 +191,31 @@
 								type="button"
 								onclick={() => oninsertcitation(citeKey)}
 								title="Insert citation"
-								class="flex items-center justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-left transition-colors hover:border-accent/40 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+								class="flex items-center justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 text-left transition-colors hover:border-accent/40"
 							>
-								<span class="font-mono text-xs text-ink dark:text-dark-ink">[[@{citeKey}]]</span>
-								<span class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
-									>insert</span
-								>
+								<span class="font-mono text-xs text-ink">[[@{citeKey}]]</span>
+								<span class="font-sans text-[10px] text-ink-faint">insert</span>
 							</button>
 						{/each}
 					</div>
 				</div>
 			{:else if reviewResult.requirements.length > 0}
-				<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					All relevant references are cited.
-				</p>
+				<p class="font-sans text-xs text-ink-faint">All relevant references are cited.</p>
 			{/if}
 
-			<div class="border-t border-paper-border pt-4 dark:border-dark-paper-border">
-				<p
-					class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-				>
+			<div class="border-t border-paper-border pt-4">
+				<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase">
 					Critical questions
 				</p>
 				{#if !reviewQuestions && !loadingQuestions}
-					<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="mb-2 font-sans text-xs text-ink-faint">
 						Questions a peer reviewer would likely raise about this document.
 					</p>
 					<button
 						type="button"
 						onclick={runReviewQuestions}
 						disabled={!hasAiKey}
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 					>
 						<svg
 							width="12"
@@ -258,20 +235,17 @@
 						Generate questions
 					</button>
 				{:else if loadingQuestions}
-					<p class="py-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Generating…</p>
+					<p class="py-2 font-sans text-xs text-ink-faint">Generating…</p>
 				{:else if questionsError}
-					<p class="font-sans text-xs text-red-500">{questionsError}</p>
+					<p class="font-sans text-xs text-danger">{questionsError}</p>
 				{:else if reviewQuestions}
 					<ol class="flex flex-col gap-2">
 						{#each reviewQuestions as q, i (i)}
 							<li class="flex items-start gap-2">
-								<span
-									class="mt-0.5 shrink-0 font-sans text-[10px] font-semibold text-ink-faint dark:text-dark-ink-faint"
+								<span class="mt-0.5 shrink-0 font-sans text-[10px] font-semibold text-ink-faint"
 									>{i + 1}.</span
 								>
-								<span class="font-sans text-xs leading-relaxed text-ink dark:text-dark-ink"
-									>{q}</span
-								>
+								<span class="font-sans text-xs leading-relaxed text-ink">{q}</span>
 							</li>
 						{/each}
 					</ol>
@@ -279,22 +253,9 @@
 						type="button"
 						onclick={runReviewQuestions}
 						disabled={loadingQuestions}
-						class="mt-3 flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+						class="mt-3 flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 					>
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<polyline points="23 4 23 10 17 10" />
-							<path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-						</svg>
+						<RotateCw size={12} strokeWidth={1.75} aria-hidden="true" />
 						Regenerate
 					</button>
 				{/if}
@@ -304,22 +265,9 @@
 				type="button"
 				onclick={runReview}
 				disabled={loadingReview}
-				class="mt-auto flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="mt-auto flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 			>
-				<svg
-					width="12"
-					height="12"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<polyline points="23 4 23 10 17 10" />
-					<path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-				</svg>
+				<RotateCw size={12} strokeWidth={1.75} aria-hidden="true" />
 				Re-run review
 			</button>
 		{/if}

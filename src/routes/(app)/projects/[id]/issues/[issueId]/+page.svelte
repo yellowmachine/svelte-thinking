@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
@@ -206,11 +207,26 @@
 	});
 
 	// ── Navigation guard ──────────────────────────────────────────────────────
-	beforeNavigate(({ cancel }) => {
-		if (isDirty) {
-			const ok = confirm('You have unsaved changes. Leave anyway?');
-			if (!ok) cancel();
-		}
+	// Closing the tab is covered by the browser's own prompt; in-app navigation
+	// is paused here and resumed with goto() once the user confirms.
+	let leaveConfirmed = false;
+	beforeNavigate((nav) => {
+		if (!isDirty || leaveConfirmed || nav.type === 'leave' || !nav.to) return;
+		nav.cancel();
+		const target = nav.to.url;
+		confirmDialog({
+			title: 'Leave without saving?',
+			message: 'Your changes to this issue have not been saved.',
+			confirmLabel: 'Leave',
+			cancelLabel: 'Stay',
+			danger: true
+		}).then((ok) => {
+			if (!ok) return;
+			leaveConfirmed = true;
+			// target is SvelteKit's own resolved destination (nav.to.url).
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(target);
+		});
 	});
 
 	// ── Helpers ───────────────────────────────────────────────────────────────
@@ -229,7 +245,7 @@
 
 	const STATUS_CLASS: Record<IssueStatus, string> = {
 		open: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-		in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+		in_progress: 'bg-warning-bg text-warning',
 		closed: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
 	};
 
@@ -237,7 +253,7 @@
 		low: 'text-zinc-400 dark:text-zinc-500',
 		medium: 'text-sky-500 dark:text-sky-400',
 		high: 'text-orange-500 dark:text-orange-400',
-		critical: 'text-red-600 dark:text-red-400'
+		critical: 'text-danger'
 	};
 </script>
 
@@ -380,7 +396,7 @@
 					onclick={() => {
 						showDeleteDialog = true;
 					}}
-					class="font-sans text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+					class="font-sans text-xs text-danger hover:text-danger"
 				>
 					Delete
 				</button>
@@ -389,7 +405,7 @@
 	</div>
 
 	{#if saveError}
-		<p class="mb-4 font-sans text-sm text-red-500">{saveError}</p>
+		<p class="mb-4 font-sans text-sm text-danger">{saveError}</p>
 	{/if}
 
 	<!-- Content -->
@@ -470,7 +486,7 @@
 									<button
 										type="button"
 										onclick={() => deleteComment(c.id)}
-										class="font-sans text-xs text-zinc-400 transition-colors hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
+										class="font-sans text-xs text-zinc-400 transition-colors hover:text-danger dark:text-zinc-500"
 									>
 										Delete
 									</button>
@@ -506,7 +522,7 @@
 													<button
 														type="button"
 														onclick={() => deleteComment(r.id, c.id)}
-														class="mt-1 font-sans text-xs text-zinc-400 transition-colors hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
+														class="mt-1 font-sans text-xs text-zinc-400 transition-colors hover:text-danger dark:text-zinc-500"
 													>
 														Delete
 													</button>

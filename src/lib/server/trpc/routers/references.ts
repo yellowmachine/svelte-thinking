@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { eq, and, asc, sql, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { safeFetch, UnsafeUrlError } from '$lib/server/safeFetch';
 import { env } from '$env/dynamic/private';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
@@ -420,7 +421,7 @@ export const referencesRouter = router({
 			if (parsed.length === 0) {
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
-					message: 'No se encontraron entradas BibTeX válidas.'
+					message: 'No valid BibTeX entries found.'
 				});
 			}
 
@@ -466,7 +467,7 @@ export const referencesRouter = router({
 							userId: ctx.user.id,
 							citeKey: uniqueKey,
 							type: entry.type,
-							title: entry.title || '(sin título)',
+							title: entry.title || '(no title)',
 							authors: entry.authors as Author[],
 							year: entry.year || null,
 							abstract: entry.abstract || null,
@@ -561,13 +562,6 @@ export const referencesRouter = router({
 			return { inserted: newLinks.length, skipped: toLink.length - newLinks.length };
 		}),
 
-	// ── Generate PDF from the reference's URL (disabled in beta) ───────────
-	generatePdfFromUrl: protectedProcedure
-		.input(z.object({ refId: z.string(), projectId: z.string() }))
-		.mutation(async () => {
-			return { pdfKey: null };
-		}),
-
 	// ── Export all references as a .bib file string ───────────────────────
 
 	exportBibtex: protectedProcedure.input(z.string()).query(async ({ ctx, input: projectId }) => {
@@ -599,7 +593,7 @@ export const referencesRouter = router({
 			let text: string;
 			let pageTitle: string | null = null;
 			try {
-				const res = await fetch(url, {
+				const res = await safeFetch(url, {
 					headers: {
 						'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
 					},
@@ -617,6 +611,8 @@ export const referencesRouter = router({
 				pageTitle = article?.title ?? null;
 			} catch (e) {
 				if (e instanceof TRPCError) throw e;
+				if (e instanceof UnsafeUrlError)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: e.message });
 				throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch or parse the URL.' });
 			}
 
@@ -631,7 +627,6 @@ export const referencesRouter = router({
 
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
-				ctx.db as Db,
 				ctx.user.id,
 				'bibliography',
 				projectId
@@ -751,7 +746,7 @@ ${truncated}`;
 			// Fetch, extract main content and sanitize — store HTML directly (no markdown round-trip)
 			let renderedHtml: string;
 			try {
-				const res = await fetch(url, {
+				const res = await safeFetch(url, {
 					headers: {
 						'User-Agent': 'Mozilla/5.0 (compatible; Scholio/1.0; +https://scholio.review)'
 					},
@@ -815,6 +810,8 @@ ${truncated}`;
 				});
 			} catch (e) {
 				if (e instanceof TRPCError) throw e;
+				if (e instanceof UnsafeUrlError)
+					throw new TRPCError({ code: 'BAD_REQUEST', message: e.message });
 				throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not fetch or parse the URL.' });
 			}
 
@@ -838,7 +835,7 @@ ${truncated}`;
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un documento con el título "${title}" en este proyecto.`
+							message: `A document titled "${title}" already exists in this project.`
 						});
 					}
 					throw e;

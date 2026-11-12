@@ -5,76 +5,55 @@ import { router, protectedProcedure } from '../init';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { document } from '$lib/server/db/schemas/documents.schema';
 import { project } from '$lib/server/db/schemas/projects.schema';
-import { notificationPreference } from '$lib/server/db/schemas/users.schema';
+import { notificationRecipients } from '$lib/server/definerFunctions';
 import { sendNewCommentNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 
 import type { Db } from '$lib/server/db';
 
+type WithRLS = <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
+
 async function notifyDocumentOwner(
-	db: Db,
+	withRLS: WithRLS,
 	documentId: string,
 	commenterId: string,
 	commenterName: string,
 	commentContent: string
 ) {
 	try {
-		// Fetch document + project + owner email in one query (bypasses RLS via ctx.db)
-		const rows = await db
-			.select({
-				documentTitle: document.title,
-				projectId: document.projectId,
-				projectTitle: project.title,
-				ownerId: project.ownerId,
-				ownerEmail: sql<string>`(SELECT email FROM "user" WHERE "user".id = ${project.ownerId})`
-			})
-			.from(document)
-			.innerJoin(project, eq(document.projectId, project.id))
-			.where(eq(document.id, documentId))
-			.limit(1);
-
-		const row = rows[0];
-		if (!row || row.ownerId === commenterId) return; // no notificar al propio autor
-
-		// Get or create notification preference
-		const existingPref = await db
-			.select()
-			.from(notificationPreference)
-			.where(
-				and(
-					eq(notificationPreference.userId, row.ownerId),
-					eq(notificationPreference.projectId, row.projectId)
-				)
-			)
-			.limit(1);
-
-		let pref = existingPref[0];
-		if (!pref) {
-			const [created] = await db
-				.insert(notificationPreference)
-				.values({
-					id: crypto.randomUUID(),
-					userId: row.ownerId,
-					projectId: row.projectId,
-					unsubscribeToken: crypto.randomUUID()
+		// As the commenter: RLS lets them read the document they just commented on,
+		// and notification_recipients checks they are a member of the project.
+		const found = await withRLS(async (db) => {
+			const [doc] = await db
+				.select({
+					documentTitle: document.title,
+					projectId: document.projectId,
+					projectTitle: project.title
 				})
-				.returning();
-			pref = created;
-		}
+				.from(document)
+				.innerJoin(project, eq(document.projectId, project.id))
+				.where(eq(document.id, documentId))
+				.limit(1);
+			if (!doc) return null;
+			// Owner only; empty when the commenter is the owner.
+			const [owner] = await notificationRecipients(db, doc.projectId, true);
+			return owner ? { doc, owner } : null;
+		});
 
-		if (!pref.commentEmails) return;
+		if (!found || found.owner.userId === commenterId || !found.owner.commentEmails) return;
+		const { doc, owner } = found;
 
 		const origin = env.ORIGIN ?? 'http://localhost:5174';
 		const excerpt = commentContent.slice(0, 200) + (commentContent.length > 200 ? '…' : '');
 
 		await sendNewCommentNotification({
-			to: row.ownerEmail,
+			to: owner.email,
 			authorName: commenterName,
-			documentTitle: row.documentTitle,
-			projectTitle: row.projectTitle,
+			documentTitle: doc.documentTitle,
+			projectTitle: doc.projectTitle,
 			commentExcerpt: excerpt,
-			documentUrl: `${origin}/projects/${row.projectId}/documents/${documentId}`,
-			unsubscribeUrl: `${origin}/notifications/unsubscribe/${pref.unsubscribeToken}`
+			documentUrl: `${origin}/projects/${doc.projectId}/documents/${documentId}`,
+			unsubscribeUrl: `${origin}/notifications/unsubscribe/${owner.unsubscribeToken}`
 		});
 	} catch (e) {
 		// Notificaciones son best-effort: nunca deben romper la mutación
@@ -222,7 +201,7 @@ export const commentsRouter = router({
 			// Solo notificar comentarios raíz, no replies
 			if (!input.parentCommentId) {
 				notifyDocumentOwner(
-					ctx.db,
+					ctx.withRLS,
 					input.documentId,
 					ctx.user.id,
 					ctx.user.name ?? ctx.user.email,
@@ -257,7 +236,7 @@ export const commentsRouter = router({
 			);
 
 			notifyDocumentOwner(
-				ctx.db,
+				ctx.withRLS,
 				input.documentId,
 				ctx.user.id,
 				ctx.user.name ?? ctx.user.email,

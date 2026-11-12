@@ -135,17 +135,17 @@
 >
 	<!-- panel -->
 	<div
-		class="absolute top-16 left-1/2 w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+		class="absolute top-16 left-1/2 w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-2xl"
 	>
 		<!-- tab bar -->
-		<div class="flex border-b border-paper-border dark:border-dark-paper-border">
+		<div class="flex border-b border-paper-border">
 			<button
 				type="button"
 				onclick={() => (activeTab = 'text')}
 				class="flex items-center gap-1.5 border-b-2 px-4 py-2.5 font-sans text-xs font-medium transition-colors {activeTab ===
 				'text'
-					? 'border-accent text-accent'
-					: 'border-transparent text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+					? 'border-accent text-accent-ink'
+					: 'border-transparent text-ink-muted hover:text-ink'}"
 			>
 				<!-- magnifier -->
 				<svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -162,8 +162,8 @@
 				onclick={() => (activeTab = 'semantic')}
 				class="flex items-center gap-1.5 border-b-2 px-4 py-2.5 font-sans text-xs font-medium transition-colors {activeTab ===
 				'semantic'
-					? 'border-accent text-accent'
-					: 'border-transparent text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink'}"
+					? 'border-accent text-accent-ink'
+					: 'border-transparent text-ink-muted hover:text-ink'}"
 			>
 				<!-- sparkles -->
 				<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -185,11 +185,9 @@
 					onkeydown={onTextKeydown}
 					type="text"
 					placeholder="Find in document…"
-					class="min-w-0 flex-1 bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+					class="min-w-0 flex-1 bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none"
 				/>
-				<span
-					class="shrink-0 font-sans text-xs text-ink-faint tabular-nums dark:text-dark-ink-faint"
-				>
+				<span class="shrink-0 font-sans text-xs text-ink-faint tabular-nums">
 					{#if textQuery.trim()}
 						{textMatches.length === 0
 							? 'No results'
@@ -202,7 +200,7 @@
 						onclick={prevMatch}
 						disabled={textMatches.length === 0}
 						title="Previous (Shift+Enter)"
-						class="rounded p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-30 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+						class="rounded p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-30"
 					>
 						<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 							<path
@@ -217,7 +215,7 @@
 						onclick={nextMatch}
 						disabled={textMatches.length === 0}
 						title="Next (Enter)"
-						class="rounded p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-30 dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+						class="rounded p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink disabled:opacity-30"
 					>
 						<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 							<path
@@ -234,8 +232,8 @@
 					onclick={() => (listMode = !listMode)}
 					title="Toggle list view"
 					class="rounded p-1 transition-colors {listMode
-						? 'text-accent'
-						: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
+						? 'text-accent-ink'
+						: 'text-ink-muted hover:bg-paper-ui hover:text-ink'}"
 				>
 					<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 						<path
@@ -250,9 +248,7 @@
 			<!-- list of matches with context -->
 			{#if listMode && textQuery.trim()}
 				{#if textMatches.length > 0}
-					<ul
-						class="max-h-64 overflow-y-auto border-t border-paper-border py-1 dark:border-dark-paper-border"
-					>
+					<ul class="max-h-64 overflow-y-auto border-t border-paper-border py-1">
 						{#each textMatches as blockIdx, i (blockIdx)}
 							{@const snippet = getSnippet(blockIdx)}
 							<li>
@@ -264,13 +260,11 @@
 									}}
 									class="w-full px-4 py-2 text-left transition-colors {currentMatch === i
 										? 'bg-accent/8 dark:bg-accent/12'
-										: 'hover:bg-paper-ui dark:hover:bg-dark-paper-ui'}"
+										: 'hover:bg-paper-ui'}"
 								>
-									<p
-										class="font-sans text-xs leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-									>
+									<p class="font-sans text-xs leading-relaxed text-ink-muted">
 										{snippet.before}<mark
-											class="rounded-sm bg-accent/25 px-0.5 font-medium text-ink not-italic dark:text-dark-ink"
+											class="rounded-sm bg-accent/25 px-0.5 font-medium text-ink not-italic"
 											>{snippet.match}</mark
 										>{snippet.after}
 									</p>
@@ -279,9 +273,7 @@
 						{/each}
 					</ul>
 				{:else}
-					<p
-						class="border-t border-paper-border px-4 py-3 font-sans text-sm text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
-					>
+					<p class="border-t border-paper-border px-4 py-3 font-sans text-sm text-ink-faint">
 						No results found.
 					</p>
 				{/if}
@@ -298,26 +290,22 @@
 						onkeydown={onSemanticKeydown}
 						type="text"
 						placeholder="Semantic search in this document…"
-						class="min-w-0 flex-1 bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+						class="min-w-0 flex-1 bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none"
 					/>
 					{#if semanticLoading}
-						<span class="shrink-0 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-							>Searching…</span
-						>
+						<span class="shrink-0 font-sans text-xs text-ink-faint">Searching…</span>
 					{:else}
 						<kbd
-							class="shrink-0 rounded border border-paper-border px-1.5 py-0.5 font-sans text-[10px] text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
+							class="shrink-0 rounded border border-paper-border px-1.5 py-0.5 font-sans text-[10px] text-ink-faint"
 							>↵</kbd
 						>
 					{/if}
 				</div>
 
 				{#if semanticError}
-					<p class="px-4 pb-3 font-sans text-sm text-red-500">{semanticError}</p>
+					<p class="px-4 pb-3 font-sans text-sm text-danger">{semanticError}</p>
 				{:else if semanticResults.length > 0}
-					<ul
-						class="max-h-72 overflow-y-auto border-t border-paper-border py-1 dark:border-dark-paper-border"
-					>
+					<ul class="max-h-72 overflow-y-auto border-t border-paper-border py-1">
 						{#each semanticResults as result (result.chunk_index)}
 							<li>
 								<button
@@ -326,14 +314,14 @@
 										onclose();
 										scrollToChunk(result.chunk_index, result.text);
 									}}
-									class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+									class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-paper-ui"
 								>
 									<span
-										class="mt-0.5 shrink-0 rounded bg-accent/10 px-1.5 py-0.5 font-sans text-[10px] font-medium text-accent"
+										class="mt-0.5 shrink-0 rounded bg-accent/10 px-1.5 py-0.5 font-sans text-[10px] font-medium text-accent-ink"
 									>
 										{Math.round(result.similarity * 100)}%
 									</span>
-									<p class="line-clamp-2 font-sans text-sm text-ink dark:text-dark-ink">
+									<p class="line-clamp-2 font-sans text-sm text-ink">
 										{result.text}
 									</p>
 								</button>
@@ -341,9 +329,7 @@
 						{/each}
 					</ul>
 				{:else if semanticQuery.trim() && !semanticLoading}
-					<p
-						class="border-t border-paper-border px-4 py-3 font-sans text-sm text-ink-faint dark:border-dark-paper-border dark:text-dark-ink-faint"
-					>
+					<p class="border-t border-paper-border px-4 py-3 font-sans text-sm text-ink-faint">
 						No results found.
 					</p>
 				{/if}

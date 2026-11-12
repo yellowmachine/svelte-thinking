@@ -16,5 +16,5 @@
 {#if offline}
 	<OfflineView />
 {:else}
-	<ErrorPage status={page.status} />
+	<ErrorPage status={page.status} detail={page.error?.message} />
 {/if}

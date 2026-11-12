@@ -199,7 +199,7 @@
 				}
 				el.innerHTML = svg;
 			} catch {
-				el.textContent = `No se pudo cargar el diagrama "${title}"`;
+				el.textContent = `Couldn't load the diagram "${title}"`;
 			}
 		}
 	}
@@ -407,7 +407,7 @@
 			const marker = document.createElement('button');
 			marker.className = 'para-marker' + (existing.length > 0 ? ' para-marker--has-comments' : '');
 			marker.setAttribute('type', 'button');
-			marker.setAttribute('aria-label', `Comentar párrafo ${n}`);
+			marker.setAttribute('aria-label', `Comment on paragraph ${n}`);
 			marker.dataset.paragraph = String(n);
 			marker.textContent = existing.length > 0 ? `¶${n} · ${existing.length}` : `¶${n}`;
 			marker.addEventListener('click', (e) => {

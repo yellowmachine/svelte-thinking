@@ -1,13 +1,14 @@
 import { z } from 'zod';
-import { eq, desc, asc, and, ne, sql } from 'drizzle-orm';
+import { eq, desc, asc, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
-import { notificationPreference } from '$lib/server/db/schemas/users.schema';
+import { notificationRecipients } from '$lib/server/definerFunctions';
 import { extractWikilinks } from '$lib/utils/wikilinks';
+import { sha256Hex } from '$lib/utils/contentHash';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
 import { resolveTaskKey } from '$lib/server/trpc/routers/ai';
@@ -15,92 +16,58 @@ import { logUsage } from '$lib/server/aiUsage';
 import { sendCommitNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 import { DOCUMENT_TYPES } from '$lib/domain/document';
+import { projectRoleOf } from '$lib/server/projectAccess';
 import {
+	canCreateDocument,
 	canDelegateWriting,
 	roleAllowsWrite,
 	type CollaboratorRole
 } from '$lib/domain/permissions';
 import type { Db } from '$lib/server/db';
 
+type WithRLS = <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
+
 async function notifyCollaboratorsOnCommit(
-	db: Db,
+	withRLS: WithRLS,
 	documentId: string,
 	projectId: string,
-	committerId: string,
 	committerName: string,
 	commitMessage: string
 ) {
 	try {
-		// Get document + project title
-		const rows = await db
-			.select({ documentTitle: document.title, projectTitle: project.title })
-			.from(document)
-			.innerJoin(project, eq(document.projectId, project.id))
-			.where(eq(document.id, documentId))
-			.limit(1);
-
-		const meta = rows[0];
-		if (!meta) return;
-
-		// Get all collaborators except the committer, with their emails
-		const collaborators = await db
-			.select({
-				userId: projectCollaborator.userId,
-				email: sql<string>`(SELECT email FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
-			})
-			.from(projectCollaborator)
-			.where(
-				and(
-					eq(projectCollaborator.projectId, projectId),
-					ne(projectCollaborator.userId, committerId)
-				)
-			);
-
-		if (collaborators.length === 0) return;
+		// As the committer: RLS lets them read the document, and
+		// notification_recipients checks they are a member of the project and
+		// leaves them out of the list.
+		const found = await withRLS(async (db) => {
+			const [meta] = await db
+				.select({ documentTitle: document.title, projectTitle: project.title })
+				.from(document)
+				.innerJoin(project, eq(document.projectId, project.id))
+				.where(eq(document.id, documentId))
+				.limit(1);
+			if (!meta) return null;
+			return { meta, recipients: await notificationRecipients(db, projectId, false) };
+		});
+		if (!found) return;
+		const { meta } = found;
+		const recipients = found.recipients.filter((r) => r.commitEmails);
+		if (recipients.length === 0) return;
 
 		const origin = env.ORIGIN ?? 'http://localhost:5174';
 		const documentUrl = `${origin}/projects/${projectId}/documents/${documentId}`;
 
 		await Promise.all(
-			collaborators.map(async (collab) => {
-				// Check or create notification preference
-				const existing = await db
-					.select()
-					.from(notificationPreference)
-					.where(
-						and(
-							eq(notificationPreference.userId, collab.userId),
-							eq(notificationPreference.projectId, projectId)
-						)
-					)
-					.limit(1);
-
-				let pref = existing[0];
-				if (!pref) {
-					const [created] = await db
-						.insert(notificationPreference)
-						.values({
-							id: crypto.randomUUID(),
-							userId: collab.userId,
-							projectId,
-							unsubscribeToken: crypto.randomUUID()
-						})
-						.returning();
-					pref = created;
-				}
-
-				if (!pref.commitEmails) return;
-
-				await sendCommitNotification({
-					to: collab.email,
+			recipients.map((r) =>
+				sendCommitNotification({
+					to: r.email,
 					committerName,
 					documentTitle: meta.documentTitle,
 					projectTitle: meta.projectTitle,
 					commitMessage,
 					documentUrl,
-					unsubscribeUrl: `${origin}/notifications/unsubscribe/${pref.unsubscribeToken}`
-				});
-			})
+					unsubscribeUrl: `${origin}/notifications/unsubscribe/${r.unsubscribeToken}`
+				})
+			)
 		);
 	} catch (e) {
 		console.error('[notifications] Error sending commit notification:', e);
@@ -234,6 +201,15 @@ export const documentsRouter = router({
 			const docId = crypto.randomUUID();
 
 			return ctx.withRLS(async (db) => {
+				const role = await projectRoleOf(db, input.projectId, ctx.user.id);
+				if (!canCreateDocument(role, input.isPrivate)) {
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: role
+							? 'Your role in this project only lets you add private notes.'
+							: 'Project not found.'
+					});
+				}
 				try {
 					const [created] = await db
 						.insert(document)
@@ -269,7 +245,7 @@ export const documentsRouter = router({
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un documento con el título "${input.title}" en este proyecto.`
+							message: `A document titled "${input.title}" already exists in this project.`
 						});
 					}
 					throw e;
@@ -320,7 +296,7 @@ export const documentsRouter = router({
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un documento con ese título en este proyecto.`
+							message: `A document with that title already exists in this project.`
 						});
 					}
 					throw e;
@@ -338,18 +314,57 @@ export const documentsRouter = router({
 
 	// Auto-save: persiste el borrador sin crear versión.
 	// Llamado cada ~30s mientras el usuario escribe.
+	// baseDraftHash: SHA-256 of the draft the client last knew was on the server
+	// ('' when it knew of none). If the server's draft has changed since — another
+	// tab or device saved — the save is refused with CONFLICT instead of
+	// overwriting it. Without the hash (old clients, mobile notes) it saves as before.
 	saveDraft: protectedProcedure
-		.input(z.object({ documentId: z.string(), content: z.string() }))
+		.input(
+			z.object({
+				documentId: z.string(),
+				content: z.string(),
+				baseDraftHash: z
+					.string()
+					.regex(/^[0-9a-f]{64}$/)
+					.optional()
+			})
+		)
 		.mutation(async ({ ctx, input }) => {
-			const rows = await ctx.withRLS((db) =>
-				db
+			return ctx.withRLS(async (db) => {
+				const [current] = await db
+					.select({ draftContent: document.draftContent })
+					.from(document)
+					.where(eq(document.id, input.documentId))
+					.for('update')
+					.limit(1);
+				if (!current) throw new TRPCError({ code: 'NOT_FOUND' });
+
+				const serverDraft = current.draftContent ?? '';
+				if (
+					input.baseDraftHash !== undefined &&
+					serverDraft !== '' &&
+					serverDraft !== input.content &&
+					(await sha256Hex(serverDraft)) !== input.baseDraftHash
+				) {
+					throw new TRPCError({
+						code: 'CONFLICT',
+						message: 'This draft was changed in another tab or device since you opened it.'
+					});
+				}
+
+				const rows = await db
 					.update(document)
 					.set({ draftContent: input.content, updatedAt: new Date() })
 					.where(eq(document.id, input.documentId))
-					.returning({ id: document.id, updatedAt: document.updatedAt })
-			);
-			if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			return rows[0];
+					.returning({ id: document.id, updatedAt: document.updatedAt });
+				// Readable but not writable: someone else holds the writer slot now.
+				if (!rows[0])
+					throw new TRPCError({
+						code: 'FORBIDDEN',
+						message: 'You no longer have write access to this document.'
+					});
+				return rows[0];
+			});
 		}),
 
 	// Commit: crea una versión numerada a partir del draft actual.
@@ -376,7 +391,7 @@ export const documentsRouter = router({
 				if (contentToCommit === null) {
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
-						message: 'No hay cambios sin commitear'
+						message: 'No changes since the last saved version'
 					});
 				}
 
@@ -475,7 +490,6 @@ export const documentsRouter = router({
 				try {
 					const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 						ctx.withRLS as never,
-						ctx.db as Db,
 						ctx.user.id,
 						'summary',
 						result._projectId
@@ -506,10 +520,9 @@ export const documentsRouter = router({
 			})();
 
 			notifyCollaboratorsOnCommit(
-				ctx.db,
+				ctx.withRLS,
 				input.documentId,
 				result._projectId,
-				ctx.user.id,
 				ctx.user.name ?? ctx.user.email,
 				input.message
 			);
@@ -630,7 +643,7 @@ export const documentsRouter = router({
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un documento con el título "${input.title}" en este proyecto.`
+							message: `A document titled "${input.title}" already exists in this project.`
 						});
 					}
 					throw e;
@@ -700,7 +713,7 @@ export const documentsRouter = router({
 					if (e instanceof Error && e.message.includes('document_project_title_idx')) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: `Ya existe un template con el título "${input.templateTitle}" en este proyecto.`
+							message: `A template titled "${input.templateTitle}" already exists in this project.`
 						});
 					}
 					throw e;
@@ -746,7 +759,7 @@ export const documentsRouter = router({
 				) {
 					throw new TRPCError({
 						code: 'FORBIDDEN',
-						message: 'Solo el propietario o el writer actual pueden modificar la delegación'
+						message: 'Only the owner or the current writer can change who has write access'
 					});
 				}
 
@@ -755,7 +768,7 @@ export const documentsRouter = router({
 				if (!isProjectOwner && input.writerUserId !== null) {
 					throw new TRPCError({
 						code: 'FORBIDDEN',
-						message: 'Solo el propietario puede transferir la escritura a otro usuario'
+						message: 'Only the owner can hand write access to another user'
 					});
 				}
 
@@ -774,14 +787,14 @@ export const documentsRouter = router({
 					if (!collab) {
 						throw new TRPCError({
 							code: 'BAD_REQUEST',
-							message: 'El usuario no es colaborador de este proyecto'
+							message: 'This user is not a collaborator on this project'
 						});
 					}
 
 					if (!roleAllowsWrite(collab.role as CollaboratorRole)) {
 						throw new TRPCError({
 							code: 'BAD_REQUEST',
-							message: 'El colaborador no tiene un rol que permita escritura'
+							message: "This collaborator's role doesn't allow writing"
 						});
 					}
 				}
@@ -816,10 +829,16 @@ export const documentsRouter = router({
 		.input(z.object({ documentId: z.string(), versionId: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			return ctx.withRLS(async (db) => {
+				// The version must belong to this document, not just be readable.
 				const source = await db
 					.select()
 					.from(documentVersion)
-					.where(eq(documentVersion.id, input.versionId))
+					.where(
+						and(
+							eq(documentVersion.id, input.versionId),
+							eq(documentVersion.documentId, input.documentId)
+						)
+					)
 					.limit(1);
 
 				if (!source[0]) throw new TRPCError({ code: 'NOT_FOUND' });

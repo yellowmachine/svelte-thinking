@@ -41,7 +41,7 @@
 	];
 </script>
 
-<div class="min-h-screen bg-paper-ui dark:bg-dark-paper-ui">
+<div class="min-h-screen bg-paper-ui">
 	<div class="mx-auto max-w-3xl px-6 py-8">
 		<!-- Header -->
 		<div class="mb-8">
@@ -49,13 +49,10 @@
 			<a href="#" class="mb-3 flex items-center gap-1.5 font-sans text-sm text-ink-muted">
 				← Climate Policy Review
 			</a>
-			<h1
-				data-tutorial="project-review-title"
-				class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
-			>
+			<h1 data-tutorial="project-review-title" class="font-serif text-3xl font-semibold text-ink">
 				Open comments
 			</h1>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+			<p class="mt-1 font-sans text-sm text-ink-muted">
 				{mockThreads.length} open threads across 2 documents
 			</p>
 		</div>
@@ -66,21 +63,18 @@
 				<section>
 					<div class="mb-3 flex items-center gap-2">
 						<!-- svelte-ignore a11y_invalid_attribute -->
-						<a
-							href="#"
-							class="font-serif text-lg font-semibold text-ink hover:text-accent dark:text-dark-ink"
-						>
+						<a href="#" class="font-serif text-lg font-semibold text-ink hover:text-accent-ink">
 							{thread.documentTitle}
 						</a>
 					</div>
 
 					<div
 						data-tutorial="project-review-thread"
-						class="rounded-xl border border-paper-border bg-paper p-4 dark:border-dark-paper-border dark:bg-dark-paper"
+						class="rounded-xl border border-paper-border bg-paper p-4"
 					>
 						{#if thread.anchorContext && thread.anchorText}
 							<p
-								class="mb-2 rounded-md border-l-2 border-amber-300 bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink dark:border-amber-600 dark:bg-dark-paper-ui dark:text-dark-ink"
+								class="mb-2 rounded-md border-l-2 border-warning-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs leading-relaxed text-ink"
 							>
 								{thread.anchorContext}
 							</p>
@@ -89,14 +83,10 @@
 						<div class="flex items-start justify-between gap-3">
 							<div class="min-w-0 flex-1">
 								<div class="mb-0.5 flex items-center gap-2">
-									<span class="font-sans text-xs font-medium text-ink dark:text-dark-ink"
-										>{thread.author}</span
-									>
-									<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-										>{thread.date}</span
-									>
+									<span class="font-sans text-xs font-medium text-ink">{thread.author}</span>
+									<span class="font-sans text-xs text-ink-faint">{thread.date}</span>
 								</div>
-								<p class="font-sans text-sm leading-relaxed text-ink dark:text-dark-ink">
+								<p class="font-sans text-sm leading-relaxed text-ink">
 									{thread.content}
 								</p>
 							</div>
@@ -105,7 +95,7 @@
 								<button
 									data-tutorial="project-review-resolve"
 									type="button"
-									class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:border-dark-paper-border dark:text-dark-ink-muted"
+									class="rounded-md border border-paper-border px-2.5 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-success-border hover:bg-success-bg hover:text-success"
 								>
 									Resolve
 								</button>
@@ -113,20 +103,14 @@
 						</div>
 
 						{#if thread.replies.length > 0}
-							<div
-								class="mt-3 flex flex-col gap-2 border-l-2 border-paper-border pl-3 dark:border-dark-paper-border"
-							>
+							<div class="mt-3 flex flex-col gap-2 border-l-2 border-paper-border pl-3">
 								{#each thread.replies as reply (reply.author)}
 									<div>
 										<div class="mb-0.5 flex items-center gap-2">
-											<span class="font-sans text-xs font-medium text-ink dark:text-dark-ink"
-												>{reply.author}</span
-											>
-											<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-												>{reply.date}</span
-											>
+											<span class="font-sans text-xs font-medium text-ink">{reply.author}</span>
+											<span class="font-sans text-xs text-ink-faint">{reply.date}</span>
 										</div>
-										<p class="font-sans text-sm leading-relaxed text-ink dark:text-dark-ink">
+										<p class="font-sans text-sm leading-relaxed text-ink">
 											{reply.content}
 										</p>
 									</div>
@@ -139,7 +123,7 @@
 		</div>
 
 		{#if completed}
-			<p class="mt-8 font-sans text-sm text-ink-muted italic dark:text-dark-ink-muted">
+			<p class="mt-8 font-sans text-sm text-ink-muted italic">
 				Tutorial already completed — the tour will not launch.
 			</p>
 		{/if}

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Trash from '@lucide/svelte/icons/trash';
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 
@@ -60,32 +62,20 @@
 	}
 </script>
 
-<aside
-	class="flex w-64 shrink-0 flex-col border-r border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
->
-	<div
-		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
+<aside class="flex w-64 shrink-0 flex-col border-r border-paper-border bg-paper">
+	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3">
 		<a
 			href={resolve(`/projects/${projectId}`)}
-			class="flex items-center gap-1.5 font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+			class="flex items-center gap-1.5 font-sans text-xs text-ink-muted transition-colors hover:text-ink"
 		>
-			<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-				<path
-					d="M10 12L6 8l4-4"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
+			<ChevronLeft size={14} strokeWidth={1.75} aria-hidden="true" />
 			{projectTitle}
 		</a>
 		<button
 			type="button"
 			onclick={onnew}
 			title="New conversation"
-			class="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+			class="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 		>
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 				<path
@@ -100,15 +90,13 @@
 
 	<div class="flex-1 overflow-y-auto py-2">
 		{#if conversations.length === 0}
-			<p class="px-4 py-6 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Sin conversaciones
-			</p>
+			<p class="px-4 py-6 text-center font-sans text-xs text-ink-faint">No conversations yet</p>
 		{:else}
 			{#each conversations as conv (conv.id)}
 				<div
-					class="group relative flex items-start transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {activeConvId ===
+					class="group relative flex items-start transition-colors hover:bg-paper-ui {activeConvId ===
 					conv.id
-						? 'bg-paper-ui dark:bg-dark-paper-ui'
+						? 'bg-paper-ui'
 						: ''}"
 				>
 					<button
@@ -117,10 +105,10 @@
 						disabled={loadingConv}
 						class="flex min-w-0 flex-1 flex-col px-4 py-2.5 text-left"
 					>
-						<span class="block truncate font-sans text-sm text-ink dark:text-dark-ink">
+						<span class="block truncate font-sans text-sm text-ink">
 							{conv.title ?? 'Conversation'}
 						</span>
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+						<span class="font-sans text-xs text-ink-faint">
 							{formatDate(conv.updatedAt)}
 						</span>
 					</button>
@@ -128,17 +116,9 @@
 						type="button"
 						aria-label="Delete conversation"
 						onclick={(e) => ondeleteconversation(conv.id, e)}
-						class="mt-2.5 mr-2 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-dark-ink-faint"
+						class="mt-2.5 mr-2 shrink-0 rounded p-0.5 text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
 					>
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
+						<Trash size={12} strokeWidth={1.75} aria-hidden="true" />
 					</button>
 				</div>
 			{/each}
@@ -146,11 +126,11 @@
 	</div>
 
 	{#if isOwner}
-		<div class="shrink-0 border-t border-paper-border dark:border-dark-paper-border">
+		<div class="shrink-0 border-t border-paper-border">
 			<button
 				type="button"
 				onclick={() => (showPromptEditor = !showPromptEditor)}
-				class="flex w-full items-center justify-between px-4 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex w-full items-center justify-between px-4 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
 			>
 				<span class="flex items-center gap-1.5">
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -182,20 +162,18 @@
 			</button>
 			{#if showPromptEditor}
 				<div class="px-4 pb-4">
-					<p
-						class="mb-2 font-sans text-[11px] leading-relaxed text-ink-faint dark:text-dark-ink-faint"
-					>
+					<p class="mb-2 font-sans text-[11px] leading-relaxed text-ink-faint">
 						Custom instructions prepended to the agent's base prompt. Only you can see or edit this.
 					</p>
 					<textarea
 						bind:value={promptText}
 						placeholder="E.g. You are an assistant specialized in economics research. Always cite sources when possible."
 						rows="6"
-						class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+						class="w-full resize-none rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 					></textarea>
 					<div class="mt-2 flex items-center justify-end gap-2">
 						{#if promptSaved}
-							<span class="font-sans text-xs text-green-600 dark:text-green-400">Saved</span>
+							<span class="font-sans text-xs text-success">Saved</span>
 						{/if}
 						<button
 							type="button"

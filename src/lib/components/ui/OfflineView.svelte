@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { onMount } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { offlineDb, type OfflineIndexEntry } from '$lib/offline.db';
@@ -67,48 +68,33 @@
 
 {#if selected}
 	<!-- Offline document reader -->
-	<div class="flex min-h-screen flex-col bg-paper dark:bg-dark-paper">
+	<div class="flex min-h-screen flex-col bg-paper">
 		<div
-			class="sticky top-0 z-10 flex items-center gap-3 border-b border-paper-border bg-paper px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper"
+			class="sticky top-0 z-10 flex items-center gap-3 border-b border-paper-border bg-paper px-4 py-3"
 		>
 			<button
 				type="button"
 				onclick={() => (selected = null)}
-				class="flex items-center gap-1.5 font-sans text-sm text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+				class="flex items-center gap-1.5 font-sans text-sm text-ink-muted hover:text-ink"
 			>
-				<svg
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<path d="M19 12H5M12 5l-7 7 7 7" />
-				</svg>
+				<ArrowLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 				Back
 			</button>
-			<h1 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">
+			<h1 class="font-serif text-base font-semibold text-ink">
 				{selected.title}
 			</h1>
-			<span
-				class="ml-auto rounded bg-amber-100 px-2 py-0.5 font-sans text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+			<span class="ml-auto rounded bg-warning-bg px-2 py-0.5 font-sans text-xs text-warning"
 				>Offline — read only</span
 			>
 		</div>
 		<div class="mx-auto w-full max-w-3xl px-6 py-8">
 			{#if selected.content}
-				<div
-					class="prose prose-sm max-w-none font-serif text-ink dark:text-dark-ink dark:prose-invert"
-				>
+				<div class="prose prose-sm max-w-none font-serif text-ink dark:prose-invert">
 					<pre
 						class="font-serif text-base leading-relaxed whitespace-pre-wrap">{selected.content}</pre>
 				</div>
 			{:else}
-				<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<p class="font-sans text-sm text-ink-muted">
 					No cached content available for this document.
 				</p>
 			{/if}
@@ -117,14 +103,14 @@
 {:else}
 	<div
 		id="main-content"
-		class="flex min-h-screen flex-col items-center justify-center gap-6 bg-paper px-6 py-12 text-center dark:bg-dark-paper"
+		class="flex min-h-screen flex-col items-center justify-center gap-6 bg-paper px-6 py-12 text-center"
 	>
 		<svg
 			width="48"
 			height="48"
 			viewBox="0 0 24 24"
 			fill="none"
-			class="text-ink-faint dark:text-dark-ink-faint"
+			class="text-ink-faint"
 			aria-hidden="true"
 		>
 			<path
@@ -137,15 +123,13 @@
 		</svg>
 
 		<div class="flex flex-col gap-2">
-			<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">You're offline</h1>
+			<h1 class="font-serif text-2xl font-semibold text-ink">You're offline</h1>
 			{#if loaded && groups.length === 0}
-				<p class="max-w-sm font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<p class="max-w-sm font-sans text-sm text-ink-muted">
 					This page isn't available offline. Check your connection and try again.
 				</p>
 			{:else}
-				<p class="max-w-sm font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Here's what you have available:
-				</p>
+				<p class="max-w-sm font-sans text-sm text-ink-muted">Here's what you have available:</p>
 			{/if}
 		</div>
 
@@ -154,7 +138,7 @@
 				{#each groups as group (group.url)}
 					<div class="mb-4">
 						<span
-							class="mb-1 block font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
+							class="mb-1 block font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase"
 						>
 							{group.title}
 						</span>
@@ -164,7 +148,7 @@
 									<button
 										type="button"
 										onclick={() => openDocument(doc)}
-										class="block w-full rounded-md px-3 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui hover:text-accent dark:text-dark-ink dark:hover:bg-dark-paper-ui dark:hover:text-accent"
+										class="block w-full rounded-md px-3 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui hover:text-accent-ink dark:hover:text-accent-ink"
 									>
 										{doc.title}
 									</button>
@@ -179,7 +163,7 @@
 		<button
 			type="button"
 			onclick={() => window.location.reload()}
-			class="rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:hover:border-accent dark:hover:text-accent"
+			class="rounded-lg border border-paper-border bg-paper-ui px-4 py-2 font-sans text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent-ink dark:hover:border-accent dark:hover:text-accent-ink"
 		>
 			Try again
 		</button>

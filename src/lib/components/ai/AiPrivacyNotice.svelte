@@ -16,9 +16,7 @@
 		aria-modal="true"
 		aria-labelledby="privacy-notice-title"
 	>
-		<div
-			class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
-		>
+		<div class="w-full max-w-md rounded-2xl border border-paper-border bg-paper p-6 shadow-xl">
 			<div class="flex items-start gap-3">
 				<div
 					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950"
@@ -38,28 +36,25 @@
 					</svg>
 				</div>
 				<div>
-					<h2
-						id="privacy-notice-title"
-						class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
-					>
+					<h2 id="privacy-notice-title" class="font-serif text-base font-semibold text-ink">
 						Your documents are private
 					</h2>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
 						When you use the AI assistant, the content of your documents is sent to OpenRouter <strong
-							class="font-medium text-ink dark:text-dark-ink">only to process your query</strong
+							class="font-medium text-ink">only to process your query</strong
 						>.
 					</p>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
 						None of these providers use data sent via API to train their models. Your research stays
 						within the query.
 					</p>
-					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+					<p class="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
 						You can review the privacy policy at
 						<a
 							href="https://openrouter.ai/privacy"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="text-accent underline underline-offset-2">OpenRouter</a
+							class="text-accent-ink underline underline-offset-2">OpenRouter</a
 						>.
 					</p>
 				</div>

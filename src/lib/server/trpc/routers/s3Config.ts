@@ -10,6 +10,7 @@ import {
 } from '$lib/server/db/schemas/organizations.schema';
 import { encryptSecret } from '$lib/server/kms';
 import { testS3Connection } from '$lib/server/storage';
+import { assertPublicUrl, UnsafeUrlError } from '$lib/server/safeFetch';
 import {
 	getDecryptedUserS3Config,
 	invalidateUserS3Cache,
@@ -25,6 +26,17 @@ const s3InputSchema = z.object({
 	accessKey: z.string().min(1),
 	secretKey: z.string().min(1)
 });
+
+/** The server talks to this endpoint for every upload: it must not be on its own network. */
+async function assertPublicEndpoint(endpoint: string) {
+	try {
+		await assertPublicUrl(endpoint);
+	} catch (e) {
+		if (e instanceof UnsafeUrlError)
+			throw new TRPCError({ code: 'BAD_REQUEST', message: `S3 endpoint: ${e.message}` });
+		throw e;
+	}
+}
 
 async function encryptCredentials(accessKey: string, secretKey: string) {
 	try {
@@ -105,6 +117,7 @@ export const s3ConfigRouter = router({
 	}),
 
 	set: protectedProcedure.input(s3InputSchema).mutation(async ({ ctx, input }) => {
+		await assertPublicEndpoint(input.endpoint);
 		const creds = await encryptCredentials(input.accessKey, input.secretKey);
 
 		const existing = (await ctx.withRLS((db) =>
@@ -151,7 +164,7 @@ export const s3ConfigRouter = router({
 
 	test: protectedProcedure.mutation(async ({ ctx }) => {
 		const config = await getDecryptedUserS3Config(ctx.user.id, ctx.withRLS);
-		if (!config) throw new TRPCError({ code: 'NOT_FOUND', message: 'S3 no configurado' });
+		if (!config) throw new TRPCError({ code: 'NOT_FOUND', message: 'S3 not configured' });
 
 		const result = await testS3Connection(config);
 		if (result.ok) {
@@ -205,6 +218,7 @@ export const s3ConfigRouter = router({
 		.input(z.object({ orgId: z.string(), config: s3InputSchema }))
 		.mutation(async ({ ctx, input }) => {
 			await assertOrgOwner(ctx.withRLS, input.orgId, ctx.user.id);
+			await assertPublicEndpoint(input.config.endpoint);
 
 			const creds = await encryptCredentials(input.config.accessKey, input.config.secretKey);
 
@@ -255,7 +269,7 @@ export const s3ConfigRouter = router({
 
 		const config = await getDecryptedOrgS3Config(orgId, ctx.withRLS);
 		if (!config)
-			throw new TRPCError({ code: 'NOT_FOUND', message: 'S3 de organización no configurado' });
+			throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization S3 not configured' });
 
 		const result = await testS3Connection(config);
 		if (result.ok) {

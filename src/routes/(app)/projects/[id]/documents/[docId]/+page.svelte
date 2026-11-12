@@ -1,10 +1,29 @@
 <script lang="ts">
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import Link from '@lucide/svelte/icons/link';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import Star from '@lucide/svelte/icons/star';
+	import X from '@lucide/svelte/icons/x';
 	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { onMount, onDestroy, untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { documentTutorialSteps } from '$lib/tutorials/document';
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
+	import { confirmDialog } from '$lib/stores/confirm.svelte';
+	import { focusMode } from '$lib/stores/focusMode.svelte';
+	import EditorPanelRail, { type RailItem } from '$lib/components/editor/EditorPanelRail.svelte';
+	import StickyNote from '@lucide/svelte/icons/sticky-note';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import History from '@lucide/svelte/icons/rotate-ccw-clock';
+	import Layers from '@lucide/svelte/icons/layers';
+	import SpellCheck from '@lucide/svelte/icons/spell-check';
+	import SpellCheck2 from '@lucide/svelte/icons/spell-check-2';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
+	import PencilLine from '@lucide/svelte/icons/pencil-line';
+	import ScanSearch from '@lucide/svelte/icons/scan-search';
+	import { sha256Hex } from '$lib/utils/contentHash';
 	import { page } from '$app/state';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import MobileNoteEditor from '$lib/components/editor/MobileNoteEditor.svelte';
@@ -63,6 +82,12 @@
 	let content = $state(untrack(() => data.document?.content ?? ''));
 	let lastSavedContent = $state(untrack(() => data.document?.content ?? ''));
 	const isDirty = $derived(content !== lastSavedContent);
+	// The draft this tab knows is on the server ('' = none). saveDraft sends its
+	// hash so the server can refuse to overwrite a draft another tab or device
+	// saved in between (CONFLICT → the draft conflict modal).
+	let serverDraftBase = $state(
+		untrack(() => (data.document?.hasDraft ? (data.document.content ?? '') : ''))
+	);
 
 	// Editable title
 	let docTitle = $state(untrack(() => data.document?.title ?? ''));
@@ -235,10 +260,15 @@
 
 	function handleConflictKeepLocal() {
 		// Descartamos el remoto → lo guardamos en el stash
-		if (draftConflictRemoteContent !== null) openStash(draftConflictRemoteContent);
+		if (draftConflictRemoteContent !== null) {
+			openStash(draftConflictRemoteContent);
+			// The user has seen the remote draft and chose theirs: the next save may replace it.
+			serverDraftBase = draftConflictRemoteContent;
+		}
 		draftConflictRemoteContent = null;
 		newerVersion = null;
 		versionPollDismissed = true;
+		doSaveDraft();
 	}
 
 	function handleConflictKeepRemote() {
@@ -248,6 +278,7 @@
 		// Reemplazamos el contenido del editor con el del servidor
 		content = draftConflictRemoteContent;
 		lastSavedContent = draftConflictRemoteContent;
+		serverDraftBase = draftConflictRemoteContent;
 		draftConflictRemoteContent = null;
 		newerVersion = null;
 		versionPollDismissed = true;
@@ -256,23 +287,43 @@
 	// ── Stash panel ───────────────────────────────────────────────────────────────
 	// sessionStorage keyado por documento: persiste recargas accidentales, se limpia al cerrar pestaña.
 	const STASH_KEY = untrack(() => `stash-${data.document?.id ?? ''}`);
-	let showStash = $state(false);
+	// Right-hand panels: one at a time, so they never squeeze the text.
+	type DockPanel =
+		| 'comments'
+		| 'annotations'
+		| 'bib'
+		| 'spell'
+		| 'grammar'
+		| 'chat'
+		| 'review'
+		| 'enrich'
+		| 'draft'
+		| 'history'
+		| 'stash'
+		| 'backlinks';
+	let activePanel = $state<DockPanel | null>(null);
+	function closePanel(panel: DockPanel) {
+		if (activePanel === panel) activePanel = null;
+	}
+	function togglePanel(panel: DockPanel) {
+		activePanel = activePanel === panel ? null : panel;
+	}
 	let stashContent = $state<string | null>(null);
 
 	function openStash(discarded: string) {
 		stashContent = discarded;
-		showStash = true;
+		activePanel = 'stash';
 		sessionStorage.setItem(STASH_KEY, discarded);
 	}
 
 	/** Solo oculta el panel; el contenido sigue en estado y sessionStorage para poder reabrirlo */
 	function closeStash() {
-		showStash = false;
+		closePanel('stash');
 	}
 
 	/** Borra el contenido definitivamente */
 	function clearStash() {
-		showStash = false;
+		closePanel('stash');
 		stashContent = null;
 		sessionStorage.removeItem(STASH_KEY);
 	}
@@ -303,7 +354,7 @@
 		viewMode = m;
 		localStorage.setItem(VIEW_MODE_KEY, m);
 		if (m !== 'editor') loadRefs();
-		if (m === 'preview') showBib = false;
+		if (m === 'preview') closePanel('bib');
 	}
 
 	// Citations
@@ -502,7 +553,6 @@
 	const backlinks = $derived(data.backlinks);
 
 	// Version history
-	let showHistory = $state(false);
 
 	// Public toggle
 	let isPublic = $state(untrack(() => data.document?.isPublic ?? false));
@@ -533,12 +583,11 @@
 	}
 
 	// ── Spell check panel ───────────────────────────────────────────────────────
-	let showSpellPanel = $state(false);
 	let spellLoading = $state(false);
 	let spellCorrections = $state<SpellCorrection[]>([]);
 
 	async function runSpellCheck(scoped?: { text: string; offset: number }) {
-		showSpellPanel = true;
+		activePanel = 'spell';
 		spellLoading = true;
 		spellCorrections = [];
 		try {
@@ -556,7 +605,7 @@
 					}))
 				: result.corrections;
 		} catch {
-			showSpellPanel = false;
+			closePanel('spell');
 		} finally {
 			spellLoading = false;
 		}
@@ -571,12 +620,11 @@
 	}
 
 	// ── Grammar assistant panel ──────────────────────────────────────────────────
-	let showGrammarPanel = $state(false);
 	let grammarLoading = $state(false);
 	let grammarCorrections = $state<SpellCorrection[]>([]);
 
 	async function runGrammarCheck() {
-		showGrammarPanel = true;
+		activePanel = 'grammar';
 		grammarLoading = true;
 		grammarCorrections = [];
 		try {
@@ -586,7 +634,7 @@
 			});
 			grammarCorrections = result.corrections;
 		} catch {
-			showGrammarPanel = false;
+			closePanel('grammar');
 		} finally {
 			grammarLoading = false;
 		}
@@ -651,13 +699,9 @@
 		replies: Reply[];
 	};
 
-	let showComments = $state(false);
 	let currentCommentId = $state<string | null>(null);
 
-	let showAnnotations = $state(false);
-
 	// ── Bibliography panel ────────────────────────────────────────────────────
-	let showBib = $state(false);
 	let bibFilter = $state('');
 	let activeBibCiteKey = $state<string | null>(null);
 	let inlineComments: InlineComment[] = $state(
@@ -809,25 +853,26 @@
 				documentId: data.document.id,
 				content,
 				savedAt: new Date(),
-				status: 'pending'
+				status: 'pending',
+				baseDraftHash: await sha256Hex(serverDraftBase)
 			});
 			lastSavedContent = content;
 			saveStatus = 'offline';
-			console.log(`[offline] save: queued to Dexie (doc ${data.document.id})`);
 			return;
 		}
 
 		saveStatus = 'saving';
-		console.log(`[offline] save: saving online (doc ${data.document.id})`);
+		const toSave = content;
 		try {
 			const saved = await trpc.documents.saveDraft.mutate({
 				documentId: data.document.id,
-				content
+				content: toSave,
+				baseDraftHash: await sha256Hex(serverDraftBase)
 			});
-			lastSavedContent = content;
+			lastSavedContent = toSave;
+			serverDraftBase = toSave;
 			lastOwnSaveAt = saved.updatedAt;
 			saveStatus = 'saved';
-			console.log(`[offline] save: ✓ saved online (doc ${data.document.id})`);
 			setTimeout(() => {
 				if (saveStatus === 'saved') saveStatus = 'idle';
 			}, 2000);
@@ -846,7 +891,8 @@
 					documentId: data.document.id,
 					content,
 					savedAt: new Date(),
-					status: 'pending'
+					status: 'pending',
+					baseDraftHash: await sha256Hex(serverDraftBase)
 				});
 				lastSavedContent = content;
 				saveStatus = 'offline';
@@ -854,6 +900,12 @@
 				console.warn(
 					`[offline] save: network error detected — queued to Dexie (doc ${data.document.id})`
 				);
+			} else if ((e as { data?: { code?: string } }).data?.code === 'CONFLICT') {
+				// Another tab or device saved this draft meanwhile: stop autosaving and let
+				// the user choose between the two versions instead of overwriting theirs.
+				saveStatus = 'pending';
+				newerVersion = { type: 'draft', versionNumber: null, committerName: null };
+				handleResolveConflict();
 			} else {
 				saveStatus = 'error';
 				console.error(`[offline] save: ✗ server error (doc ${data.document.id})`, e);
@@ -867,7 +919,6 @@
 		if (onlineStore.online && saveStatus === 'offline') {
 			const documentId = data.document?.id;
 			if (!documentId) return;
-			console.log(`[offline] reconnect: checking pending edits for doc ${documentId}`);
 			offlineDb.pendingEdits
 				.where({ documentId })
 				.toArray()
@@ -879,25 +930,22 @@
 						writerLostContent = writerLost.content;
 						saveStatus = 'error';
 					} else if (!hasPending) {
-						console.log(`[offline] reconnect: ✓ all edits synced for doc ${documentId}`);
-						saveStatus = 'idle';
-					} else {
-						console.log(
-							`[offline] reconnect: still ${edits.filter((e) => e.status === 'pending').length} pending edit(s) for doc ${documentId}`
+						// The sync pushed our latest queued edit: that is the server draft now.
+						// If it failed (e.g. a conflict), the base stays and the next save
+						// opens the conflict modal with both versions.
+						const latest = edits.reduce<(typeof edits)[number] | null>(
+							(acc, e) => (!acc || e.savedAt > acc.savedAt ? e : acc),
+							null
 						);
+						if (latest?.status === 'synced') serverDraftBase = lastSavedContent;
+						saveStatus = 'idle';
 					}
 				});
 		}
 	});
 
 	function toggleHistory() {
-		showHistory = !showHistory;
-		if (showHistory) showComments = false;
-	}
-
-	function toggleComments() {
-		showComments = !showComments;
-		if (showComments) showHistory = false;
+		togglePanel('history');
 	}
 
 	function handleCommentClick(id: string) {
@@ -942,7 +990,7 @@
 			case 'error':
 				return 'Error saving';
 			case 'offline':
-				return 'Guardado offline';
+				return 'Saved offline';
 			default:
 				return '';
 		}
@@ -980,8 +1028,8 @@
 	}
 
 	function toggleBib() {
-		showBib = !showBib;
-		if (showBib) {
+		togglePanel('bib');
+		if (activePanel === 'bib') {
 			loadRefs();
 			bibFilter = '';
 		}
@@ -1013,7 +1061,7 @@
 	}
 
 	function handlePreviewCommentClick(_id: string) {
-		showComments = true;
+		activePanel = 'comments';
 	}
 
 	function handleParagraphComment(paragraphNumber: number, coords: { top: number; right: number }) {
@@ -1040,13 +1088,90 @@
 					? 'org-owner'
 					: 'org-member'
 	);
+	// The side rail: every panel that can open here, in reading → writing → AI order.
+	const railItems = $derived<RailItem[]>(
+		[
+			{
+				id: 'comments',
+				label: 'Comments',
+				icon: MessageSquare,
+				badge: openCommentsCount,
+				show: true
+			},
+			{ id: 'annotations', label: 'Subnotes', icon: StickyNote, show: true },
+			{ id: 'bib', label: 'Bibliography', icon: BookOpen, show: viewMode !== 'preview' },
+			{
+				id: 'backlinks',
+				label: 'Mentioned in',
+				icon: Link,
+				badge: backlinks.length,
+				show: backlinks.length > 0
+			},
+			{ id: 'history', label: 'Version history', icon: History, show: true, group: true },
+			{ id: 'stash', label: 'Discarded text', icon: Layers, show: stashContent !== null },
+			{
+				id: 'spell',
+				label: 'Spelling',
+				icon: SpellCheck,
+				badge: spellCorrections.length,
+				show: activePanel === 'spell' || spellCorrections.length > 0
+			},
+			{
+				id: 'grammar',
+				label: 'Grammar',
+				icon: SpellCheck2,
+				badge: grammarCorrections.length,
+				show: activePanel === 'grammar' || grammarCorrections.length > 0
+			},
+			{
+				id: 'chat',
+				label: withModel('Chat with the assistant', 'agent'),
+				icon: Sparkles,
+				show: aiCtaType === 'ok',
+				group: true
+			},
+			{
+				id: 'review',
+				label: withModel('Review against the requirements', 'review'),
+				icon: ClipboardCheck,
+				show: aiCtaType === 'ok' && !data.document.isReadonly
+			},
+			{
+				id: 'draft',
+				label: withModel('Draft from project context', 'draft'),
+				icon: PencilLine,
+				show: aiCtaType === 'ok' && !data.document.isReadonly && viewMode !== 'preview'
+			},
+			{
+				id: 'enrich',
+				label: 'Find untagged people and citations',
+				icon: ScanSearch,
+				show: aiCtaType === 'ok' && !data.document.isReadonly
+			}
+		]
+			.filter((i) => i.show)
+			// A group divider only makes sense after something.
+			.map(({ show: _show, ...item }, idx) => ({ ...item, group: idx > 0 && item.group }))
+	);
+
+	/** Tooltip with the model this task uses, when one is configured. */
+	function withModel(label: string, task: 'agent' | 'draft' | 'review'): string {
+		const model = taskModel(task);
+		return model ? `${label} · ${model}` : label;
+	}
+
+	function onRailToggle(id: string) {
+		const panel = id as DockPanel;
+		if (panel === 'bib') return toggleBib();
+		togglePanel(panel);
+	}
+
 	function taskModel(task: 'agent' | 'draft' | 'review') {
 		const modelId = aiTaskConfig[task]?.model;
 		return modelId ? formatModelSlug(modelId) : null;
 	}
 
 	// ── Chat assistant ───────────────────────────────────────────────────────────
-	let showChat = $state(false);
 	let showSearch = $state(false);
 	let searchTab = $state<'text' | 'semantic'>('text');
 
@@ -1057,47 +1182,22 @@
 	}
 
 	function toggleChat() {
-		showChat = !showChat;
-		if (showChat) {
-			showReview = false;
-			showDraft = false;
-			showHistory = false;
-			showComments = false;
-			showBib = false;
-		}
+		togglePanel('chat');
 	}
 
 	// ── Review assistant ─────────────────────────────────────────────────────────
-	let showReview = $state(false);
 
 	function toggleReview() {
-		showReview = !showReview;
-		if (showReview) {
-			showChat = false;
-			showDraft = false;
-			showHistory = false;
-			showComments = false;
-			showBib = false;
-		}
+		togglePanel('review');
 	}
 
 	// ── Enrich (find untagged) ───────────────────────────────────────────────────
-	let showEnrich = $state(false);
 
 	function toggleEnrich() {
-		showEnrich = !showEnrich;
-		if (showEnrich) {
-			showChat = false;
-			showReview = false;
-			showDraft = false;
-			showHistory = false;
-			showComments = false;
-			showBib = false;
-		}
+		togglePanel('enrich');
 	}
 
 	// ── Draft assistant ──────────────────────────────────────────────────────────
-	let showDraft = $state(false);
 
 	// Selection AI review
 	type ReviewType = 'clarity' | 'argument' | 'citations' | 'terminology';
@@ -1169,14 +1269,7 @@
 	}
 
 	function toggleDraft() {
-		showDraft = !showDraft;
-		if (showDraft) {
-			showChat = false;
-			showReview = false;
-			showHistory = false;
-			showComments = false;
-			showBib = false;
-		}
+		togglePanel('draft');
 	}
 
 	// Show floating button only after selection stabilizes (not during drag)
@@ -1279,23 +1372,42 @@
 	// Guard: unsaved changes — SvelteKit client-side navigation
 	// Capture workspace at page entry so we can restore it if the user cancels.
 	const entryWorkspace = { ...workspaceStore.current };
-	beforeNavigate(({ cancel }) => {
-		if (isDirty) {
-			const ok = confirm('You have unsaved changes. Leave anyway?');
+	// Closing the tab is covered by the beforeunload handler below; in-app
+	// navigation is paused here and resumed with goto() once the user confirms.
+	let leaveConfirmed = false;
+	beforeNavigate((nav) => {
+		if (!isDirty || leaveConfirmed || nav.type === 'leave' || !nav.to) return;
+		nav.cancel();
+		const target = nav.to.url;
+		confirmDialog({
+			title: 'Leave without saving?',
+			message: 'Your latest changes have not been saved to the server yet.',
+			confirmLabel: 'Leave',
+			cancelLabel: 'Stay'
+		}).then(async (ok) => {
 			if (!ok) {
-				cancel();
 				workspaceStore.set(entryWorkspace);
-			} else {
-				// Save to Dexie before leaving so content survives navigation
-				offlineDb.pendingEdits.add({
-					id: crypto.randomUUID(),
-					documentId: data.document.id,
-					content,
-					savedAt: new Date(),
-					status: 'pending'
-				});
+				return;
 			}
-		}
+			// Save to Dexie before leaving so content survives navigation
+			await offlineDb.pendingEdits.add({
+				id: crypto.randomUUID(),
+				documentId: data.document.id,
+				content,
+				savedAt: new Date(),
+				status: 'pending',
+				baseDraftHash: await sha256Hex(serverDraftBase)
+			});
+			leaveConfirmed = true;
+			// target is SvelteKit's own resolved destination (nav.to.url).
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			goto(target);
+		});
+	});
+
+	// Focus mode only lives while the editor is open.
+	$effect(() => () => {
+		focusMode.on = false;
 	});
 
 	// Guard: tab close / hard refresh
@@ -1331,7 +1443,7 @@
 		const saved = sessionStorage.getItem(STASH_KEY);
 		if (saved) {
 			stashContent = saved;
-			showStash = true;
+			activePanel = 'stash';
 		}
 
 		// Polling de versión: comprueba cada 60s si hay un nuevo commit en el servidor.
@@ -1348,7 +1460,7 @@
 		const targetId = page.url.searchParams.get('commentId');
 		if (!targetId) return;
 		currentCommentId = targetId;
-		showComments = true;
+		activePanel = 'comments';
 		if (viewMode === 'editor') setViewMode('preview');
 		// Scroll preview and sidebar after DOM renders
 		setTimeout(() => {
@@ -1379,41 +1491,27 @@
 			/>
 		{:else}
 			<!-- Read-only rendered view for non-notes documents -->
-			<div class="flex h-screen flex-col bg-paper dark:bg-dark-paper">
+			<div class="flex h-screen flex-col bg-paper">
 				<div
-					class="flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+					class="flex shrink-0 items-center gap-3 border-b border-paper-border bg-paper/95 px-4 py-3 backdrop-blur-sm"
 				>
 					<button
 						onclick={() => {
 							window.location.href = `/projects/${data.document.projectId}`;
 						}}
-						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
+						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted"
 					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<path d="M15 18l-6-6 6-6" />
-						</svg>
+						<ChevronLeft size={16} strokeWidth={1.75} aria-hidden="true" />
 						{data.projectTitle}
 					</button>
-					<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-					<span
-						translate="no"
-						class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink"
+					<span class="text-ink-faint">/</span>
+					<span translate="no" class="truncate font-sans text-sm font-medium text-ink"
 						>{data.document.title}</span
 					>
 				</div>
 				<div class="pb-safe flex-1 overflow-y-auto px-4 py-6">
 					{#if !content.trim()}
-						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Empty document.</p>
+						<p class="font-sans text-sm text-ink-faint">Empty document.</p>
 					{:else if data.document.type === 'diagram'}
 						<MermaidPreview code={content} />
 					{:else}
@@ -1425,39 +1523,37 @@
 	</div>
 
 	<!-- Desktop editor -->
-	<div class="hidden sm:flex sm:h-screen sm:flex-col">
+	<div class="hidden sm:flex sm:h-full sm:flex-col">
 		<!-- Sticky toolbar -->
 		<div
-			class="sticky top-0 z-10 flex flex-col border-b border-paper-border bg-paper/95 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper/95"
+			class="sticky top-0 z-10 flex flex-col border-b border-paper-border bg-paper/95 backdrop-blur-sm"
 		>
 			<!-- Row 1: breadcrumb -->
 			<div
 				data-tutorial="doc-breadcrumb"
-				class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm dark:border-dark-paper-border/50"
+				class="flex min-w-0 items-center gap-2 border-b border-paper-border/50 px-6 py-2 font-sans text-sm"
 			>
 				<button
 					translate="no"
 					onclick={() => (window.location.href = `/projects/${data.document.projectId}`)}
-					class="shrink-0 text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="shrink-0 text-ink-muted transition-colors hover:text-ink"
 				>
 					{data.projectTitle}
 				</button>
-				<span class="text-ink-faint dark:text-dark-ink-faint">/</span>
-				<span translate="no" class="truncate font-medium text-ink dark:text-dark-ink"
-					>{docTitle}</span
-				>
+				<span class="text-ink-faint">/</span>
+				<span translate="no" class="truncate font-medium text-ink">{docTitle}</span>
 
 				<!-- Writer badge -->
 				{#if currentWriterUserId !== null}
 					<span
-						class="shrink-0 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-sans text-[10px] text-amber-700 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400"
+						class="shrink-0 rounded border border-warning-border bg-warning-bg px-1.5 py-0.5 font-sans text-xs text-warning"
 					>
 						Writer: {currentWriterName ?? currentWriterUserId}
 					</span>
 				{/if}
 				{#if !canWrite}
 					<span
-						class="shrink-0 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-[10px] text-ink-faint dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink-faint"
+						class="shrink-0 rounded border border-paper-border bg-paper-ui px-1.5 py-0.5 font-sans text-xs text-ink-faint"
 					>
 						Read-only
 					</span>
@@ -1469,7 +1565,7 @@
 							await trpc.documents.update.mutate({ id: data.document.id, isReadonly: true });
 							data.document = { ...data.document, isReadonly: true };
 						}}
-						class="shrink-0 font-sans text-[10px] text-ink-faint hover:text-ink hover:underline dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						class="shrink-0 font-sans text-xs text-ink-faint hover:text-ink hover:underline"
 					>
 						Lock editing
 					</button>
@@ -1481,7 +1577,7 @@
 							await trpc.documents.update.mutate({ id: data.document.id, isReadonly: false });
 							data.document = { ...data.document, isReadonly: false };
 						}}
-						class="shrink-0 font-sans text-[10px] text-accent hover:underline"
+						class="shrink-0 font-sans text-xs text-accent-ink hover:underline"
 					>
 						Unlock editing
 					</button>
@@ -1491,586 +1587,304 @@
 				{#if saveStatusLabel()}
 					<span
 						class="ml-auto shrink-0 font-sans text-xs {saveStatus === 'error'
-							? 'text-red-500'
+							? 'text-danger'
 							: saveStatus === 'saved'
-								? 'text-green-600'
-								: 'text-ink-faint dark:text-dark-ink-faint'}"
+								? 'text-success'
+								: 'text-ink-faint'}"
 					>
 						{saveStatusLabel()}
 					</span>
 				{/if}
+
+				<!-- Focus mode: hide the app chrome and the toolbar (Ctrl+. or Esc to leave) -->
+				<button
+					type="button"
+					onclick={() => (focusMode.on = !focusMode.on)}
+					aria-pressed={focusMode.on}
+					title={focusMode.on ? 'Leave focus mode (Esc)' : 'Focus mode (Ctrl+.)'}
+					class="{saveStatusLabel()
+						? ''
+						: 'ml-auto'} flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
+				>
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						{#if focusMode.on}
+							<path
+								d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"
+								stroke="currentColor"
+								stroke-width="1.75"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						{:else}
+							<path
+								d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"
+								stroke="currentColor"
+								stroke-width="1.75"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						{/if}
+					</svg>
+					{focusMode.on ? 'Leave focus' : 'Focus'}
+				</button>
 			</div>
 
-			<!-- Row 2: toolbar -->
-			<div data-tutorial="doc-toolbar" class="flex items-center gap-2 overflow-x-auto px-4 py-2">
-				<!-- Reclaim writer (Delegate moved to project doc list) -->
-				{#if reclaimCap.kind === 'available'}
-					<button
-						onclick={() => handleSetWriter(null)}
-						disabled={delegating}
-						title="Reclaim write access from {currentWriterName ?? currentWriterUserId}"
-						class="flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 font-sans text-sm text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-40 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
-					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<polyline points="1 4 1 10 7 10" />
-							<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-						</svg>
-						Reclaim
-					</button>
-				{/if}
-
-				<!-- Release writer (downgraded writer yields their slot back to project owner) -->
-				{#if releaseWriterCap.kind === 'available'}
-					<button
-						onclick={() => handleSetWriter(null)}
-						disabled={delegating}
-						title="Release write access — the project owner will regain control"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-							<polyline points="16 17 21 12 16 7" />
-							<line x1="21" y1="12" x2="9" y2="12" />
-						</svg>
-						Release writer
-					</button>
-				{/if}
-
-				{#if !data.document.isReadonly}
-					<button
-						onclick={doSaveDraft}
-						disabled={!isDirty || !canTriggerSave(saveCap) || newerVersion?.type === 'draft'}
-						title={newerVersion?.type === 'draft'
-							? 'Resuelve el conflicto de borrador antes de guardar'
-							: saveCap.kind === 'queued'
-								? saveCap.hint
-								: saveCap.kind === 'blocked'
-									? saveCap.reason
-									: undefined}
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-							<polyline points="17 21 17 13 7 13 7 21" />
-							<polyline points="7 3 7 8 15 8" />
-						</svg>
-						{saveCap.kind === 'saving'
-							? 'Saving…'
-							: saveCap.kind === 'queued'
-								? 'Save offline'
-								: 'Save'}
-					</button>
-				{/if}
-
-				<!-- View mode selector -->
-				{#if canWrite && !data.forcePublished}
-					<div
-						class="flex overflow-hidden rounded-md border border-paper-border dark:border-dark-paper-border"
-						role="group"
-						aria-label="View mode"
-					>
+			{#if !focusMode.on}
+				<!-- Row 2: toolbar -->
+				<div data-tutorial="doc-toolbar" class="flex items-center gap-2 overflow-x-auto px-4 py-2">
+					<!-- Reclaim writer (Delegate moved to project doc list) -->
+					{#if reclaimCap.kind === 'available'}
 						<button
-							onclick={() => setViewMode('editor')}
-							title="Editor only"
-							class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'editor'}
+							onclick={() => handleSetWriter(null)}
+							disabled={delegating}
+							title="Reclaim write access from {currentWriterName ?? currentWriterUserId}"
+							class="flex items-center gap-1.5 rounded-md border border-warning-border bg-warning-bg px-3 py-1.5 font-sans text-sm text-warning transition-colors hover:bg-warning-bg disabled:opacity-40"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M4 6h16M4 10h10M4 14h12M4 18h8"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-								/>
-							</svg>
-						</button>
-						<button
-							onclick={() => setViewMode('split')}
-							title="Editor and preview"
-							class="border-x border-paper-border px-2.5 py-1.5 transition-colors dark:border-dark-paper-border {viewMode ===
-							'split'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'split'}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<rect
-									x="2"
-									y="3"
-									width="9"
-									height="18"
-									rx="1"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-								<rect
-									x="13"
-									y="3"
-									width="9"
-									height="18"
-									rx="1"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-							</svg>
-						</button>
-						<button
-							onclick={() => setViewMode('preview')}
-							title="Preview only"
-							class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
-								? 'bg-accent text-white'
-								: 'text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-							aria-pressed={viewMode === 'preview'}
-						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"
-									stroke="currentColor"
-									stroke-width="1.5"
-								/>
-								<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5" />
-							</svg>
-						</button>
-					</div>
-				{/if}
-
-				{#if data.document.type === 'book'}
-					<a
-						href={resolve(
-							`/projects/${data.document.projectId}/documents/${data.document.id}/read`
-						)}
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-							<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-						</svg>
-						Read
-					</a>
-				{/if}
-
-				<!-- Insert diagram -->
-				{#if !data.document.isReadonly && data.document.type !== 'diagram' && data.projectDocs.some((d) => d.type === 'diagram')}
-					<button
-						type="button"
-						onclick={() => (showDiagramPicker = true)}
-						title="Insert an embedded diagram"
-						class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-					>
-						<svg
-							width="14"
-							height="14"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<rect x="3" y="3" width="7" height="7" rx="1" />
-							<rect x="14" y="14" width="7" height="7" rx="1" />
-							<path d="M10 6.5h4a3.5 3.5 0 0 1 3.5 3.5v4" />
-						</svg>
-						Diagram
-					</button>
-				{/if}
-
-				<!-- AI buttons or CTA -->
-				{#if aiCtaType === 'ok'}
-					<!-- Chat assistant button -->
-					<button
-						type="button"
-						onclick={toggleChat}
-						title="Chat with the assistant about this document"
-						class="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-sans text-sm font-medium transition-colors {showChat
-							? 'bg-accent/20 text-accent hover:bg-accent/30 dark:bg-accent/30 dark:hover:bg-accent/40'
-							: 'bg-accent/10 text-accent hover:bg-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'}"
-					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+							<svg
+								width="13"
+								height="13"
+								viewBox="0 0 24 24"
+								fill="none"
 								stroke="currentColor"
 								stroke-width="1.5"
 								stroke-linecap="round"
 								stroke-linejoin="round"
-							/>
-						</svg>
-						Assistant
-					</button>
-
-					<!-- Review button -->
-					{#if !data.document.isReadonly}
-						<button
-							type="button"
-							onclick={toggleReview}
-							title="Review document against project requirements"
-							class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showReview
-								? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
-								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-						>
-							<span class="flex items-center gap-1.5">
-								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M9 11l3 3L22 4"
-										stroke="currentColor"
-										stroke-width="1.5"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-									<path
-										d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
-										stroke="currentColor"
-										stroke-width="1.5"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
-								Review
-							</span>
-							{#if taskModel('review')}
-								<span class="text-[10px] opacity-50">{taskModel('review')}</span>
-							{/if}
+								aria-hidden="true"
+							>
+								<polyline points="1 4 1 10 7 10" />
+								<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+							</svg>
+							Reclaim
 						</button>
 					{/if}
 
-					<!-- Draft assistant button -->
-					{#if !data.document.isReadonly && viewMode !== 'preview'}
+					<!-- Release writer (downgraded writer yields their slot back to project owner) -->
+					{#if releaseWriterCap.kind === 'available'}
 						<button
-							type="button"
-							onclick={toggleDraft}
-							title="Draft assistant — generate text from your project context"
-							class="flex flex-col items-center rounded-md border px-3 py-1 font-sans text-sm transition-colors {showDraft
-								? 'border-accent bg-accent/10 text-accent dark:border-accent dark:text-accent'
-								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							onclick={() => handleSetWriter(null)}
+							disabled={delegating}
+							title="Release write access — the project owner will regain control"
+							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 						>
-							<span class="flex items-center gap-1.5">
-								<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M12 19l7-7 3 3-7 7-3-3z"
-										stroke="currentColor"
-										stroke-width="1.5"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-									<path
-										d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"
-										stroke="currentColor"
-										stroke-width="1.5"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
-								Draft
-							</span>
-							{#if taskModel('draft')}
-								<span class="text-[10px] opacity-50">{taskModel('draft')}</span>
-							{/if}
+							<svg
+								width="13"
+								height="13"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+								<polyline points="16 17 21 12 16 7" />
+								<line x1="21" y1="12" x2="9" y2="12" />
+							</svg>
+							Release writer
 						</button>
 					{/if}
 
-					<!-- Enrich button -->
 					{#if !data.document.isReadonly}
 						<button
-							type="button"
-							onclick={toggleEnrich}
-							title="Find untagged persons and informal citations"
-							class="flex flex-col items-center rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showEnrich
-								? 'border-accent/40 bg-accent/5 text-accent dark:border-accent/30'
-								: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+							onclick={doSaveDraft}
+							disabled={!isDirty || !canTriggerSave(saveCap) || newerVersion?.type === 'draft'}
+							title={newerVersion?.type === 'draft'
+								? 'Resolve the draft conflict before saving'
+								: saveCap.kind === 'queued'
+									? saveCap.hint
+									: saveCap.kind === 'blocked'
+										? saveCap.reason
+										: undefined}
+							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 						>
-							<span class="flex items-center gap-1.5">
+							<svg
+								width="13"
+								height="13"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+								<polyline points="17 21 17 13 7 13 7 21" />
+								<polyline points="7 3 7 8 15 8" />
+							</svg>
+							{saveCap.kind === 'saving'
+								? 'Saving…'
+								: saveCap.kind === 'queued'
+									? 'Save offline'
+									: 'Save'}
+						</button>
+					{/if}
+
+					<span class="mx-1 h-5 w-px shrink-0 bg-paper-border" aria-hidden="true"></span>
+					<!-- View mode selector -->
+					{#if canWrite && !data.forcePublished}
+						<div
+							class="flex overflow-hidden rounded-md border border-paper-border"
+							role="group"
+							aria-label="View mode"
+						>
+							<button
+								onclick={() => setViewMode('editor')}
+								title="Editor only"
+								class="px-2.5 py-1.5 transition-colors {viewMode === 'editor'
+									? 'bg-accent text-white'
+									: 'text-ink-muted hover:bg-paper-ui'}"
+								aria-pressed={viewMode === 'editor'}
+							>
 								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5" />
 									<path
-										d="M21 21l-4.35-4.35M11 8v6M8 11h6"
+										d="M4 6h16M4 10h10M4 14h12M4 18h8"
 										stroke="currentColor"
 										stroke-width="1.5"
 										stroke-linecap="round"
 									/>
 								</svg>
-								Enrich
-							</span>
+							</button>
+							<button
+								onclick={() => setViewMode('split')}
+								title="Editor and preview"
+								class="border-x border-paper-border px-2.5 py-1.5 transition-colors {viewMode ===
+								'split'
+									? 'bg-accent text-white'
+									: 'text-ink-muted hover:bg-paper-ui'}"
+								aria-pressed={viewMode === 'split'}
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<rect
+										x="2"
+										y="3"
+										width="9"
+										height="18"
+										rx="1"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
+									<rect
+										x="13"
+										y="3"
+										width="9"
+										height="18"
+										rx="1"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
+								</svg>
+							</button>
+							<button
+								onclick={() => setViewMode('preview')}
+								title="Preview only"
+								class="px-2.5 py-1.5 transition-colors {viewMode === 'preview'
+									? 'bg-accent text-white'
+									: 'text-ink-muted hover:bg-paper-ui'}"
+								aria-pressed={viewMode === 'preview'}
+							>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+									<path
+										d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"
+										stroke="currentColor"
+										stroke-width="1.5"
+									/>
+									<circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5" />
+								</svg>
+							</button>
+						</div>
+					{/if}
+
+					{#if data.document.type === 'book'}
+						<a
+							href={resolve(
+								`/projects/${data.document.projectId}/documents/${data.document.id}/read`
+							)}
+							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
+						>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+								<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+							</svg>
+							Read
+						</a>
+					{/if}
+
+					<!-- Insert and cite -->
+					<span class="mx-1 h-5 w-px shrink-0 bg-paper-border" aria-hidden="true"></span>
+					<!-- Insert diagram -->
+					{#if !data.document.isReadonly && data.document.type !== 'diagram' && data.projectDocs.some((d) => d.type === 'diagram')}
+						<button
+							type="button"
+							onclick={() => (showDiagramPicker = true)}
+							title="Insert an embedded diagram"
+							class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
+						>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<rect x="3" y="3" width="7" height="7" rx="1" />
+								<rect x="14" y="14" width="7" height="7" rx="1" />
+								<path d="M10 6.5h4a3.5 3.5 0 0 1 3.5 3.5v4" />
+							</svg>
+							Diagram
 						</button>
 					{/if}
-				{:else if aiCtaType === 'personal'}
-					<a
-						href={resolve('/settings?tab=ai')}
-						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
-					>
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linejoin="round"
-							/>
-						</svg>
-						Configure AI
-					</a>
-				{:else if aiCtaType === 'org-owner'}
-					<a
-						href={resolve('/settings?tab=organizations')}
-						class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent/5"
-					>
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linejoin="round"
-							/>
-						</svg>
-						Configure org AI
-					</a>
-				{:else}
-					<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						AI not configured · contact your org owner
-					</span>
-				{/if}
 
-				<!-- Citation style selector (all modes) -->
-				<button
-					onclick={(e) => {
-						e.stopPropagation();
-						const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-						citeStyleMenuPos = { top: rect.bottom + 4, left: rect.left };
-						showCiteStyleMenu = !showCiteStyleMenu;
-					}}
-					title="Citation style — controls how @citeKey references render in preview"
-					class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-				>
-					{CITATION_STYLE_LABELS[citationStyle]}
-					<svg
-						width="10"
-						height="10"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2.5"
-						aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg
-					>
-				</button>
-
-				<button
-					onclick={toggleComments}
-					title="Toggle comment threads panel"
-					class="relative flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showComments
-						? 'border-amber-400 bg-amber-400/10 text-amber-700 dark:text-amber-300'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-				>
-					<svg
-						width="13"
-						height="13"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-						<line x1="8" y1="9" x2="16" y2="9" />
-						<line x1="8" y1="13" x2="13" y2="13" />
-					</svg>
-					Comments
-					{#if openCommentsCount > 0}
-						<span
-							class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 font-sans text-xs font-semibold text-white"
+					<!-- AI: the assistant panels live in the side rail; here only the set-up prompts -->
+					{#if aiCtaType === 'personal'}
+						<a
+							href={resolve('/settings?tab=ai')}
+							class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:border-accent hover:bg-accent/5"
 						>
-							{openCommentsCount}
+							<Star size={12} strokeWidth={1.75} aria-hidden="true" />
+							Configure AI
+						</a>
+					{:else if aiCtaType === 'org-owner'}
+						<a
+							href={resolve('/settings?tab=organizations')}
+							class="flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-3 py-1.5 font-sans text-xs font-medium text-accent-ink transition-colors hover:border-accent hover:bg-accent/5"
+						>
+							<Star size={12} strokeWidth={1.75} aria-hidden="true" />
+							Configure org AI
+						</a>
+					{:else if aiCtaType !== 'ok'}
+						<span class="font-sans text-xs text-ink-faint">
+							AI not configured · contact your org owner
 						</span>
 					{/if}
-				</button>
 
-				{#if viewMode !== 'preview'}
-					<button
-						onclick={toggleBib}
-						title="Bibliography panel — insert citations from your project references"
-						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showBib
-							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-							<path d="M6.5 2H20v20l-7-4-7 4V2z" />
-						</svg>
-						Bib
-					</button>
-				{/if}
-
-				<button
-					onclick={() => (showAnnotations = !showAnnotations)}
-					title="Toggle subnotes panel"
-					class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showAnnotations
-						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-				>
-					<svg
-						width="13"
-						height="13"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-						<polyline points="14 2 14 8 20 8" />
-						<line x1="16" y1="13" x2="8" y2="13" />
-						<line x1="16" y1="17" x2="8" y2="17" />
-					</svg>
-					Subnotes
-				</button>
-
-				<a
-					href={resolve(
-						`/projects/${data.document.projectId}/documents/${data.document.id}/history`
-					)}
-					title="Version history — browse and restore past committed versions"
-					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-				>
-					<svg
-						width="13"
-						height="13"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<circle cx="12" cy="12" r="10" />
-						<polyline points="12 6 12 12 16 14" />
-					</svg>
-					History
-				</a>
-
-				{#if stashContent !== null}
-					<button
-						type="button"
-						onclick={() => (showStash = !showStash)}
-						title="Stash — contenido descartado al resolver un conflicto de borrador"
-						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showStash
-							? 'border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-300'
-							: 'border-amber-300 text-amber-600 hover:bg-amber-50 dark:border-amber-700/50 dark:text-amber-400 dark:hover:bg-amber-900/20'}"
-					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<polygon points="12 2 2 7 12 12 22 7 12 2" />
-							<polyline points="2 17 12 22 22 17" />
-							<polyline points="2 12 12 17 22 12" />
-						</svg>
-						Stash
-					</button>
-				{/if}
-
-				<a
-					href={resolve('/help')}
-					target="_blank"
-					rel="noopener noreferrer"
-					title="Syntax guide"
-					class="flex h-7 w-7 items-center justify-center rounded-full border border-paper-border font-sans text-sm text-ink-faint transition-colors hover:border-ink-muted hover:text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-dark-ink-muted dark:hover:text-dark-ink-muted"
-				>
-					?
-				</a>
-
-				{#if !data.document.isReadonly}
-					<!-- Spell / Grammar dropdown -->
+					<!-- Citation style selector (all modes) -->
 					<button
 						onclick={(e) => {
 							e.stopPropagation();
 							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-							spellMenuPos = { top: rect.bottom + 4, left: rect.left };
-							showSpellMenu = !showSpellMenu;
+							citeStyleMenuPos = { top: rect.bottom + 4, left: rect.left };
+							showCiteStyleMenu = !showCiteStyleMenu;
 						}}
-						title="Spell check and grammar"
-						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {showSpellPanel ||
-						showGrammarPanel
-							? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
-							: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
+						title="Citation style — how [[@key]] citations render in the preview"
+						class="flex items-center gap-1 rounded-md border border-paper-border px-2.5 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 					>
-						<svg
-							width="13"
-							height="13"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<polyline points="4 7 4 4 20 4 20 7" />
-							<line x1="9" y1="20" x2="15" y2="20" />
-							<line x1="12" y1="4" x2="12" y2="20" />
-						</svg>
-						Spell
+						{CITATION_STYLE_LABELS[citationStyle]}
 						<svg
 							width="10"
 							height="10"
@@ -2081,169 +1895,196 @@
 							aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg
 						>
 					</button>
-				{/if}
 
-				<!-- Text find button (Ctrl+F) -->
-				<button
-					onclick={() => {
-						searchTab = 'text';
-						showSearch = true;
-					}}
-					title="Find in document (Ctrl+F)"
-					aria-pressed={showSearch && searchTab === 'text'}
-					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showSearch &&
-					searchTab === 'text'
-						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-				>
-					<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path
-							fill-rule="evenodd"
-							d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-				</button>
-
-				<!-- Semantic search button (Ctrl+Shift+F) -->
-				<button
-					onclick={() => {
-						searchTab = 'semantic';
-						showSearch = true;
-					}}
-					title="Semantic search (Ctrl+Shift+F)"
-					aria-pressed={showSearch && searchTab === 'semantic'}
-					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showSearch &&
-					searchTab === 'semantic'
-						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-				>
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-						<path
-							d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
-						/>
-					</svg>
-				</button>
-
-				<!-- Syntax reference (Ctrl+/) -->
-				<button
-					onclick={() => (showCheatsheet = !showCheatsheet)}
-					title="Syntax reference (Ctrl+/)"
-					aria-pressed={showCheatsheet}
-					class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showCheatsheet
-						? 'border-accent bg-accent/10 text-accent dark:bg-accent/20'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.75"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<circle cx="12" cy="12" r="10" />
-						<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-						<path d="M12 17h.01" />
-					</svg>
-				</button>
-
-				<!-- Export dropdown trigger only — menu rendered at root level to escape backdrop-filter -->
-				<button
-					onclick={(e) => {
-						const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-						exportMenuPos = { top: rect.bottom + 4, left: rect.left };
-						showExport = !showExport;
-					}}
-					title="Export document — PDF, DOCX, Markdown, and more"
-					class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
-				>
-					Export
-					<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-						<path
-							d="M2 3.5l3 3 3-3"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-				</button>
-
-				<button
-					onclick={togglePublic}
-					title={isPublic
-						? 'Public document — visible to everyone as AI context. Click to make private.'
-						: 'Private document. Click to make public.'}
-					class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {isPublic
-						? 'border-green-400/60 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-500/40 dark:bg-green-950/30 dark:text-green-400'
-						: 'border-paper-border text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui'}"
-				>
-					{#if isPublic}
-						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
-							<path
-								d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"
+					<!-- Check and find -->
+					<span class="mx-1 h-5 w-px shrink-0 bg-paper-border" aria-hidden="true"></span>
+					{#if !data.document.isReadonly}
+						<!-- Spell / Grammar dropdown -->
+						<button
+							onclick={(e) => {
+								e.stopPropagation();
+								const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+								spellMenuPos = { top: rect.bottom + 4, left: rect.left };
+								showSpellMenu = !showSpellMenu;
+							}}
+							title="Spell check and grammar"
+							class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {activePanel ===
+								'spell' || activePanel === 'grammar'
+								? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
+								: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
+						>
+							<svg
+								width="13"
+								height="13"
+								viewBox="0 0 24 24"
+								fill="none"
 								stroke="currentColor"
 								stroke-width="1.5"
 								stroke-linecap="round"
-							/>
-						</svg>
-						Public
-					{:else}
-						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<rect
-								x="3"
-								y="11"
-								width="18"
-								height="11"
-								rx="2"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<polyline points="4 7 4 4 20 4 20 7" />
+								<line x1="9" y1="20" x2="15" y2="20" />
+								<line x1="12" y1="4" x2="12" y2="20" />
+							</svg>
+							Spell
+							<svg
+								width="10"
+								height="10"
+								viewBox="0 0 24 24"
+								fill="none"
 								stroke="currentColor"
-								stroke-width="1.5"
-							/>
-							<path
-								d="M7 11V7a5 5 0 0110 0v4"
-								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-							/>
-						</svg>
-						Private
+								stroke-width="2.5"
+								aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg
+							>
+						</button>
 					{/if}
-				</button>
 
-				{#if !data.document.isReadonly}
+					<!-- Search (text and semantic tabs in one overlay) -->
 					<button
-						onclick={() => (showCommit = true)}
-						disabled={!canTriggerCommit(commitCap)}
-						title={commitCap.kind === 'blocked'
-							? commitCap.reason
-							: 'Commit — save a named version and update the project timeline'}
-						class="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+						onclick={() => {
+							searchTab = 'text';
+							showSearch = true;
+						}}
+						title="Search — in this document (Ctrl+F) or by meaning across the project (Ctrl+Shift+F)"
+						aria-label="Search"
+						aria-pressed={showSearch}
+						class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showSearch
+							? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
+					>
+						<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path
+								fill-rule="evenodd"
+								d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</button>
+
+					<!-- Syntax reference (Ctrl+/) -->
+					<button
+						onclick={() => (showCheatsheet = !showCheatsheet)}
+						title="Syntax reference (Ctrl+/)"
+						aria-pressed={showCheatsheet}
+						class="flex items-center justify-center rounded-md border px-2.5 py-1.5 transition-colors {showCheatsheet
+							? 'border-accent bg-accent/10 text-accent-ink dark:bg-accent/20'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
 					>
 						<svg
-							width="13"
-							height="13"
+							width="14"
+							height="14"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
-							stroke-width="1.5"
+							stroke-width="1.75"
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							aria-hidden="true"
 						>
-							<path
-								d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
-							/>
-							<line x1="7" y1="7" x2="7.01" y2="7" />
+							<circle cx="12" cy="12" r="10" />
+							<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+							<path d="M12 17h.01" />
 						</svg>
-						Commit
 					</button>
-				{/if}
-			</div>
+
+					<!-- Share and save, kept to the right -->
+					<div class="ml-auto" aria-hidden="true"></div>
+					<!-- Export dropdown trigger only — menu rendered at root level to escape backdrop-filter -->
+					<button
+						onclick={(e) => {
+							const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+							exportMenuPos = { top: rect.bottom + 4, left: rect.left };
+							showExport = !showExport;
+						}}
+						title="Export — PDF, LaTeX (.tex) or Typst (.typ)"
+						class="flex items-center gap-1 rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
+					>
+						Export
+						<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+							<path
+								d="M2 3.5l3 3 3-3"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					</button>
+
+					<button
+						onclick={togglePublic}
+						title={isPublic
+							? 'Public document — visible to everyone as AI context. Click to make private.'
+							: 'Private document. Click to make public.'}
+						class="flex items-center gap-1.5 rounded-md border px-3 py-1.5 font-sans text-sm transition-colors {isPublic
+							? 'border-green-400/60 bg-success-bg text-success hover:bg-success-bg dark:border-green-500/40 dark:text-green-400'
+							: 'border-paper-border text-ink-muted hover:bg-paper-ui'}"
+					>
+						{#if isPublic}
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
+								<path
+									d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+							Public
+						{:else}
+							<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<rect
+									x="3"
+									y="11"
+									width="18"
+									height="11"
+									rx="2"
+									stroke="currentColor"
+									stroke-width="1.5"
+								/>
+								<path
+									d="M7 11V7a5 5 0 0110 0v4"
+									stroke="currentColor"
+									stroke-width="1.5"
+									stroke-linecap="round"
+								/>
+							</svg>
+							Private
+						{/if}
+					</button>
+
+					{#if !data.document.isReadonly}
+						<button
+							onclick={() => (showCommit = true)}
+							disabled={!canTriggerCommit(commitCap)}
+							title={commitCap.kind === 'blocked'
+								? commitCap.reason
+								: 'Save version — keep a named snapshot of this document in its history'}
+							class="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+						>
+							<svg
+								width="13"
+								height="13"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path
+									d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+								/>
+								<line x1="7" y1="7" x2="7.01" y2="7" />
+							</svg>
+							Save version
+						</button>
+					{/if}
+				</div>
+			{/if}
 
 			{#if newerVersion !== null}
 				<NewVersionBanner
@@ -2262,23 +2103,14 @@
 			<div class="mb-6">
 				{#if sourceRefCitation}
 					<div
-						class="mb-1 flex items-start gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+						class="mb-1 flex items-start gap-2 rounded border border-paper-border bg-paper-ui px-3 py-2"
 					>
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
+						<Link
+							size={12}
+							strokeWidth={1.75}
 							class="text-ink-light dark:text-dark-ink-light mt-0.5 shrink-0"
 							aria-hidden="true"
-						>
-							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-						</svg>
+						/>
 						<p
 							class="text-ink-light dark:text-dark-ink-light min-w-0 flex-1 font-sans text-xs leading-relaxed"
 							translate="no"
@@ -2296,7 +2128,7 @@
 									titlePickerSearch = sourceReference?.citeKey ?? '';
 									showTitleRefPicker = true;
 								}}
-								class="rounded p-1 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+								class="rounded p-1 text-ink-faint transition-colors hover:text-ink"
 							>
 								<svg
 									width="12"
@@ -2317,7 +2149,7 @@
 								type="button"
 								title="Unlink reference"
 								onclick={handleTitleRefUnlink}
-								class="rounded p-1 text-ink-faint transition-colors hover:text-red-500 dark:text-dark-ink-faint dark:hover:text-red-400"
+								class="rounded p-1 text-ink-faint transition-colors hover:text-danger"
 							>
 								<svg
 									width="12"
@@ -2353,36 +2185,21 @@
 							titlePickerSearch = '';
 							showTitleRefPicker = true;
 						}}
-						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:border-accent dark:hover:text-accent"
+						class="mb-1 flex items-center gap-1.5 rounded border border-dashed border-paper-border px-3 py-1.5 font-sans text-xs text-ink-faint transition-colors hover:border-accent hover:text-accent-ink dark:hover:border-accent dark:hover:text-accent-ink"
 					>
-						<svg
-							width="11"
-							height="11"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-						</svg>
+						<Link size={11} strokeWidth={1.75} aria-hidden="true" />
 						Link bibliographic reference
 					</button>
 				{/if}
 				{#if showTitleRefPicker}
 					<div class="relative mb-3">
-						<div
-							class="flex items-center gap-2 rounded border border-accent bg-paper-ui px-3 py-2 dark:bg-dark-paper-ui"
-						>
+						<div class="flex items-center gap-2 rounded border border-accent bg-paper-ui px-3 py-2">
 							<input
 								{@attach (node) => node.focus()}
 								type="text"
 								bind:value={titlePickerSearch}
 								placeholder="Search by citeKey, title or author…"
-								class="min-w-0 flex-1 bg-transparent font-sans text-xs text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+								class="min-w-0 flex-1 bg-transparent font-sans text-xs text-ink placeholder:text-ink-faint focus:outline-none"
 								onkeydown={(e) => {
 									if (e.key === 'Escape') {
 										showTitleRefPicker = false;
@@ -2405,27 +2222,14 @@
 									titlePickerRefId = '';
 								}}
 								aria-label="Cancel"
-								class="shrink-0 text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+								class="shrink-0 text-ink-faint transition-colors hover:text-ink"
 							>
-								<svg
-									width="12"
-									height="12"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									aria-hidden="true"
-								>
-									<line x1="18" y1="6" x2="6" y2="18" />
-									<line x1="6" y1="6" x2="18" y2="18" />
-								</svg>
+								<X size={12} strokeWidth={1.75} aria-hidden="true" />
 							</button>
 						</div>
 						{#if filteredTitleRefs.length > 0}
 							<ul
-								class="absolute top-full right-0 left-0 z-20 max-h-56 overflow-y-auto rounded-b border border-t-0 border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+								class="absolute top-full right-0 left-0 z-20 max-h-56 overflow-y-auto rounded-b border border-t-0 border-paper-border bg-paper shadow-lg"
 							>
 								{#each filteredTitleRefs as ref (ref.id ?? ref.citeKey)}
 									<li>
@@ -2435,18 +2239,14 @@
 												titlePickerRefId = ref.id ?? '';
 												handleTitleRefAssign();
 											}}
-											class="flex w-full items-baseline gap-2 px-3 py-2 text-left hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+											class="flex w-full items-baseline gap-2 px-3 py-2 text-left hover:bg-paper-ui"
 										>
-											<span class="shrink-0 font-mono text-[11px] font-medium text-accent"
+											<span class="shrink-0 font-mono text-[11px] font-medium text-accent-ink"
 												>@{ref.citeKey}</span
 											>
-											<span class="min-w-0 truncate font-sans text-xs text-ink dark:text-dark-ink"
-												>{ref.title}</span
-											>
+											<span class="min-w-0 truncate font-sans text-xs text-ink">{ref.title}</span>
 											{#if ref.year}
-												<span
-													class="shrink-0 font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
-													>{ref.year}</span
+												<span class="shrink-0 font-sans text-[11px] text-ink-faint">{ref.year}</span
 												>
 											{/if}
 										</button>
@@ -2455,7 +2255,7 @@
 							</ul>
 						{:else if titlePickerSearch.trim()}
 							<div
-								class="absolute top-full right-0 left-0 z-20 rounded-b border border-t-0 border-paper-border bg-paper px-3 py-2 font-sans text-xs text-ink-faint shadow-lg dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-faint"
+								class="absolute top-full right-0 left-0 z-20 rounded-b border border-t-0 border-paper-border bg-paper px-3 py-2 font-sans text-xs text-ink-faint shadow-lg"
 							>
 								No results
 							</div>
@@ -2469,10 +2269,10 @@
 						bind:value={docTitle}
 						onblur={commitTitle}
 						onkeydown={onTitleKeydown}
-						class="w-full border-none bg-transparent font-serif text-3xl font-semibold text-ink outline-none dark:text-dark-ink"
+						class="w-full border-none bg-transparent font-serif text-3xl font-semibold text-ink outline-none"
 					/>
 					{#if titleError}
-						<p class="mt-1 font-sans text-xs text-red-500">{titleError}</p>
+						<p class="mt-1 font-sans text-xs text-danger">{titleError}</p>
 					{/if}
 				{:else}
 					<button
@@ -2480,14 +2280,14 @@
 						translate="no"
 						onclick={startEditTitle}
 						aria-label="Edit document title"
-						class="cursor-text text-left font-serif text-3xl font-semibold text-ink dark:text-dark-ink"
+						class="cursor-text text-left font-serif text-3xl font-semibold text-ink"
 					>
 						{docTitle}
 					</button>
 				{/if}
 				{#if data.document?.generatedByAi}
 					<div
-						class="mt-2 inline-flex items-center gap-1.5 rounded border border-paper-border px-2 py-1 dark:border-dark-paper-border"
+						class="mt-2 inline-flex items-center gap-1.5 rounded border border-paper-border px-2 py-1"
 					>
 						<svg
 							width="11"
@@ -2495,7 +2295,7 @@
 							viewBox="0 0 24 24"
 							fill="none"
 							aria-hidden="true"
-							class="text-ink-faint dark:text-dark-ink-faint"
+							class="text-ink-faint"
 						>
 							<path
 								d="M12 2L9.5 9.5L2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5L12 2z"
@@ -2504,9 +2304,7 @@
 								stroke-linejoin="round"
 							/>
 						</svg>
-						<span class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
-							>Generated by AI</span
-						>
+						<span class="font-sans text-[10px] text-ink-faint">Generated by AI</span>
 					</div>
 				{/if}
 			</div>
@@ -2516,7 +2314,7 @@
 		<div data-tutorial="doc-editor-area" class="flex min-h-0 flex-1 overflow-hidden">
 			{#if data.document.type === 'diagram'}
 				<div class="relative flex flex-1 flex-col overflow-hidden">
-					<div class="border-b border-paper-border px-6 pt-10 pb-4 dark:border-dark-paper-border">
+					<div class="border-b border-paper-border px-6 pt-10 pb-4">
 						<div class="mx-auto w-full max-w-4xl">
 							{@render editableTitle()}
 						</div>
@@ -2530,15 +2328,13 @@
 			{:else if viewMode === 'split'}
 				<!-- Split: editor left, preview right -->
 				<div class="relative flex flex-1 flex-col overflow-hidden">
-					<div class="border-b border-paper-border px-6 pt-10 pb-4 dark:border-dark-paper-border">
+					<div class="border-b border-paper-border px-6 pt-10 pb-4">
 						<div class="mx-auto w-full max-w-4xl">
 							{@render editableTitle()}
 						</div>
 					</div>
 					<div class="flex flex-1 overflow-hidden">
-						<div
-							class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-6 dark:border-dark-paper-border"
-						>
+						<div class="flex-1 overflow-y-auto border-r border-paper-border px-6 py-6">
 							<div class="mx-auto w-full max-w-2xl">
 								<MarkdownEditor
 									bind:this={editorEl}
@@ -2592,7 +2388,7 @@
 						{@render editableTitle()}
 						{#if viewMode === 'preview'}
 							{#if data.document?.lastCommit}
-								<p class="-mt-4 mb-6 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+								<p class="-mt-4 mb-6 font-sans text-xs text-ink-faint">
 									{#if data.document.lastCommit.committerName}
 										{data.document.lastCommit.committerName} ·
 									{/if}
@@ -2604,8 +2400,8 @@
 								</p>
 							{/if}
 							{#if data.unpublished}
-								<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-									El autor aún no ha publicado este documento.
+								<p class="font-sans text-sm text-ink-faint">
+									The author hasn't published this document yet.
 								</p>
 							{:else}
 								<MarkdownPreview
@@ -2663,8 +2459,7 @@
 				bind:showNewComment
 				bind:showSubnote
 				bind:showReviewTypeMenu
-				bind:showComments
-				bind:showHistory
+				onopencomments={() => (activePanel = 'comments')}
 				bind:selectionReview
 				bind:authorPopover
 				bind:headingTooltip
@@ -2695,7 +2490,7 @@
 				}}
 			/>
 			<!-- Comments sidebar -->
-			{#if showComments}
+			{#if activePanel === 'comments'}
 				<CommentsPanel
 					comments={inlineComments}
 					activeCommentId={currentCommentId}
@@ -2713,7 +2508,7 @@
 			{/if}
 
 			<!-- Annotations panel (subnotes) -->
-			{#if showAnnotations}
+			{#if activePanel === 'annotations'}
 				<AnnotationsPanel
 					subnotes={docSubnotes}
 					{sourceReference}
@@ -2743,7 +2538,7 @@
 			{/if}
 
 			<!-- Bibliography panel -->
-			{#if showBib && viewMode !== 'preview'}
+			{#if activePanel === 'bib' && viewMode !== 'preview'}
 				<BibliographyPanel
 					refs={projectRefs}
 					activeKey={activeBibCiteKey}
@@ -2754,45 +2549,26 @@
 			{/if}
 
 			<!-- Backlinks panel -->
-			{#if backlinks.length > 0}
+			{#if activePanel === 'backlinks' && backlinks.length > 0}
 				<div
-					class="flex w-56 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
+					class="flex w-56 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper"
 				>
-					<div class="border-b border-paper-border px-4 py-3 dark:border-dark-paper-border">
-						<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">
-							Mencionado en
-						</h3>
+					<div class="border-b border-paper-border px-4 py-3">
+						<h3 class="font-serif text-sm font-semibold text-ink">Mentioned in</h3>
 					</div>
 					<div class="flex-1 overflow-y-auto p-2">
 						{#each backlinks as link (link.id)}
 							<a
 								href={resolve(`/projects/${data.document.projectId}/documents/${link.id}`)}
-								class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+								class="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-paper-ui"
 							>
-								<svg
-									width="12"
-									height="12"
-									viewBox="0 0 24 24"
-									fill="none"
-									class="shrink-0 text-accent"
+								<Link
+									size={12}
+									strokeWidth={1.75}
+									class="shrink-0 text-accent-ink"
 									aria-hidden="true"
-								>
-									<path
-										d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-									/>
-									<path
-										d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-									/>
-								</svg>
-								<span class="truncate font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-									>{link.title}</span
-								>
+								/>
+								<span class="truncate font-sans text-xs text-ink-muted">{link.title}</span>
 							</a>
 						{/each}
 					</div>
@@ -2800,10 +2576,8 @@
 			{/if}
 
 			<!-- Spell check sidebar -->
-			{#if showSpellPanel}
-				<div
-					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
-				>
+			{#if activePanel === 'spell'}
+				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border">
 					<SpellCheckPanel
 						bind:corrections={spellCorrections}
 						loading={spellLoading}
@@ -2811,7 +2585,7 @@
 						onaccept={applySpellCorrection}
 						onignore={ignoreSpellWord}
 						onclose={() => {
-							showSpellPanel = false;
+							closePanel('spell');
 							spellCorrections = [];
 							editorEl?.clearSpellHover();
 						}}
@@ -2822,10 +2596,8 @@
 			{/if}
 
 			<!-- Grammar assistant sidebar -->
-			{#if showGrammarPanel}
-				<div
-					class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
-				>
+			{#if activePanel === 'grammar'}
+				<div class="flex w-72 shrink-0 flex-col overflow-hidden border-l border-paper-border">
 					<SpellCheckPanel
 						bind:corrections={grammarCorrections}
 						loading={grammarLoading}
@@ -2834,7 +2606,7 @@
 						onaccept={applyGrammarCorrection}
 						onignore={async () => {}}
 						onclose={() => {
-							showGrammarPanel = false;
+							closePanel('grammar');
 							grammarCorrections = [];
 							editorEl?.clearSpellHover();
 						}}
@@ -2845,9 +2617,9 @@
 			{/if}
 
 			<!-- Chat assistant sidebar -->
-			{#if showChat}
+			{#if activePanel === 'chat'}
 				<div
-					class="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border dark:border-dark-paper-border"
+					class="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border"
 				>
 					<AiEditorPanel
 						projectId={data.document.projectId}
@@ -2887,7 +2659,7 @@
 			{/if}
 
 			<!-- Review sidebar -->
-			{#if showReview}
+			{#if activePanel === 'review'}
 				<ReviewPanel
 					projectId={data.document.projectId}
 					documentId={data.document.id}
@@ -2898,7 +2670,7 @@
 			{/if}
 
 			<!-- Enrich sidebar -->
-			{#if showEnrich}
+			{#if activePanel === 'enrich'}
 				<EnrichPanel
 					projectId={data.document.projectId}
 					documentId={data.document.id}
@@ -2929,7 +2701,7 @@
 			{/if}
 
 			<!-- Draft assistant sidebar -->
-			{#if showDraft}
+			{#if activePanel === 'draft'}
 				<DraftPanel
 					projectId={data.document.projectId}
 					onclose={toggleDraft}
@@ -2940,13 +2712,17 @@
 			{/if}
 
 			<!-- Version history sidebar -->
-			{#if showHistory}
+			{#if activePanel === 'history'}
 				<VersionHistoryPanel
 					documentId={data.document.id}
 					projectId={data.document.projectId}
 					onclose={toggleHistory}
 					onrestore={(restoredContent) => {
+						// Keep the draft being replaced, so it can still be copied back.
+						if (content.trim() && content !== restoredContent) openStash(content);
 						content = restoredContent;
+						// restoreVersion already wrote it as the server draft.
+						serverDraftBase = restoredContent;
 						lastSavedContent = restoredContent;
 						saveStatus = 'pending';
 						if (autoSaveTimer) clearTimeout(autoSaveTimer);
@@ -2956,9 +2732,11 @@
 			{/if}
 
 			<!-- Stash panel (contenido descartado al resolver conflicto de draft) -->
-			{#if showStash && stashContent !== null}
+			{#if activePanel === 'stash' && stashContent !== null}
 				<StashPanel content={stashContent} onclose={closeStash} onclear={clearStash} />
 			{/if}
+
+			<EditorPanelRail items={railItems} active={activePanel} ontoggle={onRailToggle} />
 		</div>
 
 		<!-- Cite picker modal -->
@@ -3023,7 +2801,7 @@
 		tabindex="-1"
 	></button>
 	<div
-		class="fixed z-20 w-28 overflow-hidden rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		class="fixed z-20 w-28 overflow-hidden rounded-md border border-paper-border bg-paper shadow-lg"
 		style="top: {citeStyleMenuPos.top}px; left: {citeStyleMenuPos.left}px;"
 	>
 		{#each Object.entries(CITATION_STYLE_LABELS) as [s, label] (s)}
@@ -3032,10 +2810,10 @@
 					setCitationStyle(s as CitationStyle);
 					showCiteStyleMenu = false;
 				}}
-				class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {citationStyle ===
+				class="flex w-full items-center justify-between px-3 py-2 font-sans text-xs transition-colors hover:bg-paper-ui {citationStyle ===
 				s
-					? 'font-semibold text-accent'
-					: 'text-ink-muted dark:text-dark-ink-muted'}"
+					? 'font-semibold text-accent-ink'
+					: 'text-ink-muted'}"
 			>
 				{label}
 				{#if citationStyle === s}
@@ -3062,7 +2840,7 @@
 		tabindex="-1"
 	></button>
 	<div
-		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		class="fixed z-20 w-44 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg"
 		style="top: {exportMenuPos.top}px; left: {exportMenuPos.left}px;"
 	>
 		<a
@@ -3071,9 +2849,9 @@
 			)}
 			download
 			onclick={() => (showExport = false)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.tex</span>LaTeX
+			<span class="font-mono text-xs text-ink-faint">.tex</span>LaTeX
 		</a>
 		<a
 			href={resolve(
@@ -3081,9 +2859,9 @@
 			)}
 			download
 			onclick={() => (showExport = false)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.typ</span>Typst
+			<span class="font-mono text-xs text-ink-faint">.typ</span>Typst
 		</a>
 		<a
 			href={resolve(
@@ -3093,9 +2871,9 @@
 			)}
 			download
 			onclick={() => (showExport = false)}
-			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="flex items-center gap-2.5 px-4 py-2.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 		>
-			<span class="font-mono text-xs text-ink-faint dark:text-dark-ink-faint">.pdf</span>PDF
+			<span class="font-mono text-xs text-ink-faint">.pdf</span>PDF
 		</a>
 	</div>
 {/if}
@@ -3110,7 +2888,13 @@
 			e.preventDefault();
 			doSaveDraft();
 		}
+		if (e.key === '.' && (e.ctrlKey || e.metaKey)) {
+			e.preventDefault();
+			focusMode.on = !focusMode.on;
+		}
 		if (e.key === 'Escape') {
+			// The first Escape closes what is open; with nothing open, it leaves focus mode.
+			if (!showCheatsheet && !showCiteStyleMenu) focusMode.on = false;
 			showCheatsheet = false;
 			showCiteStyleMenu = false;
 		}
@@ -3129,7 +2913,7 @@
 		tabindex="-1"
 	></button>
 	<div
-		class="fixed z-20 w-52 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+		class="fixed z-20 w-52 overflow-hidden rounded-xl border border-paper-border bg-paper shadow-lg"
 		style="top: {spellMenuPos.top}px; left: {spellMenuPos.left}px;"
 	>
 		<button
@@ -3138,9 +2922,10 @@
 				showSpellMenu = false;
 			}}
 			disabled={spellLoading}
-			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showSpellPanel
-				? 'text-accent'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 {activePanel ===
+			'spell'
+				? 'text-accent-ink'
+				: 'text-ink-muted'}"
 		>
 			<svg
 				width="13"
@@ -3165,9 +2950,10 @@
 				showSpellMenu = false;
 			}}
 			disabled={grammarLoading}
-			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 dark:hover:bg-dark-paper-ui {showGrammarPanel
-				? 'text-accent'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+			class="flex w-full items-center gap-2.5 px-4 py-2.5 font-sans text-sm hover:bg-paper-ui disabled:opacity-40 {activePanel ===
+			'grammar'
+				? 'text-accent-ink'
+				: 'text-ink-muted'}"
 		>
 			<svg
 				width="13"
@@ -3185,16 +2971,13 @@
 			</svg>
 			{grammarLoading ? 'Checking…' : 'Grammar'}
 		</button>
-		<div class="border-t border-paper-border px-4 py-2 dark:border-dark-paper-border">
-			<label
-				for="spell-lang"
-				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Language</label
-			>
+		<div class="border-t border-paper-border px-4 py-2">
+			<label for="spell-lang" class="mb-1 block font-sans text-xs text-ink-faint">Language</label>
 			<select
 				id="spell-lang"
 				value={spellLanguage}
 				onchange={(e) => setSpellLanguage((e.target as HTMLSelectElement).value)}
-				class="w-full cursor-pointer rounded bg-paper-ui px-1.5 py-1 font-sans text-sm text-ink-muted outline-none dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+				class="w-full cursor-pointer rounded bg-paper-ui px-1.5 py-1 font-sans text-sm text-ink-muted outline-none"
 			>
 				{#each SPELL_LANGUAGES as lang (lang.code)}
 					<option value={lang.code}>{lang.label}</option>

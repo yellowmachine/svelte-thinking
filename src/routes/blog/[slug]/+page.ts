@@ -22,7 +22,7 @@ export const load: PageLoad = async ({ params }) => {
 	});
 
 	if (!entry) {
-		error(404, 'Post no encontrado');
+		error(404, 'Post not found');
 	}
 
 	const mod = await entry[1]();

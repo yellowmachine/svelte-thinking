@@ -11,7 +11,7 @@ export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) redirect(302, '/projects');
 
 	const token = event.url.searchParams.get('token');
-	if (!token) throw error(403, 'Registro cerrado. Solicita acceso en la página principal.');
+	if (!token) throw error(403, 'Registration is closed. Request access on the home page.');
 
 	const rows = await db
 		.select({ id: waitlist.id, email: waitlist.email, name: waitlist.name })
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async (event) => {
 		)
 		.limit(1);
 
-	if (!rows[0]) throw error(403, 'El enlace de registro no es válido o ha expirado.');
+	if (!rows[0]) throw error(403, 'This registration link is invalid or has expired.');
 
 	return { token, email: rows[0].email, name: rows[0].name };
 };
@@ -52,7 +52,7 @@ export const actions: Actions = {
 			.limit(1);
 
 		if (!rows[0])
-			return fail(403, { message: 'El enlace de registro no es válido o ha expirado.' });
+			return fail(403, { message: 'This registration link is invalid or has expired.' });
 
 		let userId: string;
 		try {
@@ -79,9 +79,9 @@ export const actions: Actions = {
 					redirect(302, `/login?welcome=1&email=${encodeURIComponent(email)}`);
 				}
 
-				return fail(400, { message: e.message || 'Error al crear la cuenta' });
+				return fail(400, { message: e.message || "Couldn't create the account" });
 			}
-			return fail(500, { message: 'Error inesperado' });
+			return fail(500, { message: 'Unexpected error' });
 		}
 
 		// El perfil de Scholio lo crea databaseHooks.user.create.after (auth-options.ts).

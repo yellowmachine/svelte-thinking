@@ -96,10 +96,13 @@ export const GET: RequestHandler = async (event) => {
 	// Build sections in requirement order, skip missing docs
 	// imageRegistry collects localName → minioUrl for all images found across sections
 	const imageRegistry = new Map<string, string>();
+	const citeKeys = new Set(rawRefs.map((r) => r.citeKey));
 	const sections = fulfilledReqs.flatMap((req) => {
 		const doc = docMap.get(req.fulfilledDocumentId!);
 		if (!doc || !doc.draftContent?.trim()) return [];
-		return [{ title: req.name, content: markdownToTypst(doc.draftContent, imageRegistry) }];
+		return [
+			{ title: req.name, content: markdownToTypst(doc.draftContent, imageRegistry, { citeKeys }) }
+		];
 	});
 
 	if (sections.length === 0) {
@@ -169,7 +172,7 @@ export const GET: RequestHandler = async (event) => {
 	try {
 		const p = proj[0];
 		const date = p.publishedAt
-			? p.publishedAt.toLocaleDateString('es-ES', {
+			? p.publishedAt.toLocaleDateString('en-GB', {
 					year: 'numeric',
 					month: 'long',
 					day: 'numeric'
@@ -193,7 +196,7 @@ export const GET: RequestHandler = async (event) => {
 		const files = bibContent ? { 'refs.bib': bibContent } : undefined;
 		pdf = await compileToPdf(typstSource, images, files);
 	} catch (e) {
-		const msg = e instanceof Error ? e.message : 'Error al generar el PDF';
+		const msg = e instanceof Error ? e.message : "Couldn't generate the PDF";
 		error(500, msg);
 	}
 

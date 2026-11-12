@@ -1,17 +1,17 @@
 /**
  * Tests for the AI backend logic:
  * 1. indexDocument — chunking + embed + upsert in document_chunk
- * 2. search_documents_semantic — vector similarity via the agent tool
- * 3. Agent loop — correct tool dispatch with mocked OpenRouter
+ * 2. search_documents_semantic — vector similarity via the agent tool (executeTool)
  */
 
 import { describe, it, expect, beforeAll, vi, afterEach } from 'vitest';
-import { createTestDb, createTestCaller, type TestDb } from '$lib/server/db/test-utils';
+import { createTestDb, createTestCaller, asUser, type TestDb } from '$lib/server/db/test-utils';
 import { userProfile, userApiKey } from '$lib/server/db/schemas/users.schema';
 import { documentChunk } from '$lib/server/db/schemas/documentChunks.schema';
 import { eq } from 'drizzle-orm';
 import { indexDocument } from '$lib/server/embeddings';
 import { encryptSecret } from '$lib/server/kms';
+import { executeTool } from './ai';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ afterEach(() => {
 
 describe('indexDocument', () => {
 	it('chunkea el contenido y crea filas en document_chunk', async () => {
-		// Mock embed-service: devuelve embeddings falsos sin llamar al servidor real
+		// Mock the embeddings API: devuelve embeddings falsos sin llamar al servidor real
 		vi.stubGlobal(
 			'fetch',
 			vi.fn().mockResolvedValue({
@@ -203,11 +203,10 @@ describe('documents.commit triggers indexing', () => {
 	});
 });
 
-// ── 3. search_documents_semantic (tool via agente) ─────────────────────────
+// ── 3. search_documents_semantic (herramienta del agente) ──────────────────
 
-describe('ai.sendMessage — search_documents_semantic', () => {
-	it('el agente llama a search_documents_semantic y devuelve respuesta', async () => {
-		// Seed chunks manualmente para esta prueba
+describe('executeTool — search_documents_semantic', () => {
+	it('devuelve los fragmentos del proyecto más cercanos a la consulta', async () => {
 		await db
 			.insert(documentChunk)
 			.values([
@@ -222,68 +221,29 @@ describe('ai.sendMessage — search_documents_semantic', () => {
 			])
 			.onConflictDoNothing();
 
-		const fetchMock = vi.fn();
-
-		// Llamada 1: OpenRouter — responde con tool_call search_documents_semantic
-		// Llamada 2: embed-service — embedding de la query para la búsqueda semántica
-		// Llamada 3: OpenRouter — respuesta final tras recibir el resultado del tool
-		fetchMock
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					choices: [
-						{
-							finish_reason: 'tool_calls',
-							message: {
-								role: 'assistant',
-								content: null,
-								tool_calls: [
-									{
-										id: 'call-1',
-										type: 'function',
-										function: {
-											name: 'search_documents_semantic',
-											arguments: JSON.stringify({ query: 'teoría del capital' })
-										}
-									}
-								]
-							}
-						}
-					]
-				})
-			})
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({ data: [{ embedding: fakeEmbedding(1), index: 0 }] })
-			})
-			.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					choices: [
-						{
-							finish_reason: 'stop',
-							message: {
-								role: 'assistant',
-								content: 'El proyecto menciona la teoría del capital de Böhm-Bawerk.'
-							}
-						}
-					]
-				})
-			});
-
+		// Única llamada externa: el embedding de la consulta.
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({ data: [{ embedding: fakeEmbedding(1), index: 0 }] })
+		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const caller = createTestCaller(db, USER);
-		const result = await caller.ai.sendMessage({
-			projectId,
-			message: '¿Qué dice el proyecto sobre la teoría del capital?'
-		});
-
-		expect(result.message.content).toContain('Böhm-Bawerk');
-		// Verificar que se llamó a search_documents_semantic (2ª llamada a fetch es OpenRouter)
-		const openRouterCall = fetchMock.mock.calls.find(
-			([url]) => typeof url === 'string' && url.includes('openrouter')
+		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) => asUser(db, USER, fn);
+		const result = await executeTool(
+			'search_documents_semantic',
+			{ query: 'teoría del capital' },
+			withRLS as never,
+			projectId
 		);
-		expect(openRouterCall).toBeDefined();
+
+		expect(result.output).toContain('Böhm-Bawerk');
+		expect(result.docsUsed.map((d) => d.id)).toContain(documentId);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('pide la consulta si falta', async () => {
+		const withRLS = <T>(fn: (tx: TestDb) => Promise<T>) => asUser(db, USER, fn);
+		const result = await executeTool('search_documents_semantic', {}, withRLS as never, projectId);
+		expect(result.output).toContain('missing required parameter query');
 	});
 });

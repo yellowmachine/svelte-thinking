@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import X from '@lucide/svelte/icons/x';
 	import { notifyAiUsed } from '$lib/utils/aiUsedEvent';
 	import { onMount } from 'svelte';
 	import { marked } from 'marked';
@@ -346,45 +349,33 @@
 				{#if messages.length === 0}
 					<div class="flex h-full flex-col items-center justify-center gap-4 text-center">
 						<div class="rounded-full bg-accent/10 p-4">
-							<svg
-								width="28"
-								height="28"
-								viewBox="0 0 24 24"
-								fill="none"
-								class="text-accent"
+							<MessageSquare
+								size={28}
+								strokeWidth={1.75}
+								class="text-accent-ink"
 								aria-hidden="true"
-							>
-								<path
-									d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-									stroke="currentColor"
-									stroke-width="1.5"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
+							/>
 						</div>
 						<div>
-							<p class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
-								Research assistant
+							<p class="font-serif text-lg font-semibold text-ink">Research assistant</p>
+							<p class="mt-1 font-sans text-sm text-ink-muted">
+								Ask me about the content of your project.
 							</p>
-							<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								Hazme preguntas sobre el contenido de tu proyecto.
-							</p>
-							<p class="mt-0.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+							<p class="mt-0.5 font-sans text-xs text-ink-faint">
 								E.g. "What references to Mises are in the draft?"
 							</p>
 							<div class="mt-3 flex flex-wrap justify-center gap-1.5">
 								<span
-									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
-									>Busca en tus documentos</span
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
+									>Searches your documents</span
 								>
 								<span
-									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
-									>Crea documentos</span
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
+									>Creates documents</span
 								>
 								<span
-									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent/80 dark:bg-accent/15 dark:text-accent/70"
-									>Abre issues</span
+									class="rounded-full bg-accent/10 px-2.5 py-1 font-sans text-[11px] text-accent-ink/80 dark:bg-accent/15 dark:text-accent-ink/70"
+									>Opens issues</span
 								>
 							</div>
 						</div>
@@ -394,11 +385,9 @@
 						{#each messages as msg (msg.id)}
 							{#if msg.role === 'system'}
 								<div class="flex items-center gap-3">
-									<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
-									<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
-										>{msg.content}</span
-									>
-									<div class="h-px flex-1 bg-paper-border dark:bg-dark-paper-border"></div>
+									<div class="h-px flex-1 bg-paper-border"></div>
+									<span class="font-sans text-[11px] text-ink-faint">{msg.content}</span>
+									<div class="h-px flex-1 bg-paper-border"></div>
 								</div>
 							{:else}
 								<div class="flex gap-3 {msg.role === 'user' ? 'flex-row-reverse' : ''}">
@@ -407,7 +396,7 @@
 										class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold {msg.role ===
 										'user'
 											? 'bg-accent text-white'
-											: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted'}"
+											: 'bg-paper-border text-ink-muted'}"
 									>
 										{msg.role === 'user' ? 'You' : 'AI'}
 									</div>
@@ -418,7 +407,7 @@
 											class="rounded-2xl px-4 py-3 font-sans text-sm leading-relaxed {msg.role ===
 											'user'
 												? 'rounded-tr-sm bg-accent text-white'
-												: `chat-prose rounded-tl-sm bg-paper-ui text-ink dark:bg-dark-paper-ui dark:text-dark-ink${msg.broken ? ' opacity-50' : ''}`}"
+												: `chat-prose rounded-tl-sm bg-paper-ui text-ink dark:text-dark-ink${msg.broken ? ' opacity-50' : ''}`}"
 										>
 											{#if msg.role === 'assistant'}
 												<!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -429,26 +418,22 @@
 										</div>
 										{#if msg.broken}
 											<div class="mt-1 flex items-center gap-2 px-1">
-												<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-													>Response interrupted</span
-												>
+												<span class="font-sans text-xs text-ink-faint">Response interrupted</span>
 												<button
 													type="button"
 													onclick={retry}
-													class="font-sans text-xs text-accent underline decoration-dotted hover:decoration-solid"
+													class="font-sans text-xs text-accent-ink underline decoration-dotted hover:decoration-solid"
 													>Retry</button
 												>
 											</div>
 										{:else if msg.role === 'assistant' && msg.docsUsed?.length}
 											<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
-												<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
-													>Sources:</span
-												>
+												<span class="font-sans text-[11px] text-ink-faint">Sources:</span>
 												{#each msg.docsUsed as doc (doc.id)}
 													<a
 														translate="no"
 														href={resolve(`/projects/${data.project.id}/documents/${doc.id}`)}
-														class="font-sans text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline dark:text-dark-ink-muted dark:hover:text-dark-ink"
+														class="font-sans text-[11px] text-ink-muted underline-offset-2 hover:text-ink hover:underline"
 														>{doc.title}</a
 													>
 												{/each}
@@ -507,26 +492,24 @@
 						{#if sending && !streamingMsgId}
 							<div class="flex gap-3">
 								<div
-									class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper-border text-xs font-semibold text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted"
+									class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper-border text-xs font-semibold text-ink-muted"
 								>
 									AI
 								</div>
-								<div class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3 dark:bg-dark-paper-ui">
+								<div class="rounded-2xl rounded-tl-sm bg-paper-ui px-4 py-3">
 									<div class="flex items-center gap-2">
 										<div class="flex gap-1">
 											<span
-												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:0ms] dark:bg-dark-ink-faint"
+												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:0ms]"
 											></span>
 											<span
-												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:150ms] dark:bg-dark-ink-faint"
+												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:150ms]"
 											></span>
 											<span
-												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms] dark:bg-dark-ink-faint"
+												class="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:300ms]"
 											></span>
 										</div>
-										<span
-											class="font-sans text-xs text-ink-faint transition-all dark:text-dark-ink-faint"
-										>
+										<span class="font-sans text-xs text-ink-faint transition-all">
 											{thinkingHint}
 										</span>
 									</div>
@@ -540,41 +523,32 @@
 			</div>
 
 			<!-- Input -->
-			<div
-				class="border-t border-paper-border bg-paper px-6 py-4 dark:border-dark-paper-border dark:bg-dark-paper"
-			>
+			<div class="border-t border-paper-border bg-paper px-6 py-4">
 				{#if sendError}
 					<div
-						class="mx-auto mb-3 flex max-w-2xl items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/30"
+						class="mx-auto mb-3 flex max-w-2xl items-start justify-between gap-3 rounded-lg border border-danger-border bg-danger-bg px-4 py-3"
 					>
-						<p class="font-sans text-sm text-red-700 dark:text-red-400">{sendError}</p>
+						<p class="font-sans text-sm text-danger">{sendError}</p>
 						<button
 							type="button"
 							onclick={() => (sendError = null)}
-							aria-label="Cerrar"
-							class="shrink-0 text-red-400 hover:text-red-600 dark:text-red-500"
+							aria-label="Close"
+							class="shrink-0 text-red-400 hover:text-danger dark:text-red-500"
 						>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M18 6L6 18M6 6l12 12"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-								/>
-							</svg>
+							<X size={14} strokeWidth={1.75} aria-hidden="true" />
 						</button>
 					</div>
 				{/if}
 				<div class="mx-auto max-w-2xl">
 					<div
-						class="flex items-end gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 focus-within:border-accent dark:border-dark-paper-border dark:bg-dark-paper-ui"
+						class="flex items-end gap-3 rounded-xl border border-paper-border bg-paper-ui px-4 py-3 focus-within:border-accent"
 					>
 						<textarea
 							bind:value={input}
 							onkeydown={onKeydown}
 							placeholder="Ask about your project... (Enter to send, Shift+Enter for new line)"
 							rows="1"
-							class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none dark:text-dark-ink"
+							class="flex-1 resize-none bg-transparent font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none"
 							style="max-height: 160px; overflow-y: auto;"
 						></textarea>
 						{#if sending}
@@ -582,7 +556,7 @@
 								type="button"
 								onclick={stopStream}
 								aria-label="Detener"
-								class="shrink-0 rounded-lg border border-paper-border bg-paper p-2 text-ink-muted transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink-muted dark:hover:border-red-700/50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+								class="shrink-0 rounded-lg border border-paper-border bg-paper p-2 text-ink-muted transition-colors hover:border-danger-border hover:bg-danger-bg hover:text-danger"
 							>
 								<svg
 									width="16"
@@ -599,7 +573,7 @@
 								type="button"
 								onclick={() => send()}
 								disabled={!input.trim()}
-								aria-label="Enviar"
+								aria-label="Send"
 								class="shrink-0 rounded-lg bg-accent p-2 text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
 							>
 								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -615,22 +589,20 @@
 						{/if}
 					</div>
 					<div class="mt-2 flex items-center justify-between">
-						<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-							El asistente tiene acceso al contenido de todos los documentos del proyecto.
+						<p class="font-sans text-xs text-ink-faint">
+							The assistant can read every document in this project.
 						</p>
 						<!-- Model picker trigger -->
 						<div class="relative">
 							<button
 								type="button"
 								onclick={() => (showModelPicker = !showModelPicker)}
-								class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {isOverridden
-									? 'border-accent/50 text-accent dark:border-accent/50'
-									: 'border-paper-border text-ink-muted dark:border-dark-paper-border dark:text-dark-ink-muted'}"
+								class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-colors hover:bg-paper-ui {isOverridden
+									? 'border-accent/50 text-accent-ink dark:border-accent/50'
+									: 'border-paper-border text-ink-muted'}"
 							>
-								<span class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
-									>OpenRouter</span
-								>
-								<span class="text-ink-faint dark:text-dark-ink-faint">·</span>
+								<span class="font-sans text-[11px] text-ink-faint">OpenRouter</span>
+								<span class="text-ink-faint">·</span>
 								<span class="font-sans text-[11px]">{activeModelLabel}</span>
 								{#if isOverridden}
 									<span class="h-1.5 w-1.5 rounded-full bg-accent" title="Model override active"
@@ -642,7 +614,7 @@
 									viewBox="0 0 24 24"
 									fill="none"
 									aria-hidden="true"
-									class="text-ink-faint dark:text-dark-ink-faint"
+									class="text-ink-faint"
 								>
 									<path
 										d="M6 9l6 6 6-6"
@@ -663,11 +635,9 @@
 								></div>
 								<!-- Popover -->
 								<div
-									class="absolute right-0 bottom-full z-20 mb-2 w-64 rounded-xl border border-paper-border bg-paper py-1.5 shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+									class="absolute right-0 bottom-full z-20 mb-2 w-64 rounded-xl border border-paper-border bg-paper py-1.5 shadow-lg"
 								>
-									<p
-										class="px-3 pt-0.5 pb-1.5 font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint"
-									>
+									<p class="px-3 pt-0.5 pb-1.5 font-sans text-[11px] text-ink-faint">
 										Model for this session
 									</p>
 									{#each agentModels as m (m.id)}
@@ -677,42 +647,26 @@
 												modelOverride = m.id === configuredModel ? null : m.id;
 												showModelPicker = false;
 											}}
-											class="flex w-full items-center justify-between px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui {activeModel ===
+											class="flex w-full items-center justify-between px-3 py-2 text-left font-sans text-sm transition-colors hover:bg-paper-ui {activeModel ===
 											m.id
-												? 'text-accent'
-												: 'text-ink dark:text-dark-ink'}"
+												? 'text-accent-ink'
+												: 'text-ink'}"
 										>
 											<span>{m.shortLabel}</span>
 											{#if activeModel === m.id}
-												<svg
-													width="13"
-													height="13"
-													viewBox="0 0 24 24"
-													fill="none"
-													aria-hidden="true"
-												>
-													<path
-														d="M20 6L9 17l-5-5"
-														stroke="currentColor"
-														stroke-width="2"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													/>
-												</svg>
+												<Check size={13} strokeWidth={1.75} aria-hidden="true" />
 											{/if}
 										</button>
 									{/each}
 									{#if isOverridden}
-										<div
-											class="mx-3 mt-1 border-t border-paper-border pt-1 dark:border-dark-paper-border"
-										>
+										<div class="mx-3 mt-1 border-t border-paper-border pt-1">
 											<button
 												type="button"
 												onclick={() => {
 													modelOverride = null;
 													showModelPicker = false;
 												}}
-												class="w-full rounded py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+												class="w-full rounded py-1.5 font-sans text-xs text-ink-faint transition-colors hover:text-ink"
 											>
 												Reset to default ({agentModels.find((m) => m.id === configuredModel)
 													?.shortLabel ?? formatModelSlug(configuredModel)})

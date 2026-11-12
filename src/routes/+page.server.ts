@@ -7,6 +7,7 @@ import { user } from '$lib/server/db/auth.schema';
 import { notifySlack } from '$lib/server/slack';
 import { cacheGet, cacheSet } from '$lib/server/cache';
 import { sendWaitlistWelcomeEmail } from '$lib/server/email';
+import { hitRateLimit, RATE_LIMITS } from '$lib/server/rateLimit';
 
 const USER_COUNT_KEY = 'scholio:stats:user_count';
 const USER_COUNT_TTL = 15 * 60; // 15 min
@@ -27,14 +28,17 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
-	joinWaitlist: async ({ request }) => {
+	joinWaitlist: async ({ request, getClientAddress }) => {
+		const { allowed } = await hitRateLimit(RATE_LIMITS.waitlist, getClientAddress());
+		if (!allowed) return fail(429, { error: 'Too many attempts. Try again later.' });
+
 		const data = await request.formData();
 		const name = data.get('name')?.toString().trim() ?? '';
 		const email = data.get('email')?.toString().trim().toLowerCase() ?? '';
 		const message = data.get('message')?.toString().trim() ?? '';
 
-		if (!email || !name) return fail(400, { error: 'Nombre y email son obligatorios.' });
-		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, { error: 'Email no válido.' });
+		if (!email || !name) return fail(400, { error: 'Name and email are required.' });
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, { error: 'Invalid email.' });
 
 		const existing = await db
 			.select({ id: waitlist.id, status: waitlist.status })
@@ -42,12 +46,9 @@ export const actions: Actions = {
 			.where(eq(waitlist.email, email))
 			.limit(1);
 
-		if (existing[0]) {
-			if (existing[0].status === 'approved') {
-				return fail(400, { error: 'Este email ya tiene acceso. Ve a iniciar sesión.' });
-			}
-			return { success: true, email }; // ya en lista, no revelar estado
-		}
+		// Ya en la lista (pendiente, aprobado o rechazado): la misma respuesta que a
+		// un email nuevo, para que el formulario no sirva para saber quién tiene cuenta.
+		if (existing[0]) return { success: true, email };
 
 		await db.insert(waitlist).values({
 			id: crypto.randomUUID(),

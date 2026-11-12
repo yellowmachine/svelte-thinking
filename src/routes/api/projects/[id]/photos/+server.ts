@@ -12,7 +12,7 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'im
 
 export const POST: RequestHandler = async (event) => {
 	const user = event.locals.user;
-	if (!user) error(401, 'No autenticado');
+	if (!user) error(401, 'Not authenticated');
 
 	const projectId = event.params.id;
 

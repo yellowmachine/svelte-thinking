@@ -63,8 +63,7 @@
 		showNewComment = $bindable(false),
 		showSubnote = $bindable(false),
 		showReviewTypeMenu = $bindable(false),
-		showComments = $bindable(false),
-		showHistory = $bindable(false),
+		onopencomments,
 		selectionReview = $bindable<SelectionReview>(null),
 		authorPopover = $bindable<AuthorPopover>(null),
 		headingTooltip = $bindable<HeadingTooltip>(null),
@@ -95,8 +94,8 @@
 		showNewComment?: boolean;
 		showSubnote?: boolean;
 		showReviewTypeMenu?: boolean;
-		showComments?: boolean;
-		showHistory?: boolean;
+		/** Opens the comments panel (e.g. after adding a comment). */
+		onopencomments?: () => void;
 		selectionReview?: SelectionReview;
 		authorPopover?: AuthorPopover;
 		headingTooltip?: HeadingTooltip;
@@ -198,7 +197,7 @@
 			showNewComment = false;
 			savedCommentSelection = null;
 			onclearselection();
-			showComments = true;
+			onopencomments?.();
 		} finally {
 			submittingComment = false;
 		}
@@ -265,7 +264,7 @@
 			paragraphCommentText = '';
 			showNewParagraphComment = false;
 			pendingParagraphNumber = null;
-			showComments = true;
+			onopencomments?.();
 		} catch (e) {
 			console.error('Failed to submit paragraph comment', e);
 		} finally {
@@ -285,15 +284,14 @@
 			onclick={() => {
 				savedCommentSelection = currentSelection;
 				showNewComment = true;
-				showComments = true;
-				showHistory = false;
+				onopencomments?.();
 			}}
 		>
 			+ Comment
 		</button>
 		{#if projectRefs.length > 0}
 			<button
-				class="pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+				class="pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors hover:bg-paper-ui"
 				onclick={() => {
 					savedCommentSelection = currentSelection;
 					subnoteNotes = '';
@@ -310,18 +308,18 @@
 		{#if hasAiKey && currentSelection && currentSelection.text.trim().length > 20}
 			<div class="pointer-events-auto relative">
 				<button
-					class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+					class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors"
 					onclick={() => (showReviewTypeMenu = !showReviewTypeMenu)}
 				>
 					Review ▾
 				</button>
 				{#if showReviewTypeMenu}
 					<div
-						class="absolute top-full left-0 z-30 mt-1 w-44 rounded-md border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+						class="absolute top-full left-0 z-30 mt-1 w-44 rounded-md border border-paper-border bg-paper shadow-lg"
 					>
 						{#each Object.entries(reviewTypeLabels) as [type, label] (type)}
 							<button
-								class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted block w-full px-3 py-2 text-left font-sans text-xs text-ink dark:text-dark-ink"
+								class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted block w-full px-3 py-2 text-left font-sans text-xs text-ink"
 								onclick={() => onreviewselection(type)}
 							>
 								{label}
@@ -331,7 +329,7 @@
 				{/if}
 			</div>
 			<button
-				class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+				class="hover:bg-paper-muted dark:hover:bg-dark-paper-muted pointer-events-auto rounded-md border border-paper-border bg-paper px-3 py-1.5 font-sans text-xs font-semibold text-ink shadow-md transition-colors"
 				onclick={() => {
 					onspellcheck(currentSelection!.text, currentSelection!.from);
 				}}
@@ -348,18 +346,14 @@
 		class="pointer-events-none fixed z-20"
 		style="top: {selectionReview.coords.bottom + 8}px; left: {selectionReview.coords.left}px;"
 	>
-		<div
-			class="pointer-events-auto w-96 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<div
-				class="flex items-center justify-between border-b border-paper-border px-3 py-2 dark:border-dark-paper-border"
-			>
-				<span class="font-sans text-xs font-semibold text-ink dark:text-dark-ink"
+		<div class="pointer-events-auto w-96 rounded-lg border border-paper-border bg-paper shadow-lg">
+			<div class="flex items-center justify-between border-b border-paper-border px-3 py-2">
+				<span class="font-sans text-xs font-semibold text-ink"
 					>{reviewTypeLabels[selectionReview.reviewType]}</span
 				>
 				<button
 					onclick={() => (selectionReview = null)}
-					class="text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					class="text-ink-faint transition-colors hover:text-ink"
 					aria-label="Close"
 				>
 					<svg
@@ -375,17 +369,14 @@
 			<div class="space-y-2 px-3 py-2.5">
 				{#if selectionReview.loading}
 					<div class="flex items-center gap-2">
-						<Spinner size="sm" class="text-accent" />
-						<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Reviewing…</span
-						>
+						<Spinner size="sm" class="text-accent-ink" />
+						<span class="font-sans text-xs text-ink-faint">Reviewing…</span>
 					</div>
 				{:else}
-					<p
-						class="font-sans text-xs leading-relaxed whitespace-pre-wrap text-ink dark:text-dark-ink"
-					>
+					<p class="font-sans text-xs leading-relaxed whitespace-pre-wrap text-ink">
 						{selectionReview.suggestion}
 					</p>
-					<p class="font-sans text-[10px] text-ink-faint italic dark:text-dark-ink-faint">
+					<p class="font-sans text-[10px] text-ink-faint italic">
 						{selectionReview.explanation}
 					</p>
 					<div class="flex gap-2 pt-1">
@@ -397,14 +388,12 @@
 						</button>
 						<button
 							onclick={() => (selectionReview = null)}
-							class="rounded border border-paper-border px-3 py-1 font-sans text-xs text-ink-faint hover:text-ink dark:border-dark-paper-border dark:text-dark-ink-faint dark:hover:text-dark-ink"
+							class="rounded border border-paper-border px-3 py-1 font-sans text-xs text-ink-faint hover:text-ink"
 						>
 							Discard
 						</button>
 					</div>
-					<p class="font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
-						Generated by AI · may be inaccurate
-					</p>
+					<p class="font-sans text-[10px] text-ink-faint">Generated by AI · may be inaccurate</p>
 				{/if}
 			</div>
 		</div>
@@ -418,18 +407,12 @@
 		class="pointer-events-none fixed z-20"
 		style="top: {authorPopover.coords.bottom + 8}px; left: {authorPopover.coords.left}px;"
 	>
-		<div
-			class="pointer-events-auto w-72 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<div
-				class="flex items-center justify-between border-b border-paper-border px-3 py-2 dark:border-dark-paper-border"
-			>
-				<span class="font-sans text-xs font-semibold text-ink dark:text-dark-ink"
-					>{authorPopover.name}</span
-				>
+		<div class="pointer-events-auto w-72 rounded-lg border border-paper-border bg-paper shadow-lg">
+			<div class="flex items-center justify-between border-b border-paper-border px-3 py-2">
+				<span class="font-sans text-xs font-semibold text-ink">{authorPopover.name}</span>
 				<button
 					onclick={() => (authorPopover = null)}
-					class="text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+					class="text-ink-faint transition-colors hover:text-ink"
 					aria-label="Close"
 				>
 					<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -443,9 +426,7 @@
 				</button>
 			</div>
 			{#if authorPopover.refs.length === 0}
-				<p class="px-3 py-2.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Not in project bibliography.
-				</p>
+				<p class="px-3 py-2.5 font-sans text-xs text-ink-faint">Not in project bibliography.</p>
 			{:else}
 				<div class="space-y-0.5 p-1.5">
 					{#each authorPopover.refs as ref (ref.citeKey)}
@@ -454,17 +435,14 @@
 								onscrolltocite(ref.citeKey);
 								authorPopover = null;
 							}}
-							class="flex w-full items-baseline gap-1.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-paper-ui dark:hover:bg-dark-paper-ui"
+							class="flex w-full items-baseline gap-1.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-paper-ui"
 						>
-							<span class="shrink-0 font-mono text-[10px] text-accent">@{ref.citeKey}</span>
-							<span
-								class="min-w-0 truncate font-sans text-xs text-ink dark:text-dark-ink"
-								title={ref.title}>{ref.title}</span
+							<span class="shrink-0 font-mono text-[10px] text-accent-ink">@{ref.citeKey}</span>
+							<span class="min-w-0 truncate font-sans text-xs text-ink" title={ref.title}
+								>{ref.title}</span
 							>
 							{#if ref.year}
-								<span class="shrink-0 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint"
-									>({ref.year})</span
-								>
+								<span class="shrink-0 font-sans text-[10px] text-ink-faint">({ref.year})</span>
 							{/if}
 						</button>
 					{/each}
@@ -481,14 +459,14 @@
 		style="top: {headingTooltip.coords.bottom + 6}px; left: {headingTooltip.coords.left}px;"
 	>
 		<div
-			class="pointer-events-auto flex items-center gap-1.5 rounded border border-paper-border bg-paper px-2.5 py-1.5 shadow-sm dark:border-dark-paper-border dark:bg-dark-paper"
+			class="pointer-events-auto flex items-center gap-1.5 rounded border border-paper-border bg-paper px-2.5 py-1.5 shadow-sm"
 		>
 			<svg
 				width="11"
 				height="11"
 				viewBox="0 0 24 24"
 				fill="none"
-				class="text-ink-faint dark:text-dark-ink-faint"
+				class="text-ink-faint"
 				aria-hidden="true"
 			>
 				<path
@@ -498,12 +476,12 @@
 					stroke-linecap="round"
 				/>
 			</svg>
-			<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+			<span class="font-sans text-xs text-ink-muted"
 				>{headingTooltip.wordCount} words in this section</span
 			>
 			<button
 				onclick={() => (headingTooltip = null)}
-				class="ml-1 text-ink-faint hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+				class="ml-1 text-ink-faint hover:text-ink"
 				aria-label="Close"
 			>
 				<svg width="10" height="10" viewBox="0 0 24 24" fill="none"
@@ -527,10 +505,10 @@
 			.left}px;"
 	>
 		<div
-			class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+			class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl"
 		>
 			<p
-				class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
+				class="mb-2 truncate border-l-2 border-amber-400 pl-2 font-sans text-xs text-ink-muted italic"
 			>
 				«{savedCommentSelection.text.slice(0, 60)}{savedCommentSelection.text.length > 60
 					? '…'
@@ -541,7 +519,7 @@
 				bind:value={newCommentText}
 				rows={3}
 				placeholder="Write your comment…"
-				class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			></textarea>
 			<div class="mt-2 flex gap-2">
 				<button
@@ -557,7 +535,7 @@
 						savedCommentSelection = null;
 						newCommentText = '';
 					}}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					Cancel
 				</button>
@@ -574,64 +552,55 @@
 			.left}px;"
 	>
 		<div
-			class="pointer-events-auto w-80 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+			class="pointer-events-auto w-80 rounded-xl border border-paper-border bg-paper p-3 shadow-xl"
 		>
-			<p class="mb-2 font-sans text-xs font-semibold text-ink-muted dark:text-dark-ink-muted">
-				Nueva subnota bibliográfica
-			</p>
+			<p class="mb-2 font-sans text-xs font-semibold text-ink-muted">New bibliographic subnote</p>
 			<p
-				class="mb-3 truncate border-l-2 border-paper-border pl-2 font-sans text-xs text-ink-muted italic dark:text-dark-ink-muted"
+				class="mb-3 truncate border-l-2 border-paper-border pl-2 font-sans text-xs text-ink-muted italic"
 			>
 				«{savedCommentSelection.text.slice(0, 80)}{savedCommentSelection.text.length > 80
 					? '…'
 					: ''}»
 			</p>
 			{#if !sourceReference}
-				<label
-					for="subnote-ref"
-					class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-					>Referencia</label
+				<label for="subnote-ref" class="mb-1 block font-sans text-xs text-ink-faint"
+					>Reference</label
 				>
 				<select
 					id="subnote-ref"
 					bind:value={subnoteRefId}
-					class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 				>
-					<option value="">— elige referencia —</option>
+					<option value="">— choose a reference —</option>
 					{#each projectRefs as ref (ref.id)}
 						<option value={ref.id ?? ''}>{ref.citeKey}</option>
 					{/each}
 				</select>
 			{:else}
-				<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-					Referencia: <span class="font-mono text-accent">@{sourceReference.citeKey}</span>
+				<p class="mb-2 font-sans text-xs text-ink-faint">
+					Reference: <span class="font-mono text-accent-ink">@{sourceReference.citeKey}</span>
 				</p>
 			{/if}
-			<label
-				for="subnote-slug"
-				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-				>Slug <span class="text-ink-faint">(identificador único)</span></label
+			<label for="subnote-slug" class="mb-1 block font-sans text-xs text-ink-faint"
+				>Slug <span class="text-ink-faint">(unique identifier)</span></label
 			>
 			<input
 				id="subnote-slug"
 				bind:value={subnoteSlug}
 				type="text"
 				placeholder="p247-exchange"
-				class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="mb-2 w-full rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			/>
-			<label
-				for="subnote-notes"
-				class="mb-1 block font-sans text-xs text-ink-faint dark:text-dark-ink-faint">Nota</label
-			>
+			<label for="subnote-notes" class="mb-1 block font-sans text-xs text-ink-faint">Nota</label>
 			<textarea
 				id="subnote-notes"
 				use:focusOnMount
 				bind:value={subnoteNotes}
 				rows={3}
-				class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			></textarea>
 			{#if subnoteError}
-				<p class="mt-1 font-sans text-xs text-red-500">{subnoteError}</p>
+				<p class="mt-1 font-sans text-xs text-danger">{subnoteError}</p>
 			{/if}
 			<div class="mt-2 flex gap-2">
 				<button
@@ -649,7 +618,7 @@
 						showSubnote = false;
 						savedCommentSelection = null;
 					}}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted hover:bg-paper-ui"
 				>
 					Cancel
 				</button>
@@ -668,17 +637,17 @@
 	>
 		<div
 			bind:this={paragraphCommentEl}
-			class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+			class="pointer-events-auto w-72 rounded-xl border border-paper-border bg-paper p-3 shadow-xl"
 		>
-			<p class="mb-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-				Comentario en ¶{pendingParagraphNumber}
+			<p class="mb-2 font-sans text-xs text-ink-faint">
+				Comment on ¶{pendingParagraphNumber}
 			</p>
 			<textarea
 				use:focusOnMount
 				bind:value={paragraphCommentText}
 				rows={3}
 				placeholder="Write your comment…"
-				class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="w-full resize-none rounded-md border border-paper-border bg-paper-ui px-2 py-1.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			></textarea>
 			<div class="mt-2 flex gap-2">
 				<button
@@ -693,7 +662,7 @@
 						showNewParagraphComment = false;
 						paragraphCommentText = '';
 					}}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					Cancel
 				</button>

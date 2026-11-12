@@ -1,10 +1,12 @@
 <script lang="ts">
+	import Plus from '@lucide/svelte/icons/plus';
+	import Search from '@lucide/svelte/icons/search';
 	import { page } from '$app/state';
 	import { trpc } from '$lib/utils/trpc';
 
 	import { resolve } from '$app/paths';
 	type Project = { id: string; title: string };
-	type Sheet = 'note' | 'photo' | null;
+	type Sheet = 'note' | 'photo' | 'more' | null;
 
 	let sheet = $state<Sheet>(null);
 	let projects: Project[] = $state([]);
@@ -17,10 +19,24 @@
 	const onProjects = $derived(page.url.pathname.startsWith('/projects'));
 	const onExplore = $derived(page.url.pathname.startsWith('/explore'));
 
+	// Sections without a tab of their own: reached through "More".
+	const MORE_LINKS = [
+		{ href: '/bib', label: 'Bibliography' },
+		{ href: '/posts', label: 'Blog' },
+		{ href: '/network', label: 'Network' },
+		{ href: '/help', label: 'Help' }
+	] as const;
+	const onMore = $derived(
+		MORE_LINKS.some(
+			(l) => page.url.pathname === l.href || page.url.pathname.startsWith(`${l.href}/`)
+		)
+	);
+
 	async function openSheet(type: Sheet) {
 		sheet = type;
 		uploadError = '';
 		photoProjectId = '';
+		if (type === 'more') return;
 		if (projects.length === 0) {
 			loading = true;
 			try {
@@ -115,15 +131,16 @@
 
 <!-- Bottom nav -->
 <nav
-	class="pb-safe fixed inset-x-0 bottom-0 z-10 border-t border-paper-border bg-paper/95 backdrop-blur-sm sm:hidden dark:border-dark-paper-border dark:bg-dark-paper/95"
+	class="pb-safe fixed inset-x-0 bottom-0 z-10 border-t border-paper-border bg-paper/95 backdrop-blur-sm sm:hidden"
 >
 	<div class="flex items-center">
 		<!-- Proyectos -->
 		<a
 			href={resolve('/projects')}
+			aria-current={onProjects ? 'page' : undefined}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onProjects
-				? 'text-accent'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+				? 'text-accent-ink'
+				: 'text-ink-muted'}"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -144,48 +161,24 @@
 		<!-- Explore -->
 		<a
 			href={resolve('/explore')}
+			aria-current={onExplore ? 'page' : undefined}
 			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onExplore
-				? 'text-accent'
-				: 'text-ink-muted dark:text-dark-ink-muted'}"
+				? 'text-accent-ink'
+				: 'text-ink-muted'}"
 		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="20"
-				height="20"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.75"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-			</svg>
+			<Search size={20} strokeWidth={1.75} aria-hidden="true" />
 			Explore
 		</a>
 
 		<!-- + Nota -->
 		<button
 			onclick={() => openSheet('note')}
-			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors dark:text-dark-ink-muted"
+			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors"
 		>
 			<span
 				class="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white shadow-sm"
 			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<line x1="12" y1="5" x2="12" y2="19" />
-					<line x1="5" y1="12" x2="19" y2="12" />
-				</svg>
+				<Plus size={16} strokeWidth={1.75} aria-hidden="true" />
 			</span>
 			Note
 		</button>
@@ -193,7 +186,7 @@
 		<!-- Photos -->
 		<button
 			onclick={() => openSheet('photo')}
-			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors dark:text-dark-ink-muted"
+			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs text-ink-muted transition-colors"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -213,8 +206,40 @@
 			</svg>
 			Photos
 		</button>
+
+		<!-- More -->
+		<button
+			onclick={() => openSheet('more')}
+			aria-haspopup="dialog"
+			aria-expanded={sheet === 'more'}
+			class="flex flex-1 flex-col items-center gap-1 py-2.5 font-sans text-xs transition-colors {onMore
+				? 'text-accent-ink'
+				: 'text-ink-muted'}"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="currentColor"
+				aria-hidden="true"
+			>
+				<circle cx="5" cy="12" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle
+					cx="19"
+					cy="12"
+					r="1.75"
+				/>
+			</svg>
+			More
+		</button>
 	</div>
 </nav>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && sheet) close();
+	}}
+/>
 
 <!-- Bottom sheet backdrop -->
 {#if sheet}
@@ -226,47 +251,63 @@
 	></button>
 
 	<div
-		class="pb-safe fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-paper-border bg-paper sm:hidden dark:border-dark-paper-border dark:bg-dark-paper"
+		role="dialog"
+		aria-modal="true"
+		aria-label={sheet === 'more' ? 'More sections' : 'Choose a project'}
+		class="pb-safe fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-paper-border bg-paper sm:hidden"
 	>
 		<!-- Handle -->
 		<div class="flex justify-center pt-3 pb-1">
-			<div class="h-1 w-10 rounded-full bg-paper-border dark:bg-dark-paper-border"></div>
+			<div class="h-1 w-10 rounded-full bg-paper-border"></div>
 		</div>
 
-		<div class="px-4 pb-2">
-			<p class="font-sans text-sm font-medium text-ink dark:text-dark-ink">
-				{sheet === 'note'
-					? 'Which project to add the note to?'
-					: 'Which project to add the photo to?'}
-			</p>
-		</div>
-
-		{#if loading}
-			<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Loading projects…
-			</p>
-		{:else if projects.length === 0}
-			<p class="px-4 py-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				You have no projects yet.
-			</p>
-		{:else}
-			<ul class="max-h-64 overflow-y-auto pb-2">
-				{#each projects as p (p.id)}
+		{#if sheet === 'more'}
+			<ul class="pb-2">
+				{#each MORE_LINKS as link (link.href)}
 					<li>
-						<button
-							onclick={() => (sheet === 'note' ? createNote(p.id) : selectPhotoProject(p.id))}
-							disabled={creating}
-							class="w-full px-4 py-3 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+						<a
+							href={resolve(link.href)}
+							onclick={close}
+							aria-current={page.url.pathname.startsWith(link.href) ? 'page' : undefined}
+							class="block px-4 py-3 font-sans text-sm text-ink transition-colors hover:bg-paper-ui aria-[current=page]:font-medium aria-[current=page]:text-accent-ink"
 						>
-							{p.title}
-						</button>
+							{link.label}
+						</a>
 					</li>
 				{/each}
 			</ul>
+		{:else}
+			<div class="px-4 pb-2">
+				<p class="font-sans text-sm font-medium text-ink">
+					{sheet === 'note'
+						? 'Which project to add the note to?'
+						: 'Which project to add the photo to?'}
+				</p>
+			</div>
+
+			{#if loading}
+				<p class="px-4 py-4 font-sans text-sm text-ink-muted">Loading projects…</p>
+			{:else if projects.length === 0}
+				<p class="px-4 py-4 font-sans text-sm text-ink-muted">You have no projects yet.</p>
+			{:else}
+				<ul class="max-h-64 overflow-y-auto pb-2">
+					{#each projects as p (p.id)}
+						<li>
+							<button
+								onclick={() => (sheet === 'note' ? createNote(p.id) : selectPhotoProject(p.id))}
+								disabled={creating}
+								class="w-full px-4 py-3 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50"
+							>
+								{p.title}
+							</button>
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		{/if}
 
 		{#if uploadError}
-			<p class="px-4 pb-3 font-sans text-xs text-red-600">{uploadError}</p>
+			<p class="px-4 pb-3 font-sans text-xs text-danger">{uploadError}</p>
 		{/if}
 	</div>
 {/if}

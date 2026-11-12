@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import { trpc } from '$lib/utils/trpc';
 	import { parseBibtexFile } from '$lib/utils/bibtex';
 
@@ -47,38 +48,26 @@
 </script>
 
 <div class="w-full max-w-sm shrink-0">
-	<div
-		class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
-	>
-		<div
-			class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-		>
-			<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Import BibTeX</h2>
+	<div class="sticky top-20 overflow-hidden rounded-2xl border border-paper-border bg-paper">
+		<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5">
+			<h2 class="font-serif text-base font-semibold text-ink">Import BibTeX</h2>
 			<button
 				onclick={onclose}
 				aria-label="Close"
-				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 			>
-				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-					<path
-						d="M1 1l12 12M13 1L1 13"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 
 		<div class="space-y-4 px-5 py-4">
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Paste the contents of a <code
-					class="rounded bg-paper-ui px-1 font-mono text-xs dark:bg-dark-paper-ui">.bib</code
-				> file or several BibTeX entries.
+			<p class="font-sans text-sm text-ink-muted">
+				Paste the contents of a <code class="rounded bg-paper-ui px-1 font-mono text-xs">.bib</code> file
+				or several BibTeX entries.
 			</p>
 
 			<label
-				class="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-paper-border px-3 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-paper-border px-3 py-2.5 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent-ink"
 			>
 				<svg
 					width="14"
@@ -105,13 +94,10 @@
 			</label>
 
 			<div>
-				<label
-					for="import-raw"
-					class="mb-1 block font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted"
-				>
+				<label for="import-raw" class="mb-1 block font-sans text-xs font-medium text-ink-muted">
 					BibTeX content
 					{#if importPreview > 0}
-						<span class="ml-1 text-accent"
+						<span class="ml-1 text-accent-ink"
 							>· {importPreview} {importPreview === 1 ? 'entry' : 'entries'} detected</span
 						>
 					{/if}
@@ -121,15 +107,13 @@
 					bind:value={importRaw}
 					rows={12}
 					placeholder={'@article{smith2024,\n  title = {Example},\n  author = {Smith, John},\n  year = {2024},\n  journal = {Nature}\n}'}
-					class="w-full resize-y rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+					class="w-full resize-y rounded-md border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 				></textarea>
 			</div>
 
 			{#if importResult}
-				<div
-					class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30"
-				>
-					<p class="font-sans text-sm text-green-700 dark:text-green-400">
+				<div class="rounded-lg border border-success-border bg-success-bg px-3 py-2">
+					<p class="font-sans text-sm text-success">
 						✓ {importResult.inserted}
 						{importResult.inserted === 1 ? 'reference imported' : 'references imported'}
 						{#if importResult.skipped > 0}· {importResult.skipped} skipped{/if}
@@ -138,20 +122,16 @@
 			{/if}
 
 			{#if importError}
-				<p
-					class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-				>
+				<p class="rounded-lg bg-danger-bg px-3 py-2 font-sans text-sm text-danger">
 					{importError}
 				</p>
 			{/if}
 		</div>
 
-		<div
-			class="flex justify-end gap-2 border-t border-paper-border px-5 py-3 dark:border-dark-paper-border"
-		>
+		<div class="flex justify-end gap-2 border-t border-paper-border px-5 py-3">
 			<button
 				onclick={onclose}
-				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+				class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 			>
 				Close
 			</button>

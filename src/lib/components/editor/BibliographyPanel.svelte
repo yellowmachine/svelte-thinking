@@ -37,76 +37,67 @@
 	});
 </script>
 
-<div
-	class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
->
-	<div
-		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
-		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Bibliografía</h3>
-		<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">{refs.length} refs</span
-		>
+<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper">
+	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3">
+		<h3 class="font-serif text-sm font-semibold text-ink">Bibliography</h3>
+		<span class="font-sans text-xs text-ink-faint">{refs.length} refs</span>
 	</div>
 
-	<div class="border-b border-paper-border px-3 py-2 dark:border-dark-paper-border">
+	<div class="border-b border-paper-border px-3 py-2">
 		<input
 			type="text"
 			bind:value={filter}
-			placeholder="Filtrar… ej. dennett"
-			class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink dark:placeholder:text-dark-ink-faint"
+			placeholder="Filter… e.g. dennett"
+			class="w-full rounded-md border border-paper-border bg-paper-ui px-2.5 py-1.5 font-sans text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 		/>
 	</div>
 
 	<div class="flex-1 space-y-1 overflow-y-auto p-2">
 		{#if refs.length === 0}
-			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin referencias en este proyecto.
+			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted">
+				No references in this project.
 			</p>
 		{:else if filtered.length === 0}
-			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Sin coincidencias.
-			</p>
+			<p class="px-1 py-6 text-center font-sans text-sm text-ink-muted">No matches.</p>
 		{:else}
 			{#each filtered as ref (ref.id ?? ref.citeKey)}
 				<div
 					data-bib-ref={ref.citeKey}
 					class="rounded-lg border p-2.5 transition-colors {activeKey === ref.citeKey
 						? 'border-accent/50 bg-accent/5 dark:border-accent/40 dark:bg-accent/10'
-						: 'border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper'}"
+						: 'border-paper-border bg-paper'}"
 				>
 					<div class="flex items-center justify-between gap-1">
 						<button
 							onclick={() => onscrolltocite?.(ref.citeKey)}
-							class="font-mono text-xs font-semibold text-accent hover:underline"
+							class="font-mono text-xs font-semibold text-accent-ink hover:underline"
 						>
 							@{ref.citeKey}
 						</button>
 						<button
 							onclick={() => oninsert?.(ref.citeKey)}
-							title="Insertar cita en el cursor"
-							class="rounded px-1.5 py-0.5 font-sans text-[10px] text-ink-faint transition-colors hover:bg-accent hover:text-white dark:text-dark-ink-faint"
+							title="Insert citation at cursor"
+							class="rounded px-1.5 py-0.5 font-sans text-[10px] text-ink-faint transition-colors hover:bg-accent hover:text-white"
 						>
-							+ cita
+							+ cite
 						</button>
 					</div>
-					<p class="mt-0.5 line-clamp-2 font-sans text-xs leading-snug text-ink dark:text-dark-ink">
+					<p class="mt-0.5 line-clamp-2 font-sans text-xs leading-snug text-ink">
 						{ref.title}
 					</p>
 					{#if ref.authors.length > 0}
-						<p class="mt-0.5 font-sans text-[10px] text-ink-faint dark:text-dark-ink-faint">
+						<p class="mt-0.5 font-sans text-[10px] text-ink-faint">
 							{ref.authors.map((a) => a.last).join(', ')}{ref.year ? ` (${ref.year})` : ''}
 						</p>
 					{/if}
 					{#if ref.subnotes && ref.subnotes.length > 0}
-						<div
-							class="mt-2 space-y-1.5 border-t border-paper-border pt-2 dark:border-dark-paper-border"
-						>
+						<div class="mt-2 space-y-1.5 border-t border-paper-border pt-2">
 							{#each ref.subnotes as s (s.slug)}
 								<div class="border-l-2 border-accent/30 pl-2">
-									<span class="font-mono text-[10px] font-semibold text-accent">:{s.slug}</span>
+									<span class="font-mono text-[10px] font-semibold text-accent-ink">:{s.slug}</span>
 									{#if s.notes}
 										<p
-											class="mt-0.5 font-sans text-[10px] leading-snug whitespace-pre-wrap text-ink-muted dark:text-dark-ink-muted"
+											class="mt-0.5 font-sans text-[10px] leading-snug whitespace-pre-wrap text-ink-muted"
 										>
 											{s.notes}
 										</p>

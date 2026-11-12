@@ -1,4 +1,6 @@
 <script lang="ts">
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import Trash from '@lucide/svelte/icons/trash';
 	import { type ProjectStatus, PROJECT_STATUS_LABELS } from '$lib/domain/project';
 	let {
 		title,
@@ -38,11 +40,11 @@
 	);
 
 	const statusStyle: Record<ProjectStatus, string> = {
-		draft: 'bg-paper-border text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted',
-		active: 'bg-green-100 text-green-700',
-		review: 'bg-amber-100 text-amber-700',
+		draft: 'bg-paper-border text-ink-muted',
+		active: 'bg-success-bg text-success',
+		review: 'bg-warning-bg text-warning',
 		published: 'bg-blue-100 text-blue-700',
-		archived: 'bg-paper-border text-ink-faint dark:bg-dark-paper-border dark:text-dark-ink-faint'
+		archived: 'bg-paper-border text-ink-faint'
 	};
 
 	let formattedDate = $derived(
@@ -74,19 +76,19 @@
 		tabindex="0"
 		{onclick}
 		onkeydown={(e) => e.key === 'Enter' && onclick?.()}
-		class="w-full cursor-pointer rounded-xl border border-paper-border bg-paper p-5 text-left transition-all hover:border-accent/30 hover:shadow-sm dark:border-dark-paper-border dark:bg-dark-paper dark:hover:border-accent/30"
+		class="w-full cursor-pointer rounded-xl border border-paper-border bg-paper p-5 text-left transition-all hover:border-accent/30 hover:shadow-sm dark:hover:border-accent/30"
 	>
 		<div class="flex items-start justify-between gap-3">
 			<div class="flex min-w-0 items-center gap-2">
 				<h3
 					translate="no"
-					class="font-serif text-lg font-semibold text-ink group-hover:text-accent dark:text-dark-ink dark:group-hover:text-accent"
+					class="font-serif text-lg font-semibold text-ink group-hover:text-accent-ink dark:group-hover:text-accent-ink"
 				>
 					{title}
 				</h3>
 				{#if hasActiveShares}
 					<span
-						class="mt-0.5 shrink-0 text-accent"
+						class="mt-0.5 shrink-0 text-accent-ink"
 						title="Has active public links"
 						aria-label="Has active public links"
 					>
@@ -111,7 +113,7 @@
 			<div class="flex shrink-0 items-center gap-1.5">
 				{#if daysLeft !== null}
 					<span
-						class="rounded-full bg-red-100 px-2.5 py-0.5 font-sans text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400"
+						class="rounded-full bg-danger-bg px-2.5 py-0.5 font-sans text-xs font-medium text-danger"
 					>
 						Deleting in {daysLeft}d
 					</span>
@@ -130,18 +132,13 @@
 		</div>
 
 		{#if description}
-			<p
-				translate="no"
-				class="mt-2 line-clamp-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-			>
+			<p translate="no" class="mt-2 line-clamp-2 font-sans text-sm leading-relaxed text-ink-muted">
 				{description}
 			</p>
 		{/if}
 
 		<div class="mt-4 flex items-center gap-4">
-			<span
-				class="flex items-center gap-1.5 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-			>
+			<span class="flex items-center gap-1.5 font-sans text-xs text-ink-faint">
 				<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
 					<circle cx="6" cy="4" r="2" stroke="currentColor" stroke-width="1.2" />
 					<path
@@ -156,7 +153,7 @@
 			</span>
 
 			{#if formattedDate}
-				<span class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				<span class="font-sans text-xs text-ink-faint">
 					Updated {formattedDate}
 				</span>
 			{/if}
@@ -169,34 +166,18 @@
 							<a
 								href={reviewHref}
 								onclick={(e) => e.stopPropagation()}
-								class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50"
+								class="flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/50"
 								title="View open comments"
 							>
-								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
+								<MessageSquare size={10} strokeWidth={1.75} aria-hidden="true" />
 								{openComments}
 							</a>
 							<!-- eslint-enable svelte/no-navigation-without-resolve -->
 						{:else}
 							<span
-								class="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+								class="flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 font-sans text-xs font-medium text-warning"
 							>
-								<svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-									<path
-										d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									/>
-								</svg>
+								<MessageSquare size={10} strokeWidth={1.75} aria-hidden="true" />
 								{openComments}
 							</span>
 						{/if}
@@ -240,7 +221,7 @@
 			<button
 				type="button"
 				onclick={toggleMenu}
-				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:bg-paper-ui hover:text-ink dark:text-dark-ink-faint dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
+				class="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint opacity-0 transition-opacity group-hover:opacity-100 hover:bg-paper-ui hover:text-ink"
 				aria-label="Project options"
 			>
 				<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -254,7 +235,7 @@
 
 			{#if menuOpen}
 				<div
-					class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+					class="absolute top-full right-0 z-20 mt-1 w-44 rounded-lg border border-paper-border bg-paper shadow-lg"
 					role="menu"
 				>
 					<button
@@ -265,21 +246,9 @@
 							menuOpen = false;
 							ondelete?.();
 						}}
-						class="flex w-full items-center gap-2 px-3 py-2 font-sans text-xs text-red-500 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/10"
+						class="flex w-full items-center gap-2 px-3 py-2 font-sans text-xs text-danger transition-colors hover:bg-danger-bg"
 					>
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							aria-hidden="true"
-						>
-							<polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path
-								d="M10 11v6M14 11v6"
-							/><path d="M9 6V4h6v2" />
-						</svg>
+						<Trash size={12} strokeWidth={1.75} aria-hidden="true" />
 						Delete project…
 					</button>
 				</div>

@@ -42,6 +42,19 @@ export function roleAllowsWrite(role: CollaboratorRole | null): boolean {
 }
 
 /**
+ * Who can add a document to a project. Owners and writers can add any;
+ * reviewers and commenters only private ones (their own notes), since they
+ * can't edit shared documents either. Non-members can't add any.
+ */
+export function canCreateDocument(
+	role: 'owner' | CollaboratorRole | null,
+	isPrivate: boolean
+): boolean {
+	if (role === 'owner' || roleAllowsWrite(role)) return true;
+	return isPrivate && (role === 'reviewer' || role === 'commenter');
+}
+
+/**
  * Project owner can always delegate or reclaim.
  * The current delegated writer (writerUserId) can also release or transfer their slot,
  * even if their collaborator role no longer allows writing (downgrade case).

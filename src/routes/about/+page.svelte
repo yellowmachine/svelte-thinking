@@ -2,11 +2,9 @@
 	import { resolve } from '$app/paths';
 </script>
 
-<div class="min-h-screen bg-paper-ui font-sans dark:bg-dark-paper-ui">
+<div class="min-h-screen bg-paper-ui font-sans">
 	<!-- ── Nav ──────────────────────────────────────────────────────────────── -->
-	<header
-		class="sticky top-0 z-20 border-b border-paper-border bg-paper-ui/90 backdrop-blur-sm dark:border-dark-paper-border dark:bg-dark-paper-ui/90"
-	>
+	<header class="sticky top-0 z-20 border-b border-paper-border bg-paper-ui/90 backdrop-blur-sm">
 		<div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
 			<div class="flex items-center gap-2">
 				<a href={resolve('/')} class="flex items-center gap-2">
@@ -20,10 +18,9 @@
 							/>
 						</svg>
 					</div>
-					<span class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Scholio</span
-					>
+					<span class="font-serif text-base font-semibold text-ink">Scholio</span>
 					<span
-						class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent uppercase"
+						class="rounded-full bg-accent/10 px-2 py-0.5 font-sans text-[10px] font-semibold tracking-wide text-accent-ink uppercase"
 						>beta</span
 					>
 				</a>
@@ -31,13 +28,13 @@
 			<div class="flex items-center gap-4">
 				<a
 					href={resolve('/blog')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 				>
 					Blog
 				</a>
 				<a
 					href={resolve('/login')}
-					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+					class="font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 				>
 					Sign in
 				</a>
@@ -56,15 +53,13 @@
 		<!-- Placeholder foto -->
 		<div class="mb-10 flex flex-col items-start gap-8 sm:flex-row sm:items-center">
 			<div
-				class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-accent/10 font-serif text-3xl font-semibold text-accent"
+				class="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-accent/10 font-serif text-3xl font-semibold text-accent-ink"
 			>
 				MA
 			</div>
 			<div>
-				<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">
-					Miguel Ángel Alarcos Torrecillas
-				</h1>
-				<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+				<h1 class="font-serif text-3xl font-semibold text-ink">Miguel Ángel Alarcos Torrecillas</h1>
+				<p class="mt-1 font-sans text-sm text-ink-muted">
 					Computer Systems Engineer · University of Murcia - 2005.
 				</p>
 				<div class="mt-3 flex items-center gap-4">
@@ -72,7 +67,7 @@
 						href="https://github.com/yellowmachine"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 						aria-label="GitHub"
 					>
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -84,7 +79,7 @@
 					</a>
 					<a
 						href="mailto:contact@scholio.review"
-						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+						class="flex items-center gap-1.5 font-sans text-sm text-ink-muted transition-colors hover:text-ink"
 					>
 						<svg
 							width="16"
@@ -108,49 +103,42 @@
 		</div>
 
 		<!-- Sobre el proyecto -->
-		<section class="space-y-6 border-t border-paper-border pt-10 dark:border-dark-paper-border">
-			<h2 class="font-serif text-xl font-semibold text-ink dark:text-dark-ink">
-				Why Scholio exists
-			</h2>
-			<p class="font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+		<section class="space-y-6 border-t border-paper-border pt-10">
+			<h2 class="font-serif text-xl font-semibold text-ink">Why Scholio exists</h2>
+			<p class="font-sans text-base leading-relaxed text-ink-muted">
 				Scholio was born from a concrete need: I wanted a tool that would help me in my own
 				research, that understood the context of my documents, handled citations rigorously, and
 				didn't force me to switch applications every time I needed to look something up or draft a
 				paragraph.
 			</p>
-			<p class="font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+			<p class="font-sans text-base leading-relaxed text-ink-muted">
 				I didn't find that tool, so I built it. Scholio is the environment I wish I had from the
 				start: Markdown editor, bibliography management, document version control, role-based
 				collaboration, and an AI assistant that knows your project — not a generic chatbot, but an
 				agent that works with your own texts and references.
 			</p>
-			<p class="font-sans text-base leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+			<p class="font-sans text-base leading-relaxed text-ink-muted">
 				I am the sole developer. That means every design decision and every line of code answers to
 				a clear criterion: if it doesn't serve me as a researcher, it doesn't go into the product.
 			</p>
 		</section>
 
 		<!-- Transparency -->
-		<section
-			class="mt-10 space-y-4 rounded-xl border border-paper-border bg-paper p-6 dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<h2 class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Transparency</h2>
-			<ul
-				class="space-y-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-			>
+		<section class="mt-10 space-y-4 rounded-xl border border-paper-border bg-paper p-6">
+			<h2 class="font-serif text-base font-semibold text-ink">Transparency</h2>
+			<ul class="space-y-2 font-sans text-sm leading-relaxed text-ink-muted">
 				<li>
-					· Scholio is in <strong class="text-ink dark:text-dark-ink">closed beta</strong>. Access
-					is by invitation while I stabilize the platform.
+					· Scholio is in <strong class="text-ink">closed beta</strong>. Access is by invitation
+					while I stabilize the platform.
 				</li>
 				<li>
-					· Your data and documents <strong class="text-ink dark:text-dark-ink"
-						>are not used to train AI models</strong
+					· Your data and documents <strong class="text-ink">are not used to train AI models</strong
 					>. Integration with external providers (OpenRouter, Perplexity) is governed by their own
 					policies, which you can review in settings.
 				</li>
 				<li>
-					· The project is <strong class="text-ink dark:text-dark-ink">independent</strong>, with no
-					investors and no aggressive monetization agenda.
+					· The project is <strong class="text-ink">independent</strong>, with no investors and no
+					aggressive monetization agenda.
 				</li>
 			</ul>
 		</section>
@@ -166,18 +154,12 @@
 	</main>
 
 	<!-- ── Footer ────────────────────────────────────────────────────────────── -->
-	<footer class="border-t border-paper-border py-8 dark:border-dark-paper-border">
-		<div
-			class="mx-auto max-w-5xl px-6 text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-		>
-			© 2026 Scholio · <a
-				href={resolve('/conduct')}
-				class="hover:text-ink-muted dark:hover:text-dark-ink-muted">Code of conduct</a
+	<footer class="border-t border-paper-border py-8">
+		<div class="mx-auto max-w-5xl px-6 text-center font-sans text-xs text-ink-faint">
+			© 2026 Scholio · <a href={resolve('/conduct')} class="hover:text-ink-muted">Code of conduct</a
 			>
 			·
-			<a
-				href="mailto:contact@scholio.review"
-				class="hover:text-ink-muted dark:hover:text-dark-ink-muted">contact@scholio.review</a
+			<a href="mailto:contact@scholio.review" class="hover:text-ink-muted">contact@scholio.review</a
 			>
 		</div>
 	</footer>

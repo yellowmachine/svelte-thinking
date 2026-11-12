@@ -20,10 +20,10 @@ export const load: PageServerLoad = async (event) => {
 	]);
 
 	const p = proj[0];
-	if (!p) error(404, 'Proyecto no encontrado');
+	if (!p) error(404, 'Project not found');
 
 	const iss = issueRows[0];
-	if (!iss) error(404, 'Issue no encontrado');
+	if (!iss) error(404, 'Issue not found');
 
 	return {
 		issue: iss,

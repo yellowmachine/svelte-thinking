@@ -46,12 +46,12 @@ export async function sendProjectInvitation({
 
 	await sendMail({
 		to,
-		subject: `${inviterName} te invitó a colaborar en "${projectTitle}"`,
+		subject: `${inviterName} invited you to collaborate on "${projectTitle}" on Scholio`,
 		html: `
-			<p>Hola,</p>
-			<p><strong>${inviterName}</strong> te ha invitado a colaborar en el proyecto <strong>"${projectTitle}"</strong> como <strong>${role}</strong>.</p>
-			<p><a href="${link}">Aceptar invitación</a></p>
-			<p>Este enlace expira en 7 días.</p>
+			<p>Hello,</p>
+			<p><strong>${inviterName}</strong> has invited you to collaborate on the project <strong>"${projectTitle}"</strong> on Scholio as <strong>${role}</strong>.</p>
+			<p><a href="${link}">Accept invitation</a></p>
+			<p>This link expires in 7 days.</p>
 		`
 	});
 }

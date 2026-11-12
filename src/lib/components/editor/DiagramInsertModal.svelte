@@ -1,4 +1,5 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
 	import { trpc } from '$lib/utils/trpc';
 	import { renderMermaidToSvg } from '$lib/utils/mermaidRender';
 
@@ -33,7 +34,7 @@
 			const withContent = await trpc.documents.withContent.query(doc.id);
 			previewSvg = await renderMermaidToSvg(withContent.content);
 		} catch (e) {
-			previewError = `No se pudo previsualizar el diagrama: ${e}`;
+			previewError = `Couldn't preview the diagram: ${e}`;
 		} finally {
 			previewLoading = false;
 		}
@@ -53,33 +54,21 @@
 	}}
 >
 	<div
-		class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-t-2xl border border-paper-border bg-paper shadow-2xl sm:rounded-2xl dark:border-dark-paper-border dark:bg-dark-paper"
+		class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-t-2xl border border-paper-border bg-paper shadow-2xl sm:rounded-2xl"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="diagram-insert-title"
 	>
-		<div
-			class="flex items-center justify-between border-b border-paper-border px-5 py-3.5 dark:border-dark-paper-border"
-		>
-			<h2
-				id="diagram-insert-title"
-				class="font-serif text-base font-semibold text-ink dark:text-dark-ink"
-			>
-				Insertar diagrama
+		<div class="flex items-center justify-between border-b border-paper-border px-5 py-3.5">
+			<h2 id="diagram-insert-title" class="font-serif text-base font-semibold text-ink">
+				Insert diagram
 			</h2>
 			<button
 				onclick={onclose}
-				aria-label="Cerrar"
-				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				aria-label="Close"
+				class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 			>
-				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-					<path
-						d="M1 1l12 12M13 1L1 13"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 
@@ -87,33 +76,27 @@
 			<input
 				type="search"
 				bind:value={diagramSearch}
-				placeholder="Buscar por título…"
-				class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				placeholder="Search by title…"
+				class="w-full rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-sans text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			/>
 		</div>
 
 		<div class="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden px-4 py-3 sm:grid-cols-2">
 			<div class="max-h-64 overflow-y-auto sm:max-h-none">
 				{#if docs.length === 0}
-					<p
-						class="px-3 py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-					>
-						Sin diagramas en este proyecto.
+					<p class="px-3 py-6 text-center font-sans text-sm text-ink-muted">
+						No diagrams in this project.
 					</p>
 				{:else if filteredDocs.length === 0}
-					<p
-						class="px-3 py-4 text-center font-sans text-sm text-ink-faint dark:text-dark-ink-faint"
-					>
-						Sin resultados.
-					</p>
+					<p class="px-3 py-4 text-center font-sans text-sm text-ink-faint">No results.</p>
 				{:else}
 					{#each filteredDocs as doc (doc.id)}
 						<button
 							onclick={() => select(doc)}
 							class="block w-full truncate rounded-lg px-3 py-2 text-left font-sans text-sm transition-colors {selected?.id ===
 							doc.id
-								? 'bg-accent/10 text-accent dark:bg-accent/20'
-								: 'text-ink hover:bg-paper-ui dark:text-dark-ink dark:hover:bg-dark-paper-ui'}"
+								? 'bg-accent/10 text-accent-ink dark:bg-accent/20'
+								: 'text-ink hover:bg-paper-ui'}"
 						>
 							{doc.title}
 						</button>
@@ -122,20 +105,18 @@
 			</div>
 
 			<div
-				class="flex min-h-40 flex-col items-center justify-center overflow-auto rounded-lg border border-paper-border bg-paper-ui p-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+				class="flex min-h-40 flex-col items-center justify-center overflow-auto rounded-lg border border-paper-border bg-paper-ui p-3"
 			>
 				{#if !selected}
-					<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-						Selecciona un diagrama para previsualizarlo
-					</p>
+					<p class="font-sans text-sm text-ink-faint">Select a diagram to preview it</p>
 				{:else}
-					<p class="mb-2 self-start font-sans text-sm font-medium text-ink dark:text-dark-ink">
+					<p class="mb-2 self-start font-sans text-sm font-medium text-ink">
 						{selected.title}
 					</p>
 					{#if previewLoading}
-						<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">Cargando…</p>
+						<p class="font-sans text-sm text-ink-faint">Loading…</p>
 					{:else if previewError}
-						<p class="font-sans text-sm text-red-600 dark:text-red-400">{previewError}</p>
+						<p class="font-sans text-sm text-danger">{previewError}</p>
 					{:else}
 						<div class="w-full [&_svg]:h-auto [&_svg]:max-w-full">
 							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -146,21 +127,19 @@
 			</div>
 		</div>
 
-		<div
-			class="flex justify-end gap-2 border-t border-paper-border px-4 py-3 dark:border-dark-paper-border"
-		>
+		<div class="flex justify-end gap-2 border-t border-paper-border px-4 py-3">
 			<button
 				onclick={onclose}
-				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="rounded-md px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 			>
-				Cancelar
+				Cancel
 			</button>
 			<button
 				onclick={confirmInsert}
 				disabled={!selected}
 				class="rounded-md bg-accent px-3 py-1.5 font-sans text-sm text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
 			>
-				Insertar
+				Insert
 			</button>
 		</div>
 	</div>

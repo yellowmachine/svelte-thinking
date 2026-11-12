@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
+	import RotateCw from '@lucide/svelte/icons/rotate-cw';
+	import X from '@lucide/svelte/icons/x';
 	import { trpc } from '$lib/utils/trpc';
 
 	type UntaggedRef = { context: string; text: string; citeKey: string };
@@ -90,42 +93,30 @@
 	}
 </script>
 
-<div
-	class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper dark:border-dark-paper-border dark:bg-dark-paper"
->
-	<div
-		class="flex items-center justify-between border-b border-paper-border px-4 py-3 dark:border-dark-paper-border"
-	>
-		<h3 class="font-serif text-sm font-semibold text-ink dark:text-dark-ink">Enrich document</h3>
+<div class="flex w-80 shrink-0 flex-col overflow-hidden border-l border-paper-border bg-paper">
+	<div class="flex items-center justify-between border-b border-paper-border px-4 py-3">
+		<h3 class="font-serif text-sm font-semibold text-ink">Enrich document</h3>
 		<button
 			type="button"
 			onclick={onclose}
-			class="text-ink-faint transition-colors hover:text-ink-muted dark:text-dark-ink-faint dark:hover:text-dark-ink-muted"
+			class="text-ink-faint transition-colors hover:text-ink-muted"
 			aria-label="Close"
 		>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-				<path
-					d="M18 6L6 18M6 6l12 12"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-				/>
-			</svg>
+			<X size={14} strokeWidth={1.75} aria-hidden="true" />
 		</button>
 	</div>
 
 	<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
 		{#if !enrichResult && !loadingEnrich}
-			<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="font-sans text-xs text-ink-faint">
 				Finds person names not yet tagged as <code
-					class="rounded bg-paper-ui px-1 font-mono text-[11px] dark:bg-dark-paper-ui"
-					>[[person:]]</code
+					class="rounded bg-paper-ui px-1 font-mono text-[11px]">[[person:]]</code
 				> and informal citations that match a reference in your bibliography.
 			</p>
 			<button
 				type="button"
 				onclick={runEnrich}
-				class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 			>
 				<svg
 					width="12"
@@ -143,21 +134,19 @@
 				Analyse document
 			</button>
 		{:else if loadingEnrich}
-			<p class="py-6 text-center font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Analysing…
-			</p>
+			<p class="py-6 text-center font-sans text-sm text-ink-muted">Analysing…</p>
 		{:else if enrichError}
-			<p class="font-sans text-xs text-red-500">{enrichError}</p>
+			<p class="font-sans text-xs text-danger">{enrichError}</p>
 		{:else if enrichResult}
 			{#if enrichResult.persons.length === 0 && enrichResult.refs.length === 0}
-				<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				<p class="font-sans text-xs text-ink-faint">
 					No untagged persons or informal citations found.
 				</p>
 			{:else}
 				<button
 					type="button"
 					onclick={applyAll}
-					class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-xs text-accent transition-colors hover:bg-accent/10"
+					class="flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/5 px-3 py-1.5 font-sans text-xs text-accent-ink transition-colors hover:bg-accent/10"
 				>
 					<svg
 						width="12"
@@ -179,50 +168,32 @@
 
 			{#if enrichResult.persons.length > 0}
 				<div>
-					<p
-						class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-					>
+					<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase">
 						People
 					</p>
 					<div class="flex flex-col gap-1.5">
 						{#each enrichResult.persons as name (name)}
 							{@const snippet = enrichSnippet(name)}
 							<div
-								class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+								class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2"
 							>
 								<div class="min-w-0">
 									{#if snippet}
-										<p
-											class="font-sans text-[11px] leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-										>
-											{snippet.before}<strong class="text-ink dark:text-dark-ink"
-												>{snippet.match}</strong
+										<p class="font-sans text-[11px] leading-relaxed text-ink-muted">
+											{snippet.before}<strong class="text-ink">{snippet.match}</strong
 											>{snippet.after}
 										</p>
 									{/if}
-									<span
-										class="mt-0.5 block font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint"
+									<span class="mt-0.5 block font-mono text-[10px] text-ink-faint"
 										>→ [[person:{name}]]</span
 									>
 								</div>
 								<button
 									type="button"
 									onclick={() => applyPerson(name)}
-									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent hover:underline"
+									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent-ink hover:underline"
 								>
-									<svg
-										width="10"
-										height="10"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2.5"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
-									>
-										<polyline points="20 6 9 17 4 12" />
-									</svg>
+									<Check size={10} strokeWidth={1.75} aria-hidden="true" />
 									Apply
 								</button>
 							</div>
@@ -233,9 +204,7 @@
 
 			{#if enrichResult.refs.length > 0}
 				<div>
-					<p
-						class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase dark:text-dark-ink-faint"
-					>
+					<p class="mb-2 font-sans text-[11px] font-medium tracking-wide text-ink-faint uppercase">
 						Informal citations
 					</p>
 					<div class="flex flex-col gap-1.5">
@@ -250,41 +219,25 @@
 										}
 									: enrichSnippet(ref.text)}
 							<div
-								class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+								class="flex items-start justify-between rounded-md border border-paper-border bg-paper-ui px-3 py-2"
 							>
 								<div class="min-w-0">
 									{#if refSnippet}
-										<p
-											class="font-sans text-[11px] leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-										>
-											{refSnippet.before}<strong class="text-ink dark:text-dark-ink"
-												>{refSnippet.match}</strong
+										<p class="font-sans text-[11px] leading-relaxed text-ink-muted">
+											{refSnippet.before}<strong class="text-ink">{refSnippet.match}</strong
 											>{refSnippet.after}
 										</p>
 									{/if}
-									<span
-										class="mt-0.5 block font-mono text-[10px] text-ink-faint dark:text-dark-ink-faint"
+									<span class="mt-0.5 block font-mono text-[10px] text-ink-faint"
 										>→ [[@{ref.citeKey}]]</span
 									>
 								</div>
 								<button
 									type="button"
 									onclick={() => applyRef(ref)}
-									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent hover:underline"
+									class="ml-2 inline-flex shrink-0 items-center gap-0.5 font-sans text-[10px] text-accent-ink hover:underline"
 								>
-									<svg
-										width="10"
-										height="10"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2.5"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										aria-hidden="true"
-									>
-										<polyline points="20 6 9 17 4 12" />
-									</svg>
+									<Check size={10} strokeWidth={1.75} aria-hidden="true" />
 									Apply
 								</button>
 							</div>
@@ -297,22 +250,9 @@
 				type="button"
 				onclick={runEnrich}
 				disabled={loadingEnrich}
-				class="mt-auto flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40 dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+				class="mt-auto flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-40"
 			>
-				<svg
-					width="12"
-					height="12"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<polyline points="23 4 23 10 17 10" />
-					<path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-				</svg>
+				<RotateCw size={12} strokeWidth={1.75} aria-hidden="true" />
 				Re-analyse
 			</button>
 		{/if}

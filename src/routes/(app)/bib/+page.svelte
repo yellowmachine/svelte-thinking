@@ -1,4 +1,7 @@
 <script lang="ts">
+	import X from '@lucide/svelte/icons/x';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import BookOpen from '@lucide/svelte/icons/book-open';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { invalidateAll } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
@@ -52,7 +55,7 @@
 			if (!map.has(key)) {
 				map.set(key, {
 					projectId: r.projectId,
-					projectTitle: r.projectTitle ?? 'Sin proyecto',
+					projectTitle: r.projectTitle ?? 'No project',
 					bibHref: r.projectId ? `/projects/${r.projectId}/bib` : null,
 					refs: []
 				});
@@ -110,10 +113,10 @@
 	function typeLabel(type: string): string {
 		const labels: Record<string, string> = {
 			article: 'Article',
-			book: 'Libro',
-			inproceedings: 'Conferencia',
+			book: 'Book',
+			inproceedings: 'Conference paper',
 			incollection: 'Chapter',
-			phdthesis: 'Tesis doctoral',
+			phdthesis: 'PhD thesis',
 			mastersthesis: "Master's thesis",
 			techreport: 'Technical report',
 			misc: 'Miscellaneous'
@@ -129,14 +132,11 @@
 <div class="mx-auto max-w-4xl px-6 py-8">
 	<div class="mb-6 flex items-start justify-between gap-4">
 		<div>
-			<h1
-				data-tutorial="bib-title"
-				class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink"
-			>
+			<h1 data-tutorial="bib-title" class="font-serif text-2xl font-semibold text-ink">
 				Global bibliography
 			</h1>
-			<p class="mt-1 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				{data.references.length} referencia{data.references.length !== 1 ? 's' : ''} en todos tus proyectos
+			<p class="mt-1 font-sans text-sm text-ink-muted">
+				{data.references.length} reference{data.references.length !== 1 ? 's' : ''} across all your projects
 			</p>
 		</div>
 		<button
@@ -147,7 +147,7 @@
 				importResult = null;
 				importError = '';
 			}}
-			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+			class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui"
 		>
 			Import .bib
 		</button>
@@ -160,22 +160,19 @@
 			type="search"
 			bind:value={query}
 			placeholder="Search by title, author, key, project…"
-			class="w-full rounded-lg border border-paper-border bg-paper px-4 py-2.5 font-sans text-sm text-ink placeholder-ink-faint outline-none focus:border-accent focus:ring-1 focus:ring-accent dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint dark:focus:border-accent"
+			class="w-full rounded-lg border border-paper-border bg-paper px-4 py-2.5 font-sans text-sm text-ink placeholder-ink-faint outline-none focus:border-accent focus:ring-1 focus:ring-accent dark:focus:border-accent"
 		/>
 	</div>
 
 	{#if data.references.length === 0}
-		<div
-			class="rounded-lg border border-paper-border bg-paper p-8 text-center dark:border-dark-paper-border dark:bg-dark-paper"
-		>
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				No references yet. Add them from the
-				<strong>Bibliography</strong> section of each project.
-			</p>
-		</div>
+		<EmptyState
+			icon={BookOpen}
+			title="Your library is empty"
+			description="References you add in any project's Bibliography are kept here, so you can reuse them across projects."
+		/>
 	{:else if filtered.length === 0}
-		<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-			Sin resultados para <em>"{query}"</em>.
+		<p class="font-sans text-sm text-ink-muted">
+			No results for <em>"{query}"</em>.
 		</p>
 	{:else}
 		<div class="space-y-8">
@@ -184,57 +181,46 @@
 					<div class="mb-3 flex items-center justify-between">
 						<h2
 							translate={group.projectId ? 'no' : 'yes'}
-							class="font-sans text-xs font-semibold tracking-wider text-ink-muted uppercase dark:text-dark-ink-muted"
+							class="font-sans text-xs font-semibold tracking-wider text-ink-muted uppercase"
 						>
 							{group.projectTitle}
 						</h2>
 						{#if group.bibHref}
 							<a
 								href={resolve(`/projects/${group.projectId!}/bib`)}
-								class="font-sans text-xs text-accent hover:underline"
+								class="font-sans text-xs text-accent-ink hover:underline"
 							>
-								Ver en proyecto →
+								View in project →
 							</a>
 						{/if}
 					</div>
 
-					<div
-						class="divide-y divide-paper-border rounded-lg border border-paper-border dark:divide-dark-paper-border dark:border-dark-paper-border"
-					>
+					<div class="divide-y divide-paper-border rounded-lg border border-paper-border">
 						{#each group.refs as ref (ref.id)}
 							<div class="px-4 py-3">
 								<div class="flex items-start justify-between gap-3">
 									<div class="min-w-0 flex-1">
-										<p
-											translate="no"
-											class="font-sans text-sm font-medium text-ink dark:text-dark-ink"
-										>
+										<p translate="no" class="font-sans text-sm font-medium text-ink">
 											{ref.title}
 										</p>
 										{#if ref.authors && ref.authors.length > 0}
-											<p
-												translate="no"
-												class="mt-0.5 font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-											>
+											<p translate="no" class="mt-0.5 font-sans text-xs text-ink-muted">
 												{authorString(ref.authors)}{ref.year ? ` (${ref.year})` : ''}
 											</p>
 										{/if}
 										{#if ref.journal || ref.booktitle}
-											<p
-												translate="no"
-												class="mt-0.5 font-sans text-xs text-ink-faint italic dark:text-dark-ink-faint"
-											>
+											<p translate="no" class="mt-0.5 font-sans text-xs text-ink-faint italic">
 												{ref.journal ?? ref.booktitle}
 											</p>
 										{/if}
 									</div>
 									<div class="flex shrink-0 items-center gap-2">
 										<span
-											class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-muted dark:bg-dark-paper-ui dark:text-dark-ink-muted"
+											class="rounded-full bg-paper-ui px-2 py-0.5 font-sans text-[10px] text-ink-muted"
 										>
 											{typeLabel(ref.type)}
 										</span>
-										<code translate="no" class="font-mono text-[11px] text-accent"
+										<code translate="no" class="font-mono text-[11px] text-accent-ink"
 											>@{ref.citeKey}</code
 										>
 										{#if ref.externalHref}
@@ -242,7 +228,7 @@
 												href={ref.externalHref}
 												target="_blank"
 												rel="noopener noreferrer external"
-												class="font-sans text-xs text-accent hover:underline"
+												class="font-sans text-xs text-accent-ink hover:underline"
 											>
 												{ref.doi ? 'DOI' : 'URL'}
 											</a>
@@ -252,8 +238,8 @@
 												type="button"
 												onclick={() => deleteRef(ref.id)}
 												disabled={deleting.has(ref.id)}
-												aria-label="Borrar referencia"
-												class="rounded p-0.5 text-ink-faint hover:text-red-500 disabled:opacity-40"
+												aria-label="Delete reference"
+												class="rounded p-0.5 text-ink-faint hover:text-danger disabled:opacity-40"
 											>
 												<svg
 													width="13"
@@ -291,28 +277,16 @@
 		aria-labelledby="import-bib-title"
 	>
 		<div
-			class="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl dark:border-dark-paper-border dark:bg-dark-paper"
+			class="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-paper-border bg-paper p-6 shadow-xl"
 		>
 			<div class="flex items-center justify-between">
-				<h2
-					id="import-bib-title"
-					class="font-serif text-lg font-semibold text-ink dark:text-dark-ink"
-				>
-					Import .bib
-				</h2>
+				<h2 id="import-bib-title" class="font-serif text-lg font-semibold text-ink">Import .bib</h2>
 				<button
 					onclick={() => (showImport = false)}
-					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="rounded-md p-1 text-ink-muted hover:bg-paper-ui"
 					aria-label="Close"
 				>
-					<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-						<path
-							d="M1 1l12 12M13 1L1 13"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-						/>
-					</svg>
+					<X size={14} strokeWidth={1.75} aria-hidden="true" />
 				</button>
 			</div>
 
@@ -320,20 +294,18 @@
 				bind:value={importRaw}
 				placeholder="Paste BibTeX content here…"
 				rows="12"
-				class="w-full resize-y rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+				class="w-full resize-y rounded-lg border border-paper-border bg-paper-ui px-3 py-2 font-mono text-xs text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
 			></textarea>
 
 			{#if importRaw.trim()}
-				<p class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted">
+				<p class="font-sans text-xs text-ink-muted">
 					{importPreview()} entr{importPreview() === 1 ? 'y' : 'ies'} detected
 				</p>
 			{/if}
 
 			{#if importResult}
-				<div
-					class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 dark:border-green-800/40 dark:bg-green-950/30"
-				>
-					<p class="font-sans text-sm text-green-700 dark:text-green-400">
+				<div class="rounded-lg border border-success-border bg-success-bg px-3 py-2">
+					<p class="font-sans text-sm text-success">
 						✓ {importResult.inserted}
 						{importResult.inserted === 1 ? 'reference imported' : 'references imported'}
 						{#if importResult.skipped > 0}· {importResult.skipped} skipped (already in library){/if}
@@ -342,9 +314,7 @@
 			{/if}
 
 			{#if importError}
-				<p
-					class="rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-				>
+				<p class="rounded-lg bg-danger-bg px-3 py-2 font-sans text-sm text-danger">
 					{importError}
 				</p>
 			{/if}
@@ -352,7 +322,7 @@
 			<div class="flex justify-end gap-2">
 				<button
 					onclick={() => (showImport = false)}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-sm text-ink-muted hover:bg-paper-ui"
 				>
 					Close
 				</button>

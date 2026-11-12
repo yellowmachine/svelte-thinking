@@ -2,7 +2,6 @@ import { TRPCError } from '@trpc/server';
 import { resolveTaskKey, OPENROUTER_URL, type WithRLS } from './trpc/routers/ai';
 import { logUsage, readUsage, type OpenRouterUsage } from './aiUsage';
 import { getDefaultModelId } from './openrouter';
-import type { Db } from './db';
 
 const MODERATION_SYSTEM_PROMPT = `You moderate public blog comments. Reply with exactly one line:
 "OK" if the comment is on-topic and not spam, harassment, hate speech, or abuse.
@@ -18,7 +17,6 @@ Do not reply with anything else.`;
  */
 export async function runCommentModerationCheck(
 	withRLS: WithRLS,
-	db: Db,
 	userId: string,
 	content: string
 ): Promise<{ flagged: boolean; reason: string | null } | null> {
@@ -27,7 +25,6 @@ export async function runCommentModerationCheck(
 	try {
 		const resolved = await resolveTaskKey(
 			withRLS,
-			db,
 			userId,
 			'moderate',
 			undefined,

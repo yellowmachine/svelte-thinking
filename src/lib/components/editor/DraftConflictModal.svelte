@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
+	import Copy from '@lucide/svelte/icons/copy';
+	import X from '@lucide/svelte/icons/x';
 	import DiffViewer from './DiffViewer.svelte';
 
 	let {
@@ -37,43 +40,25 @@
 	aria-modal="true"
 	aria-labelledby="draft-conflict-title"
 >
-	<div
-		class="flex max-h-[90vh] w-full max-w-5xl flex-col gap-4 rounded-2xl bg-paper p-6 shadow-xl dark:bg-dark-paper"
-	>
+	<div class="flex max-h-[90vh] w-full max-w-5xl flex-col gap-4 rounded-2xl bg-paper p-6 shadow-xl">
 		<!-- Header -->
 		<div class="flex shrink-0 items-start justify-between">
 			<div>
-				<h2
-					id="draft-conflict-title"
-					class="font-serif text-lg font-semibold text-ink dark:text-dark-ink"
-				>
-					Conflicto de borrador
+				<h2 id="draft-conflict-title" class="font-serif text-lg font-semibold text-ink">
+					Draft conflict
 				</h2>
-				<p class="mt-1 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
-					Tu borrador local difiere del guardado desde otro dispositivo. Elige qué contenido
-					conservar.
+				<p class="mt-1 font-sans text-sm leading-relaxed text-ink-muted">
+					Your local draft differs from the one saved on another device. Choose which content to
+					keep.
 				</p>
 			</div>
 			<button
 				type="button"
 				onclick={onclose}
-				class="shrink-0 rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink"
-				aria-label="Cerrar"
+				class="shrink-0 rounded-md p-1.5 text-ink-muted transition-colors hover:bg-paper-ui hover:text-ink"
+				aria-label="Close"
 			>
-				<svg
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<line x1="18" y1="6" x2="6" y2="18" />
-					<line x1="6" y1="6" x2="18" y2="18" />
-				</svg>
+				<X size={16} strokeWidth={1.75} aria-hidden="true" />
 			</button>
 		</div>
 
@@ -82,53 +67,26 @@
 			<DiffViewer
 				oldText={localContent}
 				newText={remoteContent}
-				oldLabel="Tu borrador (local)"
-				newLabel="Borrador del servidor"
+				oldLabel="Your draft (local)"
+				newLabel="Server draft"
 			/>
 		</div>
 
 		<!-- Acciones alineadas a las dos columnas del diff -->
-		<div
-			class="grid shrink-0 grid-cols-2 gap-3 border-t border-paper-border pt-4 dark:border-dark-paper-border"
-		>
+		<div class="grid shrink-0 grid-cols-2 gap-3 border-t border-paper-border pt-4">
 			<!-- Columna izquierda: acciones sobre el borrador local -->
 			<div class="flex items-center gap-2">
 				<button
 					type="button"
 					onclick={copyLocal}
-					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					{#if copiedLocal}
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<polyline points="20 6 9 17 4 12" />
-						</svg>
-						Copiado
+						<Check size={12} strokeWidth={1.75} aria-hidden="true" />
+						Copied
 					{:else}
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-						</svg>
-						Copiar el mío
+						<Copy size={12} strokeWidth={1.75} aria-hidden="true" />
+						Copy mine
 					{/if}
 				</button>
 				<button
@@ -136,7 +94,7 @@
 					onclick={onkeepmyself}
 					class="rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-90"
 				>
-					Mantener el mío
+					Keep mine
 				</button>
 			</div>
 
@@ -145,47 +103,22 @@
 				<button
 					type="button"
 					onclick={copyRemote}
-					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui"
+					class="flex items-center gap-1.5 rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-ui"
 				>
 					{#if copiedRemote}
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<polyline points="20 6 9 17 4 12" />
-						</svg>
-						Copiado
+						<Check size={12} strokeWidth={1.75} aria-hidden="true" />
+						Copied
 					{:else}
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-						</svg>
-						Copiar el del servidor
+						<Copy size={12} strokeWidth={1.75} aria-hidden="true" />
+						Copy the server's
 					{/if}
 				</button>
 				<button
 					type="button"
 					onclick={onkeepremote}
-					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs font-medium text-ink transition-colors hover:bg-paper-ui dark:border-dark-paper-border dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+					class="rounded-md border border-paper-border px-3 py-1.5 font-sans text-xs font-medium text-ink transition-colors hover:bg-paper-ui"
 				>
-					Usar el del servidor
+					Use the server's
 				</button>
 			</div>
 		</div>

@@ -591,7 +591,8 @@ function chicagoBib(ref: CiteRef): string {
 
 // ── Main processor ────────────────────────────────────────────────────────
 //
-// Finds all [@key] and [@key1; @key2] patterns in the markdown,
+// Finds all [[@key]] and [[@key1; @key2]] citations (and the older Pandoc
+// form [@key], see citationSyntax.ts) in the markdown,
 // replaces them with formatted inline citations, and appends a
 // bibliography section at the end.
 //
@@ -613,9 +614,10 @@ function _processCitations(
 ): string {
 	if (!refs.size) return markdown;
 
-	// Pattern: [[@key]] or multi-key [[@key1; @key2]]
-	// citeKey chars: letters, digits, :, -, _, .
-	const CITE_PATTERN = /\[\[(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]\]/g;
+	// Pattern: [[@key]] or multi-key [[@key1; @key2]] (group 1), or the older
+	// [@key] (group 2). citeKey chars: letters, digits, :, -, _, .
+	const CITE_PATTERN =
+		/\[\[(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]\]|\[(@[\w:._-]+(?:;\s*@[\w:._-]+)*)\]/g;
 
 	// For numbered styles: collect unique keys in order of first appearance
 	const orderedKeys: string[] = [];
@@ -627,7 +629,7 @@ function _processCitations(
 		const src = markdown;
 		CITE_PATTERN.lastIndex = 0;
 		while ((m = CITE_PATTERN.exec(src)) !== null) {
-			const keys = m[1].split(';').map((k) => k.trim().replace(/^@/, ''));
+			const keys = (m[1] ?? m[2]).split(';').map((k) => k.trim().replace(/^@/, ''));
 			for (const key of keys) {
 				if (!keyIndex.has(key)) {
 					orderedKeys.push(key);
@@ -645,7 +647,8 @@ function _processCitations(
 	CITE_PATTERN.lastIndex = 0;
 	const usedKeys = new Set<string>();
 
-	const result = markdown.replace(CITE_PATTERN, (_match, inner: string) => {
+	const result = markdown.replace(CITE_PATTERN, (_match, doubled?: string, single?: string) => {
+		const inner = (doubled ?? single)!;
 		const keys = inner.split(';').map((k: string) => k.trim().replace(/^@/, ''));
 
 		if (style === 'apa') {

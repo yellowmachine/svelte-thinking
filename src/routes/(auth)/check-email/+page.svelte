@@ -9,17 +9,15 @@
 	>
 		✉️
 	</div>
-	<h1 class="font-serif text-2xl font-semibold text-ink dark:text-dark-ink">Check your email</h1>
-	<p class="mt-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+	<h1 class="font-serif text-2xl font-semibold text-ink">Check your email</h1>
+	<p class="mt-3 font-sans text-sm text-ink-muted">
 		We've sent a verification link to<br />
-		<span class="font-medium text-ink dark:text-dark-ink">{data.email}</span>
+		<span class="font-medium text-ink">{data.email}</span>
 	</p>
-	<p class="mt-4 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-		Can't find it? Check your spam folder.
-	</p>
+	<p class="mt-4 font-sans text-xs text-ink-faint">Can't find it? Check your spam folder.</p>
 	<button
 		onclick={() => (window.location.href = '/login')}
-		class="mt-6 font-sans text-sm text-accent hover:underline"
+		class="mt-6 font-sans text-sm text-accent-ink hover:underline"
 	>
 		Back to sign in
 	</button>

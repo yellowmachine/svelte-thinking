@@ -12,6 +12,7 @@
  *   scholio:s3:org:{orgId}                         Org S3 config      (TTL 10 min)
  *   scholio:photo:presign:{photoId}                Photo presigned URL (TTL 55 min)
  *   scholio:model-catalog                          Resolved OpenRouter model catalog (TTL 5 days)
+ *   scholio:ratelimit:{name}:{id}                  Rate-limit counters (rateLimit.ts)
  */
 
 import Redis from 'ioredis';
@@ -129,5 +130,22 @@ export async function invalidatePattern(pattern: string): Promise<void> {
 		} while (cursor !== '0');
 	} catch {
 		// no-op
+	}
+}
+
+/**
+ * Increments a counter that expires `windowSeconds` after its first hit and
+ * returns the new value, or null if Redis is unavailable.
+ */
+export async function incrementWindow(key: string, windowSeconds: number): Promise<number | null> {
+	const client = getClient();
+	if (!client) return null;
+	try {
+		// SET NX starts the window only once; INCR keeps the TTL.
+		const results = await client.multi().set(key, 0, 'EX', windowSeconds, 'NX').incr(key).exec();
+		const value = results?.[1]?.[1];
+		return typeof value === 'number' ? value : null;
+	} catch {
+		return null;
 	}
 }

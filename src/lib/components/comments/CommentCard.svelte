@@ -44,14 +44,13 @@
 </script>
 
 <div
-	class="rounded-lg border bg-paper p-4 font-sans dark:bg-dark-paper
-		{status === 'resolved'
-		? 'border-paper-border opacity-60 dark:border-dark-paper-border'
-		: 'border-paper-border dark:border-dark-paper-border'}"
+	class="rounded-lg border bg-paper p-4 font-sans {status === 'resolved'
+		? 'border-paper-border opacity-60'
+		: 'border-paper-border'}"
 >
 	{#if type === 'inline' && anchorText}
 		<div
-			class="mb-3 rounded border-l-2 border-accent bg-accent-light/50 px-3 py-1.5 font-serif text-sm text-ink-muted italic dark:text-dark-ink-muted"
+			class="mb-3 rounded border-l-2 border-accent bg-accent-light/50 px-3 py-1.5 font-serif text-sm text-ink-muted italic"
 		>
 			"{anchorText}"
 		</div>
@@ -66,14 +65,14 @@
 
 		<div class="min-w-0 flex-1">
 			<div class="flex items-center gap-2">
-				<span class="text-sm font-medium text-ink dark:text-dark-ink">{authorName}</span>
-				<span class="text-xs text-ink-faint dark:text-dark-ink-faint">{formattedDate}</span>
+				<span class="text-sm font-medium text-ink">{authorName}</span>
+				<span class="text-xs text-ink-faint">{formattedDate}</span>
 				{#if status === 'resolved'}
-					<span class="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">Resuelto</span>
+					<span class="rounded-full bg-success-bg px-2 py-0.5 text-xs text-success">Resuelto</span>
 				{/if}
 			</div>
 
-			<p class="mt-1.5 text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted">
+			<p class="mt-1.5 text-sm leading-relaxed text-ink-muted">
 				{content}
 			</p>
 
@@ -81,7 +80,7 @@
 				{#if replyCount > 0}
 					<button
 						onclick={onreply}
-						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-ink"
 					>
 						<svg
 							width="11"
@@ -103,7 +102,7 @@
 				{:else}
 					<button
 						onclick={onreply}
-						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-ink dark:text-dark-ink-faint dark:hover:text-dark-ink"
+						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-ink"
 					>
 						<svg
 							width="11"
@@ -119,14 +118,14 @@
 							<polyline points="9 10 4 15 9 20" />
 							<path d="M20 4v7a4 4 0 01-4 4H4" />
 						</svg>
-						Responder
+						Reply
 					</button>
 				{/if}
 
 				{#if status === 'open'}
 					<button
 						onclick={onresolve}
-						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-green-600 dark:text-dark-ink-faint"
+						class="inline-flex items-center gap-1 text-xs text-ink-faint transition-colors hover:text-success"
 					>
 						<svg
 							width="11"
@@ -142,7 +141,7 @@
 							<path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
 							<polyline points="22 4 12 14.01 9 11.01" />
 						</svg>
-						Resolver
+						Resolve
 					</button>
 				{/if}
 			</div>

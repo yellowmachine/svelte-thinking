@@ -1,0 +1,51 @@
+<script lang="ts">
+	import X from '@lucide/svelte/icons/x';
+	import { toasts, type Toast } from '$lib/stores/flash.svelte';
+
+	const STYLES: Record<Toast['type'], string> = {
+		success: 'border-success-border bg-success-bg text-success',
+		error: 'border-danger-border bg-danger-bg text-danger',
+		info: 'border-paper-border bg-paper text-ink'
+	};
+
+	async function runAction(toast: Toast) {
+		toasts.dismiss(toast.id);
+		await toast.action?.run();
+	}
+</script>
+
+<!-- Polite region for success/info; each error is announced as an alert. -->
+<div
+	class="pointer-events-none fixed inset-x-4 top-4 z-[60] flex flex-col items-stretch gap-2 sm:inset-x-auto sm:top-16 sm:right-4 sm:w-96"
+	aria-live="polite"
+	aria-label="Notifications"
+	role="region"
+>
+	{#each toasts.items as toast (toast.id)}
+		<div
+			role={toast.type === 'error' ? 'alert' : undefined}
+			class="pointer-events-auto flex items-start gap-3 rounded-lg border px-4 py-3 font-sans text-sm shadow-lg {STYLES[
+				toast.type
+			]}"
+		>
+			<p class="min-w-0 flex-1 break-words">{toast.text}</p>
+			{#if toast.action}
+				<button
+					type="button"
+					onclick={() => runAction(toast)}
+					class="shrink-0 font-semibold underline underline-offset-2 hover:no-underline"
+				>
+					{toast.action.label}
+				</button>
+			{/if}
+			<button
+				type="button"
+				onclick={() => toasts.dismiss(toast.id)}
+				aria-label="Dismiss notification"
+				class="-m-1 shrink-0 rounded p-1 opacity-70 hover:opacity-100"
+			>
+				<X size={14} strokeWidth={1.75} aria-hidden="true" />
+			</button>
+		</div>
+	{/each}
+</div>

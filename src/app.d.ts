@@ -6,7 +6,6 @@ import type { Db } from '$lib/server/db';
 declare global {
 	namespace App {
 		interface Locals {
-			app: 'scholio' | 'scipy';
 			user?: User;
 			session?: Session;
 			/**

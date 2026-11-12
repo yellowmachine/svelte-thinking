@@ -20,7 +20,7 @@ export const actions: Actions = {
 		const email = data.get('email')?.toString().trim() ?? '';
 		const name = data.get('name')?.toString().trim() ?? '';
 
-		if (!email) return fail(400, { message: 'El email es obligatorio.' });
+		if (!email) return fail(400, { message: 'Email is required.' });
 
 		const existing = await db
 			.select({ id: waitlist.id, status: waitlist.status })
@@ -30,9 +30,15 @@ export const actions: Actions = {
 
 		if (existing[0]) {
 			if (existing[0].status === 'approved') {
-				return { already: true, message: 'Tu solicitud ya fue aprobada. Revisa tu correo.' };
+				return {
+					already: true,
+					message: 'Your request has already been approved. Check your email.'
+				};
 			}
-			return { already: true, message: 'Ya estás en la lista de espera. Te avisaremos pronto.' };
+			return {
+				already: true,
+				message: "You're already on the waiting list. We'll be in touch soon."
+			};
 		}
 
 		await db.insert(waitlist).values({

@@ -34,7 +34,7 @@ export const load: PageServerLoad = async (event) => {
 	]);
 
 	const idx = rows.findIndex((v) => v.id === versionId);
-	if (idx === -1) error(404, 'Versión no encontrada');
+	if (idx === -1) error(404, 'Version not found');
 
 	return {
 		documentTitle: docRows[0]?.title ?? '',

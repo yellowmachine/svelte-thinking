@@ -4,7 +4,6 @@ import {
 	index,
 	pgPolicy,
 	integer,
-	uniqueIndex,
 	jsonb,
 	numeric,
 	boolean
@@ -13,24 +12,9 @@ import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
 
 const currentUserId = sql`nullif(current_setting('app.current_user_id', true), '')`;
-import { document } from './documents.schema';
 import { project } from './projects.schema';
 
 export const aiMessageRoleEnum = scholioSchema.enum('ai_message_role', ['user', 'assistant']);
-
-export const aiSuggestionTypeEnum = scholioSchema.enum('ai_suggestion_type', [
-	'grammar',
-	'style',
-	'structure',
-	'clarity',
-	'citation'
-]);
-
-export const aiSuggestionStatusEnum = scholioSchema.enum('ai_suggestion_status', [
-	'pending',
-	'applied',
-	'rejected'
-]);
 
 export const aiConversation = scholioSchema
 	.table(
@@ -87,28 +71,6 @@ export const aiMessage = scholioSchema
 	)
 	.enableRLS();
 
-// Daily usage counter per user for operator-hosted AI calls (suggest endpoint).
-// Used to enforce rate limits without RLS bypass — each user can only see their own row.
-export const userAiUsage = scholioSchema
-	.table(
-		'user_ai_usage',
-		{
-			id: text('id').primaryKey(),
-			userId: text('user_id').notNull(),
-			date: text('date').notNull(), // 'YYYY-MM-DD'
-			suggestionCount: integer('suggestion_count').notNull().default(0)
-		},
-		(t) => [
-			uniqueIndex('user_ai_usage_user_date_idx').on(t.userId, t.date),
-
-			pgPolicy('user_ai_usage_access', {
-				for: 'all',
-				using: sql`${t.userId} = current_setting('app.current_user_id', true)`
-			})
-		]
-	)
-	.enableRLS();
-
 // Immutable log of AI calls — aggregated for quota enforcement and billing visibility.
 // orgId = null means personal (user key); orgId set means org billing applies.
 export const aiUsageLog = scholioSchema
@@ -154,38 +116,6 @@ export const aiUsageLog = scholioSchema
 			pgPolicy('ai_usage_log_insert', {
 				for: 'insert',
 				withCheck: sql`${t.userId} = ${currentUserId}`
-			})
-		]
-	)
-	.enableRLS();
-
-export const aiSuggestion = scholioSchema
-	.table(
-		'ai_suggestion',
-		{
-			id: text('id').primaryKey(),
-			documentId: text('document_id')
-				.notNull()
-				.references(() => document.id, { onDelete: 'cascade' }),
-			type: aiSuggestionTypeEnum('type').notNull(),
-			originalText: text('original_text'),
-			suggestedText: text('suggested_text').notNull(),
-			explanation: text('explanation'),
-			status: aiSuggestionStatusEnum('status').notNull().default('pending'),
-			createdAt: timestamp('created_at').notNull().defaultNow()
-		},
-		(t) => [
-			index('ai_suggestion_document_idx').on(t.documentId, t.status),
-
-			// Acceso via el documento (RLS en document filtra)
-			pgPolicy('ai_suggestion_access', {
-				for: 'all',
-				using: sql`
-				EXISTS (
-					SELECT 1 FROM scholio.document
-					WHERE document.id = ${t.documentId}
-				)
-			`
 			})
 		]
 	)

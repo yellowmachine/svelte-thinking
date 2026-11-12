@@ -8,8 +8,6 @@ export * from './schemas/ai.schema';
 export * from './schemas/photos.schema';
 export * from './schemas/waitlist.schema';
 export * from './schemas/datasets.schema';
-export * from './schemas/analyses.schema';
-export * from './schemas/templates.schema';
 export * from './schemas/references.schema';
 export * from './schemas/contextLinks.schema';
 export * from './schemas/documentLinks.schema';

@@ -124,19 +124,19 @@ export const blogRouter = router({
 					throw new TRPCError({
 						code: 'FORBIDDEN',
 						message:
-							'No puedes cambiar tu handle una vez has publicado — protege las URLs ya publicadas.'
+							"You can't change your handle once you've published — this protects URLs already out there."
 					});
 				}
 
 				if (!HANDLE_RE.test(handle)) {
 					throw new TRPCError({
 						code: 'BAD_REQUEST',
-						message: 'El handle debe tener entre 3 y 30 caracteres: letras, números y guiones.'
+						message: 'Handles must be 3–30 characters: letters, numbers and hyphens.'
 					});
 				}
 
 				if (RESERVED_HANDLES.has(handle)) {
-					throw new TRPCError({ code: 'BAD_REQUEST', message: 'Ese handle está reservado.' });
+					throw new TRPCError({ code: 'BAD_REQUEST', message: 'That handle is reserved.' });
 				}
 
 				const existing = await db
@@ -145,7 +145,7 @@ export const blogRouter = router({
 					.where(and(eq(userProfile.handle, handle), ne(userProfile.userId, ctx.user.id)))
 					.limit(1);
 				if (existing[0]) {
-					throw new TRPCError({ code: 'CONFLICT', message: 'Ese handle ya está en uso.' });
+					throw new TRPCError({ code: 'CONFLICT', message: 'That handle is already taken.' });
 				}
 
 				try {
@@ -155,7 +155,7 @@ export const blogRouter = router({
 						.where(eq(userProfile.userId, ctx.user.id));
 				} catch {
 					// Fallback for a race lost to the unique constraint
-					throw new TRPCError({ code: 'CONFLICT', message: 'Ese handle ya está en uso.' });
+					throw new TRPCError({ code: 'CONFLICT', message: 'That handle is already taken.' });
 				}
 
 				return { handle };
@@ -212,7 +212,7 @@ export const blogRouter = router({
 				if (!handle) {
 					throw new TRPCError({
 						code: 'PRECONDITION_FAILED',
-						message: 'Configura tu blog en Ajustes → Blog primero'
+						message: 'Set up your blog in Settings → Blog first'
 					});
 				}
 
@@ -244,7 +244,7 @@ export const blogRouter = router({
 					if (taken.has(slug)) {
 						throw new TRPCError({
 							code: 'CONFLICT',
-							message: 'Ya tienes una publicación con esa URL. Elige otra.'
+							message: 'You already have a post at that URL. Choose another.'
 						});
 					}
 				} else {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Check from '@lucide/svelte/icons/check';
 	import { resolve } from '$app/paths';
 	import type { PendingAction } from '$lib/server/trpc/routers/ai';
 	import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -81,29 +82,19 @@
 
 {#if status !== 'discarded'}
 	<div
-		class="mt-2 overflow-hidden rounded-xl border transition-colors
-		{status === 'done'
-			? 'border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20'
+		class="mt-2 overflow-hidden rounded-xl border transition-colors {status === 'done'
+			? 'border-success-border bg-success-bg dark:bg-green-950/20'
 			: 'border-accent/20 bg-accent/5 dark:border-accent/15 dark:bg-accent/5'}"
 	>
 		<div class="flex items-start gap-3 px-4 pt-4">
 			<!-- Icon -->
 			<div
-				class="mt-0.5 shrink-0 rounded-lg p-2
-				{status === 'done'
-					? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
-					: 'bg-accent/10 text-accent'}"
+				class="mt-0.5 shrink-0 rounded-lg p-2 {status === 'done'
+					? 'bg-success-bg text-success dark:text-green-400'
+					: 'bg-accent/10 text-accent-ink'}"
 			>
 				{#if status === 'done'}
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path
-							d="M20 6L9 17l-5-5"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
+					<Check size={14} strokeWidth={1.75} aria-hidden="true" />
 				{:else if action.type === 'create_issue'}
 					<!-- Issue icon: circle with dot -->
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -133,8 +124,9 @@
 			<!-- Info -->
 			<div class="min-w-0 flex-1">
 				<p
-					class="font-sans text-[11px] font-semibold tracking-wide uppercase
-					{status === 'done' ? 'text-green-600 dark:text-green-400' : 'text-accent'}"
+					class="font-sans text-[11px] font-semibold tracking-wide uppercase {status === 'done'
+						? 'text-success'
+						: 'text-accent-ink'}"
 				>
 					{#if status === 'done'}
 						{action.type === 'create_issue' ? 'Issue created' : 'Document created'}
@@ -142,10 +134,10 @@
 						{action.type === 'create_issue' ? 'Create issue' : 'Create document'}
 					{/if}
 				</p>
-				<p class="mt-0.5 font-serif text-sm font-semibold text-ink dark:text-dark-ink">
+				<p class="mt-0.5 font-serif text-sm font-semibold text-ink">
 					{action.title}
 				</p>
-				<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+				<p class="font-sans text-xs text-ink-faint">
 					{#if action.type === 'create_document'}
 						{docTypeLabel[action.docType] ?? action.docType}
 						{#if wordCount > 0}
@@ -183,7 +175,7 @@
 				<button
 					onclick={discard}
 					disabled={status === 'loading'}
-					class="rounded-lg px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-border disabled:opacity-40 dark:text-dark-ink-muted dark:hover:bg-dark-paper-border"
+					class="rounded-lg px-3 py-1.5 font-sans text-xs text-ink-muted transition-colors hover:bg-paper-border disabled:opacity-40"
 				>
 					Discard
 				</button>
@@ -196,15 +188,7 @@
 						<Spinner size="sm" />
 						Creating…
 					{:else}
-						<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M20 6L9 17l-5-5"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							/>
-						</svg>
+						<Check size={11} strokeWidth={1.75} aria-hidden="true" />
 						Create
 					{/if}
 				</button>

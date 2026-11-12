@@ -14,7 +14,7 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 
 ### Colaboración
 
-- Invitación de colaboradores por email con roles (editor / viewer)
+- Invitación de colaboradores por email con roles (owner, author, coauthor, reviewer, commenter)
 - Comentarios inline anclados al texto: los comentarios se asocian a la selección exacta del documento
 - Respuestas a comentarios y resolución/reapertura de hilos
 
@@ -23,14 +23,16 @@ Scholio es una herramienta web para investigadores y equipos académicos que nec
 - Subida de imágenes por proyecto con área de previsualización antes de confirmar
 - Campo de descripción/nota por imagen
 - Galería con lightbox, copia como Markdown y eliminación
-- Almacenamiento en MinIO (S3-compatible), seguridad por oscuridad mediante UUID doble en la URL
+- Almacenamiento en el S3 propio de cada usuario u organización (Settings → Storage): Scholio no guarda
+  ficheros en su servidor. Seguridad por oscuridad mediante UUID doble en la URL
 
 ### Asistente IA
 
-- Chat por proyecto: el asistente recibe como contexto todos los borradores activos del proyecto
-- Sugerencias inline en el editor: se activan con un toggle y proponen reemplazos de fragmentos con explicación
-- Filtros antes de llamar a la IA: mínimo 100 palabras en el documento y mínimo 30 palabras de diferencia respecto a la última consulta (sin coste innecesario)
-- Modelo: Claude Haiku 4.5 (Anthropic)
+- Chat por proyecto (agente con herramientas: leer documentos, búsqueda semántica, crear documentos…)
+  y chat en el editor que propone cambios como antes/después que se aceptan o rechazan
+- Revisión, borradores de sección, enriquecimiento, ortografía y gramática
+- Modelos vía [OpenRouter](https://openrouter.ai) con la clave de cada usuario u organización (BYOK);
+  el modelo se elige por tarea en Settings → AI, y el coste real de cada llamada queda registrado (`/usage`)
 
 ### Cuenta y acceso
 
@@ -52,12 +54,14 @@ El editor usa Markdown estándar extendido con las siguientes funcionalidades pr
 ### Citas bibliográficas
 
 ```markdown
-La selección natural opera sobre variaciones heredables [@darwin1859].
-Algunos autores discrepan en el mecanismo [@dawkins1976; @gould1979].
+La selección natural opera sobre variaciones heredables [[@darwin1859]].
+Algunos autores discrepan en el mecanismo [[@dawkins1976; @gould1979]].
 ```
 
-Las citas se renderizan según el estilo seleccionado (APA 7, IEEE o Vancouver).
-Al final del documento se genera la bibliografía automáticamente.
+Las citas se renderizan según el estilo seleccionado (APA 7, IEEE, Vancouver o Chicago).
+Al final del documento se genera la bibliografía automáticamente. La forma de Pandoc `[@clave]`
+también se acepta (vista previa y exportaciones), pero el editor inserta `[[@clave]]`. En las
+exportaciones a Typst/PDF, una clave que no está en la bibliografía sale como texto `[clave]`.
 
 ### Matemáticas (KaTeX)
 
@@ -100,7 +104,8 @@ El panel "Mencionado en" del editor muestra los backlinks entrantes al documento
 ```
 ````
 
-`"$ref": "dataset:nombre"` hace referencia a un dataset subido al proyecto (CSV, TSV o JSON).
+`"$ref": "dataset:nombre"` hace referencia a un dataset subido al proyecto (CSV, TSV o JSON, hasta
+5 MB) desde **Proyecto → Datasets**. Se guardan en la base de datos: no necesitan S3.
 
 ### Ejemplo de documento completo
 
@@ -110,9 +115,9 @@ El panel "Mencionado en" del editor muestra los backlinks entrantes al documento
 ## Introducción
 
 El problema de la justificación epistémica ocupa un lugar central en la
-filosofía analítica desde al menos [[Conocimiento y creencia]] [@ayer1956].
+filosofía analítica desde al menos [[Conocimiento y creencia]] [[@ayer1956]].
 La formulación clásica del conocimiento como _creencia verdadera justificada_
-fue cuestionada definitivamente por Edmund Gettier [@gettier1963].
+fue cuestionada definitivamente por Edmund Gettier [[@gettier1963]].
 
 ## Formalización
 
@@ -125,7 +130,7 @@ $$
 donde $B$ es creencia, $V$ es verdad y $J$ es justificación.
 
 Gettier demostró que esta condición es **necesaria pero no suficiente**
-[@gettier1963; @chisholm1966].
+[[@gettier1963; @chisholm1966]].
 
 ## Distribución de casos en la literatura
 
@@ -157,8 +162,8 @@ Las soluciones contemporáneas al problema se discuten en
 | API           | tRPC v11 con procedimientos protegidos               |
 | Base de datos | PostgreSQL con Row-Level Security (RLS), Drizzle ORM |
 | Auth          | Better Auth (email + Seilide, OpenID Connect)        |
-| Storage       | MinIO (S3-compatible)                                |
-| IA            | Anthropic SDK — Claude Haiku 4.5                     |
+| Storage       | S3 propio de cada usuario u organización (BYO S3)    |
+| IA            | OpenRouter (BYOK, modelo por tarea)                  |
 | Errores       | Sentry                                               |
 | Runtime       | Bun                                                  |
 
@@ -303,27 +308,27 @@ no confundirse con las que quedaran de antes en el navegador.
 ### Un solo stack: `docker-compose.prod.yml`
 
 El despliegue es **un único stack de Dokploy** (Docker Compose apuntando a `docker-compose.prod.yml`) con
-la app, su Postgres (`db`), `redis`, `typst`, `kroki`, `kroki-mermaid` y `rustfs`. Su Postgres es solo
+la app, su Postgres (`db`), `redis`, `typst`, `kroki` y `kroki-mermaid`. Su Postgres es solo
 suyo y arranca vacío: `scripts/migrate.mjs`, al arrancar la app, crea el rol `scholio_app`, el schema y
 las tablas.
 
 - **Sin redes externas propias**: los servicios se hablan por la red por defecto del stack; solo
-  `scholio` y `rustfs` están además en `dokploy-network`, para que Traefik les dé dominio. Ya no existe
+  `scholio` está además en `dokploy-network`, para que Traefik le dé dominio. Ya no existe
   `scholio-network`.
 - **Volúmenes sin `name:` fijo**: Compose les antepone el nombre del proyecto de Dokploy, así que dos
   stacks nunca comparten volumen por accidente.
-- **Sin puertos al host**: Traefik llega por `dokploy-network` (app en el 3000, rustfs en el 9000).
+- **Sin puertos al host**: Traefik llega por `dokploy-network` (app en el 3000).
 
 ### Configurar la aplicación en Dokploy
 
 1. **New Application → Docker Compose**, apuntando a `docker-compose.prod.yml`
 2. En **Environment Variables**, las de la tabla de abajo
-3. Dominios (Traefik + Let's Encrypt): `scholio.review` → servicio `scholio`, puerto 3000; el de
-   `STORAGE_PUBLIC_URL` → servicio `rustfs`, puerto 9000
+3. Dominio (Traefik + Let's Encrypt): `scholio.review` → servicio `scholio`, puerto 3000
 4. Deploy
 
-El bucket (`STORAGE_BUCKET`, por defecto `scholio`) y su política de lectura pública los crea la app en
-la primera subida (`ensureBucket` en `src/lib/server/storage.ts`).
+Los ficheros (fotos, PDFs de referencias) van al S3 que cada usuario u organización configura en
+Settings → Storage. El stack ya no lleva almacenamiento propio: si venías de un despliegue con `rustfs`,
+su volumen (`rustfs_data`) sigue en el servidor hasta que lo borres a mano.
 
 > **Backups de Postgres**: no forman parte de este stack. Se hacen fuera, contra un S3 externo,
 > para que sobrevivan a la pérdida del servidor.
@@ -397,30 +402,24 @@ docker system prune -af
 
 Todas están documentadas en `.env.example`. Las que hay que poner en Dokploy para `docker-compose.prod.yml`:
 
-| Variable                                        | Descripción                                                                        |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `ORIGIN`                                        | `https://scholio.review` (URLs de retorno, cookies)                                |
-| `BETTER_AUTH_SECRET`                            | Secreto de sesión (`openssl rand -base64 32`)                                      |
-| `POSTGRES_PASSWORD`                             | Contraseña del dueño de la base (`scholio`), la usan las migraciones               |
-| `APP_DB_PASSWORD`                               | Contraseña del rol de la app (`scholio_app`, con RLS); sin ella no arranca         |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                | Admin con acceso a `/admin`, sembrado al arrancar                                  |
-| `SEILIDE_URL/CLIENT_ID/CLIENT_SECRET`           | «Entrar con Seilide» (opcional: sin las tres no sale el botón)                     |
-| `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY`       | Credenciales de rustfs; la app las usa también para subir                          |
-| `STORAGE_PUBLIC_URL`                            | URL pública desde la que el navegador descarga los ficheros (el dominio de rustfs) |
-| `STORAGE_BUCKET`                                | Opcional, por defecto `scholio`                                                    |
-| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID (opcional)                                                          |
-| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                       |
-| `KMS_MASTER_KEY`                                | Cifra las API keys de usuario (BYOK); cambiarla las pierde                         |
-| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                      |
-| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                 |
-| `SENTRY_DSN`                                    | DSN de Sentry en servidor (opcional)                                               |
-| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente — **build-time**, se hornea en la imagen de GHCR          |
+| Variable                                        | Descripción                                                                                  |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `ORIGIN`                                        | `https://scholio.review` (URLs de retorno, cookies)                                          |
+| `BETTER_AUTH_SECRET`                            | Secreto de sesión (`openssl rand -base64 32`)                                                |
+| `POSTGRES_PASSWORD`                             | Contraseña del dueño de la base (`scholio`), la usan las migraciones                         |
+| `APP_DB_PASSWORD`                               | Contraseña del rol de la app (`scholio_app`, con RLS); sin ella no arranca                   |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                | Admin con acceso a `/admin`, sembrado al arrancar                                            |
+| `SEILIDE_URL/CLIENT_ID/CLIENT_SECRET`           | «Entrar con Seilide» (opcional: sin las tres no sale el botón)                               |
+| `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID (opcional)                                                                    |
+| `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                                 |
+| `KMS_MASTER_KEY`                                | Cifra las API keys de usuario (BYOK); cambiarla las pierde                                   |
+| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                                |
+| `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                           |
+| `SENTRY_DSN`                                    | DSN de Sentry en servidor (opcional)                                                         |
+| `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente (opcional; se lee al arrancar, suele ser el mismo que `SENTRY_DSN`) |
 
 Ya no existen `GITHUB_CLIENT_ID/SECRET` (sin login con GitHub), `PUBLIC_LIBRARIAN_URL` ni nada de
 Stripe.
-
-`SCIPY_SERVICE_URL` se sigue leyendo desde `src/lib/server/scipy.ts`, pero es código muerto (la ruta
-`(scipy)` no está en uso).
 
 ---
 
@@ -431,34 +430,19 @@ Antes de abrir acceso a usuarios reales:
 - [ ] Rellenar todas las variables de entorno de producción (ver tabla anterior)
 - [ ] Crear el cliente de Scholio en Seilide (ver [Entrar con Seilide](#entrar-con-seilide))
 - [ ] Crear el proyecto en Sentry y copiar el DSN (servidor y cliente)
-- [ ] Verificar que el bucket es accesible públicamente para `GET` (la política se aplica automáticamente en el primer upload)
 
 ---
 
 ## Pendiente (no bloquea el beta)
 
-### Funcionalidades de usuario
-
-- **Perfil editable** — los campos de nombre y email están en la UI pero sin backend; actualmente son de solo lectura
-- **Cambio de contraseña** — formulario presente, sin endpoint conectado
+- **Perfil editable** — nombre y email se muestran en Settings pero no se pueden cambiar
 - **Avatar de usuario** — muestra iniciales; subida de foto de perfil no implementada
-
-### Infraestructura y operaciones
-
-- **Panel de administración** — sin métricas de uso ni gestión de usuarios desde la propia app; por ahora se gestiona desde el dashboard de Sentry
-- **Rate limiting en IA** — sugerencias inline limitadas a 30/día por usuario; chat y borradores requieren BYOK (OpenRouter)
-- **Soft delete** para proyectos y documentos — el borrado actual es definitivo; anotado para implementar antes de escalar
-
-### Funcionalidades académicas avanzadas
-
-- **Sugerencias de referencias externas** — el asistente podría enlazar fuentes de Semantic Scholar u OpenLibrary relevantes al contexto del documento (feature 1 del roadmap IA)
-- **Exportación PDF** — pendiente; exportación a LaTeX (`.tex`) y Typst (`.typ`) ya implementada
-- **Transferencia de propiedad de proyectos** — esquema de base de datos preparado, sin UI ni endpoint
-- **Eliminación de cuenta** — botón presente en zona de peligro, sin acción conectada
+- **Soft delete** de documentos — el borrado actual es definitivo
+- **Transferencia de propiedad de proyectos** — sin UI ni endpoint
+- **Sugerencias de referencias externas** (Semantic Scholar, OpenLibrary) para el asistente
 
 ---
 
 ## Créditos
 
 Desarrollado con [Claude Code](https://claude.ai/claude-code).
-Asistente IA impulsado por [Claude Haiku 4.5](https://www.anthropic.com) (Anthropic).

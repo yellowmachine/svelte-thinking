@@ -102,8 +102,7 @@ async function generateRequirementsFromAI(
 	if (!keyRow) {
 		throw new TRPCError({
 			code: 'PRECONDITION_FAILED',
-			message:
-				'Configura tu API key de OpenRouter en Ajustes → Asistente IA para generar requisitos.'
+			message: 'Set your OpenRouter API key in Settings → AI Assistant to generate requirements.'
 		});
 	}
 
@@ -113,7 +112,7 @@ async function generateRequirementsFromAI(
 	} catch {
 		throw new TRPCError({
 			code: 'INTERNAL_SERVER_ERROR',
-			message: 'Error al descifrar la API key. Vuelve a guardarla en Ajustes.'
+			message: "Couldn't decrypt the API key. Save it again in Settings."
 		});
 	}
 
@@ -144,7 +143,7 @@ async function generateRequirementsFromAI(
 	if (!res.ok) {
 		throw new TRPCError({
 			code: 'INTERNAL_SERVER_ERROR',
-			message: `Error de OpenRouter (${res.status}).`
+			message: `OpenRouter error (${res.status}).`
 		});
 	}
 
@@ -224,7 +223,7 @@ export const requirementsRouter = router({
 			if (!canManageRequirements(ctx.user.id, rows[0].ownerId)) {
 				throw new TRPCError({
 					code: 'FORBIDDEN',
-					message: 'Solo el propietario puede generar requisitos.'
+					message: 'Only the owner can generate requirements.'
 				});
 			}
 
@@ -243,7 +242,7 @@ export const requirementsRouter = router({
 			if (aiRequirements.length === 0) {
 				throw new TRPCError({
 					code: 'INTERNAL_SERVER_ERROR',
-					message: 'No se pudieron generar requisitos. Intenta con una descripción más detallada.'
+					message: "Couldn't generate requirements. Try a more detailed description."
 				});
 			}
 

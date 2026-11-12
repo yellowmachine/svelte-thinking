@@ -1,3 +1,5 @@
+import { replaceCitations } from './citationSyntax';
+import { escapeTypstText, escapeTypstLine, typstCitation } from './typstEscape';
 export type ExportFormat = 'latex' | 'typst';
 
 export interface RefData {
@@ -105,14 +107,8 @@ function mdToLatex(md: string): string {
 		return `%%CB${codeBlocks.length - 1}%%`;
 	});
 
-	// Citations: [@key] and [@key1; @key2]
-	t = t.replace(/\[@([^\]]+)\]/g, (_, keys) => {
-		const cleaned = keys
-			.split(';')
-			.map((k: string) => k.trim().replace(/^@/, ''))
-			.join(',');
-		return `\\cite{${cleaned}}`;
-	});
+	// Citations: [[@key]] / [[@key1; @key2]] (and the older [@key])
+	t = replaceCitations(t, (keys) => `\\cite{${keys.join(',')}}`);
 
 	// Diagram embeds [[diagram:uuid|Title]] → text placeholder. No server-side
 	// Mermaid rendering here, so the diagram itself can't be embedded — protect
@@ -198,9 +194,18 @@ export type DiagramSvgMap = Map<string, { svg: string; title: string }>;
 
 function mdToTypst(
 	md: string,
-	diagrams?: DiagramSvgMap
+	diagrams?: DiagramSvgMap,
+	citeKeys?: Set<string>
 ): { body: string; diagramFiles: Record<string, string> } {
 	let t = md.replace(/^---\r?\n[\s\S]*?\n---[ \t]*(\r?\n|$)/, '');
+
+	// Protect fenced code blocks: Typst uses the same ``` syntax, but the text
+	// escaping below must not touch their contents.
+	const codeBlocks: string[] = [];
+	t = t.replace(/^```[^\n]*\n[\s\S]*?^```/gm, (block) => {
+		codeBlocks.push(block);
+		return `%%CB${codeBlocks.length - 1}%%`;
+	});
 
 	// Protect display math $$...$$ → Typst display: $ ... $
 	const displayMath: string[] = [];
@@ -216,13 +221,13 @@ function mdToTypst(
 		return `%%IM${inlineMath.length - 1}%%`;
 	});
 
-	// Citations: [@key] → @key, [@key1; @key2] → @key1 @key2
-	t = t.replace(/\[@([^\]]+)\]/g, (_, keys) =>
-		keys
-			.split(';')
-			.map((k: string) => `@${k.trim().replace(/^@/, '')}`)
-			.join(' ')
-	);
+	// Citations: [[@key1; @key2]] (and the older [@key]) → @key1 @key2, behind
+	// placeholders so the text escaping below leaves the @ alone.
+	const citations: string[] = [];
+	t = replaceCitations(t, (keys) => {
+		citations.push(typstCitation(keys, citeKeys));
+		return `%%CITE${citations.length - 1}%%`;
+	});
 
 	// Diagram embeds [[diagram:uuid|Title]] → an embedded image when the caller
 	// already resolved the Mermaid source to an SVG (see `diagrams`), otherwise
@@ -246,6 +251,9 @@ function mdToTypst(
 	// Wikilinks → plain title
 	t = t.replace(/\[\[([^\]]+)\]\]/g, (_, c) => (c.includes(':') ? c.split(':')[0] : c));
 
+	// Escape what is left of the plain text (@, #, $, <, ~, //)
+	t = escapeTypstText(t);
+
 	// Headers: # → =, ## → ==, etc.
 	t = t.replace(/^#### (.+)$/gm, '==== $1');
 	t = t.replace(/^### (.+)$/gm, '=== $1');
@@ -265,6 +273,8 @@ function mdToTypst(
 	t = t.replace(/%%DM(\d+)%%/g, (_, i) => displayMath[parseInt(i)]);
 	t = t.replace(/%%IM(\d+)%%/g, (_, i) => inlineMath[parseInt(i)]);
 	t = t.replace(/%%DIAG(\d+)%%/g, (_, i) => diagramPlaceholdersTypst[parseInt(i)]);
+	t = t.replace(/%%CITE(\d+)%%/g, (_, i) => citations[parseInt(i)]);
+	t = t.replace(/%%CB(\d+)%%/g, (_, i) => codeBlocks[parseInt(i)]);
 
 	return { body: t, diagramFiles };
 }
@@ -275,7 +285,7 @@ export function toTypst(
 	refs: RefData[],
 	diagrams?: DiagramSvgMap
 ): { typst: string; diagramFiles: Record<string, string> } {
-	const { body, diagramFiles } = mdToTypst(content, diagrams);
+	const { body, diagramFiles } = mdToTypst(content, diagrams, new Set(refs.map((r) => r.citeKey)));
 	const bib = serializeBib(refs);
 	const bibSection = bib.trim() ? `\n#bibliography("refs.bib")\n` : '';
 
@@ -287,7 +297,7 @@ export function toTypst(
 #set par(justify: true)
 
 #align(center)[
-  #text(size: 16pt, weight: "bold")[${docTitle}]
+  #text(size: 16pt, weight: "bold")[${escapeTypstLine(docTitle)}]
   #v(0.5em)
 ]
 

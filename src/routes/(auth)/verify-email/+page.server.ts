@@ -4,12 +4,12 @@ import { auth } from '$lib/server/auth';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const token = url.searchParams.get('token');
-	if (!token) error(400, 'Token de verificación no encontrado');
+	if (!token) error(400, 'Verification token not found');
 
 	try {
 		await auth.api.verifyEmail({ query: { token } });
 	} catch {
-		error(400, 'El enlace de verificación es inválido o ha expirado');
+		error(400, 'This verification link is invalid or has expired');
 	}
 
 	redirect(302, '/projects');

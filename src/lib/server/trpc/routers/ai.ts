@@ -11,11 +11,11 @@ import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { issue } from '$lib/server/db/schemas/issues.schema';
 import { userApiKey, userProfile, userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
-import {
-	organization,
-	organizationMember,
-	organizationApiKey
-} from '$lib/server/db/schemas/organizations.schema';
+import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
+import { orgAiKeys, type OrgKeyRow } from '$lib/server/definerFunctions';
+import { rowsOf } from '$lib/server/db/rows';
+import { projectRoleOf } from '$lib/server/projectAccess';
+import { canCreateDocument } from '$lib/domain/permissions';
 import { decryptSecret } from '$lib/server/kms';
 import { type AiTask, parseTaskConfig } from './aiConfig';
 import { getDefaultModelId } from '$lib/server/openrouter';
@@ -100,14 +100,14 @@ async function throwProviderError(res: Response): Promise<never> {
 		const msg = body?.error?.message ?? '';
 		const code = body?.error?.code ?? res.status;
 		if (code === 401)
-			message = `API key de ${providerLabel} inválida. Revísala en Ajustes → Asistente IA.`;
+			message = `Invalid ${providerLabel} API key. Check it in Settings → AI Assistant.`;
 		else if (code === 402)
-			message = `Has agotado los créditos de ${providerLabel}. Recarga tu cuenta.`;
+			message = `You've run out of ${providerLabel} credits. Top up your account.`;
 		else if (code === 429)
-			message = `Límite de peticiones alcanzado en ${providerLabel}. Espera un momento.`;
-		else message = msg || `Error de ${providerLabel} (${res.status}).`;
+			message = `${providerLabel} rate limit reached. Wait a moment and try again.`;
+		else message = msg || `${providerLabel} error (${res.status}).`;
 	} catch {
-		message = `Error de ${providerLabel} (${res.status}).`;
+		message = `${providerLabel} error (${res.status}).`;
 	}
 	throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message });
 }
@@ -460,7 +460,9 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 	// References — with abstract preview (≤200 chars)
 	if (refs.length > 0) {
 		lines.push('## Available bibliography');
-		lines.push('Use citekeys in brackets when citing: [@citeKey]');
+		lines.push(
+			'Cite references with their citekey in double brackets: [[@citeKey]] (several: [[@a; @b]])'
+		);
 		for (const r of refs) {
 			const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
 				.map((a) => [a.last, a.first].filter(Boolean).join(', '))
@@ -469,7 +471,7 @@ async function buildProjectContext(withRLS: WithRLS, projectId: string): Promise
 			const abstract = r.abstract
 				? `\n   Abstract: ${r.abstract.slice(0, 200)}${r.abstract.length > 200 ? '…' : ''}`
 				: '';
-			lines.push(`[@${r.citeKey}] ${authors}${year}. ${r.title}.${abstract}`);
+			lines.push(`[[@${r.citeKey}]] ${authors}${year}. ${r.title}.${abstract}`);
 		}
 		lines.push('');
 	}
@@ -701,7 +703,8 @@ const TOOLS = [
 
 type ToolResult = { output: string; docsUsed: { id: string; title: string }[] };
 
-async function executeTool(
+/** Exported for tests. */
+export async function executeTool(
 	name: string,
 	args: Record<string, unknown>,
 	withRLS: WithRLS,
@@ -739,18 +742,20 @@ async function executeTool(
 			const queryVec = await embedQuery(query);
 			const vecLiteral = `[${queryVec.join(',')}]`;
 
-			const result = await withRLS((db) =>
-				db.execute(sql`
-					SELECT dc.text, dc.document_id, d.title, d.id AS doc_id
-					FROM scholio.document_chunk dc
-					JOIN scholio.document d ON d.id = dc.document_id
-					WHERE dc.project_id = ${projectId}
-					ORDER BY dc.embedding <=> ${vecLiteral}::vector
-					LIMIT 6
-				`)
-			);
-
-			const rows = result as unknown as { title: string; doc_id: string; text: string }[];
+			type ChunkRow = { title: string; doc_id: string; text: string };
+			const rows = (await withRLS((db) =>
+				rowsOf<ChunkRow>(
+					db as Db,
+					sql`
+						SELECT dc.text, dc.document_id, d.title, d.id AS doc_id
+						FROM scholio.document_chunk dc
+						JOIN scholio.document d ON d.id = dc.document_id
+						WHERE dc.project_id = ${projectId}
+						ORDER BY dc.embedding <=> ${vecLiteral}::vector
+						LIMIT 6
+					`
+				)
+			)) as ChunkRow[];
 			if (!rows.length)
 				return {
 					output: `No results for "${query}". Documents may not be indexed yet.`,
@@ -789,7 +794,7 @@ async function executeTool(
 							.join('; ');
 						const year = r.year ? ` (${r.year})` : '';
 						const doi = r.doi ? ` DOI: ${r.doi}` : '';
-						return `[@${r.citeKey}] ${authors}${year}. ${r.title}.${doi}`;
+						return `[[@${r.citeKey}]] ${authors}${year}. ${r.title}.${doi}`;
 					})
 					.join('\n'),
 				docsUsed: []
@@ -903,7 +908,6 @@ type KeyRow = {
 // Falls back to the user's personal key otherwise.
 export async function resolveTaskKey(
 	withRLS: WithRLS,
-	db: Db,
 	userId: string,
 	task: AiTask,
 	projectId?: string,
@@ -939,33 +943,27 @@ export async function resolveTaskKey(
 				.limit(1)
 		)) as { id: string }[];
 
-		// Also accept the org owner (may not have a member row)
-		const ownerRows = await db
-			.select({ id: organization.id })
-			.from(organization)
-			.where(and(eq(organization.id, orgId), eq(organization.ownerId, userId)))
-			.limit(1);
+		// Also accept the org owner (may not have a member row). org_select lets
+		// the owner and the members read the organization row.
+		const ownerRows = (await withRLS((rdb) =>
+			(rdb as Db)
+				.select({ id: organization.id })
+				.from(organization)
+				.where(and(eq(organization.id, orgId!), eq(organization.ownerId, userId)))
+				.limit(1)
+		)) as { id: string }[];
 
 		if (memberRows[0] || ownerRows[0]) {
-			// Fetch org config + keys without RLS (member RLS blocks key SELECT)
-			const [orgRows, orgKeys] = await Promise.all([
-				db
+			// Members can't read organization_api_key (owner only), so the keys come
+			// through scholio.org_ai_keys, which checks membership itself.
+			const [orgRows, orgKeys] = (await withRLS(async (rdb) => [
+				await (rdb as Db)
 					.select({ aiTaskConfig: organization.aiTaskConfig })
 					.from(organization)
-					.where(eq(organization.id, orgId))
+					.where(eq(organization.id, orgId!))
 					.limit(1),
-				db
-					.select({
-						id: organizationApiKey.id,
-						encryptedApiKey: organizationApiKey.encryptedApiKey,
-						encryptedDataKey: organizationApiKey.encryptedDataKey,
-						iv: organizationApiKey.iv,
-						authTag: organizationApiKey.authTag,
-						enabled: organizationApiKey.enabled
-					})
-					.from(organizationApiKey)
-					.where(and(eq(organizationApiKey.orgId, orgId), eq(organizationApiKey.enabled, true)))
-			]);
+				await orgAiKeys(rdb as Db, orgId!)
+			])) as [{ aiTaskConfig: string | null }[], OrgKeyRow[]];
 
 			const orgConfig = parseTaskConfig(orgRows[0]?.aiTaskConfig ?? null);
 			const orgTaskEntry = orgConfig[task];
@@ -1049,167 +1047,6 @@ export async function resolveTaskKey(
 	const result = { apiKey, model };
 	await cacheSet(cacheKey, result, TTL.taskKey);
 	return result;
-}
-
-async function runAgentLoop(
-	systemPrompt: string,
-	/** Prior turns already persisted in DB (no current user message). */
-	history: { role: 'user' | 'assistant'; content: string }[],
-	userMessage: string,
-	withRLS: WithRLS,
-	projectId: string,
-	apiKey: string,
-	model: string
-): Promise<{
-	content: string;
-	pendingActions: PendingAction[];
-	docsUsed: { id: string; title: string }[];
-	usage: Usage;
-}> {
-	const messages: OAMessage[] = [
-		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-		{ role: 'user', content: userMessage }
-	];
-
-	const pendingActions: PendingAction[] = [];
-	const seenDocs = new Map<string, string>();
-	const extraHeaders = {
-		'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
-		'X-Title': 'Scholio'
-	};
-	let totalUsage = NO_USAGE;
-
-	for (let i = 0; i < MAX_AGENT_ITERATIONS; i++) {
-		const res = await fetch(OPENROUTER_URL, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				'Content-Type': 'application/json',
-				...extraHeaders
-			},
-			body: JSON.stringify({
-				model,
-				max_tokens: 2048,
-				messages: [{ role: 'system', content: systemPrompt }, ...messages],
-				tools: TOOLS,
-				tool_choice: 'auto'
-			})
-		});
-
-		if (!res.ok) await throwProviderError(res);
-
-		const data = (await res.json()) as {
-			choices: { message: OAMessage; finish_reason: string }[];
-			usage?: OpenRouterUsage;
-		};
-		totalUsage = addUsage(totalUsage, readUsage(data.usage));
-
-		const choice = data.choices[0];
-		if (!choice)
-			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'No response from model.' });
-
-		// ── Tool calls → execute and loop ────────────────────────────────────
-		if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls?.length) {
-			messages.push(choice.message);
-
-			const results = await Promise.all(
-				choice.message.tool_calls.map(async (tc) => {
-					let args: Record<string, unknown> = {};
-					try {
-						args = JSON.parse(tc.function.arguments);
-					} catch {
-						/* empty args */
-					}
-
-					// ── Write tools: intercept, queue, don't execute yet ──────
-					if (tc.function.name === 'create_document') {
-						pendingActions.push({
-							type: 'create_document',
-							title: (args.title as string) || 'Nuevo documento',
-							docType:
-								(args.type as Extract<PendingAction, { type: 'create_document' }>['docType']) ||
-								'paper',
-							content: (args.content as string) || '',
-							requirementId: (args.requirementId as string) || undefined
-						});
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Proposal registered. The user will see a confirmation card.'
-						};
-					}
-
-					if (tc.function.name === 'create_issue') {
-						pendingActions.push({
-							type: 'create_issue',
-							title: (args.title as string) || 'Nuevo issue',
-							content: (args.content as string) || undefined,
-							priority:
-								(args.priority as Extract<PendingAction, { type: 'create_issue' }>['priority']) ||
-								'medium'
-						});
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Issue proposed. The user will see a confirmation card.'
-						};
-					}
-
-					if (tc.function.name === 'propose_references') {
-						const refs = ((args.references as ProposedReference[]) || []).map(
-							(r) =>
-								({
-									citeKey: r.citeKey,
-									type: r.type || 'misc',
-									title: r.title || '',
-									authors: r.authors || [],
-									year: r.year,
-									journal: r.journal,
-									publisher: r.publisher,
-									doi: r.doi,
-									url: r.url,
-									volume: r.volume,
-									issue: r.issue,
-									pages: r.pages,
-									abstract: r.abstract
-								}) as ProposedReference
-						);
-						pendingActions.push({ type: 'propose_references', references: refs });
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: `Proposed ${refs.length} reference(s). The user will see a selection card to choose which ones to add.`
-						};
-					}
-
-					// ── Read tools: execute normally ──────────────────────────
-					const { output, docsUsed } = await executeTool(
-						tc.function.name,
-						args,
-						withRLS,
-						projectId
-					);
-					for (const d of docsUsed) seenDocs.set(d.id, d.title);
-					return { role: 'tool' as const, tool_call_id: tc.id, content: output };
-				})
-			);
-			messages.push(...results);
-			continue;
-		}
-
-		// ── Final text response ───────────────────────────────────────────────
-		return {
-			content: choice.message.content ?? '',
-			pendingActions,
-			docsUsed: [...seenDocs.entries()].map(([id, title]) => ({ id, title })),
-			usage: totalUsage
-		};
-	}
-
-	throw new TRPCError({
-		code: 'INTERNAL_SERVER_ERROR',
-		message: 'The agent could not complete the response within the maximum number of steps.'
-	});
 }
 
 // ---------------------------------------------------------------------------
@@ -1605,381 +1442,6 @@ type EditorToolContext = {
 	onUsage?: (model: string, task: 'spell' | 'grammar', usage: Usage) => void;
 };
 
-async function runEditorAgentLoop(
-	documentTitle: string,
-	documentContent: string,
-	history: { role: 'user' | 'assistant'; content: string }[],
-	userMessage: string,
-	apiKey: string,
-	model: string,
-	toolCtx: EditorToolContext
-): Promise<{
-	content: string;
-	pendingEditorActions: PendingEditorAction[];
-	pendingActions: PendingAction[];
-	usage: Usage;
-}> {
-	const systemPrompt = `${EDITOR_SYSTEM_PROMPT}\n\n---\n\n## Document: "${documentTitle}"\n\n${documentContent}`;
-
-	const messages: OAMessage[] = [
-		...history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-		{ role: 'user', content: userMessage }
-	];
-
-	const pendingEditorActions: PendingEditorAction[] = [];
-	const pendingActions: PendingAction[] = [];
-	const extraHeaders = {
-		'HTTP-Referer': env.ORIGIN ?? 'http://localhost:5174',
-		'X-Title': 'Scholio'
-	};
-	let totalUsage = NO_USAGE;
-
-	for (let i = 0; i < 4; i++) {
-		const res = await fetch(OPENROUTER_URL, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${apiKey}`,
-				'Content-Type': 'application/json',
-				...extraHeaders
-			},
-			body: JSON.stringify({
-				model,
-				max_tokens: 2048,
-				messages: [{ role: 'system', content: systemPrompt }, ...messages],
-				tools: EDITOR_TOOLS,
-				tool_choice: 'auto'
-			})
-		});
-
-		if (!res.ok) await throwProviderError(res);
-
-		const data = (await res.json()) as {
-			choices: { message: OAMessage; finish_reason: string }[];
-			usage?: OpenRouterUsage;
-		};
-		totalUsage = addUsage(totalUsage, readUsage(data.usage));
-
-		const choice = data.choices[0];
-		if (!choice)
-			throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'No response from model.' });
-
-		if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls?.length) {
-			messages.push(choice.message);
-
-			const results = await Promise.all(
-				choice.message.tool_calls.map(async (tc) => {
-					let args: Record<string, unknown> = {};
-					try {
-						args = JSON.parse(tc.function.arguments);
-					} catch {
-						/* empty */
-					}
-
-					// ── replace_text / insert_after: propose and continue ──────────
-					if (tc.function.name === 'replace_text') {
-						pendingEditorActions.push({
-							type: 'replace_text',
-							anchorText: (args.anchorText as string) ?? '',
-							replacement: (args.replacement as string) ?? '',
-							explanation: (args.explanation as string) ?? ''
-						});
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Replacement proposed. The user will see a preview.'
-						};
-					}
-
-					if (tc.function.name === 'insert_after') {
-						pendingEditorActions.push({
-							type: 'insert_after',
-							anchorText: (args.anchorText as string) ?? '',
-							content: (args.content as string) ?? '',
-							explanation: (args.explanation as string) ?? ''
-						});
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Insertion proposed. The user will see a preview.'
-						};
-					}
-
-					if (tc.function.name === 'insert_index') {
-						const kind = args.kind === 'persons' ? 'persons' : 'toc';
-						pendingEditorActions.push({
-							type: 'insert_index',
-							kind,
-							explanation: (args.explanation as string) ?? ''
-						});
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Index insertion proposed. The user will see a preview.'
-						};
-					}
-
-					if (tc.function.name === 'set_diagram_code') {
-						pendingEditorActions.push({
-							type: 'set_diagram_code',
-							code: (args.code as string) ?? '',
-							explanation: (args.explanation as string) ?? ''
-						});
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Diagram update proposed. The user will see a preview.'
-						};
-					}
-
-					if (tc.function.name === 'propose_references') {
-						const refs = ((args.references as ProposedReference[]) || []).map(
-							(r) =>
-								({
-									citeKey: r.citeKey,
-									type: r.type || 'misc',
-									title: r.title || '',
-									authors: r.authors || [],
-									year: r.year,
-									journal: r.journal,
-									publisher: r.publisher,
-									doi: r.doi,
-									url: r.url,
-									volume: r.volume,
-									issue: r.issue,
-									pages: r.pages,
-									abstract: r.abstract
-								}) as ProposedReference
-						);
-						pendingActions.push({ type: 'propose_references', references: refs });
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: `Proposed ${refs.length} reference(s). The user will see a selection card to choose which ones to add.`
-						};
-					}
-
-					// ── list_references: read tool, returns bibliography ──────────
-					if (tc.function.name === 'list_references') {
-						const rows = (await toolCtx.withRLS((db) =>
-							(db as Db)
-								.select({ ref: reference })
-								.from(reference)
-								.innerJoin(projectReference, eq(projectReference.referenceId, reference.id))
-								.where(eq(projectReference.projectId, toolCtx.projectId))
-						)) as { ref: typeof reference.$inferSelect }[];
-						if (rows.length === 0) {
-							return {
-								role: 'tool' as const,
-								tool_call_id: tc.id,
-								content: 'This project has no bibliography entries yet.'
-							};
-						}
-						const output = rows
-							.map(({ ref: r }) => {
-								const authors = ((r.authors ?? []) as { first?: string; last?: string }[])
-									.map((a) => [a.last, a.first].filter(Boolean).join(', '))
-									.join('; ');
-								const year = r.year ? ` (${r.year})` : '';
-								return `[@${r.citeKey}] ${authors}${year}. ${r.title}.`;
-							})
-							.join('\n');
-						return { role: 'tool' as const, tool_call_id: tc.id, content: output };
-					}
-
-					// ── check_spelling: run spell check → produce pending actions ──
-					if (tc.function.name === 'check_spelling') {
-						try {
-							const langNote =
-								toolCtx.spellLanguage === 'auto'
-									? 'Detect the language automatically.'
-									: `The text is in language code: ${toolCtx.spellLanguage}.`;
-							const prompt = `You are a professional proofreader. Analyze the following text for spelling errors.
-${langNote}
-Return a JSON array. Each item: {"original": "exact substring", "suggestion": "corrected text", "explanation": "brief reason (max 10 words)"}
-Rules: only genuine spelling errors; ignore proper nouns, citation keys like [[@smith2023]], Markdown syntax; return [] if correct; ONLY valid JSON.
-
-Text:
-${documentContent}`;
-							const spellRes = await fetch(OPENROUTER_URL, {
-								method: 'POST',
-								headers: {
-									Authorization: `Bearer ${toolCtx.spellApiKey}`,
-									'Content-Type': 'application/json',
-									...extraHeaders
-								},
-								body: JSON.stringify({
-									model: toolCtx.spellModel,
-									messages: [{ role: 'user', content: prompt }],
-									temperature: 0,
-									max_tokens: 2000
-								})
-							});
-							if (spellRes.ok) {
-								const spellData = (await spellRes.json()) as {
-									choices: { message: { content: string } }[];
-									usage?: OpenRouterUsage;
-								};
-								toolCtx.onUsage?.(toolCtx.spellModel, 'spell', readUsage(spellData.usage));
-								const raw = JSON.parse(
-									(spellData.choices[0]?.message?.content ?? '[]')
-										.trim()
-										.replace(/^```(?:json)?\n?/, '')
-										.replace(/\n?```$/, '')
-								) as { original: string; suggestion: string; explanation: string }[];
-								const corrections = Array.isArray(raw)
-									? raw.filter(
-											(c) => c.original && c.suggestion && documentContent.includes(c.original)
-										)
-									: [];
-								for (const c of corrections) {
-									pendingEditorActions.push({
-										type: 'replace_text',
-										anchorText: c.original,
-										replacement: c.suggestion,
-										explanation: c.explanation
-									});
-								}
-								return {
-									role: 'tool' as const,
-									tool_call_id: tc.id,
-									content:
-										corrections.length > 0
-											? `Spell check complete. ${corrections.length} correction(s) proposed.`
-											: 'Spell check complete. No errors found.'
-								};
-							}
-						} catch {
-							/* fall through */
-						}
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Spell check failed. Ask the user to use the Spell button instead.'
-						};
-					}
-
-					// ── check_grammar: run grammar check → produce pending actions ──
-					if (tc.function.name === 'check_grammar') {
-						try {
-							const prompt = `You are an expert academic writing assistant. Analyze the following text for grammatical errors, awkward phrasing, and issues with academic register.
-Return a JSON array. Each item: {"original": "exact substring", "suggestion": "corrected text", "explanation": "brief reason (max 10 words)"}
-Rules: grammar errors only (not spelling); flag unnatural phrasing; suggest formal alternatives for informal register; ignore citation keys and Markdown; return [] if correct; ONLY valid JSON.
-
-Text:
-${documentContent}`;
-							const grammarRes = await fetch(OPENROUTER_URL, {
-								method: 'POST',
-								headers: {
-									Authorization: `Bearer ${toolCtx.grammarApiKey}`,
-									'Content-Type': 'application/json',
-									...extraHeaders
-								},
-								body: JSON.stringify({
-									model: toolCtx.grammarModel,
-									messages: [{ role: 'user', content: prompt }],
-									temperature: 0,
-									max_tokens: 2000
-								})
-							});
-							if (grammarRes.ok) {
-								const grammarData = (await grammarRes.json()) as {
-									choices: { message: { content: string } }[];
-									usage?: OpenRouterUsage;
-								};
-								toolCtx.onUsage?.(toolCtx.grammarModel, 'grammar', readUsage(grammarData.usage));
-								const raw = JSON.parse(
-									(grammarData.choices[0]?.message?.content ?? '[]')
-										.trim()
-										.replace(/^```(?:json)?\n?/, '')
-										.replace(/\n?```$/, '')
-								) as { original: string; suggestion: string; explanation: string }[];
-								const corrections = Array.isArray(raw)
-									? raw.filter(
-											(c) => c.original && c.suggestion && documentContent.includes(c.original)
-										)
-									: [];
-								for (const c of corrections) {
-									pendingEditorActions.push({
-										type: 'replace_text',
-										anchorText: c.original,
-										replacement: c.suggestion,
-										explanation: c.explanation
-									});
-								}
-								return {
-									role: 'tool' as const,
-									tool_call_id: tc.id,
-									content:
-										corrections.length > 0
-											? `Grammar check complete. ${corrections.length} correction(s) proposed.`
-											: 'Grammar check complete. No issues found.'
-								};
-							}
-						} catch {
-							/* fall through */
-						}
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Grammar check failed. Ask the user to use the Grammar button instead.'
-						};
-					}
-
-					// ── find_untagged: detect untagged persons/refs → propose replacements ──
-					if (tc.function.name === 'find_untagged') {
-						try {
-							const enrichRows = (await toolCtx
-								.withRLS((db) =>
-									(db as Db).execute(
-										sql`SELECT * FROM scholio.find_untagged_in_document(${toolCtx.documentId}, ${toolCtx.projectId})`
-									)
-								)
-								.catch(() => null)) as unknown as null;
-							// find_untagged is a complex DB function — if unavailable, fall back to model-based detection
-							if (!enrichRows) {
-								return {
-									role: 'tool' as const,
-									tool_call_id: tc.id,
-									content:
-										'Person/reference tagging is not available from the chat yet. Ask the user to use the Enrich button in the toolbar.'
-								};
-							}
-						} catch {
-							/* fall through */
-						}
-						return {
-							role: 'tool' as const,
-							tool_call_id: tc.id,
-							content: 'Use the Enrich button in the toolbar for person and reference tagging.'
-						};
-					}
-
-					return {
-						role: 'tool' as const,
-						tool_call_id: tc.id,
-						content: `Unknown tool: "${tc.function.name}".`
-					};
-				})
-			);
-
-			messages.push(...results);
-			continue;
-		}
-
-		return {
-			content: choice.message.content ?? '',
-			pendingEditorActions,
-			pendingActions,
-			usage: totalUsage
-		};
-	}
-
-	throw new TRPCError({
-		code: 'INTERNAL_SERVER_ERROR',
-		message: 'The editor agent could not complete the response.'
-	});
-}
-
 // ---------------------------------------------------------------------------
 // SSE streaming helpers
 // ---------------------------------------------------------------------------
@@ -2149,7 +1611,7 @@ export async function runAgentLoopSSE(
 					if (tc.function.name === 'create_document') {
 						pendingActions.push({
 							type: 'create_document',
-							title: (args.title as string) || 'Nuevo documento',
+							title: (args.title as string) || 'New document',
 							docType:
 								(args.type as string as Extract<
 									PendingAction,
@@ -2167,7 +1629,7 @@ export async function runAgentLoopSSE(
 					if (tc.function.name === 'create_issue') {
 						pendingActions.push({
 							type: 'create_issue',
-							title: (args.title as string) || 'Nuevo issue',
+							title: (args.title as string) || 'New issue',
 							content: (args.content as string) || undefined,
 							priority:
 								(args.priority as string as Extract<
@@ -2399,7 +1861,7 @@ export async function runEditorAgentLoopSSE(
 									.map((a) => [a.last, a.first].filter(Boolean).join(', '))
 									.join('; ');
 								const year = r.year ? ` (${r.year})` : '';
-								return `[@${r.citeKey}] ${authors}${year}. ${r.title}.`;
+								return `[[@${r.citeKey}]] ${authors}${year}. ${r.title}.`;
 							})
 							.join('\n');
 						return { role: 'tool' as const, tool_call_id: tc.id, content: output };
@@ -2739,142 +2201,6 @@ export const aiRouter = router({
 			return { conversation: conv[0], messages };
 		}),
 
-	sendMessage: protectedProcedure
-		.input(
-			z.object({
-				projectId: z.string(),
-				conversationId: z.string().optional(),
-				message: z.string().min(1).max(4000),
-				modelOverride: z.string().optional()
-			})
-		)
-		.mutation(async ({ ctx, input }) => {
-			const userId = ctx.user.id;
-
-			// ── Get or create conversation ────────────────────────────────────
-			let convId = input.conversationId;
-			if (!convId) {
-				convId = crypto.randomUUID();
-				const title = input.message.slice(0, 60) + (input.message.length > 60 ? '…' : '');
-				await ctx.withRLS((db) =>
-					db
-						.insert(aiConversation)
-						.values({ id: convId!, projectId: input.projectId, userId, title })
-				);
-			} else {
-				const rows = (await ctx.withRLS((db) =>
-					db
-						.select({ id: aiConversation.id })
-						.from(aiConversation)
-						.where(eq(aiConversation.id, convId!))
-						.limit(1)
-				)) as { id: string }[];
-				if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			}
-
-			// ── Load prior history (before saving current message) ────────────
-			const history = (await ctx.withRLS((db) =>
-				db
-					.select({ role: aiMessage.role, content: aiMessage.content })
-					.from(aiMessage)
-					.where(eq(aiMessage.conversationId, convId!))
-					.orderBy(asc(aiMessage.createdAt))
-			)) as { role: 'user' | 'assistant'; content: string }[];
-
-			// ── Persist user message ──────────────────────────────────────────
-			await ctx.withRLS((db) =>
-				db.insert(aiMessage).values({
-					id: crypto.randomUUID(),
-					conversationId: convId!,
-					role: 'user',
-					content: input.message
-				})
-			);
-
-			// ── Resolve key + model for agent task ───────────────────────────
-			const {
-				apiKey: userApiKey,
-				model: resolvedModel,
-				resolvedOrgId
-			} = await resolveTaskKey(
-				ctx.withRLS as WithRLS,
-				ctx.db as Db,
-				userId,
-				'agent',
-				input.projectId
-			);
-			// Personal project: allow user to override the model for this request
-			const effectiveModel =
-				!resolvedOrgId && input.modelOverride ? input.modelOverride : resolvedModel;
-
-			// ── Resolve custom system prompt (if any) and run agent loop ─────
-			const projectRows = (await ctx.withRLS((db) =>
-				(db as Db)
-					.select({ agentSystemPrompt: project.agentSystemPrompt })
-					.from(project)
-					.where(eq(project.id, input.projectId))
-					.limit(1)
-			)) as { agentSystemPrompt: string | null }[];
-
-			const customPrompt = (projectRows[0]?.agentSystemPrompt ?? '').trim();
-			const systemWithIndex = customPrompt
-				? `${customPrompt}\n\n---\n\n${SYSTEM_PROMPT}`
-				: SYSTEM_PROMPT;
-
-			const {
-				content: assistantContent,
-				pendingActions,
-				docsUsed,
-				usage: agentUsage
-			} = await runAgentLoop(
-				systemWithIndex,
-				history,
-				input.message,
-				ctx.withRLS as WithRLS,
-				input.projectId,
-				userApiKey,
-				effectiveModel
-			);
-
-			logUsage(ctx.withRLS, {
-				orgId: resolvedOrgId,
-				projectId: input.projectId,
-				userId,
-				model: effectiveModel,
-				task: 'agent',
-				usage: agentUsage
-			});
-
-			// ── Persist assistant response ────────────────────────────────────
-			const assistantMsgId = crypto.randomUUID();
-			await ctx.withRLS((db) =>
-				db.insert(aiMessage).values({
-					id: assistantMsgId,
-					conversationId: convId!,
-					role: 'assistant',
-					content: assistantContent,
-					docsUsed
-				})
-			);
-			await ctx.withRLS((db) =>
-				db
-					.update(aiConversation)
-					.set({ updatedAt: new Date() })
-					.where(eq(aiConversation.id, convId!))
-			);
-
-			return {
-				conversationId: convId,
-				message: {
-					id: assistantMsgId,
-					role: 'assistant' as const,
-					content: assistantContent,
-					docsUsed
-				},
-				pendingActions: pendingActions.length > 0 ? pendingActions : undefined
-			};
-		}),
-
 	// ---------------------------------------------------------------------------
 	// Apply a pending action confirmed by the user
 	// ---------------------------------------------------------------------------
@@ -2937,6 +2263,14 @@ export const aiRouter = router({
 				const versionId = crypto.randomUUID();
 
 				await ctx.withRLS(async (db) => {
+					// The agent creates shared documents: same rule as creating one by hand.
+					const role = await projectRoleOf(db, input.projectId, ctx.user.id);
+					if (!canCreateDocument(role, false)) {
+						throw new TRPCError({
+							code: 'FORBIDDEN',
+							message: 'Your role in this project does not let you add documents.'
+						});
+					}
 					await db.insert(document).values({
 						id: docId,
 						projectId: input.projectId,
@@ -3050,159 +2384,6 @@ export const aiRouter = router({
 			return { type: 'references' as const, count: addedCount };
 		}),
 
-	sendEditorMessage: protectedProcedure
-		.input(
-			z.object({
-				projectId: z.string(),
-				documentId: z.string(),
-				documentTitle: z.string(),
-				documentContent: z.string().max(200000),
-				spellLanguage: z.string().optional(),
-				conversationId: z.string().optional(),
-				message: z.string().min(1).max(4000),
-				modelOverride: z.string().optional()
-			})
-		)
-		.mutation(async ({ ctx, input }) => {
-			const userId = ctx.user.id;
-
-			// ── Get or create conversation ────────────────────────────────────
-			let convId = input.conversationId;
-			if (!convId) {
-				convId = crypto.randomUUID();
-				const title = input.message.slice(0, 60) + (input.message.length > 60 ? '…' : '');
-				await ctx.withRLS((db) =>
-					db
-						.insert(aiConversation)
-						.values({ id: convId!, projectId: input.projectId, userId, title })
-				);
-			} else {
-				const rows = (await ctx.withRLS((db) =>
-					db
-						.select({ id: aiConversation.id })
-						.from(aiConversation)
-						.where(eq(aiConversation.id, convId!))
-						.limit(1)
-				)) as { id: string }[];
-				if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND' });
-			}
-
-			// ── Load prior history ────────────────────────────────────────────
-			const history = (await ctx.withRLS((db) =>
-				db
-					.select({ role: aiMessage.role, content: aiMessage.content })
-					.from(aiMessage)
-					.where(eq(aiMessage.conversationId, convId!))
-					.orderBy(asc(aiMessage.createdAt))
-			)) as { role: 'user' | 'assistant'; content: string }[];
-
-			// ── Persist user message ──────────────────────────────────────────
-			await ctx.withRLS((db) =>
-				db.insert(aiMessage).values({
-					id: crypto.randomUUID(),
-					conversationId: convId!,
-					role: 'user',
-					content: input.message
-				})
-			);
-
-			// ── Resolve keys + models ─────────────────────────────────────────
-			const [
-				{ apiKey: editorApiKey, model: resolvedModel, resolvedOrgId },
-				{ apiKey: spellApiKey, model: spellModel },
-				{ apiKey: grammarApiKey, model: grammarModel }
-			] = await Promise.all([
-				resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId),
-				resolveTaskKey(
-					ctx.withRLS as WithRLS,
-					ctx.db as Db,
-					userId,
-					'spell',
-					input.projectId
-				).catch(() =>
-					resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
-				),
-				resolveTaskKey(
-					ctx.withRLS as WithRLS,
-					ctx.db as Db,
-					userId,
-					'grammar',
-					input.projectId
-				).catch(() =>
-					resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
-				)
-			]);
-			const effectiveModel =
-				!resolvedOrgId && input.modelOverride ? input.modelOverride : resolvedModel;
-
-			// ── Run editor agent loop ─────────────────────────────────────────
-			const {
-				content: assistantContent,
-				pendingEditorActions,
-				pendingActions,
-				usage
-			} = await runEditorAgentLoop(
-				input.documentTitle,
-				input.documentContent,
-				history,
-				input.message,
-				editorApiKey,
-				effectiveModel,
-				{
-					spellApiKey,
-					spellModel,
-					spellLanguage: input.spellLanguage ?? 'auto',
-					grammarApiKey,
-					grammarModel,
-					withRLS: ctx.withRLS as WithRLS,
-					projectId: input.projectId,
-					documentId: input.documentId,
-					onUsage: (model, task, usage) =>
-						logUsage(ctx.withRLS, {
-							orgId: resolvedOrgId,
-							projectId: input.projectId,
-							userId,
-							model,
-							task,
-							usage
-						})
-				}
-			);
-
-			logUsage(ctx.withRLS, {
-				orgId: resolvedOrgId,
-				projectId: input.projectId,
-				userId,
-				model: effectiveModel,
-				task: 'agent',
-				usage
-			});
-
-			// ── Persist assistant response ────────────────────────────────────
-			const assistantMsgId = crypto.randomUUID();
-			await ctx.withRLS((db) =>
-				db.insert(aiMessage).values({
-					id: assistantMsgId,
-					conversationId: convId!,
-					role: 'assistant',
-					content: assistantContent
-				})
-			);
-			await ctx.withRLS((db) =>
-				db
-					.update(aiConversation)
-					.set({ updatedAt: new Date() })
-					.where(eq(aiConversation.id, convId!))
-			);
-
-			return {
-				conversationId: convId,
-				message: { id: assistantMsgId, role: 'assistant' as const, content: assistantContent },
-				pendingEditorActions: pendingEditorActions.length > 0 ? pendingEditorActions : undefined,
-				pendingActions: pendingActions.length > 0 ? pendingActions : undefined
-			};
-		}),
-
 	deleteConversation: protectedProcedure
 		.input(z.string())
 		.mutation(async ({ ctx, input: conversationId }) => {
@@ -3245,13 +2426,7 @@ export const aiRouter = router({
 				apiKey: userApiKey,
 				model: resolvedModel,
 				resolvedOrgId: draftOrgId
-			} = await resolveTaskKey(
-				ctx.withRLS as WithRLS,
-				ctx.db as Db,
-				userId,
-				'draft',
-				input.projectId
-			);
+			} = await resolveTaskKey(ctx.withRLS as WithRLS, userId, 'draft', input.projectId);
 
 			const [proj, selectedDocs, ctxLinks] = await Promise.all([
 				ctx.withRLS((db) =>
@@ -3308,6 +2483,15 @@ export const aiRouter = router({
 				conclusion: 'sección de Conclusión',
 				methodology: 'sección de Metodología',
 				literature_review: 'Revisión de Literatura'
+			};
+			const outputTypeTitles: Record<string, string> = {
+				full_paper: 'Full paper',
+				introduction: 'Introduction',
+				abstract: 'Abstract',
+				discussion: 'Discussion',
+				conclusion: 'Conclusion',
+				methodology: 'Methodology',
+				literature_review: 'Literature review'
 			};
 			const styleLabels: Record<string, string> = {
 				formal: 'formal y riguroso',
@@ -3398,7 +2582,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 			const docId = crypto.randomUUID();
 			const versionId = crypto.randomUUID();
 			const typeLabel = outputTypeLabels[input.outputType] ?? input.outputType;
-			const docTitle = `Borrador: ${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)}`;
+			const docTitle = `Draft: ${outputTypeTitles[input.outputType] ?? typeLabel}`;
 
 			await ctx.withRLS(async (db) => {
 				await db.insert(document).values({
@@ -3414,7 +2598,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 					documentId: docId,
 					content: '',
 					versionNumber: 1,
-					changeDescription: 'Versión inicial',
+					changeDescription: 'Initial version',
 					createdBy: ctx.user.id
 				});
 				await db
@@ -3441,17 +2625,11 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				apiKey: userApiKey,
 				model,
 				resolvedOrgId: sectionOrgId
-			} = await resolveTaskKey(
-				ctx.withRLS as WithRLS,
-				ctx.db as Db,
-				userId,
-				'draft',
-				input.projectId
-			);
+			} = await resolveTaskKey(ctx.withRLS as WithRLS, userId, 'draft', input.projectId);
 
 			const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
 			if (!projectContext) {
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found.' });
 			}
 
 			const baseUrl = OPENROUTER_URL;
@@ -3468,7 +2646,7 @@ ${projectContext}
 Reglas:
 - Responde ÚNICAMENTE con el texto redactado, listo para insertar en el documento. Sin explicaciones ni preámbulos.
 - Usa el idioma del investigador (detecta por la instrucción).
-- Cita referencias usando su citekey entre corchetes: [@citeKey].
+- Cita referencias con su citekey entre dobles corchetes: [[@citeKey]] (varias: [[@a; @b]]).
 - El texto debe tener un tono académico apropiado para publicación científica.
 - No inventes datos, cifras ni afirmaciones que no estén en el contexto.`;
 
@@ -3523,13 +2701,7 @@ Reglas:
 				apiKey: userApiKey,
 				model: resolvedReviewModel,
 				resolvedOrgId: reviewOrgId
-			} = await resolveTaskKey(
-				ctx.withRLS as WithRLS,
-				ctx.db as Db,
-				userId,
-				'review',
-				input.projectId
-			);
+			} = await resolveTaskKey(ctx.withRLS as WithRLS, userId, 'review', input.projectId);
 
 			// Load document content + project context in parallel
 			const [docRows, projectContext] = await Promise.all([
@@ -3544,17 +2716,17 @@ Reglas:
 			]);
 
 			if (!docRows[0]) {
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Documento no encontrado.' });
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Document not found.' });
 			}
 			if (!projectContext) {
-				throw new TRPCError({ code: 'NOT_FOUND', message: 'Proyecto no encontrado.' });
+				throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found.' });
 			}
 
 			const docContent = docRows[0].draftContent?.trim() ?? '';
 			if (!docContent) {
 				throw new TRPCError({
 					code: 'BAD_REQUEST',
-					message: 'El documento está vacío. Escribe algo antes de revisarlo.'
+					message: 'The document is empty. Write something before reviewing it.'
 				});
 			}
 
@@ -3577,7 +2749,7 @@ Respond ONLY with a valid JSON object (no markdown, no explanation outside the J
 
 Rules:
 - "requirements": include every requirement from the project context, in the same order. Set "covered" to true only if the document meaningfully addresses it.
-- "uncitedRefs": list citeKeys from the bibliography that are relevant to the document's topic but never mentioned (as [@citeKey]) in the document. Omit refs that are genuinely unrelated to the document content.
+- "uncitedRefs": list citeKeys from the bibliography that are relevant to the document's topic but never mentioned (as [[@citeKey]]) in the document. Omit refs that are genuinely unrelated to the document content.
 - Keep notes concise (max 15 words).
 - Use the language of the document.`;
 
@@ -3653,7 +2825,6 @@ Rules:
 
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
-				ctx.db as Db,
 				userId,
 				'review',
 				input.projectId
@@ -3752,7 +2923,6 @@ Rules:
 
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
-				ctx.db as Db,
 				userId,
 				'review',
 				input.projectId
@@ -3891,7 +3061,6 @@ ${docContent.slice(0, 10000)}`;
 
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
-				ctx.db as Db,
 				userId,
 				'review',
 				input.projectId
@@ -3991,7 +3160,6 @@ Rules:
 			const userId = ctx.user.id;
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS,
-				ctx.db,
 				userId,
 				'grammar',
 				input.projectId
@@ -4101,7 +3269,6 @@ ${input.text}`;
 			const userId = ctx.user.id;
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS,
-				ctx.db,
 				userId,
 				'spell',
 				input.projectId

@@ -24,7 +24,7 @@ export const load: PageServerLoad = async (event) => {
 		)
 	]);
 
-	if (!proj[0]) error(404, 'Proyecto no encontrado');
+	if (!proj[0]) error(404, 'Project not found');
 
 	const s3 = await resolveProjectS3Config(projectId, userId, event.locals.withRLS).catch(
 		() => null

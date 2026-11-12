@@ -18,9 +18,7 @@
 </script>
 
 <div class="flex h-full min-h-0 flex-1 overflow-hidden">
-	<div
-		class="flex w-1/2 min-w-0 flex-col overflow-hidden border-r border-paper-border dark:border-dark-paper-border"
-	>
+	<div class="flex w-1/2 min-w-0 flex-col overflow-hidden border-r border-paper-border">
 		<DiagramEditor bind:value {readonly} {ondocchange} />
 	</div>
 	<div class="w-1/2 min-w-0 overflow-hidden">

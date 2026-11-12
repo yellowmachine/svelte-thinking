@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		.limit(1);
 
 	if (!shareRows[0]) {
-		error(404, 'Este enlace no existe o ha expirado');
+		error(404, 'This link does not exist or has expired');
 	}
 
 	const share = shareRows[0];
@@ -69,7 +69,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	});
 
 	if (!docRows[0] || !versionRows[0]) {
-		error(404, 'Este enlace no existe o ha expirado');
+		error(404, 'This link does not exist or has expired');
 	}
 
 	return {

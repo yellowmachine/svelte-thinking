@@ -34,37 +34,29 @@
 
 <div class="mx-auto max-w-3xl px-6 py-10">
 	<!-- Breadcrumb -->
-	<nav
-		class="mb-6 flex items-center gap-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint"
-	>
-		<a href={resolve('/help')} class="text-accent underline-offset-2 hover:underline">Help</a>
+	<nav class="mb-6 flex items-center gap-2 font-sans text-xs text-ink-faint">
+		<a href={resolve('/help')} class="text-accent-ink underline-offset-2 hover:underline">Help</a>
 		<span>/</span>
 		<span>Document types</span>
 		<span>/</span>
-		<span class="text-ink-muted dark:text-dark-ink-muted">{sample.label}</span>
+		<span class="text-ink-muted">{sample.label}</span>
 	</nav>
 
 	<!-- Header -->
 	<div class="mb-8">
-		<h1 class="font-serif text-3xl font-semibold text-ink dark:text-dark-ink">{sample.label}</h1>
-		<p
-			class="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-		>
+		<h1 class="font-serif text-3xl font-semibold text-ink">{sample.label}</h1>
+		<p class="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-ink-muted">
 			{sample.description}
 		</p>
 	</div>
 
 	<!-- What you can do -->
 	<section class="mb-8">
-		<h2 class="mb-3 font-serif text-base font-semibold text-ink dark:text-dark-ink">
-			What you can do
-		</h2>
+		<h2 class="mb-3 font-serif text-base font-semibold text-ink">What you can do</h2>
 		<ul class="space-y-1.5">
 			{#each sample.features as feature, i (i)}
-				<li
-					class="flex items-start gap-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted"
-				>
-					<span class="mt-0.5 shrink-0 text-accent">✓</span>
+				<li class="flex items-start gap-2 font-sans text-sm text-ink-muted">
+					<span class="mt-0.5 shrink-0 text-accent-ink">✓</span>
 					<span>{feature}</span>
 				</li>
 			{/each}
@@ -73,30 +65,24 @@
 
 	<!-- Example -->
 	<section class="mb-8">
-		<h2 class="mb-3 font-serif text-base font-semibold text-ink dark:text-dark-ink">
-			Example — <span class="font-sans font-normal text-ink-muted dark:text-dark-ink-muted"
-				>{exampleDoc.title}</span
-			>
+		<h2 class="mb-3 font-serif text-base font-semibold text-ink">
+			Example — <span class="font-sans font-normal text-ink-muted">{exampleDoc.title}</span>
 		</h2>
-		<div
-			class="overflow-hidden rounded-xl border border-paper-border dark:border-dark-paper-border"
-		>
+		<div class="overflow-hidden rounded-xl border border-paper-border">
 			<div
-				class="flex items-center justify-between border-b border-paper-border bg-paper-ui px-4 py-2 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+				class="flex items-center justify-between border-b border-paper-border bg-paper-ui px-4 py-2"
 			>
-				<span class="font-mono text-[11px] text-ink-faint dark:text-dark-ink-faint">markdown</span>
-				<span
-					class="rounded bg-paper-border px-2 py-0.5 font-mono text-[10px] text-ink-muted dark:bg-dark-paper-border dark:text-dark-ink-muted"
-				>
+				<span class="font-mono text-[11px] text-ink-faint">markdown</span>
+				<span class="rounded bg-paper-border px-2 py-0.5 font-mono text-[10px] text-ink-muted">
 					type: {exampleDoc.docType}
 				</span>
 			</div>
 			<pre
-				class="overflow-x-auto bg-paper px-5 py-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-ink dark:bg-dark-paper dark:text-dark-ink">{exampleDoc.content.trim()}</pre>
+				class="overflow-x-auto bg-paper px-5 py-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-ink">{exampleDoc.content.trim()}</pre>
 		</div>
 
 		{#if sample.docs.length > 1}
-			<p class="mt-2 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+			<p class="mt-2 font-sans text-xs text-ink-faint">
 				This sample project includes {sample.docs.length} documents. The example above shows the first
 				one.
 			</p>
@@ -107,8 +93,8 @@
 	<section
 		class="rounded-xl border border-accent/20 bg-accent/5 px-6 py-5 dark:border-accent/15 dark:bg-accent/10"
 	>
-		<p class="font-serif text-base font-semibold text-ink dark:text-dark-ink">Try it yourself</p>
-		<p class="mt-1 mb-4 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
+		<p class="font-serif text-base font-semibold text-ink">Try it yourself</p>
+		<p class="mt-1 mb-4 font-sans text-sm text-ink-muted">
 			Creates a new project called <strong>"{sample.projectTitle}"</strong> in your workspace,
 			pre-filled with {sample.docs.length === 1
 				? 'this example document'
@@ -127,7 +113,7 @@
 			{/if}
 		</button>
 		{#if errorMsg}
-			<p class="mt-2 font-sans text-xs text-red-600 dark:text-red-400">{errorMsg}</p>
+			<p class="mt-2 font-sans text-xs text-danger">{errorMsg}</p>
 		{/if}
 	</section>
 </div>

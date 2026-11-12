@@ -78,6 +78,27 @@
       "when": 1794476027379,
       "tag": "0010_ai_spend_banner",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794480809699,
+      "tag": "0011_rls_definer_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794481644099,
+      "tag": "0012_drop_scipy_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794481884677,
+      "tag": "0013_drop_dead_ai_tables",
+      "breakpoints": true
     }
   ]
 }

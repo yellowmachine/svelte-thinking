@@ -14,12 +14,12 @@ import { env } from '$env/dynamic/private';
 
 export const POST: RequestHandler = async (event) => {
 	const user = event.locals.user;
-	if (!user) error(401, 'No autenticado');
-	if (!user.twoFactorEnabled) error(400, '2FA no está activado');
+	if (!user) error(401, 'Not authenticated');
+	if (!user.twoFactorEnabled) error(400, '2FA is not enabled');
 
 	const body = await event.request.json().catch(() => ({}));
 	const code: string = body?.code ?? '';
-	if (!code || code.length !== 6) error(400, 'Código inválido');
+	if (!code || code.length !== 6) error(400, 'Invalid code');
 
 	const row = await db
 		.select({ secret: twoFactor.secret })
@@ -27,7 +27,7 @@ export const POST: RequestHandler = async (event) => {
 		.where(eq(twoFactor.userId, user.id))
 		.limit(1);
 
-	if (!row[0]) error(404, 'Secreto 2FA no encontrado');
+	if (!row[0]) error(404, '2FA secret not found');
 
 	const { symmetricDecrypt } = await import('better-auth/crypto');
 	const secret = await symmetricDecrypt({ key: env.BETTER_AUTH_SECRET!, data: row[0].secret });
@@ -36,7 +36,7 @@ export const POST: RequestHandler = async (event) => {
 	const otp = createOTP(secret, { digits: 6, period: 30 });
 
 	const valid = await otp.verify(code);
-	if (!valid) error(401, 'Código incorrecto');
+	if (!valid) error(401, 'Incorrect code');
 
 	const totpURI = otp.url('Scholio', user.email);
 	const textSecret = new URL(totpURI).searchParams.get('secret') ?? '';

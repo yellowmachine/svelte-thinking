@@ -9,6 +9,10 @@ export interface PendingEdit {
 	content: string; // full snapshot on each manual save
 	savedAt: Date;
 	status: PendingEditStatus;
+	/** Hash of the server draft this edit was based on (saveDraft's conflict check). */
+	baseDraftHash?: string;
+	/** Why the sync failed, for the sync log. */
+	failureReason?: string;
 }
 
 export interface PendingCreate {

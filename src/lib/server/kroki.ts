@@ -28,7 +28,7 @@ export async function renderMermaidToSvgServer(code: string): Promise<string> {
 	});
 
 	if (!res.ok) {
-		throw new Error(`Kroki respondió ${res.status}: ${await res.text().catch(() => '')}`);
+		throw new Error(`Kroki responded ${res.status}: ${await res.text().catch(() => '')}`);
 	}
 
 	return res.text();

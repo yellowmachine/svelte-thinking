@@ -36,19 +36,14 @@ export const blogCommentsRouter = router({
 			if (!post.commentsEnabled) {
 				throw new TRPCError({
 					code: 'FORBIDDEN',
-					message: 'Los comentarios están desactivados en esta publicación.'
+					message: 'Comments are turned off for this post.'
 				});
 			}
 
 			// Best-effort — only runs if the commenting user has their own AI key
 			// configured (BYOK). Never blocks the comment; only flags it for the
 			// post author's review queue.
-			const check = await runCommentModerationCheck(
-				ctx.withRLS,
-				ctx.db,
-				ctx.user.id,
-				input.content
-			);
+			const check = await runCommentModerationCheck(ctx.withRLS, ctx.user.id, input.content);
 
 			const [created] = await ctx.withRLS((db) =>
 				db

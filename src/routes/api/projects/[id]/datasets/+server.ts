@@ -14,13 +14,13 @@ function hasAllowedExtension(filename: string): boolean {
 
 export const GET: RequestHandler = async (event) => {
 	const user = event.locals.user;
-	if (!user) error(401, 'No autenticado');
+	if (!user) error(401, 'Not authenticated');
 
 	const projectId = event.params.id;
 	const [proj] = await event.locals.withRLS((rdb) =>
 		rdb.select({ id: project.id }).from(project).where(eq(project.id, projectId)).limit(1)
 	);
-	if (!proj) error(404, 'Proyecto no encontrado');
+	if (!proj) error(404, 'Project not found');
 
 	const datasets = await event.locals.withRLS((rdb) =>
 		rdb
@@ -42,23 +42,23 @@ export const GET: RequestHandler = async (event) => {
 
 export const POST: RequestHandler = async (event) => {
 	const user = event.locals.user;
-	if (!user) error(401, 'No autenticado');
+	if (!user) error(401, 'Not authenticated');
 
 	const projectId = event.params.id;
 	const [proj] = await event.locals.withRLS((rdb) =>
 		rdb.select({ id: project.id }).from(project).where(eq(project.id, projectId)).limit(1)
 	);
-	if (!proj) error(404, 'Proyecto no encontrado');
+	if (!proj) error(404, 'Project not found');
 
 	const formData = await event.request.formData();
 	const file = formData.get('file');
-	if (!(file instanceof File)) error(400, 'No se recibió ningún archivo');
+	if (!(file instanceof File)) error(400, 'No file received');
 
 	if (!hasAllowedExtension(file.name)) {
-		error(400, 'Tipo no permitido. Se aceptan CSV, TSV, JSON.');
+		error(400, 'File type not allowed. Accepted: CSV, TSV, JSON.');
 	}
 
-	if (file.size > MAX_SIZE) error(400, 'Archivo demasiado grande. Máximo 5 MB.');
+	if (file.size > MAX_SIZE) error(400, 'File too large. Maximum 5 MB.');
 
 	const content = await file.text();
 
@@ -93,10 +93,10 @@ export const POST: RequestHandler = async (event) => {
 
 export const DELETE: RequestHandler = async (event) => {
 	const user = event.locals.user;
-	if (!user) error(401, 'No autenticado');
+	if (!user) error(401, 'Not authenticated');
 
 	const datasetId = event.url.searchParams.get('datasetId');
-	if (!datasetId) error(400, 'datasetId requerido');
+	if (!datasetId) error(400, 'datasetId is required');
 
 	const projectId = event.params.id;
 
@@ -113,7 +113,7 @@ export const DELETE: RequestHandler = async (event) => {
 			)
 			.limit(1)
 	);
-	if (!dataset) error(404, 'Dataset no encontrado');
+	if (!dataset) error(404, 'Dataset not found');
 
 	await event.locals.withRLS((rdb) =>
 		rdb.delete(projectDataset).where(eq(projectDataset.id, datasetId))

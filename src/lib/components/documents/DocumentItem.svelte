@@ -30,10 +30,9 @@
 
 <button
 	{onclick}
-	class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left font-sans text-sm transition-colors
-		{active
-		? 'bg-accent-light text-accent dark:bg-accent/20 dark:text-dark-ink'
-		: 'text-ink-muted hover:bg-paper-border/50 dark:text-dark-ink-muted dark:hover:bg-dark-paper-border/50'}"
+	class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left font-sans text-sm transition-colors {active
+		? 'bg-accent-light text-accent-ink dark:bg-accent/20 dark:text-dark-ink'
+		: 'text-ink-muted hover:bg-paper-border/50'}"
 >
 	<svg width="13" height="13" viewBox="0 0 13 13" fill="none" class="shrink-0 opacity-60">
 		<path d={typeIcon[type]} stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
@@ -41,7 +40,7 @@
 	<span translate="no" class="flex-1 truncate">{title}</span>
 	{#if badge}
 		<span
-			class="ml-2 shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+			class="ml-2 shrink-0 rounded-full bg-warning-bg px-2 py-0.5 text-xs font-semibold text-warning"
 		>
 			{badge}
 		</span>

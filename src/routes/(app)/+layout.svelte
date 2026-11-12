@@ -4,11 +4,13 @@
 	import MobileHeader from '$lib/components/layout/MobileHeader.svelte';
 	import MobileNav from '$lib/components/layout/MobileNav.svelte';
 	import FeedbackButton from '$lib/components/layout/FeedbackButton.svelte';
-	import ConnectivityBanner from '$lib/components/ui/ConnectivityBanner.svelte';
 	import AiSpendBanner from '$lib/components/layout/AiSpendBanner.svelte';
+	import Banner from '$lib/components/ui/Banner.svelte';
 	import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { onlineStore } from '$lib/stores/online.svelte';
+	import { focusMode } from '$lib/stores/focusMode.svelte';
+	import { page } from '$app/state';
 	import { trpc } from '$lib/utils/trpc';
 	import { resolve } from '$app/paths';
 	import { AI_TASKS } from '$lib/ai-config';
@@ -19,6 +21,26 @@
 	// Dismissed IDs managed client-side; initial list comes from server (already filtered).
 	let dismissed = $state<Set<string>>(new Set());
 	let visibleNotifications = $derived(data.activeNotifications.filter((n) => !dismissed.has(n.id)));
+
+	const OBSOLETE_AI_NOTICE = 'obsolete-ai-models';
+	type Notice = {
+		id: string;
+		variant: 'danger' | 'warning';
+		message: string;
+		dismissible: boolean;
+	};
+	const notices = $derived<Notice[]>([
+		...(data.obsoleteAiTasks.length > 0
+			? [{ id: OBSOLETE_AI_NOTICE, variant: 'danger' as const, message: '', dismissible: false }]
+			: []),
+		...visibleNotifications.map((n) => ({
+			id: n.id,
+			variant: 'warning' as const,
+			message: n.message,
+			dismissible: true
+		}))
+	]);
+	let showAllNotices = $state(false);
 
 	function taskLabel(taskId: string): string {
 		return AI_TASKS.find((t) => t.id === taskId)?.label ?? taskId;
@@ -41,119 +63,80 @@
 	});
 </script>
 
-<div class="flex h-screen flex-col overflow-hidden bg-paper-ui dark:bg-dark-paper-ui">
-	<!-- Desktop nav -->
-	<div class="hidden sm:block">
-		<Navbar
-			user={data.user}
-			pendingInvitationCount={data.pendingInvitationCount}
-			orgs={data.orgs}
-		/>
-	</div>
-	<!-- Mobile header -->
-	<MobileHeader user={data.user} />
-
-	<!-- AI spending line, if the user turned it on in Settings → AI -->
-	{#if data.showAiSpendBanner}
-		<AiSpendBanner />
-	{/if}
-
-	<!-- Obsolete AI model banner (persistent until the user fixes the config) -->
-	{#if data.obsoleteAiTasks.length > 0}
-		<div
-			class="flex shrink-0 items-start gap-3 border-b border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/50 dark:bg-red-900/20"
-		>
-			<svg
-				class="mt-0.5 shrink-0 text-red-600 dark:text-red-400"
-				width="15"
-				height="15"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				<circle cx="12" cy="12" r="10" />
-				<line x1="12" y1="8" x2="12" y2="12" />
-				<line x1="12" y1="16" x2="12.01" y2="16" />
-			</svg>
-			<p class="flex-1 font-sans text-sm text-red-900 dark:text-red-200">
-				{#if data.obsoleteAiTasks.length === 1}
-					The AI model configured for "{taskLabel(data.obsoleteAiTasks[0].task)}" is no longer
-					available on OpenRouter.
-				{:else}
-					{data.obsoleteAiTasks.length} AI models you configured are no longer available on OpenRouter.
-				{/if}
-				<a href="{resolve('/settings')}?tab=ai" class="font-medium underline"
-					>Review in Settings →</a
-				>
-			</p>
+<div class="flex h-screen flex-col overflow-hidden bg-paper-ui">
+	<!-- Focus mode (editor) hides all the chrome above the content -->
+	{#if !focusMode.on}
+		<!-- Desktop nav -->
+		<div class="hidden sm:block">
+			<Navbar
+				user={data.user}
+				pendingInvitationCount={data.pendingInvitationCount}
+				orgs={data.orgs}
+			/>
 		</div>
-	{/if}
+		<!-- Mobile header -->
+		<MobileHeader user={data.user} />
 
-	<!-- Notification banners -->
-	{#each visibleNotifications as n (n.id)}
-		<div
-			class="flex shrink-0 items-start gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700/50 dark:bg-amber-900/20"
-		>
-			<svg
-				class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
-				width="15"
-				height="15"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				aria-hidden="true"
-			>
-				<circle cx="12" cy="12" r="10" />
-				<line x1="12" y1="8" x2="12" y2="12" />
-				<line x1="12" y1="16" x2="12.01" y2="16" />
-			</svg>
-			<p class="flex-1 font-sans text-sm text-amber-900 dark:text-amber-200">{n.message}</p>
-			<button
-				onclick={() => dismiss(n.id)}
-				aria-label="Dismiss notification"
-				class="shrink-0 rounded p-0.5 text-amber-600 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-800/30"
-			>
-				<svg
-					width="14"
-					height="14"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<line x1="18" y1="6" x2="6" y2="18" />
-					<line x1="6" y1="6" x2="18" y2="18" />
-				</svg>
-			</button>
-		</div>
-	{/each}
+		<!-- AI spending line, if the user turned it on in Settings → AI -->
+		{#if data.showAiSpendBanner}
+			<AiSpendBanner />
+		{/if}
+
+		<!-- One notice slot: the most important one shows, the rest behind "+N more".
+		     Order: broken AI configuration (danger) first, then admin notices. -->
+		{#if notices.length > 0}
+			<div class="shrink-0">
+				{#each showAllNotices ? notices : notices.slice(0, 1) as notice (notice.id)}
+					<Banner
+						variant={notice.variant}
+						ondismiss={notice.dismissible ? () => dismiss(notice.id) : undefined}
+					>
+						{#if notice.id === OBSOLETE_AI_NOTICE}
+							{#if data.obsoleteAiTasks.length === 1}
+								The AI model chosen for "{taskLabel(data.obsoleteAiTasks[0].task)}" is no longer
+								available.
+							{:else}
+								{data.obsoleteAiTasks.length} of the AI models you chose are no longer available.
+							{/if}
+							<a href="{resolve('/settings')}?tab=ai" class="font-medium underline">
+								Choose another in Settings →
+							</a>
+						{:else}
+							{notice.message}
+						{/if}
+						{#snippet action()}
+							{#if notices.length > 1 && notice === notices[0]}
+								<button
+									type="button"
+									onclick={() => (showAllNotices = !showAllNotices)}
+									aria-expanded={showAllNotices}
+									class="font-medium whitespace-nowrap underline underline-offset-2"
+								>
+									{showAllNotices ? 'Show less' : `+${notices.length - 1} more`}
+								</button>
+							{/if}
+						{/snippet}
+					</Banner>
+				{/each}
+			</div>
+		{/if}
+	{/if}
 
 	<main id="main-content" class="flex-1 overflow-y-auto pb-16 sm:pb-0">
 		{@render children()}
 	</main>
-	<ConnectivityBanner />
-	<FeedbackButton />
-	<footer
-		class="hidden border-t border-paper-border px-6 py-3 sm:block dark:border-dark-paper-border"
-	>
-		<p class="text-center font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+	<!-- Not over the editor: it would cover its side panels -->
+	{#if !focusMode.on && page.route.id !== '/(app)/projects/[id]/documents/[docId]'}
+		<FeedbackButton />
+	{/if}
+	<footer class="hidden border-t border-paper-border px-6 py-3 {focusMode.on ? '' : 'sm:block'}">
+		<p class="text-center font-sans text-xs text-ink-faint">
 			Scholio Beta · Developed with
 			<a
 				href="https://claude.ai/code"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="underline decoration-dotted hover:text-ink-muted dark:hover:text-dark-ink-muted"
-				>Claude Code</a
+				class="underline decoration-dotted hover:text-ink-muted">Claude Code</a
 			>
 			· AI assistant powered by
 			<span class="font-medium">Claude</span> (Anthropic)

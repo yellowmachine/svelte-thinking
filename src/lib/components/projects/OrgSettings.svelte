@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Plus from '@lucide/svelte/icons/plus';
 	import { untrack } from 'svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
@@ -283,8 +284,8 @@
 					onclick={() => (selectedOrgId = org.id)}
 					class="w-full truncate rounded-lg px-3 py-2 text-left font-sans text-sm transition-colors {selectedOrgId ===
 					org.id
-						? 'bg-accent/10 text-accent'
-						: 'text-ink-muted hover:bg-paper-ui hover:text-ink dark:text-dark-ink-muted dark:hover:bg-dark-paper-ui dark:hover:text-dark-ink'}"
+						? 'bg-accent/10 text-accent-ink'
+						: 'text-ink-muted hover:bg-paper-ui hover:text-ink'}"
 				>
 					{org.name}
 					{#if org.role === 'owner'}
@@ -295,18 +296,16 @@
 		</div>
 
 		<!-- Create org -->
-		<div class="mt-4 border-t border-paper-border pt-4 dark:border-dark-paper-border">
-			<p class="mb-2 font-sans text-xs font-medium text-ink-muted dark:text-dark-ink-muted">
-				New organization
-			</p>
+		<div class="mt-4 border-t border-paper-border pt-4">
+			<p class="mb-2 font-sans text-xs font-medium text-ink-muted">New organization</p>
 			<input
 				bind:value={createName}
 				placeholder="Name"
-				class="w-full rounded-md border border-paper-border bg-paper px-2.5 py-1.5 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint"
+				class="w-full rounded-md border border-paper-border bg-paper px-2.5 py-1.5 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 				onkeydown={(e) => e.key === 'Enter' && createOrg()}
 			/>
 			{#if createError}
-				<p class="mt-1 font-sans text-xs text-red-500">{createError}</p>
+				<p class="mt-1 font-sans text-xs text-danger">{createError}</p>
 			{/if}
 			<button
 				type="button"
@@ -315,19 +314,7 @@
 				class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
 			>
 				{#if !creating}
-					<svg
-						width="12"
-						height="12"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2.5"
-						stroke-linecap="round"
-						aria-hidden="true"
-					>
-						<line x1="12" y1="5" x2="12" y2="19" />
-						<line x1="5" y1="12" x2="19" y2="12" />
-					</svg>
+					<Plus size={12} strokeWidth={1.75} aria-hidden="true" />
 				{/if}
 				{creating ? 'Creating…' : 'Create'}
 			</button>
@@ -337,18 +324,16 @@
 	<!-- Main panel -->
 	<div class="min-w-0 flex-1">
 		{#if !selectedOrg}
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-				Select or create an organization.
-			</p>
+			<p class="font-sans text-sm text-ink-muted">Select or create an organization.</p>
 		{:else if loadingDetail}
-			<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">Loading…</p>
+			<p class="font-sans text-sm text-ink-muted">Loading…</p>
 		{:else}
 			<div class="space-y-8">
 				<div>
-					<h3 class="font-serif text-lg font-semibold text-ink dark:text-dark-ink">
+					<h3 class="font-serif text-lg font-semibold text-ink">
 						{selectedOrg.name}
 					</h3>
-					<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+					<p class="font-sans text-xs text-ink-faint">
 						/{selectedOrg.slug}
 					</p>
 				</div>
@@ -356,31 +341,27 @@
 				<!-- API Keys (owner only) -->
 				{#if isOwner}
 					<section>
-						<h4
-							class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
-						>
+						<h4 class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase">
 							API Keys
 						</h4>
 						<div class="space-y-2">
 							{#each keys as key (key.id)}
 								<div
-									class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border"
+									class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2"
 								>
-									<span class="font-sans text-sm text-ink dark:text-dark-ink">{key.name}</span>
+									<span class="font-sans text-sm text-ink">{key.name}</span>
 									<div class="flex items-center gap-2">
 										<button
 											type="button"
 											onclick={() => toggleKey(key.id, !key.enabled)}
-											class="font-sans text-xs {key.enabled
-												? 'text-green-600'
-												: 'text-ink-faint dark:text-dark-ink-faint'}"
+											class="font-sans text-xs {key.enabled ? 'text-success' : 'text-ink-faint'}"
 										>
 											{key.enabled ? 'Active' : 'Disabled'}
 										</button>
 										<button
 											type="button"
 											onclick={() => deleteKey(key.id)}
-											class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
+											class="inline-flex items-center gap-1 font-sans text-xs text-danger hover:text-danger"
 										>
 											<svg
 												width="11"
@@ -408,13 +389,13 @@
 							<input
 								bind:value={newKeyName}
 								placeholder="Key name"
-								class="w-32 rounded-md border border-paper-border bg-paper px-2.5 py-1.5 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint"
+								class="w-32 rounded-md border border-paper-border bg-paper px-2.5 py-1.5 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 							/>
 							<input
 								bind:value={newKeyValue}
 								placeholder="sk-or-…"
 								type="password"
-								class="flex-1 rounded-md border border-paper-border bg-paper px-2.5 py-1.5 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint"
+								class="flex-1 rounded-md border border-paper-border bg-paper px-2.5 py-1.5 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 							/>
 							<button
 								type="button"
@@ -423,47 +404,29 @@
 								class="flex items-center gap-1 rounded-md bg-accent px-3 py-1.5 font-sans text-xs font-medium text-white hover:opacity-80 disabled:opacity-50"
 							>
 								{#if !addingKey}
-									<svg
-										width="11"
-										height="11"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2.5"
-										stroke-linecap="round"
-										aria-hidden="true"
-									>
-										<line x1="12" y1="5" x2="12" y2="19" />
-										<line x1="5" y1="12" x2="19" y2="12" />
-									</svg>
+									<Plus size={11} strokeWidth={1.75} aria-hidden="true" />
 								{/if}
 								{addingKey ? 'Adding…' : 'Add'}
 							</button>
 						</div>
 						{#if keyError}
-							<p class="mt-1 font-sans text-xs text-red-500">{keyError}</p>
+							<p class="mt-1 font-sans text-xs text-danger">{keyError}</p>
 						{/if}
 					</section>
 
 					<!-- AI Task Config (owner only) -->
 					<section>
-						<h4
-							class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
-						>
+						<h4 class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase">
 							AI Task Configuration
 						</h4>
 						{#if keys.filter((k) => k.enabled).length === 0}
-							<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-								Add an API key first.
-							</p>
+							<p class="font-sans text-sm text-ink-muted">Add an API key first.</p>
 						{:else}
 							<div class="space-y-3">
 								{#each AI_TASKS as task (task.id)}
 									{@const current = taskConfig[task.id]}
 									<div class="flex items-center gap-3">
-										<span class="w-28 font-sans text-sm text-ink dark:text-dark-ink"
-											>{task.label}</span
-										>
+										<span class="w-28 font-sans text-sm text-ink">{task.label}</span>
 										<select
 											value={current?.keyId ?? ''}
 											onchange={(e) => {
@@ -471,7 +434,7 @@
 												const model = current?.model ?? aiModels[0]?.id ?? '';
 												if (keyId) setTask(task.id, keyId, model);
 											}}
-											class="rounded-md border border-paper-border bg-paper px-2 py-1 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+											class="rounded-md border border-paper-border bg-paper px-2 py-1 font-sans text-xs text-ink focus:border-accent focus:outline-none"
 										>
 											<option value="">— key —</option>
 											{#each keys.filter((k) => k.enabled) as key (key.id)}
@@ -485,7 +448,7 @@
 												const keyId = current?.keyId ?? keys.find((k) => k.enabled)?.id ?? '';
 												if (keyId && model) setTask(task.id, keyId, model);
 											}}
-											class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1 font-sans text-xs text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+											class="flex-1 rounded-md border border-paper-border bg-paper px-2 py-1 font-sans text-xs text-ink focus:border-accent focus:outline-none"
 										>
 											<option value="">— model —</option>
 											{#each aiModels as model (model.id)}
@@ -501,32 +464,28 @@
 
 					<!-- S3 Storage (owner only) -->
 					<section>
-						<h4
-							class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
-						>
+						<h4 class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase">
 							S3 Storage
 						</h4>
 
 						{#if orgS3Config}
 							<div
-								class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3 dark:border-dark-paper-border dark:bg-dark-paper-ui"
+								class="mb-4 flex items-center justify-between gap-3 rounded-lg border border-paper-border bg-paper-ui px-4 py-3"
 							>
 								<div class="min-w-0 flex-1">
-									<p class="truncate font-sans text-sm font-medium text-ink dark:text-dark-ink">
+									<p class="truncate font-sans text-sm font-medium text-ink">
 										{orgS3Config.bucket}
-										<span class="font-normal text-ink-faint dark:text-dark-ink-faint"
-											>@ {orgS3Config.endpoint}</span
-										>
+										<span class="font-normal text-ink-faint">@ {orgS3Config.endpoint}</span>
 									</p>
-									<p class="font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
+									<p class="font-sans text-xs text-ink-faint">
 										{orgS3Config.verified ? 'Verified' : 'Unverified'} · Region: {orgS3Config.region}
 									</p>
 								</div>
 								<div class="flex items-center gap-3">
 									<span
 										class="font-sans text-xs {orgS3Config.verified
-											? 'text-green-600 dark:text-green-400'
-											: 'text-amber-600 dark:text-amber-400'}"
+											? 'text-success'
+											: 'text-warning'}"
 									>
 										{orgS3Config.verified ? '✓ OK' : '⚠ Unverified'}
 									</span>
@@ -534,7 +493,7 @@
 										type="button"
 										onclick={testOrgS3}
 										disabled={orgS3Testing}
-										class="inline-flex items-center gap-1 font-sans text-xs text-accent hover:underline disabled:opacity-50"
+										class="inline-flex items-center gap-1 font-sans text-xs text-accent-ink hover:underline disabled:opacity-50"
 									>
 										{#if !orgS3Testing}
 											<svg
@@ -556,7 +515,7 @@
 									<button
 										type="button"
 										onclick={removeOrgS3}
-										class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
+										class="inline-flex items-center gap-1 font-sans text-xs text-danger hover:text-danger"
 									>
 										<svg
 											width="11"
@@ -580,28 +539,22 @@
 						{/if}
 
 						{#if orgS3Error}
-							<p
-								class="mb-3 rounded-lg bg-red-50 px-3 py-2 font-sans text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400"
-							>
+							<p class="mb-3 rounded-lg bg-danger-bg px-3 py-2 font-sans text-sm text-danger">
 								{orgS3Error}
 							</p>
 						{/if}
 						{#if orgS3Success}
-							<p
-								class="mb-3 rounded-lg bg-green-50 px-3 py-2 font-sans text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400"
-							>
+							<p class="mb-3 rounded-lg bg-success-bg px-3 py-2 font-sans text-sm text-success">
 								{orgS3Success}
 							</p>
 						{/if}
 
-						<p class="mb-3 font-sans text-sm font-medium text-ink dark:text-dark-ink">
+						<p class="mb-3 font-sans text-sm font-medium text-ink">
 							{orgS3Config ? 'Update configuration' : 'Configure bucket'}
 						</p>
 						<div class="grid grid-cols-2 gap-3">
 							<div class="col-span-2">
-								<label
-									for="s3-endpoint"
-									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label for="s3-endpoint" class="mb-1 block font-sans text-xs text-ink-muted"
 									>Endpoint URL</label
 								>
 								<input
@@ -609,39 +562,33 @@
 									bind:value={orgS3Endpoint}
 									type="url"
 									placeholder="https://…"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 								/>
 							</div>
 							<div>
-								<label
-									for="s3-bucket"
-									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label for="s3-bucket" class="mb-1 block font-sans text-xs text-ink-muted"
 									>Bucket</label
 								>
 								<input
 									id="s3-bucket"
 									bind:value={orgS3Bucket}
 									placeholder="my-bucket"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 								/>
 							</div>
 							<div>
-								<label
-									for="s3-region"
-									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label for="s3-region" class="mb-1 block font-sans text-xs text-ink-muted"
 									>Region</label
 								>
 								<input
 									id="s3-region"
 									bind:value={orgS3Region}
 									placeholder="us-east-1"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 								/>
 							</div>
 							<div class="col-span-2">
-								<label
-									for="s3-public-url"
-									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label for="s3-public-url" class="mb-1 block font-sans text-xs text-ink-muted"
 									>Public URL (optional)</label
 								>
 								<input
@@ -649,26 +596,22 @@
 									bind:value={orgS3PublicUrl}
 									type="url"
 									placeholder="https://cdn.example.com"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 								/>
 							</div>
 							<div>
-								<label
-									for="s3-access-key"
-									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label for="s3-access-key" class="mb-1 block font-sans text-xs text-ink-muted"
 									>Access Key ID</label
 								>
 								<input
 									id="s3-access-key"
 									bind:value={orgS3AccessKey}
 									autocomplete="off"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 								/>
 							</div>
 							<div>
-								<label
-									for="s3-secret-key"
-									class="mb-1 block font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
+								<label for="s3-secret-key" class="mb-1 block font-sans text-xs text-ink-muted"
 									>Secret Access Key</label
 								>
 								<input
@@ -676,7 +619,7 @@
 									bind:value={orgS3SecretKey}
 									type="password"
 									autocomplete="new-password"
-									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink"
+									class="w-full rounded-md border border-paper-border bg-paper px-3 py-2 font-mono text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 								/>
 							</div>
 						</div>
@@ -714,28 +657,22 @@
 
 				<!-- Members -->
 				<section>
-					<h4
-						class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
-					>
+					<h4 class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase">
 						Members
 					</h4>
 					<div class="space-y-2">
 						{#each members as member (member.id)}
 							<div
-								class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2 dark:border-dark-paper-border"
+								class="flex items-center justify-between rounded-lg border border-paper-border px-3 py-2"
 							>
-								<span class="font-mono text-xs text-ink-muted dark:text-dark-ink-muted"
-									>{member.userId.slice(0, 12)}…</span
-								>
+								<span class="font-mono text-xs text-ink-muted">{member.userId.slice(0, 12)}…</span>
 								<div class="flex items-center gap-3">
-									<span class="font-sans text-xs text-ink-faint capitalize dark:text-dark-ink-faint"
-										>{member.role}</span
-									>
+									<span class="font-sans text-xs text-ink-faint capitalize">{member.role}</span>
 									{#if isOwner}
 										<button
 											type="button"
 											onclick={() => removeMember(member.id)}
-											class="inline-flex items-center gap-1 font-sans text-xs text-red-500 hover:text-red-700"
+											class="inline-flex items-center gap-1 font-sans text-xs text-danger hover:text-danger"
 										>
 											<svg
 												width="11"
@@ -759,9 +696,7 @@
 							</div>
 						{/each}
 						{#if members.length === 0}
-							<p class="font-sans text-sm text-ink-faint dark:text-dark-ink-faint">
-								No members yet.
-							</p>
+							<p class="font-sans text-sm text-ink-faint">No members yet.</p>
 						{/if}
 					</div>
 				</section>
@@ -769,9 +704,7 @@
 				<!-- Invite (owner only) -->
 				{#if isOwner}
 					<section>
-						<h4
-							class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase dark:text-dark-ink-muted"
-						>
+						<h4 class="mb-3 font-sans text-xs font-semibold tracking-wide text-ink-muted uppercase">
 							Invite member
 						</h4>
 						<div class="flex gap-2">
@@ -779,7 +712,7 @@
 								bind:value={inviteEmail}
 								type="email"
 								placeholder="email@institution.edu"
-								class="flex-1 rounded-md border border-paper-border bg-paper px-2.5 py-1.5 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper dark:text-dark-ink dark:placeholder-dark-ink-faint"
+								class="flex-1 rounded-md border border-paper-border bg-paper px-2.5 py-1.5 font-sans text-sm text-ink placeholder-ink-faint focus:border-accent focus:outline-none"
 								onkeydown={(e) => e.key === 'Enter' && sendInvite()}
 							/>
 							<button
@@ -810,23 +743,19 @@
 							</button>
 						</div>
 						{#if inviteError}
-							<p class="mt-1 font-sans text-xs text-red-500">{inviteError}</p>
+							<p class="mt-1 font-sans text-xs text-danger">{inviteError}</p>
 						{/if}
 
 						<!-- Pending invitations -->
 						{#if invitations.filter((i) => isInvitationPending(i.status)).length > 0}
 							<div class="mt-3 space-y-1">
 								{#each invitations.filter((i) => isInvitationPending(i.status)) as inv (inv.id)}
-									<div
-										class="flex items-center justify-between rounded-lg bg-paper-ui px-3 py-2 dark:bg-dark-paper-ui"
-									>
-										<span class="font-sans text-xs text-ink-muted dark:text-dark-ink-muted"
-											>{inv.invitedEmail}</span
-										>
+									<div class="flex items-center justify-between rounded-lg bg-paper-ui px-3 py-2">
+										<span class="font-sans text-xs text-ink-muted">{inv.invitedEmail}</span>
 										<button
 											type="button"
 											onclick={() => cancelInvite(inv.id)}
-											class="inline-flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-red-500 dark:text-dark-ink-faint"
+											class="inline-flex items-center gap-1 font-sans text-xs text-ink-faint hover:text-danger"
 										>
 											<svg
 												width="11"

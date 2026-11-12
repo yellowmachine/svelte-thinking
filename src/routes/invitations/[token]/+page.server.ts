@@ -2,7 +2,6 @@ import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
-import { project } from '$lib/server/db/schemas/projects.schema';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -14,15 +13,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			expiresAt: projectInvitation.expiresAt,
 			projectId: projectInvitation.projectId,
 			invitedEmail: projectInvitation.invitedEmail,
-			projectTitle: project.title,
-			projectDescription: project.description
+			// Copied onto the invitation when it is sent: whoever opens the link is
+			// not a collaborator yet, so RLS hides the project row from them.
+			projectTitle: projectInvitation.projectTitle
 		})
 		.from(projectInvitation)
-		.leftJoin(project, eq(project.id, projectInvitation.projectId))
 		.where(eq(projectInvitation.token, params.token))
 		.limit(1);
 
-	if (!rows[0]) error(404, 'Invitación no encontrada');
+	if (!rows[0]) error(404, 'Invitation not found');
 
 	return {
 		invitation: rows[0],

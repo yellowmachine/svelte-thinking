@@ -225,7 +225,7 @@ export const load: PageServerLoad = async (event) => {
 		) as Promise<{ userId: string; role: string; name: string }[]>
 	]);
 
-	if (!docResult) error(404, 'Documento no encontrado');
+	if (!docResult) error(404, 'Document not found');
 
 	const proj = projectResult[0];
 

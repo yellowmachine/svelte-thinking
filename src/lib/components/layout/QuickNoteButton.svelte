@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Plus from '@lucide/svelte/icons/plus';
 	import { trpc } from '$lib/utils/trpc';
 
 	type Project = { id: string; title: string };
@@ -76,41 +77,22 @@
 	<button
 		onclick={toggle}
 		disabled={creating}
-		class="flex items-center gap-1.5 rounded-md border border-accent/50 px-3 py-1.5 font-sans text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
+		class="flex items-center gap-1.5 rounded-md border border-accent/50 px-3 py-1.5 font-sans text-sm font-medium text-accent-ink transition-colors hover:bg-accent hover:text-white disabled:opacity-50"
 	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2.5"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		>
-			<line x1="12" y1="5" x2="12" y2="19" />
-			<line x1="5" y1="12" x2="19" y2="12" />
-		</svg>
+		<Plus size={14} strokeWidth={1.75} aria-hidden="true" />
 		Quick note
 	</button>
 
 	{#if open}
 		<div
-			class="absolute top-full right-0 z-50 mt-1.5 w-60 rounded-xl border border-paper-border bg-paper shadow-lg dark:border-dark-paper-border dark:bg-dark-paper"
+			class="absolute top-full right-0 z-50 mt-1.5 w-60 rounded-xl border border-paper-border bg-paper shadow-lg"
 		>
 			{#if loading}
-				<p class="px-4 py-3 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-					Loading projects…
-				</p>
+				<p class="px-4 py-3 font-sans text-sm text-ink-muted">Loading projects…</p>
 			{:else if projects.length === 0}
 				<div class="px-4 py-3">
-					<p class="font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-						You have no projects yet.
-					</p>
-					<p class="mt-1 font-sans text-xs text-ink-faint dark:text-dark-ink-faint">
-						Create a project to get started.
-					</p>
+					<p class="font-sans text-sm text-ink-muted">You have no projects yet.</p>
+					<p class="mt-1 font-sans text-xs text-ink-faint">Create a project to get started.</p>
 				</div>
 			{:else}
 				<ul class="py-1">
@@ -119,43 +101,41 @@
 							<button
 								onclick={() => createNote(p.id)}
 								disabled={creating}
-								class="w-full px-4 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50 dark:text-dark-ink dark:hover:bg-dark-paper-ui"
+								class="w-full px-4 py-2 text-left font-sans text-sm text-ink transition-colors hover:bg-paper-ui disabled:opacity-50"
 							>
 								<span translate="no">{p.title}</span>
 							</button>
 						</li>
 					{/each}
 					{#if displayed.length === 0 && showSearch}
-						<li class="px-4 py-2 font-sans text-sm text-ink-muted dark:text-dark-ink-muted">
-							No results
-						</li>
+						<li class="px-4 py-2 font-sans text-sm text-ink-muted">No results</li>
 					{/if}
 				</ul>
 
 				{#if showSearch}
-					<div class="border-t border-paper-border p-2 dark:border-dark-paper-border">
+					<div class="border-t border-paper-border p-2">
 						<!-- svelte-ignore a11y_autofocus -->
 						<input
 							autofocus
 							bind:value={searchQuery}
 							type="text"
 							placeholder="Search project…"
-							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none dark:border-dark-paper-border dark:bg-dark-paper-ui dark:text-dark-ink"
+							class="w-full rounded-md border border-paper-border bg-paper-ui px-3 py-1.5 font-sans text-sm text-ink focus:border-accent focus:outline-none"
 						/>
 					</div>
 				{:else if projects.length > 5}
-					<div class="border-t border-paper-border dark:border-dark-paper-border">
+					<div class="border-t border-paper-border">
 						<button
 							onclick={() => (showSearch = true)}
-							class="w-full px-4 py-2 text-left font-sans text-xs text-ink-muted transition-colors hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink"
+							class="w-full px-4 py-2 text-left font-sans text-xs text-ink-muted transition-colors hover:text-ink"
 						>
 							Ver todos ({projects.length})…
 						</button>
 					</div>
 				{/if}
 
-				<div class="border-t border-paper-border px-4 py-2 dark:border-dark-paper-border">
-					<p class="font-sans text-[11px] text-ink-faint dark:text-dark-ink-faint">
+				<div class="border-t border-paper-border px-4 py-2">
+					<p class="font-sans text-[11px] text-ink-faint">
 						Tip: name projects with <span class="font-mono">_quick</span> or
 						<span class="font-mono">_math</span> to make them appear first.
 					</p>

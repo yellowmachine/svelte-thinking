@@ -6,6 +6,7 @@ import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { blogPost } from '$lib/server/db/schemas/blog.schema';
 import { serializeBib, type RefData } from '$lib/utils/export';
 import { markdownToTypst } from '$lib/utils/markdownToTypst';
+import { escapeTypstLine } from '$lib/utils/typstEscape';
 import { compileToPdf } from '$lib/server/typst';
 
 // Wraps markdownToTypst's body conversion in a minimal title+content document —
@@ -14,9 +15,11 @@ import { compileToPdf } from '$lib/server/typst';
 // footnotes, and [[person:Name]] wikilinks/index render correctly instead of
 // leaking as raw text (markdownToTypst supports these; the simpler mdToTypst
 // used by the app's existing "Export" button does not).
-function buildPostTypst(title: string, content: string, hasRefs: boolean): string {
-	const body = markdownToTypst(content);
-	const bibSection = hasRefs ? '\n#bibliography("refs.bib")\n' : '';
+function buildPostTypst(title: string, content: string, refs: RefData[]): string {
+	const body = markdownToTypst(content, undefined, {
+		citeKeys: new Set(refs.map((r) => r.citeKey))
+	});
+	const bibSection = refs.length > 0 ? '\n#bibliography("refs.bib")\n' : '';
 	const escapedTitle = title.replace(/"/g, '\\"');
 
 	return `#set document(title: "${escapedTitle}")
@@ -25,7 +28,7 @@ function buildPostTypst(title: string, content: string, hasRefs: boolean): strin
 #set par(justify: true)
 
 #align(center)[
-  #text(size: 16pt, weight: "bold")[${escapedTitle}]
+  #text(size: 16pt, weight: "bold")[${escapeTypstLine(title)}]
   #v(0.5em)
 ]
 
@@ -46,18 +49,18 @@ export const GET: RequestHandler = async ({ params }) => {
 		.from(userProfile)
 		.where(eq(userProfile.handle, handle))
 		.limit(1);
-	if (!profileRows[0]) error(404, 'Este blog no existe');
+	if (!profileRows[0]) error(404, 'This blog does not exist');
 
 	const postRows = await db
 		.select({ title: blogPost.title, content: blogPost.content, refsJson: blogPost.refsJson })
 		.from(blogPost)
 		.where(and(eq(blogPost.userId, profileRows[0].userId), eq(blogPost.slug, params.slug)))
 		.limit(1);
-	if (!postRows[0]) error(404, 'Esta publicación no existe');
+	if (!postRows[0]) error(404, 'This post does not exist');
 	const post = postRows[0];
 
 	const refs: RefData[] = post.refsJson ? JSON.parse(post.refsJson) : [];
-	const typ = buildPostTypst(post.title, post.content, refs.length > 0);
+	const typ = buildPostTypst(post.title, post.content, refs);
 	const bib = serializeBib(refs);
 	const files = bib.trim() ? { 'refs.bib': bib } : undefined;
 
@@ -65,7 +68,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	try {
 		pdf = await compileToPdf(typ, undefined, files);
 	} catch (e) {
-		error(500, `Error compilando PDF: ${e instanceof Error ? e.message : e}`);
+		error(500, `Error compiling PDF: ${e instanceof Error ? e.message : e}`);
 	}
 
 	const slug = params.slug;

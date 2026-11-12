@@ -53,44 +53,44 @@ const VALID_REF_TYPES = new Set([
 
 export const POST: RequestHandler = async (event) => {
 	const user = event.locals.user;
-	if (!user) error(401, 'No autenticado');
+	if (!user) error(401, 'Not authenticated');
 
 	const contentLength = Number(event.request.headers.get('content-length') ?? 0);
-	if (contentLength > MAX_SIZE) error(413, 'El archivo es demasiado grande (máx. 200 MB)');
+	if (contentLength > MAX_SIZE) error(413, 'The file is too large (max. 200 MB)');
 
 	const formData = await event.request.formData();
 	const file = formData.get('file');
-	if (!(file instanceof File)) error(400, 'Se esperaba un campo "file"');
+	if (!(file instanceof File)) error(400, 'Expected a "file" field');
 	if (!file.name.endsWith('.scholio') && !file.name.endsWith('.zip'))
 		error(400, 'Expected a .scholio file');
 
 	const buffer = new Uint8Array(await file.arrayBuffer());
-	if (buffer.byteLength > MAX_SIZE) error(413, 'El archivo es demasiado grande (máx. 200 MB)');
+	if (buffer.byteLength > MAX_SIZE) error(413, 'The file is too large (max. 200 MB)');
 
 	// ── Decompress ──────────────────────────────────────────────────────────────
 	let zip: ReturnType<typeof unzipSync>;
 	try {
 		zip = unzipSync(buffer);
 	} catch {
-		error(400, 'No se pudo leer el ZIP');
+		error(400, "Couldn't read the ZIP");
 	}
 
 	const yamlEntry = zip['project.yaml'];
-	if (!yamlEntry) error(400, 'El ZIP no contiene project.yaml');
+	if (!yamlEntry) error(400, "The ZIP doesn't contain project.yaml");
 
 	// ── Parse & validate YAML ───────────────────────────────────────────────────
 	let data: Record<string, unknown>;
 	try {
 		data = parse(new TextDecoder().decode(yamlEntry));
 	} catch {
-		error(400, 'project.yaml no es un YAML válido');
+		error(400, 'project.yaml is not valid YAML');
 	}
 
-	if (!data?.scholio_export) error(400, 'No es un export válido de Scholio');
+	if (!data?.scholio_export) error(400, 'Not a valid Scholio export');
 
 	const proj = data.project as Record<string, unknown> | undefined;
 	if (!proj?.title || typeof proj.title !== 'string') {
-		error(400, 'project.title es obligatorio');
+		error(400, 'project.title is required');
 	}
 
 	const rawDocs = (data.documents as unknown[]) ?? [];
@@ -140,7 +140,7 @@ export const POST: RequestHandler = async (event) => {
 					type: VALID_REF_TYPES.has(r.type as string)
 						? (r.type as (typeof reference.$inferInsert)['type'])
 						: 'misc',
-					title: String(r.title ?? 'Sin título'),
+					title: String(r.title ?? 'Untitled'),
 					authors: Array.isArray(r.authors) ? r.authors : [],
 					editors: Array.isArray(r.editors) ? r.editors : [],
 					year: typeof r.year === 'string' ? r.year : null,
@@ -192,7 +192,7 @@ export const POST: RequestHandler = async (event) => {
 						documentId: docId,
 						content,
 						versionNumber: 1,
-						changeDescription: 'Importado',
+						changeDescription: 'Imported',
 						createdBy: user.id
 					});
 				}
@@ -203,7 +203,7 @@ export const POST: RequestHandler = async (event) => {
 			await tx.insert(document).values({
 				id: docId,
 				projectId,
-				title: typeof r.title === 'string' ? r.title : 'Sin título',
+				title: typeof r.title === 'string' ? r.title : 'Untitled',
 				type: VALID_DOC_TYPES.has(r.type as string)
 					? (r.type as (typeof document.$inferInsert)['type'])
 					: 'notes',

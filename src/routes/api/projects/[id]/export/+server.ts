@@ -13,6 +13,7 @@ import { user } from '$lib/server/db/auth.schema';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { createS3Client } from '$lib/server/storage';
+import { safeFetch } from '$lib/server/safeFetch';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 
 export const GET: RequestHandler = async (event) => {
@@ -93,7 +94,7 @@ export const GET: RequestHandler = async (event) => {
 			)
 		]);
 
-	if (!proj[0]) error(404, 'Proyecto no encontrado');
+	if (!proj[0]) error(404, 'Project not found');
 
 	// Group comments by documentId, nest replies under their parent
 	type CommentRow = (typeof allComments)[number];
@@ -243,7 +244,8 @@ export const GET: RequestHandler = async (event) => {
 						}
 					} else {
 						// Public URL fallback
-						const res = await fetch(photo.url);
+						const res = await safeFetch(photo.url).catch(() => null);
+						if (!res) return;
 						if (!res.ok) return;
 						bytes = new Uint8Array(await res.arrayBuffer());
 					}

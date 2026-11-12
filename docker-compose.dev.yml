@@ -39,22 +39,6 @@ services:
     image: yuzutech/kroki-mermaid:latest
     restart: unless-stopped
 
-  embed:
-    build:
-      context: ./embed-service
-    restart: unless-stopped
-    ports:
-      - '3200:3200'
-
-  #scipy:
-  #  build:
-  #    context: ./scipy-service
-  #  restart: unless-stopped
-  #  environment:
-  #    SCIPY_API_KEY: ${SCIPY_API_KEY:-}
-  #  ports:
-  #    - "3400:3400"
-
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -68,6 +52,9 @@ services:
       timeout: 3s
       retries: 5
 
+  # S3 local para probar subidas (fotos, PDFs de referencias): la app no lo usa
+  # sola; configúralo como almacenamiento propio en Settings → Storage con
+  # endpoint http://localhost:9000, claves rustfsadmin/rustfsadmin.
   rustfs:
     security_opt:
       - 'no-new-privileges:true'
