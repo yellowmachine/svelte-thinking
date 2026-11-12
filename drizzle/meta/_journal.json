@@ -92,6 +92,13 @@
       "when": 1794481644099,
       "tag": "0012_drop_scipy_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794481884677,
+      "tag": "0013_drop_dead_ai_tables",
+      "breakpoints": true
     }
   ]
 }

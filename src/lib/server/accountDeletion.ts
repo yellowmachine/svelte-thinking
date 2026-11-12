@@ -25,7 +25,7 @@ import {
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
 import { reference } from '$lib/server/db/schemas/references.schema';
 import { tag } from '$lib/server/db/schemas/tags.schema';
-import { aiConversation, userAiUsage } from '$lib/server/db/schemas/ai.schema';
+import { aiConversation } from '$lib/server/db/schemas/ai.schema';
 import { blogPost, blogAggregator } from '$lib/server/db/schemas/blog.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { projectInterest } from '$lib/server/db/schemas/discover.schema';
@@ -87,7 +87,6 @@ export async function deleteAccountData(tx: Db, userId: string): Promise<Account
 	await tx.delete(reference).where(eq(reference.userId, userId));
 	await tx.delete(tag).where(eq(tag.userId, userId));
 	await tx.delete(aiConversation).where(eq(aiConversation.userId, userId));
-	await tx.delete(userAiUsage).where(eq(userAiUsage.userId, userId));
 	await tx.delete(blogPost).where(eq(blogPost.userId, userId));
 	await tx.delete(blogAggregator).where(eq(blogAggregator.userId, userId));
 	await tx.delete(notificationPreference).where(eq(notificationPreference.userId, userId));

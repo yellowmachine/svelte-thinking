@@ -4,14 +4,9 @@
  * Each function checks the caller itself, from app.current_user_id, so call
  * them on a `withRLS` transaction (unsubscribeByToken works without one).
  */
-import { sql, type SQL } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import type { Db } from '$lib/server/db';
-
-/** postgres-js returns the rows as an array; PGlite (tests) as `{ rows }`. */
-async function rowsOf<T>(db: Db, query: SQL): Promise<T[]> {
-	const result = (await db.execute(query)) as unknown as T[] | { rows: T[] };
-	return Array.isArray(result) ? result : result.rows;
-}
+import { rowsOf } from '$lib/server/db/rows';
 
 export type NotificationRecipient = {
 	userId: string;

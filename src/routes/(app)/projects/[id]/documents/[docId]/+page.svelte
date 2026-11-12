@@ -813,12 +813,10 @@
 			});
 			lastSavedContent = content;
 			saveStatus = 'offline';
-			console.log(`[offline] save: queued to Dexie (doc ${data.document.id})`);
 			return;
 		}
 
 		saveStatus = 'saving';
-		console.log(`[offline] save: saving online (doc ${data.document.id})`);
 		try {
 			const saved = await trpc.documents.saveDraft.mutate({
 				documentId: data.document.id,
@@ -827,7 +825,6 @@
 			lastSavedContent = content;
 			lastOwnSaveAt = saved.updatedAt;
 			saveStatus = 'saved';
-			console.log(`[offline] save: ✓ saved online (doc ${data.document.id})`);
 			setTimeout(() => {
 				if (saveStatus === 'saved') saveStatus = 'idle';
 			}, 2000);
@@ -867,7 +864,6 @@
 		if (onlineStore.online && saveStatus === 'offline') {
 			const documentId = data.document?.id;
 			if (!documentId) return;
-			console.log(`[offline] reconnect: checking pending edits for doc ${documentId}`);
 			offlineDb.pendingEdits
 				.where({ documentId })
 				.toArray()
@@ -879,12 +875,7 @@
 						writerLostContent = writerLost.content;
 						saveStatus = 'error';
 					} else if (!hasPending) {
-						console.log(`[offline] reconnect: ✓ all edits synced for doc ${documentId}`);
 						saveStatus = 'idle';
-					} else {
-						console.log(
-							`[offline] reconnect: still ${edits.filter((e) => e.status === 'pending').length} pending edit(s) for doc ${documentId}`
-						);
 					}
 				});
 		}

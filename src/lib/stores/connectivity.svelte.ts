@@ -24,11 +24,9 @@ class ConnectivityStore {
 			.sortBy('savedAt');
 
 		if (pending.length === 0) {
-			console.log('[offline] syncAll: no pending edits, already up to date');
 			return;
 		}
 
-		console.log(`[offline] syncAll: starting — ${pending.length} pending edit(s)`);
 		this.syncState = 'syncing';
 
 		// Latest snapshot per document
@@ -37,7 +35,6 @@ class ConnectivityStore {
 			latestByDoc.set(edit.documentId, edit);
 		}
 
-		console.log(`[offline] syncAll: syncing ${latestByDoc.size} document(s)`);
 		const errors: SyncError[] = [];
 
 		for (const [documentId, edit] of latestByDoc) {
@@ -46,7 +43,6 @@ class ConnectivityStore {
 				await offlineDb.pendingEdits
 					.where({ documentId, status: 'pending' })
 					.modify({ status: 'synced' });
-				console.log(`[offline] syncAll: ✓ synced document ${documentId}`);
 			} catch (e) {
 				const isForbidden =
 					e instanceof Error &&
@@ -74,7 +70,6 @@ class ConnectivityStore {
 			this.syncErrors = [...this.syncErrors, ...errors];
 			this.syncState = 'error';
 		} else {
-			console.log('[offline] syncAll: ✓ all documents synced');
 			this.syncState = 'idle';
 			flash.set('Synced', 'success');
 		}
