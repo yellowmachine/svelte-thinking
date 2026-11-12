@@ -11,11 +11,8 @@ import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { issue } from '$lib/server/db/schemas/issues.schema';
 import { userApiKey, userProfile, userSpellAllowlist } from '$lib/server/db/schemas/users.schema';
-import {
-	organization,
-	organizationMember,
-	organizationApiKey
-} from '$lib/server/db/schemas/organizations.schema';
+import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
+import { orgAiKeys, type OrgKeyRow } from '$lib/server/definerFunctions';
 import { decryptSecret } from '$lib/server/kms';
 import { type AiTask, parseTaskConfig } from './aiConfig';
 import { getDefaultModelId } from '$lib/server/openrouter';
@@ -905,7 +902,6 @@ type KeyRow = {
 // Falls back to the user's personal key otherwise.
 export async function resolveTaskKey(
 	withRLS: WithRLS,
-	db: Db,
 	userId: string,
 	task: AiTask,
 	projectId?: string,
@@ -941,33 +937,27 @@ export async function resolveTaskKey(
 				.limit(1)
 		)) as { id: string }[];
 
-		// Also accept the org owner (may not have a member row)
-		const ownerRows = await db
-			.select({ id: organization.id })
-			.from(organization)
-			.where(and(eq(organization.id, orgId), eq(organization.ownerId, userId)))
-			.limit(1);
+		// Also accept the org owner (may not have a member row). org_select lets
+		// the owner and the members read the organization row.
+		const ownerRows = (await withRLS((rdb) =>
+			(rdb as Db)
+				.select({ id: organization.id })
+				.from(organization)
+				.where(and(eq(organization.id, orgId!), eq(organization.ownerId, userId)))
+				.limit(1)
+		)) as { id: string }[];
 
 		if (memberRows[0] || ownerRows[0]) {
-			// Fetch org config + keys without RLS (member RLS blocks key SELECT)
-			const [orgRows, orgKeys] = await Promise.all([
-				db
+			// Members can't read organization_api_key (owner only), so the keys come
+			// through scholio.org_ai_keys, which checks membership itself.
+			const [orgRows, orgKeys] = (await withRLS(async (rdb) => [
+				await (rdb as Db)
 					.select({ aiTaskConfig: organization.aiTaskConfig })
 					.from(organization)
-					.where(eq(organization.id, orgId))
+					.where(eq(organization.id, orgId!))
 					.limit(1),
-				db
-					.select({
-						id: organizationApiKey.id,
-						encryptedApiKey: organizationApiKey.encryptedApiKey,
-						encryptedDataKey: organizationApiKey.encryptedDataKey,
-						iv: organizationApiKey.iv,
-						authTag: organizationApiKey.authTag,
-						enabled: organizationApiKey.enabled
-					})
-					.from(organizationApiKey)
-					.where(and(eq(organizationApiKey.orgId, orgId), eq(organizationApiKey.enabled, true)))
-			]);
+				await orgAiKeys(rdb as Db, orgId!)
+			])) as [{ aiTaskConfig: string | null }[], OrgKeyRow[]];
 
 			const orgConfig = parseTaskConfig(orgRows[0]?.aiTaskConfig ?? null);
 			const orgTaskEntry = orgConfig[task];
@@ -2798,13 +2788,7 @@ export const aiRouter = router({
 				apiKey: userApiKey,
 				model: resolvedModel,
 				resolvedOrgId
-			} = await resolveTaskKey(
-				ctx.withRLS as WithRLS,
-				ctx.db as Db,
-				userId,
-				'agent',
-				input.projectId
-			);
+			} = await resolveTaskKey(ctx.withRLS as WithRLS, userId, 'agent', input.projectId);
 			// Personal project: allow user to override the model for this request
 			const effectiveModel =
 				!resolvedOrgId && input.modelOverride ? input.modelOverride : resolvedModel;
@@ -3114,24 +3098,12 @@ export const aiRouter = router({
 				{ apiKey: spellApiKey, model: spellModel },
 				{ apiKey: grammarApiKey, model: grammarModel }
 			] = await Promise.all([
-				resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId),
-				resolveTaskKey(
-					ctx.withRLS as WithRLS,
-					ctx.db as Db,
-					userId,
-					'spell',
-					input.projectId
-				).catch(() =>
-					resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
+				resolveTaskKey(ctx.withRLS as WithRLS, userId, 'agent', input.projectId),
+				resolveTaskKey(ctx.withRLS as WithRLS, userId, 'spell', input.projectId).catch(() =>
+					resolveTaskKey(ctx.withRLS as WithRLS, userId, 'agent', input.projectId)
 				),
-				resolveTaskKey(
-					ctx.withRLS as WithRLS,
-					ctx.db as Db,
-					userId,
-					'grammar',
-					input.projectId
-				).catch(() =>
-					resolveTaskKey(ctx.withRLS as WithRLS, ctx.db as Db, userId, 'agent', input.projectId)
+				resolveTaskKey(ctx.withRLS as WithRLS, userId, 'grammar', input.projectId).catch(() =>
+					resolveTaskKey(ctx.withRLS as WithRLS, userId, 'agent', input.projectId)
 				)
 			]);
 			const effectiveModel =
@@ -3247,13 +3219,7 @@ export const aiRouter = router({
 				apiKey: userApiKey,
 				model: resolvedModel,
 				resolvedOrgId: draftOrgId
-			} = await resolveTaskKey(
-				ctx.withRLS as WithRLS,
-				ctx.db as Db,
-				userId,
-				'draft',
-				input.projectId
-			);
+			} = await resolveTaskKey(ctx.withRLS as WithRLS, userId, 'draft', input.projectId);
 
 			const [proj, selectedDocs, ctxLinks] = await Promise.all([
 				ctx.withRLS((db) =>
@@ -3443,13 +3409,7 @@ Genera solo el contenido del borrador, sin explicaciones adicionales ni meta-com
 				apiKey: userApiKey,
 				model,
 				resolvedOrgId: sectionOrgId
-			} = await resolveTaskKey(
-				ctx.withRLS as WithRLS,
-				ctx.db as Db,
-				userId,
-				'draft',
-				input.projectId
-			);
+			} = await resolveTaskKey(ctx.withRLS as WithRLS, userId, 'draft', input.projectId);
 
 			const projectContext = await buildProjectContext(ctx.withRLS, input.projectId);
 			if (!projectContext) {
@@ -3525,13 +3485,7 @@ Reglas:
 				apiKey: userApiKey,
 				model: resolvedReviewModel,
 				resolvedOrgId: reviewOrgId
-			} = await resolveTaskKey(
-				ctx.withRLS as WithRLS,
-				ctx.db as Db,
-				userId,
-				'review',
-				input.projectId
-			);
+			} = await resolveTaskKey(ctx.withRLS as WithRLS, userId, 'review', input.projectId);
 
 			// Load document content + project context in parallel
 			const [docRows, projectContext] = await Promise.all([
@@ -3655,7 +3609,6 @@ Rules:
 
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
-				ctx.db as Db,
 				userId,
 				'review',
 				input.projectId
@@ -3754,7 +3707,6 @@ Rules:
 
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
-				ctx.db as Db,
 				userId,
 				'review',
 				input.projectId
@@ -3893,7 +3845,6 @@ ${docContent.slice(0, 10000)}`;
 
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
-				ctx.db as Db,
 				userId,
 				'review',
 				input.projectId
@@ -3993,7 +3944,6 @@ Rules:
 			const userId = ctx.user.id;
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS,
-				ctx.db,
 				userId,
 				'grammar',
 				input.projectId
@@ -4103,7 +4053,6 @@ ${input.text}`;
 			const userId = ctx.user.id;
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS,
-				ctx.db,
 				userId,
 				'spell',
 				input.projectId

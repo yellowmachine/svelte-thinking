@@ -706,7 +706,6 @@ export const projectsRouter = router({
 					try {
 						const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 							ctx.withRLS as never,
-							ctx.db as Db,
 							userId,
 							'summary',
 							projectId

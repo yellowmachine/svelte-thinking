@@ -20,7 +20,6 @@
 				projectId: string;
 				invitedEmail: string;
 				projectTitle: string | null;
-				projectDescription: string | null;
 			};
 			token: string;
 			user: { id: string; name: string; email: string } | null;
@@ -139,15 +138,6 @@
 				>
 					{data.invitation.projectTitle ?? 'Untitled project'}
 				</h1>
-				{#if data.invitation.projectDescription}
-					<p
-						translate="no"
-						class="mt-2 font-sans text-sm leading-relaxed text-ink-muted dark:text-dark-ink-muted"
-					>
-						{data.invitation.projectDescription}
-					</p>
-				{/if}
-
 				<div
 					class="mt-5 flex items-center gap-3 rounded-lg bg-paper-ui px-4 py-3 dark:bg-dark-paper-ui"
 				>

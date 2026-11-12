@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { eq, desc, asc, and, ne, sql } from 'drizzle-orm';
+import { eq, desc, asc, and, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { document, documentVersion } from '$lib/server/db/schemas/documents.schema';
 import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
-import { notificationPreference } from '$lib/server/db/schemas/users.schema';
+import { notificationRecipients } from '$lib/server/definerFunctions';
 import { extractWikilinks } from '$lib/utils/wikilinks';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
 import { generateAndSaveDocumentSummary } from '$lib/server/documentSummary';
@@ -22,85 +22,49 @@ import {
 } from '$lib/domain/permissions';
 import type { Db } from '$lib/server/db';
 
+type WithRLS = <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
+
 async function notifyCollaboratorsOnCommit(
-	db: Db,
+	withRLS: WithRLS,
 	documentId: string,
 	projectId: string,
-	committerId: string,
 	committerName: string,
 	commitMessage: string
 ) {
 	try {
-		// Get document + project title
-		const rows = await db
-			.select({ documentTitle: document.title, projectTitle: project.title })
-			.from(document)
-			.innerJoin(project, eq(document.projectId, project.id))
-			.where(eq(document.id, documentId))
-			.limit(1);
-
-		const meta = rows[0];
-		if (!meta) return;
-
-		// Get all collaborators except the committer, with their emails
-		const collaborators = await db
-			.select({
-				userId: projectCollaborator.userId,
-				email: sql<string>`(SELECT email FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
-			})
-			.from(projectCollaborator)
-			.where(
-				and(
-					eq(projectCollaborator.projectId, projectId),
-					ne(projectCollaborator.userId, committerId)
-				)
-			);
-
-		if (collaborators.length === 0) return;
+		// As the committer: RLS lets them read the document, and
+		// notification_recipients checks they are a member of the project and
+		// leaves them out of the list.
+		const found = await withRLS(async (db) => {
+			const [meta] = await db
+				.select({ documentTitle: document.title, projectTitle: project.title })
+				.from(document)
+				.innerJoin(project, eq(document.projectId, project.id))
+				.where(eq(document.id, documentId))
+				.limit(1);
+			if (!meta) return null;
+			return { meta, recipients: await notificationRecipients(db, projectId, false) };
+		});
+		if (!found) return;
+		const { meta } = found;
+		const recipients = found.recipients.filter((r) => r.commitEmails);
+		if (recipients.length === 0) return;
 
 		const origin = env.ORIGIN ?? 'http://localhost:5174';
 		const documentUrl = `${origin}/projects/${projectId}/documents/${documentId}`;
 
 		await Promise.all(
-			collaborators.map(async (collab) => {
-				// Check or create notification preference
-				const existing = await db
-					.select()
-					.from(notificationPreference)
-					.where(
-						and(
-							eq(notificationPreference.userId, collab.userId),
-							eq(notificationPreference.projectId, projectId)
-						)
-					)
-					.limit(1);
-
-				let pref = existing[0];
-				if (!pref) {
-					const [created] = await db
-						.insert(notificationPreference)
-						.values({
-							id: crypto.randomUUID(),
-							userId: collab.userId,
-							projectId,
-							unsubscribeToken: crypto.randomUUID()
-						})
-						.returning();
-					pref = created;
-				}
-
-				if (!pref.commitEmails) return;
-
-				await sendCommitNotification({
-					to: collab.email,
+			recipients.map((r) =>
+				sendCommitNotification({
+					to: r.email,
 					committerName,
 					documentTitle: meta.documentTitle,
 					projectTitle: meta.projectTitle,
 					commitMessage,
 					documentUrl,
-					unsubscribeUrl: `${origin}/notifications/unsubscribe/${pref.unsubscribeToken}`
-				});
-			})
+					unsubscribeUrl: `${origin}/notifications/unsubscribe/${r.unsubscribeToken}`
+				})
+			)
 		);
 	} catch (e) {
 		console.error('[notifications] Error sending commit notification:', e);
@@ -475,7 +439,6 @@ export const documentsRouter = router({
 				try {
 					const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 						ctx.withRLS as never,
-						ctx.db as Db,
 						ctx.user.id,
 						'summary',
 						result._projectId
@@ -506,10 +469,9 @@ export const documentsRouter = router({
 			})();
 
 			notifyCollaboratorsOnCommit(
-				ctx.db,
+				ctx.withRLS,
 				input.documentId,
 				result._projectId,
-				ctx.user.id,
 				ctx.user.name ?? ctx.user.email,
 				input.message
 			);

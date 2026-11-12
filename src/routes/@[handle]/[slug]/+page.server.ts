@@ -41,9 +41,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		excerptFromHtml(post.renderedHtml, 160) ||
 		`${post.title} — publicado por @${author.handle} en Scholio.`;
 
-	// Mirrors the blog_post_comment_public_read RLS predicate — queried here with
-	// the plain db (bypassing RLS) same as the post itself, since this route has
-	// no session-bound RLS context for anonymous visitors.
+	// Plain db, no user: RLS still applies, and only blog_post_comment_public_read
+	// lets rows through (approved comments on posts with comments visible). The
+	// WHERE below repeats that predicate; it does not widen what RLS allows.
 	const comments = post.commentsVisible
 		? await db
 				.select({

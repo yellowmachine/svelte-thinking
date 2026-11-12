@@ -64,6 +64,12 @@ if (!roleExisted) {
 const [{ db: dbName }] = await client`SELECT current_database() AS db`;
 await client.unsafe(`GRANT CONNECT ON DATABASE "${dbName}" TO "${appUser}"`);
 await client.unsafe(`ALTER ROLE "${appUser}" SET search_path = scholio, public`);
+// Sin usuario, app.current_user_id debe valer '' y no NULL. Las policies de
+// "sin usuario" (aceptar invitaciones: current_setting(...) = '') solo pasan con
+// '', y en una conexión recién abierta el GUC no existe y vale NULL: fallaban
+// de forma intermitente según la conexión del pool. Las demás usan nullif(…, ''),
+// que trata igual '' y NULL.
+await client.unsafe(`ALTER ROLE "${appUser}" SET app.current_user_id = ''`);
 for (const schema of ['public', 'scholio']) {
 	await client.unsafe(`GRANT USAGE ON SCHEMA ${schema} TO "${appUser}"`);
 	await client.unsafe(

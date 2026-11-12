@@ -1,6 +1,5 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { db } from '$lib/server/db';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { eq } from 'drizzle-orm';
 import { auth } from '$lib/server/auth';
@@ -9,11 +8,13 @@ import { env } from '$env/dynamic/private';
 export const load: PageServerLoad = async (event) => {
 	const user = event.locals.user!;
 
-	const [profile] = await db
-		.select({ orcid: userProfile.orcid, orcidVerified: userProfile.orcidVerified })
-		.from(userProfile)
-		.where(eq(userProfile.userId, user.id))
-		.limit(1);
+	const [profile] = await event.locals.withRLS((tx) =>
+		tx
+			.select({ orcid: userProfile.orcid, orcidVerified: userProfile.orcidVerified })
+			.from(userProfile)
+			.where(eq(userProfile.userId, user.id))
+			.limit(1)
+	);
 
 	const orcidStatus = event.url.searchParams.get('orcid');
 	const openrouterStatus = event.url.searchParams.get('openrouter');

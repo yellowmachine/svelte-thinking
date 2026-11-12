@@ -624,7 +624,6 @@ export const referencesRouter = router({
 
 			const { apiKey, model, resolvedOrgId } = await resolveTaskKey(
 				ctx.withRLS as WithRLS,
-				ctx.db as Db,
 				ctx.user.id,
 				'bibliography',
 				projectId

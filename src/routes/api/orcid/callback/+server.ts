@@ -1,7 +1,6 @@
 import type { RequestHandler } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { db } from '$lib/server/db';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { eq } from 'drizzle-orm';
 
@@ -44,10 +43,16 @@ export const GET: RequestHandler = async ({ url, locals, cookies }) => {
 		redirect(302, '/settings?tab=profile&orcid=error');
 	}
 
-	await db
-		.update(userProfile)
-		.set({ orcid: orcidId, orcidVerified: true, updatedAt: new Date() })
-		.where(eq(userProfile.userId, locals.user.id));
+	// Under RLS as the user: user_profile only lets its owner update the row.
+	const userId = locals.user.id;
+	const updated = await locals.withRLS((tx) =>
+		tx
+			.update(userProfile)
+			.set({ orcid: orcidId, orcidVerified: true, updatedAt: new Date() })
+			.where(eq(userProfile.userId, userId))
+			.returning({ id: userProfile.id })
+	);
+	if (updated.length === 0) redirect(302, '/settings?tab=profile&orcid=error');
 
 	redirect(302, '/settings?tab=profile&orcid=connected');
 };

@@ -1,24 +1,13 @@
-import { db } from '$lib/server/db';
-import { notificationPreference } from '$lib/server/db/schemas/users.schema';
-import { eq } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
+import { db } from '$lib/server/db';
+import { unsubscribeByToken } from '$lib/server/definerFunctions';
 import type { PageServerLoad } from './$types';
 
+// Opened from an email, usually without a session: RLS hides every
+// notification_preference row here, so the token goes through
+// scholio.unsubscribe_by_token, which only touches the row it names.
 export const load: PageServerLoad = async ({ params }) => {
-	const rows = await db
-		.select({ id: notificationPreference.id, commentEmails: notificationPreference.commentEmails })
-		.from(notificationPreference)
-		.where(eq(notificationPreference.unsubscribeToken, params.token))
-		.limit(1);
-
-	if (!rows[0]) error(404, 'Enlace no válido');
-
-	if (rows[0].commentEmails) {
-		await db
-			.update(notificationPreference)
-			.set({ commentEmails: false, updatedAt: new Date() })
-			.where(eq(notificationPreference.id, rows[0].id));
-	}
-
-	return { alreadyUnsubscribed: !rows[0].commentEmails };
+	const result = await unsubscribeByToken(db, params.token);
+	if (result === 'invalid') error(404, 'Invalid link');
+	return { alreadyUnsubscribed: result === 'already' };
 };
