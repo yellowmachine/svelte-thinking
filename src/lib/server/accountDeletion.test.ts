@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { eq, sql } from 'drizzle-orm';
+import { eq, is, sql } from 'drizzle-orm';
 import { createTestDb, asUser, type TestDb } from './db/test-utils';
-import { deleteAccountData } from './accountDeletion';
+import { deleteAccountData, USER_ID_COLUMNS } from './accountDeletion';
+import { getTableConfig, PgTable } from 'drizzle-orm/pg-core';
+import * as schema from './db/schema';
 import { project, projectCollaborator } from './db/schemas/projects.schema';
 import { userProfile, userApiKey } from './db/schemas/users.schema';
 import { reference, projectReference } from './db/schemas/references.schema';
@@ -252,5 +254,31 @@ describe('userNameSql', () => {
 		expect(await nameOf('named')).toBe('Ada');
 		expect(await nameOf('never-existed')).toBe(DELETED_USER_NAME);
 		expect(await nameOf(null)).toBeNull();
+	});
+});
+
+describe('USER_ID_COLUMNS', () => {
+	// user_id, owner_id, author_id, target_user_id, created_by, invited_by…
+	const POINTS_AT_A_USER = /(user_id|owner_id|author_id|_by)$/;
+
+	const userIdColumns = Object.values(schema)
+		.filter((t) => is(t, PgTable))
+		.flatMap((t) => {
+			const { schema: pgSchema, name, columns } = getTableConfig(t as PgTable);
+			return columns
+				.filter((c) => POINTS_AT_A_USER.test(c.name))
+				.map((c) => `${pgSchema ?? 'public'}.${name}.${c.name}`);
+		})
+		.sort();
+
+	it('says what account deletion does with every column that holds a user id', () => {
+		const missing = userIdColumns.filter((c) => !(c in USER_ID_COLUMNS));
+		// A new column that points at users: delete its rows in deleteAccountData
+		// (or say why they stay) and list it in USER_ID_COLUMNS.
+		expect(missing).toEqual([]);
+	});
+
+	it('lists no column that is no longer in the schema', () => {
+		expect(Object.keys(USER_ID_COLUMNS).filter((c) => !userIdColumns.includes(c))).toEqual([]);
 	});
 });

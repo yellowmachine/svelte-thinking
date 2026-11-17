@@ -6,24 +6,10 @@
  * nothing. Rows that belong to other projects through a foreign key go with
  * ON DELETE CASCADE, which Postgres runs without RLS.
  *
- * Handed over, not deleted: the user's projects in organizations owned by
- * someone else go to that organization's owner, files included.
- *
- * Deleted in other people's projects too: the user's private documents and
- * private issues, which nobody else can see. Documents the user held as writer
- * go back to their project's owner.
- *
- * Kept on purpose, shown as "Deleted user" (userNameSql):
- * - comments and issue comments in other people's projects, and comments on
- *   other people's blog posts: they are part of those discussions.
- * - document versions, photos, datasets and notebooks they added to other
- *   people's projects: they belong to those projects.
- * - feedback: public by design; a signed entry loses the name.
- * Kept as is:
- * - ai_usage_log: what each AI call cost. The table has no delete policy.
- * - the waitlist entry: with it the same email can sign up again.
- * - document.owner_user_id / issue.owner_user_id of shared documents and
- *   issues: who created them.
+ * What happens to each column that holds a user id, in every table, is in
+ * USER_ID_COLUMNS below; accountDeletion.test.ts fails when a table gains such a
+ * column that isn't listed there. The waitlist entry (by email) is kept: with
+ * it the same email can sign up again.
  */
 import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { Db } from '$lib/server/db';
@@ -48,6 +34,74 @@ import { document } from '$lib/server/db/schemas/documents.schema';
 import { issue } from '$lib/server/db/schemas/issues.schema';
 import { notificationDismissal } from '$lib/server/db/schemas/notifications.schema';
 import { feedback } from '$lib/server/db/schemas/feedback.schema';
+
+/**
+ * Every column that holds a user id, and what account deletion does with it:
+ * - `deleted`: the user's rows go.
+ * - `cascade`: they go with a parent row this deletion removes.
+ * - `kept`: they stay, for the reason given; names show as "Deleted user"
+ *   (userNameSql).
+ * accountDeletion.test.ts compares it with the schema, so a new column that
+ * points at users can't be forgotten here.
+ */
+export const USER_ID_COLUMNS: Record<string, string> = {
+	// Better Auth
+	'public.session.user_id': 'cascade: user (Better Auth FK)',
+	'public.account.user_id': 'cascade: user (Better Auth FK)',
+	'public.two_factor.user_id': 'cascade: user (Better Auth FK)',
+
+	// The user's own data
+	'scholio.user_profile.user_id': 'deleted',
+	'scholio.user_api_key.user_id': 'deleted',
+	'scholio.user_jupyter_connection.user_id': 'deleted',
+	'scholio.notification_preference.user_id': 'deleted',
+	'scholio.user_s3_config.user_id': 'deleted',
+	'scholio.user_spell_allowlist.user_id': 'deleted',
+	'scholio.ai_conversation.user_id': 'deleted',
+	'scholio.reference.user_id': 'deleted',
+	'scholio.tag.user_id': 'deleted',
+	'scholio.project_interest.user_id': 'deleted',
+	'scholio.notification_dismissal.user_id': 'deleted',
+	'scholio.blog_post.user_id': 'deleted',
+	'scholio.blog_aggregator.user_id': 'deleted',
+
+	// Projects and organizations
+	'scholio.project.owner_id':
+		"deleted; those in someone else's organization are handed over to its owner",
+	'scholio.project_collaborator.user_id': 'deleted',
+	'scholio.project_collaborator.owner_user_id':
+		'cascade: owned projects; moved to the new owner on hand-over',
+	'scholio.project_invitation.invited_by':
+		'cascade: only project owners invite, so they go with the owned projects',
+	'scholio.organization.owner_id': 'deleted; projects others own in it become personal',
+	'scholio.organization_member.user_id': 'deleted',
+	'scholio.organization_member.org_owner_id': 'cascade: owned organizations',
+	'scholio.org_invitation.invited_by':
+		'cascade: only organization owners invite, so they go with the owned organizations',
+
+	// What the user leaves in other people's projects
+	'scholio.document.owner_user_id':
+		'deleted for private documents; kept for shared ones: who created them',
+	'scholio.document.writer_user_id': 'cleared: write access goes back to the project owner',
+	'scholio.issue.owner_user_id':
+		'deleted for private issues; kept for shared ones: who opened them',
+	'scholio.comment.author_id': "kept: part of the project's discussion",
+	'scholio.issue_comment.author_id': "kept: part of the project's discussion",
+	'scholio.document_version.created_by': "kept: part of the document's history",
+	'scholio.document_version_share.created_by':
+		"kept: the link shares a version of the project's document",
+	'scholio.project_photo.uploaded_by': 'kept: belongs to the project (cascade in owned ones)',
+	'scholio.project_dataset.uploaded_by': 'kept: belongs to the project (cascade in owned ones)',
+	'scholio.project_notebook.imported_by': 'kept: belongs to the project (cascade in owned ones)',
+	'scholio.blog_post_comment.author_id': "kept: part of the post's discussion",
+	'scholio.blog_aggregator_item.target_user_id':
+		"kept: lists join the target's profile, so a deleted blog drops out of them",
+
+	// Elsewhere
+	'scholio.feedback.user_id': 'kept: public by design; a signed entry loses the name',
+	'scholio.ai_usage_log.user_id': 'kept: what each AI call cost; the table has no delete policy',
+	'scholio.notification.created_by': 'kept: broadcasts written by an admin'
+};
 
 /**
  * A file to remove from storage once the account is gone. `orgId` says which
