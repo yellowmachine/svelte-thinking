@@ -8,6 +8,7 @@ import { reference } from '$lib/server/db/schemas/references.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { eq, and, isNull, isNotNull, sql } from 'drizzle-orm';
 import { canWriteDocument, type CollaboratorRole } from '$lib/domain/permissions';
+import { userNameSql } from '$lib/server/db/userName';
 
 export const load: PageServerLoad = async (event) => {
 	const { id: projectId, docId } = event.params;
@@ -65,9 +66,7 @@ export const load: PageServerLoad = async (event) => {
 					.select({
 						content: documentVersion.content,
 						createdAt: documentVersion.createdAt,
-						committerName: sql<
-							string | null
-						>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+						committerName: userNameSql<string | null>(documentVersion.createdBy)
 					})
 					.from(documentVersion)
 					.where(eq(documentVersion.id, doc.currentVersionId))
@@ -93,9 +92,7 @@ export const load: PageServerLoad = async (event) => {
 				.select({
 					content: documentVersion.content,
 					createdAt: documentVersion.createdAt,
-					committerName: sql<
-						string | null
-					>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`
+					committerName: userNameSql<string | null>(documentVersion.createdBy)
 				})
 				.from(documentVersion)
 				.where(eq(documentVersion.id, doc.currentVersionId))
@@ -131,7 +128,7 @@ export const load: PageServerLoad = async (event) => {
 				.select({
 					id: comment.id,
 					authorId: comment.authorId,
-					authorName: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${comment.authorId})`,
+					authorName: userNameSql(comment.authorId),
 					content: comment.content,
 					anchorText: comment.anchorText,
 					lineStart: comment.lineStart,
@@ -156,7 +153,7 @@ export const load: PageServerLoad = async (event) => {
 					id: comment.id,
 					parentCommentId: comment.parentCommentId,
 					authorId: comment.authorId,
-					authorName: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${comment.authorId})`,
+					authorName: userNameSql(comment.authorId),
 					content: comment.content,
 					createdAt: comment.createdAt
 				})
@@ -218,7 +215,7 @@ export const load: PageServerLoad = async (event) => {
 				.select({
 					userId: projectCollaborator.userId,
 					role: projectCollaborator.role,
-					name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
+					name: userNameSql(projectCollaborator.userId)
 				})
 				.from(projectCollaborator)
 				.where(eq(projectCollaborator.projectId, projectId))
@@ -248,7 +245,7 @@ export const load: PageServerLoad = async (event) => {
 		const writerId = docResult.writerUserId;
 		const writerRow = await event.locals.withRLS((db) =>
 			db
-				.select({ name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${writerId})` })
+				.select({ name: userNameSql(sql`${writerId}::text`) })
 				.from(document)
 				.where(eq(document.id, docId))
 				.limit(1)

@@ -24,6 +24,7 @@ import {
 	type CollaboratorRole
 } from '$lib/domain/permissions';
 import type { Db } from '$lib/server/db';
+import { userNameSql } from '$lib/server/db/userName';
 
 type WithRLS = <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
 
@@ -166,9 +167,7 @@ export const documentsRouter = router({
 					currentVersionId: document.currentVersionId,
 					versionNumber: documentVersion.versionNumber,
 					committedAt: documentVersion.createdAt,
-					committerName: sql<
-						string | null
-					>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`,
+					committerName: userNameSql<string | null>(documentVersion.createdBy),
 					// updatedAt cambia en cada saveDraft o commit — sirve para detectar drafts externos
 					draftUpdatedAt: document.updatedAt
 				})

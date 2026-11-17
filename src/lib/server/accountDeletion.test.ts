@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { createTestDb, asUser, type TestDb } from './db/test-utils';
 import { deleteAccountData } from './accountDeletion';
 import { project, projectCollaborator } from './db/schemas/projects.schema';
@@ -9,6 +9,12 @@ import { tag } from './db/schemas/tags.schema';
 import { organization, organizationMember } from './db/schemas/organizations.schema';
 import { projectPhoto } from './db/schemas/photos.schema';
 import { document } from './db/schemas/documents.schema';
+import { issue } from './db/schemas/issues.schema';
+import { comment } from './db/schemas/comments.schema';
+import { feedback } from './db/schemas/feedback.schema';
+import { notification, notificationDismissal } from './db/schemas/notifications.schema';
+import { user as authUser } from './db/auth.schema';
+import { userNameSql, DELETED_USER_NAME } from './db/userName';
 
 const GONE = 'leaving-user';
 const STAYS = 'other-user';
@@ -87,6 +93,37 @@ beforeAll(async () => {
 		{ projectId: 'p-stays', referenceId: 'r-gone' },
 		{ projectId: 'p-gone-org', referenceId: 'r-gone' }
 	]);
+	// What GONE leaves in STAYS's project.
+	await db.insert(document).values([
+		{
+			id: 'd-private',
+			projectId: 'p-stays',
+			title: 'My notes',
+			isPrivate: true,
+			ownerUserId: GONE
+		},
+		{ id: 'd-shared', projectId: 'p-stays', title: 'Shared', ownerUserId: GONE, writerUserId: GONE }
+	]);
+	await db.insert(issue).values([
+		{ id: 'i-private', projectId: 'p-stays', title: 'Mine', isPrivate: true, ownerUserId: GONE },
+		{ id: 'i-shared', projectId: 'p-stays', title: 'Ours', ownerUserId: GONE }
+	]);
+	await db
+		.insert(comment)
+		.values({ id: 'cm-1', documentId: 'd-shared', authorId: GONE, content: 'Looks good' });
+	await db.insert(feedback).values([
+		{ id: 'f-1', userId: GONE, message: 'Nice', showName: true, userName: 'Leaving' },
+		{ id: 'f-2', userId: STAYS, message: 'Hi', showName: true, userName: 'Staying' }
+	]);
+	await db.insert(notification).values({
+		id: 'n-1',
+		message: 'Maintenance',
+		startsAt: new Date(),
+		expiresAt: new Date(),
+		createdBy: 'admin'
+	});
+	await db.insert(notificationDismissal).values({ notificationId: 'n-1', userId: GONE });
+
 	await db.insert(tag).values({ id: 't-1', userId: GONE, name: 'tag' });
 	await db.insert(userApiKey).values({
 		id: 'k-1',
@@ -169,9 +206,51 @@ describe('deleteAccountData', () => {
 		expect(await db.select().from(userApiKey).where(eq(userApiKey.userId, GONE))).toHaveLength(0);
 		expect(await db.select().from(userProfile).where(eq(userProfile.userId, GONE))).toHaveLength(0);
 
+		// In STAYS's project: private documents and issues go, shared ones stay,
+		// and write access goes back to the owner.
+		const docs = await db
+			.select({ id: document.id, writerUserId: document.writerUserId })
+			.from(document)
+			.where(eq(document.projectId, 'p-stays'));
+		expect(docs).toEqual([{ id: 'd-shared', writerUserId: null }]);
+		const issues = await db
+			.select({ id: issue.id })
+			.from(issue)
+			.where(eq(issue.projectId, 'p-stays'));
+		expect(issues.map((i) => i.id)).toEqual(['i-shared']);
+		expect(await db.select().from(comment).where(eq(comment.id, 'cm-1'))).toHaveLength(1);
+
+		const fb = await db
+			.select({ id: feedback.id, userName: feedback.userName })
+			.from(feedback)
+			.orderBy(feedback.id);
+		expect(fb).toEqual([
+			{ id: 'f-1', userName: null },
+			{ id: 'f-2', userName: 'Staying' }
+		]);
+		expect(
+			await db.select().from(notificationDismissal).where(eq(notificationDismissal.userId, GONE))
+		).toHaveLength(0);
+
 		expect(await db.select().from(reference).where(eq(reference.userId, STAYS))).toHaveLength(1);
 		expect(await db.select().from(userProfile).where(eq(userProfile.userId, STAYS))).toHaveLength(
 			1
 		);
+	});
+});
+
+describe('userNameSql', () => {
+	it("gives the user's name, DELETED_USER_NAME once they are gone, and NULL for no user", async () => {
+		await db.insert(authUser).values({ id: 'named', name: 'Ada', email: 'ada@example.com' });
+		const nameOf = async (id: string | null) => {
+			const [row] = await db
+				.select({ name: userNameSql<string | null>(sql`${id}::text`) })
+				.from(sql`(SELECT 1) AS one`);
+			return row.name;
+		};
+
+		expect(await nameOf('named')).toBe('Ada');
+		expect(await nameOf('never-existed')).toBe(DELETED_USER_NAME);
+		expect(await nameOf(null)).toBeNull();
 	});
 });

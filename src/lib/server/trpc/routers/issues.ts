@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { eq, asc, isNull, isNotNull, sql } from 'drizzle-orm';
+import { eq, asc, isNull, isNotNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { issue } from '$lib/server/db/schemas/issues.schema';
 import { issueComment } from '$lib/server/db/schemas/issueComments.schema';
+import { userNameSql } from '$lib/server/db/userName';
 
 const issueStatusValues = ['open', 'in_progress', 'closed'] as const;
 const issuePriorityValues = ['low', 'medium', 'high', 'critical'] as const;
@@ -88,7 +89,7 @@ export const issuesRouter = router({
 	// ── Comments ──────────────────────────────────────────────────────────────
 
 	listComments: protectedProcedure.input(z.string()).query(async ({ ctx, input: issueId }) => {
-		const authorName = sql<string>`(SELECT name FROM "user" WHERE "user".id = ${issueComment.authorId})`;
+		const authorName = userNameSql(issueComment.authorId);
 
 		const threads = await ctx.withRLS((db) =>
 			db

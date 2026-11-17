@@ -9,14 +9,25 @@
  * Handed over, not deleted: the user's projects in organizations owned by
  * someone else go to that organization's owner, files included.
  *
- * Kept on purpose:
+ * Deleted in other people's projects too: the user's private documents and
+ * private issues, which nobody else can see. Documents the user held as writer
+ * go back to their project's owner.
+ *
+ * Kept on purpose, shown as "Deleted user" (userNameSql):
+ * - comments and issue comments in other people's projects, and comments on
+ *   other people's blog posts: they are part of those discussions.
+ * - document versions, photos, datasets and notebooks they added to other
+ *   people's projects: they belong to those projects.
+ * - feedback: public by design; a signed entry loses the name.
+ * Kept as is:
  * - ai_usage_log: what each AI call cost. The table has no delete policy.
- * - comments and issue comments written in other people's projects: they are
- *   part of those projects' discussion.
+ * - the waitlist entry: with it the same email can sign up again.
+ * - document.owner_user_id / issue.owner_user_id of shared documents and
+ *   issues: who created them.
  */
 import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { Db } from '$lib/server/db';
-import { handOverOrgProjects } from '$lib/server/definerFunctions';
+import { handOverOrgProjects, releaseWrittenDocuments } from '$lib/server/definerFunctions';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import {
 	userProfile,
@@ -33,6 +44,10 @@ import { aiConversation } from '$lib/server/db/schemas/ai.schema';
 import { blogPost, blogAggregator } from '$lib/server/db/schemas/blog.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { projectInterest } from '$lib/server/db/schemas/discover.schema';
+import { document } from '$lib/server/db/schemas/documents.schema';
+import { issue } from '$lib/server/db/schemas/issues.schema';
+import { notificationDismissal } from '$lib/server/db/schemas/notifications.schema';
+import { feedback } from '$lib/server/db/schemas/feedback.schema';
 
 /**
  * A file to remove from storage once the account is gone. `orgId` says which
@@ -143,6 +158,14 @@ export async function deleteAccountData(
 		.where(eq(organization.ownerId, userId))
 		.returning({ id: organization.id });
 
+	// What the user leaves in other people's projects: write access goes back
+	// to the owner; private documents and issues, which only they could see, go.
+	await releaseWrittenDocuments(tx);
+	await tx
+		.delete(document)
+		.where(and(eq(document.isPrivate, true), eq(document.ownerUserId, userId)));
+	await tx.delete(issue).where(and(eq(issue.isPrivate, true), eq(issue.ownerUserId, userId)));
+
 	// Memberships in other people's projects and organizations.
 	await tx.delete(projectCollaborator).where(eq(projectCollaborator.userId, userId));
 	await tx.delete(organizationMember).where(eq(organizationMember.userId, userId));
@@ -160,6 +183,9 @@ export async function deleteAccountData(
 	await tx.delete(userS3Config).where(eq(userS3Config.userId, userId));
 	await tx.delete(userApiKey).where(eq(userApiKey.userId, userId));
 	await tx.delete(userProfile).where(eq(userProfile.userId, userId));
+	await tx.delete(notificationDismissal).where(eq(notificationDismissal.userId, userId));
+	// Feedback stays; a signed entry loses the name, and shows as "Deleted user".
+	await tx.update(feedback).set({ userName: null }).where(eq(feedback.userId, userId));
 
 	return {
 		files,

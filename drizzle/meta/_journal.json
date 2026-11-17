@@ -113,6 +113,13 @@
       "when": 1794933934162,
       "tag": "0015_hand_over_org_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794934870488,
+      "tag": "0016_release_written_documents",
+      "breakpoints": true
     }
   ]
 }

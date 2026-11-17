@@ -4,6 +4,7 @@ import { project } from '$lib/server/db/schemas/projects.schema';
 import { document } from '$lib/server/db/schemas/documents.schema';
 import { comment } from '$lib/server/db/schemas/comments.schema';
 import { eq, and, isNull, isNotNull, sql } from 'drizzle-orm';
+import { userNameSql } from '$lib/server/db/userName';
 
 export const load: PageServerLoad = async (event) => {
 	const { id: projectId } = event.params;
@@ -25,7 +26,7 @@ export const load: PageServerLoad = async (event) => {
 					documentId: comment.documentId,
 					documentTitle: sql<string>`(SELECT title FROM scholio.document WHERE document.id = ${comment.documentId})`,
 					authorId: comment.authorId,
-					authorName: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${comment.authorId})`,
+					authorName: userNameSql(comment.authorId),
 					content: comment.content,
 					anchorText: comment.anchorText,
 					anchorContext: comment.anchorContext,
@@ -53,7 +54,7 @@ export const load: PageServerLoad = async (event) => {
 					id: comment.id,
 					parentCommentId: comment.parentCommentId,
 					authorId: comment.authorId,
-					authorName: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${comment.authorId})`,
+					authorName: userNameSql(comment.authorId),
 					content: comment.content,
 					createdAt: comment.createdAt
 				})

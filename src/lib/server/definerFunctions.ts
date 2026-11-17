@@ -1,6 +1,7 @@
 /**
  * Typed wrappers for the SECURITY DEFINER functions of migrations
- * 0011_rls_definer_functions and 0015_hand_over_org_projects: the only
+ * 0011_rls_definer_functions, 0015_hand_over_org_projects and
+ * 0016_release_written_documents: the only
  * operations that cross users past RLS.
  * Each function checks the caller itself, from app.current_user_id, so call
  * them on a `withRLS` transaction (unsubscribeByToken works without one).
@@ -93,4 +94,16 @@ export async function handOverOrgProjects(tx: Db): Promise<string[]> {
 		sql`SELECT * FROM scholio.hand_over_org_projects()`
 	);
 	return rows.map((r) => r.project_id);
+}
+
+/**
+ * Gives up write access to every document the caller holds as writer; it goes
+ * back to the project owner. Returns their ids.
+ */
+export async function releaseWrittenDocuments(tx: Db): Promise<string[]> {
+	const rows = await rowsOf<{ document_id: string }>(
+		tx,
+		sql`SELECT * FROM scholio.release_written_documents()`
+	);
+	return rows.map((r) => r.document_id);
 }

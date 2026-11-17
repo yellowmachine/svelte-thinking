@@ -1,10 +1,11 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { userProfile } from '$lib/server/db/schemas/users.schema';
 import { blogPost, blogPostComment } from '$lib/server/db/schemas/blog.schema';
 import { excerptFromHtml } from '$lib/server/blogExcerpt';
+import { userNameSql } from '$lib/server/db/userName';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const handle = params.handle.toLowerCase();
@@ -49,7 +50,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				.select({
 					id: blogPostComment.id,
 					authorId: blogPostComment.authorId,
-					authorName: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${blogPostComment.authorId})`,
+					authorName: userNameSql(blogPostComment.authorId),
 					content: blogPostComment.content,
 					createdAt: blogPostComment.createdAt
 				})
