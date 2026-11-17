@@ -24,7 +24,8 @@ async function getUserCount(): Promise<number> {
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) redirect(302, '/projects');
 	const userCount = await getUserCount();
-	return { userCount };
+	// ?deleted=1: where the account deletion dialog lands.
+	return { userCount, accountDeleted: event.url.searchParams.get('deleted') === '1' };
 };
 
 export const actions: Actions = {

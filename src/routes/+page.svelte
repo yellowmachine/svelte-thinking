@@ -74,6 +74,18 @@
 		</div>
 	</header>
 
+	{#if data.accountDeleted}
+		<div class="mx-auto max-w-3xl px-6 pt-8">
+			<div
+				role="status"
+				class="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3 font-sans text-sm text-accent-ink"
+			>
+				Your account has been deleted. We've sent a confirmation to your email. Thanks for having
+				been part of Scholio.
+			</div>
+		</div>
+	{/if}
+
 	<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
 	<section class="mx-auto max-w-3xl px-6 pt-24 pb-20 text-center">
 		<p class="mb-4 font-sans text-xs font-semibold tracking-widest text-accent-ink uppercase">
