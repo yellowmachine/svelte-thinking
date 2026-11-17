@@ -1,171 +1,124 @@
 # Scholio — Plataforma de escritura académica colaborativa (Beta)
 
-Scholio es una herramienta web para investigadores y equipos académicos que necesitan redactar, revisar y versionar documentos de forma colaborativa, con asistencia de inteligencia artificial integrada.
+Scholio es una herramienta web para investigadores y equipos académicos que necesitan redactar,
+revisar y versionar documentos de forma colaborativa, con asistencia de inteligencia artificial
+integrada. En producción en [scholio.review](https://scholio.review). La interfaz está en inglés;
+este README, en español.
+
+La guía de uso está dentro de la app, en `/help` (con proyectos de ejemplo que se crean con un clic).
+Este README es la parte técnica.
 
 ---
 
-## Funcionalidades implementadas
+## Funcionalidades
 
-### Proyectos y documentos
+### Proyectos
 
-- Creación de proyectos con título, descripción y visibilidad (público / privado)
-- Documentos con editor Markdown, guardado automático de borradores y historial de versiones (commits con mensaje de cambio)
-- Comparación visual entre versiones (diff)
+Cada proyecto tiene sus secciones en pestañas: documentos, bibliografía, fotos, datasets, notebooks,
+requisitos, revisión, issues, búsqueda y asistente.
+
+- **Documentos** — editor Markdown con borradores guardados solos, historial de versiones (commits con
+  mensaje), diff entre versiones, modo foco y corrector ortográfico y gramatical
+- **Bibliografía** — referencias por proyecto y biblioteca personal (`/bib`); alta por DOI (CrossRef),
+  URL o BibTeX; PDF adjunto por referencia y subnotas (`[[@clave:slug]]`)
+- **Fotos** — galería con descripción por imagen, lightbox y copia como Markdown
+- **Datasets** — CSV, TSV o JSON (hasta 5 MB), guardados en la base, para los gráficos Vega-Lite
+- **Notebooks** — Jupyter (`.ipynb`, hasta 50 MB)
+- **Requisitos** — lo que pide la revista o el tribunal; el asistente revisa los documentos contra ellos
+- **Revisión e issues** — hilos de comentarios del proyecto y tareas abiertas
+- **Búsqueda** — semántica (pgvector + embeddings de OpenAI); sin `OPENAI_API_KEY` devuelve vacío
+- **Exportar** — documento a LaTeX, Typst o PDF (servicio Typst; diagramas Mermaid por Kroki), libro
+  a partir de varios documentos, y el proyecto entero como zip, que se puede volver a importar
+- **Ficheros** en el S3 propio de cada usuario u organización (Settings → Storage): Scholio no guarda
+  ficheros en su servidor
 
 ### Colaboración
 
-- Invitación de colaboradores por email con roles (owner, author, coauthor, reviewer, commenter)
-- Comentarios inline anclados al texto: los comentarios se asocian a la selección exacta del documento
-- Respuestas a comentarios y resolución/reapertura de hilos
+- Roles: owner, author, coauthor, reviewer, commenter. Reviewers y commenters solo pueden crear
+  documentos privados (sus notas)
+- Comentarios anclados a la selección exacta del texto, con respuestas y resolución/reapertura
+- Organizaciones con sus miembros e invitaciones; red de colaboradores (`/network`)
+- Notificaciones, también por email (con enlace para darse de baja)
+- Enlaces de vista previa de una versión (`/preview/[token]`), sin cuenta
 
-### Fotos y recursos visuales
+### Publicar
 
-- Subida de imágenes por proyecto con área de previsualización antes de confirmar
-- Campo de descripción/nota por imagen
-- Galería con lightbox, copia como Markdown y eliminación
-- Almacenamiento en el S3 propio de cada usuario u organización (Settings → Storage): Scholio no guarda
-  ficheros en su servidor. Seguridad por oscuridad mediante UUID doble en la URL
+- Proyectos públicos o privados; `/explore` para encontrar proyectos e investigadores
+- Blog personal en `/@handle`, con listas, RSS y PDF de cada entrada; y el blog del sitio (`/blog`)
 
 ### Asistente IA
 
 - Chat por proyecto (agente con herramientas: leer documentos, búsqueda semántica, crear documentos…)
   y chat en el editor que propone cambios como antes/después que se aceptan o rechazan
-- Revisión, borradores de sección, enriquecimiento, ortografía y gramática
+- Revisión contra los requisitos, borradores de sección, enriquecimiento (personas y citas sin marcar),
+  ortografía y gramática
 - Modelos vía [OpenRouter](https://openrouter.ai) con la clave de cada usuario u organización (BYOK);
-  el modelo se elige por tarea en Settings → AI, y el coste real de cada llamada queda registrado (`/usage`)
+  el modelo se elige por tarea en Settings → AI, y el coste real de cada llamada queda registrado
+  (`/usage`, `/usage/org`)
 
 ### Cuenta y acceso
 
-- Acceso por lista de espera: quien se apunta y el admin aprueba recibe un enlace de registro con email/contraseña
-- «Entrar con Seilide» (la cuenta de la nube de JellyCartoon, OpenID Connect): entra directamente, sin lista de espera — ver [Entrar con Seilide](#entrar-con-seilide)
-- Verificación en dos pasos (TOTP)
+- Acceso por lista de espera: quien se apunta y el admin aprueba (`/admin`) recibe un enlace de
+  registro con email/contraseña
+- «Entrar con Seilide» (la cuenta de la nube de JellyCartoon, OpenID Connect): entra directamente, sin
+  lista de espera — ver [Entrar con Seilide](#entrar-con-seilide)
+- Verificación en dos pasos (TOTP) y enlace con ORCID
 - Sin planes ni pagos: todas las cuentas son iguales
 
-### Observabilidad
+### Otros
 
-- Captura de errores en cliente y servidor con Sentry
+- PWA instalable; modo sin conexión solo si la imagen se construye con `ENABLE_SW=true`
+- Un único tour de bienvenida, en el editor (driver.js), que se repite desde `/help#editor`
+- Errores de cliente y servidor en Sentry
 
 ---
 
 ## Sintaxis del editor
 
-El editor usa Markdown estándar extendido con las siguientes funcionalidades propias de Scholio:
+Markdown estándar con extensiones propias. La referencia completa, con ejemplos, está en `/help`;
+aquí el resumen y dónde vive cada cosa en el código.
 
-### Citas bibliográficas
+| Sintaxis                                      | Qué hace                                                      | Código                    |
+| --------------------------------------------- | ------------------------------------------------------------- | ------------------------- |
+| `[[@clave]]`, `[[@a; @b]]`, `[[@clave:slug]]` | Cita (y subnota de una referencia); también `[@clave]` Pandoc | `utils/citationSyntax.ts` |
+| `$…$`, `$$…$$`                                | Matemáticas (KaTeX)                                           |                           |
+| `[[Título]]`                                  | Enlace a otro documento del proyecto, por título              | `utils/wikilinks.ts`      |
+| `[[Título:hash]]`                             | Documento público de otro usuario (8 primeros del UUID)       | `utils/wikilinks.ts`      |
+| `[[doc:uuid\|Título]]`                        | Enlace estable por UUID (capítulos de un libro)               | `utils/wikilinks.ts`      |
+| `[[diagram:uuid\|Título]]`                    | Diagrama incrustado como SVG                                  | `utils/wikilinks.ts`      |
+| `[[#Encabezado]]`                             | Enlace a una sección del mismo documento                      | `utils/wikilinks.ts`      |
+| `[[person:Nombre]]`, `[[index:persons]]`      | Mención de una persona e índice onomástico                    | `utils/wikilinks.ts`      |
+| `[[index:toc]]`                               | Índice de contenidos                                          | `utils/wikilinks.ts`      |
+| `[^1]`                                        | Notas al pie                                                  |                           |
+| `> [!note]`, `warning`, `tip`, `caution`      | Callouts                                                      | `utils/callouts.ts`       |
+| `> [!epigraph]`                               | Epígrafe                                                      | `utils/epigraphs.ts`      |
+| ` ```vega-lite `                              | Gráfico; `"data": { "$ref": "dataset:fichero.csv" }`          |                           |
+| ` ```mermaid `                                | Diagrama (en el PDF, renderizado por Kroki)                   |                           |
 
-```markdown
-La selección natural opera sobre variaciones heredables [[@darwin1859]].
-Algunos autores discrepan en el mecanismo [[@dawkins1976; @gould1979]].
-```
-
-Las citas se renderizan según el estilo seleccionado (APA 7, IEEE, Vancouver o Chicago).
-Al final del documento se genera la bibliografía automáticamente. La forma de Pandoc `[@clave]`
-también se acepta (vista previa y exportaciones), pero el editor inserta `[[@clave]]`. En las
-exportaciones a Typst/PDF, una clave que no está en la bibliografía sale como texto `[clave]`.
-
-### Matemáticas (KaTeX)
-
-```markdown
-La entropía de Shannon se define como $H = -\sum_{i} p_i \log p_i$.
-
-Para distribuciones continuas:
-
-$$
-H(X) = -\int_{-\infty}^{\infty} f(x) \log f(x) \, dx
-$$
-```
-
-### Wikilinks
-
-```markdown
-Como se desarrolla en [[Introducción]], la hipótesis central es...
-
-Para más detalle ver [[Metodología:a3f9b2c1]] (documento externo público).
-```
-
-- `[[Título]]` — enlaza a un documento del mismo proyecto por título
-- `[[Título:hash]]` — enlaza a un documento público de otro usuario (los primeros 8 caracteres de su UUID)
-
-El panel "Mencionado en" del editor muestra los backlinks entrantes al documento actual.
-
-### Gráficos Vega-Lite
-
-````markdown
-```vega-lite
-{
-  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-  "data": { "$ref": "dataset:resultados" },
-  "mark": "bar",
-  "encoding": {
-    "x": { "field": "grupo", "type": "nominal" },
-    "y": { "field": "valor", "type": "quantitative" }
-  }
-}
-```
-````
-
-`"$ref": "dataset:nombre"` hace referencia a un dataset subido al proyecto (CSV, TSV o JSON, hasta
-5 MB) desde **Proyecto → Datasets**. Se guardan en la base de datos: no necesitan S3.
-
-### Ejemplo de documento completo
-
-````markdown
-# La paradoja de la inducción y el problema de Gettier
-
-## Introducción
-
-El problema de la justificación epistémica ocupa un lugar central en la
-filosofía analítica desde al menos [[Conocimiento y creencia]] [[@ayer1956]].
-La formulación clásica del conocimiento como _creencia verdadera justificada_
-fue cuestionada definitivamente por Edmund Gettier [[@gettier1963]].
-
-## Formalización
-
-Sea $K$ el operador de conocimiento. La definición tripartita establece:
-
-$$
-K(s, p) \iff B(s, p) \land V(p) \land J(s, p)
-$$
-
-donde $B$ es creencia, $V$ es verdad y $J$ es justificación.
-
-Gettier demostró que esta condición es **necesaria pero no suficiente**
-[[@gettier1963; @chisholm1966]].
-
-## Distribución de casos en la literatura
-
-```vega-lite
-{
-  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-  "data": { "$ref": "dataset:casos_gettier" },
-  "mark": "arc",
-  "encoding": {
-    "theta": { "field": "frecuencia", "type": "quantitative" },
-    "color": { "field": "tipo", "type": "nominal" }
-  }
-}
-```
-
-## Conclusión
-
-Las soluciones contemporáneas al problema se discuten en
-[[Epistemología contemporánea:b7c3d1e2]].
-````
+- Las citas salen en el estilo del proyecto (APA 7, IEEE, Vancouver o Chicago) y la bibliografía se
+  genera al final. El editor inserta `[[@clave]]`; en Typst/PDF, una clave que no está en la
+  bibliografía sale como texto `[clave]`.
+- El `$ref` de un dataset es su **nombre de fichero completo, con extensión** (`dataset:resultados.csv`),
+  tal como lo copia la página de Datasets.
+- El panel «Mentioned in» del editor muestra los documentos que enlazan al actual.
 
 ---
 
 ## Stack técnico
 
-| Capa          | Tecnología                                           |
-| ------------- | ---------------------------------------------------- |
-| Frontend      | SvelteKit 5, Svelte 5 (runes), TailwindCSS           |
-| API           | tRPC v11 con procedimientos protegidos               |
-| Base de datos | PostgreSQL con Row-Level Security (RLS), Drizzle ORM |
-| Auth          | Better Auth (email + Seilide, OpenID Connect)        |
-| Storage       | S3 propio de cada usuario u organización (BYO S3)    |
-| IA            | OpenRouter (BYOK, modelo por tarea)                  |
-| Errores       | Sentry                                               |
-| Runtime       | Bun                                                  |
+| Capa          | Tecnología                                                                 |
+| ------------- | -------------------------------------------------------------------------- |
+| Frontend      | SvelteKit 2, Svelte 5 (runes), TailwindCSS, Lucide                         |
+| API           | tRPC v11 con procedimientos protegidos                                     |
+| Base de datos | PostgreSQL 16 con Row-Level Security (RLS) y pgvector, Drizzle ORM         |
+| Caché         | Redis (`src/lib/server/cache.ts`)                                          |
+| Auth          | Better Auth (email + Seilide, OpenID Connect), TOTP                        |
+| Storage       | S3 propio de cada usuario u organización (BYO S3)                          |
+| IA            | OpenRouter (BYOK, modelo por tarea); embeddings de OpenAI                  |
+| Documentos    | KaTeX, Vega-Lite, Mermaid; servicio Typst (`typst-service/`) y Kroki (PDF) |
+| Errores       | Sentry                                                                     |
+| Runtime       | Bun, `svelte-adapter-bun`                                                  |
+| Tests         | Vitest, Playwright (e2e, fuera de CI), Storybook                           |
 
 ---
 
@@ -179,27 +132,18 @@ Las soluciones contemporáneas al problema se discuten en
 ### Puesta en marcha (desde cero)
 
 ```sh
-# 1. Instalar dependencias
-bun install
-
-# 2. Instalar los git hooks (pre-commit con lint-staged) — el "prepare"
-#    de package.json debería hacerlo solo tras el install, pero conviene
-#    confirmarlo a mano: si `git config core.hooksPath` no imprime nada,
-#    ejecuta esto.
-bun run prepare
-
-# 3. Copiar variables de entorno y rellenar las necesarias
-cp .env.example .env
-
-# 4. Levantar PostgreSQL (vacío) y los servicios auxiliares
-docker compose -f docker-compose.dev.yml up -d
-
-# 5. Preparar la base y aplicar migraciones
-bun run db:migrate
-
-# 6. Arrancar el servidor de desarrollo
-bun run dev
+bun install                 # instala dependencias y, con "prepare", los git hooks (husky + lint-staged)
+cp .env.example .env        # y rellenar lo necesario
+bun run db:up               # Postgres vacío y los servicios auxiliares (espera a que estén listos)
+bun run db:migrate          # prepara la base y aplica las migraciones
+bun run dev                 # http://localhost:5174
 ```
+
+Si `git config core.hooksPath` no imprime nada tras el install, `bun run prepare` instala los hooks; sin
+ellos los commits no pasan por `lint-staged` y los problemas de formato solo salen en CI.
+
+`docker-compose.dev.yml` levanta Postgres (pgvector, en el 5433 según `.env.example`), Redis, el servicio
+Typst, Kroki con Mermaid y un S3 local (rustfs) para probar Settings → Storage sin uno de verdad.
 
 `bun run db:migrate` (`scripts/migrate.mjs`) levanta una base vacía de una vez: crea la extensión
 pgvector, el schema `scholio` y el rol de la app (`APP_DB_USER`/`APP_DB_PASSWORD`, sin superuser ni
@@ -210,9 +154,21 @@ permisos al rol y siembra el admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`). Es idempote
 el rol ya existe, no le cambia la contraseña (`ALTER ROLE scholio_app PASSWORD '…'` en el contenedor
 `db`).
 
-> **Nota**: si `bun run prepare` no deja `.git/hooks` funcionando (`git config core.hooksPath`
-> vacío tras el install), los commits pasarán sin pasar por `lint-staged` en local — el `bun run lint`
-> de CI seguirá pillando problemas de formato, pero solo al abrir el PR en vez de en el commit.
+### Scripts
+
+| Script                     | Para qué                                                               |
+| -------------------------- | ---------------------------------------------------------------------- |
+| `check`, `lint`, `format`  | svelte-check; prettier + eslint (lo mismo que CI); formatear           |
+| `test:unit`                | Vitest (proyecto `server`)                                             |
+| `db:test:ready`            | Postgres de tests en el 5434, migrado, para los tests de integración   |
+| `test:built`               | La app compilada contra un Seilide falso (ver abajo)                   |
+| `test:e2e`                 | Playwright                                                             |
+| `db:generate`              | Nueva migración de Drizzle a partir de los schemas                     |
+| `db:studio`                | Drizzle Studio                                                         |
+| `auth:schema`              | Regenera el schema de Better Auth (`src/lib/server/db/auth.schema.ts`) |
+| `storybook`                | Storybook en el 6006                                                   |
+| `tunnel`, `preview:tunnel` | La app compilada detrás del túnel `scholio-dev` (ver abajo)            |
+| `genpwd`                   | Una contraseña o secreto aleatorio                                     |
 
 ### Entrar con Seilide
 
@@ -272,13 +228,22 @@ no confundirse con las que quedaran de antes en el navegador.
 
 ---
 
-## Despliegue en producción (Hetzner + Dokploy)
+## Ramas y CI
 
-### Infraestructura actual
+- Se trabaja en `development`; `staging` y `main` reciben los merges. Un push a `main` despliega
+  producción.
+- `.github/workflows/ci.yml`, en cada push y PR a `main` y `staging`: `check`, `lint`, `build` y los
+  tests unitarios. El job de e2e está comentado hasta que Playwright funcione en CI.
+- `.github/workflows/build-ghcr.yml`, en cada push a `main`: construye las imágenes y despliega (abajo).
 
-- **Servidor**: Hetzner — 75 GB disco, 2 GB RAM
-- **PaaS**: [Dokploy](https://dokploy.com) self-hosted — gestiona deploys, SSL (Traefik), env vars y reverse proxy
-- **Dashboard Dokploy**: `dokploy.scholio.review`
+---
+
+## Despliegue en producción (Dokploy)
+
+### Infraestructura
+
+- **Servidor**: un VPS de netcup con [Dokploy](https://dokploy.com) self-hosted, que gestiona deploys,
+  SSL (Traefik), variables de entorno y reverse proxy. Dashboard en `dokploy.scholio.review`
 - **Imágenes**: `.github/workflows/build-ghcr.yml` construye y publica en GHCR en cada push a `main`:
   - `ghcr.io/yellowmachine/svelte-thinking:latest` — app
   - `ghcr.io/yellowmachine/scholio-typst:latest` — typst (solo si cambió `typst-service/**`, o con `workflow_dispatch`)
@@ -303,8 +268,6 @@ no confundirse con las que quedaran de antes en el navegador.
 
   Como el trigger nativo de Dokploy también dispara en cuanto detecta el push (antes de que termine el build de la imagen), es normal ver **dos deploys por cada push a `main`**: uno prematuro (puede coger la imagen vieja) y el de este job, que siempre llega después de confirmar que la imagen está lista. Con `pull_policy: always`, el segundo vuelve a hacer `pull` y queda como estado final — no hace falta desactivar el trigger nativo.
 
-- Fly.io está deshabilitado (`fly.toml` y el job `deploy-fly` quedaron comentados) — el despliegue va solo por Dokploy.
-
 ### Un solo stack: `docker-compose.prod.yml`
 
 El despliegue es **un único stack de Dokploy** (Docker Compose apuntando a `docker-compose.prod.yml`) con
@@ -313,8 +276,7 @@ suyo y arranca vacío: `scripts/migrate.mjs`, al arrancar la app, crea el rol `s
 las tablas.
 
 - **Sin redes externas propias**: los servicios se hablan por la red por defecto del stack; solo
-  `scholio` está además en `dokploy-network`, para que Traefik le dé dominio. Ya no existe
-  `scholio-network`.
+  `scholio` está además en `dokploy-network`, para que Traefik le dé dominio.
 - **Volúmenes sin `name:` fijo**: Compose les antepone el nombre del proyecto de Dokploy, así que dos
   stacks nunca comparten volumen por accidente.
 - **Sin puertos al host**: Traefik llega por `dokploy-network` (app en el 3000).
@@ -327,8 +289,7 @@ las tablas.
 4. Deploy
 
 Los ficheros (fotos, PDFs de referencias) van al S3 que cada usuario u organización configura en
-Settings → Storage. El stack ya no lleva almacenamiento propio: si venías de un despliegue con `rustfs`,
-su volumen (`rustfs_data`) sigue en el servidor hasta que lo borres a mano.
+Settings → Storage. El stack no lleva almacenamiento propio.
 
 > **Backups de Postgres**: no forman parte de este stack. Se hacen fuera, contra un S3 externo,
 > para que sobrevivan a la pérdida del servidor.
@@ -349,7 +310,7 @@ bun scripts/migrate.mjs
 
 Dokploy tiene un bug conocido por el que un deploy normal reutiliza la imagen cacheada en lugar de descargar la nueva. En vez de depender del toggle "Pull always" de la UI de Dokploy (fácil de olvidar si se recrea la app), `scholio` y `typst` en `docker-compose.prod.yml` llevan `pull_policy: always` — un campo nativo del Compose Spec (Docker Compose v2.10+) que fuerza el `pull` antes de levantar el servicio, queda versionado y no depende de un ajuste manual en la UI.
 
-**Consecuencia**: cada deploy descarga la imagen completa, lo que acumula capas antiguas en `/var/lib/docker/overlay2`. Sin limpieza periódica, el disco se llena (incidente real: 75 GB llenos en producción). Ver sección de mantenimiento abajo.
+**Consecuencia**: cada deploy descarga la imagen completa, lo que acumula capas antiguas en `/var/lib/docker/overlay2`. Sin limpieza periódica, el disco se llena (ya pasó en producción). Ver la sección de mantenimiento.
 
 ---
 
@@ -396,9 +357,15 @@ Si el disco supera el 80%, ejecutar:
 docker system prune -af
 ```
 
+### Email
+
+netcup bloquea por defecto la salida a los puertos 25, 465 y 587 (política «netcup Mail block» del
+firewall en el SCP). En este servidor está quitada; si el email deja de llegar, o en un servidor nuevo,
+mirar eso primero (`nc -vz -w 5 smtp.protonmail.ch 587`).
+
 ---
 
-## Variables de entorno necesarias
+## Variables de entorno
 
 Todas están documentadas en `.env.example`. Las que hay que poner en Dokploy para `docker-compose.prod.yml`:
 
@@ -413,33 +380,38 @@ Todas están documentadas en `.env.example`. Las que hay que poner en Dokploy pa
 | `ORCID_CLIENT_ID/SECRET/REDIRECT_URI/BASE_URL`  | OAuth de ORCID (opcional)                                                                    |
 | `SMTP_HOST/PORT/SECURE/USER/PASS`, `EMAIL_FROM` | Envío de email transaccional                                                                 |
 | `KMS_MASTER_KEY`                                | Cifra las API keys de usuario (BYOK); cambiarla las pierde                                   |
-| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para búsqueda semántica                                |
+| `OPENAI_API_KEY`                                | Embeddings (`text-embedding-3-small`) para la búsqueda semántica (opcional: sin ella, vacía) |
 | `SLACK_WEBHOOK_URL`                             | Notificaciones internas (opcional)                                                           |
 | `SENTRY_DSN`                                    | DSN de Sentry en servidor (opcional)                                                         |
 | `PUBLIC_SENTRY_DSN`                             | DSN de Sentry en cliente (opcional; se lee al arrancar, suele ser el mismo que `SENTRY_DSN`) |
 
-Ya no existen `GITHUB_CLIENT_ID/SECRET` (sin login con GitHub), `PUBLIC_LIBRARIAN_URL` ni nada de
-Stripe.
+Fijadas en el propio compose, sin tocar en Dokploy: `DATABASE_URL`, `MIGRATION_DATABASE_URL`,
+`APP_DB_USER`, `REDIS_URL`, `TYPST_SERVICE_URL`, `KROKI_URL`, `BODY_SIZE_LIMIT` (`20M`), y
+`ADDRESS_HEADER`/`XFF_DEPTH` (la IP real del cliente detrás de Traefik).
+
+Otras:
+
+- `ENABLE_SW` — argumento de build (`Dockerfile`): `true` incluye el Service Worker y el modo sin
+  conexión. CI no lo pasa, así que producción va sin él.
+- `ALLOW_PRIVATE_URLS` — `true` deja que las URLs que da el usuario (importar por URL, Jupyter,
+  endpoint S3) apunten a direcciones privadas, que `safeFetch` rechaza por defecto. En `bun run dev`
+  ya se permiten; en producción, solo si Jupyter o el S3 están en la misma red privada.
+
+> ⚠️ **Límite de subida**: `BODY_SIZE_LIMIT` es `20M` en producción, pero la app acepta más: importar
+> un proyecto hasta 200 MB, PDFs de referencias y notebooks hasta 50 MB. En producción, todo lo que
+> pase de 20 MB falla antes de llegar a la app. `.env.example` usa `100M`.
 
 ---
 
-## Checklist de lanzamiento beta
+## Pendiente
 
-Antes de abrir acceso a usuarios reales:
-
-- [ ] Rellenar todas las variables de entorno de producción (ver tabla anterior)
-- [ ] Crear el cliente de Scholio en Seilide (ver [Entrar con Seilide](#entrar-con-seilide))
-- [ ] Crear el proyecto en Sentry y copiar el DSN (servidor y cliente)
-
----
-
-## Pendiente (no bloquea el beta)
-
-- **Perfil editable** — nombre y email se muestran en Settings pero no se pueden cambiar
+- **Email editable** — nombre y bio se cambian en Settings; el email no
 - **Avatar de usuario** — muestra iniciales; subida de foto de perfil no implementada
 - **Soft delete** de documentos — el borrado actual es definitivo
 - **Transferencia de propiedad de proyectos** — sin UI ni endpoint
-- **Sugerencias de referencias externas** (Semantic Scholar, OpenLibrary) para el asistente
+- **Sugerencias de referencias externas** para el asistente (Semantic Scholar, OpenLibrary); el alta
+  por DOI (CrossRef) ya existe
+- **e2e en CI** — Playwright está, el job no
 
 ---
 
