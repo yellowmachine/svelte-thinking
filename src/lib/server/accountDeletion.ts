@@ -11,7 +11,7 @@
  * - comments and issue comments written in other people's projects: they are
  *   part of those projects' discussion.
  */
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { Db } from '$lib/server/db';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import {
@@ -23,18 +23,62 @@ import {
 	userSpellAllowlist
 } from '$lib/server/db/schemas/users.schema';
 import { projectPhoto } from '$lib/server/db/schemas/photos.schema';
-import { reference } from '$lib/server/db/schemas/references.schema';
+import { reference, projectReference } from '$lib/server/db/schemas/references.schema';
 import { tag } from '$lib/server/db/schemas/tags.schema';
 import { aiConversation } from '$lib/server/db/schemas/ai.schema';
 import { blogPost, blogAggregator } from '$lib/server/db/schemas/blog.schema';
 import { organization, organizationMember } from '$lib/server/db/schemas/organizations.schema';
 import { projectInterest } from '$lib/server/db/schemas/discover.schema';
 
+/**
+ * A file to remove from storage once the account is gone. `orgId` says which
+ * bucket it lives in, as resolveProjectS3Config would pick it: the
+ * organization's when its project belongs to one, the user's own otherwise.
+ */
+export type AccountFile = { key: string; orgId: string | null };
+
 export type AccountDeletionResult = {
-	/** Storage keys of the files that lived in the user's own projects and library. */
-	storageKeys: string[];
 	deletedProjects: number;
+	/** Organizations the user owned; their projects owned by others are now personal. */
+	deletedOrgIds: string[];
 };
+
+/**
+ * Files in the user's own projects and library. Call it inside the same RLS
+ * transaction as deleteAccountData, before it: afterwards the rows are gone.
+ */
+export async function collectAccountFiles(tx: Db, userId: string): Promise<AccountFile[]> {
+	const photos = await tx
+		.select({ key: projectPhoto.key, orgId: project.orgId })
+		.from(projectPhoto)
+		.innerJoin(project, eq(project.id, projectPhoto.projectId))
+		.where(eq(project.ownerId, userId));
+
+	// A reference PDF is uploaded through a project, to that project's bucket,
+	// under projects/<projectId>/. The reference may be linked to several.
+	const refRows = await tx
+		.select({
+			refId: reference.id,
+			key: reference.pdfKey,
+			projectId: project.id,
+			orgId: project.orgId
+		})
+		.from(reference)
+		.leftJoin(projectReference, eq(projectReference.referenceId, reference.id))
+		.leftJoin(project, eq(project.id, projectReference.projectId))
+		.where(and(eq(reference.userId, userId), isNotNull(reference.pdfKey)));
+
+	const refPdfs = new Map<string, AccountFile>();
+	for (const r of refRows) {
+		if (!r.key) continue;
+		const uploadedHere = r.projectId !== null && r.key.startsWith(`projects/${r.projectId}/`);
+		if (!refPdfs.has(r.refId) || uploadedHere) {
+			refPdfs.set(r.refId, { key: r.key, orgId: r.orgId ?? null });
+		}
+	}
+
+	return [...photos, ...refPdfs.values()];
+}
 
 export async function deleteAccountData(tx: Db, userId: string): Promise<AccountDeletionResult> {
 	const ownedProjects = await tx
@@ -42,23 +86,6 @@ export async function deleteAccountData(tx: Db, userId: string): Promise<Account
 		.from(project)
 		.where(eq(project.ownerId, userId));
 	const projectIds = ownedProjects.map((p) => p.id);
-
-	const photos =
-		projectIds.length > 0
-			? await tx
-					.select({ key: projectPhoto.key })
-					.from(projectPhoto)
-					.where(inArray(projectPhoto.projectId, projectIds))
-			: [];
-	const refPdfs = await tx
-		.select({ key: reference.pdfKey })
-		.from(reference)
-		.where(eq(reference.userId, userId));
-
-	const storageKeys = [
-		...photos.map((p) => p.key),
-		...refPdfs.flatMap((r) => (r.key ? [r.key] : []))
-	];
 
 	// Owned projects: documents, versions, comments, collaborators, photos…
 	// go with them by cascade.
@@ -76,7 +103,11 @@ export async function deleteAccountData(tx: Db, userId: string): Promise<Account
 	}
 
 	// Owned organizations: members, API keys, invitations and storage config cascade.
-	await tx.delete(organization).where(eq(organization.ownerId, userId));
+	// Projects other members own in them stay, as personal projects (org_id SET NULL).
+	const deletedOrgs = await tx
+		.delete(organization)
+		.where(eq(organization.ownerId, userId))
+		.returning({ id: organization.id });
 
 	// Memberships in other people's projects and organizations.
 	await tx.delete(projectCollaborator).where(eq(projectCollaborator.userId, userId));
@@ -96,5 +127,5 @@ export async function deleteAccountData(tx: Db, userId: string): Promise<Account
 	await tx.delete(userApiKey).where(eq(userApiKey.userId, userId));
 	await tx.delete(userProfile).where(eq(userProfile.userId, userId));
 
-	return { storageKeys, deletedProjects: deleted.length };
+	return { deletedProjects: deleted.length, deletedOrgIds: deletedOrgs.map((o) => o.id) };
 }
