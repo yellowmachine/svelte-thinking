@@ -1,6 +1,8 @@
 /**
- * Typed wrappers for the SECURITY DEFINER functions of migration
- * 0011_rls_definer_functions: the only operations that cross users past RLS.
+ * Typed wrappers for the SECURITY DEFINER functions of migrations
+ * 0011_rls_definer_functions, 0015_hand_over_org_projects,
+ * 0016_release_written_documents and 0017_set_document_writer: the only
+ * operations that cross users past RLS.
  * Each function checks the caller itself, from app.current_user_id, so call
  * them on a `withRLS` transaction (unsubscribeByToken works without one).
  */
@@ -80,4 +82,45 @@ export async function orgAiKeys(tx: Db, orgId: string): Promise<OrgKeyRow[]> {
 		authTag: r.auth_tag,
 		enabled: r.enabled
 	}));
+}
+
+/**
+ * Account deletion: hands the caller's projects in organizations owned by
+ * someone else to that organization's owner. Returns their ids.
+ */
+export async function handOverOrgProjects(tx: Db): Promise<string[]> {
+	const rows = await rowsOf<{ project_id: string }>(
+		tx,
+		sql`SELECT * FROM scholio.hand_over_org_projects()`
+	);
+	return rows.map((r) => r.project_id);
+}
+
+/**
+ * Gives up write access to every document the caller holds as writer; it goes
+ * back to the project owner. Returns their ids.
+ */
+export async function releaseWrittenDocuments(tx: Db): Promise<string[]> {
+	const rows = await rowsOf<{ document_id: string }>(
+		tx,
+		sql`SELECT * FROM scholio.release_written_documents()`
+	);
+	return rows.map((r) => r.document_id);
+}
+
+/**
+ * Sets who may write a shared document, with setWriter's rules: the project
+ * owner to NULL or a collaborator who writes, the current writer only to NULL.
+ * Throws (42501 / 22023) otherwise. Returns false if there is no such document.
+ */
+export async function setDocumentWriter(
+	tx: Db,
+	documentId: string,
+	writerUserId: string | null
+): Promise<boolean> {
+	const [row] = await rowsOf<{ id: string | null }>(
+		tx,
+		sql`SELECT scholio.set_document_writer(${documentId}, ${writerUserId}::text) AS id`
+	);
+	return row?.id != null;
 }

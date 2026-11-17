@@ -1,6 +1,7 @@
 import { text, timestamp, index, uniqueIndex, pgPolicy, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { scholioSchema } from '../scholio-schema';
+import { organization } from './organizations.schema';
 
 export const projectStatusEnum = scholioSchema.enum('project_status', [
 	'draft',
@@ -34,8 +35,9 @@ export const project = scholioSchema
 			requirementsTemplate: text('requirements_template'),
 			// Custom system prompt for the project-level AI agent (owner only)
 			agentSystemPrompt: text('agent_system_prompt'),
-			// Optional org link — when set, AI key is resolved from the org (not the user)
-			orgId: text('org_id'),
+			// Optional org link — when set, AI key and S3 bucket are resolved from the org.
+			// If the org is deleted the project stays with its owner, as a personal project.
+			orgId: text('org_id').references(() => organization.id, { onDelete: 'set null' }),
 			citationStyle: text('citation_style'),
 			doi: text('doi'),
 			version: text('version'),

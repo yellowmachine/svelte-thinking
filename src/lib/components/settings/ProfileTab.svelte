@@ -3,6 +3,7 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 
 	import { resolve } from '$app/paths';
 	let {
@@ -30,11 +31,15 @@
 	let passwordError = $state('');
 	let passwordSuccess = $state(false);
 
-	let showDeleteDialog = $state(false);
+	// ?delete=1: back from signing in again to delete the account.
+	let showDeleteDialog = $state(untrack(() => page.url.searchParams.get('delete') === '1'));
 	let deleteConfirmText = $state('');
 	let deletingAccount = $state(false);
 	let deleteError = $state('');
+	// The server only deletes with a session started a few minutes ago.
+	let deleteNeedsReauth = $state(false);
 	const DELETE_KEYWORD = 'DELETE';
+	const REAUTH_LOGIN = `/login?redirect=${encodeURIComponent('/settings?tab=profile&delete=1')}`;
 
 	async function unlinkOrcid() {
 		unlinkingOrcid = true;
@@ -54,6 +59,11 @@
 			const res = await fetch('/api/account/delete', { method: 'DELETE' });
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
+				if (body.code === 'reauth_required') {
+					deleteNeedsReauth = true;
+					deletingAccount = false;
+					return;
+				}
 				throw new Error(body.message ?? 'Error deleting account');
 			}
 			window.location.href = '/?deleted=1';
@@ -356,6 +366,10 @@
 				This action will permanently delete your account and <strong>all your data</strong>:
 				projects, documents, version history, comments and files. This cannot be undone.
 			</p>
+			<p class="mt-2 font-sans text-sm text-ink-muted">
+				Projects you own inside someone else's organization aren't deleted: they go to the
+				organization's owner.
+			</p>
 
 			<div class="mt-5">
 				<label for="delete-confirm" class="block font-sans text-sm font-medium text-ink">
@@ -374,6 +388,23 @@
 				<p class="mt-3 font-sans text-sm text-danger">{deleteError}</p>
 			{/if}
 
+			{#if deleteNeedsReauth}
+				<div class="mt-3 rounded-md border border-danger-border bg-danger-bg p-3">
+					<p class="font-sans text-sm text-danger">
+						For your security, sign in again to delete your account. You'll come back here.
+					</p>
+					<form method="post" action="/logout" class="mt-2">
+						<input type="hidden" name="redirect" value={REAUTH_LOGIN} />
+						<button
+							type="submit"
+							class="rounded-md bg-red-600 px-3 py-1.5 font-sans text-sm font-medium text-white transition-colors hover:bg-red-700"
+						>
+							Sign in again
+						</button>
+					</form>
+				</div>
+			{/if}
+
 			<div class="mt-5 flex gap-3">
 				<button
 					type="button"
@@ -381,6 +412,7 @@
 						showDeleteDialog = false;
 						deleteConfirmText = '';
 						deleteError = '';
+						deleteNeedsReauth = false;
 					}}
 					disabled={deletingAccount}
 					class="flex-1 rounded-md border border-paper-border px-4 py-2 font-sans text-sm text-ink-muted transition-colors hover:bg-paper-ui disabled:opacity-50"

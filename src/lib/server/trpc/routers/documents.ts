@@ -6,7 +6,7 @@ import { document, documentVersion } from '$lib/server/db/schemas/documents.sche
 import { documentLink } from '$lib/server/db/schemas/documentLinks.schema';
 import { projectContextLink } from '$lib/server/db/schemas/contextLinks.schema';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
-import { notificationRecipients } from '$lib/server/definerFunctions';
+import { notificationRecipients, setDocumentWriter } from '$lib/server/definerFunctions';
 import { extractWikilinks } from '$lib/utils/wikilinks';
 import { sha256Hex } from '$lib/utils/contentHash';
 import { indexDocument, embedQuery } from '$lib/server/embeddings';
@@ -24,6 +24,7 @@ import {
 	type CollaboratorRole
 } from '$lib/domain/permissions';
 import type { Db } from '$lib/server/db';
+import { userNameSql } from '$lib/server/db/userName';
 
 type WithRLS = <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
 
@@ -166,9 +167,7 @@ export const documentsRouter = router({
 					currentVersionId: document.currentVersionId,
 					versionNumber: documentVersion.versionNumber,
 					committedAt: documentVersion.createdAt,
-					committerName: sql<
-						string | null
-					>`(SELECT name FROM "user" WHERE "user".id = ${documentVersion.createdBy})`,
+					committerName: userNameSql<string | null>(documentVersion.createdBy),
 					// updatedAt cambia en cada saveDraft o commit — sirve para detectar drafts externos
 					draftUpdatedAt: document.updatedAt
 				})
@@ -799,12 +798,11 @@ export const documentsRouter = router({
 					}
 				}
 
-				const [updated] = await db
-					.update(document)
-					.set({ writerUserId: input.writerUserId, updatedAt: new Date() })
-					.where(eq(document.id, input.documentId))
-					.returning();
+				// RLS can't let the writer column change (see 0017_set_document_writer),
+				// so the change goes through a SECURITY DEFINER function with these rules.
+				await setDocumentWriter(db, input.documentId, input.writerUserId);
 
+				const [updated] = await db.select().from(document).where(eq(document.id, input.documentId));
 				return updated;
 			});
 		}),

@@ -29,7 +29,8 @@
 						{entry.message}
 					</p>
 					<p class="mt-2 font-sans text-xs text-ink-faint">
-						{entry.showName && entry.userName ? entry.userName : 'Anonymous user'}
+						<!-- A signed entry with no name left: its author deleted their account. -->
+						{entry.showName ? (entry.userName ?? 'Deleted user') : 'Anonymous user'}
 						· {formatDate(entry.createdAt)}
 					</p>
 				</div>

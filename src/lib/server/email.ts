@@ -303,3 +303,39 @@ export async function sendPasswordResetEmail(email: string, url: string) {
 		`
 	});
 }
+
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/**
+ * Sent once an account is deleted: the record that it happened, and a warning
+ * if it wasn't the owner who did it.
+ */
+export async function sendAccountDeletedEmail({
+	to,
+	name,
+	deletedProjects,
+	handedOverProjects
+}: {
+	to: string;
+	name: string;
+	deletedProjects: number;
+	handedOverProjects: number;
+}) {
+	const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+	const handedOver =
+		handedOverProjects > 0
+			? `<p>${plural(handedOverProjects, 'project', 'projects')} you owned inside someone else's organization ${handedOverProjects === 1 ? 'was' : 'were'} handed over to that organization's owner instead of being deleted.</p>`
+			: '';
+	await sendMail({
+		to,
+		subject: 'Your Scholio account has been deleted',
+		html: `
+			<p>Hi ${escapeHtml(name)},</p>
+			<p>Your Scholio account and its data have been deleted, including ${plural(deletedProjects, 'project', 'projects')} and the files in them.</p>
+			${handedOver}
+			<p>Comments you left in other people's projects remain, signed as "Deleted user".</p>
+			<p>If you didn't do this, reply to this email right away.</p>
+			<p>— The Scholio team</p>
+		`
+	});
+}

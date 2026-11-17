@@ -11,6 +11,7 @@ import { projectInvitation } from '$lib/server/db/schemas/invitations.schema';
 import { projectRequirement } from '$lib/server/db/schemas/requirements.schema';
 import { tag, projectTag } from '$lib/server/db/schemas/tags.schema';
 import { eq, desc, and, count, sql, inArray, isNull, gt } from 'drizzle-orm';
+import { userNameSql } from '$lib/server/db/userName';
 
 export const load: PageServerLoad = async (event) => {
 	const projectId = event.params.id;
@@ -74,7 +75,7 @@ export const load: PageServerLoad = async (event) => {
 					userId: projectCollaborator.userId,
 					role: projectCollaborator.role,
 					createdAt: projectCollaborator.createdAt,
-					name: sql<string>`(SELECT name FROM "user" WHERE "user".id = ${projectCollaborator.userId})`,
+					name: userNameSql(projectCollaborator.userId),
 					email: sql<string>`(SELECT email FROM "user" WHERE "user".id = ${projectCollaborator.userId})`
 				})
 				.from(projectCollaborator)

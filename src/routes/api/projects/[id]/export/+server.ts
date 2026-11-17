@@ -15,6 +15,7 @@ import { resolveProjectS3Config } from '$lib/server/s3Storage';
 import { createS3Client } from '$lib/server/storage';
 import { safeFetch } from '$lib/server/safeFetch';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { userNameSql } from '$lib/server/db/userName';
 
 export const GET: RequestHandler = async (event) => {
 	const projectId = event.params.id;
@@ -81,13 +82,14 @@ export const GET: RequestHandler = async (event) => {
 						lineStart: comment.lineStart,
 						lineEnd: comment.lineEnd,
 						createdAt: comment.createdAt,
+						// Left join: comments outlive their authors' accounts.
 						authorEmail: user.email,
-						authorName: user.name,
+						authorName: userNameSql(comment.authorId),
 						authorOrcid: userProfile.orcid
 					})
 					.from(comment)
 					.innerJoin(document, eq(document.id, comment.documentId))
-					.innerJoin(user, eq(user.id, comment.authorId))
+					.leftJoin(user, eq(user.id, comment.authorId))
 					.leftJoin(userProfile, eq(userProfile.userId, comment.authorId))
 					.where(eq(document.projectId, projectId))
 					.orderBy(asc(comment.createdAt))

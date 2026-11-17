@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { eq, and, isNull, isNotNull, desc, sql } from 'drizzle-orm';
+import { eq, and, isNull, isNotNull, desc } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { comment } from '$lib/server/db/schemas/comments.schema';
@@ -10,6 +10,7 @@ import { sendNewCommentNotification } from '$lib/server/email';
 import { env } from '$env/dynamic/private';
 
 import type { Db } from '$lib/server/db';
+import { userNameSql } from '$lib/server/db/userName';
 
 type WithRLS = <T>(fn: (db: Db) => Promise<T>) => Promise<T>;
 
@@ -61,8 +62,7 @@ async function notifyDocumentOwner(
 	}
 }
 
-const authorNameSql = (authorId: typeof comment.authorId) =>
-	sql<string>`(SELECT name FROM "user" WHERE "user".id = ${authorId})`;
+const authorNameSql = (authorId: typeof comment.authorId) => userNameSql(authorId);
 
 const createGeneralCommentSchema = z.object({
 	documentId: z.string(),
