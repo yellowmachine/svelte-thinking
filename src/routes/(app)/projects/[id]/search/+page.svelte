@@ -2,8 +2,6 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Search from '@lucide/svelte/icons/search';
 	import type { PageData } from './$types';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { projectSearchTutorialSteps } from '$lib/tutorials/projectSearch';
 
 	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
@@ -75,9 +73,3 @@
 		</ul>
 	{/if}
 </div>
-
-<TutorialManager
-	slug="project-search"
-	completedTutorials={data.completedTutorials}
-	steps={projectSearchTutorialSteps}
-/>

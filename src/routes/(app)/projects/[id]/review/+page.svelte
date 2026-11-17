@@ -4,8 +4,6 @@
 	import { goto } from '$app/navigation';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { projectReviewTutorialSteps } from '$lib/tutorials/projectReview';
 
 	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
@@ -217,9 +215,3 @@
 		</div>
 	{/if}
 </div>
-
-<TutorialManager
-	slug="project-review"
-	completedTutorials={data.completedTutorials}
-	steps={projectReviewTutorialSteps}
-/>

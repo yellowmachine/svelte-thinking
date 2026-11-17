@@ -25,6 +25,7 @@
 <!-- One side panel at a time: this rail opens, switches and closes them. -->
 <nav
 	aria-label="Side panels"
+	data-tutorial="doc-side-rail"
 	class="flex w-11 shrink-0 flex-col items-center gap-1 border-l border-paper-border bg-paper py-2"
 >
 	{#each items as item (item.id)}

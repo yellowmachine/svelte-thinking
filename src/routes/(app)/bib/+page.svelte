@@ -8,9 +8,6 @@
 	import { parseBibtexFile } from '$lib/utils/bibtex';
 	import type { PageData } from './$types';
 
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { bibTutorialSteps } from '$lib/tutorials/bib';
-
 	import { resolve } from '$app/paths';
 	let { data }: { data: PageData } = $props();
 
@@ -337,5 +334,3 @@
 		</div>
 	</div>
 {/if}
-
-<TutorialManager slug="bib" completedTutorials={data.completedTutorials} steps={bibTutorialSteps} />

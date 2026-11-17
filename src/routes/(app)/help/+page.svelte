@@ -1,6 +1,23 @@
 <script lang="ts">
 	import Callout from '$lib/components/ui/Callout.svelte';
 	import { resolve } from '$app/paths';
+	import Button from '$lib/components/ui/Button.svelte';
+	import { trpc } from '$lib/utils/trpc';
+	import { invalidateAll } from '$app/navigation';
+
+	let tourState = $state<'idle' | 'busy' | 'done' | 'error'>('idle');
+
+	async function replayEditorTour() {
+		tourState = 'busy';
+		try {
+			await trpc.users.resetTutorial.mutate('document');
+			// The layout holds completedTutorials: refresh it so the next document sees the change.
+			await invalidateAll();
+			tourState = 'done';
+		} catch {
+			tourState = 'error';
+		}
+	}
 </script>
 
 <div class="mx-auto max-w-3xl px-6 py-10">
@@ -221,6 +238,24 @@
 		<p class="mt-1 font-sans text-sm text-ink-muted">
 			Standard Markdown with custom extensions for citations, math, wikilinks and charts.
 		</p>
+		<div class="mt-3 flex flex-wrap items-center gap-3">
+			<Button
+				variant="secondary"
+				size="sm"
+				onclick={replayEditorTour}
+				loading={tourState === 'busy'}
+				disabled={tourState === 'done'}
+			>
+				Replay the editor tour
+			</Button>
+			{#if tourState === 'done'}
+				<span class="font-sans text-xs text-ink-muted"
+					>It will show the next time you open a document.</span
+				>
+			{:else if tourState === 'error'}
+				<span class="font-sans text-xs text-red-600">Could not reset the tour. Try again.</span>
+			{/if}
+		</div>
 	</section>
 
 	<!-- Basic formatting -->

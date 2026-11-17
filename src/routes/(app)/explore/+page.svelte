@@ -1,9 +1,6 @@
 <script lang="ts">
 	import { trpc } from '$lib/utils/trpc';
 	import { resolve } from '$app/paths';
-	import { page } from '$app/stores';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { exploreTutorialSteps } from '$lib/tutorials/explore';
 
 	type Tab = 'projects' | 'researchers';
 
@@ -254,9 +251,3 @@
 		</div>
 	{/if}
 </div>
-
-<TutorialManager
-	slug="explore"
-	completedTutorials={($page.data.completedTutorials as string[]) ?? []}
-	steps={exploreTutorialSteps}
-/>

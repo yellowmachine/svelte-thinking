@@ -14,8 +14,6 @@
 	import BibReferenceList from '$lib/components/bib/BibReferenceList.svelte';
 	import { goto } from '$app/navigation';
 	import { flash } from '$lib/stores/flash.svelte';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { projectBibTutorialSteps } from '$lib/tutorials/projectBib';
 
 	import { resolve } from '$app/paths';
 	// ── Citation style ────────────────────────────────────────────────────────
@@ -374,12 +372,6 @@
 		}}
 	/>
 {/if}
-
-<TutorialManager
-	slug="project-bib"
-	completedTutorials={data.completedTutorials}
-	steps={projectBibTutorialSteps}
-/>
 
 <SafeDeleteDialog
 	open={!!refToDelete}

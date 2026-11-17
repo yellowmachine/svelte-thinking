@@ -21,8 +21,6 @@
 	import UseTemplateModal from '$lib/components/projects/UseTemplateModal.svelte';
 	import SaveAsTemplateModal from '$lib/components/projects/SaveAsTemplateModal.svelte';
 	import TagManager from '$lib/components/projects/TagManager.svelte';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { projectTutorialSteps } from '$lib/tutorials/project';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
 	import { offlineDb, type PendingCreate } from '$lib/offline.db';
@@ -1339,12 +1337,6 @@
 		</div>
 	</div>
 </div>
-
-<TutorialManager
-	slug="project"
-	completedTutorials={data.completedTutorials}
-	steps={projectTutorialSteps}
-/>
 
 <!-- Delete document (from list) -->
 <SafeDeleteDialog
