@@ -2,12 +2,15 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { auth, seilide } from '$lib/server/auth';
 import { APIError } from 'better-auth/api';
+import { safeRedirectPath } from '$lib/utils/safeRedirect';
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) redirect(302, '/projects');
 	return {
 		welcome: event.url.searchParams.get('welcome') === '1',
 		prefillEmail: event.url.searchParams.get('email') ?? null,
+		// Kept in the form actions: `action="?/signInEmail"` alone would drop it.
+		redirect: event.url.searchParams.get('redirect'),
 		seilide: seilide !== null
 	};
 };
@@ -17,7 +20,7 @@ export const actions: Actions = {
 		const data = await event.request.formData();
 		const email = data.get('email')?.toString() ?? '';
 		const password = data.get('password')?.toString() ?? '';
-		const redirectTo = event.url.searchParams.get('redirect') ?? '/projects';
+		const redirectTo = safeRedirectPath(event.url.searchParams.get('redirect'), '/projects');
 
 		try {
 			const result = await auth.api.signInEmail({ body: { email, password } });
@@ -54,7 +57,7 @@ export const actions: Actions = {
 	verifyTotp: async (event) => {
 		const data = await event.request.formData();
 		const code = data.get('code')?.toString() ?? '';
-		const redirectTo = event.url.searchParams.get('redirect') ?? '/projects';
+		const redirectTo = safeRedirectPath(event.url.searchParams.get('redirect'), '/projects');
 
 		try {
 			await auth.api.verifyTOTP({
@@ -73,7 +76,7 @@ export const actions: Actions = {
 
 	signInSeilide: async (event) => {
 		if (!seilide) return fail(404, { message: 'Seilide sign-in is not configured' });
-		const redirectTo = event.url.searchParams.get('redirect') ?? '/projects';
+		const redirectTo = safeRedirectPath(event.url.searchParams.get('redirect'), '/projects');
 
 		const result = await auth.api.signInWithOAuth2({
 			body: { providerId: 'seilide', callbackURL: redirectTo }

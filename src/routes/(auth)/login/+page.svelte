@@ -5,6 +5,11 @@
 	import { resolve } from '$app/paths';
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 
+	// The ?redirect= of the page, carried into each form action.
+	let redirectQuery = $derived(
+		data.redirect ? `&redirect=${encodeURIComponent(data.redirect)}` : ''
+	);
+
 	// When the server returns twoFactor: true, show the TOTP step
 	let showTotpStep = $derived(form && 'twoFactor' in form && form.twoFactor === true);
 </script>
@@ -17,7 +22,12 @@
 			Enter the 6-digit code from your authenticator app.
 		</p>
 
-		<form method="post" action="?/verifyTotp" use:enhance class="mt-6 flex flex-col gap-4">
+		<form
+			method="post"
+			action="?/verifyTotp{redirectQuery}"
+			use:enhance
+			class="mt-6 flex flex-col gap-4"
+		>
 			<div class="flex flex-col gap-1.5">
 				<label for="code" class="font-sans text-sm font-medium text-ink">TOTP code</label>
 				<input
@@ -74,7 +84,12 @@
 			</div>
 		{/if}
 
-		<form method="post" action="?/signInEmail" use:enhance class="mt-6 flex flex-col gap-4">
+		<form
+			method="post"
+			action="?/signInEmail{redirectQuery}"
+			use:enhance
+			class="mt-6 flex flex-col gap-4"
+		>
 			<div class="flex flex-col gap-1.5">
 				<label for="email" class="font-sans text-sm font-medium text-ink">Email</label>
 				<input
@@ -128,7 +143,7 @@
 				<div class="flex-1 border-t border-paper-border"></div>
 			</div>
 
-			<form method="post" action="?/signInSeilide" use:enhance>
+			<form method="post" action="?/signInSeilide{redirectQuery}" use:enhance>
 				<button
 					type="submit"
 					class="flex w-full items-center justify-center gap-2.5 rounded-md border border-paper-border bg-paper px-4 py-2.5 font-sans text-sm font-medium text-ink transition-colors hover:bg-paper-ui"
