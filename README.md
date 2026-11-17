@@ -23,7 +23,7 @@ requisitos, revisión, issues, búsqueda y asistente.
   URL o BibTeX; PDF adjunto por referencia y subnotas (`[[@clave:slug]]`)
 - **Fotos** — galería con descripción por imagen, lightbox y copia como Markdown
 - **Datasets** — CSV, TSV o JSON (hasta 5 MB), guardados en la base, para los gráficos Vega-Lite
-- **Notebooks** — Jupyter (`.ipynb`, hasta 50 MB)
+- **Notebooks** — Jupyter (`.ipynb`)
 - **Requisitos** — lo que pide la revista o el tribunal; el asistente revisa los documentos contra ellos
 - **Revisión e issues** — hilos de comentarios del proyecto y tareas abiertas
 - **Búsqueda** — semántica (pgvector + embeddings de OpenAI); sin `OPENAI_API_KEY` devuelve vacío
@@ -397,9 +397,10 @@ Otras:
   endpoint S3) apunten a direcciones privadas, que `safeFetch` rechaza por defecto. En `bun run dev`
   ya se permiten; en producción, solo si Jupyter o el S3 están en la misma red privada.
 
-> ⚠️ **Límite de subida**: `BODY_SIZE_LIMIT` es `20M` en producción, pero la app acepta más: importar
-> un proyecto hasta 200 MB, PDFs de referencias y notebooks hasta 50 MB. En producción, todo lo que
-> pase de 20 MB falla antes de llegar a la app. `.env.example` usa `100M`.
+> **Límite de subida: 20 MB.** `BODY_SIZE_LIMIT=20M` es el tope de cualquier petición, a propósito.
+> Los límites propios de cada subida (importar un proyecto 200 MB, PDFs de referencias y notebooks
+> 50 MB) son más altos, pero no llegan a contar: lo que pase de 20 MB se rechaza antes de llegar a la
+> app. `.env.example` usa el mismo valor, para que en local pase lo mismo.
 
 ---
 
