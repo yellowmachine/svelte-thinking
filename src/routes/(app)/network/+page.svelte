@@ -2,8 +2,6 @@
 	import { trpc } from '$lib/utils/trpc';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { networkTutorialSteps } from '$lib/tutorials/network';
 
 	const roleLabel: Record<string, string> = {
 		author: 'Author',
@@ -123,9 +121,3 @@
 		{/if}
 	</section>
 </div>
-
-<TutorialManager
-	slug="network"
-	completedTutorials={data.completedTutorials}
-	steps={networkTutorialSteps}
-/>

@@ -3,8 +3,6 @@
 	import { resolve } from '$app/paths';
 	import { trpc } from '$lib/utils/trpc';
 	import type { PageData } from './$types';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { projectIssuesTutorialSteps } from '$lib/tutorials/projectIssues';
 
 	let { data }: { data: PageData } = $props();
 
@@ -226,9 +224,3 @@
 		</ul>
 	{/if}
 </div>
-
-<TutorialManager
-	slug="project-issues"
-	completedTutorials={data.completedTutorials}
-	steps={projectIssuesTutorialSteps}
-/>

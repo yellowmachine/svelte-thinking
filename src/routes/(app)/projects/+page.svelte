@@ -7,12 +7,10 @@
 	import { onMount } from 'svelte';
 	import ProjectCard from '$lib/components/projects/ProjectCard.svelte';
 	import SafeDeleteDialog from '$lib/components/ui/SafeDeleteDialog.svelte';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
 	import { trpc } from '$lib/utils/trpc';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { page } from '$app/state';
 	import { offlineDb } from '$lib/offline.db';
-	import { projectsTutorialSteps } from '$lib/tutorials/projects';
 	import type { PageData } from './$types';
 
 	import { resolve } from '$app/paths';
@@ -358,12 +356,6 @@
 		{/if}
 	{/if}
 </div>
-
-<TutorialManager
-	slug="projects"
-	completedTutorials={data.completedTutorials}
-	steps={projectsTutorialSteps}
-/>
 
 <SafeDeleteDialog
 	open={deleteTarget !== null}

@@ -8,8 +8,6 @@
 	import SecurityTab from '$lib/components/settings/SecurityTab.svelte';
 	import StorageTab from '$lib/components/settings/StorageTab.svelte';
 	import BlogSettingsTab from '$lib/components/settings/BlogSettingsTab.svelte';
-	import TutorialManager from '$lib/components/tutorial/TutorialManager.svelte';
-	import { settingsTutorialSteps } from '$lib/tutorials/settings';
 
 	let { data }: { data: PageData } = $props();
 
@@ -142,9 +140,3 @@
 		<BlogSettingsTab />
 	{/if}
 </div>
-
-<TutorialManager
-	slug="settings"
-	completedTutorials={data.completedTutorials}
-	steps={settingsTutorialSteps}
-/>

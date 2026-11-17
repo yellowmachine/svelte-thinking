@@ -6,18 +6,7 @@
 	import { trpc } from '$lib/utils/trpc';
 
 	interface Props {
-		slug:
-			| 'projects'
-			| 'project'
-			| 'document'
-			| 'bib'
-			| 'project-bib'
-			| 'settings'
-			| 'project-review'
-			| 'project-search'
-			| 'project-issues'
-			| 'explore'
-			| 'network';
+		slug: 'document';
 		completedTutorials: string[];
 		steps: DriveStep[];
 		minWidth?: number;
