@@ -6,6 +6,9 @@
  * nothing. Rows that belong to other projects through a foreign key go with
  * ON DELETE CASCADE, which Postgres runs without RLS.
  *
+ * Handed over, not deleted: the user's projects in organizations owned by
+ * someone else go to that organization's owner, files included.
+ *
  * Kept on purpose:
  * - ai_usage_log: what each AI call cost. The table has no delete policy.
  * - comments and issue comments written in other people's projects: they are
@@ -13,6 +16,7 @@
  */
 import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { Db } from '$lib/server/db';
+import { handOverOrgProjects } from '$lib/server/definerFunctions';
 import { project, projectCollaborator } from '$lib/server/db/schemas/projects.schema';
 import {
 	userProfile,
@@ -38,18 +42,26 @@ import { projectInterest } from '$lib/server/db/schemas/discover.schema';
 export type AccountFile = { key: string; orgId: string | null };
 
 export type AccountDeletionResult = {
+	/** Files to remove from storage, now that their rows are gone. */
+	files: AccountFile[];
 	deletedProjects: number;
+	/** Projects in someone else's organization, now owned by that organization's owner. */
+	handedOverProjectIds: string[];
 	/** Organizations the user owned; their projects owned by others are now personal. */
 	deletedOrgIds: string[];
 };
 
 /**
- * Files in the user's own projects and library. Call it inside the same RLS
- * transaction as deleteAccountData, before it: afterwards the rows are gone.
+ * Photos of the user's own projects and PDFs of their library. Run it before
+ * the hand-over: afterwards the user no longer sees the projects handed over,
+ * and a PDF uploaded through one of them would land in the wrong bucket.
  */
-export async function collectAccountFiles(tx: Db, userId: string): Promise<AccountFile[]> {
+async function collectAccountFiles(
+	tx: Db,
+	userId: string
+): Promise<{ photos: (AccountFile & { projectId: string })[]; pdfs: AccountFile[] }> {
 	const photos = await tx
-		.select({ key: projectPhoto.key, orgId: project.orgId })
+		.select({ key: projectPhoto.key, orgId: project.orgId, projectId: project.id })
 		.from(projectPhoto)
 		.innerJoin(project, eq(project.id, projectPhoto.projectId))
 		.where(eq(project.ownerId, userId));
@@ -77,10 +89,32 @@ export async function collectAccountFiles(tx: Db, userId: string): Promise<Accou
 		}
 	}
 
-	return [...photos, ...refPdfs.values()];
+	return { photos, pdfs: [...refPdfs.values()] };
 }
 
-export async function deleteAccountData(tx: Db, userId: string): Promise<AccountDeletionResult> {
+/**
+ * `beforeDelete` gets the files once they are known and before anything is
+ * deleted: the moment to read the credentials of their buckets, which go with
+ * the user's S3 config, the organizations they own and their memberships.
+ */
+export async function deleteAccountData(
+	tx: Db,
+	userId: string,
+	beforeDelete?: (files: AccountFile[]) => Promise<void>
+): Promise<AccountDeletionResult> {
+	const { photos, pdfs } = await collectAccountFiles(tx, userId);
+
+	const handedOverProjectIds = await handOverOrgProjects(tx);
+
+	// The photos of a project handed over stay with it, in the org's bucket.
+	const files = [
+		...photos
+			.filter((p) => !handedOverProjectIds.includes(p.projectId))
+			.map(({ key, orgId }) => ({ key, orgId })),
+		...pdfs
+	];
+	await beforeDelete?.(files);
+
 	const ownedProjects = await tx
 		.select({ id: project.id })
 		.from(project)
@@ -127,5 +161,10 @@ export async function deleteAccountData(tx: Db, userId: string): Promise<Account
 	await tx.delete(userApiKey).where(eq(userApiKey.userId, userId));
 	await tx.delete(userProfile).where(eq(userProfile.userId, userId));
 
-	return { deletedProjects: deleted.length, deletedOrgIds: deletedOrgs.map((o) => o.id) };
+	return {
+		files,
+		deletedProjects: deleted.length,
+		handedOverProjectIds,
+		deletedOrgIds: deletedOrgs.map((o) => o.id)
+	};
 }

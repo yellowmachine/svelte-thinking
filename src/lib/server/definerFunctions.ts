@@ -1,6 +1,7 @@
 /**
- * Typed wrappers for the SECURITY DEFINER functions of migration
- * 0011_rls_definer_functions: the only operations that cross users past RLS.
+ * Typed wrappers for the SECURITY DEFINER functions of migrations
+ * 0011_rls_definer_functions and 0015_hand_over_org_projects: the only
+ * operations that cross users past RLS.
  * Each function checks the caller itself, from app.current_user_id, so call
  * them on a `withRLS` transaction (unsubscribeByToken works without one).
  */
@@ -80,4 +81,16 @@ export async function orgAiKeys(tx: Db, orgId: string): Promise<OrgKeyRow[]> {
 		authTag: r.auth_tag,
 		enabled: r.enabled
 	}));
+}
+
+/**
+ * Account deletion: hands the caller's projects in organizations owned by
+ * someone else to that organization's owner. Returns their ids.
+ */
+export async function handOverOrgProjects(tx: Db): Promise<string[]> {
+	const rows = await rowsOf<{ project_id: string }>(
+		tx,
+		sql`SELECT * FROM scholio.hand_over_org_projects()`
+	);
+	return rows.map((r) => r.project_id);
 }

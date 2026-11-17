@@ -1,16 +1,18 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createTestDb, asUser, type TestDb } from './db/test-utils';
-import { collectAccountFiles, deleteAccountData } from './accountDeletion';
+import { deleteAccountData } from './accountDeletion';
 import { project, projectCollaborator } from './db/schemas/projects.schema';
 import { userProfile, userApiKey } from './db/schemas/users.schema';
 import { reference, projectReference } from './db/schemas/references.schema';
 import { tag } from './db/schemas/tags.schema';
 import { organization, organizationMember } from './db/schemas/organizations.schema';
 import { projectPhoto } from './db/schemas/photos.schema';
+import { document } from './db/schemas/documents.schema';
 
 const GONE = 'leaving-user';
 const STAYS = 'other-user';
+const THIRD = 'third-user';
 
 const photo = (id: string, projectId: string, uploadedBy: string) => ({
 	id,
@@ -50,13 +52,16 @@ beforeAll(async () => {
 		{ id: 'p-admin', title: 'Theirs, in my org', ownerId: STAYS, orgId: 'o-gone' },
 		{ id: 'p-stays', title: 'Theirs', ownerId: STAYS }
 	]);
-	await db.insert(projectCollaborator).values({
-		id: 'c-1',
-		projectId: 'p-stays',
-		userId: GONE,
-		ownerUserId: STAYS,
-		role: 'coauthor'
-	});
+	await db.insert(projectCollaborator).values([
+		{ id: 'c-1', projectId: 'p-stays', userId: GONE, ownerUserId: STAYS, role: 'coauthor' },
+		// p-gone-org goes to STAYS, who owns o-stays and is a coauthor in it.
+		{ id: 'c-own', projectId: 'p-gone-org', userId: GONE, ownerUserId: GONE, role: 'owner' },
+		{ id: 'c-2', projectId: 'p-gone-org', userId: STAYS, ownerUserId: GONE, role: 'coauthor' },
+		{ id: 'c-3', projectId: 'p-gone-org', userId: THIRD, ownerUserId: GONE, role: 'author' }
+	]);
+	await db
+		.insert(document)
+		.values({ id: 'd-1', projectId: 'p-gone-org', title: 'Draft', writerUserId: GONE });
 	await db
 		.insert(projectPhoto)
 		.values([
@@ -94,39 +99,60 @@ beforeAll(async () => {
 	});
 }, 30_000);
 
-describe('account deletion', () => {
-	it('lists each file with the bucket it lives in', async () => {
-		const files = await asUser(db, GONE, (tx) => collectAccountFiles(tx as never, GONE));
+describe('deleteAccountData', () => {
+	it('deletes the user data under RLS and leaves other users alone', async () => {
+		const result = await asUser(db, GONE, (tx) => deleteAccountData(tx as never, GONE));
 
-		expect(files).toHaveLength(4);
-		expect(files).toEqual(
+		expect(result.deletedProjects).toBe(1);
+		expect(result.handedOverProjectIds).toEqual(['p-gone-org']);
+		expect(result.deletedOrgIds).toEqual(['o-gone']);
+
+		// Each file with its bucket. The photo of the project handed over stays.
+		expect(result.files).toHaveLength(3);
+		expect(result.files).toEqual(
 			expect.arrayContaining([
 				{ key: 'projects/p-gone/photos/ph-1.png', orgId: null },
-				{ key: 'projects/p-gone-org/photos/ph-2.png', orgId: 'o-stays' },
 				{ key: 'projects/p-gone-org/references/r-gone/paper.pdf', orgId: 'o-stays' },
 				{ key: 'refs/c.pdf', orgId: null }
 			])
 		);
-	});
-
-	it('deletes the user data under RLS and leaves other users alone', async () => {
-		const result = await asUser(db, GONE, (tx) => deleteAccountData(tx as never, GONE));
-
-		expect(result.deletedProjects).toBe(2);
-		expect(result.deletedOrgIds).toEqual(['o-gone']);
 
 		// Checked as superuser so RLS can't hide leftovers.
 		const projects = await db
-			.select({ id: project.id, orgId: project.orgId })
+			.select({ id: project.id, ownerId: project.ownerId, orgId: project.orgId })
 			.from(project)
 			.orderBy(project.id);
-		// The admin's project in the deleted org stays, now as a personal project.
 		expect(projects).toEqual([
-			{ id: 'p-admin', orgId: null },
-			{ id: 'p-stays', orgId: null }
+			// The admin's project in the deleted org stays, now as a personal project.
+			{ id: 'p-admin', ownerId: STAYS, orgId: null },
+			// The user's project in someone else's org goes to that org's owner.
+			{ id: 'p-gone-org', ownerId: STAYS, orgId: 'o-stays' },
+			{ id: 'p-stays', ownerId: STAYS, orgId: null }
 		]);
-		const photos = await db.select({ id: projectPhoto.id }).from(projectPhoto);
-		expect(photos.map((p) => p.id)).toEqual(['ph-3']);
+		const handedOver = await db
+			.select({
+				userId: projectCollaborator.userId,
+				ownerUserId: projectCollaborator.ownerUserId,
+				role: projectCollaborator.role
+			})
+			.from(projectCollaborator)
+			.where(eq(projectCollaborator.projectId, 'p-gone-org'))
+			.orderBy(projectCollaborator.userId);
+		expect(handedOver).toEqual([
+			{ userId: STAYS, ownerUserId: STAYS, role: 'owner' },
+			{ userId: THIRD, ownerUserId: STAYS, role: 'author' }
+		]);
+		const [doc] = await db
+			.select({ writerUserId: document.writerUserId })
+			.from(document)
+			.where(eq(document.id, 'd-1'));
+		expect(doc.writerUserId).toBeNull();
+
+		const photos = await db
+			.select({ id: projectPhoto.id })
+			.from(projectPhoto)
+			.orderBy(projectPhoto.id);
+		expect(photos.map((p) => p.id)).toEqual(['ph-2', 'ph-3']);
 
 		const orgs = await db.select({ id: organization.id }).from(organization);
 		expect(orgs.map((o) => o.id)).toEqual(['o-stays']);
