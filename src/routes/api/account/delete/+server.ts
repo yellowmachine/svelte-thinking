@@ -10,14 +10,14 @@
  *      Before deleting, the same transaction reads the credentials of each
  *      bucket the files live in: afterwards the user's S3 config, the
  *      organizations they owned and their memberships are gone.
- *   2. Better Auth records (session, account, user) — deleting the user row
- *      cascades to session and account via Better Auth's FK.
+ *   2. Better Auth records (session, account, user), in the same transaction —
+ *      deleting the user row cascades to session and account via their FK.
  *   3. Files, best-effort, each in its own bucket, once the data is gone.
  */
 import { json, error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
-import { db, type Db } from '$lib/server/db';
+import type { Db } from '$lib/server/db';
 import { user as authUser } from '$lib/server/db/auth.schema';
 import { deleteFileWithConfig, type UserS3Config } from '$lib/server/storage';
 import { getDecryptedUserS3Config, getDecryptedOrgS3Config } from '$lib/server/s3Storage';
@@ -40,28 +40,39 @@ export const DELETE: RequestHandler = async (event) => {
 	const userId = currentUser.id;
 
 	const buckets: { config: UserS3Config; keys: string[] }[] = [];
-	const { deletedOrgIds } = await event.locals.withRLS((tx: Db) =>
-		deleteAccountData(tx, userId, async (files) => {
-			const inTx = <T>(fn: (db: Db) => T) => Promise.resolve(fn(tx));
-			const keysByOrg = new Map<string | null, string[]>();
-			for (const f of files) keysByOrg.set(f.orgId, [...(keysByOrg.get(f.orgId) ?? []), f.key]);
+	let deletedOrgIds: string[];
+	try {
+		// One transaction for Scholio's data and Better Auth's: all of it goes, or
+		// none, so a failure can't leave a user without a profile, stuck on /no-access.
+		({ deletedOrgIds } = await event.locals.withRLS(async (tx: Db) => {
+			const result = await deleteAccountData(tx, userId, async (files) => {
+				const inTx = <T>(fn: (db: Db) => T) => Promise.resolve(fn(tx));
+				const keysByOrg = new Map<string | null, string[]>();
+				for (const f of files) keysByOrg.set(f.orgId, [...(keysByOrg.get(f.orgId) ?? []), f.key]);
 
-			for (const [orgId, keys] of keysByOrg) {
-				const config = await (
-					orgId ? getDecryptedOrgS3Config(orgId, inTx) : getDecryptedUserS3Config(userId, inTx)
-				).catch(() => null);
-				if (config) buckets.push({ config, keys });
-			}
-		})
-	);
+				for (const [orgId, keys] of keysByOrg) {
+					const config = await (
+						orgId ? getDecryptedOrgS3Config(orgId, inTx) : getDecryptedUserS3Config(userId, inTx)
+					).catch(() => null);
+					if (config) buckets.push({ config, keys });
+				}
+			});
+			// Better Auth tables have no RLS; session and account go by cascade.
+			await tx.delete(authUser).where(eq(authUser.id, userId));
+			return result;
+		}));
+	} catch (e) {
+		console.error('[account/delete] rolled back', e);
+		return json(
+			{ message: "Your account couldn't be deleted. Nothing was changed; try again later." },
+			{ status: 500 }
+		);
+	}
 
 	await Promise.allSettled([
 		cacheDel(CACHE_KEY.userS3(userId)),
 		...deletedOrgIds.map((id) => cacheDel(CACHE_KEY.orgS3(id)))
 	]);
-
-	// Better Auth tables have no RLS.
-	await db.delete(authUser).where(eq(authUser.id, userId));
 
 	await Promise.allSettled(
 		buckets.flatMap(({ config, keys }) => keys.map((k) => deleteFileWithConfig(config, k)))
